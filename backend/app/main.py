@@ -40,20 +40,20 @@ app.add_middleware(
     SessionMiddleware,
     secret_key="bknr_secret_key_2025",
     session_cookie="bknr_session",
-    max_age=3600 * 8,   # 8 hours session
+    max_age=3600 * 8,
 )
 
 
 # -------------------------
-# STATIC FILES
+# STATIC FILES  (FIXED FOR RENDER)
 # -------------------------
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="backend/app/static"), name="static")
 
 
 # -------------------------
-# TEMPLATE ENGINE
+# TEMPLATE ENGINE  (FIXED FOR RENDER)
 # -------------------------
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="backend/app/templates")
 templates.env.cache = {}    # Always reload templates
 
 
