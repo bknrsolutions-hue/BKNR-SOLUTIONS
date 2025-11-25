@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PEELING REPORT - BKNR SOLUTIONS</title>
+
+<style>
+body{font-family:Arial;background:#e6f2ff;margin:0;}
+h2{text-align:center;color:#003366;margin:20px 0;}
+
+.filter-box{
+  width:95%;max-width:1100px;margin:0 auto 20px auto;background:white;
+  padding:15px;border-radius:8px;box-shadow:0 0 8px rgba(0,0,0,0.15);
+  display:flex;gap:20px;flex-wrap:wrap;
+}
+label{font-weight:600;color:#003366;}
+input,select{padding:8px;border:1px solid #a3bcd6;border-radius:6px;min-width:200px;}
+
+table{
+  width:95%;max-width:1100px;margin:0 auto 30px;background:white;
+  border-collapse:collapse;box-shadow:0 0 8px rgba(0,0,0,0.15);
+}
+th,td{padding:10px;border-bottom:1px solid #dce6f5;}
+th{background:#003366;color:white;}
+.no-data{text-align:center;margin-top:20px;font-weight:600;}
+</style>
+</head>
+
+<body>
+
+<h2>PEELING REPORT</h2>
+
+<form method="get" class="filter-box">
+
+  <div>
+    <label>Batch</label><br>
+    <select name="batch" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for b in batch_list %}
+      <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>From Date</label><br>
+    <input type="date" name="from_date" value="{{ selected_from }}" onchange="this.form.submit()">
+  </div>
+
+  <div>
+    <label>To Date</label><br>
+    <input type="date" name="to_date" value="{{ selected_to }}" onchange="this.form.submit()">
+  </div>
+
+</form>
+
+{% if peeling_data %}
+<table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Batch</th>
+  <th>HLSO Count</th>
+  <th>HLSO Qty</th>
+  <th>Peeled Qty</th>
+  <th>Yield %</th>
+  <th>Contractor</th>
+  <th>Rate</th>
+  <th>Amount</th>
+  <th>Date</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in peeling_data %}
+<tr>
+  <td>{{ r.id }}</td>
+  <td>{{ r.batch_number }}</td>
+  <td>{{ r.hlso_count }}</td>
+  <td>{{ r.hlso_qty }}</td>
+  <td>{{ r.peeled_qty }}</td>
+  <td>{{ r.yield_percent }}</td>
+  <td>{{ r.contractor }}</td>
+  <td>{{ r.rate_per_kg }}</td>
+  <td>{{ r.amount }}</td>
+  <td>{{ r.date }}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+{% else %}
+<p class="no-data">No records found.</p>
+{% endif %}
+
+</body>
+</html>

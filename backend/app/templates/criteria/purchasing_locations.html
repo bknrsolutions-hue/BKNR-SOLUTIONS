@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PURCHASING LOCATIONS MASTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{width:90%;max-width:1100px;margin:0 auto;background:white;
+    padding:25px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,.15);}
+
+  .row{display:flex;flex-wrap:wrap;margin-bottom:18px;}
+  .col{flex:1;min-width:300px;display:flex;flex-direction:column;}
+
+  label{font-weight:600;margin-bottom:6px;color:#003366;}
+  input{
+    padding:10px;border:1px solid #a3bcd6;border-radius:6px;background:#f9fcff;font-size:14px;
+  }
+
+  .actions{text-align:center;margin-top:20px;}
+  .btn{background:#003366;color:white;padding:10px 20px;border:none;border-radius:6px;
+    font-weight:600;cursor:pointer;width:150px;}
+  .btn-clear{background:#777;}
+
+  table{
+    width:90%;max-width:1100px;margin:25px auto;border-collapse:collapse;background:white;
+    border-radius:10px;overflow:hidden;box-shadow:0 0 8px rgba(0,0,0,0.1);
+  }
+  th,td{padding:10px;border-bottom:1px solid #ddd;font-size:14px;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#eef5ff;}
+  tr.selected{background:#cce5ff!important;}
+
+  #actionWrap{display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;}
+  #dotsBtn{background:#003366;color:white;padding:6px 12px;border-radius:6px;font-size:20px;}
+  #menuBox{display:none;position:absolute;right:0;width:170px;background:white;border:1px solid #ccc;
+    border-radius:8px;}
+  .menu-item{padding:10px;font-weight:600;color:#003366;border-bottom:1px solid #eee;cursor:pointer;}
+  .menu-item:hover{background:#eef4ff;}
+</style>
+
+</head>
+<body>
+
+<h2>PURCHASING LOCATIONS MASTER</h2>
+
+<form id="locForm" onsubmit="saveRecord(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>Location Name</label>
+        <input type="text" id="location_name" required>
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_date" value="{{ date }}">
+    <input type="hidden" id="meta_time" value="{{ time }}">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+{% if today_data %}
+<div id="actionWrap">
+  <button id="dotsBtn">⋮</button>
+  <div id="menuBox">
+    <div class="menu-item" onclick="editRow()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th><th>Location</th><th>Date</th><th>Time</th><th>Email</th><th>Company</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in today_data %}
+    <tr data-id="{{ row.id }}" data-name="{{ row.location_name }}">
+      <td>{{ row.id }}</td>
+      <td>{{ row.location_name }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+      <td>{{ row.email }}</td>
+      <td>{{ row.company_id }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+let selectedRow=null;
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+    r.onclick=()=>{
+      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow=r;
+      actionWrap.style.display="block";
+    };
+  });
+
+  dotsBtn.onclick=()=>{
+    menuBox.style.display = menuBox.style.display==="block" ? "none" : "block";
+  };
+});
+
+async function saveRecord(e){
+  e.preventDefault();
+
+  const fd=new FormData();
+  fd.append("id",record_id.value||"");
+  fd.append("location_name",location_name.value);
+  fd.append("date",meta_date.value);
+  fd.append("time",meta_time.value);
+  fd.append("email",meta_email.value);
+  fd.append("company_id",meta_company_id.value);
+
+  const res=await fetch("/criteria/purchasing_locations",{method:"POST",body:fd});
+  if(res.ok) location.reload();
+  else alert("Save failed");
+}
+
+function editRow(){
+  record_id.value=selectedRow.dataset.id;
+  location_name.value=selectedRow.dataset.name;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteRow(){
+  const id=selectedRow.dataset.id;
+  await fetch(`/criteria/purchasing_locations/delete/${id}`,{method:"POST"});
+  location.reload();
+}
+
+function clearForm(){
+  record_id.value="";
+  location_name.value="";
+  actionWrap.style.display="none";
+}
+</script>
+
+</body>
+</html>

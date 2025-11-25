@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PEELING FORM - BKNR SOLUTIONS</title>
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+    width:95%;max-width:1100px;margin:0 auto;background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:8px;
+  }
+
+  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px;}
+  .col{width:32%;min-width:250px;display:flex;flex-direction:column;}
+
+  label{font-weight:600;color:#003366;margin-bottom:5px;}
+  select,input{
+    padding:8px;border:1px solid #a3bcd6;border-radius:6px;
+    background:#f9fcff;font-size:14px;
+  }
+  input[disabled]{background:#eee;color:#666;}
+
+  .actions{text-align:center;margin-top:20px;}
+  button{
+    background:#003366;color:white;border:none;padding:9px 18px;border-radius:6px;
+    font-weight:600;cursor:pointer;margin:0 10px;
+  }
+  .btn-clear{background:#777;}
+
+  /* Lookup popup */
+  #lookupModal{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.45);justify-content:center;align-items:center;z-index:9999;
+  }
+  #lookupModal .frame-box{
+    width:90%;max-width:900px;height:85vh;background:white;border-radius:10px;overflow:hidden;
+  }
+  #lookupFrame{width:100%;height:100%;border:none;}
+  .close-btn{
+    font-size:22px;font-weight:bold;color:#003366;cursor:pointer;
+    position:absolute;top:10px;right:25px;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>PEELING</h2>
+
+<form action="/processing/peeling" method="post" onsubmit="fillMeta(this)">
+  <div class="form-container">
+
+    <!-- Row 1 -->
+    <div class="row">
+
+      <div class="col">
+        <label>Batch Number</label>
+        <select name="batch_number" onchange="openLookup(this,'batch')" required>
+          <option value="" disabled selected>Select Batch</option>
+          {% for b in batches %}
+          <option value="{{ b }}">{{ b }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Batch</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>HLSO Count</label>
+        <select name="hlso_count" onchange="openLookup(this,'hlso')" required>
+          <option value="" disabled selected>Select HLSO</option>
+          {% for h in hlso_counts %}
+          <option value="{{ h }}">{{ h }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add HLSO Count</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>HLSO Quantity (kg)</label>
+        <input type="number" step="0.01" name="hlso_qty" id="hlso_qty" min="0">
+      </div>
+
+    </div>
+
+    <!-- Row 2 -->
+    <div class="row">
+
+      <div class="col">
+        <label>Peeling Variety</label>
+        <select name="variety" onchange="openLookup(this,'variety')" required>
+          <option value="" disabled selected>Select Variety</option>
+          {% for v in varieties %}
+          <option value="{{ v }}">{{ v }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Variety</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Peeled Quantity (kg)</label>
+        <input type="number" step="0.01" name="peeled_qty" id="peeled_qty" min="0">
+      </div>
+
+      <div class="col">
+        <label>Yield (%)</label>
+        <input type="number" id="yield" name="yield_percent" disabled>
+      </div>
+
+    </div>
+
+    <!-- Row 3 -->
+    <div class="row">
+
+      <div class="col">
+        <label>Contractor</label>
+        <select name="contractor" onchange="openLookup(this,'contractor')" required>
+          <option value="" disabled selected>Select Contractor</option>
+          {% for c in contractors %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Contractor</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Peeling Rate (₹/kg)</label>
+        <select name="rate" id="rate" onchange="recalc()" required>
+          <option value="" disabled selected>Select Rate</option>
+          {% for r in rates %}
+          <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Amount (₹)</label>
+        <input type="number" id="amount" name="amount" disabled>
+      </div>
+
+    </div>
+
+    <!-- Hidden Meta Fields -->
+    <input type="hidden" name="date" id="meta_date">
+    <input type="hidden" name="time" id="meta_time">
+    <input type="hidden" name="email" id="meta_email">
+    <input type="hidden" name="company_id" id="meta_company_id">
+
+    <!-- Buttons -->
+    <div class="actions">
+      <button type="submit">SAVE</button>
+      <button type="reset" class="btn-clear">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+<!-- Lookup Popup -->
+<div id="lookupModal">
+  <div class="frame-box">
+    <span class="close-btn" onclick="closeLookup()">×</span>
+    <iframe id="lookupFrame"></iframe>
+  </div>
+</div>
+
+<script>
+// META AUTO-FILL
+function fillMeta(form){
+  const now=new Date();
+  form.date.value=now.toISOString().slice(0,10);
+  form.time.value=now.toTimeString().slice(0,8);
+  form.email.value="bknr.solutions@gmail.com";
+  form.company_id.value="BKNR001";
+}
+
+// CALCULATIONS
+function recalc(){
+  const hlso=parseFloat(document.getElementById("hlso_qty").value)||0;
+  const peeled=parseFloat(document.getElementById("peeled_qty").value)||0;
+  const rate=parseFloat(document.getElementById("rate").value)||0;
+
+  document.getElementById("yield").value = hlso ? ((peeled/hlso)*100).toFixed(2) : "";
+  document.getElementById("amount").value = peeled ? (peeled*rate).toFixed(2) : "";
+}
+
+["hlso_qty","peeled_qty","rate"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("input",recalc);
+});
+
+// LOOKUP POPUP
+function openLookup(sel, type){
+  if(sel.value !== "__add__") return;
+
+  let url="";
+  if(type==="batch") url="/processing/gate_entry";
+  if(type==="hlso") url="/criteria/hoso_hlso";
+  if(type==="variety") url="/criteria/varieties";
+  if(type==="contractor") url="/criteria/contractors";
+
+  document.getElementById("lookupFrame").src=url;
+  document.getElementById("lookupModal").style.display="flex";
+  sel.value="";
+}
+function closeLookup(){
+  document.getElementById("lookupModal").style.display="none";
+  location.reload();
+}
+
+// Init meta
+fillMeta(document.forms[0]);
+</script>
+
+</body>
+</html>

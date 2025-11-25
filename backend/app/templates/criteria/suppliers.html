@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SUPPLIERS MASTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{width:90%;max-width:1100px;margin:0 auto;background:white;
+    padding:25px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,.15);}
+
+  .row{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:18px;}
+  .col{flex:1;min-width:260px;display:flex;flex-direction:column;}
+
+  label{font-weight:600;color:#003366;margin-bottom:6px;}
+  input,textarea{
+    padding:10px;border:1px solid #a3bcd6;border-radius:6px;background:#f9fcff;
+    font-size:14px;
+  }
+  textarea{height:60px;resize:none;}
+
+  .actions{text-align:center;margin-top:20px;}
+  .btn{background:#003366;color:white;padding:10px 20px;border:none;
+    border-radius:6px;font-weight:600;cursor:pointer;width:150px;}
+  .btn-clear{background:#777;}
+
+  table{
+    width:90%;max-width:1100px;margin:25px auto;border-collapse:collapse;
+    background:#fff;border-radius:10px;overflow:hidden;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+  }
+  th,td{padding:10px;border-bottom:1px solid #ddd;font-size:14px;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#eef5ff;}
+  tr.selected{background:#cce5ff!important;}
+
+  #actionWrap{display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;}
+  #dotsBtn{background:#003366;color:white;padding:6px 12px;border-radius:6px;font-size:20px;}
+  #menuBox{display:none;position:absolute;right:0;width:180px;background:white;
+    border:1px solid #ccc;border-radius:8px;}
+  .menu-item{padding:10px;font-weight:600;color:#003366;border-bottom:1px solid #eee;cursor:pointer;}
+  .menu-item:hover{background:#eef4ff;}
+</style>
+</head>
+
+<body>
+
+<h2>SUPPLIERS MASTER</h2>
+
+<form id="supForm" onsubmit="saveSupplier(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>Supplier Name</label>
+        <input type="text" id="supplier_name" required>
+      </div>
+      <div class="col">
+        <label>Email</label>
+        <input type="email" id="supplier_email">
+      </div>
+      <div class="col">
+        <label>Phone</label>
+        <input type="text" id="phone">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Address</label>
+        <textarea id="address"></textarea>
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_date" value="{{ date }}">
+    <input type="hidden" id="meta_time" value="{{ time }}">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+{% if today_data %}
+<div id="actionWrap">
+  <button id="dotsBtn">⋮</button>
+  <div id="menuBox">
+    <div class="menu-item" onclick="editRow()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th>
+      <th>Date</th><th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in today_data %}
+    <tr 
+      data-id="{{ row.id }}"
+      data-name="{{ row.supplier_name }}"
+      data-email="{{ row.supplier_email }}"
+      data-phone="{{ row.phone }}"
+      data-address="{{ row.address }}"
+    >
+      <td>{{ row.id }}</td>
+      <td>{{ row.supplier_name }}</td>
+      <td>{{ row.supplier_email }}</td>
+      <td>{{ row.phone }}</td>
+      <td>{{ row.address }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+let selectedRow=null;
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+    r.onclick=()=>{
+      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow=r;
+      actionWrap.style.display="block";
+    };
+  });
+
+  dotsBtn.onclick=()=>{
+    menuBox.style.display = menuBox.style.display==="block" ? "none" : "block";
+  };
+});
+
+async function saveSupplier(e){
+  e.preventDefault();
+
+  const fd=new FormData();
+  fd.append("id",record_id.value||"");
+  fd.append("supplier_name",supplier_name.value);
+  fd.append("supplier_email",supplier_email.value);
+  fd.append("phone",phone.value);
+  fd.append("address",address.value);
+  fd.append("date",meta_date.value);
+  fd.append("time",meta_time.value);
+  fd.append("email",meta_email.value);
+  fd.append("company_id",meta_company_id.value);
+
+  const res=await fetch("/criteria/suppliers",{method:"POST",body:fd});
+  if(res.ok) location.reload();
+  else alert("Save failed");
+}
+
+function editRow(){
+  record_id.value=selectedRow.dataset.id;
+  supplier_name.value=selectedRow.dataset.name;
+  supplier_email.value=selectedRow.dataset.email;
+  phone.value=selectedRow.dataset.phone;
+  address.value=selectedRow.dataset.address;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteRow(){
+  const id=selectedRow.dataset.id;
+  await fetch(`/criteria/suppliers/delete/${id}`,{method:"POST"});
+  location.reload();
+}
+
+function clearForm(){
+  record_id.value="";
+  supplier_name.value="";
+  supplier_email.value="";
+  phone.value="";
+  address.value="";
+}
+</script>
+
+</body>
+</html>

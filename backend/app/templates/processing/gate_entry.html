@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GATE ENTRY - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {font-family:Arial,sans-serif; background:#e6f2ff; margin:0; padding:0;}
+  h2 {text-align:center; color:#003366; margin:20px 0; font-weight:700;}
+
+  .form-container {
+      width:92%; max-width:1200px; margin:0 auto;
+      background:white; padding:22px;
+      border-radius:10px; box-shadow:0 0 8px rgba(0,0,0,0.15);
+  }
+
+  .row {display:flex; flex-wrap:wrap; justify-content:space-between; margin-bottom:15px;}
+  .col {width:32%; display:flex; flex-direction:column; margin-bottom:15px;}
+
+  @media(max-width:900px){ .col { width:48%; } }
+  @media(max-width:600px){ .col { width:100%; } }
+
+  label {font-weight:600; color:#003366; margin-bottom:6px;}
+
+  input, select {
+      padding:10px; border:1px solid #a3bcd6; background:#f9fcff;
+      border-radius:6px; font-size:14px;
+  }
+
+  .actions {text-align:center; margin-top:20px;}
+  .btn {background:#003366; color:white; border:none;
+        padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;}
+  .btn-clear {background:#777;}
+
+  table {
+      width:92%; max-width:1200px; margin:20px auto;
+      border-collapse:collapse; background:white;
+      border-radius:10px; overflow:hidden;
+      box-shadow:0 0 8px rgba(0,0,0,0.15);
+  }
+  th,td {padding:10px; border-bottom:1px solid #ccc; font-size:14px;}
+  th {background:#003366; color:white;}
+  tr:hover {background:#e6f2ff; cursor:pointer;}
+  tr.selected {background:#cce5ff !important;}
+
+  #threeDotsMenu {
+      width:92%; max-width:1200px; margin:10px auto;
+      text-align:right; position:relative; display:none;
+  }
+
+  #dropdownMenu {
+      display:none; position:absolute; right:0; background:white;
+      border:1px solid #ccc; border-radius:8px;
+      width:180px; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:1000;
+  }
+  .menu-item {padding:10px; cursor:pointer;}
+  .menu-item:hover {background:#e6f2ff;}
+
+  #lookupModal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.45); justify-content:center; align-items:center;
+      z-index:9999;
+  }
+
+  .lookup-box {
+      background:white; width:90%; max-width:900px; height:85vh;
+      border-radius:10px; overflow:hidden; position:relative;
+  }
+
+  .close-popup {
+      position:absolute; top:10px; right:20px;
+      font-size:22px; font-weight:bold; cursor:pointer; color:#003366;
+  }
+
+  iframe {width:100%; height:100%; border:none;}
+</style>
+</head>
+
+<body>
+
+<h2>GATE ENTRY</h2>
+
+<!-- FORM -->
+<form method="post" action="{% if edit_data %}/processing/gate_entry/update/{{ edit_data.id }}{% else %}/processing/gate_entry{% endif %}">
+  <div class="form-container">
+
+    <!-- ROW 1 -->
+    <div class="row">
+      <div class="col">
+        <label>Batch Number</label>
+        <input name="batch_number"
+          value="{% if edit_data %}{{ edit_data.batch_number }}{% endif %}"
+          required>
+      </div>
+
+      <div class="col">
+        <label>Challan Number</label>
+        <input name="challan_number"
+          value="{% if edit_data %}{{ edit_data.challan_number }}{% endif %}"
+          required>
+      </div>
+
+      <div class="col">
+        <label>Gate Pass Number</label>
+        <input name="gate_pass_number"
+          value="{% if edit_data %}{{ edit_data.gate_pass_number }}{% endif %}"
+          required>
+      </div>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="row">
+      <div class="col">
+        <label>Supplier</label>
+        <select name="supplier_name" required>
+          <option value="" disabled {% if not edit_data %}selected{% endif %}>Select Supplier</option>
+          {% for s in suppliers %}
+          <option value="{{ s }}" {% if edit_data and edit_data.supplier_name == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Supplier</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Purchasing Location</label>
+        <select name="purchasing_location" required>
+          <option value="" disabled {% if not edit_data %}selected{% endif %}>Select Location</option>
+          {% for l in locations %}
+          <option value="{{ l }}" {% if edit_data and edit_data.purchasing_location == l %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Location</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Vehicle Number</label>
+        <select name="vehicle_number" required>
+          <option value="" disabled {% if not edit_data %}selected{% endif %}>Select Vehicle</option>
+          {% for v in vehicles %}
+          <option value="{{ v }}" {% if edit_data and edit_data.vehicle_number == v %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Vehicle</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ROW 3 -->
+    <div class="row">
+      <div class="col">
+        <label>Material Boxes</label>
+        <input type="number" name="no_of_material_boxes"
+          value="{% if edit_data %}{{ edit_data.no_of_material_boxes }}{% endif %}">
+      </div>
+
+      <div class="col">
+        <label>Empty Boxes</label>
+        <input type="number" name="no_of_empty_boxes"
+          value="{% if edit_data %}{{ edit_data.no_of_empty_boxes }}{% endif %}">
+      </div>
+
+      <div class="col">
+        <label>Ice Boxes</label>
+        <input type="number" name="no_of_ice_boxes"
+          value="{% if edit_data %}{{ edit_data.no_of_ice_boxes }}{% endif %}">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
+      <button class="btn btn-clear" type="button" onclick="window.location='/processing/gate_entry'">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+{% if message %}
+<p style="text-align:center; color:green; font-weight:700;">{{ message }}</p>
+{% endif %}
+
+<!-- 3 DOT MENU -->
+{% if today_data %}
+<div id="threeDotsMenu">
+  <button id="dotsBtn" class="btn">⋮</button>
+
+  <div id="dropdownMenu">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
+    <div class="menu-item" onclick="printSelected()">🖨 Print</div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<table id="dataTable">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Batch</th>
+  <th>Challan</th>
+  <th>Supplier</th>
+  <th>Location</th>
+  <th>Vehicle</th>
+  <th>Material</th>
+  <th>Empty</th>
+  <th>Ice</th>
+  <th>Gate Pass</th>
+  <th>Date</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in today_data %}
+<tr data-id="{{ r.id }}">
+  <td>{{ r.id }}</td>
+  <td>{{ r.batch_number }}</td>
+  <td>{{ r.challan_number }}</td>
+  <td>{{ r.supplier_name }}</td>
+  <td>{{ r.purchasing_location }}</td>
+  <td>{{ r.vehicle_number }}</td>
+  <td>{{ r.no_of_material_boxes }}</td>
+  <td>{{ r.no_of_empty_boxes }}</td>
+  <td>{{ r.no_of_ice_boxes }}</td>
+  <td>{{ r.gate_pass_number }}</td>
+  <td>{{ r.date }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<!-- LOOKUP POPUP -->
+<div id="lookupModal">
+  <div class="lookup-box">
+    <span class="close-popup" onclick="closeLookup()">×</span>
+    <iframe id="lookupFrame"></iframe>
+  </div>
+</div>
+
+<script>
+let selectedRow = null;
+
+/*** SELECT ROW ***/
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("#dataTable tbody tr").forEach(row => {
+    row.addEventListener("click", () => {
+      document.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
+      row.classList.add("selected");
+      selectedRow = row;
+      document.getElementById("threeDotsMenu").style.display = "block";
+    });
+  });
+});
+
+/*** MENU TOGGLE ***/
+document.getElementById("dotsBtn").addEventListener("click", () => {
+  const d = document.getElementById("dropdownMenu");
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+/*** EDIT BUTTON — Redirect ***/
+function editSelected(){
+  if(!selectedRow) return alert("Select a row!");
+  window.location = `/processing/gate_entry/edit/${selectedRow.dataset.id}`;
+}
+
+/*** DELETE ***/
+function deleteSelected(){
+  if(!selectedRow) return alert("Select a row!");
+  if(!confirm("Delete?")) return;
+  fetch(`/processing/gate_entry/delete/${selectedRow.dataset.id}`, { method: "POST" })
+    .then(() => location.reload());
+}
+
+/*** PRINT ***/
+function printSelected(){
+  if(!selectedRow) return alert("Select row!");
+  const win = window.open("", "_blank");
+  win.document.write("<h3>Gate Entry Record</h3>");
+  win.document.write(selectedRow.innerHTML);
+  win.print();
+}
+
+/*** POPUP LOOKUP ***/
+document.querySelectorAll("select").forEach(sel => {
+  sel.addEventListener("change", function(){
+    if(this.value !== "__add__") return;
+
+    let url = "";
+    if(this.name === "supplier_name") url = "/criteria/suppliers";
+    if(this.name === "purchasing_location") url = "/criteria/purchasing_locations";
+    if(this.name === "vehicle_number") url = "/criteria/vehicle_numbers";
+
+    document.getElementById("lookupFrame").src = url;
+    document.getElementById("lookupModal").style.display = "flex";
+
+    this.value = "";
+  });
+});
+
+function closeLookup(){
+  document.getElementById("lookupModal").style.display = "none";
+  window.location.reload();
+}
+</script>
+
+</body>
+</html>

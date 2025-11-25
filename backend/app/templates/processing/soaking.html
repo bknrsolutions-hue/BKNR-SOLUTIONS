@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SOAKING FORM - BKNR SOLUTIONS</title>
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+    width:95%;max-width:1100px;margin:0 auto;background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:8px;
+  }
+
+  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px;}
+  .col{width:32%;min-width:250px;display:flex;flex-direction:column;}
+
+  label{font-weight:600;color:#003366;margin-bottom:5px;}
+
+  input,select{
+    padding:8px;border:1px solid #a3bcd6;border-radius:6px;background:#f9fcff;font-size:14px;
+  }
+
+  input[disabled]{background:#eee;color:#666;}
+
+  .actions{text-align:center;margin-top:25px;}
+  button{
+    background:#003366;color:white;border:none;padding:9px 18px;border-radius:6px;
+    font-weight:600;margin:0 10px;cursor:pointer;
+  }
+  .btn-clear{background:#777;}
+
+  /* Lookup Popup */
+  #lookupModal{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.45);justify-content:center;align-items:center;z-index:9999;
+  }
+  #lookupModal .frame-box{
+    width:90%;max-width:900px;height:85vh;background:#fff;border-radius:10px;overflow:hidden;
+    position:relative;
+  }
+  #lookupFrame{width:100%;height:100%;border:none;}
+  .close-btn{
+    position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:#003366;cursor:pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>SOAKING</h2>
+
+<form action="/processing/soaking" method="post" onsubmit="fillMeta(this)">
+  <div class="form-container">
+
+    <!-- Row 1 -->
+    <div class="row">
+
+      <div class="col">
+        <label>Batch Number</label>
+        <select name="batch_number" onchange="openLookup(this,'batch')" required>
+          <option value="" disabled selected>Select Batch</option>
+          {% for b in batches %}
+          <option value="{{ b }}">{{ b }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add New Batch</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Variety</label>
+        <select name="variety" onchange="openLookup(this,'variety')" required>
+          <option value="" disabled selected>Select Variety</option>
+          {% for v in varieties %}
+          <option value="{{ v }}">{{ v }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Variety</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>In Count</label>
+        <select name="in_count" onchange="openLookup(this,'count')" required>
+          <option value="" disabled selected>Select Count</option>
+          {% for c in counts %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Count</option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- Row 2 -->
+    <div class="row">
+
+      <div class="col">
+        <label>In Quantity (kg)</label>
+        <input type="number" step="0.01" id="inQty" name="in_qty">
+      </div>
+
+      <div class="col">
+        <label>Chemical Name</label>
+        <select name="chemical_name" onchange="openLookup(this,'chemical')" required>
+          <option value="" disabled selected>Select Chemical</option>
+          {% for c in chemicals %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Chemical</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Chemical %</label>
+        <input type="number" step="0.01" id="chemPercent" name="chemical_percent">
+      </div>
+
+    </div>
+
+    <!-- Row 3 -->
+    <div class="row">
+
+      <div class="col">
+        <label>Chemical Quantity (kg)</label>
+        <input type="number" id="chemQty" name="chemical_qty" disabled>
+      </div>
+
+      <div class="col">
+        <label>Salt %</label>
+        <input type="number" step="0.01" id="saltPercent" name="salt_percent">
+      </div>
+
+      <div class="col">
+        <label>Salt Quantity (kg)</label>
+        <input type="number" id="saltQty" name="salt_qty" disabled>
+      </div>
+
+    </div>
+
+    <!-- Meta -->
+    <input type="hidden" name="date" id="meta_date">
+    <input type="hidden" name="time" id="meta_time">
+    <input type="hidden" name="email" id="meta_email">
+    <input type="hidden" name="company_id" id="meta_company_id">
+
+    <div class="actions">
+      <button type="submit">SAVE</button>
+      <button type="reset" class="btn-clear">CLEAR</button>
+    </div>
+  </div>
+</form>
+
+<!-- LOOKUP MODAL -->
+<div id="lookupModal">
+  <div class="frame-box">
+    <span class="close-btn" onclick="closeLookup()">×</span>
+    <iframe id="lookupFrame"></iframe>
+  </div>
+</div>
+
+<script>
+// META AUTO-FILL
+function fillMeta(form){
+  const now=new Date();
+  form.date.value=now.toISOString().slice(0,10);
+  form.time.value=now.toTimeString().slice(0,8);
+  form.email.value="bknr.solutions@gmail.com";
+  form.company_id.value="BKNR001";
+}
+
+// CALCULATIONS
+function recalc(){
+  const qty=parseFloat(document.getElementById("inQty").value)||0;
+  const cp=parseFloat(document.getElementById("chemPercent").value)||0;
+  const sp=parseFloat(document.getElementById("saltPercent").value)||0;
+
+  document.getElementById("chemQty").value = qty ? ((qty*cp)/100).toFixed(2) : "";
+  document.getElementById("saltQty").value = qty ? ((qty*sp)/100).toFixed(2) : "";
+}
+
+["inQty","chemPercent","saltPercent"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener("input",recalc);
+});
+
+// LOOKUP POPUP
+function openLookup(sel,type){
+  if(sel.value!=="__add__") return;
+
+  let url="";
+  if(type==="batch") url="/processing/gate_entry";
+  if(type==="variety") url="/criteria/varieties";
+  if(type==="count") url="/criteria/grade_to_hoso";
+  if(type==="chemical") url="/criteria/chemicals";
+
+  document.getElementById("lookupFrame").src=url;
+  document.getElementById("lookupModal").style.display="flex";
+  sel.value="";
+}
+function closeLookup(){
+  document.getElementById("lookupModal").style.display="none";
+  location.reload();
+}
+
+// Init meta
+fillMeta(document.forms[0]);
+</script>
+
+</body>
+</html>

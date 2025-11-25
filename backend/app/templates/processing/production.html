@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRODUCTION FORM - BKNR SOLUTIONS</title>
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+    width:95%;max-width:1100px;margin:0 auto;background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:8px;
+  }
+
+  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px;}
+  .col{width:32%;min-width:250px;display:flex;flex-direction:column;}
+
+  label{font-weight:600;color:#003366;margin-bottom:6px;}
+
+  input,select{
+    padding:8px;border:1px solid #a3bcd6;border-radius:6px;background:#f9fcff;font-size:14px;
+  }
+
+  input[disabled]{background:#eee;color:#666;}
+
+  .actions{text-align:center;margin-top:25px;}
+  button{
+    background:#003366;color:white;border:none;padding:9px 18px;border-radius:6px;
+    font-weight:600;margin:0 10px;cursor:pointer;
+  }
+  .btn-clear{background:#777;}
+
+  /* Lookup Popup */
+  #lookupModal{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.45);justify-content:center;align-items:center;z-index:9999;
+  }
+  .lookup-box{
+    width:90%;max-width:900px;height:85vh;background:white;border-radius:10px;
+    overflow:hidden;position:relative;
+  }
+  .close-btn{
+    position:absolute;top:10px;right:20px;font-size:26px;font-weight:bold;color:#003366;cursor:pointer;
+  }
+  iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+
+<body>
+
+<h2>PRODUCTION FORM</h2>
+
+<form action="/processing/production" method="post" onsubmit="fillMeta(this)">
+  <div class="form-container">
+
+    <!-- Row 1 -->
+    <div class="row">
+      <div class="col">
+        <label>Batch Number</label>
+        <select name="batch_number" onchange="openLookup(this,'batch')">
+          <option value="" disabled selected>Select Batch</option>
+          {% for b in batches %}
+          <option value="{{ b }}">{{ b }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Batch</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Brand</label>
+        <select name="brand" onchange="openLookup(this,'brand')">
+          <option value="" disabled selected>Select Brand</option>
+          {% for br in brands %}
+          <option value="{{ br }}">{{ br }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Brand</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Variety</label>
+        <select name="variety" onchange="openLookup(this,'variety')">
+          <option value="" disabled selected>Select Variety</option>
+          {% for v in varieties %}
+          <option value="{{ v }}">{{ v }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Variety</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="row">
+      <div class="col">
+        <label>Glaze (%)</label>
+        <select name="glaze" onchange="openLookup(this,'glaze')">
+          <option value="" disabled selected>Select Glaze</option>
+          {% for g in glazes %}
+          <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Glaze</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Freezer</label>
+        <select name="freezer" onchange="openLookup(this,'freezer')">
+          <option value="" disabled selected>Select Freezer</option>
+          {% for f in freezers %}
+          <option value="{{ f }}">{{ f }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Freezer</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Packing Style</label>
+        <select name="packing_style" id="packingStyle" required>
+          <option value="" disabled selected>Select Packing Style</option>
+          {% for p in packing_styles %}
+          <option value="{{ p.name }}" data-mc="{{ p.mc_weight }}" data-slab="{{ p.slab_weight }}">
+            {{ p.name }}
+          </option>
+          {% endfor %}
+          <option value="__add__">➕ Add Packing Style</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="row">
+      <div class="col">
+        <label>Grade</label>
+        <select name="grade" onchange="openLookup(this,'grade')">
+          <option value="" disabled selected>Select Grade</option>
+          {% for g in grades %}
+          <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+          <option value="__add__">➕ Add Grade</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>No. of MC</label>
+        <input type="number" min="0" id="noMC" name="no_of_mc">
+      </div>
+
+      <div class="col">
+        <label>Loose</label>
+        <input type="number" min="0" id="loose" name="loose">
+      </div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="row">
+      <div class="col">
+        <label>Production Quantity (kg)</label>
+        <input type="number" id="prodQty" name="production_qty" disabled>
+      </div>
+    </div>
+
+    <!-- Meta -->
+    <input type="hidden" name="date" id="meta_date">
+    <input type="hidden" name="time" id="meta_time">
+    <input type="hidden" name="email" id="meta_email">
+    <input type="hidden" name="company_id" id="meta_company_id">
+
+    <div class="actions">
+      <button type="submit">SAVE</button>
+      <button type="reset" class="btn-clear">CLEAR</button>
+    </div>
+  </div>
+</form>
+
+<!-- LOOKUP POPUP -->
+<div id="lookupModal">
+  <div class="lookup-box">
+    <span class="close-btn" onclick="closeLookup()">×</span>
+    <iframe id="lookupFrame"></iframe>
+  </div>
+</div>
+
+<script>
+// META AUTO FILL
+function fillMeta(form){
+  const now=new Date();
+  form.date.value=now.toISOString().slice(0,10);
+  form.time.value=now.toTimeString().slice(0,8);
+  form.email.value="bknr.solutions@gmail.com";
+  form.company_id.value="BKNR001";
+}
+
+// PRODUCTION QTY CALC
+const mc=document.getElementById("noMC");
+const loose=document.getElementById("loose");
+const pack=document.getElementById("packingStyle");
+const prod=document.getElementById("prodQty");
+
+function calcQty(){
+  const mcVal=parseFloat(mc.value)||0;
+  const looseVal=parseFloat(loose.value)||0;
+
+  const opt=pack.options[pack.selectedIndex];
+  const mcW=parseFloat(opt.getAttribute("data-mc"))||0;
+  const slabW=parseFloat(opt.getAttribute("data-slab"))||0;
+
+  const qty = (mcVal*mcW) + (looseVal*slabW);
+  prod.value = qty ? qty.toFixed(2) : "";
+}
+
+[mc,loose,pack].forEach(x=>x.addEventListener("input", calcQty));
+
+// LOOKUP POPUP OPEN
+function openLookup(sel,type){
+  if(sel.value!=="__add__") return;
+
+  let url="/";
+  if(type==="batch") url="/processing/gate_entry";
+  if(type==="brand") url="/criteria/brands";
+  if(type==="variety") url="/criteria/varieties";
+  if(type==="glaze") url="/criteria/glazes";
+  if(type==="freezer") url="/criteria/freezers";
+  if(type==="grade") url="/criteria/grade_to_hoso";
+
+  document.getElementById("lookupFrame").src=url;
+  document.getElementById("lookupModal").style.display="flex";
+  sel.value="";
+}
+
+function closeLookup(){
+  document.getElementById("lookupModal").style.display="none";
+  location.reload();
+}
+
+// INIT
+fillMeta(document.forms[0]);
+</script>
+
+</body>
+</html>

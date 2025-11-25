@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ERP Menu - BKNR SOLUTIONS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif;}
+    body {display:flex; height:100vh; background:#eaf4ff;}
+
+    /* Sidebar */
+    .sidebar {
+      width:260px;
+      background:#003366;
+      color:white;
+      display:flex;
+      flex-direction:column;
+      padding-top:20px;
+      box-shadow:3px 0 10px rgba(0,0,0,0.25);
+    }
+    .sidebar h2 {
+      text-align:center;
+      margin-bottom:20px;
+      font-size:22px;
+      color:#00ccff;
+      font-weight:500;
+      letter-spacing:0.5px;
+    }
+
+    /* Main Menu Buttons */
+    .menu-btn {
+      background:none;
+      border:none;
+      color:white;
+      width:100%;
+      text-align:left;
+      padding:12px 24px;
+      font-size:15px;
+      font-weight:400;
+      cursor:pointer;
+      border-left:4px solid transparent;
+      transition:0.3s ease;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .menu-btn:hover {
+      background:#0059b3;
+      border-left:4px solid #00ccff;
+    }
+    .menu-arrow {
+      transition:transform 0.25s ease;
+      font-size:14px;
+    }
+    .menu-btn.active .menu-arrow {
+      transform:rotate(90deg);
+    }
+
+    /* Submenu */
+    .submenu {
+      display:none;
+      background:#cce5ff;
+      color:#003366;
+      padding:5px 0;
+      border-left:4px solid #00aaff;
+      animation:fadeIn 0.3s ease;
+    }
+    .submenu a {
+      display:block;
+      text-decoration:none;
+      color:#003366;
+      font-size:14px;
+      font-weight:400;
+      padding:8px 45px;
+      transition:0.2s;
+      border-left:2px solid transparent;
+    }
+    .submenu a:hover {
+      background:#b3d9ff;
+      border-left:2px solid #0066cc;
+      padding-left:50px;
+    }
+
+    @keyframes fadeIn {
+      from {opacity:0; transform:translateY(-5px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+
+    /* Header */
+    header {
+      background:#003366;
+      color:white;
+      padding:15px 25px;
+      font-size:19px;
+      font-weight:500;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    }
+    .logout-btn {
+      background:#b30000;
+      border:none;
+      color:white;
+      padding:8px 15px;
+      border-radius:5px;
+      cursor:pointer;
+      font-weight:500;
+      transition:0.2s;
+      font-size:14px;
+    }
+    .logout-btn:hover {background:#ff3333;}
+
+    /* Main content */
+    .main-content {
+      flex:1;
+      background:#eaf4ff;
+      display:flex;
+      flex-direction:column;
+    }
+    .iframe-container {flex:1; padding:0; margin:0;}
+    iframe {
+      width:100%;
+      height:100%;
+      border:none;
+      background:white;
+      box-shadow:inset 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .welcome-box {
+      background:white;
+      border-radius:10px;
+      padding:30px;
+      box-shadow:0 0 10px rgba(0,0,0,0.1);
+      max-width:650px;
+      margin:50px auto;
+      text-align:center;
+    }
+    .welcome-box h3 {
+      margin-bottom:15px;
+      color:#003366;
+      font-size:20px;
+      font-weight:600;
+    }
+    .welcome-box p {
+      color:#444;
+      font-size:15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Menu</h2>
+
+    <button class="menu-btn" onclick="toggleMenu('processingMenu', this)">
+      <span>Processing</span> <span class="menu-arrow">▸</span>
+    </button>
+    <div id="processingMenu" class="submenu">
+      <a href="/processing/gate_entry" onclick="openForm(event, this)">Gate Entry</a>
+      <a href="/processing/raw_material_purchasing" onclick="openForm(event, this)">Raw Material Purchasing</a>
+      <a href="/processing/de_heading" onclick="openForm(event, this)">De-Heading</a>
+      <a href="/processing/grading" onclick="openForm(event, this)">Grading</a>
+      <a href="/processing/peeling" onclick="openForm(event, this)">Peeling</a>
+      <a href="/processing/soaking" onclick="openForm(event, this)">Soaking</a>
+      <a href="/processing/production" onclick="openForm(event, this)">Production</a>
+    </div>
+
+    <button class="menu-btn" onclick="toggleMenu('inventoryMenu', this)">
+      <span>Inventory</span> <span class="menu-arrow">▸</span>
+    </button>
+    <div id="inventoryMenu" class="submenu">
+      <a href="/inventory/stock_entry" onclick="openForm(event, this)">Stock Entry (IN/OUT)</a>
+      <a href="/inventory/pending_orders" onclick="openForm(event, this)">Pending Orders</a>
+    </div>
+
+    <button class="menu-btn" onclick="toggleMenu('criteriaMenu', this)">
+      <span>Criteria</span> <span class="menu-arrow">▸</span>
+    </button>
+    <div id="criteriaMenu" class="submenu">
+      <a href="/criteria/brands" onclick="openForm(event, this)">Brands</a>
+      <a href="/criteria/glazes" onclick="openForm(event, this)">Glazes</a>
+      <a href="/criteria/grades" onclick="openForm(event, this)">Grades</a>
+      <a href="/criteria/grade_to_hoso" onclick="openForm(event, this)">Grade to Hoso counts</a>
+      <a href="/criteria/buyers" onclick="openForm(event, this)">Buyers</a>
+      <a href="/criteria/buyer_agents" onclick="openForm(event, this)">Buyer Agents</a>
+      <a href="/criteria/varieties" onclick="openForm(event, this)">Varieties</a>
+      <a href="/criteria/packing_styles" onclick="openForm(event, this)">Packing Styles</a>
+      <a href="/criteria/production_types" onclick="openForm(event, this)">Production Types</a>
+      <a href="/criteria/chemicals" onclick="openForm(event, this)">Chemicals</a>
+      <a href="/criteria/contractors" onclick="openForm(event, this)">Contractors</a>
+      <a href="/criteria/suppliers" onclick="openForm(event, this)">Suppliers</a>
+      <a href="/criteria/countries" onclick="openForm(event, this)">Countries</a>
+      <a href="/criteria/freezers" onclick="openForm(event, this)">freezers</a>
+      <a href="/criteria/hoso_hlso" onclick="openForm(event, this)">Hoso to Hlso yields</a>
+      <a href="/criteria/peeling_rates" onclick="openForm(event, this)">Peeling Rates</a>
+    </div>
+
+    <button class="menu-btn" onclick="toggleMenu('generalStockMenu', this)">
+      <span>General Stock</span> <span class="menu-arrow">▸</span>
+    </button>
+    <div id="generalStockMenu" class="submenu">
+      <a href="/general_stock/entry" onclick="openForm(event, this)">General Store Entry</a>
+    </div>
+
+    <button class="menu-btn" onclick="toggleMenu('adminMenu', this)">
+      <span>Admin</span> <span class="menu-arrow">▸</span>
+    </button>
+    <div id="adminMenu" class="submenu">
+      <a href="/admin/add_user" onclick="openForm(event, this)">Add User</a>
+      <a href="/admin/users" onclick="openForm(event, this)">Existing Users</a>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <span>{{ request.state.company_name if request.state.company_name else "Company Name" }}</span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </header>
+
+    <div class="iframe-container" id="iframeContainer">
+      <div class="welcome-box" id="welcomeBox">
+        <h3>Welcome to BKNR ERP Dashboard 👋</h3>
+        <p>Select a module from the sidebar to open its form.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu(id, btn) {
+      document.querySelectorAll(".submenu").forEach(menu => {
+        if (menu.id !== id) menu.style.display = "none";
+      });
+      document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+
+      const clicked = document.getElementById(id);
+      const isVisible = clicked.style.display === "block";
+      clicked.style.display = isVisible ? "none" : "block";
+      if (!isVisible) btn.classList.add("active");
+    }
+
+    function openForm(event, el) {
+      event.preventDefault();
+      const url = el.getAttribute("href");
+      document.getElementById("welcomeBox")?.remove();
+
+      let iframe = document.querySelector("iframe");
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        document.getElementById("iframeContainer").appendChild(iframe);
+      }
+      iframe.src = url;
+    }
+
+    function logout() {
+      alert("You have been logged out securely.");
+      window.location.href = "/";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GENERAL STOCK - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+      width:95%;max-width:1100px;margin:0 auto;background:#fff;
+      box-shadow:0 0 8px rgba(0,0,0,.15);padding:25px;border-radius:8px;
+  }
+
+  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px;}
+  .col{width:32%;min-width:260px;display:flex;flex-direction:column;margin-bottom:10px;}
+
+  label{font-weight:600;color:#003366;margin-bottom:6px;}
+  select,input{
+      padding:9px;border:1px solid #a3bcd6;border-radius:6px;font-size:14px;background:#f9fcff;
+  }
+  select:focus,input:focus{border-color:#003366;outline:none;box-shadow:0 0 5px rgba(0,51,102,.3);}
+  input[readonly]{background:#eef4fa;}
+
+  /* Colors */
+  #quantity.out-selected{color:#b30000;font-weight:bold;}
+  #availableStock.low-stock{color:#b30000;font-weight:bold;}
+
+  /* Buttons */
+  .actions{text-align:center;margin-top:20px;}
+  .btn{
+      background:#003366;color:white;border:none;padding:10px 20px;
+      border-radius:6px;font-weight:600;cursor:pointer;width:130px;margin:0 8px;
+  }
+  .btn-clear{background:#777;}
+  .btn:hover{opacity:.9;}
+
+  /* Table */
+  table{
+      width:95%;max-width:1100px;margin:25px auto;border-collapse:collapse;background:white;
+      border-radius:8px;overflow:hidden;box-shadow:0 0 8px rgba(0,0,0,.15);
+  }
+  th,td{
+      padding:10px 12px;border-bottom:1px solid #ccc;font-size:14px;text-align:left;
+  }
+  th{background:#003366;color:white;}
+  tr:hover{background:#eef5ff;}
+  tr.selected{background:#cde3ff!important;}
+
+  /* 3-dots action menu */
+  #actionBar{
+      display:none;width:95%;max-width:1100px;margin:10px auto;position:relative;text-align:right;
+  }
+  #dots{
+      background:#003366;color:#fff;border:none;padding:6px 14px;border-radius:6px;
+      font-size:22px;cursor:pointer;
+  }
+  #menuBox{
+      display:none;position:absolute;right:0;top:48px;width:180px;background:white;
+      border:1px solid #ccc;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.2);
+  }
+  .menu-item{
+      padding:11px;font-weight:600;color:#003366;border-bottom:1px solid #eee;cursor:pointer;
+  }
+  .menu-item:hover{background:#e8f0ff;}
+
+  /* Add New Modal */
+  .modal-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;
+  }
+  .modal{
+      background:#fff;padding:25px;border-radius:10px;width:350px;text-align:center;
+      box-shadow:0 0 10px rgba(0,0,0,.3);
+  }
+  .modal h3{margin:0 0 15px;color:#003366;}
+  .modal-buttons button{
+      margin:0 5px;padding:9px 14px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;
+  }
+  .modal-buttons .save{background:#003366;color:white;}
+  .modal-buttons .cancel{background:#777;color:white;}
+
+  @media(max-width:768px){
+    .col{width:100%;}
+    .btn{width:100%;margin-bottom:10px;}
+    table{font-size:13px;}
+  }
+</style>
+</head>
+
+<body>
+
+<h2>GENERAL STOCK</h2>
+
+<form id="generalStockForm" action="/inventory/general_stock" method="post" onsubmit="return validateForm(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>GRN Number</label>
+        <select id="grnNumber" name="grn_number" required onchange="handleAddNew(this)">
+          <option value="" disabled selected>Select GRN</option>
+          {% for g in grn_list %}
+            <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+          <option value="add_new">➕ Add New</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Item Name</label>
+        <select id="itemName" name="item_name" required onchange="handleAddNew(this)">
+          <option value="" disabled selected>Select Item</option>
+          {% for i in items %}
+            <option value="{{ i }}">{{ i }}</option>
+          {% endfor %}
+          <option value="add_new">➕ Add New</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Unit Name</label>
+        <select id="unitName" name="unit_name" required onchange="handleAddNew(this)">
+          <option value="" disabled selected>Select Unit</option>
+          {% for u in units %}
+            <option value="{{ u }}">{{ u }}</option>
+          {% endfor %}
+          <option value="add_new">➕ Add New</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Movement Type</label>
+        <select id="movementType" name="movement_type" required onchange="updateColor(); handleAddNew(this)">
+          <option value="" disabled selected>Select Movement</option>
+          <option value="IN">IN</option>
+          <option value="OUT">OUT</option>
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Quantity</label>
+        <input type="number" id="quantity" name="quantity" step="0.01" min="0" required>
+      </div>
+
+      <div class="col">
+        <label>Opening Stock</label>
+        <input type="number" id="openingStock" name="opening_stock" step="0.01" min="0" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Available Stock</label>
+        <input type="number" id="availableStock" name="available_stock" step="0.01" min="0" required oninput="checkStockLevel()">
+      </div>
+
+      <div class="col">
+        <label>Minimum Level</label>
+        <input type="number" id="minimumLevel" name="minimum_level" step="0.01" min="0" oninput="checkStockLevel()">
+      </div>
+
+      <div class="col actions">
+        <button class="btn" type="submit">SAVE</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if today_data %}
+<div id="actionBar">
+  <button id="dots">⋮</button>
+
+  <div id="menuBox">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
+    <div class="menu-item" onclick="printSelected()">🖨️ Print</div>
+    <div class="menu-item" onclick="exportExcel()">📄 Export Excel</div>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th><th>GRN</th><th>Item</th><th>Unit</th>
+      <th>Movement</th><th>Qty</th><th>Opening</th>
+      <th>Available</th><th>Minimum</th><th>Date</th><th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in today_data %}
+    <tr 
+      data-id="{{ row.id }}"
+      data-grn="{{ row.grn_number }}"
+      data-item="{{ row.item_name }}"
+      data-unit="{{ row.unit_name }}"
+      data-move="{{ row.movement_type }}"
+      data-qty="{{ row.quantity }}"
+      data-open="{{ row.opening_stock }}"
+      data-avail="{{ row.available_stock }}"
+      data-min="{{ row.minimum_level }}"
+    >
+      <td>{{ row.id }}</td>
+      <td>{{ row.grn_number }}</td>
+      <td>{{ row.item_name }}</td>
+      <td>{{ row.unit_name }}</td>
+      <td>{{ row.movement_type }}</td>
+      <td>{{ row.quantity }}</td>
+      <td>{{ row.opening_stock }}</td>
+      <td>{{ row.available_stock }}</td>
+      <td>{{ row.minimum_level }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<!-- ADD NEW MODAL -->
+<div id="addNewModal" class="modal-overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Add New</h3>
+    <input type="text" id="newValueInput" placeholder="Enter new value">
+    <div class="modal-buttons">
+      <button class="cancel" onclick="closeModal()">Cancel</button>
+      <button class="save" onclick="saveNewValue()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------------------------------------------- */
+/* ADD NEW option modal */
+/* -------------------------------------------- */
+let currentSelect=null;
+
+function handleAddNew(el){
+  if(el.value==="add_new"){
+    currentSelect=el;
+    document.getElementById('newValueInput').value="";
+    document.getElementById('modalTitle').innerText="Add New "+el.previousElementSibling.innerText;
+    document.getElementById('addNewModal').style.display="flex";
+  }
+}
+function closeModal(){document.getElementById('addNewModal').style.display="none";currentSelect.value="";}
+function saveNewValue(){
+  const v=document.getElementById('newValueInput').value.trim();
+  if(v){
+    let opt=document.createElement("option");
+    opt.value=v;opt.text=v;
+    currentSelect.insertBefore(opt,currentSelect.lastElementChild);
+    currentSelect.value=v;
+  }
+  closeModal();
+}
+
+/* -------------------------------------------- */
+/* STOCK color logic */
+/* -------------------------------------------- */
+function updateColor(){
+  const mv=movementType.value;
+  if(mv==="OUT") quantity.classList.add("out-selected");
+  else quantity.classList.remove("out-selected");
+}
+function checkStockLevel(){
+  const a=parseFloat(availableStock.value)||0;
+  const m=parseFloat(minimumLevel.value)||0;
+  if(a<m) availableStock.classList.add("low-stock");
+  else availableStock.classList.remove("low-stock");
+}
+
+/* ADMIN lock */
+const isAdmin=false;
+window.onload=()=>{ if(!isAdmin){ minimumLevel.readOnly=true; minimumLevel.title="Admin only"; } }
+
+/* -------------------------------------------- */
+/* TABLE ROW SELECTION + MENU */
+/* -------------------------------------------- */
+let selectedRow=null;
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const rows=document.querySelectorAll("#dataTable tbody tr");
+  rows.forEach(r=>{
+    r.onclick=()=>{
+      rows.forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow=r;
+      actionBar.style.display="block";
+    };
+  });
+});
+
+dots.onclick=()=>{menuBox.style.display=(menuBox.style.display==="block")?"none":"block";};
+
+/* -------------------------------------------- */
+/* EDIT */
+/* -------------------------------------------- */
+function editSelected(){
+  if(!selectedRow) return;
+
+  grnNumber.value=selectedRow.dataset.grn;
+  itemName.value=selectedRow.dataset.item;
+  unitName.value=selectedRow.dataset.unit;
+  movementType.value=selectedRow.dataset.move;
+  quantity.value=selectedRow.dataset.qty;
+  openingStock.value=selectedRow.dataset.open;
+  availableStock.value=selectedRow.dataset.avail;
+  minimumLevel.value=selectedRow.dataset.min;
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* -------------------------------------------- */
+/* DELETE */
+/* -------------------------------------------- */
+async function deleteSelected(){
+  if(!selectedRow) return;
+  if(!confirm("Delete this entry?")) return;
+
+  const id=selectedRow.dataset.id;
+  const res=await fetch(`/inventory/general_stock/delete/${id}`,{method:"POST"});
+  if(res.ok) location.reload();
+  else alert("Delete failed");
+}
+
+/* -------------------------------------------- */
+/* PRINT */
+/* -------------------------------------------- */
+function printSelected(){
+  if(!selectedRow) return;
+  const w=window.open("", "_blank");
+  w.document.write("<h2>General Stock Record</h2>");
+  w.document.write(`<p><b>GRN:</b> ${selectedRow.dataset.grn}</p>`);
+  w.document.write(`<p><b>Item:</b> ${selectedRow.dataset.item}</p>`);
+  w.document.write(`<p><b>Unit:</b> ${selectedRow.dataset.unit}</p>`);
+  w.document.write(`<p><b>Movement:</b> ${selectedRow.dataset.move}</p>`);
+  w.document.write(`<p><b>Qty:</b> ${selectedRow.dataset.qty}</p>`);
+  w.print();
+}
+
+/* -------------------------------------------- */
+/* EXPORT EXCEL */
+/* -------------------------------------------- */
+function exportExcel(){
+  if(!selectedRow) return;
+
+  let csv=`ID,GRN,Item,Unit,Movement,Qty,Opening,Available,Minimum\n`;
+  csv+=`${selectedRow.dataset.id},${selectedRow.dataset.grn},${selectedRow.dataset.item},${selectedRow.dataset.unit},${selectedRow.dataset.move},${selectedRow.dataset.qty},${selectedRow.dataset.open},${selectedRow.dataset.avail},${selectedRow.dataset.min}`;
+
+  const blob=new Blob([csv],{type:"application/vnd.ms-excel"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="general_stock.xls";
+  a.click();
+}
+
+/* -------------------------------------------- */
+/* FORM VALIDATION */
+/* -------------------------------------------- */
+function validateForm(e){
+  checkStockLevel();
+  return true;
+}
+</script>
+
+</body>
+</html>

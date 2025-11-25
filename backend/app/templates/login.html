@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BKNR ERP - Secure Login & Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #003366, #0099cc);
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; margin: 0; color: #003366;
+    }
+    .container {
+      background: white; padding: 30px; border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3); width: 400px;
+    }
+    h2 { text-align: center; color: #003366; margin-bottom: 15px; }
+    input, button {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border: 1px solid #ccc; border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #003366; color: white;
+      border: none; cursor: pointer; font-weight: 600;
+    }
+    button:hover { background-color: #0059b3; }
+    .hidden { display: none; }
+    .success { color: green; font-weight: bold; text-align: center; }
+    .error { color: red; font-weight: bold; text-align: center; }
+    .switch {
+      text-align: center; font-size: 13px; margin-top: 10px;
+    }
+    .switch a {
+      color: #003366; font-weight: bold; cursor: pointer; text-decoration: none;
+    }
+    .switch a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 id="title">Registration</h2>
+
+  <!-- Registration Form -->
+  <div id="registerForm">
+    <input type="text" id="full_name" placeholder="Full Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="company_name" placeholder="Company Name" required>
+    <input type="text" id="designation" placeholder="Designation" required>
+    <input type="text" id="phone" placeholder="Phone Number" required>
+    <button onclick="sendOTP()">Send OTP</button>
+    <div class="switch">Already have an account? <a onclick="showLogin()">Login</a></div>
+  </div>
+
+  <!-- OTP Verification -->
+  <div id="otpForm" class="hidden">
+    <input type="text" id="otp" placeholder="Enter OTP" required>
+    <button onclick="verifyOTP()">Verify OTP</button>
+    <div class="switch">Didn’t get OTP? <a onclick="resendOTP()">Resend OTP</a></div>
+  </div>
+
+  <!-- Password Creation -->
+  <div id="passwordForm" class="hidden">
+    <input type="password" id="password" placeholder="New Password" required>
+    <input type="password" id="confirm_password" placeholder="Confirm Password" required>
+    <button onclick="createPassword()">Create Password</button>
+  </div>
+
+  <!-- Login -->
+  <div id="loginForm" class="hidden">
+    <input type="text" id="company_id" placeholder="Company ID" required>
+    <input type="email" id="login_email" placeholder="Email" required>
+    <input type="password" id="login_password" placeholder="Password" required>
+    <button onclick="login()">Login</button>
+    <div class="switch">
+      New user? <a onclick="showRegister()">Register here</a><br>
+      <a onclick="forgotPassword()">Forgot Password?</a>
+    </div>
+  </div>
+
+  <p id="message" class=""></p>
+</div>
+
+<script>
+const BASE_URL = "http://127.0.0.1:8000/auth";
+let currentEmail = "";
+
+// ---------- UI Switchers ----------
+function showRegister() {
+  document.getElementById("loginForm").classList.add("hidden");
+  document.getElementById("registerForm").classList.remove("hidden");
+  document.getElementById("title").innerText = "Registration";
+  clearMessage();
+}
+
+function showLogin() {
+  document.getElementById("registerForm").classList.add("hidden");
+  document.getElementById("otpForm").classList.add("hidden");
+  document.getElementById("passwordForm").classList.add("hidden");
+  document.getElementById("loginForm").classList.remove("hidden");
+  document.getElementById("title").innerText = "Login";
+  clearMessage();
+}
+
+// ---------- 1️⃣ Send OTP ----------
+async function sendOTP() {
+  const data = new FormData();
+  data.append("full_name", document.getElementById("full_name").value);
+  data.append("email", document.getElementById("email").value);
+  data.append("company_name", document.getElementById("company_name").value);
+  data.append("designation", document.getElementById("designation").value);
+  data.append("phone", document.getElementById("phone").value);
+
+  try {
+    const res = await fetch(`${BASE_URL}/send_otp`, { method: "POST", body: data });
+    const result = await res.json();
+    if (res.ok) {
+      currentEmail = document.getElementById("email").value;
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("otpForm").classList.remove("hidden");
+      showMessage(result.message, "success");
+    } else {
+      if (result.detail && result.detail.includes("already registered")) {
+        showMessage("This email is already registered. Please login instead.", "error");
+        setTimeout(() => showLogin(), 1500);
+      } else {
+        showMessage(result.detail || "Failed to send OTP", "error");
+      }
+    }
+  } catch {
+    showMessage("Failed to send OTP", "error");
+  }
+}
+
+// ---------- Resend OTP ----------
+async function resendOTP() {
+  if (!currentEmail) return showMessage("Enter your email again.", "error");
+  const data = new FormData();
+  data.append("full_name", document.getElementById("full_name").value);
+  data.append("email", currentEmail);
+  data.append("company_name", document.getElementById("company_name").value);
+  data.append("designation", document.getElementById("designation").value);
+  data.append("phone", document.getElementById("phone").value);
+  try {
+    const res = await fetch(`${BASE_URL}/send_otp`, { method: "POST", body: data });
+    const result = await res.json();
+    showMessage(res.ok ? "OTP resent successfully!" : result.detail, res.ok ? "success" : "error");
+  } catch {
+    showMessage("Failed to resend OTP", "error");
+  }
+}
+
+// ---------- 2️⃣ Verify OTP ----------
+async function verifyOTP() {
+  const data = new FormData();
+  data.append("email", currentEmail);
+  data.append("otp", document.getElementById("otp").value);
+
+  try {
+    const res = await fetch(`${BASE_URL}/verify_otp`, { method: "POST", body: data });
+    const result = await res.json();
+    if (res.ok) {
+      document.getElementById("otpForm").classList.add("hidden");
+      document.getElementById("passwordForm").classList.remove("hidden");
+      showMessage(result.message, "success");
+    } else showMessage(result.detail, "error");
+  } catch {
+    showMessage("OTP verification failed", "error");
+  }
+}
+
+// ---------- 3️⃣ Create Password ----------
+async function createPassword() {
+  const pass = document.getElementById("password").value;
+  const confirm = document.getElementById("confirm_password").value;
+  if (pass !== confirm) return showMessage("Passwords do not match", "error");
+
+  const data = new FormData();
+  data.append("email", currentEmail);
+  data.append("password", pass);
+
+  try {
+    const res = await fetch(`${BASE_URL}/create_password`, { method: "POST", body: data });
+    const result = await res.json();
+    if (res.ok) {
+      showMessage("Account created! Check email for Company ID.", "success");
+      document.getElementById("passwordForm").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("title").innerText = "Login";
+    } else showMessage(result.detail, "error");
+  } catch {
+    showMessage("Failed to create password", "error");
+  }
+}
+
+// ---------- 4️⃣ Login ----------
+async function login() {
+  const data = new FormData();
+  data.append("company_id", document.getElementById("company_id").value);
+  data.append("email", document.getElementById("login_email").value);
+  data.append("password", document.getElementById("login_password").value);
+
+  try {
+    const res = await fetch(`${BASE_URL}/login`, {
+      method: "POST",
+      body: data,
+      redirect: "follow"
+    });
+
+    if (res.redirected) {
+      window.location.href = res.url;
+      return;
+    }
+
+    const result = await res.json();
+    if (res.ok) {
+      showMessage("Login successful! Redirecting...", "success");
+      setTimeout(() => window.location.href = "/menu", 1500);
+    } else {
+      showMessage(result.detail || "Invalid credentials", "error");
+    }
+  } catch {
+    showMessage("Login failed", "error");
+  }
+}
+
+// ---------- Helper ----------
+function showMessage(text, type) {
+  const msg = document.getElementById("message");
+  msg.textContent = text;
+  msg.className = type;
+}
+function clearMessage() {
+  const msg = document.getElementById("message");
+  msg.textContent = "";
+  msg.className = "";
+}
+
+// Placeholder for forgot password
+function forgotPassword() {
+  alert("Forgot password feature coming soon — will use OTP reset.");
+}
+</script>
+
+</body>
+</html>

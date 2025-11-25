@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soaking Form - BKNR SOLUTIONS</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #004aad;
+      margin-bottom: 25px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      justify-items: start;
+    }
+
+    .column {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: #004aad;
+      box-shadow: 0 0 4px rgba(0,74,173,0.4);
+    }
+
+    input[disabled] {
+      background-color: #eee;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button {
+      grid-column: span 3;
+      justify-self: center;
+      background-color: #004aad;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 200px;
+      margin-top: 15px;
+    }
+
+    button:hover { background-color: #003580; }
+
+    @media (max-width: 768px) {
+      form { grid-template-columns: 1fr; gap: 20px; justify-items: center; }
+      .column { width: 90%; }
+    }
+  </style>
+</head>
+<body>
+  <header>BKNR SOLUTIONS</header>
+
+  <div class="container">
+    <h2>Soaking Form</h2>
+
+    <form id="soakingForm" method="POST" action="/submit-soaking">
+      <!-- Common Fields -->
+      <div class="column">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" disabled>
+      </div>
+
+      <div class="column">
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" disabled>
+      </div>
+
+      <div class="column">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" disabled>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="column">
+        <label for="batchNumber">Batch Number:</label>
+        <select id="batchNumber" name="batchNumber" required>
+          <option value="" disabled selected>Select batch</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="variety">Variety:</label>
+        <select id="variety" name="variety" required>
+          <option value="" disabled selected>Select variety</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="inCount">In Count:</label>
+        <select id="inCount" name="inCount" required>
+          <option value="" disabled selected>Select in count</option>
+        </select>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="column">
+        <label for="inQty">In Quantity (Kg):</label>
+        <input type="number" id="inQty" name="inQty" step="0.01" min="0" placeholder="Enter in quantity" required>
+      </div>
+
+      <div class="column">
+        <label for="chemicalName">Chemical Name:</label>
+        <select id="chemicalName" name="chemicalName" required>
+          <option value="" disabled selected>Select chemical</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="chemicalPercent">Chemical %:</label>
+        <input type="number" id="chemicalPercent" name="chemicalPercent" step="0.01" min="0" placeholder="Enter %" required>
+      </div>
+
+      <!-- Row 4 -->
+      <div class="column">
+        <label for="chemicalQty">Chemical Quantity (Kg):</label>
+        <input type="number" id="chemicalQty" name="chemicalQty" step="0.01" min="0" placeholder="Auto calc" disabled>
+      </div>
+
+      <div class="column">
+        <label for="saltPercent">Salt %:</label>
+        <input type="number" id="saltPercent" name="saltPercent" step="0.01" min="0" placeholder="Enter %" required>
+      </div>
+
+      <div class="column">
+        <label for="saltQty">Salt Quantity (Kg):</label>
+        <input type="number" id="saltQty" name="saltQty" step="0.01" min="0" placeholder="Auto calc" disabled>
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    // Auto date/time/email
+    const now = new Date();
+    document.getElementById("date").valueAsDate = now;
+    document.getElementById("time").value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("email").value = localStorage.getItem("user_email") || "bknr.solutions@gmail.com";
+
+    // Dummy lookup data (replace with DB/API later)
+    const batches = ["BATCH001", "BATCH002", "BATCH003"];
+    const varieties = JSON.parse(localStorage.getItem("varieties") || '["Tiger Shrimp", "White Prawn", "Vannamei"]');
+    const gradedCounts = ["20/25", "25/30", "30/40", "40/50"];
+    const chemicals = ["STPP", "Phosphate", "Sodium Chloride"];
+
+    const fillSelect = (id, list) => {
+      const sel = document.getElementById(id);
+      list.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+      });
+    };
+
+    fillSelect("batchNumber", batches);
+    fillSelect("variety", varieties);
+    fillSelect("inCount", gradedCounts);
+    fillSelect("chemicalName", chemicals);
+
+    // Calculation fields
+    const inQty = document.getElementById("inQty");
+    const chemPercent = document.getElementById("chemicalPercent");
+    const chemQty = document.getElementById("chemicalQty");
+    const saltPercent = document.getElementById("saltPercent");
+    const saltQty = document.getElementById("saltQty");
+
+    function recalc() {
+      const qtyVal = parseFloat(inQty.value) || 0;
+      const cPerc = parseFloat(chemPercent.value) || 0;
+      const sPerc = parseFloat(saltPercent.value) || 0;
+
+      // Chemical Quantity = (InQty * Chem%) / 100
+      chemQty.value = ((qtyVal * cPerc) / 100).toFixed(2);
+
+      // Salt Quantity = (InQty * Salt%) / 100
+      saltQty.value = ((qtyVal * sPerc) / 100).toFixed(2);
+    }
+
+    [inQty, chemPercent, saltPercent].forEach(f => f.addEventListener("input", recalc));
+  </script>
+</body>
+</html>

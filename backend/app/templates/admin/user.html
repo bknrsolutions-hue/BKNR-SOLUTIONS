@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add User - BKNR ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eaf4ff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 25px;
+      max-width: 900px;
+      margin: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #003366;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 15px;
+      display: block;
+      color: #003366;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    input[disabled] {
+      background: #e0e0e0;
+    }
+
+    .permissions-box {
+      margin-top: 25px;
+      background: #f2f6ff;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #003366;
+    }
+
+    .perm-title {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #003366;
+      font-weight: bold;
+    }
+
+    .perm-section {
+      margin-bottom: 20px;
+    }
+
+    .perm-section h4 {
+      margin-bottom: 8px;
+      color: #0055a3;
+      text-decoration: underline;
+    }
+
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      background: #003366;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0055a3;
+    }
+
+    .message {
+      text-align:center;
+      padding:10px;
+      margin-top:15px;
+      font-weight:bold;
+    }
+
+    .success { color:green; }
+    .error { color:red; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>➕ Add New User</h2>
+
+    {% if message %}
+      <p class="message {{ 'success' if 'successfully' in message else 'error' }}">{{ message }}</p>
+    {% endif %}
+
+    <form action="/admin/add_user" method="post">
+
+      <label>Employee Name</label>
+      <input type="text" name="full_name" required>
+
+      <label>Designation</label>
+      <input type="text" name="designation" required>
+
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Company ID</label>
+      <input type="text" value="{{ company_id }}" name="company_id" disabled>
+
+      <input type="hidden" name="company_id" value="{{ company_id }}">
+
+      <div class="permissions-box">
+        <div class="perm-title">✔ User Access Permissions</div>
+
+        <!-- 📌 SECTION 1: Processing -->
+        <div class="perm-section">
+          <h4>Processing</h4>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="access" value="gate_entry"> Gate Entry</label>
+            <label><input type="checkbox" name="access" value="raw_material_purchasing"> Raw Material Purchasing</label>
+            <label><input type="checkbox" name="access" value="de_heading"> De-Heading</label>
+            <label><input type="checkbox" name="access" value="grading"> Grading</label>
+            <label><input type="checkbox" name="access" value="peeling"> Peeling</label>
+            <label><input type="checkbox" name="access" value="soaking"> Soaking</label>
+            <label><input type="checkbox" name="access" value="production"> Production</label>
+          </div>
+        </div>
+
+        <!-- 📌 SECTION 2: Inventory -->
+        <div class="perm-section">
+          <h4>Inventory</h4>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="access" value="stock_entry"> Stock Entry</label>
+            <label><input type="checkbox" name="access" value="pending_orders"> Pending Orders</label>
+          </div>
+        </div>
+
+        <!-- 📌 SECTION 3: Criteria -->
+        <div class="perm-section">
+          <h4>Criteria</h4>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="access" value="brands"> Brands</label>
+            <label><input type="checkbox" name="access" value="grades"> Grades</label>
+            <label><input type="checkbox" name="access" value="varieties"> Varieties</label>
+            <label><input type="checkbox" name="access" value="countries"> Countries</label>
+            <label><input type="checkbox" name="access" value="buyers"> Buyers</label>
+            <label><input type="checkbox" name="access" value="packing_styles"> Packing Styles</label>
+            <label><input type="checkbox" name="access" value="grade_to_hoso"> Grade to Hoso</label>
+            <label><input type="checkbox" name="access" value="freezers"> Freezers</label>
+            <label><input type="checkbox" name="access" value="production_types"> Production Types</label>
+            <label><input type="checkbox" name="access" value="chemicals"> Chemicals</label>
+            <label><input type="checkbox" name="access" value="contractors"> Contractors</label>
+            <label><input type="checkbox" name="access" value="suppliers"> Suppliers</label>
+            <label><input type="checkbox" name="access" value="peeling_rates"> Peeling Rates</label>
+            <label><input type="checkbox" name="access" value="hoso_hlso"> Hoso to Hlso</label>
+            <label><input type="checkbox" name="access" value="species"> Species</label>
+            <label><input type="checkbox" name="access" value="vehicle_numbers"> Vehicle Numbers</label>
+            <label><input type="checkbox" name="access" value="coldstore_locations"> Coldstore Locations</label>
+            <label><input type="checkbox" name="access" value="purchasing_locations"> Purchasing Locations</label>
+          </div>
+        </div>
+
+        <!-- 📌 SECTION 4: Reports -->
+        <div class="perm-section">
+          <h4>Reports</h4>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="access" value="batch_report"> Batch Wise Report</label>
+            <label><input type="checkbox" name="access" value="purchasing_report"> Purchasing Report</label>
+            <label><input type="checkbox" name="access" value="stock_report"> Stock Report</label>
+          </div>
+        </div>
+
+      </div>
+
+      <button type="submit">➕ Create User</button>
+
+    </form>
+  </div>
+
+</body>
+</html>

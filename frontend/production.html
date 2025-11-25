@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Form - BKNR SOLUTIONS</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: 40px auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #004aad;
+      margin-bottom: 25px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      justify-items: start;
+    }
+
+    .column {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: #004aad;
+      box-shadow: 0 0 4px rgba(0,74,173,0.4);
+    }
+
+    input[disabled] {
+      background-color: #eee;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button {
+      grid-column: span 3;
+      justify-self: center;
+      background-color: #004aad;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 200px;
+      margin-top: 15px;
+    }
+
+    button:hover { background-color: #003580; }
+
+    @media (max-width: 768px) {
+      form { grid-template-columns: 1fr; gap: 20px; justify-items: center; }
+      .column { width: 90%; }
+    }
+  </style>
+</head>
+<body>
+  <header>BKNR SOLUTIONS</header>
+
+  <div class="container">
+    <h2>Production Form</h2>
+
+    <form id="productionForm" method="POST" action="/submit-production">
+      <!-- Common Fields -->
+      <div class="column">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" disabled>
+      </div>
+
+      <div class="column">
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" disabled>
+      </div>
+
+      <div class="column">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" disabled>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="column">
+        <label for="batchNumber">Batch Number:</label>
+        <select id="batchNumber" name="batchNumber" required>
+          <option value="" disabled selected>Select batch</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="brand">Brand:</label>
+        <select id="brand" name="brand" required>
+          <option value="" disabled selected>Select brand</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="variety">Variety:</label>
+        <select id="variety" name="variety" required>
+          <option value="" disabled selected>Select variety</option>
+        </select>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="column">
+        <label for="glaze">Glaze %:</label>
+        <select id="glaze" name="glaze" required>
+          <option value="" disabled selected>Select glaze</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="freezer">Freezer:</label>
+        <select id="freezer" name="freezer" required>
+          <option value="" disabled selected>Select freezer</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="packingStyle">Packing Style:</label>
+        <select id="packingStyle" name="packingStyle" required>
+          <option value="" disabled selected>Select packing style</option>
+        </select>
+      </div>
+
+      <!-- Row 4 -->
+      <div class="column">
+        <label for="grade">Grade:</label>
+        <select id="grade" name="grade" required>
+          <option value="" disabled selected>Select grade</option>
+        </select>
+      </div>
+
+      <div class="column">
+        <label for="noOfMc">No. of MC:</label>
+        <input type="number" id="noOfMc" name="noOfMc" min="0" step="1" placeholder="Enter MC count" required>
+      </div>
+
+      <div class="column">
+        <label for="loose">Loose:</label>
+        <input type="number" id="loose" name="loose" min="0" step="1" placeholder="Enter loose count" required>
+      </div>
+
+      <!-- Row 5 -->
+      <div class="column">
+        <label for="productionQty">Production Quantity (Kg):</label>
+        <input type="number" id="productionQty" name="productionQty" step="0.01" placeholder="Auto calculated" disabled>
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    // Auto date/time/email
+    const now = new Date();
+    document.getElementById("date").valueAsDate = now;
+    document.getElementById("time").value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("email").value = localStorage.getItem("user_email") || "bknr.solutions@gmail.com";
+
+    // Dummy lookup data (replace with DB later)
+    const batches = ["BATCH001", "BATCH002", "BATCH003"];
+    const brands = ["SeaFresh", "OceanBlue", "BKNR"];
+    const varieties = JSON.parse(localStorage.getItem("varieties") || '["Vannamei", "Tiger Shrimp", "White Prawn"]');
+    const glazes = ["0%", "5%", "10%", "20%"];
+    const freezers = ["Freezer 1", "Freezer 2", "IQF Tunnel"];
+    const grades = ["20/25", "25/30", "30/40"];
+    const packingStyles = [
+      { name: "10Kg Block", mcWeight: 10, slabWeight: 1.5 },
+      { name: "5Kg Box", mcWeight: 5, slabWeight: 1.0 },
+      { name: "2Kg Pouch", mcWeight: 2, slabWeight: 0.5 }
+    ];
+
+    function fillSelect(id, list, valueField = "name") {
+      const sel = document.getElementById(id);
+      list.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = typeof item === "object" ? item[valueField] : item;
+        opt.textContent = opt.value;
+        sel.appendChild(opt);
+      });
+    }
+
+    fillSelect("batchNumber", batches);
+    fillSelect("brand", brands);
+    fillSelect("variety", varieties);
+    fillSelect("glaze", glazes);
+    fillSelect("freezer", freezers);
+    fillSelect("grade", grades);
+    fillSelect("packingStyle", packingStyles);
+
+    // Formula calculation
+    const mcInput = document.getElementById("noOfMc");
+    const looseInput = document.getElementById("loose");
+    const packSelect = document.getElementById("packingStyle");
+    const qtyOutput = document.getElementById("productionQty");
+
+    function calcProductionQty() {
+      const mc = parseFloat(mcInput.value) || 0;
+      const loose = parseFloat(looseInput.value) || 0;
+      const selectedPack = packingStyles.find(p => p.name === packSelect.value);
+      if (!selectedPack) {
+        qtyOutput.value = "";
+        return;
+      }
+      const qty = (mc * selectedPack.mcWeight) + (loose * selectedPack.slabWeight);
+      qtyOutput.value = qty.toFixed(2);
+    }
+
+    [mcInput, looseInput, packSelect].forEach(e => e.addEventListener("input", calcProductionQty));
+  </script>
+</body>
+</html>

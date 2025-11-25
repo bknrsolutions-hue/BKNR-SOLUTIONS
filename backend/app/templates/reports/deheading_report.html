@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>De-Heading Report</title>
+    <style>
+        body { font-family: Arial; background: #eef6ff; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ccc; }
+        th { background: #003366; color: white; padding: 8px; }
+        td { padding: 8px; }
+        .filter-box { margin-bottom: 20px; }
+        label { font-weight: bold; }
+        select, input[type="date"] {
+            padding: 6px; width: 180px; margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px; background: #003366; color: white;
+            border: none; border-radius: 5px; cursor: pointer;
+        }
+        button:hover { background: #0055aa; }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h2>DE-HEADING REPORT</h2>
+
+    <!-- FILTER FORM -->
+    <form method="get" class="filter-box">
+
+        <label>Batch:</label>
+        <select name="batch">
+            <option value="">-- All --</option>
+            {% for b in batch_list %}
+                <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Contractor:</label>
+        <select name="contractor">
+            <option value="">-- All --</option>
+            {% for c in contractor_list %}
+                <option value="{{ c }}" {% if selected_contractor == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <label>From:</label>
+        <input type="date" name="from_date" value="{{ selected_from }}">
+
+        <label>To:</label>
+        <input type="date" name="to_date" value="{{ selected_to }}">
+        
+        <button type="submit">Search</button>
+    </form>
+
+    <!-- REPORT TABLE -->
+    <table>
+        <thead>
+        <tr>
+            <th>Batch</th>
+            <th>HOSO Count</th>
+            <th>HOSO Qty</th>
+            <th>HLSO Qty</th>
+            <th>Yield%</th>
+            <th>Contractor</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Date</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for row in report_data %}
+        <tr>
+            <td>{{ row.batch_number }}</td>
+            <td>{{ row.hoso_count }}</td>
+            <td>{{ row.hoso_qty }}</td>
+            <td>{{ row.hlso_qty }}</td>
+            <td>{{ row.yield_percent }}</td>
+            <td>{{ row.contractor }}</td>
+            <td>{{ row.rate_per_kg }}</td>
+            <td>{{ row.amount }}</td>
+            <td>{{ row.date }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

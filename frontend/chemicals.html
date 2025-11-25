@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chemicals Form - BKNR SOLUTIONS</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #004aad;
+      margin-bottom: 25px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      justify-items: start;
+    }
+
+    .column {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #004aad;
+      box-shadow: 0 0 4px rgba(0,74,173,0.4);
+    }
+
+    input[disabled] {
+      background-color: #eee;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button {
+      grid-column: span 3;
+      justify-self: center;
+      background-color: #004aad;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 200px;
+      margin-top: 15px;
+    }
+
+    button:hover { background-color: #003580; }
+
+    @media (max-width: 768px) {
+      form {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        justify-items: center;
+      }
+      .column {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>BKNR SOLUTIONS</header>
+
+  <div class="container">
+    <h2>Chemicals Form</h2>
+
+    <form id="chemicalsForm" method="POST" action="/submit-chemical">
+      <!-- Common Fields (Row 1) -->
+      <div class="column">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" disabled>
+      </div>
+
+      <div class="column">
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" disabled>
+      </div>
+
+      <div class="column">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" disabled>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="column">
+        <label for="chemicalName">Chemical Name:</label>
+        <input list="chemicalList" id="chemicalName" name="chemicalName" placeholder="Enter or select chemical" required>
+        <datalist id="chemicalList"></datalist>
+      </div>
+
+      <div></div>
+      <div></div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    // Auto Date, Time, Email
+    const now = new Date();
+    document.getElementById("date").valueAsDate = now;
+    document.getElementById("time").value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("email").value = localStorage.getItem("user_email") || "bknr.solutions@gmail.com";
+
+    // Memory-based chemical dropdown (like Variety memory)
+    const chemicals = JSON.parse(localStorage.getItem("chemicals") || "[]");
+    const chemicalList = document.getElementById("chemicalList");
+    chemicals.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      chemicalList.appendChild(opt);
+    });
+
+    // Save new chemical after submit
+    document.getElementById("chemicalsForm").addEventListener("submit", () => {
+      const newChemical = document.getElementById("chemicalName").value.trim();
+      if (newChemical && !chemicals.includes(newChemical)) {
+        chemicals.push(newChemical);
+        localStorage.setItem("chemicals", JSON.stringify(chemicals));
+      }
+    });
+  </script>
+</body>
+</html>

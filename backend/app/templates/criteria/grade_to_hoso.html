@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GRADE → HOSO MAPPING</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+    width:90%;max-width:1100px;margin:0 auto;background:#fff;
+    padding:25px;border-radius:10px;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);
+  }
+
+  .row{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:15px;}
+  .col{flex:1;min-width:250px;display:flex;flex-direction:column;}
+  label{font-weight:600;margin-bottom:6px;color:#003366;}
+
+  input,select{
+    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
+    background:#f9fcff;font-size:14px;
+  }
+
+  .actions{text-align:center;margin-top:20px;}
+  .btn{
+    background:#003366;color:white;padding:10px 20px;border:none;
+    border-radius:6px;font-weight:600;cursor:pointer;width:150px;
+  }
+  .btn-clear{background:#777;}
+
+  table{
+    width:90%;max-width:1100px;margin:25px auto;border-collapse:collapse;
+    background:#fff;border-radius:10px;overflow:hidden;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+  }
+  th,td{padding:10px;border-bottom:1px solid #ddd;font-size:14px;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#eef5ff;}
+  tr.selected{background:#cce5ff !important;}
+
+  #actionWrap{display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;}
+  #dotsBtn{background:#003366;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:22px;cursor:pointer;}
+  #menuBox{
+    display:none;position:absolute;right:0;top:40px;
+    width:170px;background:white;border:1px solid #ccc;
+    border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,0.2);
+  }
+  .menu-item{
+    padding:10px;font-weight:600;color:#003366;
+    border-bottom:1px solid #eee;cursor:pointer;
+  }
+  .menu-item:hover{background:#e8f0ff;}
+</style>
+
+</head>
+<body>
+
+<h2>GRADE → HOSO MAPPING</h2>
+
+<form id="hosoForm" onsubmit="saveRecord(event)">
+  <div class="form-container">
+
+    <div class="row">
+
+      <div class="col">
+        <label>Main Grade</label>
+        <select id="grade_name" required>
+          <option value="" disabled selected>Select Grade</option>
+          {% for g in lookup.grades %}
+            <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col">
+        <label>NW Grade</label>
+        <select id="nw_grade" required>
+          <option value="" disabled selected>Select NW Grade</option>
+          {% for g in lookup.nwgrades %}
+            <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Glaze</label>
+        <select id="glaze_name" required>
+          <option value="" disabled selected>Select Glaze</option>
+          {% for g in lookup.glazes %}
+            <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+
+    <div class="row">
+
+      <div class="col">
+        <label>Variety</label>
+        <select id="variety_name" required>
+          <option value="" disabled selected>Select Variety</option>
+          {% for v in lookup.varieties %}
+            <option value="{{ v }}">{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col">
+        <label>Species</label>
+        <select id="species_name" required>
+          <option value="" disabled selected>Select Species</option>
+          {% for s in lookup.species %}
+            <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col">
+        <label>HOSO Count</label>
+        <input type="number" id="hoso_count" step="1" value="0">
+      </div>
+
+      <div class="col">
+        <label>HLSO Count</label>
+        <input type="number" id="hlso_count" step="1" value="0">
+      </div>
+
+    </div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_date">
+    <input type="hidden" id="meta_time">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+<!-- Action 3 dots -->
+<div id="actionWrap">
+  <button id="dotsBtn">⋮</button>
+  <div id="menuBox">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
+  </div>
+</div>
+
+{% if today_data %}
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Grade</th>
+      <th>NW Grade</th>
+      <th>Glaze</th>
+      <th>Variety</th>
+      <th>Species</th>
+      <th>HOSO</th>
+      <th>HLSO</th>
+      <th>Date</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    {% for row in today_data %}
+    <tr 
+      data-id="{{ row.id }}"
+      data-grade="{{ row.grade_name }}"
+      data-nw="{{ row.nw_grade }}"
+      data-glaze="{{ row.glaze_name }}"
+      data-variety="{{ row.variety_name }}"
+      data-species="{{ row.species }}"
+      data-hoso="{{ row.hoso_count }}"
+      data-hlso="{{ row.hlso_count }}"
+    >
+      <td>{{ row.id }}</td>
+      <td>{{ row.grade_name }}</td>
+      <td>{{ row.nw_grade }}</td>
+      <td>{{ row.glaze_name }}</td>
+      <td>{{ row.variety_name }}</td>
+      <td>{{ row.species }}</td>
+      <td>{{ row.hoso_count }}</td>
+      <td>{{ row.hlso_count }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+    </tr>
+    {% endfor %}
+
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+let selectedRow = null;
+
+/* AUTO DATE TIME */
+document.addEventListener("DOMContentLoaded", ()=>{
+  const now = new Date();
+  meta_date.value = now.toISOString().slice(0,10);
+  meta_time.value = now.toTimeString().slice(0,8);
+});
+
+/* SAVE */
+async function saveRecord(e){
+  e.preventDefault();
+
+  const fd = new FormData();
+
+  if(record_id.value) fd.append("id", record_id.value);
+
+  fd.append("grade_name", grade_name.value);
+  fd.append("nw_grade", nw_grade.value);
+  fd.append("glaze_name", glaze_name.value);
+  fd.append("variety_name", variety_name.value);
+  fd.append("species_name", species_name.value);
+
+  fd.append("hoso_count", hoso_count.value || "0");
+  fd.append("hlso_count", hlso_count.value || "0");
+
+  fd.append("date", meta_date.value);
+  fd.append("time", meta_time.value);
+  fd.append("email", meta_email.value);
+  fd.append("company_id", meta_company_id.value);
+
+  const res = await fetch("/criteria/grade_to_hoso", {
+      method:"POST",
+      body:fd
+  });
+
+  if(res.ok){
+    location.reload();
+  } else {
+    alert(await res.text());
+  }
+}
+
+/* SELECT ROW */
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+    r.onclick = ()=>{
+      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow = r;
+      actionWrap.style.display="block";
+    }
+  });
+
+  dotsBtn.onclick = ()=>{
+    menuBox.style.display = menuBox.style.display==="block" ? "none" : "block";
+  };
+});
+
+/* EDIT */
+function editSelected(){
+  record_id.value = selectedRow.dataset.id;
+  grade_name.value = selectedRow.dataset.grade;
+  nw_grade.value = selectedRow.dataset.nw;
+  glaze_name.value = selectedRow.dataset.glaze;
+  variety_name.value = selectedRow.dataset.variety;
+  species_name.value = selectedRow.dataset.species;
+  hoso_count.value = selectedRow.dataset.hoso;
+  hlso_count.value = selectedRow.dataset.hlso;
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* DELETE */
+async function deleteSelected(){
+  if(!confirm("Delete this record?")) return;
+  const id = selectedRow.dataset.id;
+  const res = await fetch(`/criteria/grade_to_hoso/delete/${id}`, {method:"POST"});
+  if(res.ok) location.reload();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freezers Form - BKNR SOLUTIONS</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 40px auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #004aad;
+      margin-bottom: 25px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      justify-items: start;
+      align-items: start;
+    }
+
+    .column {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #004aad;
+      box-shadow: 0 0 4px rgba(0, 74, 173, 0.4);
+    }
+
+    input[disabled] {
+      background-color: #eee;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    button {
+      grid-column: span 3;
+      justify-self: center;
+      background-color: #004aad;
+      color: white;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 200px;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #003580;
+    }
+
+    @media (max-width: 768px) {
+      form {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        justify-items: center;
+      }
+      .column {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>BKNR SOLUTIONS</header>
+
+  <div class="container">
+    <h2>Freezers Form</h2>
+
+    <form id="freezersForm" method="POST" action="/submit-freezers">
+      <!-- Common Row 1: Date, Time, Email -->
+      <div class="column">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" disabled>
+      </div>
+
+      <div class="column">
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" disabled>
+      </div>
+
+      <div class="column">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" disabled>
+      </div>
+
+      <!-- Row 2: Freezer -->
+      <div class="column">
+        <label for="freezer">Freezer:</label>
+        <input type="text" id="freezer" name="freezer" placeholder="Enter freezer name" required>
+      </div>
+
+      <!-- Empty placeholders to align grid -->
+      <div></div>
+      <div></div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    // Auto-fill current date & time
+    const now = new Date();
+    document.getElementById('date').valueAsDate = now;
+    document.ge

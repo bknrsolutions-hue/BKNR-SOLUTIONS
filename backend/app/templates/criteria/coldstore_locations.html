@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>COLD STORE LOCATIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2 {text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container {
+    width:90%;max-width:1100px;margin:0 auto;background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:10px;
+  }
+
+  .row {display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+  .col {width:50%;display:flex;flex-direction:column;margin-bottom:10px;}
+
+  @media(max-width:768px){
+    .col{width:100%;}
+    .btn{width:100%;margin-bottom:10px;}
+  }
+
+  label {font-weight:600;color:#003366;margin-bottom:6px;}
+
+  input {
+    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
+    font-size:14px;background:#f9fcff;
+  }
+
+  input:focus {
+    border-color:#003366;outline:none;
+    box-shadow:0 0 5px rgba(0,51,102,0.3);
+  }
+
+  .actions{text-align:center;margin-top:25px;}
+  .btn{
+    background:#003366;color:white;border:none;padding:10px 20px;
+    border-radius:6px;font-weight:600;cursor:pointer;width:160px;
+  }
+  .btn-clear{background:#777;}
+  .btn:hover{opacity:0.9;}
+
+  table{
+    width:90%;max-width:1100px;margin:10px auto 30px;border-collapse:collapse;
+    background:#f7f7f7;box-shadow:0 0 8px rgba(0,0,0,0.15);
+    border-radius:8px;overflow:hidden;
+  }
+
+  th,td{
+    padding:10px 12px;text-align:left;
+    border-bottom:1px solid #ccc;font-size:14px;
+  }
+  th{background:#003366;color:white;}
+
+  tr:hover{background:#e0ebff;cursor:pointer;}
+  tr.selected{background:#cce5ff !important;}
+
+  .menu-item{
+    padding:10px;cursor:pointer;font-size:14px;border-bottom:1px solid #eee;
+  }
+  .menu-item:hover{background:#e6f2ff;}
+</style>
+</head>
+
+<body>
+
+<h2>COLD STORE LOCATIONS</h2>
+
+<!-- FORM -->
+<form onsubmit="submitLocation(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>Location Name</label>
+        <input type="text" id="location_name" required placeholder="Enter Location Name">
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+{% if message %}
+<p style="text-align:center;color:green;font-weight:600;">{{ message }}</p>
+{% endif %}
+
+{% if today_data %}
+
+<!-- 3 DOTS MENU -->
+<div id="threeDotsMenu" style="
+  display:none;width:90%;max-width:1100px;margin:10px auto;
+  text-align:right;position:relative;">
+  <button id="dotsBtn" style="
+    background:#003366;color:white;border:none;padding:6px 12px;
+    border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
+
+  <div id="dropdownMenu" style="
+    display:none;position:absolute;right:0;background:white;border:1px solid #ccc;
+    border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    width:180px;z-index:1000;">
+    <div onclick="editSelected()" class="menu-item">✏️ Edit</div>
+    <div onclick="deleteSelected()" class="menu-item">🗑️ Delete</div>
+    <div onclick="printSelected()" class="menu-item">🖨️ Print</div>
+    <div onclick="exportPDF()" class="menu-item">📄 Export PDF</div>
+    <div onclick="exportExcel()" class="menu-item">📊 Export Excel</div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Location Name</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Email</th>
+      <th>Company ID</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for row in today_data %}
+    <tr data-id="{{ row.id }}" data-name="{{ row.coldstore_location }}">
+      <td>{{ row.id }}</td>
+      <td>{{ row.coldstore_location }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+      <td>{{ row.email }}</td>
+      <td>{{ row.company_id }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+
+<script>
+
+let selectedRow = null;
+
+/* -----------------------------------------
+   SUBMIT FORM  (✔ FIXED URL)
+------------------------------------------*/
+async function submitLocation(e){
+  e.preventDefault();
+
+  const location_name = document.getElementById("location_name").value.trim();
+  const record_id = document.getElementById("record_id").value;
+
+  const now = new Date();
+  const date = now.toISOString().slice(0,10);
+  const time = now.toTimeString().slice(0,8);
+
+  const email = document.getElementById("meta_email").value;
+  const company_id = document.getElementById("meta_company_id").value;
+
+  const fd = new FormData();
+  if(record_id) fd.append("id", record_id);
+
+  fd.append("location_name", location_name);
+  fd.append("date", date);
+  fd.append("time", time);
+  fd.append("email", email);
+  fd.append("company_id", company_id);
+
+  const res = await fetch("/criteria/coldstore_locations", {   // ✔ FIXED
+    method: "POST",
+    body: fd
+  });
+
+  if(res.ok){
+    alert("Saved Successfully!");
+    location.reload();
+  } else {
+    alert("Save Failed: " + await res.text());
+  }
+}
+
+/* -----------------------------------------
+   SELECT ROW + 3 DOT MENU
+------------------------------------------*/
+document.addEventListener("DOMContentLoaded", ()=>{
+  const rows = document.querySelectorAll("#dataTable tbody tr");
+  const menu = document.getElementById("threeDotsMenu");
+
+  rows.forEach(row=>{
+    row.addEventListener("click", ()=>{
+      rows.forEach(r=>r.classList.remove("selected"));
+      row.classList.add("selected");
+      selectedRow = row;
+      menu.style.display = "block";
+    });
+  });
+});
+
+document.getElementById("dotsBtn").addEventListener("click", ()=>{
+  const d = document.getElementById("dropdownMenu");
+  d.style.display = d.style.display === "block" ? "none" : "block";
+});
+
+/* -----------------------------------------
+   EDIT
+------------------------------------------*/
+function editSelected(){
+  if(!selectedRow) return alert("Select a row!");
+
+  document.getElementById("record_id").value = selectedRow.dataset.id;
+  document.getElementById("location_name").value = selectedRow.dataset.name;
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* -----------------------------------------
+   DELETE  (✔ FIXED URL)
+------------------------------------------*/
+async function deleteSelected(){
+  if(!selectedRow) return alert("Select a row!");
+  if(!confirm("Are you sure?")) return;
+
+  const id = selectedRow.dataset.id;
+
+  const res = await fetch(`/criteria/coldstore_locations/delete/${id}`, {   // ✔ FIXED
+    method:"POST"
+  });
+
+  if(res.ok) location.reload();
+  else alert("Delete Failed");
+}
+
+/* -----------------------------------------
+   PRINT / PDF / EXCEL
+------------------------------------------*/
+function printSelected(){
+  if(!selectedRow) return alert("Select a row!");
+
+  const id = selectedRow.children[0].innerText;
+  const name = selectedRow.children[1].innerText;
+
+  const p = window.open("", "_blank");
+  p.document.write("<h3>Cold Store Location</h3>");
+  p.document.write("<p><b>ID:</b> "+id+"</p>");
+  p.document.write("<p><b>Name:</b> "+name+"</p>");
+  p.document.close();
+  p.print();
+}
+
+function exportPDF(){ printSelected(); }
+
+function exportExcel(){
+  if(!selectedRow) return alert("Select row!");
+
+  const id = selectedRow.children[0].innerText;
+  const name = selectedRow.children[1].innerText;
+
+  const data = `ID\tLocation Name\n${id}\t${name}`;
+  const blob = new Blob([data], {type:"application/vnd.ms-excel"});
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "cold_store_location.xls";
+  a.click();
+}
+
+/* -----------------------------------------
+   CLEAR FORM
+------------------------------------------*/
+function clearForm(){
+  selectedRow = null;
+  document.getElementById("record_id").value = "";
+  document.getElementById("location_name").value = "";
+  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>

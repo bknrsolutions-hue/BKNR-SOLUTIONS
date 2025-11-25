@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BKNR SOLUTIONS - ERP Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 230px;
+      background-color: #004aad;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding-top: 10px;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 18px;
+    }
+
+    .sidebar button {
+      background: none;
+      border: none;
+      color: white;
+      text-align: left;
+      padding: 12px 20px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .sidebar button:hover {
+      background-color: #0066ff;
+    }
+
+    /* Header */
+    .header {
+      background-color: #004aad;
+      color: white;
+      padding: 15px 20px;
+      text-align: left;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .logout-btn {
+      background-color: red;
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>MENU</h2>
+    <button onclick="openForm('/gate-entry-form')">Gate Entry</button>
+    <button disabled>Raw Material Purchase</button>
+    <button disabled>De-heading</button>
+    <button disabled>Peeling</button>
+    <button disabled>Production</button>
+    <button disabled>Reports</button>
+  </div>
+
+  <!-- Main Section -->
+  <div class="main">
+    <div class="header">
+      <span><b>BKNR SOLUTIONS ERP</b></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- This is where forms will load -->
+    <iframe id="content-frame" src=""></iframe>
+  </div>
+
+  <script>
+    function openForm(url) {
+      document.getElementById('content-frame').src = url;
+    }
+
+    function logout() {
+      window.location.href = '/login';
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
