@@ -9,13 +9,15 @@ import json
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry
-from app.database.models.criteria import varieties, species
+from app.database.models.criteria import varieties, species, suppliers
 
-# No prefix here; processing_router.py should include this router under prefix="/processing"
-router = APIRouter(tags=["Raw Material Purchasing"])
+router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
 
 
+# -----------------------------------------------------
+# TODAY RANGE (9 AM TO NEXT DAY 9 AM)
+# -----------------------------------------------------
 def get_today_range():
     now = datetime.now()
     start = now.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -25,24 +27,45 @@ def get_today_range():
     return start, end
 
 
-# SHOW
-@router.get("/raw_material_purchasing", response_class=HTMLResponse, name="show_rmp")
+# -----------------------------------------------------
+# SHOW PAGE
+# -----------------------------------------------------
+@router.get("/raw_material_purchasing", response_class=HTMLResponse)
 def show_rmp(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
-    if not company_id:
+
+    company_code = request.session.get("company_code")
+    if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
-    gate_entries = db.query(GateEntry).filter_by(company_id=company_id).order_by(GateEntry.id.desc()).all()
-    batch_list = [g.batch_number for g in gate_entries if g.batch_number]
-    batch_supplier_map = {g.batch_number: g.supplier_name for g in gate_entries if g.batch_number}
+    gate_entries = (
+        db.query(GateEntry)
+        .filter(GateEntry.company_id == company_code)
+        .order_by(GateEntry.id.desc())
+        .all()
+    )
 
-    variety_list = [v.variety_name for v in db.query(varieties).filter_by(company_id=company_id).all()]
-    species_list = [s.species_name for s in db.query(species).filter_by(company_id=company_id).all()]
+    batch_list = [g.batch_number for g in gate_entries if g.batch_number]
+    batch_supplier_map = {g.batch_number: g.supplier_name for g in gate_entries}
+
+    supplier_list = [
+        s.supplier_name for s in db.query(suppliers)
+        .filter(suppliers.company_id == company_code).all()
+    ]
+
+    variety_list = [
+        v.variety_name for v in db.query(varieties)
+        .filter(varieties.company_id == company_code).all()
+    ]
+
+    species_list = [
+        s.species_name for s in db.query(species)
+        .filter(species.company_id == company_code).all()
+    ]
 
     start, end = get_today_range()
     today_data = (
         db.query(RawMaterialPurchasing)
-        .filter_by(company_id=company_id)
+        .filter(RawMaterialPurchasing.company_id == company_code)
         .filter(RawMaterialPurchasing.date >= start.date())
         .filter(RawMaterialPurchasing.date <= end.date())
         .order_by(RawMaterialPurchasing.id.desc())
@@ -54,6 +77,7 @@ def show_rmp(request: Request, db: Session = Depends(get_db)):
         "today_data": today_data,
         "edit_data": None,
         "batch_list": batch_list,
+        "supplier_list": supplier_list,
         "variety_list": variety_list,
         "species_list": species_list,
         "batch_supplier_map_json": json.dumps(batch_supplier_map),
@@ -61,38 +85,67 @@ def show_rmp(request: Request, db: Session = Depends(get_db)):
     })
 
 
-# EDIT
-@router.get("/raw_material_purchasing/edit/{id}", name="edit_rmp")
+# -----------------------------------------------------
+# EDIT PAGE
+# -----------------------------------------------------
+@router.get("/raw_material_purchasing/edit/{id}")
 def edit_rmp(id: int, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
-    if not company_id:
+
+    company_code = request.session.get("company_code")
+    if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
-    entry = db.query(RawMaterialPurchasing).filter_by(id=id, company_id=company_id).first()
+    entry = (
+        db.query(RawMaterialPurchasing)
+        .filter(RawMaterialPurchasing.id == id,
+                RawMaterialPurchasing.company_id == company_code)
+        .first()
+    )
+
     if not entry:
         return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
-    gate_entries = db.query(GateEntry).filter_by(company_id=company_id).order_by(GateEntry.id.desc()).all()
-    batch_list = [g.batch_number for g in gate_entries if g.batch_number]
-    batch_supplier_map = {g.batch_number: g.supplier_name for g in gate_entries if g.batch_number}
+    gate_entries = (
+        db.query(GateEntry)
+        .filter(GateEntry.company_id == company_code)
+        .order_by(GateEntry.id.desc())
+        .all()
+    )
 
-    variety_list = [v.variety_name for v in db.query(varieties).filter_by(company_id=company_id).all()]
-    species_list = [s.species_name for s in db.query(species).filter_by(company_id=company_id).all()]
+    batch_list = [g.batch_number for g in gate_entries]
+    batch_supplier_map = {g.batch_number: g.supplier_name for g in gate_entries}
+
+    supplier_list = [
+        s.supplier_name for s in db.query(suppliers)
+        .filter(suppliers.company_id == company_code).all()
+    ]
+
+    variety_list = [
+        v.variety_name for v in db.query(varieties)
+        .filter(varieties.company_id == company_code).all()
+    ]
+
+    species_list = [
+        s.species_name for s in db.query(species)
+        .filter(species.company_id == company_code).all()
+    ]
 
     return templates.TemplateResponse("processing/raw_material_purchasing.html", {
         "request": request,
         "today_data": [],
         "edit_data": entry,
         "batch_list": batch_list,
+        "supplier_list": supplier_list,
         "variety_list": variety_list,
         "species_list": species_list,
         "batch_supplier_map_json": json.dumps(batch_supplier_map),
-        "message": None
     })
 
 
-# SAVE (create)
-@router.post("/raw_material_purchasing", name="save_rmp")
+# -----------------------------------------------------
+# SAVE NEW
+# -----------------------------------------------------
+@router.post("/raw_material_purchasing")
 def save_rmp(
     request: Request,
     batch_number: str = Form(...),
@@ -108,13 +161,12 @@ def save_rmp(
     remarks: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_id")
-    if not company_id:
-        return RedirectResponse("/auth/login", status_code=303)
 
+    company_code = request.session.get("company_code")
     now = datetime.now()
-    received = (g1_qty or 0.0) + (g2_qty or 0.0) + (dc_qty or 0.0)
-    amount = ((g1_qty or 0.0) + ((g2_qty or 0.0) / 2.0)) * (rate_per_kg or 0.0)
+
+    received = (g1_qty or 0) + (g2_qty or 0) + (dc_qty or 0)
+    amount = (g1_qty + (g2_qty / 2)) * (rate_per_kg or 0)
 
     entry = RawMaterialPurchasing(
         batch_number=batch_number,
@@ -133,7 +185,7 @@ def save_rmp(
         email=request.session.get("email"),
         date=now.date(),
         time=now.time(),
-        company_id=company_id
+        company_id=company_code
     )
 
     db.add(entry)
@@ -143,8 +195,10 @@ def save_rmp(
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
 
-# UPDATE (no new row)
-@router.post("/raw_material_purchasing/update/{id}", name="update_rmp")
+# -----------------------------------------------------
+# UPDATE RECORD
+# -----------------------------------------------------
+@router.post("/raw_material_purchasing/update/{id}")
 def update_rmp(
     id: int,
     request: Request,
@@ -161,17 +215,22 @@ def update_rmp(
     remarks: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_id")
-    if not company_id:
-        return RedirectResponse("/auth/login", status_code=303)
 
-    entry = db.query(RawMaterialPurchasing).filter_by(id=id, company_id=company_id).first()
+    company_code = request.session.get("company_code")
+
+    entry = (
+        db.query(RawMaterialPurchasing)
+        .filter(RawMaterialPurchasing.id == id,
+                RawMaterialPurchasing.company_id == company_code)
+        .first()
+    )
+
     if not entry:
         request.session["message"] = "❌ Record Not Found!"
         return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
-    received = (g1_qty or 0.0) + (g2_qty or 0.0) + (dc_qty or 0.0)
-    amount = ((g1_qty or 0.0) + ((g2_qty or 0.0) / 2.0)) * (rate_per_kg or 0.0)
+    received = (g1_qty or 0) + (g2_qty or 0) + (dc_qty or 0)
+    amount = (g1_qty + (g2_qty / 2)) * (rate_per_kg or 0)
 
     entry.batch_number = batch_number
     entry.supplier_name = supplier_name
@@ -193,14 +252,21 @@ def update_rmp(
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
 
+# -----------------------------------------------------
 # DELETE
-@router.post("/raw_material_purchasing/delete/{id}", name="delete_rmp")
+# -----------------------------------------------------
+@router.post("/raw_material_purchasing/delete/{id}")
 def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
-    if not company_id:
-        return RedirectResponse("/auth/login", status_code=303)
 
-    entry = db.query(RawMaterialPurchasing).filter_by(id=id, company_id=company_id).first()
+    company_code = request.session.get("company_code")
+
+    entry = (
+        db.query(RawMaterialPurchasing)
+        .filter(RawMaterialPurchasing.id == id,
+                RawMaterialPurchasing.company_id == company_code)
+        .first()
+    )
+
     if entry:
         db.delete(entry)
         db.commit()

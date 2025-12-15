@@ -1,182 +1,214 @@
-from fastapi import APIRouter, HTTPException, Form, Request, Depends
-from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from pydantic import EmailStr
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, get_db
-from app.database.models import User
-from passlib.context import CryptContext
-import random, smtplib, os
-from email.mime.text import MIMEText
-from dotenv import load_dotenv
+from pydantic import BaseModel
 
-# -----------------------------------------------------
-# TEMPLATE ENGINE (VERY IMPORTANT — FIXES YOUR ERROR)
-# -----------------------------------------------------
-templates = Jinja2Templates(directory="app/templates")
+from app.database import get_db
+from app.utils.email_service import (
+    send_email_otp,
+    send_company_id_mail,
+    send_reset_password_link
+)
+from app.utils.otp_service import store_otp, verify_stored_otp
+from app.database.models.users import Company, User
+from app.security.password_handler import hash_password, verify_password
 
-# -----------------------------------------------------
-# ROUTER + SECURITY
-# -----------------------------------------------------
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Load environment variables
-load_dotenv()
-
-SENDER_EMAIL = os.getenv("EMAIL_USER", "bknr.solutions@gmail.com")
-SENDER_PASSWORD = os.getenv("EMAIL_PASS", "lfvu etvn ffdv wvvb")  # fallback password
-
-# Temporary OTP store
-otp_store = {}
-
-# -----------------------------------------------------
-# ✉️ EMAIL SENDER
-# -----------------------------------------------------
-def send_email(receiver_email, subject, body):
-    msg = MIMEText(body, "plain")
-    msg["Subject"] = subject
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = receiver_email
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.send_message(msg)
-        print(f"Email sent → {receiver_email}")
-    except Exception as e:
-        print("Email error:", e)
 
 
-# -----------------------------------------------------
-# 🔓 LOGIN PAGE (GET)  — FIXED 405 ERROR
-# -----------------------------------------------------
-@router.get("/login", response_class=HTMLResponse)
-def show_login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+# ------------------ REQUEST MODELS ------------------ #
+
+class RegisterReq(BaseModel):
+    company_name: str
+    user_name: str
+    designation: str
+    address: str
+    mobile: str
+    email: str
 
 
-# -----------------------------------------------------
-# 🔐 SEND OTP
-# -----------------------------------------------------
-@router.post("/send_otp")
-def send_otp(
-    full_name: str = Form(...),
-    email: EmailStr = Form(...),
-    company_name: str = Form(...),
-    designation: str = Form(...),
-    phone: str = Form(...)
-):
-    db: Session = SessionLocal()
+class OTPReq(BaseModel):
+    email: str
+    otp: str
 
-    # Check duplicate email
-    existing_user = db.query(User).filter(User.email == email).first()
-    if existing_user:
+
+class PasswordReq(BaseModel):
+    email: str
+    password: str
+
+
+class LoginReq(BaseModel):
+    company_id: str
+    email: str
+    password: str
+
+
+class ForgotReq(BaseModel):
+    email: str
+
+
+# =====================================================
+# REGISTER COMPANY
+# =====================================================
+@router.post("/register")
+def register_company_api(data: RegisterReq, db: Session = Depends(get_db)):
+
+    # Duplicate check inside users table
+    if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    otp = str(random.randint(100000, 999999))
-    otp_store[email] = {
-        "otp": otp,
-        "full_name": full_name,
-        "company_name": company_name,
-        "designation": designation,
-        "phone": phone
-    }
+    if db.query(User).filter(User.mobile == data.mobile).first():
+        raise HTTPException(status_code=400, detail="Mobile already registered")
 
-    send_email(email, "BKNR SOLUTIONS - OTP Verification", f"Your OTP is {otp}")
-    return {"message": f"OTP sent to {email}"}
+    import random
+    otp = str(random.randint(1000, 9999))
 
+    store_otp(data.email, otp, extra=data.dict())
+    send_email_otp(data.email, otp)
 
-# -----------------------------------------------------
-# 🧾 VERIFY OTP
-# -----------------------------------------------------
-@router.post("/verify_otp")
-def verify_otp(email: EmailStr = Form(...), otp: str = Form(...)):
-    if email not in otp_store:
-        raise HTTPException(status_code=400, detail="OTP not generated for this email")
-    if otp_store[email]["otp"] != otp:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-    return {"message": "OTP verified successfully"}
+    return {"message": "OTP Sent Successfully to Email"}
 
 
-# -----------------------------------------------------
-# 🔑 CREATE PASSWORD (FINAL REGISTRATION)
-# -----------------------------------------------------
-@router.post("/create_password")
-def create_password(email: EmailStr = Form(...), password: str = Form(...)):
-    db: Session = SessionLocal()
+# =====================================================
+# VERIFY OTP
+# =====================================================
+@router.post("/verify-otp")
+def verify_otp_api(data: OTPReq):
+    verified_data = verify_stored_otp(data.email, data.otp)
+    if not verified_data:
+        raise HTTPException(status_code=400, detail="Invalid OTP or Expired")
 
-    if email not in otp_store:
-        raise HTTPException(status_code=400, detail="OTP not verified")
+    return {"message": "OTP Verified"}
 
-    # Auto-generate unique company ID
-    company_id = f"BKNR{random.randint(1000, 9999)}"
 
-    hashed_pw = pwd_context.hash(password)
+# =====================================================
+# SET PASSWORD + CREATE COMPANY + ADMIN USER
+# =====================================================
+@router.post("/set-password")
+def set_password_api(data: PasswordReq, db: Session = Depends(get_db)):
 
-    new_user = User(
-        full_name=otp_store[email]["full_name"],
-        email=email,
-        company_name=otp_store[email]["company_name"],
-        designation=otp_store[email]["designation"],
-        phone=otp_store[email]["phone"],
-        company_id=company_id,
-        password=hashed_pw,
-        role="User"
-    )
+    verified_data = verify_stored_otp(data.email)
+    if not verified_data:
+        raise HTTPException(status_code=400, detail="OTP not verified yet")
 
-    db.add(new_user)
-    try:
+    extra = verified_data["extra"]
+
+    # Create company code
+    prefix = extra["company_name"].strip()[:4].upper()
+    import random
+    generated_code = prefix + str(random.randint(1000, 9999))
+
+    # ---------------------------------------------------
+    # FIX: CHECK IF COMPANY ALREADY EXISTS
+    # ---------------------------------------------------
+    existing_company = db.query(Company).filter(
+        Company.email == extra["email"]
+    ).first()
+
+    if existing_company:
+        company = existing_company   # use existing company
+    else:
+        company = Company(
+            company_name=extra["company_name"],
+            address=extra["address"],
+            email=extra["email"],
+            company_code=generated_code,
+            is_active=True
+        )
+        db.add(company)
         db.commit()
-    except:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
+        db.refresh(company)
 
-    send_email(
-        email,
-        "BKNR SOLUTIONS - Registration Successful",
-        f"Welcome!\nYour Company ID: {company_id}\nEmail: {email}"
+    # ---------------------------------------------------
+    # FIX: CHECK IF USER ALREADY EXISTS IN THIS COMPANY
+    # ---------------------------------------------------
+    existing_user = db.query(User).filter(
+        User.email == extra["email"],
+        User.company_id == company.id
+    ).first()
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists. Please Login.")
+
+    # Create Admin User
+    admin_user = User(
+        company_id=company.id,
+        name=extra["user_name"],
+        designation=extra["designation"],
+        email=extra["email"],
+        mobile=extra["mobile"],
+        password=hash_password(data.password),
+        role="admin",
+        permissions="ALL",
+        is_verified=True
     )
 
-    del otp_store[email]
-    return {"message": "Password created successfully", "company_id": company_id}
+    db.add(admin_user)
+    db.commit()
+
+    send_company_id_mail(extra["email"], extra["user_name"], company.company_code)
+
+    return {"message": "Password Set Successfully. Company Created!"}
 
 
-# -----------------------------------------------------
-# 🔒 LOGIN (POST)
-# -----------------------------------------------------
+# =====================================================
+# LOGIN USER
+# =====================================================
 @router.post("/login")
-def login(
-    request: Request,
-    company_id: str = Form(...),
-    email: EmailStr = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
+def login_api(data: LoginReq, request: Request, db: Session = Depends(get_db)):
+
+    # Validate company
+    company = db.query(Company).filter(
+        Company.company_code == data.company_id
+    ).first()
+
+    if not company:
+        raise HTTPException(status_code=400, detail="Invalid Company ID")
+
+    # Validate User under same company
     user = db.query(User).filter(
-        User.email == email,
-        User.company_id == company_id
+        User.email == data.email,
+        User.company_id == company.id
     ).first()
 
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=400, detail="Invalid Credentials")
 
-    if not pwd_context.verify(password, user.password):
-        raise HTTPException(status_code=401, detail="Invalid password")
+    if not verify_password(data.password, user.password):
+        raise HTTPException(status_code=400, detail="Invalid Password")
 
     # Save session
-    request.session["company_name"] = user.company_name
-    request.session["company_id"] = user.company_id
-    request.session["user_email"] = user.email
-    request.session["user_name"] = user.full_name
-    request.session["role"] = user.role
+    request.session["company_db_id"] = company.id
+    request.session["company_code"] = company.company_code
+    request.session["email"] = user.email
+    request.session["name"] = user.name
+    request.session["user_id"] = user.id
 
-    return RedirectResponse(url="/menu", status_code=302)
+    request.session["permissions"] = (
+        ["ALL"] if user.permissions == "ALL" else user.permissions.split(",")
+    )
+
+    return {"message": "Login Success"}
 
 
-# -----------------------------------------------------
-# 🚪 LOGOUT
-# -----------------------------------------------------
+# =====================================================
+# FORGOT PASSWORD
+# =====================================================
+@router.post("/forgot-password")
+def forgot_api(data: ForgotReq, db: Session = Depends(get_db)):
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Email not registered")
+
+    send_reset_password_link(user.email)
+    return {"message": "Password reset link sent to email"}
+
+
+# =====================================================
+# LOGOUT
+# =====================================================
 @router.get("/logout")
-def logout(request: Request):
+def logout_api(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/", status_code=302)
+    return {"message": "Logout Successful"}

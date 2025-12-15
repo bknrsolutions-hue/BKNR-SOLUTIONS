@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add User - BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* GENERAL */
+body{
+  background:#ebf3ff;
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+}
+
+.container{
+  width:95%;
+  max-width:1300px;
+  margin:20px auto;
+  background:white;
+  padding:18px 24px;
+  border-radius:10px;
+  box-shadow:0 2px 9px rgba(0,0,0,0.2);
+}
+
+h2{text-align:center;color:#003366;margin-bottom:10px;}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.col{ width:18%; }
+
+label{
+  font-weight:600;
+  font-size:14px;
+  margin-bottom:5px;
+  display:block;
+}
+
+input,select{
+  width:100%;
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #adc0da;
+  background:white;
+  font-size:14px;
+}
+
+/* PERMISSION DROPDOWN */
+.perm-box{
+  width:100%;
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #adc0da;
+  background:white;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.perm-menu{
+  display:none;
+  background:white;
+  border:1px solid #cbd3e4;
+  border-radius:6px;
+  margin-top:4px;
+  padding:8px;
+  max-height:350px;
+  overflow-y:auto;
+}
+
+.group-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:6px;
+  background:#e9f1ff;
+  border-radius:4px;
+  cursor:pointer;
+  font-size:14px;
+  margin-top:4px;
+}
+
+.submenu{
+  display:none;
+  padding-left:22px;
+}
+
+.submenu label{
+  display:block;
+  padding:3px 0;
+  font-size:13px;
+}
+
+/* TABLE */
+.table-block{
+  width:100%;
+  background:white;
+  margin-top:15px;
+  border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  padding:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+
+th, td{
+  width:14%;
+  padding:8px;
+  border-bottom:1px solid #ccc;
+  font-size:13px;
+  word-wrap: break-word;
+  text-align:left;
+}
+
+th{
+  background:#003366;
+  color:white;
+}
+
+/* 3-DOT MENU */
+.action-btn{
+  background:none;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.dropdown-menu{
+  display:none;
+  position:absolute;
+  background:white;
+  border:1px solid #ccc;
+  box-shadow:0 2px 7px rgba(0,0,0,0.25);
+  padding:6px;
+  border-radius:6px;
+  z-index:999;
+}
+
+.dropdown-menu button{
+  width:100%;
+  padding:6px;
+  border:none;
+  background:none;
+  text-align:left;
+  cursor:pointer;
+}
+
+.dropdown-menu button:hover{
+  background:#eef4ff;
+}
+
+button{
+  background:#003366;
+  color:white;
+  border:none;
+  padding:10px;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+}
+button:hover{ background:#0050b4; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h2>👤 User Management</h2>
+
+<!-- ================= ADD NEW BUTTON ================= -->
+<div style="text-align:right; margin-bottom:15px;">
+  <button onclick="showForm()">➕ Add New User</button>
+</div>
+
+<!-- ================= FORM SECTION ================= -->
+<div id="formSection" style="display:none;">
+
+<form action="/admin/add_user" method="post">
+
+  <div class="row">
+    <div class="col">
+      <label>Full Name</label>
+      <input name="full_name" required>
+    </div>
+
+    <div class="col">
+      <label>Designation</label>
+      <input name="designation" required>
+    </div>
+
+    <div class="col">
+      <label>Email</label>
+      <input type="email" name="email" required>
+    </div>
+
+    <div class="col">
+      <label>Mobile</label>
+      <input name="mobile" required>
+    </div>
+
+    <div class="col">
+      <label>Password</label>
+      <input name="password" type="password" value="123456">
+    </div>
+  </div>
+
+  <div class="row">
+
+    <div class="col">
+      <label>Role</label>
+      <select name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Company ID</label>
+      <input value="{{ company_code }}" disabled>
+    </div>
+
+    <div class="col">
+      <label>Permissions</label>
+
+      <div class="perm-box" onclick="togglePerm()">Select Permissions ▼</div>
+
+      <div id="permMenu" class="perm-menu">
+
+        {% set menu = {
+          'Processing': {'gate_entry':'Gate Entry','raw_material_purchasing':'Raw Purchase','de_heading':'De Heading','grading': 'Grading','peeling':'Peeling','soaking':'Soaking','production':'Production'},
+          'Inventory': {'stock_entry':'Stock Entry','pending_orders':'Pending Orders','inventory_report':'Inventory Report'},
+          'General Store': {'gs_entry':'Entry','gs_items':'Items','gs_report':'Report'},
+          'Criteria': {'suppliers':'Suppliers','buyers':'Buyers','species':'Species'},
+          'Reports': {'gate_entry_report':'Gate Entry Report','rmp_report':'RMP Report'},
+          'Attendance': {'employee_register':'Employee Register','face':'Face Attendance'},
+          'Admin': {'add_user':'Add User'}
+        } %}
+
+        {% for group, items in menu.items() %}
+
+        <div class="group-header" onclick="toggleSub('{{group}}')">
+          <span><input type="checkbox" onclick="selectGroup(event,'{{group}}')"> {{group}}</span>
+          <span style="font-size:10px;">▶</span>
+        </div>
+
+        <div id="sub-{{group}}" class="submenu">
+          {% for key,label in items.items() %}
+          <label><input type="checkbox" name="access" value="{{key}}"> {{label}}</label>
+          {% endfor %}
+        </div>
+
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+  <button type="submit">Save User</button>
+
+</form>
+
+</div>
+
+<!-- ================= TABLE SECTION ================= -->
+<div id="tableSection" class="table-block">
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Mobile</th>
+      <th>Designation</th>
+      <th>Permissions</th>
+      <th>⋮</th>
+    </tr>
+  </thead>
+
+  <tbody>
+  {% for u in existing_users %}
+  <tr>
+    <td>{{u.id}}</td>
+    <td>{{u.name}}</td>
+    <td>{{u.email}}</td>
+    <td>{{u.mobile}}</td>
+    <td>{{u.designation}}</td>
+    <td><small>{{u.permissions}}</small></td>
+
+    <td>
+      <button class="action-btn" onclick="toggleActionMenu(event,'{{u.id}}')">⋮</button>
+
+      <div id="menu-{{u.id}}" class="dropdown-menu">
+        <button onclick="editUser('{{u.id}}')">✏ Edit</button>
+
+        <form action="/admin/delete_user/{{u.id}}" method="post">
+          <button type="submit" style="color:red;">🗑 Delete</button>
+        </form>
+
+        <button onclick="showForm()">➕ Add New</button>
+      </div>
+
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+/* SHOW FORM ONLY */
+function showForm(){
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("tableSection").style.display = "none";
+}
+
+/* SHOW EDIT (COMING SOON) */
+function editUser(id){
+  alert("Edit form coming soon for ID: " + id);
+}
+
+/* PERMISSION MENU */
+function togglePerm(){
+  let pm = document.getElementById("permMenu");
+  pm.style.display = pm.style.display === "block" ? "none" : "block";
+}
+
+function toggleSub(g){
+  let s = document.getElementById("sub-"+g);
+  s.style.display = s.style.display === "block" ? "none" : "block";
+}
+
+function selectGroup(ev, g){
+  ev.stopPropagation();
+  let checked = ev.target.checked;
+  document.querySelectorAll("#sub-"+g+" input")
+    .forEach(cb => cb.checked = checked);
+}
+
+/* ACTION MENU */
+function toggleActionMenu(ev,id){
+  ev.stopPropagation();
+  document.querySelectorAll(".dropdown-menu")
+    .forEach(x=>x.style.display="none");
+
+  const menu = document.getElementById("menu-"+id);
+  menu.style.left = ev.clientX - 100 + "px";
+  menu.style.top  = ev.clientY + "px";
+  menu.style.display="block";
+}
+
+document.body.addEventListener("click",()=>{
+  document.querySelectorAll(".dropdown-menu")
+    .forEach(x=>x.style.display="none");
+});
+
+</script>
+
+</body>
+</html>

@@ -1,401 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>PEELING RATES MASTER - BKNR SOLUTIONS</title>
+<meta charset="UTF-8">
+<title>PEELING RATES | BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0}
+h2{text-align:center;color:#003366;margin:18px 0}
 
-  .form-container{
-    width:90%;max-width:1100px;margin:0 auto;background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);
-    padding:25px;border-radius:10px;
-  }
+.form-container{
+  width:95%;max-width:1200px;margin:auto;background:#fff;
+  padding:22px;border-radius:10px;
+  box-shadow:0 0 8px rgba(0,0,0,.15)
+}
 
-  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
-  .col{width:32%;min-width:260px;display:flex;flex-direction:column;margin-bottom:10px;}
+/* ⭐ 6 columns */
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:14px;
+}
 
-  label{font-weight:600;color:#003366;margin-bottom:6px;}
-  select,input{
-    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
-    background:#f9fcff;font-size:14px;
-  }
-  select:focus,input:focus{
-    border-color:#003366;outline:none;
-    box-shadow:0 0 5px rgba(0,51,102,0.3);
-  }
+.field{display:flex;flex-direction:column}
+label{font-size:13px;font-weight:600;color:#003366;margin-bottom:4px}
 
-  .actions{text-align:center;margin-top:25px;}
-  .btn{
-    background:#003366;color:white;border:none;
-    padding:10px 20px;border-radius:6px;
-    font-weight:600;cursor:pointer;width:160px;
-  }
-  .btn-clear{background:#777;}
-  .btn:hover{opacity:0.9;}
+select,input{
+  height:36px;border:1px solid #a3bcd6;border-radius:6px;
+  padding:6px 8px;background:#f9fcff;font-size:14px;
+}
 
-  table{
-    width:90%;max-width:1100px;margin:20px auto 30px;
-    border-collapse:collapse;background:white;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);
-    border-radius:8px;overflow:hidden;
-  }
-  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #ccc;font-size:14px;}
-  th{background:#003366;color:white;}
-  tr:hover{background:#e0ebff;cursor:pointer;}
-  tr.selected{background:#cce5ff !important;}
+.actions{text-align:right;margin-top:16px}
+button{
+  background:#003366;color:#fff;border:none;
+  padding:8px 20px;border-radius:6px;
+  font-weight:600;cursor:pointer
+}
 
-  /* 3 DOTS MENU */
-  #menuWrap{
-    display:none;width:90%;max-width:1100px;margin:10px auto;
-    text-align:right;position:relative;
-  }
-  #dotsBtn{
-    background:#003366;color:white;border:none;
-    padding:6px 12px;border-radius:6px;cursor:pointer;
-    font-weight:600;font-size:22px;
-  }
-  #dropdownMenu{
-    display:none;position:absolute;right:0;background:white;
-    border:1px solid #ccc;border-radius:8px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    width:200px;z-index:1000;
-  }
-  .menu-item{
-    padding:10px;border-bottom:1px solid #eee;font-size:14px;
-    cursor:pointer;font-weight:600;color:#003366;
-  }
-  .menu-item:hover{background:#e6f2ff;}
+/* TABLE */
+table{
+  width:95%;max-width:1200px;margin:22px auto;
+  border-collapse:collapse;background:#fff;
+  box-shadow:0 0 8px rgba(0,0,0,.12)
+}
+th,td{padding:9px;border-bottom:1px solid #ccc;text-align:center;font-size:14px}
+th{background:#003366;color:white}
+tr:hover{background:#eef5ff;cursor:pointer}
+tr.selected{background:#cce5ff!important}
 
-  /* POPUP */
-  .modal{
-    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.55);z-index:2000;
-    justify-content:center;align-items:center;
-  }
-  .modal-content{
-    background:white;width:90%;max-width:850px;height:90vh;
-    border-radius:10px;overflow:hidden;position:relative;
-  }
-  .modal-header{
-    background:#003366;color:white;padding:10px 15px;
-    display:flex;justify-content:space-between;
-  }
-  .close-btn{cursor:pointer;font-size:22px;font-weight:700;}
-  #popupFrame{width:100%;height:calc(90vh - 40px);border:none;}
+/* 3 DOT MENU */
+#menuWrap{
+  display:none;width:95%;max-width:1200px;
+  margin:10px auto;text-align:right;position:relative
+}
+#dotsBtn{
+  background:#003366;color:white;border:none;
+  padding:6px 12px;font-size:22px;
+  border-radius:6px;cursor:pointer
+}
+#dropdownMenu{
+  display:none;position:absolute;right:0;
+  background:white;border:1px solid #ccc;
+  width:160px;border-radius:8px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25)
+}
+.menu-item{
+  padding:10px;font-size:14px;font-weight:600;
+  color:#003366;border-bottom:1px solid #eee;
+  cursor:pointer
+}
+.menu-item:hover{background:#e6f2ff}
+
+@media(max-width:1100px){
+  .form-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:700px){
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
-
 </head>
 
 <body>
 
 <h2>PEELING RATES MASTER</h2>
 
-<form onsubmit="saveRecord(event)">
-  <div class="form-container">
+<!-- ================= FORM ================= -->
+<div class="form-container">
+<form method="post" action="/criteria/peeling_rates">
 
-    <div class="row">
-      <div class="col">
-        <label>Species</label>
-        <select id="species" required onchange="addNewFromDropdown(this,'species')">
-          <option value="" disabled selected>Select Species</option>
+<input type="hidden" name="id" id="id">
 
-          {% for s in species_list %}
-            <option value="{{ s }}">{{ s }}</option>
-          {% endfor %}
+<div class="form-grid">
 
-          <option value="__add__">➕ Add New Species</option>
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Variety</label>
-        <select id="variety_name" required onchange="addNewPopup(this,'varieties')">
-          <option value="" disabled selected>Select Variety</option>
-
-          {% for v in lookup_data.varieties %}
-            <option value="{{ v }}">{{ v }}</option>
-          {% endfor %}
-
-          <option value="__add__">➕ Add New Variety</option>
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Contractor</label>
-        <select id="contractor_name" required onchange="addNewPopup(this,'contractors')">
-          <option value="" disabled selected>Select Contractor</option>
-
-          {% for c in lookup_data.contractors %}
-            <option value="{{ c }}">{{ c }}</option>
-          {% endfor %}
-
-          <option value="__add__">➕ Add New Contractor</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <label>HLSO Count</label>
-        <input type="text" id="hlso_count" required placeholder="16/20 or U/10">
-      </div>
-
-      <div class="col">
-        <label>Rate (₹/Kg)</label>
-        <input type="number" id="rate" step="0.01" required placeholder="Enter Rate">
-      </div>
-
-      <div class="col">
-        <label>Effective From</label>
-        <input type="date" id="effective_from" required>
-      </div>
-    </div>
-
-    <input type="hidden" id="record_id">
-    <input type="hidden" id="meta_email">
-    <input type="hidden" id="meta_company_id">
-
-    <div class="actions">
-      <button class="btn" type="submit">SAVE</button>
-      <button class="btn btn-clear" onclick="clearForm()" type="button">CLEAR</button>
-    </div>
-
+  <div class="field">
+    <label>Species</label>
+    <select name="species" id="species" required>
+      <option value="">Select</option>
+      {% for s in lookup_data.species %}
+      <option value="{{s}}">{{s}}</option>
+      {% endfor %}
+    </select>
   </div>
+
+  <div class="field">
+    <label>Variety</label>
+    <select name="variety_name" id="variety_name" required>
+      <option value="">Select</option>
+      {% for v in lookup_data.varieties %}
+      <option value="{{v}}">{{v}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Contractor</label>
+    <select name="contractor_name" id="contractor_name" required>
+      <option value="">Select</option>
+      {% for c in lookup_data.contractors %}
+      <option value="{{c}}">{{c}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label>HLSO Count (10 / 10 to 20)</label>
+    <input type="text" name="hlso_count" id="hlso_count" required>
+  </div>
+
+  <div class="field">
+    <label>Rate</label>
+    <input type="number" step="0.01" name="rate" id="rate" required>
+  </div>
+
+  <div class="field">
+    <label>Effective From</label>
+    <input type="date" name="effective_from" id="effective_from" required>
+  </div>
+
+</div>
+
+<div class="actions">
+  <button type="submit">SAVE</button>
+</div>
+
 </form>
+</div>
 
-{% if message %}
-<p style="text-align:center;color:green;font-weight:600;">{{ message }}</p>
-{% endif %}
-
+<!-- ================= 3 DOT MENU ================= -->
 {% if today_data %}
-
 <div id="menuWrap">
   <button id="dotsBtn">⋮</button>
-
   <div id="dropdownMenu">
     <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
     <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
-    <div class="menu-item" onclick="printSelected()">🖨️ Print</div>
-    <div class="menu-item" onclick="exportPDF()">📄 Export PDF</div>
-    <div class="menu-item" onclick="exportExcel()">📊 Export Excel</div>
   </div>
 </div>
-
-<table id="dataTable">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Species</th>
-      <th>Variety</th>
-      <th>Contractor</th>
-      <th>HLSO Count</th>
-      <th>Rate</th>
-      <th>Effective From</th>
-      <th>Date</th>
-      <th>Time</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for row in today_data %}
-    <tr data-id="{{ row.id }}"
-        data-species="{{ row.species }}"
-        data-variety="{{ row.variety_name }}"
-        data-contractor="{{ row.contractor_name }}"
-        data-count="{{ row.hlso_count }}"
-        data-rate="{{ row.rate }}"
-        data-eff="{{ row.effective_from }}"
-    >
-      <td>{{ row.id }}</td>
-      <td>{{ row.species }}</td>
-      <td>{{ row.variety_name }}</td>
-      <td>{{ row.contractor_name }}</td>
-      <td>{{ row.hlso_count }}</td>
-      <td>{{ row.rate }}</td>
-      <td>{{ row.effective_from }}</td>
-      <td>{{ row.date }}</td>
-      <td>{{ row.time }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
 {% endif %}
 
-<!-- POPUP -->
-<div class="modal" id="popupModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="popupTitle">Add New</h3>
-      <span class="close-btn" onclick="closePopup()">×</span>
-    </div>
-    <iframe id="popupFrame"></iframe>
-  </div>
-</div>
+<!-- ================= TABLE ================= -->
+<table id="dataTable">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Species</th>
+  <th>Variety</th>
+  <th>Contractor</th>
+  <th>HLSO</th>
+  <th>Rate</th>
+  <th>Effective</th>
+</tr>
+</thead>
+<tbody>
+{% for r in today_data %}
+<tr data-id="{{r.id}}"
+    data-species="{{r.species}}"
+    data-variety="{{r.variety_name}}"
+    data-contractor="{{r.contractor_name}}"
+    data-hlso="{{r.hlso_count}}"
+    data-rate="{{r.rate}}"
+    data-effective="{{r.effective_from}}">
+  <td>{{r.id}}</td>
+  <td>{{r.species}}</td>
+  <td>{{r.variety_name}}</td>
+  <td>{{r.contractor_name}}</td>
+  <td>{{r.hlso_count}}</td>
+  <td>{{r.rate}}</td>
+  <td>{{r.effective_from}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
 
 <script>
 let selectedRow=null;
 
-/* -------------------------------
-   Auto Fill Meta
--------------------------------- */
-document.addEventListener("DOMContentLoaded",()=>{
-  document.getElementById("meta_email").value=localStorage.getItem("userEmail");
-  document.getElementById("meta_company_id").value=localStorage.getItem("companyID");
-
-  const rows=document.querySelectorAll("#dataTable tbody tr");
-  const menu=document.getElementById("menuWrap");
-
-  rows.forEach(row=>{
-    row.addEventListener("click",()=>{
-      rows.forEach(r=>r.classList.remove("selected"));
-      row.classList.add("selected");
-      selectedRow=row;
-      menu.style.display="block";
-    });
-  });
-
-  document.getElementById("dotsBtn").onclick=()=>{
-    const d=document.getElementById("dropdownMenu");
-    d.style.display=d.style.display==="block"?"none":"block";
-  };
+document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+  r.onclick=()=>{
+    document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+    r.classList.add("selected");
+    selectedRow=r;
+    menuWrap.style.display="block";
+  }
 });
 
-/* -------------------------------
-   Add species manually
--------------------------------- */
-function addNewFromDropdown(sel){
-  if(sel.value==="__add__"){
-    const val=prompt("Enter new species:");
-    if(val){
-      const opt=document.createElement("option");
-      opt.value=val; opt.textContent=val;
-      sel.insertBefore(opt, sel.lastElementChild);
-      sel.value=val;
-    } else sel.value="";
-  }
-}
+dotsBtn.onclick=()=>{
+  dropdownMenu.style.display=
+    dropdownMenu.style.display==="block"?"none":"block";
+};
 
-/* -------------------------------
-   Popup Add New
--------------------------------- */
-function addNewPopup(sel, path){
-  if(sel.value==="__add__"){
-    document.getElementById("popupTitle").innerText="Add New "+path.toUpperCase();
-    document.getElementById("popupFrame").src="/criteria/"+path;
-    document.getElementById("popupModal").style.display="flex";
-  }
-}
-function closePopup(){ location.reload(); }
-
-/* -------------------------------
-   SAVE / UPDATE
--------------------------------- */
-async function saveRecord(e){
-  e.preventDefault();
-
-  const fd=new FormData();
-
-  const id=document.getElementById("record_id").value;
-  if(id) fd.append("id",id);
-
-  const now=new Date();
-  fd.append("date",now.toISOString().slice(0,10));
-  fd.append("time",now.toTimeString().slice(0,8));
-
-  fd.append("species",document.getElementById("species").value);
-  fd.append("variety_name",document.getElementById("variety_name").value);
-  fd.append("contractor_name",document.getElementById("contractor_name").value);
-  fd.append("hlso_count",document.getElementById("hlso_count").value);
-  fd.append("rate",document.getElementById("rate").value);
-  fd.append("effective_from",document.getElementById("effective_from").value);
-
-  fd.append("email",document.getElementById("meta_email").value);
-  fd.append("company_id",document.getElementById("meta_company_id").value);
-
-  const res=await fetch("/criteria/peeling_rates",{method:"POST",body:fd});
-  if(res.ok){ alert("Saved Successfully!"); location.reload(); }
-  else alert("Save Failed");
-}
-
-/* -------------------------------
-   Edit
--------------------------------- */
 function editSelected(){
   if(!selectedRow) return;
-
-  document.getElementById("record_id").value=selectedRow.dataset.id;
-  document.getElementById("species").value=selectedRow.dataset.species;
-  document.getElementById("variety_name").value=selectedRow.dataset.variety;
-  document.getElementById("contractor_name").value=selectedRow.dataset.contractor;
-  document.getElementById("hlso_count").value=selectedRow.dataset.count;
-  document.getElementById("rate").value=selectedRow.dataset.rate;
-  document.getElementById("effective_from").value=selectedRow.dataset.eff;
-
-  window.scrollTo({top:0,behavior:'smooth'});
+  id.value=selectedRow.dataset.id;
+  species.value=selectedRow.dataset.species;
+  variety_name.value=selectedRow.dataset.variety;
+  contractor_name.value=selectedRow.dataset.contractor;
+  hlso_count.value=selectedRow.dataset.hlso;
+  rate.value=selectedRow.dataset.rate;
+  effective_from.value=selectedRow.dataset.effective;
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
-/* -------------------------------
-   Delete
--------------------------------- */
-async function deleteSelected(){
+function deleteSelected(){
   if(!selectedRow) return;
-  if(!confirm("Delete this record?")) return;
-
-  const id=selectedRow.dataset.id;
-  const res=await fetch(`/criteria/peeling_rates/delete/${id}`,{method:"POST"});
-
-  if(res.ok) location.reload(); else alert("Delete failed");
-}
-
-/* -------------------------------
-   Print / Export
--------------------------------- */
-function printSelected(){
-  if(!selectedRow) return;
-
-  const p=window.open("", "_blank");
-  p.document.write("<h3>Peeling Rate Record</h3>");
-  p.document.write("<p><b>Species:</b> "+selectedRow.dataset.species+"</p>");
-  p.document.write("<p><b>Variety:</b> "+selectedRow.dataset.variety+"</p>");
-  p.document.write("<p><b>Contractor:</b> "+selectedRow.dataset.contractor+"</p>");
-  p.document.write("<p><b>Count:</b> "+selectedRow.dataset.count+"</p>");
-  p.document.write("<p><b>Rate:</b> "+selectedRow.dataset.rate+"</p>");
-  p.document.write("<p><b>Effective From:</b> "+selectedRow.dataset.eff+"</p>");
-  p.document.close();
-  p.print();
-}
-function exportPDF(){ printSelected(); }
-
-function exportExcel(){
-  if(!selectedRow) return;
-  const data=`Species,Variety,Contractor,HLSO Count,Rate,Effective From
-${selectedRow.dataset.species},${selectedRow.dataset.variety},${selectedRow.dataset.contractor},${selectedRow.dataset.count},${selectedRow.dataset.rate},${selectedRow.dataset.eff}`;
-  const blob=new Blob([data],{type:"application/vnd.ms-excel"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download="peeling_rate.xls"; a.click();
-}
-
-/* -------------------------------
-   Clear Form
--------------------------------- */
-function clearForm(){
-  selectedRow=null;
-  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
-  document.getElementById("menuWrap").style.display="none";
-
-  document.getElementById("record_id").value="";
-  document.getElementById("species").value="";
-  document.getElementById("variety_name").value="";
-  document.getElementById("contractor_name").value="";
-  document.getElementById("hlso_count").value="";
-  document.getElementById("rate").value="";
-  document.getElementById("effective_from").value="";
+  if(!confirm("Delete full range?")) return;
+  fetch(`/criteria/peeling_rates/delete/${selectedRow.dataset.id}`,{method:"POST"})
+  .then(()=>location.reload());
 }
 </script>
 

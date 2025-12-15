@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>STOCK ENTRY – BKNR SOLUTIONS</title>
+
+<style>
+ body{font-family:Arial;background:#e6f2ff;margin:0;padding:0;}
+ h2{text-align:center;color:#fff;background:#003366;padding:12px;margin:0;}
+ .box{width:95%;max-width:1200px;margin:18px auto;background:white;
+      padding:20px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,0.2);}
+ .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+ .col{flex:1;min-width:250px;}
+ label{font-weight:600;color:#003366;margin-bottom:6px;display:block;}
+ select,input{width:100%;padding:8px;border:1px solid #9db7d6;border-radius:6px;background:#f7fbff;}
+ button{padding:10px 22px;border:none;border-radius:6px;color:#fff;background:#003366;font-weight:600;cursor:pointer;}
+ .clr{background:#666;}
+ table{width:95%;margin:18px auto;border-collapse:collapse;background:white;
+       box-shadow:0 0 6px rgba(0,0,0,0.15);}
+ th,td{padding:7px;border-bottom:1px solid #ddd;font-size:13px;}
+ th{background:#003366;color:#fff;}
+ .po_popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);
+           align-items:center;justify-content:center;}
+ .po_box{background:white;padding:22px;border-radius:8px;text-align:center;width:320px;}
+ input[type=text]{font-size:14px;}
+</style>
+</head>
+<body>
+
+<h2>STOCK ENTRY</h2>
+
+<form method="post" action="/inventory/stock_entry" onsubmit="return fillMeta()">
+<div class="box">
+
+  <!-- ROW 1 -->
+  <div class="row">
+    <div class="col">
+      <label>Batch Number (Gate Entry)</label>
+      <select name="batch_number" required>
+        <option disabled selected>Select</option>
+        {% for b in batches %}
+          <option value="{{ b }}">{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Type of Production</label>
+      <select name="type_of_production" required>
+        <option disabled selected>Select</option>
+        {% for p in production_types %}
+          <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Cargo Movement Type</label>
+      <select name="cargo_movement_type" id="moveType" required onchange="toggleOUT()">
+        <option disabled selected>Select</option>
+        <option>IN</option>
+        <option>OUT</option>
+      </select>
+    </div>
+  </div>
+
+
+  <!-- ROW 2 -->
+  <div class="row">
+    <div class="col">
+      <label>Brand</label>
+      <select name="brand" required>
+        <option disabled selected>Select</option>
+        {% for x in brands %}
+          <option value="{{ x }}">{{ x }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Freezer</label>
+      <select name="freezer" required>
+        <option disabled selected>Select</option>
+        {% for x in freezers %}
+          <option value="{{ x }}">{{ x }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Packing Style</label>
+      <select name="packing_style" id="packer" required onchange="calcQty()">
+        <option disabled selected>Select</option>
+        {% for p in packing_styles %}
+          <option value="{{ p.packing_style }}" data-mc="{{ p.mc_weight }}" data-slab="{{ p.slab_weight }}">
+            {{ p.packing_style }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+
+  <!-- ROW 3 -->
+  <div class="row">
+    <div class="col">
+      <label>Glaze %</label>
+      <select name="glaze" required>
+        <option disabled selected>Select</option>
+        {% for g in glazes %}
+          <option value="{{ g }}">{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Variety</label>
+      <select name="variety" required>
+        <option disabled selected>Select</option>
+        {% for v in varieties %}
+          <option value="{{ v }}">{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Grade</label>
+      <select name="grade" required>
+        <option disabled selected>Select</option>
+        {% for g in grades %}
+          <option value="{{ g }}">{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+
+  <!-- 🔥 NEW ROW: LOCATION LOOKUP -->
+  <div class="row">
+    <div class="col">
+      <label>Location</label>
+      <select name="location" required>
+        <option disabled selected>Select</option>
+        {% for l in locations %}
+          <option value="{{ l }}">{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+
+  <!-- ROW 4 -->
+  <div class="row">
+    <div class="col">
+      <label>No. of MC</label>
+      <input type="number" id="mc" name="no_of_mc" required oninput="calcQty()">
+    </div>
+    <div class="col">
+      <label>Loose Slabs</label>
+      <input type="number" id="loose" name="loose" required oninput="calcQty()">
+    </div>
+    <div class="col">
+      <label>Total Quantity (KG)</label>
+      <input type="number" id="qty" name="quantity" readonly>
+    </div>
+  </div>
+
+
+  <!-- ROW 5 = OUT Only -->
+  <div class="row">
+    <div class="col">
+      <label>Purpose</label>
+      <select name="purpose" id="purpose" disabled>
+        <option disabled selected>Select</option>
+        {% for p in purposes %}
+          <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label>PO Number</label>
+      <select name="po_number" id="ponum" disabled onchange="poAdd()">
+        <option disabled selected>Select</option>
+        {% for p in po_numbers %}
+          <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+        <option value="__ADD__">➕ Add New</option>
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Production At</label>
+      <select name="production_at" required>
+        <option disabled selected>Select</option>
+        {% for p in production_places %}
+          <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <!-- META -->
+  <input type="hidden" name="email" id="meta_email">
+  <input type="hidden" name="company_id" id="meta_company_id">
+
+  <div style="text-align:center;margin-top:18px;">
+    <button type="submit">SAVE</button>
+    <button type="reset" class="clr">CLEAR</button>
+  </div>
+</div>
+</form>
+
+
+<!-- TABLE -->
+{% if table_data %}
+<table>
+  <tr>
+    <th>ID</th><th>Batch</th><th>Brand</th><th>Variety</th><th>Grade</th>
+    <th>Movement</th><th>KG</th><th>PO</th><th>Date</th><th>Location</th>
+  </tr>
+  {% for r in table_data %}
+  <tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.batch_number }}</td>
+    <td>{{ r.brand }}</td>
+    <td>{{ r.variety }}</td>
+    <td>{{ r.grade }}</td>
+    <td>{{ r.cargo_movement_type }}</td>
+    <td>{{ r.quantity }}</td>
+    <td>{{ r.po_number }}</td>
+    <td>{{ r.date }}</td>
+    <td>{{ r.location }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+
+<script>
+function calcQty(){
+  let mc    = parseFloat(document.getElementById("mc").value)||0;
+  let loose = parseFloat(document.getElementById("loose").value)||0;
+  let opt   = document.getElementById("packer").selectedOptions[0];
+  if(!opt) return;
+  let mc_w   = parseFloat(opt.dataset.mc)||0;
+  let slab_w = parseFloat(opt.dataset.slab)||0;
+  document.getElementById("qty").value = (mc*mc_w + loose*slab_w).toFixed(2);
+}
+
+function toggleOUT(){
+  let isOut = document.getElementById("moveType").value === "OUT";
+  document.getElementById("purpose").disabled = !isOut;
+  document.getElementById("ponum").disabled   = !isOut;
+}
+
+function poAdd(){
+  let sel = document.getElementById("ponum");
+  if(sel.value === "__ADD__"){
+    let v = prompt("Enter PO Number:");
+    if(v){
+      let o = document.createElement("option");
+      o.value=o.text=v;
+      sel.insertBefore(o, sel.lastElementChild);
+      sel.value=v;
+    } else sel.value="";
+  }
+}
+
+function fillMeta(){
+  document.getElementById("meta_email").value      = localStorage.getItem("userEmail");
+  document.getElementById("meta_company_id").value = localStorage.getItem("companyID");
+  return true;
+}
+</script>
+
+</body>
+</html>

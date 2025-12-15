@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EMPLOYEE MASTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial;background:#eef5ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:18px;font-weight:700;}
+  
+  .container{width:92%;max-width:1200px;margin:auto;background:white;
+    border-radius:10px;padding:25px;box-shadow:0 0 10px rgba(0,0,0,.15);}
+  
+  .row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:14px;}
+  .col{flex:1;min-width:30%;display:flex;flex-direction:column;}
+  
+  label{font-weight:600;color:#003366;margin-bottom:4px;}
+  input,select{
+    padding:10px;border-radius:6px;border:1px solid #9fb9d3;
+    background:#f9fcff;font-size:15px;
+  }
+  input:focus,select:focus{
+    outline:none;border-color:#004a88;box-shadow:0 0 6px rgba(0,71,140,.4);
+  }
+
+  .btn-add{background:#059c36;color:white;border:none;padding:9px 12px;
+    border-radius:6px;margin-top:5px;width:28%;font-weight:600;}
+
+  video,img{width:100%;border-radius:10px;border:2px solid #005a99;margin-top:10px;}
+  img{display:none;}
+
+  .save-btn{
+    background:#0078C8;color:white;padding:14px;border:none;border-radius:6px;
+    font-weight:700;margin-top:18px;width:100%;display:none;
+  }
+
+  table{width:95%;margin:30px auto;border-collapse:collapse;background:white;
+      box-shadow:0 0 10px rgba(0,0,0,.15);}
+  th,td{padding:10px;border-bottom:1px solid #ddd;font-size:15px;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#e3eeff;cursor:pointer;}
+  .selected{background:#bbd8ff!important;}
+
+</style>
+</head>
+<body>
+
+<h2>EMPLOYEE MASTER</h2>
+
+<form onsubmit="saveEmployee(event)">
+<div class="container">
+
+    <div class="row">
+        <div class="col"><label>Employee ID</label><input id="employee_id" disabled></div>
+        <div class="col"><label>Name</label><input id="name" required></div>
+        <div class="col"><label>Gender</label>
+            <select id="gender"><option></option><option>Male</option><option>Female</option></select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col"><label>Mobile</label><input id="mobile" maxlength="10"></div>
+
+        <div class="col"><label>Role</label>
+            <select id="roleSelect">
+                <option>Manager</option>
+                <option>Production Incharge</option>
+                <option>Shift Incharge</option>
+                <option>Supervisor</option>
+                <option>Grader</option>
+                <option>Packer</option>
+                <option>Helper</option>
+                <option>Maintenance</option>
+                <option>Electrician</option>
+                <option>HR</option>
+                <option>Accounts</option>
+                <option>Online QC</option>
+                <option>Technologist</option>
+            </select>
+        </div>
+
+       
+
+
+
+    <div class="row">
+        <div class="col"><label>Employee Type</label>
+            <select id="empType" onchange="contractDiv.style.display=this.value=='contract'?'block':'none'">
+                <option></option><option value="company">Company Employee</option><option value="contract">Contract Labour</option>
+            </select>
+        </div>
+        <div class="col" id="contractDiv" style="display:none;">
+            <label>Contractor</label><input id="contractor">
+        </div>
+    </div>
+
+    <h3 style="text-align:center;color:#003366;margin-top:15px">FACE CAPTURE ×2 REQUIRED</h3>
+
+    <video id="camera" autoplay playsinline></video>
+    <button type="button" onclick="snap(1)" class="btn-add">📸 Capture Face 1</button>
+    <img id="img1">
+
+    <button type="button" onclick="snap(2)" class="btn-add">📸 Capture Face 2</button>
+    <img id="img2">
+
+    <button class="save-btn" id="saveBtn">💾 SAVE EMPLOYEE</button>
+</div>
+</form>
+
+
+<script>
+// ===== Load Auto Employee ID =====
+(async()=>{ employee_id.value=(await(await fetch("/employee/next_id")).json()).new_id })();
+
+// ===== Camera Start =====
+navigator.mediaDevices.getUserMedia({video:true}).then(s=>camera.srcObject=s);
+let f1=null,f2=null;
+
+// Capture Photo
+function snap(n){
+ let c=document.createElement("canvas");c.width=camera.videoWidth;c.height=camera.videoHeight;
+ c.getContext("2d").drawImage(camera,0,0,c.width,c.height); let img=c.toDataURL("image/jpeg");
+ if(n==1){f1=img;img1.src=img;img1.style.display="block";}
+ else {f2=img;img2.src=img;img2.style.display="block";}
+ if(f1&&f2) verifyFaces();
+}
+
+// Add Role (Without Duplicate)
+function addRole(){
+ let r=newRole.value.trim();
+ if(!r) return alert("Enter new role");
+ if([...roleSelect.options].some(o=>o.text===r)) return alert("Already exists");
+ roleSelect.innerHTML+=`<option>${r}</option>`; roleSelect.value=r; newRole.value="";
+ alert("Added!");
+}
+
+// Verify Face Match API
+async function verifyFaces(){
+ let r=await fetch("/employee/face/compare",{method:"POST",headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({img1:f1,img2:f2})});
+ let j=await r.json();
+ if(j.match){alert("✔ FACE VERIFIED"),saveBtn.style.display="block";}
+ else alert("❌ Face didn't match");
+}
+
+// Save to Database
+async function saveEmployee(e){
+ e.preventDefault();
+ let data={
+  employee_id:employee_id.value,name:name.value,gender:gender.value,mobile:mobile.value,
+  role:roleSelect.value,emp_type:empType.value,contractor:(empType.value=='contract'?contractor.value:null),
+  company_id:localStorage.getItem("company_id"),face_primary:f1,face_verify:f2
+ };
+ let r=await fetch("/employee/create",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ let j=await r.json();
+ if(j.status=="success") alert("🎉 Saved: "+j.employee_id);
+ else alert("❌ Error: "+j.message);
+ location.reload();
+}
+</script>
+
+</body>
+</html>

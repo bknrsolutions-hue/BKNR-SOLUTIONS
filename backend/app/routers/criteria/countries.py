@@ -6,27 +6,27 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.criteria import countries   # <-- FIXED
+from app.database.models.criteria import countries   # model
 
 router = APIRouter(tags=["COUNTRIES"])
 templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE LOAD (COMPANY-WISE)
+# PAGE – SHOW COUNTRIES
 # ---------------------------------------------------------
 @router.get("/countries")
 def countries_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    today_data = (
+    rows = (
         db.query(countries)
-        .filter(countries.company_id == company_id)
+        .filter(countries.company_id == company_code)
         .order_by(countries.id.desc())
         .all()
     )
@@ -35,9 +35,9 @@ def countries_page(request: Request, db: Session = Depends(get_db)):
         "criteria/countries.html",
         {
             "request": request,
-            "today_data": today_data,
+            "today_data": rows,
             "email": email,
-            "company_id": company_id,
+            "company_id": company_code,
             "message": ""
         }
     )
@@ -51,43 +51,42 @@ def save_country(
     request: Request,
     country_name: str = Form(...),
     production_cost_per_kg: float = Form(0.0),
-    id: int = Form(None),
+    id: str = Form(""),      # safe string ID
     date: str = Form(...),
     time: str = Form(...),
-    email: str = Form(""),
-    company_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
+    # Convert ID safely
+    record_id = int(id) if id and id.isdigit() else None
 
+    # Duplicate check
     duplicate = (
         db.query(countries)
         .filter(
             countries.country_name == country_name,
-            countries.company_id == company_id,
-            countries.id != id,
+            countries.company_id == company_code,
+            countries.id != record_id,
         )
         .first()
     )
 
     if duplicate:
         return JSONResponse(
-            {"error": f"Country '{country_name}' already exists!"},
-            status_code=400,
+            {"error": f"Country '{country_name}' already exists!"}, status_code=400
         )
 
-    if id:
+    # UPDATE
+    if record_id:
         row = (
             db.query(countries)
-            .filter(countries.id == id, countries.company_id == company_id)
+            .filter(countries.id == record_id, countries.company_id == company_code)
             .first()
         )
 
@@ -100,6 +99,7 @@ def save_country(
         row.time = time
         row.email = email
 
+    # INSERT
     else:
         new_row = countries(
             country_name=country_name,
@@ -107,7 +107,7 @@ def save_country(
             date=date,
             time=time,
             email=email,
-            company_id=company_id,
+            company_id=company_code,
         )
         db.add(new_row)
 
@@ -121,13 +121,16 @@ def save_country(
 @router.post("/countries/delete/{id}")
 def delete_country(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
-    if not company_id:
+    company_code = request.session.get("company_code")
+
+    if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(countries).filter(
-        countries.id == id, countries.company_id == company_id
+        countries.id == id,
+        countries.company_id == company_code
     ).delete()
 
     db.commit()
+
     return JSONResponse({"status": "ok"})

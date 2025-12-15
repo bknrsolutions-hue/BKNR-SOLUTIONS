@@ -12,20 +12,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE LOAD
+# PAGE LOAD (COMPANY-WISE)
 # ---------------------------------------------------------
 @router.get("/varieties")
 def varieties_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")                 # FIXED
+    company_code = request.session.get("company_code")   # FIXED
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    today_data = (
+    rows = (
         db.query(varieties)
-        .filter(varieties.company_id == company_id)
+        .filter(varieties.company_id == company_code)
         .order_by(varieties.id.desc())
         .all()
     )
@@ -34,50 +34,56 @@ def varieties_page(request: Request, db: Session = Depends(get_db)):
         "criteria/varieties.html",
         {
             "request": request,
-            "today_data": today_data,
+            "today_data": rows,
             "email": email,
-            "company_id": company_id
+            "company_id": company_code
         }
     )
 
 
 # ---------------------------------------------------------
-# SAVE / UPDATE VARIETY
+# SAVE / UPDATE
 # ---------------------------------------------------------
 @router.post("/varieties")
 def save_variety(
     request: Request,
+
     variety_name: str = Form(...),
     peeling_yield: str = Form(""),
     soaking_yield: str = Form(""),
     hoso_to_finished_yield: str = Form(""),
 
-    date: str = Form(...),
-    time: str = Form(...),
-
-    email: str = Form(""),
-    company_id: str = Form(""),
-
-    id: int = Form(None),
+    id: str = Form(""),        # FIXED: incoming from JS as string
+    date: str = Form(""),
+    time: str = Form(""),
 
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    # SESSION
+    email = request.session.get("email")                 
+    company_code = request.session.get("company_code")   
 
-    if not session_email or not session_company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
+    # SAFE ID CONVERSION
+    record_id = int(id) if id and id.isdigit() else None
 
+    # AUTO DATE/TIME
+    now = datetime.now()
+    if not date:
+        date = now.strftime("%Y-%m-%d")
+    if not time:
+        time = now.strftime("%H:%M:%S")
+
+    # DUPLICATE CHECK (company-wise)
     duplicate = (
         db.query(varieties)
         .filter(
             varieties.variety_name == variety_name,
-            varieties.company_id == company_id,
-            varieties.id != id
+            varieties.company_id == company_code,
+            varieties.id != (record_id if record_id else 0)
         )
         .first()
     )
@@ -88,10 +94,11 @@ def save_variety(
             status_code=400,
         )
 
-    if id:
+    # UPDATE MODE
+    if record_id:
         row = (
             db.query(varieties)
-            .filter(varieties.id == id, varieties.company_id == company_id)
+            .filter(varieties.id == record_id, varieties.company_id == company_code)
             .first()
         )
 
@@ -106,6 +113,7 @@ def save_variety(
         row.time = time
         row.email = email
 
+    # INSERT MODE
     else:
         new_row = varieties(
             variety_name=variety_name,
@@ -115,7 +123,7 @@ def save_variety(
             date=date,
             time=time,
             email=email,
-            company_id=company_id,
+            company_id=company_code
         )
         db.add(new_row)
 
@@ -129,14 +137,14 @@ def save_variety(
 @router.post("/varieties/delete/{id}")
 def delete_variety(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")   # FIXED
 
-    if not company_id:
+    if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(varieties).filter(
         varieties.id == id,
-        varieties.company_id == company_id
+        varieties.company_id == company_code
     ).delete()
 
     db.commit()

@@ -1,50 +1,81 @@
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta, date
+import json
 
 from app.database import get_db
-from app.database.models.processing import Grading, GateEntry
-from app.database.models.criteria import grade_to_hoso, varieties
+from app.database.models.processing import Grading, RawMaterialPurchasing
+from app.database.models.criteria import varieties, species
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-# ---------------------------------------------------------
-# PAGE LOAD
-# ---------------------------------------------------------
-@router.get("/grading")
-def page(request: Request, db: Session = Depends(get_db)):
+# -----------------------------------------------------
+# TODAY RANGE (9 AM → NEXT DAY 9 AM)  ✅ SAME AS RMP
+# -----------------------------------------------------
+def get_today_range():
+    now = datetime.now()
+    start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    if now < start:
+        start -= timedelta(days=1)
+    end = start + timedelta(days=1) - timedelta(seconds=1)
+    return start, end
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+# -----------------------------------------------------
+# SHOW PAGE
+# -----------------------------------------------------
+@router.get("/grading", response_class=HTMLResponse)
+def show_grading(request: Request, db: Session = Depends(get_db)):
 
-    # Batch lookup
-    batches = (
-        db.query(gate_entry.batch_number)
-        .filter(gate_entry.company_id == company_id)
-        .order_by(gate_entry.batch_number)
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+
+    if not company_code or not email:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    # ---------- BATCH LIST (FROM RMP) ----------
+    batch_list = [
+        b[0] for b in
+        db.query(RawMaterialPurchasing.batch_number)
+        .filter(RawMaterialPurchasing.company_id == company_code)
+        .distinct()
+        .order_by(RawMaterialPurchasing.batch_number)
         .all()
-    )
+        if b[0]
+    ]
 
-    # HOSO lookup
-    hoso_list = (
-        db.query(grade_to_hoso.hoso_count)
-        .filter(grade_to_hoso.company_id == company_id)
-        .order_by(grade_to_hoso.hoso_count)
+    # ---------- SPECIES LIST (FROM SPECIES MASTER) ----------
+    species_list = [
+        s.species_name for s in
+        db.query(species)
+        .filter(species.company_id == company_code)
+        .order_by(species.species_name)
         .all()
-    )
+    ]
 
-    # Variety lookup
-    variety_list = (
-        db.query(varieties.variety_name)
-        .filter(varieties.company_id == company_id)
+    # ---------- VARIETIES (FROM VARIETIES MASTER) ----------
+    variety_list = [
+        v.variety_name for v in
+        db.query(varieties)
+        .filter(varieties.company_id == company_code)
         .order_by(varieties.variety_name)
+        .all()
+    ]
+
+    # ---------- TODAY DATA ----------
+    start, end = get_today_range()
+    today_data = (
+        db.query(Grading)
+        .filter(
+            Grading.company_id == company_code,
+            Grading.date >= start.date(),
+            Grading.date <= end.date()
+        )
+        .order_by(Grading.id.desc())
         .all()
     )
 
@@ -52,77 +83,175 @@ def page(request: Request, db: Session = Depends(get_db)):
         "processing/grading.html",
         {
             "request": request,
-            "batches": [b[0] for b in batches],
-            "hoso_counts": [h[0] for h in hoso_list],
-            "varieties": [v[0] for v in variety_list],
-            "email": email,
-            "company_id": company_id,
+            "batches": batch_list,
+            "species_list": species_list,
+            "variety_list": variety_list,
+            "today_data": today_data,
+            "edit_data": None,
+            "message": request.session.pop("message", None)
         }
     )
 
 
-# ---------------------------------------------------------
-# SAVE GRADING ENTRY
-# ---------------------------------------------------------
-@router.post("/grading")
-def save(
-    request: Request,
+# -----------------------------------------------------
+# GET HOSO COUNTS (FROM RMP)
+# -----------------------------------------------------
+@router.get("/grading/get_hoso/{batch}")
+def get_hoso(batch: str, request: Request, db: Session = Depends(get_db)):
 
+    company_code = request.session.get("company_code")
+
+    rows = (
+        db.query(RawMaterialPurchasing.count)
+        .filter(
+            RawMaterialPurchasing.company_id == company_code,
+            RawMaterialPurchasing.batch_number == batch
+        )
+        .distinct()
+        .order_by(RawMaterialPurchasing.count)
+        .all()
+    )
+
+    return {"counts": [r[0] for r in rows if r[0]]}
+
+
+# -----------------------------------------------------
+# SAVE NEW
+# -----------------------------------------------------
+@router.post("/grading")
+def save_grading(
+    request: Request,
     batch_number: str = Form(...),
     hoso_count: str = Form(...),
-    variety: str = Form(...),
+    variety_name: str = Form(...),
     graded_count: str = Form(...),
     quantity: float = Form(...),
-
-    date: str = Form(""),
-    time: str = Form(""),
-    email: str = Form(""),
-    company_id: str = Form(""),
-
+    species_val: str = Form(...),
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
 
-    if not session_email or not session_company_id:
-        return RedirectResponse("/auth/login", status_code=302)
-
-    email = session_email
-    company_id = session_company_id
+    if not company_code or not email:
+        return RedirectResponse("/auth/login", status_code=303)
 
     now = datetime.now()
-    if not date:
-        date = now.strftime("%Y-%m-%d")
-    if not time:
-        time = now.strftime("%H:%M:%S")
 
-    # Duplicate rule:
-    # same batch_number + same hoso_count + same graded_count → single entry per day
-    dup = db.query(grading).filter(
-        grading.batch_number == batch_number,
-        grading.hoso_count == hoso_count,
-        grading.graded_count == graded_count,
-        grading.date == date,
-        grading.company_id == company_id,
-    ).first()
-
-    if dup:
-        return RedirectResponse("/processing/grading?error=exists", status_code=302)
-
-    new_row = grading(
+    entry = Grading(
         batch_number=batch_number,
         hoso_count=hoso_count,
-        variety=variety,
+        variety_name=variety_name,
         graded_count=graded_count,
         quantity=quantity,
-        date=date,
-        time=time,
+        species=species_val,
+        date=now.date(),
+        time=now.time(),
         email=email,
-        company_id=company_id,
+        company_id=company_code
     )
 
-    db.add(new_row)
+    db.add(entry)
     db.commit()
 
-    return RedirectResponse("/processing/grading?success=1", status_code=302)
+    request.session["message"] = "✔ Grading Saved Successfully!"
+    return RedirectResponse("/processing/grading", status_code=303)
+
+
+# -----------------------------------------------------
+# EDIT PAGE
+# -----------------------------------------------------
+@router.get("/grading/edit/{id}", response_class=HTMLResponse)
+def edit_grading(id: int, request: Request, db: Session = Depends(get_db)):
+
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+
+    if not company_code or not email:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    row = (
+        db.query(Grading)
+        .filter(
+            Grading.id == id,
+            Grading.company_id == company_code
+        )
+        .first()
+    )
+
+    if not row:
+        return RedirectResponse("/processing/grading", status_code=303)
+
+    response = show_grading(request, db)
+    response.context["edit_data"] = row
+    response.context["today_data"] = []
+    return response
+
+
+# -----------------------------------------------------
+# UPDATE
+# -----------------------------------------------------
+@router.post("/grading/update/{id}")
+def update_grading(
+    id: int,
+    request: Request,
+    batch_number: str = Form(...),
+    hoso_count: str = Form(...),
+    variety_name: str = Form(...),
+    graded_count: str = Form(...),
+    quantity: float = Form(...),
+    species_val: str = Form(...),
+    db: Session = Depends(get_db)
+):
+
+    company_code = request.session.get("company_code")
+
+    entry = (
+        db.query(Grading)
+        .filter(
+            Grading.id == id,
+            Grading.company_id == company_code
+        )
+        .first()
+    )
+
+    if not entry:
+        request.session["message"] = "❌ Record Not Found!"
+        return RedirectResponse("/processing/grading", status_code=303)
+
+    entry.batch_number = batch_number
+    entry.hoso_count = hoso_count
+    entry.variety_name = variety_name
+    entry.graded_count = graded_count
+    entry.quantity = quantity
+    entry.species = species_val
+
+    db.commit()
+
+    request.session["message"] = "✔ Grading Updated Successfully!"
+    return RedirectResponse("/processing/grading", status_code=303)
+
+
+# -----------------------------------------------------
+# DELETE
+# -----------------------------------------------------
+@router.post("/grading/delete/{id}")
+def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
+
+    company_code = request.session.get("company_code")
+
+    entry = (
+        db.query(Grading)
+        .filter(
+            Grading.id == id,
+            Grading.company_id == company_code
+        )
+        .first()
+    )
+
+    if entry:
+        db.delete(entry)
+        db.commit()
+
+    request.session["message"] = "🗑 Deleted Successfully!"
+    return JSONResponse({"status": "ok"})

@@ -4,125 +4,158 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.database import get_db
-from app.database.models.criteria import contractors   # <-- LOWERCASE MODEL
+from app.database.models.criteria import contractors
 
 router = APIRouter(tags=["CONTRACTORS"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-# ---------------------------------------------------------
-# SHOW PAGE (COMPANY WISE)
-# ---------------------------------------------------------
+# =====================================================
+# SHOW PAGE
+# =====================================================
 @router.get("/contractors")
 def contractors_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    today_data = db.query(contractors).filter(
-        contractors.company_id == company_id
-    ).order_by(contractors.id.desc()).all()
+    rows = (
+        db.query(contractors)
+        .filter(contractors.company_id == company_code)
+        .order_by(contractors.id.desc())
+        .all()
+    )
 
-    return templates.TemplateResponse("criteria/contractors.html", {
-        "request": request,
-        "today_data": today_data,
-        "email": email,
-        "company_id": company_id,
-        "message": ""
-    })
+    return templates.TemplateResponse(
+        "criteria/contractors.html",
+        {
+            "request": request,
+            "today_data": rows,
+            "email": email,
+            "company_id": company_code,
+        }
+    )
 
 
-# ---------------------------------------------------------
-# SAVE / UPDATE CONTRACTOR
-# ---------------------------------------------------------
+# =====================================================
+# SAVE / UPDATE (DUPLICATES ALLOWED)
+# =====================================================
 @router.post("/contractors")
 def save_contractor(
     request: Request,
+
     contractor_name: str = Form(...),
     phone: str = Form(""),
+    contractor_email: str = Form(""),
     address: str = Form(""),
-    id: int = Form(None),
+
+    gst_number: str = Form(""),
+    gst_percent: float | None = Form(None),
+    gst_applicable_from: str = Form(""),
+
+    bank_name: str = Form(""),
+    account_no: str = Form(""),
+    ifsc: str = Form(""),
+
     date: str = Form(...),
     time: str = Form(...),
-    email: str = Form(""),
-    company_id: str = Form(""),
+    id: str = Form(""),
+
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    session_email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
+    if not session_email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
+    record_id = int(id) if id.isdigit() else None
 
-    # Duplicate check
-    duplicate = db.query(contractors).filter(
-        contractors.contractor_name == contractor_name,
-        contractors.company_id == company_id,
-        contractors.id != id
-    ).first()
+    # ---------------- DATE PARSE ----------------
+    gst_date = None
+    if gst_applicable_from:
+        gst_date = datetime.strptime(gst_applicable_from, "%Y-%m-%d").date()
 
-    if duplicate:
-        return JSONResponse({"error": f"'{contractor_name}' already exists!"}, status_code=400)
-
-    # UPDATE
-    if id:
-        row = db.query(contractors).filter(
-            contractors.id == id,
-            contractors.company_id == company_id
-        ).first()
+    # ---------------- UPDATE ----------------
+    if record_id:
+        row = (
+            db.query(contractors)
+            .filter(
+                contractors.id == record_id,
+                contractors.company_id == company_code
+            )
+            .first()
+        )
 
         if not row:
             return JSONResponse({"error": "Record not found"}, status_code=404)
 
         row.contractor_name = contractor_name
         row.phone = phone
+        row.contractor_email = contractor_email
         row.address = address
+
+        row.gst_number = gst_number
+        row.gst_percent = gst_percent
+        row.gst_applicable_from = gst_date
+
+        row.bank_name = bank_name
+        row.account_no = account_no
+        row.ifsc = ifsc
+
         row.date = date
         row.time = time
-        row.email = email
+        row.email = session_email
 
-    # INSERT
+    # ---------------- INSERT (NO DUPLICATE CHECK) ----------------
     else:
-        new_row = contractors(
+        row = contractors(
             contractor_name=contractor_name,
             phone=phone,
+            contractor_email=contractor_email,
             address=address,
+
+            gst_number=gst_number,
+            gst_percent=gst_percent,
+            gst_applicable_from=gst_date,
+
+            bank_name=bank_name,
+            account_no=account_no,
+            ifsc=ifsc,
+
             date=date,
             time=time,
-            email=email,
-            company_id=company_id
+            email=session_email,
+            company_id=company_code
         )
-        db.add(new_row)
+        db.add(row)
 
     db.commit()
     return JSONResponse({"success": True})
 
 
-# ---------------------------------------------------------
-# DELETE CONTRACTOR
-# ---------------------------------------------------------
+# =====================================================
+# DELETE
+# =====================================================
 @router.post("/contractors/delete/{id}")
 def delete_contractor(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
 
-    if not company_id:
+    if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(contractors).filter(
         contractors.id == id,
-        contractors.company_id == company_id
+        contractors.company_id == company_code
     ).delete()
 
     db.commit()
-
     return JSONResponse({"status": "ok"})

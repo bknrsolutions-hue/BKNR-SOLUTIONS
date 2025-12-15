@@ -1,5 +1,3 @@
-# app/routers/criteria/suppliers.py
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -14,20 +12,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE LOAD
+# PAGE LOAD (COMPANY-WISE)
 # ---------------------------------------------------------
 @router.get("/suppliers")
-def page(request: Request, db: Session = Depends(get_db)):
+def suppliers_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")              # FIXED
+    company_code = request.session.get("company_code")  # FIXED
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
     rows = (
         db.query(suppliers)
-        .filter(suppliers.company_id == company_id)
+        .filter(suppliers.company_id == company_code)
         .order_by(suppliers.id.desc())
         .all()
     )
@@ -38,16 +36,16 @@ def page(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "today_data": rows,
             "email": email,
-            "company_id": company_id
+            "company_id": company_code
         }
     )
 
 
 # ---------------------------------------------------------
-# SAVE / UPDATE
+# SAVE / UPDATE SUPPLIER
 # ---------------------------------------------------------
 @router.post("/suppliers")
-async def save(
+async def save_supplier(
     request: Request,
 
     supplier_name: str = Form(...),
@@ -55,29 +53,23 @@ async def save(
     phone: str = Form(""),
     address: str = Form(""),
 
-    id: str = Form(""),   # <-- FIX (STRING)
+    id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
-    email: str = Form(""),
-    company_id: str = Form(""),
 
     db: Session = Depends(get_db)
 ):
 
-    # SESSION VALIDATION
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    email = request.session.get("email")               # FIXED
+    company_code = request.session.get("company_code")  # FIXED
 
-    if not session_email or not session_company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
-
-    # SAFE ID CONVERSION
+    # SAFE ID
     record_id = int(id) if id and id.isdigit() else None
 
-    # AUTO DATE/TIME
+    # AUTO DATE TIME
     now = datetime.now()
     if not date:
         date = now.strftime("%Y-%m-%d")
@@ -89,8 +81,8 @@ async def save(
         db.query(suppliers)
         .filter(
             suppliers.supplier_name == supplier_name,
-            suppliers.company_id == company_id,
-            suppliers.id != record_id
+            suppliers.company_id == company_code,
+            suppliers.id != (record_id if record_id else 0)
         )
         .first()
     )
@@ -98,19 +90,19 @@ async def save(
     if dup:
         return JSONResponse({"error": "Supplier already exists!"}, status_code=400)
 
-    # UPDATE
+    # UPDATE MODE
     if record_id:
         row = (
             db.query(suppliers)
             .filter(
                 suppliers.id == record_id,
-                suppliers.company_id == company_id
+                suppliers.company_id == company_code
             )
             .first()
         )
 
         if not row:
-            return JSONResponse({"error": "Not found"}, status_code=404)
+            return JSONResponse({"error": "Record not found"}, status_code=404)
 
         row.supplier_name = supplier_name
         row.supplier_email = supplier_email
@@ -120,7 +112,7 @@ async def save(
         row.time = time
         row.email = email
 
-    # INSERT
+    # INSERT MODE
     else:
         new_row = suppliers(
             supplier_name=supplier_name,
@@ -130,7 +122,7 @@ async def save(
             date=date,
             time=time,
             email=email,
-            company_id=company_id
+            company_id=company_code
         )
         db.add(new_row)
 
@@ -142,17 +134,18 @@ async def save(
 # DELETE
 # ---------------------------------------------------------
 @router.post("/suppliers/delete/{id}")
-def delete(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_supplier(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")  # FIXED
 
-    if not company_id:
+    if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(suppliers).filter(
         suppliers.id == id,
-        suppliers.company_id == company_id
+        suppliers.company_id == company_code
     ).delete()
 
     db.commit()
+
     return JSONResponse({"status": "ok"})

@@ -91,7 +91,7 @@ class DeHeading(Base):
 
 
 # ---------------------------------------------------------
-# GRADING
+# GRADING (Matches PostgreSQL exactly)
 # ---------------------------------------------------------
 class Grading(Base):
     __tablename__ = "grading"
@@ -102,9 +102,8 @@ class Grading(Base):
     variety_name = Column(String(100))
     graded_count = Column(String(50))
     quantity = Column(Float)
-
     species = Column(String(100))
-    grade_name = Column(String(100))  # from lookup grade to hoso
+    hoso_count = Column(String(50))
 
     company_id = Column(String(50))
     email = Column(String)
@@ -124,20 +123,22 @@ class Peeling(Base):
     batch_number = Column(String(100))
     hlso_count = Column(String(50))
     hlso_qty = Column(Float)
-    peeled_qty = Column(Float)
-    yield_percent = Column(Float)
 
     variety_name = Column(String(100))
-    contractor = Column(String(255))
-    rate_per_kg = Column(Float)
-    amount = Column(Float)
+    peeled_qty = Column(Float)
 
-    species = Column(String(100))
-    company_id = Column(String(50))
-    email = Column(String)
+    yield_percent = Column(Float)
+
+    contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
+    rate = Column(Float)
+    amount = Column(Float)
 
     date = Column(Date)
     time = Column(Time)
+
+    # For multi-company access control
+    email = Column(String(200))
+    company_id = Column(String(50))
 
 
 # ---------------------------------------------------------
@@ -188,9 +189,8 @@ class Production(Base):
     loose = Column(Integer)
     production_qty = Column(Float)
 
-    product_name = Column(String)
     production_type = Column(String)
-    total_weight = Column(Float)
+  
 
     species = Column(String(100))
     company_id = Column(String(50))

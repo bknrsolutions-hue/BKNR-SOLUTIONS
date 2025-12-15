@@ -1,196 +1,151 @@
-# app/routers/criteria/grade_to_hoso.py
+# app/routers/processing/gate_entry.py
 
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Depends, Form
+from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import date, datetime
 
 from app.database import get_db
-from app.database.models.criteria import (
-    grade_to_hoso,
-    grades,
-    glazes,
-    varieties,
-    species
-)
+from app.database.models.processing import GateEntry
+from app.database.models.criteria import suppliers, purchasing_locations, vehicle_numbers
 
-router = APIRouter(tags=["GRADE → HOSO"])
+router = APIRouter(tags=["GATE ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-# -------------------------------------------------------
+# ---------------------------------------------------------
 # PAGE LOAD
-# -------------------------------------------------------
-@router.get("/grade_to_hoso")
+# ---------------------------------------------------------
+@router.get("/gate_entry")
 def page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
+    if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # LOOKUP — company-wise
-    grade_list = (
-        db.query(grades.grade_name)
-        .filter(grades.company_id == company_id)
-        .order_by(grades.grade_name)
-        .all()
-    )
+    supplier_list = [s.supplier_name for s in db.query(suppliers)
+                     .filter(suppliers.company_id == company_code).all()]
 
-    nwgrade_list = grade_list  # same table
+    location_list = [l.location_name for l in db.query(purchasing_locations)
+                     .filter(purchasing_locations.company_id == company_code).all()]
 
-    glaze_list = (
-        db.query(glazes.glaze_name)
-        .filter(glazes.company_id == company_id)
-        .order_by(glazes.glaze_name)
-        .all()
-    )
+    vehicle_list = [v.vehicle_number for v in db.query(vehicle_numbers)
+                    .filter(vehicle_numbers.company_id == company_code).all()]
 
-    variety_list = (
-        db.query(varieties.variety_name)
-        .filter(varieties.company_id == company_id)
-        .order_by(varieties.variety_name)
-        .all()
-    )
-
-    species_list = (
-        db.query(species.species_name)
-        .filter(species.company_id == company_id)
-        .order_by(species.species_name)
-        .all()
-    )
-
-    # table rows
+    today = date.today()
     rows = (
-        db.query(grade_to_hoso)
-        .filter(grade_to_hoso.company_id == company_id)
-        .order_by(grade_to_hoso.id.desc())
+        db.query(GateEntry)
+        .filter(GateEntry.company_id == company_code)
+        .order_by(GateEntry.id.desc())
         .all()
     )
-
-    lookup = {
-        "grades": [g[0] for g in grade_list],
-        "nwgrades": [g[0] for g in nwgrade_list],
-        "glazes": [g[0] for g in glaze_list],
-        "varieties": [v[0] for v in variety_list],
-        "species": [s[0] for s in species_list],
-    }
 
     return templates.TemplateResponse(
-        "criteria/grade_to_hoso.html",
+        "processing/gate_entry.html",
         {
             "request": request,
+            "suppliers": supplier_list,
+            "locations": location_list,
+            "vehicles": vehicle_list,
             "today_data": rows,
-            "lookup": lookup,
             "email": email,
-            "company_id": company_id,
+            "company_id": company_code,
         }
     )
 
 
-# -------------------------------------------------------
+# ---------------------------------------------------------
 # SAVE / UPDATE
-# -------------------------------------------------------
-@router.post("/grade_to_hoso")
-def save_grade_to_hoso(
+# ---------------------------------------------------------
+@router.post("/gate_entry")
+def save_gate_entry(
     request: Request,
 
-    grade_name: str = Form(...),
-    nw_grade: str = Form(...),
-    glaze_name: str = Form(...),
-    variety_name: str = Form(...),
-    species_name: str = Form(...),
-    hoso_count: int = Form(0),
-    hlso_count: int = Form(0),
+    batch_number: str = Form(...),
+    challan_number: str = Form(...),
+    gate_pass_number: str = Form(...),
+    supplier_name: str = Form(...),
+    purchasing_location: str = Form(...),
+    vehicle_number: str = Form(...),
+    no_of_material_boxes: int = Form(0),
+    no_of_empty_boxes: int = Form(0),
+    no_of_ice_boxes: int = Form(0),
 
-    id: int = Form(None),
-    date: str = Form(""),
-    time: str = Form(""),
+    id: str = Form(""),
+    date_input: str = Form(""),
+    time_input: str = Form(""),
 
     db: Session = Depends(get_db)
 ):
 
-    # session
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # auto date/time
-    now = datetime.now()
-    if not date:
-        date = now.strftime("%Y-%m-%d")
-    if not time:
-        time = now.strftime("%H:%M:%S")
+    record_id = int(id) if id.isdigit() else None
 
-    # ---------------------------------------------
-    # DUPLICATE CHECK (Exactly 5 columns only)
-    # ---------------------------------------------
-    dup = (
-        db.query(grade_to_hoso)
+    now = datetime.now()
+    date_value = date_input if date_input else now.strftime("%Y-%m-%d")
+    time_value = time_input if time_input else now.strftime("%H:%M:%S")
+
+    # ---------------- DUPLICATE CHECK ----------------
+    duplicate = (
+        db.query(GateEntry)
         .filter(
-            grade_to_hoso.grade_name == grade_name,
-            grade_to_hoso.nw_grade == nw_grade,
-            grade_to_hoso.glaze_name == glaze_name,
-            grade_to_hoso.variety_name == variety_name,
-            grade_to_hoso.company_id == company_id,
-            grade_to_hoso.id != id
+            GateEntry.batch_number == batch_number,
+            GateEntry.company_id == company_code,
+            GateEntry.id != (record_id if record_id else 0)
         )
         .first()
     )
 
-    if dup:
-        return JSONResponse(
-            {"error": "This Grade + NWGrade + Glaze + Variety already exists!"},
-            status_code=400
-        )
+    if duplicate:
+        return JSONResponse({"error": "Batch Number already exists for this company!"}, status_code=400)
 
-    # ---------------------------------------------
-    # UPDATE
-    # ---------------------------------------------
-    if id:
+    # ---------------- UPDATE ----------------
+    if record_id:
         row = (
-            db.query(grade_to_hoso)
-            .filter(
-                grade_to_hoso.id == id,
-                grade_to_hoso.company_id == company_id
-            )
+            db.query(GateEntry)
+            .filter(GateEntry.id == record_id, GateEntry.company_id == company_code)
             .first()
         )
-
         if not row:
             return JSONResponse({"error": "Record not found"}, status_code=404)
 
-        row.grade_name = grade_name
-        row.nw_grade = nw_grade
-        row.glaze_name = glaze_name
-        row.variety_name = variety_name
-        row.species = species_name
-        row.hoso_count = hoso_count
-        row.hlso_count = hlso_count
-        row.date = date
-        row.time = time
+        row.batch_number = batch_number
+        row.challan_number = challan_number
+        row.gate_pass_number = gate_pass_number
+        row.supplier_name = supplier_name
+        row.purchasing_location = purchasing_location
+        row.vehicle_number = vehicle_number
+        row.no_of_material_boxes = no_of_material_boxes
+        row.no_of_empty_boxes = no_of_empty_boxes
+        row.no_of_ice_boxes = no_of_ice_boxes
+        row.date = date_value
+        row.time = time_value
         row.email = email
 
-    # ---------------------------------------------
-    # INSERT
-    # ---------------------------------------------
+    # ---------------- INSERT ----------------
     else:
-        new_row = grade_to_hoso(
-            grade_name=grade_name,
-            nw_grade=nw_grade,
-            glaze_name=glaze_name,
-            variety_name=variety_name,
-            species=species_name,
-            hoso_count=hoso_count,
-            hlso_count=hlso_count,
-            date=date,
-            time=time,
+        new_row = GateEntry(
+            batch_number=batch_number,
+            challan_number=challan_number,
+            gate_pass_number=gate_pass_number,
+            supplier_name=supplier_name,
+            purchasing_location=purchasing_location,
+            vehicle_number=vehicle_number,
+            no_of_material_boxes=no_of_material_boxes,
+            no_of_empty_boxes=no_of_empty_boxes,
+            no_of_ice_boxes=no_of_ice_boxes,
+            date=date_value,
+            time=time_value,
             email=email,
-            company_id=company_id
+            company_id=company_code
         )
         db.add(new_row)
 
@@ -198,17 +153,20 @@ def save_grade_to_hoso(
     return JSONResponse({"success": True})
 
 
-# -------------------------------------------------------
+# ---------------------------------------------------------
 # DELETE
-# -------------------------------------------------------
-@router.post("/grade_to_hoso/delete/{id}")
-def delete(id: int, request: Request, db: Session = Depends(get_db)):
+# ---------------------------------------------------------
+@router.post("/gate_entry/delete/{id}")
+def delete_gate_entry(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
 
-    db.query(grade_to_hoso).filter(
-        grade_to_hoso.id == id,
-        grade_to_hoso.company_id == company_id
+    if not company_code:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+
+    db.query(GateEntry).filter(
+        GateEntry.id == id,
+        GateEntry.company_id == company_code
     ).delete()
 
     db.commit()

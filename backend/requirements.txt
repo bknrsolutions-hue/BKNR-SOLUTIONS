@@ -1,11 +1,3 @@
 fastapi
 uvicorn
-gunicorn
-jinja2
-python-multipart
-sqlalchemy
-psycopg2-binary
-python-dotenv
-itsdangerous
-itsdangerous
 

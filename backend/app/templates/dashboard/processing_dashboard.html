@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PROCESSING DASHBOARD — BKNR SOLUTIONS</title>
+
+<style>
+body{font-family:Arial;background:#e8f3ff;margin:0;padding:0;}
+h2{text-align:center;color:#003366;margin:15px 0;font-size:22px;font-weight:800;}
+
+.container{
+    width:90%;max-width:1250px;margin:auto;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:15px;margin-top:20px;
+}
+
+.card{
+    background:white;border-radius:10px;padding:18px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    text-align:center;cursor:pointer;
+    transition:.2s;
+}
+.card:hover{transform:scale(1.03);}
+
+.card h3{margin:0;color:#00509e;font-size:15px;font-weight:700;}
+.card span{display:block;font-size:22px;color:#002447;margin-top:8px;font-weight:900;}
+</style>
+</head>
+
+<body>
+
+<h2>PROCESSING — LIVE DASHBOARD</h2>
+
+<div class="container">
+
+    <div class="card" onclick="location.href='/reports/de_heading'">
+        <h3>DE-HEADING TOTAL</h3>
+        <span>{{ de_heading_qty }}</span>
+    </div>
+
+    <div class="card" onclick="location.href='/reports/grading'">
+        <h3>GRADING TOTAL</h3>
+        <span>{{ grading_qty }}</span>
+    </div>
+
+    <div class="card" onclick="location.href='/reports/peeling'">
+        <h3>PEELING TOTAL</h3>
+        <span>{{ peeling_qty }}</span>
+    </div>
+
+    <div class="card" onclick="location.href='/reports/soaking'">
+        <h3>SOAKING TOTAL</h3>
+        <span>{{ soaking_qty }}</span>
+    </div>
+
+</div>
+
+</body>
+</html>

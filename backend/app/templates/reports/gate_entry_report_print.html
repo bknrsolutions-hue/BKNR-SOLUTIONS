@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Print - Gate Entry Report</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        margin: 20px;
+        color: #000;
+    }
+
+    /* HEADER */
+    .header-box {
+        width: 100%;
+        margin-bottom: 8px;
+        text-align: center; /* ✔ CENTER COMPANY HEADER */
+    }
+
+    .company-name {
+        font-size: 20px;
+        font-weight: bold;
+        color: #003366;
+        margin-bottom: 4px;
+    }
+
+    .company-address {
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+
+    .report-title {
+        text-align: left;  /* ✔ REPORT NAME LEFT */
+        font-size: 16px;
+        font-weight: bold;
+        color: #003366;
+        margin-top: 5px;
+    }
+
+    .printed-on {
+        text-align: right;
+        font-size: 11px;
+        margin-bottom: 10px;
+    }
+
+    /* TABLE */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table th {
+        background: #003366;
+        color: white;
+        padding: 5px;
+        border: 1px solid #333;
+
+        /* WRAP */
+        white-space: normal;
+        word-wrap: break-word;
+        font-size: 11px;
+        text-align: left;
+    }
+
+    table td {
+        padding: 4px;
+        border: 1px solid #333;
+
+        /* WRAP */
+        white-space: normal;
+        word-wrap: break-word;
+        font-size: 11px;
+    }
+
+    @page { 
+        size: A4 landscape; 
+        margin: 8mm;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- COMPANY HEADER (CENTER) -->
+<div class="header-box">
+    <div class="company-name">{{ company_name }}</div>
+    <div class="company-address">{{ company_address }}</div>
+</div>
+
+<!-- REPORT TITLE (LEFT SIDE) -->
+<div class="report-title">Gate Entry Report</div>
+
+<!-- PRINTED TIMESTAMP -->
+<div class="printed-on">
+    Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M:%S") }}
+</div>
+
+<!-- TABLE -->
+<table>
+<thead>
+<tr>
+    <th>ID</th>
+    <th>Date</th>
+    <th>Time</th>
+    <th>Batch Number</th>
+    <th>Challan Number</th>
+    <th>Gate Pass Number</th>
+    <th>Supplier Name</th>
+    <th>Purchasing Location</th>
+    <th>Vehicle Number</th>
+    <th>Material Boxes</th>
+    <th>Empty Boxes</th>
+    <th>Ice Boxes</th>
+    <th>Email</th>
+    <th>Company ID</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in rows %}
+<tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.date }}</td>
+    <td>{{ r.time.strftime("%H:%M:%S") }}</td>
+    <td>{{ r.batch_number }}</td>
+    <td>{{ r.challan_number }}</td>
+    <td>{{ r.gate_pass_number }}</td>
+    <td>{{ r.supplier_name }}</td>
+    <td>{{ r.purchasing_location }}</td>
+    <td>{{ r.vehicle_number }}</td>
+    <td>{{ r.no_of_material_boxes }}</td>
+    <td>{{ r.no_of_empty_boxes }}</td>
+    <td>{{ r.no_of_ice_boxes }}</td>
+    <td>{{ r.email }}</td>
+    <td>{{ r.company_id }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+{% if auto == 1 %}
+<script>
+    window.onload = function() {
+        window.print();
+    };
+</script>
+{% endif %}
+
+</body>
+</html>

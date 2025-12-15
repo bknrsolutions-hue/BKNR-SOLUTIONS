@@ -1,389 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>DE-HEADING - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>DE-HEADING – BKNR SOLUTIONS</title>
 
 <style>
-  body {font-family:Arial,sans-serif; background:#e6f2ff; margin:0; padding:0;}
-  h2 {text-align:center; color:#003366; margin:20px 0; font-weight:700;}
+:root{
+  --primary:#003366;
+  --border:#a3bcd6;
+  --bg:#eaf4ff;
+  --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg)}
+h2{text-align:center;margin:18px 0;color:var(--primary);font-size:20px;font-weight:700}
 
-  .form-container {
-      width:92%; max-width:1200px; margin:0 auto;
-      background:white; padding:22px;
-      border-radius:10px; box-shadow:0 0 8px rgba(0,0,0,0.15);
-  }
+/* FORM */
+.form-container{
+  width:98%;max-width:1200px;margin:12px auto;
+  background:#fff;padding:22px;border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12)
+}
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:18px 14px;
+}
+.field{display:flex;flex-direction:column;height:86px}
+.field label{font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px}
+.field input,.field select{
+  height:38px;padding:6px 8px;border:1px solid var(--border);
+  border-radius:6px;font-size:14px;background:#f9fcff
+}
+.field input[readonly]{background:#eef4fb;font-weight:600}
+.subtext{font-size:12px;color:var(--muted);margin-top:4px;height:16px}
+.actions{grid-column:1/-1;text-align:center}
+.btn{padding:10px 26px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-save{background:var(--primary);color:#fff}
+.btn-reset{background:#777;color:#fff;margin-left:10px}
 
-  .row {display:flex; flex-wrap:wrap; justify-content:space-between; margin-bottom:15px;}
-  .col {width:32%; display:flex; flex-direction:column; margin-bottom:15px;}
+/* TABLE */
+.table-wrap{
+  width:98%;max-width:1200px;margin:20px auto;
+  background:#fff;border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12);
+  overflow-x:auto
+}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--primary);color:#fff;padding:10px}
+td{padding:9px 10px;border-bottom:1px solid #e5edf7}
+tr:hover{background:#f1f7ff;cursor:pointer}
+tr.selected{background:#bed6ff!important}
+tfoot td{font-weight:700;background:#f8fbff}
 
-  @media(max-width:900px){ .col { width:48%; } }
-  @media(max-width:600px){ .col { width:100%; } }
+/* MENU */
+#threeDotsMenu{width:98%;max-width:1200px;margin:8px auto;text-align:right;display:none}
+#dotsBtn{
+  background:var(--primary);color:white;border:none;
+  padding:6px 14px;font-size:18px;border-radius:6px;cursor:pointer
+}
+#dropdownMenu{
+  display:none;position:absolute;right:50px;background:white;
+  width:160px;border-radius:8px;border:1px solid #ccc;
+  box-shadow:0 6px 18px rgba(0,0,0,.15)
+}
+.menu-item{padding:10px;cursor:pointer}
+.menu-item:hover{background:#eef4fb}
 
-  label {font-weight:600; color:#003366; margin-bottom:6px;}
-
-  input, select {
-      padding:10px; border:1px solid #a3bcd6; background:#f9fcff;
-      border-radius:6px; font-size:14px;
-  }
-
-  .actions {text-align:center; margin-top:20px;}
-  .btn {background:#003366; color:white; border:none;
-        padding:10px 20px; border-radius:6px; font-weight:600; cursor:pointer;}
-  .btn-clear {background:#777;}
-
-  table {
-      width:92%; max-width:1200px; margin:20px auto;
-      border-collapse:collapse; background:white;
-      border-radius:10px; overflow:hidden;
-      box-shadow:0 0 8px rgba(0,0,0,0.15);
-  }
-  th,td {padding:10px; border-bottom:1px solid #ccc; font-size:14px;}
-  th {background:#003366; color:white;}
-  tr:hover {background:#e6f2ff; cursor:pointer;}
-  tr.selected {background:#cce5ff !important;}
-
-  #threeDotsMenu {
-      width:92%; max-width:1200px; margin:10px auto;
-      text-align:right; position:relative; display:none;
-  }
-
-  #dropdownMenu {
-      display:none; position:absolute; right:0; background:white;
-      border:1px solid #ccc; border-radius:8px;
-      width:180px; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:1000;
-  }
-  .menu-item {padding:10px; cursor:pointer;}
-  .menu-item:hover {background:#e6f2ff;}
-
-  #lookupModal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.45); justify-content:center; align-items:center;
-      z-index:9999;
-  }
-
-  .lookup-box {
-      background:white; width:90%; max-width:900px; height:85vh;
-      border-radius:10px; overflow:hidden; position:relative;
-  }
-
-  .close-popup {
-      position:absolute; top:10px; right:20px;
-      font-size:22px; font-weight:bold; cursor:pointer; color:#003366;
-  }
-
-  iframe {width:100%; height:100%; border:none;}
+.summary-title{
+  width:98%;max-width:1200px;margin:25px auto 8px;
+  font-weight:700;color:var(--primary)
+}
 </style>
 </head>
 
 <body>
 
-<h2>DE-HEADING</h2>
+<h2>DE-HEADING {% if edit_data %}– EDIT{% endif %}</h2>
 
-<!-- FORM -->
-<form method="post"
-      action="{% if edit_data %}/processing/de_heading/update/{{ edit_data.id }}{% else %}/processing/de_heading{% endif %}">
-  <div class="form-container">
+<form method="POST"
+action="{% if edit_data %}/processing/de_heading/update/{{edit_data.id}}{% else %}/processing/de_heading{% endif %}">
 
-    <!-- ROW 1 -->
-    <div class="row">
-      <div class="col">
-        <label>Batch Number</label>
-        <select name="batch_number" id="batch_number" required>
-          <option value="" disabled {% if not edit_data %}selected{% endif %}>Select Batch</option>
-          {% for b in batches %}
-          <option value="{{ b }}" {% if edit_data and edit_data.batch_number == b %}selected{% endif %}>{{ b }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add New Batch</option>
-        </select>
-      </div>
+<div class="form-container">
+<div class="form-grid">
 
-      <div class="col">
-        <label>HOSO Count</label>
-        <select name="hoso_count" id="hoso_count" required>
-          <option value="" {% if not edit_data %}selected{% endif %}>Select Count</option>
-          {% if edit_data %}
-            <option value="{{ edit_data.hoso_count }}" selected>{{ edit_data.hoso_count }}</option>
-          {% endif %}
-        </select>
-      </div>
+<div class="field">
+<label>Batch</label>
+<select name="batch_number" id="batch_dd" required>
+<option value="">Select</option>
+{% for b in batches %}
+<option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="col">
-        <label>HOSO Qty (KG)</label>
-        <input type="number" step="0.01" name="hoso_qty" id="hoso_qty"
-          value="{% if edit_data %}{{ edit_data.hoso_qty }}{% endif %}" required>
-      </div>
-    </div>
+<div class="field">
+<label>HOSO Count</label>
+<select name="hoso_count" id="count_dd" required>
+<option value="">Select</option>
+{% if edit_data %}
+<option value="{{edit_data.hoso_count}}" selected>{{edit_data.hoso_count}}</option>
+{% endif %}
+</select>
+</div>
 
-    <!-- ROW 2 -->
-    <div class="row">
-      <div class="col">
-        <label>HLSO Qty (KG)</label>
-        <input type="number" step="0.01" name="hlso_qty" id="hlso_qty"
-          value="{% if edit_data %}{{ edit_data.hlso_qty }}{% endif %}" required>
-      </div>
+<div class="field">
+<label>Species</label>
+<select name="species" required>
+<option value="">Select</option>
+{% for s in species %}
+<option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="col">
-        <label>Yield %</label>
-        <input type="number" step="0.01" name="yield_percent" id="yield_percent"
-          value="{% if edit_data %}{{ edit_data.yield_percent }}{% endif %}" readonly>
-      </div>
+<div class="field">
+<label>HOSO Qty</label>
+<input type="number" step="0.01" id="hoso_qty" name="hoso_qty"
+value="{{edit_data.hoso_qty if edit_data else ''}}" required>
+<div class="subtext">Available: <b><span id="available_qty">0</span></b></div>
+</div>
 
-      <div class="col">
-        <label>Contractor</label>
-        <select name="contractor" id="contractor" required>
-          <option value="" disabled {% if not edit_data %}selected{% endif %}>Select Contractor</option>
-          {% for c in contractors %}
-            <option value="{{ c }}" {% if edit_data and edit_data.contractor == c %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add New Contractor</option>
-        </select>
-      </div>
-    </div>
+<div class="field">
+<label>HLSO Qty</label>
+<input type="number" step="0.01" id="hlso_qty" name="hlso_qty"
+value="{{edit_data.hlso_qty if edit_data else ''}}" required>
+</div>
 
-    <!-- ROW 3 -->
-    <div class="row">
-      <div class="col">
-        <label>Rate per KG</label>
-        <input type="number" step="0.01" name="rate_per_kg" id="rate_per_kg"
-          value="{% if edit_data %}{{ edit_data.rate_per_kg }}{% endif %}" readonly>
-      </div>
+<div class="field">
+<label>Yield %</label>
+<input type="text" id="yield_pct" readonly>
+<input type="hidden" name="yield_percent" id="yield_hidden">
+</div>
 
-      <div class="col">
-        <label>Amount</label>
-        <input type="number" step="0.01" name="amount" id="amount"
-          value="{% if edit_data %}{{ edit_data.amount }}{% endif %}" readonly>
-      </div>
+<div class="field">
+<label>Contractor</label>
+<select name="contractor" id="contractor_dd" required>
+<option value="">Select</option>
+{% for c in contractors %}
+<option value="{{c}}" {% if edit_data and edit_data.contractor==c %}selected{% endif %}>{{c}}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="col">
-        <label>Remarks</label>
-        <input type="text" name="remarks"
-          value="{% if edit_data %}{{ edit_data.remarks }}{% endif %}">
-      </div>
-    </div>
+<div class="field">
+<label>Rate</label>
+<input type="number" step="0.01" id="rate" name="rate_per_kg" readonly>
+</div>
 
-    <!-- DATE/TIME (only for new entries) -->
-    {% if not edit_data %}
-    <div class="row">
-      <div class="col">
-        <label>Date</label>
-        <input type="date" name="date_value" value="{{ date.today() }}" required>
-      </div>
+<div class="field">
+<label>Amount</label>
+<input type="number" step="0.01" id="amount" name="amount" readonly>
+</div>
 
-      <div class="col">
-        <label>Time</label>
-        <input type="time" name="time_value" value="{{ datetime.now().strftime('%H:%M:%S') }}" required>
-      </div>
-      <div class="col"></div>
-    </div>
-    {% endif %}
+<div class="actions">
+<button class="btn btn-save">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
+<button type="button" class="btn btn-reset"
+onclick="location.href='/processing/de_heading'">RESET</button>
+</div>
 
-    <div class="actions">
-      <button class="btn" type="submit">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
-      <button class="btn btn-clear" type="button" onclick="window.location='/processing/de_heading'">CLEAR</button>
-    </div>
-
-  </div>
+</div>
+</div>
 </form>
 
-{% if message %}
-<p style="text-align:center; color:green; font-weight:700;">{{ message }}</p>
-{% endif %}
-
-<!-- 3 DOT MENU -->
 {% if today_data %}
 <div id="threeDotsMenu">
-  <button id="dotsBtn" class="btn">⋮</button>
-
+  <button id="dotsBtn">⋮</button>
   <div id="dropdownMenu">
     <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
     <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
-    <div class="menu-item" onclick="printSelected()">🖨 Print</div>
   </div>
 </div>
+{% endif %}
 
-<!-- TABLE -->
-<table id="dataTable">
+<div class="table-wrap">
+<table id="mainTable">
 <thead>
 <tr>
-  <th>ID</th>
-  <th>Batch</th>
-  <th>HOSO Count</th>
-  <th>HOSO (Kg)</th>
-  <th>HLSO (Kg)</th>
-  <th>Yield %</th>
-  <th>Contractor</th>
-  <th>Rate/Kg</th>
-  <th>Amount</th>
-  <th>Date</th>
+<th>ID</th><th>Batch</th><th>Count</th><th>Species</th>
+<th>HOSO</th><th>HLSO</th><th>Yield %</th>
+<th>Contractor</th><th>Rate</th><th>Amount</th><th>Date</th>
 </tr>
 </thead>
-
 <tbody>
 {% for r in today_data %}
-<tr data-id="{{ r.id }}">
-  <td>{{ r.id }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.hoso_count }}</td>
-  <td>{{ r.hoso_qty }}</td>
-  <td>{{ r.hlso_qty }}</td>
-  <td>{{ r.yield_percent }}</td>
-  <td>{{ r.contractor }}</td>
-  <td>{{ r.rate_per_kg }}</td>
-  <td>{{ r.amount }}</td>
-  <td>{{ r.date }}</td>
+<tr data-id="{{r.id}}" data-contractor="{{r.contractor}}">
+<td>{{r.id}}</td>
+<td>{{r.batch_number}}</td>
+<td>{{r.hoso_count}}</td>
+<td>{{r.species}}</td>
+<td class="hoso">{{r.hoso_qty}}</td>
+<td class="hlso">{{r.hlso_qty}}</td>
+<td>{{r.yield_percent}} %</td>
+<td>{{r.contractor}}</td>
+<td>{{r.rate_per_kg}}</td>
+<td class="amount">{{r.amount}}</td>
+<td>{{r.date}}</td>
 </tr>
 {% endfor %}
 </tbody>
+<tfoot>
+<tr>
+<td colspan="4">GRAND TOTAL</td>
+<td id="gt_hoso">0</td>
+<td id="gt_hlso">0</td>
+<td></td><td></td><td></td>
+<td id="gt_amount">0</td><td></td>
+</tr>
+</tfoot>
 </table>
-{% endif %}
-
-<!-- LOOKUP POPUP -->
-<div id="lookupModal">
-  <div class="lookup-box">
-    <span class="close-popup" onclick="closeLookup()">×</span>
-    <iframe id="lookupFrame"></iframe>
-  </div>
 </div>
 
+<div class="summary-title">Contractor Wise Summary</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Contractor</th><th>Total HOSO</th><th>Total HLSO</th><th>Total Amount</th></tr>
+</thead>
+<tbody id="contractorBody"></tbody>
+</table>
+</div>
+
+
 <script>
-let selectedRow = null;
+document.addEventListener("DOMContentLoaded", function () {
 
-/*** SELECT ROW ***/
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("#dataTable tbody tr").forEach(row => {
-    row.addEventListener("click", () => {
-      document.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
-      row.classList.add("selected");
-      selectedRow = row;
-      document.getElementById("threeDotsMenu").style.display = "block";
-    });
-  });
+  /* ================= ELEMENTS ================= */
+  const batchDD = document.getElementById("batch_dd");
+  const countDD = document.getElementById("count_dd");
+  const contractorDD = document.getElementById("contractor_dd");
+  const hosoQty = document.getElementById("hoso_qty");
+  const hlsoQty = document.getElementById("hlso_qty");
+  const yieldTxt = document.getElementById("yield_pct");
+  const yieldHidden = document.getElementById("yield_hidden");
+  const rateEl = document.getElementById("rate");
+  const amtEl = document.getElementById("amount");
+  const availEl = document.getElementById("available_qty");
 
-  // Hook: batch change on load if edit_data present (prepopulated)
-  const batchSelect = document.getElementById("batch_number");
-  if(batchSelect && batchSelect.value){
-    loadHosoCounts(batchSelect.value);
+  const threeDotsMenu = document.getElementById("threeDotsMenu");
+  const dotsBtn = document.getElementById("dotsBtn");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  const gt_hoso = document.getElementById("gt_hoso");
+  const gt_hlso = document.getElementById("gt_hlso");
+  const gt_amount = document.getElementById("gt_amount");
+  const contractorBody = document.getElementById("contractorBody");
+
+  /* ================= CALC ================= */
+  function calc() {
+    let h = parseFloat(hosoQty.value) || 0;
+    let l = parseFloat(hlsoQty.value) || 0;
+    let r = parseFloat(rateEl.value) || 0;
+
+    let y = h ? ((l / h) * 100) : 0;
+    yieldTxt.value = y.toFixed(2) + " %";
+    yieldHidden.value = y.toFixed(2);
+    amtEl.value = (l * r).toFixed(2);
   }
-});
 
-/*** MENU TOGGLE ***/
-document.getElementById("dotsBtn").addEventListener("click", () => {
-  const d = document.getElementById("dropdownMenu");
-  d.style.display = (d.style.display === "block") ? "none" : "block";
-});
+  hosoQty.oninput = hlsoQty.oninput = calc;
 
-/*** EDIT BUTTON — Redirect ***/
-function editSelected(){
-  if(!selectedRow) return alert("Select a row!");
-  window.location = `/processing/de_heading/edit/${selectedRow.dataset.id}`;
-}
-
-/*** DELETE ***/
-function deleteSelected(){
-  if(!selectedRow) return alert("Select a row!");
-  if(!confirm("Delete?")) return;
-  fetch(`/processing/de_heading/delete/${selectedRow.dataset.id}`, { method: "POST" })
-    .then(res => res.json())
-    .then(() => location.reload())
-    .catch(err => { alert("Delete failed"); console.error(err); });
-}
-
-/*** PRINT ***/
-function printSelected(){
-  if(!selectedRow) return alert("Select row!");
-  const win = window.open("", "_blank");
-  win.document.write("<h3>De-heading Record</h3>");
-  win.document.write("<table border='1'><tr>");
-  selectedRow.querySelectorAll("td").forEach((td) => {
-    win.document.write("<td style='padding:6px'>" + td.innerText + "</td>");
-  });
-  win.document.write("</tr></table>");
-  win.print();
-}
-
-/*** LOAD HOSO COUNTS ON BATCH CHANGE ***/
-document.getElementById("batch_number").addEventListener("change", function(){
-  if(this.value === "__add__"){
-    // open lookup to add batch
-    document.getElementById("lookupFrame").src = "/processing/batch_lookup";
-    document.getElementById("lookupModal").style.display = "flex";
-    this.value = "";
-    return;
-  }
-  loadHosoCounts(this.value);
-});
-
-function loadHosoCounts(batch) {
-  fetch(`/processing/get_hoso/${encodeURIComponent(batch)}`)
-    .then(res => res.json())
-    .then(data => {
-      const h = document.getElementById("hoso_count");
-      h.innerHTML = "<option value=''>Select Count</option>";
-      data.counts.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.text = c;
-        h.appendChild(opt);
+  /* ================= NORMAL FETCH ================= */
+  batchDD.onchange = () => {
+    countDD.innerHTML = "<option value=''>Select</option>";
+    fetch(`/processing/get_hoso/${batchDD.value}`)
+      .then(r => r.json())
+      .then(d => {
+        d.counts.forEach(c => {
+          let o = document.createElement("option");
+          o.value = c;
+          o.text = c;
+          countDD.appendChild(o);
+        });
       });
-    })
-    .catch(err => console.error("Failed to load HOSO counts", err));
-}
+  };
 
-/*** CONTRACTOR CHANGE => LOAD RATE ***/
-document.getElementById("contractor").addEventListener("change", function(){
-  if(this.value === "__add__"){
-    document.getElementById("lookupFrame").src = "/criteria/contractors";
-    document.getElementById("lookupModal").style.display = "flex";
-    this.value = "";
-    return;
-  }
-  fetch(`/processing/get_rate/${encodeURIComponent(this.value)}`)
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("rate_per_kg").value = data.rate || 0;
-      calcAmounts();
-    })
-    .catch(err => console.error("Failed to load rate", err));
-});
+  countDD.onchange = () => {
+    fetch(`/processing/get_available_qty/${batchDD.value}/${countDD.value}`)
+      .then(r => r.json())
+      .then(d => availEl.innerText = d.available_qty);
+  };
 
-/*** AUTO CALC Yield% and Amount ***/
-document.getElementById("hlso_qty").addEventListener("input", calcAmounts);
-document.getElementById("hoso_qty").addEventListener("input", calcAmounts);
+  contractorDD.onchange = () => {
+    fetch(`/processing/get_rate/${contractorDD.value}`)
+      .then(r => r.json())
+      .then(d => {
+        rateEl.value = d.rate;
+        calc();
+      });
+  };
 
-function calcAmounts(){
-  const hlso = parseFloat(document.getElementById("hlso_qty").value) || 0;
-  const hoso = parseFloat(document.getElementById("hoso_qty").value) || 0;
-  const rate = parseFloat(document.getElementById("rate_per_kg").value) || 0;
+  /* ================= EDIT AUTO LOAD ================= */
+  {% if edit_data %}
 
-  if(hoso > 0){
-    document.getElementById("yield_percent").value = ((hlso / hoso) * 100).toFixed(2);
-  } else {
-    document.getElementById("yield_percent").value = "";
-  }
-  document.getElementById("amount").value = (hlso * rate).toFixed(2);
-}
+  fetch(`/processing/get_hoso/{{edit_data.batch_number}}`)
+    .then(r => r.json())
+    .then(d => {
+      countDD.innerHTML = "<option value=''>Select</option>";
+      d.counts.forEach(c => {
+        let o = document.createElement("option");
+        o.value = c;
+        o.text = c;
+        if (c === "{{edit_data.hoso_count}}") o.selected = true;
+        countDD.appendChild(o);
+      });
+    });
 
-/*** POPUP LOOKUP ***/
-document.querySelectorAll("select").forEach(sel => {
-  sel.addEventListener("change", function(){
-    if(this.value !== "__add__") return;
-    let url = "";
-    if(this.name === "batch_number") url = "/processing/batch_lookup";
-    if(this.name === "contractor") url = "/criteria/contractors";
-    document.getElementById("lookupFrame").src = url;
-    document.getElementById("lookupModal").style.display = "flex";
-    this.value = "";
+  fetch(`/processing/get_available_qty/{{edit_data.batch_number}}/{{edit_data.hoso_count}}`)
+    .then(r => r.json())
+    .then(d => availEl.innerText = d.available_qty);
+
+  fetch(`/processing/get_rate/{{edit_data.contractor}}`)
+    .then(r => r.json())
+    .then(d => {
+      rateEl.value = d.rate;
+      calc();
+    });
+
+  {% endif %}
+
+  /* ================= TABLE SELECT ================= */
+  let selectedRow = null;
+
+  document.querySelectorAll("#mainTable tbody tr").forEach(r => {
+    r.onclick = () => {
+      document.querySelectorAll("#mainTable tr").forEach(x => x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow = r;
+      threeDotsMenu.style.display = "block";
+    };
   });
+
+  dotsBtn.onclick = e => {
+    e.stopPropagation();
+    dropdownMenu.style.display =
+      dropdownMenu.style.display === "block" ? "none" : "block";
+  };
+
+  document.onclick = () => dropdownMenu.style.display = "none";
+
+  window.editSelected = function () {
+    if (!selectedRow) return alert("Select row");
+    location.href = "/processing/de_heading/edit/" + selectedRow.dataset.id;
+  };
+
+  window.deleteSelected = function () {
+    if (!selectedRow) return alert("Select row");
+    if (confirm("Delete this entry?")) {
+      fetch(`/processing/de_heading/delete/${selectedRow.dataset.id}`, { method: "POST" })
+        .then(() => location.reload());
+    }
+  };
+
+  /* ================= TOTALS ================= */
+  function n(v) { return parseFloat(v) || 0; }
+
+  function totals() {
+    let gh = 0, gl = 0, ga = 0, map = {};
+
+    document.querySelectorAll("#mainTable tbody tr").forEach(r => {
+      let c = r.dataset.contractor;
+      let h = n(r.querySelector(".hoso").innerText);
+      let l = n(r.querySelector(".hlso").innerText);
+      let a = n(r.querySelector(".amount").innerText);
+
+      gh += h; gl += l; ga += a;
+      if (!map[c]) map[c] = { h: 0, l: 0, a: 0 };
+      map[c].h += h; map[c].l += l; map[c].a += a;
+    });
+
+    gt_hoso.innerText = gh.toFixed(2);
+    gt_hlso.innerText = gl.toFixed(2);
+    gt_amount.innerText = ga.toFixed(2);
+
+    contractorBody.innerHTML = "";
+    Object.keys(map).forEach(c => {
+      contractorBody.innerHTML += `
+        <tr>
+          <td>${c}</td>
+          <td>${map[c].h.toFixed(2)}</td>
+          <td>${map[c].l.toFixed(2)}</td>
+          <td>${map[c].a.toFixed(2)}</td>
+        </tr>`;
+    });
+  }
+
+  totals();
+
 });
-
-function closeLookup(){
-  document.getElementById("lookupModal").style.display = "none";
-  // reload to pick up newly added lookup data
-  window.location.reload();
-}
 </script>
-
 </body>
 </html>

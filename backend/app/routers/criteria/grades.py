@@ -6,71 +6,77 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.criteria import grades   # <-- LOWERCASE MODEL
+from app.database.models.criteria import grades   # model
 
-# No prefix here (handled in criteria_router)
 router = APIRouter(tags=["GRADES"])
 templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE
+# PAGE – SHOW GRADES
 # ---------------------------------------------------------
 @router.get("/grades")
 def grades_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")           # unified session key
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    today_data = db.query(grades).filter(
-        grades.company_id == company_id
-    ).order_by(grades.id.desc()).all()
+    rows = (
+        db.query(grades)
+        .filter(grades.company_id == company_code)
+        .order_by(grades.id.desc())
+        .all()
+    )
 
     return templates.TemplateResponse(
         "criteria/grades.html",
         {
             "request": request,
-            "today_data": today_data,
+            "today_data": rows,
             "email": email,
-            "company_id": company_id,
+            "company_id": company_code,
             "message": ""
         }
     )
 
 
 # ---------------------------------------------------------
-# SAVE / UPDATE
+# SAVE / UPDATE GRADE
 # ---------------------------------------------------------
 @router.post("/grades")
 def save_grade(
     request: Request,
+
     grade_name: str = Form(...),
-    id: int = Form(None),
+    id: str = Form(""),             # ← safe string ID
     date: str = Form(...),
     time: str = Form(...),
-    email: str = Form(""),
-    company_id: str = Form(""),
+
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
+    # Safely convert ID
+    record_id = int(id) if id and id.isdigit() else None
 
-    # Duplicate Check
-    duplicate = db.query(grades).filter(
-        grades.grade_name == grade_name,
-        grades.company_id == company_id,
-        grades.id != id
-    ).first()
+    # Duplicate check
+    duplicate = (
+        db.query(grades)
+        .filter(
+            grades.grade_name == grade_name,
+            grades.company_id == company_code,
+            grades.id != record_id
+        )
+        .first()
+    )
 
     if duplicate:
         return JSONResponse(
@@ -79,11 +85,15 @@ def save_grade(
         )
 
     # UPDATE
-    if id:
-        row = db.query(grades).filter(
-            grades.id == id,
-            grades.company_id == company_id
-        ).first()
+    if record_id:
+        row = (
+            db.query(grades)
+            .filter(
+                grades.id == record_id,
+                grades.company_id == company_code
+            )
+            .first()
+        )
 
         if not row:
             return JSONResponse({"error": "Record not found"}, status_code=404)
@@ -100,7 +110,7 @@ def save_grade(
             date=date,
             time=time,
             email=email,
-            company_id=company_id
+            company_id=company_code
         )
         db.add(new_row)
 
@@ -109,19 +119,19 @@ def save_grade(
 
 
 # ---------------------------------------------------------
-# DELETE
+# DELETE GRADE
 # ---------------------------------------------------------
 @router.post("/grades/delete/{id}")
 def delete_grade(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
 
-    if not company_id:
+    if not company_code:
         return JSONResponse({"error": "Session expired!"}, status_code=401)
 
     db.query(grades).filter(
         grades.id == id,
-        grades.company_id == company_id
+        grades.company_id == company_code
     ).delete()
 
     db.commit()

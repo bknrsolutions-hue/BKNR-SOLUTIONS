@@ -3,416 +3,462 @@
 <head>
 <meta charset="UTF-8">
 <title>GATE ENTRY REPORT - BKNR SOLUTIONS</title>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-    /* RMP Color Scheme */
-    :root{
-      --accent:#003366;
-      --muted:#a3bcd6;
-      --light:#eaf4ff;
+    :root {
+        --accent:#003366;
+        --muted:#a3bcd6;
+        --light:#eaf4ff;
     }
-    
-    *{box-sizing:border-box}
-    body { font-family:Arial,sans-serif; background:var(--light); margin:0; padding:0; }
-    h2 { text-align:center; color:var(--accent); margin:20px 0; font-weight:700; font-size: 20px;}
 
-    /* RMP FILTER / CONTROLS Structure */
-    .controls { /* Changed from .filter-container */
-        width:92%; max-width:1200px;
+    body {
+        font-family: Arial, sans-serif;
+        background: var(--light);
+        margin: 0;
+        padding: 0;
+    }
+
+    header {
+        text-align:left;
+        padding:18px 20px;
+        font-size:22px;
+        font-weight:700;
+        color:var(--accent);
+    }
+
+    /* FILTER SECTION */
+    .controls {
+        width:96%; 
+        max-width:1200px;
         margin:10px auto;
-        display:flex; gap:10px; flex-wrap:wrap;
-        align-items:center; /* Align items to center */
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
     }
-    .filter { /* Changed from .filter-item */
-        display:flex; flex-direction:column;
-        width:19%; /* 5 filters across, slightly less than 20% to account for gap */
-        min-width:140px;
+
+    .filter {
+        width:15%;
+        min-width:100px;
+        display:flex;
+        flex-direction:column;
     }
-    .filter label { /* Label style like RMP */
-        font-weight:600; color:var(--accent); margin-bottom:6px; font-size:13px;
+
+    .filter label {
+        font-size:13px;
+        font-weight:600;
+        margin-bottom:4px;
+        color:var(--accent);
     }
-    .filter select { /* Select style like RMP */
-        padding:8px; border:1px solid var(--muted); border-radius:6px;
-        background:#fff; font-size:14px;
+
+    .filter select,
+    .filter input {
+        padding:7px;
+        border:1px solid var(--muted);
+        border-radius:6px;
+        background:white;
     }
-    
-    /* ACTION BAR + 3 DOT MENU (Kept mostly same, using RMP colors) */
+
+    .controls .right {
+        margin-left:auto;
+        display:flex;
+        align-items:center;
+    }
+
+    /* ACTION BAR */
     .action-bar {
-        width:92%; max-width:1200px;
-        margin:5px auto; display:flex; align-items:center; justify-content:flex-end;
+        width:96%; 
+        max-width:1200px; 
+        margin:10px auto;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
     }
+
+    .menu-box { position:relative; }
+
     .dots {
-        background:var(--accent); color:white; /* RMP accent color */
-        width:38px; height:38px; border-radius:8px;
-        cursor:pointer; display:flex; justify-content:center;
-        align-items:center; font-size:24px; margin-left:8px;
+        background:var(--accent);
+        color:white;
+        font-size:22px;
+        padding:6px 12px;
+        cursor:pointer;
+        border-radius:6px;
     }
-    .menu-box {
-        position:absolute; top:42px; right:0;
-        background:white; border:1px solid #ddd; /* Lighter border */
-        border-radius:6px; width:160px; display:none;
-        box-shadow:0 6px 18px rgba(0,0,0,0.12); /* Softer shadow */
-        z-index: 100;
+
+    .menu-list {
+        position:absolute;
+        right:0;
+        top:40px;
+        background:#fff;
+        border:1px solid #ccc;
+        border-radius:6px;
+        width:170px;
+        display:none;
+        box-shadow:0 6px 18px rgba(0,0,0,0.15);
+        z-index:10;
     }
-    .menu-box div {
-        padding:10px; cursor:pointer; font-size:14px;
+
+    .menu-list div {
+        padding:10px;
+        cursor:pointer;
+        font-size:14px;
         border-bottom:1px solid #eee;
     }
-    .menu-box div:hover { background:#f0f8ff; } /* RMP hover color */
+    .menu-list div:hover {
+        background:#eaf4ff;
+    }
 
-    /* TABLE EXACTLY LIKE RMP */
-    .table-container { /* Changed from .table-wrap, using RMP's box-shadow */
-        width:92%; max-width:1200px;
-        margin:10px auto 30px;
-        overflow-x:auto;
-        background:#fff; /* White background */
+    /* TABLE */
+    .table-wrap {
+        width:96%; 
+        max-width:1200px;
+        margin:10px auto;
+        background:#fff;
         border-radius:8px;
-        box-shadow:0 4px 14px rgba(0,0,0,0.06); /* RMP shadow */
-        min-width:1100px;
+        overflow:auto;
+        box-shadow:0 4px 14px rgba(0,0,0,0.1);
     }
-    table {
-        width:100%; border-collapse:collapse;
-        overflow:hidden;
-    }
-    th,td { padding:9px 10px; border-bottom:1px solid #eee; font-size:13px; white-space:nowrap; } /* Padding and border like RMP */
-    th { background:var(--accent); color:white; text-align:left; position: sticky; top: 0; z-index: 10;} /* Sticky header like RMP */
-    tr:hover { background:#f5fbff; cursor:pointer; } /* RMP hover color */
-    tr.selected { background:#cfe9ff !important; } /* RMP selected color */
-    
-    /* FOOTER TOTALS LIKE RMP */
-    tfoot td { font-weight:700; background:#f8fbff; padding:10px; border-top: 2px solid var(--muted); }
 
-    /* Responsive adjustments for filters */
-    @media(max-width:1000px){ .filter { width:48%; } } /* Changed from .filter-item */
-    @media(max-width:500px){ .filter { width:100%; } } /* Changed from .filter-item */
+    table {
+        width:100%;
+        border-collapse:collapse;
+    }
+
+    /* HEADER WRAP TEXT */
+    th {
+        background:#003366;
+        color:white;
+        padding:6px 8px;
+        border-bottom:1px solid #ddd;
+        white-space:normal;
+        word-wrap:break-word;
+        font-size:12px;
+        text-align:left;
+        position:sticky;
+        top:0;
+        z-index:5;
+        line-height:14px;
+    }
+
+    /* ROW HEIGHT SMALL */
+    td {
+        padding:4px 8px;
+        border-bottom:1px solid #eee;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        font-size:12px;
+        line-height:16px;
+    }
+
+    tfoot td {
+        font-weight:bold;
+        background:#f2f7ff;
+        padding:6px;
+        font-size:13px;
+    }
+
+    tr:hover { background:#f0f8ff; cursor:pointer; }
+    tr.selected { background:#cfe9ff !important; }
+
+    /* PAGINATION */
+    .pager {
+        width:96%; max-width:1200px;
+        margin:10px auto 40px;
+        display:flex;
+        justify-content:space-between;
+    }
+
+    .pager button {
+        padding:6px;
+        border:1px solid #ccc;
+        border-radius:6px;
+        background:white;
+        cursor:pointer;
+    }
+
+    .pager button.current {
+        background:var(--accent);
+        color:white;
+    }
 </style>
 </head>
 
 <body>
 
-<h2>GATE ENTRY REPORT</h2>
+<header>Gate Entry Report</header>
 
-<form id="filterForm" method="GET" action="/reports/gate_entry_report">
-    <div class="controls"> 
+<!-- ================= FILTERS ================= -->
+<div class="controls">
 
-        <div class="filter">
-            <label>Batch</label>
-            <select id="f_batch" name="batch">
-                <option value="">All</option>
-                {% for b in batches %}
-                <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="filter">
-            <label>Challan</label>
-            <select id="f_challan" name="challan">
-                <option value="">All</option>
-                {% for c in challans %}
-                <option value="{{ c }}" {% if selected_challan == c %}selected{% endif %}>{{ c }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="filter">
-            <label>Gate Pass</label>
-            <select id="f_gatepass" name="gatepass">
-                <option value="">All</option>
-                {% for g in gates %}
-                <option value="{{ g }}" {% if selected_gatepass == g %}selected{% endif %}>{{ g }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="filter">
-            <label>Supplier</label>
-            <select id="f_supplier" name="supplier">
-                <option value="">All</option>
-                {% for s in suppliers %}
-                <option value="{{ s }}" {% if selected_supplier == s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="filter">
-            <label>Date</label>
-            <select id="f_date" name="date">
-                <option value="">All</option>
-                {% for d in dates %}
-                <option value="{{ d }}" {% if selected_date == d %}selected{% endif %}>{{ d }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
+    <div class="filter">
+        <label>Batch Number</label>
+        <select id="flt_batch">
+            <option value="">All</option>
+            {% for b in batches %}
+            <option value="{{ b }}">{{ b }}</option>
+            {% endfor %}
+        </select>
     </div>
-</form>
 
+    <div class="filter">
+        <label>Challan Number</label>
+        <select id="flt_challan">
+            <option value="">All</option>
+            {% for c in challans %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter">
+        <label>Supplier Name</label>
+        <select id="flt_supplier">
+            <option value="">All</option>
+            {% for s in suppliers %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter">
+        <label>Gate Pass Number</label>
+        <select id="flt_gatepass">
+            <option value="">All</option>
+            {% for g in gates %}
+            <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 🔥 DATE RANGE FILTER -->
+    <div class="filter">
+        <label>From Date</label>
+        <input type="date" id="flt_from">
+    </div>
+
+    <div class="filter">
+        <label>To Date</label>
+        <input type="date" id="flt_to">
+    </div>
+
+    <div class="right">
+        <input id="quickSearch" placeholder="Search anything..." 
+        style="padding:8px;width:250px;border-radius:6px;border:1px solid var(--muted)">
+    </div>
+
+</div>
+
+<!-- ================= ACTION BAR ================= -->
 <div class="action-bar">
-    <span id="rowCount" style="font-size:13px; color:#555;">Showing 0 rows</span>
-    <div style="position:relative; display:inline-block;">
+    <div id="rowCount">Showing 0 rows</div>
+
+    <div class="menu-box">
         <div class="dots" onclick="toggleMenu()">⋮</div>
-        <div class="menu-box" id="menu">
-            <div onclick="editRow()">✏ Edit Selected</div>
-            <div onclick="deleteSelectedRows()">🗑 Delete Selected</div>
-            <div onclick="printSelectedRow()">🖨 Print Selected</div>
-            <div onclick="pdfSelectedRow()">📄 Export PDF Selected</div>
-            <div onclick="excelSelectedRow()">📊 Export Excel Selected</div>
+
+        <div class="menu-list" id="menuList">
+            <div onclick="editSelected()">✏ Edit Selected</div>
+            <div onclick="deleteSelected()">🗑 Delete Selected</div>
+            <div onclick="printSelected()">🖨 Print Selected</div>
+            <div onclick="pdfSelected()">📄 Export PDF</div>
+            <div onclick="excelSelected()">📊 Export Excel</div>
         </div>
     </div>
 </div>
 
-<div class="table-container">
-<table id="reportTable">
+<!-- ================= TABLE ================= -->
+<div class="table-wrap">
+<table id="gateTable">
 <thead>
 <tr>
-    <th style="width:36px;"><input type="checkbox" id="chk_all" title="Select all visible rows"></th>
+    <th><input type="checkbox" id="chk_all"></th>
     <th>ID</th>
-    <th>Batch</th>
-    <th>Challan</th>
-    <th>Gate Pass</th>
-    <th>Supplier</th>
-    <th>Location</th>
-    <th>Vehicle</th>
-    <th>Material Boxes</th>
-    <th>Empty</th>
-    <th>Ice</th>
     <th>Date</th>
     <th>Time</th>
+    <th>Batch Number</th>
+    <th>Challan Number</th>
+    <th>Gate Pass Number</th>
+    <th>Supplier Name</th>
+    <th>Purchasing Location</th>
+    <th>Vehicle Number</th>
+    <th>Material Boxes</th>
+    <th>Empty Boxes</th>
+    <th>Ice Boxes</th>
     <th>Email</th>
+    <th>Company ID</th>
 </tr>
 </thead>
 
-<tbody id="tbody">
-{% for row in data %}
-<tr data-id="{{ row.id }}">
+<tbody id="reportBody">
+{% for r in rows %}
+<tr data-id="{{ r.id }}">
     <td><input type="checkbox" class="rowCheck"></td>
-    <td>{{ row.id }}</td>
-    <td>{{ row.batch_number }}</td>
-    <td>{{ row.challan_number }}</td>
-    <td>{{ row.gate_pass_number }}</td>
-    <td>{{ row.supplier_name }}</td>
-    <td>{{ row.purchasing_location }}</td>
-    <td class="col-vehicle">{{ row.vehicle_number }}</td>
-    <td class="col-material">{{ row.no_of_material_boxes or 0 }}</td>
-    <td class="col-empty">{{ row.no_of_empty_boxes or 0 }}</td>
-    <td class="col-ice">{{ row.no_of_ice_boxes or 0 }}</td>
-    <td>{{ row.date }}</td>
-    <td>{{ row.time }}</td>
-    <td>{{ row.email }}</td>
+    <td>{{ r.id }}</td>
+    <td>{{ r.date }}</td>
+    <td>{{ r.time.strftime("%H:%M:%S") }}</td>
+    <td>{{ r.batch_number }}</td>
+    <td>{{ r.challan_number }}</td>
+    <td>{{ r.gate_pass_number }}</td>
+    <td>{{ r.supplier_name }}</td>
+    <td>{{ r.purchasing_location }}</td>
+    <td>{{ r.vehicle_number }}</td>
+    <td>{{ r.no_of_material_boxes }}</td>
+    <td>{{ r.no_of_empty_boxes }}</td>
+    <td>{{ r.no_of_ice_boxes }}</td>
+    <td>{{ r.email }}</td>
+    <td>{{ r.company_id }}</td>
 </tr>
 {% endfor %}
 </tbody>
 
+<!-- 🔥 SUBTOTAL -->
 <tfoot>
-    <tr>
-        <td colspan="7">Totals</td> 
-        <td id="tot_material">0</td> 
-        <td id="tot_empty">0</td>    
-        <td id="tot_ice">0</td>      
-        <td colspan="3"></td>        
-    </tr>
+<tr>
+    <td></td>
+    <td colspan="9" style="text-align:right;">TOTAL BOXES :</td>
+    <td id="sub_material">0</td>
+    <td id="sub_empty">0</td>
+    <td id="sub_ice">0</td>
+    <td colspan="2"></td>
+</tr>
 </tfoot>
+
 </table>
 </div>
 
+<!-- ================= SCRIPT ================= -->
 <script>
-const filterForm = document.getElementById("filterForm");
-const tbody = document.getElementById("tbody");
-const rowsAll = Array.from(tbody.querySelectorAll('tr')); // All rows in DOM (current filtered set)
-const chk_all = document.getElementById('chk_all');
-const rowCountEl = document.getElementById('rowCount');
 
-// Total Elements
-const tot_material = document.getElementById("tot_material");
-const tot_empty = document.getElementById("tot_empty");
-const tot_ice = document.getElementById("tot_ice");
+const rows = Array.from(document.querySelectorAll("#reportBody tr"));
+const batch = document.getElementById("flt_batch");
+const challan = document.getElementById("flt_challan");
+const supplier = document.getElementById("flt_supplier");
+const gatepass = document.getElementById("flt_gatepass");
+const flt_from = document.getElementById("flt_from");
+const flt_to = document.getElementById("flt_to");
+const search = document.getElementById("quickSearch");
+const chk_all = document.getElementById("chk_all");
 
-// Utility function to convert text to number
-function toNum(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
-
-/* -------------------------
-    TOTALS CALCULATION
-    ------------------------- */
-function computeTotals(){
-    let t_material = 0;
-    let t_empty = 0;
-    let t_ice = 0;
-    let visibleRowCount = 0;
-
-    // Iterate over all rows in the DOM (which are the current filtered data)
-    rowsAll.forEach(r => {
-        // Find cells by class name
-        const materialCell = r.querySelector('.col-material');
-        const emptyCell = r.querySelector('.col-empty');
-        const iceCell = r.querySelector('.col-ice');
-
-        if (materialCell) t_material += toNum(materialCell.innerText);
-        if (emptyCell) t_empty += toNum(emptyCell.innerText);
-        if (iceCell) t_ice += toNum(iceCell.innerText);
-        visibleRowCount++;
-    });
-
-    // Update footer cells
-    tot_material.innerText = t_material.toFixed(0);
-    tot_empty.innerText = t_empty.toFixed(0);
-    tot_ice.innerText = t_ice.toFixed(0);
-    
-    // Update row count display
-    rowCountEl.innerText = `Showing ${visibleRowCount} rows`;
-}
-
-/* -------------------------
-    MULTI-SELECTION LOGIC
-    ------------------------- */
-
-// Helper to get all IDs of currently selected rows
-function getSelectedIds(){
-    // Select all checkboxes with class 'rowCheck' that are checked
-    return Array.from(document.querySelectorAll('#tbody .rowCheck:checked'))
-             .map(cb => cb.closest('tr').dataset.id);
-}
-
-// Master Checkbox Logic
-chk_all.addEventListener('change', function(){
-    const on = this.checked;
-    
-    // Since we are using server-side filtering, all rows in rowsAll are visible/filtered.
-    rowsAll.forEach(r=>{
-        const cb = r.querySelector('.rowCheck');
-        cb.checked = on;
-        r.classList.toggle('selected', on);
-    });
-});
-
-// Row Click and Individual Checkbox Logic
-rowsAll.forEach(row=>{
-    // Click row toggles only that row's checkbox and selection class
-    row.addEventListener('click', function(e){
-        // Do not toggle if the click target is the checkbox itself
-        if(e.target.tagName.toLowerCase() === 'input') return;
-        
-        const cb = this.querySelector('.rowCheck');
-        cb.checked = !cb.checked;
-        this.classList.toggle('selected', cb.checked);
-        
-        // Update master checkbox status (optional, but good practice)
-        if (!cb.checked) {
-            chk_all.checked = false;
-        } else if (getSelectedIds().length === rowsAll.length) {
-            chk_all.checked = true;
-        }
-    });
-
-    // Individual checkbox change highlights row
-    const cb = row.querySelector('.rowCheck');
-    cb.addEventListener('change', function(){
-        const tr = this.closest('tr');
-        tr.classList.toggle('selected', this.checked);
-
-        // Update master checkbox status
-        if (!this.checked) {
-            chk_all.checked = false;
-        } else if (getSelectedIds().length === rowsAll.length) {
-            chk_all.checked = true;
-        }
-    });
-});
-
-
-/* -------------------------
-    MENU and ACTIONS
-    ------------------------- */
+/* MENU */
 function toggleMenu(){
-    let m = document.getElementById("menu");
-    m.style.display = m.style.display==="block" ? "none":"block";
+    let m = document.getElementById("menuList");
+    m.style.display = m.style.display==="block" ? "none" : "block";
 }
-document.addEventListener('click', (e)=> {
-    const dotsBtn = document.querySelector('.dots');
-    const menu = document.getElementById("menu");
-    if(!dotsBtn.contains(e.target) && !menu.contains(e.target)) {
-        menu.style.display='none';
-    }
-});
+window.onclick = e=>{
+    if(!e.target.closest(".menu-box"))
+        document.getElementById("menuList").style.display="none";
+};
 
-// EDIT (Only allows editing if exactly one row is selected)
-function editRow(){
-    const ids = getSelectedIds();
-    if(ids.length === 0) return Swal.fire('Select exactly one row to edit.', '', 'warning');
-    if(ids.length > 1) return Swal.fire('Please select only one row to edit.', '', 'warning');
-    
-    const id = ids[0];
-    window.location = `/processing/gate_entry/edit/${id}`;
+/* SELECTED ROWS */
+function getSelected(){
+    return Array.from(document.querySelectorAll(".rowCheck:checked"))
+        .map(cb => cb.closest("tr").dataset.id);
 }
 
-// DELETE SELECTED ROWS (Changed from single delete)
-async function deleteSelectedRows(){
-    const ids = getSelectedIds();
-    if(!ids.length) return Swal.fire('Select one or more rows to delete.', '', 'warning');
-
-    const ok = await Swal.fire({ 
-        title: `Delete ${ids.length} records?`, 
-        text: "You won't be able to revert this!",
-        icon:'warning', 
-        showCancelButton:true, 
-        confirmButtonText:'Yes, delete them!' 
+chk_all.onclick = ()=>{
+    let on = chk_all.checked;
+    rows.forEach(r=>{
+        let cb = r.querySelector(".rowCheck");
+        cb.checked = on;
+        r.classList.toggle("selected", on);
     });
-    if(!ok.isConfirmed) return;
+};
 
-    // Assuming your server expects a list of IDs for mass deletion
-    // If your server endpoint only handles single ID deletion: 
-    // You would loop through ids and make multiple fetch calls here.
+/* EDIT */
+function editSelected(){
+    let ids = getSelected();
+    if(ids.length !== 1) return alert("Select 1 row to edit");
+    window.location = `/processing/gate_entry/edit/${ids[0]}`;
+}
 
-    // If your server supports batch deletion (recommended):
-    try {
-        const response = await fetch(`/processing/gate_entry/delete_batch`, { 
-            method:"POST",
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ ids: ids })
-        });
-        
-        if (response.ok) {
-            Swal.fire('Deleted!', `${ids.length} records have been deleted.`, 'success')
-                .then(() => location.reload()); // Reload page to show updated data
-        } else {
-            Swal.fire('Error', 'Deletion failed on the server.', 'error');
+/* DELETE */
+async function deleteSelected(){
+    let ids = getSelected();
+    if(ids.length === 0) return alert("Select rows to delete");
+
+    if(!confirm("Delete selected rows?")) return;
+
+    await fetch("/reports/gate_entry/delete", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ids})
+    });
+
+    location.reload();
+}
+
+/* PRINT */
+function printSelected(){
+    let ids = getSelected();
+    if(ids.length === 0) return alert("Select rows");
+
+    window.open(`/reports/gate_entry/print?ids=${ids.join(",")}`, "_blank");
+}
+
+/* EXPORT PDF */
+function pdfSelected(){
+    let ids = getSelected();
+    if(ids.length === 0) return alert("Select rows");
+    window.location = `/reports/gate_entry/export_pdf?ids=${ids.join(",")}`;
+}
+
+/* EXCEL */
+function excelSelected(){
+    let ids = getSelected();
+    if(ids.length === 0) return alert("Select rows");
+    window.location = `/reports/gate_entry/export_xlsx?ids=${ids.join(",")}`;
+}
+
+/* SUBTOTAL CALC */
+function calculateSubtotal(){
+    let mat=0, emp=0, ice=0;
+
+    rows.forEach(r=>{
+        if(r.style.display !== "none"){
+            mat += parseInt(r.children[10].innerText) || 0;
+            emp += parseInt(r.children[11].innerText) || 0;
+            ice += parseInt(r.children[12].innerText) || 0;
         }
-    } catch(error) {
-        Swal.fire('Error', 'Network or server error during deletion.', 'error');
-    }
-}
-
-// PRINT/EXPORT (Modified to handle selected IDs, although usually exports use ALL filtered data)
-function printSelectedRow(){
-    const ids = getSelectedIds();
-    if(ids.length === 0) return Swal.fire('Select rows first.', '', 'warning');
-    // Assuming API takes comma-separated IDs or first ID
-    window.open(`/reports/gate_entry/print_selected?ids=${ids.join(',')}`, "_blank");
-}
-
-function pdfSelectedRow(){
-    const ids = getSelectedIds();
-    if(ids.length === 0) return Swal.fire('Select rows first.', '', 'warning');
-    window.location = `/reports/gate_entry/export_pdf_selected?ids=${ids.join(',')}`;
-}
-
-function excelSelectedRow(){
-    const ids = getSelectedIds();
-    if(ids.length === 0) return Swal.fire('Select rows first.', '', 'warning');
-    window.location = `/reports/gate_entry/export_xlsx_selected?ids=${ids.join(',')}`;
-}
-
-/* FILTER AUTO APPLY */
-document.querySelectorAll(".controls select").forEach(s=>{
-    s.addEventListener("change", ()=>{
-        filterForm.submit(); 
     });
-});
 
-// Initial call to compute totals when the page loads
-document.addEventListener("DOMContentLoaded", computeTotals);
+    document.getElementById("sub_material").innerText = mat;
+    document.getElementById("sub_empty").innerText = emp;
+    document.getElementById("sub_ice").innerText = ice;
+}
+
+/* FILTERS */
+function applyFilters(){
+    rows.forEach(r => {
+        let ok = true;
+        let rowDate = r.children[2].innerText;
+
+        if(flt_from.value && rowDate < flt_from.value) ok=false;
+        if(flt_to.value && rowDate > flt_to.value) ok=false;
+
+        if(batch.value && r.children[4].innerText !== batch.value) ok=false;
+        if(challan.value && r.children[5].innerText !== challan.value) ok=false;
+        if(supplier.value && r.children[7].innerText !== supplier.value) ok=false;
+        if(gatepass.value && r.children[6].innerText !== gatepass.value) ok=false;
+
+        if(search.value.trim() && 
+           !r.innerText.toLowerCase().includes(search.value.toLowerCase()))
+            ok=false;
+
+        r.style.display = ok ? "" : "none";
+    });
+
+    calculateSubtotal();
+}
+
+document.querySelectorAll(".controls select").forEach(s=>{
+    s.onchange = applyFilters;
+});
+flt_from.onchange = applyFilters;
+flt_to.onchange = applyFilters;
+search.oninput = applyFilters;
+
+applyFilters();
 
 </script>
 

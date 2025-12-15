@@ -1,93 +1,244 @@
-# app/routers/reports/gate_entry_report.py
+# ============================================================
+# GATE ENTRY REPORT ROUTER (FULL + FIXED + FINAL)
+# ============================================================
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query, Body
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from datetime import datetime
+from io import BytesIO
+from openpyxl import Workbook
+from weasyprint import HTML
 
 from app.database import get_db
 from app.database.models.processing import GateEntry
+from app.database.models.users import Company
 
-router = APIRouter(tags=["Gate Entry Report"])   # <-- NO PREFIX HERE
+router = APIRouter(tags=["GATE ENTRY REPORT"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/gate_entry_report")
+# ------------------------------------------------------------
+# COMPANY INFO
+# ------------------------------------------------------------
+def get_company_info(db: Session, comp_code: str):
+    c = db.query(Company).filter(Company.company_code == comp_code).first()
+    if not c:
+        return "", ""
+    return c.company_name, c.address
+
+
+# ------------------------------------------------------------
+# REPORT PAGE (ALL DATA LOADING)
+# ------------------------------------------------------------
+@router.get("/gate_entry", response_class=HTMLResponse)
 def gate_entry_report(
     request: Request,
-    batch: str = "",
-    challan: str = "",
-    gatepass: str = "",
-    supplier: str = "",
-    date: str = "",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    from_date: str = Query(None),
+    to_date: str = Query(None)
 ):
-    company_id = request.session.get("company_id", "BKNR001")
 
-    all_data = db.query(GateEntry).filter(
-        GateEntry.company_id == company_id
-    ).all()
+    email = request.session.get("email")
+    comp_code = request.session.get("company_code")
 
-    batches = sorted({row.batch_number for row in all_data})
-    challans = sorted({row.challan_number for row in all_data})
-    gates = sorted({row.gate_pass_number for row in all_data})
-    suppliers = sorted({row.supplier_name for row in all_data})
-    dates = sorted({row.date for row in all_data})
+    if not email or not comp_code:
+        return RedirectResponse("/", status_code=302)
 
-    q = db.query(GateEntry).filter(GateEntry.company_id == company_id)
+    # ------------- FIXED → ALWAYS LOAD ALL DATA ----------------
+    if not from_date:
+        from_date = "2000-01-01"
+    if not to_date:
+        to_date = "2100-01-01"
 
-    if batch:
-        q = q.filter(GateEntry.batch_number == batch)
-    if challan:
-        q = q.filter(GateEntry.challan_number == challan)
-    if gatepass:
-        q = q.filter(GateEntry.gate_pass_number == gatepass)
-    if supplier:
-        q = q.filter(GateEntry.supplier_name == supplier)
-    if date:
-        q = q.filter(GateEntry.date == date)
+    rows = (
+        db.query(GateEntry)
+        .filter(GateEntry.company_id == comp_code)
+        .filter(GateEntry.date >= from_date)
+        .filter(GateEntry.date <= to_date)
+        .order_by(GateEntry.id.desc())
+        .all()
+    )
 
-    filtered_data = q.all()
+    company_name, company_address = get_company_info(db, comp_code)
+
+    # Dropdown filters
+    batches = sorted({r.batch_number for r in rows if r.batch_number})
+    challans = sorted({r.challan_number for r in rows if r.challan_number})
+    suppliers = sorted({r.supplier_name for r in rows if r.supplier_name})
+    gates = sorted({r.gate_pass_number for r in rows if r.gate_pass_number})
+    dates = sorted({r.date for r in rows if r.date})
 
     return templates.TemplateResponse(
         "reports/gate_entry_report.html",
         {
             "request": request,
-            "data": filtered_data,
+            "rows": rows,
             "batches": batches,
             "challans": challans,
-            "gates": gates,
             "suppliers": suppliers,
+            "gates": gates,
             "dates": dates,
-            "selected_batch": batch,
-            "selected_challan": challan,
-            "selected_gatepass": gatepass,
-            "selected_supplier": supplier,
-            "selected_date": date,
+            "company_name": company_name,
+            "company_address": company_address
         }
     )
 
 
-@router.post("/gate_entry/delete/{record_id}")
-def delete_gate_entry(record_id: int, db: Session = Depends(get_db)):
-    row = db.query(GateEntry).filter(GateEntry.id == record_id).first()
-    if not row:
-        return {"status": "error", "message": "Record not found"}
+# ------------------------------------------------------------
+# DELETE MULTIPLE ENTRIES
+# ------------------------------------------------------------
+@router.post("/gate_entry/delete")
+def delete_selected(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
 
-    db.delete(row)
+    comp_code = request.session.get("company_code")
+    ids = payload.get("ids", [])
+
+    for _id in ids:
+        row = (
+            db.query(GateEntry)
+            .filter(GateEntry.company_id == comp_code)
+            .filter(GateEntry.id == _id)
+            .first()
+        )
+        if row:
+            db.delete(row)
+
     db.commit()
-    return {"status": "success", "message": "Deleted"}
+    return {"deleted": len(ids)}
 
 
-@router.get("/gate_entry/print/{record_id}")
-def print_record(record_id: int):
-    return {"print": record_id}
+# ------------------------------------------------------------
+# PRINT PAGE (AUTO PRINT)
+# ------------------------------------------------------------
+@router.get("/gate_entry/print", response_class=HTMLResponse)
+def print_view(request: Request, ids: str = None, db: Session = Depends(get_db)):
+
+    comp_code = request.session.get("company_code")
+
+    q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
+
+    if ids and ids.lower() != "all":
+        id_list = [int(x) for x in ids.split(",") if x.isdigit()]
+        q = q.filter(GateEntry.id.in_(id_list))
+
+    rows = q.order_by(GateEntry.id.asc()).all()
+
+    company_name, company_address = get_company_info(db, comp_code)
+
+    return templates.TemplateResponse(
+        "reports/gate_entry_report_print.html",
+        {
+            "request": request,
+            "rows": rows,
+            "printed_on": datetime.now(),
+            "company_name": company_name,
+            "company_address": company_address,
+            "auto": 1
+        }
+    )
 
 
-@router.get("/gate_entry/export_pdf/{record_id}")
-def export_pdf(record_id: int):
-    return {"pdf": record_id}
+# ------------------------------------------------------------
+# EXPORT PDF (PRINT TABLE STYLE)
+# ------------------------------------------------------------
+@router.get("/gate_entry/export_pdf")
+def export_pdf(request: Request, ids: str = None, db: Session = Depends(get_db)):
+
+    comp_code = request.session.get("company_code")
+
+    q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
+
+    if ids and ids.lower() != "all":
+        id_list = [int(x) for x in ids.split(",") if x.isdigit()]
+        q = q.filter(GateEntry.id.in_(id_list))
+
+    rows = q.order_by(GateEntry.id.asc()).all()
+
+    company_name, company_address = get_company_info(db, comp_code)
+
+    html_src = templates.get_template(
+        "reports/gate_entry_report_print.html"
+    ).render({
+        "rows": rows,
+        "company_name": company_name,
+        "company_address": company_address,
+        "printed_on": datetime.now(),
+        "auto": 0
+    })
+
+    pdf_bytes = HTML(string=html_src).write_pdf()
+
+    fname = f"GATE_REPORT_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+    )
 
 
-@router.get("/gate_entry/export_xlsx/{record_id}")
-def export_xlsx(record_id: int):
-    return {"xlsx": record_id}
+# ------------------------------------------------------------
+# EXPORT EXCEL
+# ------------------------------------------------------------
+@router.get("/gate_entry/export_xlsx")
+def export_excel(request: Request, ids: str = None, db: Session = Depends(get_db)):
+
+    comp_code = request.session.get("company_code")
+
+    q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
+
+    if ids and ids.lower() != "all":
+        id_list = [int(x) for x in ids.split(",") if x.isdigit()]
+        q = q.filter(GateEntry.id.in_(id_list))
+
+    rows = q.order_by(GateEntry.id.asc()).all()
+
+    company_name, company_address = get_company_info(db, comp_code)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Gate Entry Report"
+
+    # Header
+    ws.append([company_name])
+    ws.append([company_address])
+    ws.append([""])
+
+    ws.append([
+        "ID", "DATE", "TIME", "BATCH", "CHALLAN", "GATE PASS",
+        "SUPPLIER", "LOCATION", "VEHICLE",
+        "MATERIAL BOXES", "EMPTY BOXES", "ICE BOXES",
+        "EMAIL", "COMPANY"
+    ])
+
+    for r in rows:
+        ws.append([
+            r.id,
+            str(r.date) if r.date else "",
+            r.time.strftime("%H:%M:%S") if getattr(r, "time", None) else "",
+            r.batch_number or "",
+            r.challan_number or "",
+            r.gate_pass_number or "",
+            r.supplier_name or "",
+            r.purchasing_location or "",
+            r.vehicle_number or "",
+            r.no_of_material_boxes or 0,
+            r.no_of_empty_boxes or 0,
+            r.no_of_ice_boxes or 0,
+            r.email or "",
+            r.company_id or ""
+        ])
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    fname = f"GATE_REPORT_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+    )

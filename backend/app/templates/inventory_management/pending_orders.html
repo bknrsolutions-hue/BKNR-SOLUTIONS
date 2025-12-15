@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PENDING ORDERS – BKNR SOLUTIONS</title>
+
+<style>
+ body{font-family:Arial;background:#e6f2ff;margin:0;padding:0;}
+ h2{text-align:center;color:#fff;background:#003366;padding:14px;margin:0;}
+ .box{width:95%;max-width:1200px;margin:18px auto;background:white;
+      padding:20px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,0.2);}
+ .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+ .col{flex:1;min-width:250px;}
+ label{font-weight:600;color:#003366;margin-bottom:5px;display:block;}
+ select,input{width:100%;padding:8px;border:1px solid #9db7d6;border-radius:6px;background:#f7fbff;}
+ button{padding:10px 22px;color:white;border-radius:6px;border:none;background:#003366;font-weight:600;cursor:pointer;}
+ .clr{background:#777;}
+ table{width:95%;margin:18px auto;border-collapse:collapse;background:white;box-shadow:0 0 6px rgba(0,0,0,0.15);}
+ th,td{padding:7px;border-bottom:1px solid #ddd;font-size:13px;}
+ th{background:#003366;color:white;}
+ .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#0009;
+        display:none;align-items:center;justify-content:center;}
+ .modal{background:white;padding:22px;border-radius:10px;width:340px;text-align:center;}
+ .modal input{width:90%;padding:8px;margin-top:10px;}
+</style>
+</head>
+
+<body>
+
+<h2>PENDING ORDERS</h2>
+
+<form method="post" action="/inventory/pending_orders" onsubmit="fillMeta()">
+<div class="box">
+
+  <div class="row">
+    <div class="col"><label>PO Number</label>
+      <input name="po_number" placeholder="Enter PO" required>
+    </div>
+
+    <div class="col"><label>Buyer</label>
+      <select name="buyer" id="buyer">{% for b in buyers %}<option>{{b}}</option>{% endfor %}<option value="__add__">＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>Agent</label>
+      <select name="agent" id="agent">{% for a in agents %}<option>{{a}}</option>{% endfor %}<option value="__add__">＋ Add</option></select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col"><label>Brand</label>
+      <select name="brand" id="brand">{% for b in brands %}<option>{{b}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>Country</label>
+      <select name="country" id="country">{% for c in countries %}<option>{{c}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>Packing Style</label>
+      <select name="packing_style" id="pack">
+      {% for p in packing %}<option value="{{p.packing_style}}">{{p.packing_style}}</option>{% endfor %}
+      <option>＋ Add</option></select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col"><label>Count Glaze%</label>
+      <select name="count_glaze" id="cg">{% for g in glazes %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>Weight Glaze%</label>
+      <select name="weight_glaze" id="wg">{% for g in glazes %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>Variety</label>
+      <select name="variety" id="var">{% for v in varieties %}<option>{{v}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col"><label>Grade</label>
+      <select name="grade" id="grade">{% for g in grades %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
+    </div>
+
+    <div class="col"><label>No. of MC</label>
+      <input type="number" name="no_of_mc" min="0" required>
+    </div>
+
+    <div class="col"><label>Shipment Date</label>
+      <input type="date" name="shipment_date" required>
+    </div>
+  </div>
+
+  <input type="hidden" name="email" id="meta_email">
+  <input type="hidden" name="company_id" id="meta_cid">
+
+  <div style="text-align:center;margin-top:15px;">
+    <button type="submit">SAVE</button>
+    <button type="reset" class="clr">CLEAR</button>
+  </div>
+
+</div>
+</form>
+
+{% if table_data %}
+<table>
+<tr><th>ID</th><th>PO</th><th>Buyer</th><th>Brand</th><th>Packing</th><th>MC</th><th>Shipment</th><th>Date</th></tr>
+{% for r in table_data %}
+<tr>
+ <td>{{r.id}}</td><td>{{r.po_number}}</td><td>{{r.buyer}}</td>
+ <td>{{r.brand}}</td><td>{{r.packing_style}}</td>
+ <td>{{r.no_of_mc}}</td><td>{{r.shipment_date}}</td><td>{{r.date}}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
+
+<script>
+function fillMeta(){
+ document.getElementById("meta_email").value  = localStorage.getItem("userEmail") || "";
+ document.getElementById("meta_cid").value    = localStorage.getItem("companyID") || "";
+}
+
+// any dropdown "+ Add" prompt
+document.querySelectorAll("select").forEach(sel=>{
+ sel.addEventListener("change",()=>{
+  if(sel.value.includes("Add")){
+    let v=prompt("Enter new value:");
+    if(v){
+      let o=document.createElement("option");o.text=v;o.value=v;
+      sel.insertBefore(o,sel.lastElementChild);sel.value=v;
+    }else sel.value="";
+  }
+ });
+});
+</script>
+
+</body>
+</html>

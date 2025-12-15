@@ -14,39 +14,41 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE LOAD
+# PAGE LOAD (COMPANY-WISE)
 # ---------------------------------------------------------
 @router.get("/production_types")
-def page(request: Request, db: Session = Depends(get_db)):
+def production_types_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
+    # LOOKUPS (company-wise only)
     glaze_list = (
         db.query(glazes.glaze_name)
-        .filter(glazes.company_id == company_id)
+        .filter(glazes.company_id == company_code)
         .order_by(glazes.glaze_name)
         .all()
     )
 
     freezer_list = (
         db.query(freezers.freezer_name)
-        .filter(freezers.company_id == company_id)
+        .filter(freezers.company_id == company_code)
         .order_by(freezers.freezer_name)
         .all()
     )
 
-    lookup_data = {
+    lookup = {
         "glazes": [g[0] for g in glaze_list],
         "freezers": [f[0] for f in freezer_list],
     }
 
+    # TABLE DATA
     rows = (
         db.query(production_types)
-        .filter(production_types.company_id == company_id)
+        .filter(production_types.company_id == company_code)
         .order_by(production_types.id.desc())
         .all()
     )
@@ -55,10 +57,10 @@ def page(request: Request, db: Session = Depends(get_db)):
         "criteria/production_types.html",
         {
             "request": request,
-            "lookup_data": lookup_data,
+            "lookup": lookup,
             "today_data": rows,
             "email": email,
-            "company_id": company_id,
+            "company_id": company_code,
         }
     )
 
@@ -67,7 +69,7 @@ def page(request: Request, db: Session = Depends(get_db)):
 # SAVE / UPDATE
 # ---------------------------------------------------------
 @router.post("/production_types")
-async def save(
+def save_production_types(
     request: Request,
 
     production_type: str = Form(...),
@@ -75,57 +77,61 @@ async def save(
     freezer_name: str = Form(...),
     production_charge_per_kg: str = Form(""),
 
+    id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
-    email: str = Form(""),
-    company_id: str = Form(""),
 
-    id: str = Form(None),   # ID as string to avoid 422
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
+    if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    email = session_email
-    company_id = session_company_id
+    # SAFE ID
+    record_id = int(id) if id and id.isdigit() else None
 
+    # Auto Date & Time
     now = datetime.now()
-
     if not date:
         date = now.strftime("%Y-%m-%d")
     if not time:
         time = now.strftime("%H:%M:%S")
 
-    # Convert charge safely
+    # SAFE FLOAT
     try:
         charge_value = float(production_charge_per_kg) if production_charge_per_kg else 0
     except:
         charge_value = 0
 
-    # Convert ID safely
-    clean_id = int(id) if id not in (None, "", " ", "null") else None
+    # DUPLICATE CHECK
+    duplicate = (
+        db.query(production_types)
+        .filter(
+            production_types.production_type == production_type,
+            production_types.glaze_name == glaze_name,
+            production_types.freezer_name == freezer_name,
+            production_types.company_id == company_code,
+            production_types.id != (record_id if record_id else 0)
+        )
+        .first()
+    )
 
-    # Duplicate check
-    dup = db.query(production_types).filter(
-        production_types.production_type == production_type,
-        production_types.glaze_name == glaze_name,
-        production_types.freezer_name == freezer_name,
-        production_types.company_id == company_id,
-        production_types.id != (clean_id if clean_id else 0),
-    ).first()
+    if duplicate:
+        return JSONResponse({"error": "This record already exists!"}, status_code=400)
 
-    if dup:
-        return JSONResponse({"error": "Record already exists"}, status_code=400)
-
-    if clean_id:  # UPDATE MODE
-        row = db.query(production_types).filter(
-            production_types.id == clean_id,
-            production_types.company_id == company_id
-        ).first()
+    # UPDATE MODE
+    if record_id:
+        row = (
+            db.query(production_types)
+            .filter(
+                production_types.id == record_id,
+                production_types.company_id == company_code
+            )
+            .first()
+        )
 
         if not row:
             return JSONResponse({"error": "Record not found"}, status_code=404)
@@ -138,7 +144,8 @@ async def save(
         row.time = time
         row.email = email
 
-    else:  # INSERT MODE
+    # INSERT MODE
+    else:
         new_row = production_types(
             production_type=production_type,
             glaze_name=glaze_name,
@@ -147,9 +154,8 @@ async def save(
             date=date,
             time=time,
             email=email,
-            company_id=company_id,
+            company_id=company_code
         )
-
         db.add(new_row)
 
     db.commit()
@@ -157,18 +163,19 @@ async def save(
 
 
 # ---------------------------------------------------------
-# DELETE
+# DELETE RECORD
 # ---------------------------------------------------------
 @router.post("/production_types/delete/{id}")
-def delete(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_production_type(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
-    if not company_id:
-        return JSONResponse({"error": "Session expired"}, status_code=401)
+    company_code = request.session.get("company_code")
+
+    if not company_code:
+        return JSONResponse({"error": "Session expired!"}, status_code=401)
 
     db.query(production_types).filter(
         production_types.id == id,
-        production_types.company_id == company_id
+        production_types.company_id == company_code
     ).delete()
 
     db.commit()

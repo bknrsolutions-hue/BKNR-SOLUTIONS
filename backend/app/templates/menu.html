@@ -2,226 +2,368 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ERP Menu - BKNR SOLUTIONS</title>
+<title>BKNR ERP – Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
-    body{display:flex;height:100vh;background:#eaf4ff;overflow:hidden;}
 
-    .sidebar{
-      width:260px;background:#003366;color:white;display:flex;flex-direction:column;
-      justify-content:space-between;box-shadow:3px 0 10px rgba(0,0,0,0.25);transition:0.4s;
-      z-index:1000;
-    }
-    .sidebar-content{padding-top:20px;flex:1;overflow-y:auto;}
-    .sidebar h2{text-align:center;margin-bottom:20px;font-size:22px;color:#00ccff;}
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #eef5ff;
+}
 
-    .menu-btn{
-      background:none;border:none;color:white;width:100%;text-align:left;padding:12px 24px;
-      font-size:15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;
-      border-left:4px solid transparent;transition:0.3s;
-    }
-    .menu-btn:hover{background:#0059b3;border-left:4px solid #00ccff;}
-    .menu-arrow{transition:0.25s;}
+/* HEADER */
+.header {
+  background: linear-gradient(90deg, #004080, #0066cc);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  box-shadow: 0 2px 6px rgba(5, 5, 47, 0.25);
+}
 
-    .submenu{
-      display:none;background:#cce5ff;color:#003366;padding:5px 0;border-left:4px solid #00aaff;
-    }
-    .submenu a{
-      display:block;text-decoration:none;color:#003366;font-size:14px;padding:8px 45px;
-      transition:0.2s;border-left:2px solid transparent;
-    }
-    .submenu a:hover{background:#b3d9ff;border-left:2px solid #0066cc;padding-left:50px;}
+.header .company-title {
+  font-size: 20px;
+  font-weight: bold;
+}
 
-    header{
-      background:#003366;color:white;padding:15px;text-align:center;font-size:20px;
-      font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.3);
-    }
+.header .logout {
+  background: red;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: 12px;
+  cursor: pointer;
+}
 
-    .logout-section{text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.3);}
-    .logout-btn{background:#b30000;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;}
+.header .user-info {
+  font-size: 16px;
+  font-weight: bold;
+}
 
-    .main-content{flex:1;background:#eaf4ff;display:flex;flex-direction:column;height:100vh;}
-    .iframe-container{flex:1;}
-    iframe{width:100%;height:100%;border:none;background:white;}
+/* TOP MENU */
+.top-menu {
+  background: #a1c6e4;
+  display: flex;
+  gap: 30px;
+  padding: 12px 35px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
 
-    .welcome-box{
-      background:white;border-radius:10px;padding:30px;box-shadow:0 0 10px rgba(0,0,0,0.1);
-      max-width:650px;margin:50px auto;text-align:center;
-    }
+.top-menu button {
+  background: none;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #0d263f;
+}
+
+.top-menu button.active,
+.top-menu button:hover {
+  color: #0d264b;
+  border-bottom: 3px solid #0066ff;
+}
+
+.container {
+  display: flex;
+  height: calc(100vh - 95px);
+}
+
+/** LEFT MENU **/
+.left-menu {
+  width: 245px;
+  background: #a1c6e4;
+  border-right: 1px solid #cdd5e0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.left-menu h3 {
+  font-size: 13px;
+  margin: 14px 8px 6px;
+  color: #1a1a1a;
+}
+
+.left-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+  border: none;
+  background: #f1f4ff;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.left-menu button:hover {
+  background: #cfe2ff;
+}
+
+iframe {
+  width: 100%;
+  height: calc(100vh - 120px);
+  border: none;
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-content">
-    <h2>Menu</h2>
-
-    <!-- Dashboards -->
-    <button class="menu-btn" onclick="toggleMenu('dashMenu', this)">
-      <span>Dashboards</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="dashMenu" class="submenu">
-      <a href="/dashboard/inventory" onclick="openForm(event,this)">Inventory Dashboard</a>
-      <a href="/dashboard/processing" onclick="openForm(event,this)">Processing Dashboard</a>
-      <a href="/dashboard/costing" onclick="openForm(event,this)">Costing Dashboard</a>
-      <a href="/dashboard/day_summary" onclick="openForm(event,this)">Day Summary Dashboard</a>
-    </div>
-
-    <!-- Processing -->
-    <button class="menu-btn" onclick="toggleMenu('processingMenu', this)">
-      <span>Processing</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="processingMenu" class="submenu">
-      <a href="/processing/gate_entry" onclick="openForm(event,this)">Gate Entry</a>
-      <a href="/processing/raw_material_purchasing" onclick="openForm(event,this)">Raw Material Purchasing</a>
-      <a href="/processing/de_heading" onclick="openForm(event,this)">De-Heading</a>
-      <a href="/processing/grading" onclick="openForm(event,this)">Grading</a>
-      <a href="/processing/peeling" onclick="openForm(event,this)">Peeling</a>
-      <a href="/processing/soaking" onclick="openForm(event,this)">Soaking</a>
-      <a href="/processing/production" onclick="openForm(event,this)">Production</a>
-    </div>
-
-    <!-- Reports -->
-    <button class="menu-btn" onclick="toggleMenu('reportsMenu', this)">
-      <span>Reports</span><span class="menu-arrow">▸</span>
-    </button>
-
-    <div id="reportsMenu" class="submenu">
-      <a href="/reports/gate_entry_report" onclick="openForm(event,this)">Gate Entry Report</a>
-      <a href="/reports/raw_material_purchasing_report" onclick="openForm(event,this)">Raw Material Purchasing Report</a>
-      <a href="/reports/de_heading" onclick="openForm(event,this)">De-Heading Report</a>
-      <a href="/reports/grading" onclick="openForm(event,this)">Grading Report</a>
-      <a href="/reports/peeling" onclick="openForm(event,this)">Peeling Report</a>
-      <a href="/reports/soaking" onclick="openForm(event,this)">Soaking Report</a>
-      <a href="/reports/production" onclick="openForm(event,this)">Production Report</a>
-    </div>
-
-    <!-- Inventory -->
-    <button class="menu-btn" onclick="toggleMenu('inventoryMenu', this)">
-      <span>Inventory Management</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="inventoryMenu" class="submenu">
-      <a href="/inventory/stock_entry" onclick="openForm(event,this)">Stock Entry</a>
-      <a href="/inventory/pending_orders" onclick="openForm(event,this)">Pending Orders</a>
-      <a href="/inventory/view" onclick="openForm(event,this)">Inventory</a>
-    </div>
-
-    <!-- General Store -->
-    <button class="menu-btn" onclick="toggleMenu('generalMenu', this)">
-      <span>General Store</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="generalMenu" class="submenu">
-      <a href="/general_store/entry" onclick="openForm(event,this)">General Store Entry</a>
-      <a href="/general_store/stock" onclick="openForm(event,this)">General Stock</a>
-    </div>
-
-    <!-- Criteria -->
-    <button class="menu-btn" onclick="toggleMenu('criteriaMenu', this)">
-      <span>Criteria</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="criteriaMenu" class="submenu">
-      <a href="/criteria/brands" onclick="openForm(event,this)">Brands</a>
-      <a href="/criteria/grades" onclick="openForm(event,this)">Grades</a>
-      <a href="/criteria/varieties" onclick="openForm(event,this)">Varieties</a>
-      <a href="/criteria/glazes" onclick="openForm(event,this)">Glazes</a>
-      <a href="/criteria/countries" onclick="openForm(event,this)">Countries</a>
-      <a href="/criteria/buyers" onclick="openForm(event,this)">Buyers</a>
-      <a href="/criteria/buyer_agents" onclick="openForm(event,this)">Buyer Agents</a>
-      <a href="/criteria/packing_styles" onclick="openForm(event,this)">Packing Styles</a>
-      <a href="/criteria/grade_to_hoso" onclick="openForm(event,this)">Grade to Hoso Counts</a>
-      <a href="/criteria/freezers" onclick="openForm(event,this)">Freezers</a>
-      <a href="/criteria/production_types" onclick="openForm(event,this)">Production Types</a>
-      <a href="/criteria/chemicals" onclick="openForm(event,this)">Chemicals</a>
-      <a href="/criteria/contractors" onclick="openForm(event,this)">Contractors</a>
-      <a href="/criteria/suppliers" onclick="openForm(event,this)">Suppliers</a>
-      <a href="/criteria/species" onclick="openForm(event,this)">Species</a>
-      <a href="/criteria/purchasing_locations" onclick="openForm(event,this)">Purchasing Locations</a>
-      <a href="/criteria/vehicle_numbers" onclick="openForm(event,this)">Vehicle Numbers</a>
-      <a href="/criteria/coldstore_locations" onclick="openForm(event,this)">Cold Store Locations</a>
-      <a href="/criteria/peeling_rates" onclick="openForm(event,this)">Peeling Rates</a>
-    </div>
-
-    <!-- Bills -->
-    <button class="menu-btn" onclick="toggleMenu('billsMenu', this)">
-      <span>Bills & Accounts</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="billsMenu" class="submenu">
-      <a href="/bills/electricity" onclick="openForm(event,this)">Electricity Bill</a>
-      <a href="/bills/employee_salaries" onclick="openForm(event,this)">Employee Salaries</a>
-      <a href="/bills/contractor_bills" onclick="openForm(event,this)">Contractor Bills</a>
-      <a href="/bills/supplier_payments" onclick="openForm(event,this)">Supplier Payments</a>
-      <a href="/bills/vendor_payments" onclick="openForm(event,this)">Vendor Payments</a>
-      <a href="/bills/other_expenses" onclick="openForm(event,this)">Other Expenses</a>
-      <a href="/bills/outstanding_summary" onclick="openForm(event,this)">Outstanding Summary</a>
-    </div>
-
-    <!-- Attendance -->
-    <button class="menu-btn" onclick="toggleMenu('attendanceMenu', this)">
-      <span>Attendance</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="attendanceMenu" class="submenu">
-      <a href="/attendance/permanent" onclick="openForm(event,this)">Permanent Employees</a>
-      <a href="/attendance/temporary" onclick="openForm(event,this)">Temporary Employees</a>
-    </div>
-
-    <!-- Admin -->
-    <button class="menu-btn" onclick="toggleMenu('adminMenu', this)">
-      <span>Admin</span><span class="menu-arrow">▸</span>
-    </button>
-    <div id="adminMenu" class="submenu">
-      <a href="/admin/add_user" onclick="openForm(event,this)">Add User</a>
-      <a href="/admin/users" onclick="openForm(event,this)">Existing Users</a>
-    </div>
-
-  </div>
-
-  <div class="logout-section">
-    <button class="logout-btn" onclick="logout()">Logout</button>
+<div class="header">
+  <div class="company-title">{{ request.session.get('company_code') }}</div>
+  <div style="display:flex; align-items:center;">
+    <div class="user-info">{{ request.session.get('name') }}</div>
+    <div class="logout" onclick="logout()">Logout</div>
   </div>
 </div>
 
-<!-- Main Content -->
-<div class="main-content">
-  <header>{{ company_name if company_name else "BKNR SOLUTIONS" }}</header>
+<div class="top-menu">
+  <button class="active" onclick="setActive(this); loadDash()">Dashboards</button>
+  <button onclick="setActive(this); loadOps()">Operations</button>
+  <button onclick="setActive(this); loadReports()">Reports</button>
+  <button onclick="setActive(this); loadCriteria()">Criteria</button>
+  <button onclick="setActive(this); loadSummaries()">Summaries</button>
+  <button onclick="setActive(this); loadBills()">Bills & Accounts</button>
+  <button onclick="setActive(this); loadAttendance()">Attendance</button>
+  <button onclick="setActive(this); loadAdmin()">Admin</button>
+</div>
 
-  <div class="iframe-container" id="iframeContainer">
-    <div class="welcome-box" id="welcomeBox">
-      <h3>Welcome to BKNR ERP Dashboard 👋</h3>
-      <p>Select a module from the menu to begin.</p>
-    </div>
+<div class="container">
+  <div id="sideMenu" class="left-menu"></div>
+  <div style="flex:1">
+    <iframe id="frame"></iframe>
   </div>
 </div>
 
 <script>
-function toggleMenu(id,btn){
-  document.querySelectorAll(".submenu").forEach(m=>{ if(m.id!==id) m.style.display="none"; });
-  document.querySelectorAll(".menu-btn").forEach(b=>b.classList.remove("active"));
+const permissions = {{ request.session.get('permissions')|tojson }};
+console.log(permissions);
 
-  const menu=document.getElementById(id);
-  const visible=menu.style.display==="block";
-  menu.style.display=visible?"none":"block";
-  if(!visible) btn.classList.add("active");
+function allow(key){
+  return permissions.includes("ALL") || permissions.includes(key);
 }
 
-function openForm(event,el){
-  event.preventDefault();
-  const url=el.getAttribute("href");
-  document.getElementById("welcomeBox")?.remove();
-
-  let iframe=document.querySelector("iframe");
-  if(!iframe){
-    iframe=document.createElement("iframe");
-    document.getElementById("iframeContainer").appendChild(iframe);
-  }
-  iframe.src=url;
+function setActive(btn){
+  document.querySelectorAll(".top-menu button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
 }
 
-function logout(){
-  window.location.href="/auth/logout";
+function openPage(route){
+  document.getElementById("frame").src = route;
 }
+
+/******** DASHBOARD *********/
+function loadDash(){
+  let html = `
+      <h3>Dashboards</h3>
+      <button onclick="openPage('/dashboard/processing')">Processing</button>
+      <button onclick="openPage('/dashboard/inventory')">Inventory</button>
+      <button onclick="openPage('/dashboard/general_stock')">General Stock</button>
+      <button onclick="openPage('/dashboard/purchasing')">Purchasing</button>
+  `;
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** OPERATIONS *********/
+function loadOps(){
+  let html = `<h3>Processing</h3>`;
+
+  if(allow("gate_entry"))
+    html += `<button onclick="openPage('/processing/gate_entry')">Gate Entry</button>`;
+
+  if(allow("raw_material_purchasing"))
+    html += `<button onclick="openPage('/processing/raw_material_purchasing')">Raw Material Purchasing</button>`;
+
+  if(allow("de_heading"))
+    html += `<button onclick="openPage('/processing/de_heading')">De Heading</button>`;
+
+  if(allow("grading"))
+    html += `<button onclick="openPage('/processing/grading')">Grading</button>`;
+
+  if(allow("peeling"))
+    html += `<button onclick="openPage('/processing/peeling')">Peeling</button>`;
+
+  if(allow("soaking"))
+    html += `<button onclick="openPage('/processing/soaking')">Soaking</button>`;
+
+  if(allow("production"))
+    html += `<button onclick="openPage('/processing/production')">Production</button>`;
+
+  html += `<h3>Inventory</h3>`;
+
+  if(allow("stock_entry"))
+    html += `<button onclick="openPage('/inventory/stock_entry')">Stock Entry</button>`;
+
+  if(allow("pending_orders"))
+    html += `<button onclick="openPage('/inventory/pending_orders')">Pending Orders</button>`;
+
+  html += `<h3>General Store</h3>`;
+
+  if(allow("gs_entry"))
+    html += `<button onclick="openPage('/general_stock/entry')">General Stock Entry</button>`;
+
+  if(allow("gs_items"))
+    html += `<button onclick="openPage('/general_stock/items')">Items Master</button>`;
+
+  if(allow("gs_report"))
+    html += `<button onclick="openPage('/general_stock/report')">Stock Report</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** REPORTS *********/
+function loadReports(){
+  let html = `<h3>Processing Reports</h3>`;
+
+if(allow("gate_entry_report"))
+  html += `<button onclick="openPage('/reports/gate_entry')">Gate Entry Report</button>`;
+
+if(allow("rmp_report"))
+  html += `<button onclick="openPage('/reports/raw_material_purchasing')">Raw Material Purchase Report</button>`;
+
+if(allow("de_heading_report"))
+  html += `<button onclick="openPage('/reports/de_heading')">De-Heading Report</button>`;
+
+if(allow("grading_report"))
+  html += `<button onclick="openPage('/reports/grading_report')">Grading Report</button>`;
+
+if(allow("peeling_report"))
+  html += `<button onclick="openPage('/reports/peeling_report')">Peeling Report</button>`;
+
+if(allow("soaking_report"))
+  html += `<button onclick="openPage('/reports/soaking_report')">Soaking Report</button>`;
+
+if(allow("production_report"))
+  html += `<button onclick="openPage('/reports/production_report')">Production Report</button>`;
+
+  html += `<h3>Inventory Reports</h3>`;
+
+  if(allow("inventory_report"))
+    html += `<button onclick="openPage('/inventory/report')">Stock Status</button>`;
+
+  html += `<h3>General Store Reports</h3>`;
+
+  if(allow("gs_report"))
+    html += `<button onclick="openPage('/general_stock/report')">General Store Report</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** CRITERIA *********/
+function loadCriteria(){
+  let html = `<h3>Master Criteria</h3>`;
+  
+  const forms = [
+    ["suppliers", "Suppliers"],
+    ["buyers", "Buyers"],
+    ["buyer_agents", "Buyer Agents"],
+    ["species", "Species"],
+    ["varieties", "Varieties"],
+    ["grades", "Grades"],
+    ["glazes", "Glazes"],
+    ["packing_styles", "Packing Styles"],
+    ["chemicals", "Chemicals"],
+    ["freezers", "Freezers"],
+    ["countries", "Countries"],
+    ["vehicle_numbers", "Vehicle Numbers"],
+    ["production_at", "Production At"],
+    ["production_types", "Production Types"],
+    ["purposes", "Purposes"],
+    ["purchasing_locations", "Purchasing Locations"],
+    ["grade_to_hoso", "Grade to HOSO"],
+    ["hoso_hlso", "HOSO & HLSO"],
+    ["peeling_rates", "Peeling Rates"],
+    ["contractors", "Contractors"],
+    ["coldstore_locations", "Coldstore locations"],
+    ["brands", "Brands"]
+  ];
+
+  forms.forEach(f=>{
+    if(allow(f[0])){
+      html += `<button onclick="openPage('/criteria/${f[0]}')">${f[1]}</button>`;
+    }
+  });
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** SUMMARIES *********/
+function loadSummaries(){
+  let html = `<h3>Summaries</h3>`;
+
+  if(allow("processing_summary"))
+    html += `<button onclick="openPage('/summary/processing')">Processing Summary</button>`;
+
+  if(allow("inventory_summary"))
+    html += `<button onclick="openPage('/summary/inventory')">Inventory Summary</button>`;
+
+  if(allow("purchase_summary"))
+    html += `<button onclick="openPage('/summary/purchasing')">Raw Purchase Summary</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** BILLS *********/
+function loadBills(){
+  let html = `<h3>Bills & Accounts</h3>`;
+
+  if(allow("vendor_bills"))
+    html += `<button onclick="openPage('/bills/vendor')">Vendor Bills</button>`;
+
+  if(allow("customer_bills"))
+    html += `<button onclick="openPage('/bills/customer')">Customer Bills</button>`;
+
+  if(allow("contractor_payment"))
+    html += `<button onclick="openPage('/accounts/contractor_settlement')">Contractor Settlement</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** ATTENDANCE *********/
+function loadAttendance(){
+  let html = `<h3>Attendance</h3>`;
+
+  if(allow("employee_register"))
+    html += `<button onclick="openPage('/employee/create')">Employee Registration</button>`;
+
+  html += `<button onclick="openPage('/attendance/punch')">Attendance Punch</button>`;
+
+  if(allow("face"))
+    html += `<button onclick="openPage('/attendance/face_attendance')">Face Attendance</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** ADMIN *********/
+function loadAdmin(){
+  let html = `<h3>Admin</h3>`;
+
+  if(allow("add_user"))
+    html += `<button onclick="openPage('/admin/add_user')">Add User</button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/***** LOGOUT ******/
+async function logout(){
+  await fetch("/auth/logout");
+  window.location.href="/";
+}
+
+loadDash();
 </script>
 
 </body>

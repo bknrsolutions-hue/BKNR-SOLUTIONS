@@ -6,57 +6,130 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  body {font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2 {text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+:root{
+  --primary:#003366;
+  --bg:#e6f2ff;
+  --border:#a3bcd6;
+}
+*{box-sizing:border-box;font-family:Arial,sans-serif}
 
-  .form-container {
-    width:90%;max-width:1100px;margin:0 auto;background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:10px;
-  }
-  .row {display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
-  .col {width:48%;display:flex;flex-direction:column;margin-bottom:10px;}
-  textarea {height:60px;resize:none;}
+body{margin:0;background:var(--bg)}
+h2{text-align:center;color:var(--primary);margin:20px 0;font-weight:700}
 
-  @media(max-width:768px){
-    .col{width:100%;}
-    .btn{width:100%;margin-bottom:10px;}
-  }
+/* ================= FORM ================= */
+.form-container{
+  width:98%;
+  max-width:1400px;
+  margin:0 auto;
+  background:#fff;
+  padding:22px;
+  border-radius:10px;
+  box-shadow:0 0 8px rgba(0,0,0,.15);
+}
 
-  label {font-weight:600;color:#003366;margin-bottom:6px;}
-  input, textarea {
-    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
-    font-size:14px;background:#f9fcff;
-  }
-  input:focus, textarea:focus {
-    border-color:#003366;outline:none;
-    box-shadow:0 0 5px rgba(0,51,102,0.3);
-  }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:14px;
+}
 
-  .actions{text-align:center;margin-top:25px;}
-  .btn{
-    background:#003366;color:white;border:none;padding:10px 20px;
-    border-radius:6px;font-weight:600;cursor:pointer;width:160px;
-  }
-  .btn-clear{background:#777;}
-  .btn:hover{opacity:0.9;}
+.field{display:flex;flex-direction:column}
+label{
+  font-weight:600;
+  font-size:12px;
+  color:var(--primary);
+  margin-bottom:5px;
+}
+input,textarea{
+  padding:9px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-size:13px;
+  background:#f9fcff;
+}
+textarea{resize:none;height:38px}
 
-  table{
-    width:90%;max-width:1100px;margin:10px auto 30px;border-collapse:collapse;
-    background:#f7f7f7;box-shadow:0 0 8px rgba(0,0,0,0.15);
-    border-radius:8px;overflow:hidden;
-  }
-  th,td{
-    padding:10px 12px;text-align:left;
-    border-bottom:1px solid #ccc;font-size:14px;
-  }
-  th{background:#003366;color:white;}
-  tr:hover{background:#e0ebff;cursor:pointer;}
-  tr.selected{background:#cce5ff !important;}
+/* ================= ACTIONS ================= */
+.actions{
+  grid-column:span 6;
+  text-align:center;
+  margin-top:15px;
+}
+.btn{
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  padding:10px 20px;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+  width:160px;
+}
+.btn-clear{background:#777}
 
-  .menu-item{
-    padding:10px;cursor:pointer;font-size:14px;border-bottom:1px solid #eee;
-  }
-  .menu-item:hover{background:#e6f2ff;}
+/* ================= 3 DOT MENU ================= */
+.menu-wrap{
+  width:98%;
+  max-width:1400px;
+  margin:10px auto;
+  text-align:right;
+  display:none;
+  position:relative;
+}
+.menu-btn{
+  background:#003366;
+  color:#fff;
+  border:none;
+  font-size:20px;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.menu{
+  position:absolute;
+  right:0;
+  top:40px;
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:8px;
+  width:200px;
+  display:none;
+  box-shadow:0 4px 10px rgba(0,0,0,.2);
+}
+.menu div{
+  padding:10px;
+  cursor:pointer;
+  border-bottom:1px solid #eee;
+}
+.menu div:hover{background:#eef5ff}
+
+/* ================= TABLE ================= */
+table{
+  width:98%;
+  max-width:1400px;
+  margin:10px auto 30px;
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 0 8px rgba(0,0,0,.15);
+}
+th,td{
+  padding:8px;
+  font-size:13px;
+  border-bottom:1px solid #ccc;
+}
+th{background:var(--primary);color:#fff}
+tr:hover{background:#eef5ff}
+tr.selected{background:#cce5ff!important}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:1100px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+  .actions{grid-column:span 3}
+}
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .actions{grid-column:span 1}
+}
 </style>
 </head>
 
@@ -64,243 +137,162 @@
 
 <h2>CONTRACTORS MASTER</h2>
 
-<!-- FORM -->
+<!-- ================= FORM ================= -->
 <form onsubmit="submitContractor(event)">
-  <div class="form-container">
+<div class="form-container">
+<div class="grid">
 
-    <div class="row">
-      <div class="col">
-        <label>Contractor Name</label>
-        <input type="text" id="contractor_name" required placeholder="Enter Contractor Name">
-      </div>
+<div class="field"><label>Name</label><input id="contractor_name" required></div>
+<div class="field"><label>Phone</label><input id="phone"></div>
+<div class="field"><label>Email</label><input id="contractor_email"></div>
+<div class="field"><label>GST No</label><input id="gst_number"></div>
+<div class="field"><label>GST %</label><input id="gst_percent"></div>
+<div class="field"><label>GST From</label><input type="date" id="gst_applicable_from"></div>
 
-      <div class="col">
-        <label>Phone Number</label>
-        <input type="text" id="phone" placeholder="Enter Phone Number">
-      </div>
-    </div>
+<div class="field"><label>Bank</label><input id="bank_name"></div>
+<div class="field"><label>Account</label><input id="account_no"></div>
+<div class="field"><label>IFSC</label><input id="ifsc"></div>
 
-    <div class="row">
-      <div class="col" style="width:100%;">
-        <label>Address</label>
-        <textarea id="address" placeholder="Enter Contractor Address"></textarea>
-      </div>
-    </div>
+<div class="field" style="grid-column:span 3">
+  <label>Address</label><textarea id="address"></textarea>
+</div>
 
-    <input type="hidden" id="record_id">
-    <input type="hidden" id="meta_email" value="{{ email }}">
-    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+<input type="hidden" id="record_id">
+<input type="hidden" id="date">
+<input type="hidden" id="time">
 
-    <div class="actions">
-      <button class="btn" type="submit">SAVE</button>
-      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
-    </div>
+<div class="actions">
+  <button class="btn">SAVE</button>
+  <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+</div>
 
-  </div>
+</div>
+</div>
 </form>
 
-{% if message %}
-<p style="text-align:center;color:green;font-weight:600;">{{ message }}</p>
-{% endif %}
-
-{% if today_data %}
-
-<!-- THREE DOT MENU -->
-<div id="threeDotsMenu" style="
-  display:none;width:90%;max-width:1100px;margin:10px auto;
-  text-align:right;position:relative;">
-  <button id="dotsBtn" style="
-    background:#003366;color:white;border:none;padding:6px 12px;
-    border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
-
-  <div id="dropdownMenu" style="
-    display:none;position:absolute;right:0;background:white;border:1px solid #ccc;
-    border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    width:200px;z-index:1000;">
-    <div onclick="editSelected()" class="menu-item">✏️ Edit</div>
-    <div onclick="deleteSelected()" class="menu-item">🗑️ Delete</div>
-    <div onclick="printSelected()" class="menu-item">🖨️ Print</div>
-    <div onclick="exportPDF()" class="menu-item">📄 Export PDF</div>
-    <div onclick="exportExcel()" class="menu-item">📊 Export Excel</div>
+<!-- ================= 3 DOT MENU ================= -->
+<div class="menu-wrap" id="menuWrap">
+  <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+  <div class="menu" id="menu">
+    <div onclick="editRow()">✏️ Edit</div>
+    <div onclick="deleteRow()">🗑️ Delete</div>
+    <div onclick="printRow()">🖨️ Print</div>
   </div>
 </div>
 
-<!-- TABLE -->
+<!-- ================= TABLE ================= -->
+{% if today_data %}
 <table id="dataTable">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Contractor Name</th>
-      <th>Phone</th>
-      <th>Address</th>
-      <th>Date</th>
-      <th>Time</th>
-      <th>Email</th>
-      <th>Company ID</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for row in today_data %}
-    <tr
-      data-id="{{ row.id }}"
-      data-name="{{ row.contractor_name }}"
-      data-phone="{{ row.phone }}"
-      data-address="{{ row.address }}"
-    >
-      <td>{{ row.id }}</td>
-      <td>{{ row.contractor_name }}</td>
-      <td>{{ row.phone }}</td>
-      <td>{{ row.address }}</td>
-      <td>{{ row.date }}</td>
-      <td>{{ row.time }}</td>
-      <td>{{ row.email }}</td>
-      <td>{{ row.company_id }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
+<thead>
+<tr>
+<th>ID</th><th>Name</th><th>Phone</th><th>Email</th>
+<th>GST</th><th>GST %</th><th>GST From</th>
+<th>Bank</th><th>Account</th><th>IFSC</th><th>Address</th>
+</tr>
+</thead>
+<tbody>
+{% for r in today_data %}
+<tr onclick="selectRow(this)"
+ data-id="{{r.id}}"
+ data-name="{{r.contractor_name}}"
+ data-phone="{{r.phone}}"
+ data-email="{{r.contractor_email}}"
+ data-gst="{{r.gst_number}}"
+ data-gstp="{{r.gst_percent}}"
+ data-gstfrom="{{r.gst_applicable_from}}"
+ data-bank="{{r.bank_name}}"
+ data-acc="{{r.account_no}}"
+ data-ifsc="{{r.ifsc}}"
+ data-addr="{{r.address}}">
+<td>{{r.id}}</td>
+<td>{{r.contractor_name}}</td>
+<td>{{r.phone}}</td>
+<td>{{r.contractor_email}}</td>
+<td>{{r.gst_number}}</td>
+<td>{{r.gst_percent}}</td>
+<td>{{r.gst_applicable_from}}</td>
+<td>{{r.bank_name}}</td>
+<td>{{r.account_no}}</td>
+<td>{{r.ifsc}}</td>
+<td>{{r.address}}</td>
+</tr>
+{% endfor %}
+</tbody>
 </table>
-
 {% endif %}
 
 <script>
+let selected=null;
 
-let selectedRow=null;
+/* DATE TIME */
+function setDateTime(){
+ let d=new Date();
+ date.value=d.toISOString().slice(0,10);
+ time.value=d.toTimeString().slice(0,8);
+}
+setDateTime();
 
-/* -----------------------------------
-   SUBMIT CONTRACTOR
------------------------------------ */
+/* SUBMIT */
 async function submitContractor(e){
-  e.preventDefault();
-
-  const contractor_name=document.getElementById("contractor_name").value.trim();
-  const phone=document.getElementById("phone").value.trim();
-  const address=document.getElementById("address").value.trim();
-  const record_id=document.getElementById("record_id").value;
-
-  const now=new Date();
-  const date=now.toISOString().slice(0,10);
-  const time=now.toTimeString().slice(0,8);
-
-  const email=document.getElementById("meta_email").value;
-  const company_id=document.getElementById("meta_company_id").value;
-
-  const fd=new FormData();
-  if(record_id) fd.append("id",record_id);
-
-  fd.append("contractor_name",contractor_name);
-  fd.append("phone",phone);
-  fd.append("address",address);
-  fd.append("date",date);
-  fd.append("time",time);
-  fd.append("email",email);
-  fd.append("company_id",company_id);
-
-  const res=await fetch("/criteria/contractors",{method:"POST",body:fd});
-
-  if(res.ok){ alert("Saved Successfully!"); location.reload(); }
-  else alert("Save Failed: "+await res.text());
+ e.preventDefault(); setDateTime();
+ const fd=new FormData();
+ ["contractor_name","phone","contractor_email","gst_number","gst_percent",
+ "gst_applicable_from","bank_name","account_no","ifsc","address","date","time"]
+ .forEach(i=>fd.append(i,document.getElementById(i).value));
+ if(record_id.value) fd.append("id",record_id.value);
+ const r=await fetch("/criteria/contractors",{method:"POST",body:fd});
+ if(r.ok){alert("Saved");location.reload()}else alert("Error");
 }
 
-/* -----------------------------------
-   ROW SELECT + MENU
------------------------------------ */
-document.addEventListener("DOMContentLoaded",()=>{
-  const rows=document.querySelectorAll("#dataTable tbody tr");
-  const menu=document.getElementById("threeDotsMenu");
-
-  rows.forEach(row=>{
-    row.addEventListener("click",()=>{
-      rows.forEach(r=>r.classList.remove("selected"));
-      row.classList.add("selected");
-      selectedRow=row;
-      menu.style.display="block";
-    });
-  });
-});
-
-document.getElementById("dotsBtn").addEventListener("click",()=>{
-  const d=document.getElementById("dropdownMenu");
-  d.style.display=d.style.display==="block"?"none":"block";
-});
-
-/* -----------------------------------
-   EDIT
------------------------------------ */
-function editSelected(){
-  if(!selectedRow) return alert("Select a row!");
-
-  document.getElementById("record_id").value=selectedRow.dataset.id;
-  document.getElementById("contractor_name").value=selectedRow.dataset.name;
-  document.getElementById("phone").value=selectedRow.dataset.phone;
-  document.getElementById("address").value=selectedRow.dataset.address;
-
-  window.scrollTo({top:0,behavior:"smooth"});
+/* ROW SELECT */
+function selectRow(r){
+ document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+ r.classList.add("selected"); selected=r;
+ menuWrap.style.display="block";
 }
 
-/* -----------------------------------
-   DELETE
------------------------------------ */
-async function deleteSelected(){
-  if(!selectedRow) return alert("Select a row!");
-  if(!confirm("Are you sure?")) return;
+/* MENU */
+function toggleMenu(){menu.style.display=menu.style.display==="block"?"none":"block";}
 
-  const id=selectedRow.dataset.id;
-  const res=await fetch(`/criteria/contractors/delete/${id}`,{method:"POST"});
-
-  if(res.ok) location.reload();
-  else alert("Delete failed");
+/* EDIT */
+function editRow(){
+ if(!selected) return alert("Select row");
+ record_id.value=selected.dataset.id;
+ contractor_name.value=selected.dataset.name;
+ phone.value=selected.dataset.phone;
+ contractor_email.value=selected.dataset.email;
+ gst_number.value=selected.dataset.gst;
+ gst_percent.value=selected.dataset.gstp;
+ gst_applicable_from.value=selected.dataset.gstfrom;
+ bank_name.value=selected.dataset.bank;
+ account_no.value=selected.dataset.acc;
+ ifsc.value=selected.dataset.ifsc;
+ address.value=selected.dataset.addr;
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 
-/* -----------------------------------
-   PRINT, PDF, EXCEL
------------------------------------ */
-function printSelected(){
-  if(!selectedRow) return alert("Select a row!");
-
-  const p=window.open("", "_blank");
-  p.document.write("<h3>Contractor Details</h3>");
-  p.document.write("<p><b>Name:</b> "+selectedRow.dataset.name+"</p>");
-  p.document.write("<p><b>Phone:</b> "+selectedRow.dataset.phone+"</p>");
-  p.document.write("<p><b>Address:</b> "+selectedRow.dataset.address+"</p>");
-  p.document.close();
-  p.print();
+/* DELETE */
+async function deleteRow(){
+ if(!selected) return;
+ if(!confirm("Delete contractor?")) return;
+ const r=await fetch(`/criteria/contractors/delete/${selected.dataset.id}`,{method:"POST"});
+ if(r.ok) location.reload(); else alert("Delete failed");
 }
 
-function exportPDF(){ printSelected(); }
-
-function exportExcel(){
-  if(!selectedRow) return alert("Select a row!");
-
-  const name=selectedRow.dataset.name;
-  const phone=selectedRow.dataset.phone;
-  const address=selectedRow.dataset.address;
-
-  const data=`Name\tPhone\tAddress\n${name}\t${phone}\t${address}`;
-  const blob=new Blob([data],{type:"application/vnd.ms-excel"});
-
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="contractor_record.xls";
-  a.click();
+/* PRINT */
+function printRow(){
+ if(!selected) return;
+ const w=window.open("");
+ w.document.write(`<h3>${selected.dataset.name}</h3>
+ <p>${selected.dataset.phone}</p>
+ <p>${selected.dataset.addr}</p>`);
+ w.print();
 }
 
-/* -----------------------------------
-   CLEAR FORM
------------------------------------ */
 function clearForm(){
-  selectedRow=null;
-
-  document.getElementById("record_id").value="";
-  document.getElementById("contractor_name").value="";
-  document.getElementById("phone").value="";
-  document.getElementById("address").value="";
-
-  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
-  document.getElementById("threeDotsMenu").style.display="none";
+ document.querySelectorAll("input,textarea").forEach(e=>e.value="");
+ record_id.value="";
 }
-
 </script>
 
 </body>

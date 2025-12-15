@@ -1,95 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
-<title>GRADING REPORT - BKNR SOLUTIONS</title>
+<title>GRADING SUMMARY REPORT</title>
 
 <style>
-body {font-family: Arial; background:#e6f2ff; margin:0; padding:0;}
-h2 {text-align:center; color:#003366; margin:20px 0;}
+body{font-family:Arial;background:#f3f7ff;padding:18px}
+h2{text-align:center;color:#003366}
 
-.filter-box {
-  width:95%; max-width:1100px; margin:0 auto 20px auto;
-  background:white; padding:15px; border-radius:8px;
-  box-shadow:0 0 8px rgba(0,0,0,0.15);
-  display:flex; gap:20px; flex-wrap:wrap;
-}
-label {font-weight:600; color:#003366;}
-select, input {
-  padding:8px; border:1px solid #a3bcd6; border-radius:6px;
-  background:#f9fcff; font-size:14px; min-width:180px;
+.actions{
+ max-width:1300px;margin:10px auto;
+ display:flex;justify-content:space-between
 }
 
-table {
-  width:95%; max-width:1100px; margin:0 auto 30px auto; background:white;
-  border-collapse:collapse; box-shadow:0 0 8px rgba(0,0,0,0.15);
+.table-wrap{
+ max-width:1300px;margin:auto;
+ background:#fff;border-radius:8px;
+ overflow:auto
 }
-th, td {padding:10px; border-bottom:1px solid #dce6f5; font-size:14px;}
-th {background:#003366; color:white;}
-.no-data {text-align:center; color:#003366; font-weight:600; margin-top:20px;}
+
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#003366;color:#fff}
+
+.qty{font-weight:bold;color:#003366;cursor:pointer;text-decoration:underline}
+
+.red{background:#ffe5e5}
+.green{background:#e6ffea}
+.orange{background:#fff3cd}
 </style>
 </head>
 
 <body>
 
-<h2>GRADING REPORT</h2>
+<h2>GRADING SUMMARY REPORT</h2>
 
-<form method="get" class="filter-box">
-
+<div class="actions">
+  <div id="rowCount">0 rows</div>
   <div>
-    <label>Batch Number</label><br>
-    <select name="batch" onchange="this.form.submit()">
-      <option value="">All</option>
-      {% for b in batch_list %}
-      <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
-      {% endfor %}
-    </select>
+    <button onclick="exportExcel()">📊 Excel</button>
+    <button onclick="exportPDF()">📄 PDF</button>
   </div>
+</div>
 
-  <div>
-    <label>From Date</label><br>
-    <input type="date" name="from_date" value="{{ selected_from }}" onchange="this.form.submit()">
-  </div>
-
-  <div>
-    <label>To Date</label><br>
-    <input type="date" name="to_date" value="{{ selected_to }}" onchange="this.form.submit()">
-  </div>
-
-</form>
-
-{% if grading_data %}
+<div class="table-wrap">
 <table>
 <thead>
 <tr>
-  <th>ID</th>
-  <th>Batch</th>
-  <th>Variety</th>
-  <th>Count</th>
-  <th>Grade</th>
-  <th>Quantity</th>
-  <th>Date</th>
+ <th>#</th>
+ <th>Batch</th>
+ <th>Species</th>
+ <th>HOSO Count</th>
+ <th>Variety</th>
+ <th>Total HOSO Qty</th>
+ <th>Total Graded Qty</th>
+ <th>Yield %</th>
 </tr>
 </thead>
 
-<tbody>
-{% for r in grading_data %}
-<tr>
-  <td>{{ r.id }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.variety_name }}</td>
-  <td>{{ r.graded_count }}</td>
-  <td>{{ r.grade_name }}</td>
-  <td>{{ r.quantity }}</td>
-  <td>{{ r.date }}</td>
+<tbody id="tbody">
+{% for r in rows %}
+<tr class="{% if r.yield_pct > 100 %}red{% elif r.yield_pct >= 90 %}green{% else %}orange{% endif %}">
+ <td>{{ r.id }}</td>
+ <td>{{ r.batch }}</td>
+ <td>{{ r.species }}</td>
+ <td>{{ r.hoso_count }}</td>
+ <td>{{ r.variety }}</td>
+
+ <td class="qty" onclick="openRMP('{{ r.batch }}','{{ r.species }}','{{ r.hoso_count }}')">
+   {{ r.hoso_qty }}
+ </td>
+
+ <td class="qty" onclick="openGrading('{{ r.batch }}','{{ r.species }}','{{ r.hoso_count }}','{{ r.variety }}')">
+   {{ r.graded_qty }}
+ </td>
+
+ <td>{{ r.yield_pct }}%</td>
 </tr>
 {% endfor %}
 </tbody>
-
 </table>
-{% else %}
-<p class="no-data">No records found.</p>
-{% endif %}
+</div>
+
+<script>
+document.getElementById("rowCount").innerText =
+  document.querySelectorAll("#tbody tr").length + " rows";
+
+function openRMP(batch,species,count){
+ window.open(`/reports/raw_material_purchasing?batch=${batch}&species=${species}&count=${count}&variety=HOSO`);
+}
+
+function openGrading(batch,species,count,variety){
+ window.open(`/reports/grading_report?batch=${batch}&species=${species}&hoso_count=${count}&variety=${variety}`);
+}
+
+function exportExcel(){
+ location = `/reports/grading_summary/export_excel`;
+}
+
+function exportPDF(){
+ location = `/reports/grading_summary/export_pdf`;
+}
+</script>
 
 </body>
 </html>

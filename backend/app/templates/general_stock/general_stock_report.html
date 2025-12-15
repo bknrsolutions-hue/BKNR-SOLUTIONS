@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>General Stock Report</title>
+
+<style>
+body{background:#eef6ff;font-family:Arial;margin:0;padding:0;}
+h2{text-align:center;padding:15px;color:#003366;font-size:22px;}
+
+.filter-box{
+    width:95%;max-width:1200px;margin:10px auto;background:white;padding:15px;
+    border-radius:8px;box-shadow:0 0 8px rgba(0,0,0,.15);
+    display:flex;gap:10px;flex-wrap:wrap;
+}
+select,input{
+    padding:9px;border-radius:6px;border:1px solid #a3bcd6;font-size:14px;background:#f8fbff;
+}
+
+/* Table */
+table{
+    width:95%;max-width:1200px;margin:15px auto;border-collapse:collapse;background:white;
+    box-shadow:0 0 8px rgba(0,0,0,.15);border-radius:8px;overflow:hidden;
+}
+th{background:#003366;color:white;padding:9px;}
+td{padding:8px;font-size:14px;border-bottom:1px solid #ccc;}
+tr:hover{background:#def;}
+
+.low{color:red;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<h2>📄 GENERAL STOCK REPORT</h2>
+
+<div class="filter-box">
+    <select id="filter_grn" onchange="applyFilter()">
+        <option value="">GRN Filter</option>
+        {% for g in dropdown_grn %}<option>{{g}}</option>{% endfor %}
+    </select>
+
+    <select id="filter_item" onchange="applyFilter()">
+        <option value="">Item</option>
+        {% for i in dropdown_items %}<option>{{i}}</option>{% endfor %}
+    </select>
+
+    <select id="filter_unit" onchange="applyFilter()">
+        <option value="">Unit</option>
+        {% for u in dropdown_unit %}<option>{{u}}</option>{% endfor %}
+    </select>
+
+    <button onclick="resetFilter()">RESET</button>
+</div>
+
+
+<table id="reportTable">
+<thead>
+<tr>
+<th>ID</th><th>GRN</th><th>Item</th><th>Unit</th>
+<th>Type</th><th>Qty</th><th>Opening</th>
+<th>Available</th><th>Min</th><th>Date</th><th>Time</th>
+</tr>
+</thead>
+<tbody>
+{% for r in records %}
+<tr>
+<td>{{r.id}}</td>
+<td>{{r.grn_number}}</td>
+<td>{{r.item_name}}</td>
+<td>{{r.unit_name}}</td>
+<td>{{r.movement_type}}</td>
+<td>{{r.quantity}}</td>
+<td>{{r.opening_stock}}</td>
+<td class="{{'low' if r.available_stock < r.minimum_level else ''}}">
+    {{r.available_stock}}
+</td>
+<td>{{r.minimum_level}}</td>
+<td>{{r.date}}</td>
+<td>{{r.time}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+
+<script>
+function applyFilter(){
+    let grn = filter_grn.value.trim().toLowerCase();
+    let item = filter_item.value.trim().toLowerCase();
+    let unit = filter_unit.value.trim().toLowerCase();
+
+    document.querySelectorAll("#reportTable tbody tr").forEach(row=>{
+        let show=true;
+
+        if(grn && !row.children[1].innerText.toLowerCase().includes(grn)) show=false;
+        if(item && !row.children[2].innerText.toLowerCase().includes(item)) show=false;
+        if(unit && !row.children[3].innerText.toLowerCase().includes(unit)) show=false;
+
+        row.style.display = show ? "" : "none";
+    })
+}
+
+function resetFilter(){
+    filter_grn.value="";
+    filter_item.value="";
+    filter_unit.value="";
+    applyFilter();
+}
+</script>
+
+</body>
+</html>

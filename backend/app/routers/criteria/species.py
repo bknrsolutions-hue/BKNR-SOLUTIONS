@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -14,20 +14,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# PAGE LOAD
+# PAGE – LOAD SPECIES LIST
 # ---------------------------------------------------------
 @router.get("/species")
-def page(request: Request, db: Session = Depends(get_db)):
+def species_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")  # STRING company_id
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login", status_code=302)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
     rows = (
         db.query(species)
-        .filter(species.company_id == company_id)
+        .filter(species.company_id == company_code)
         .order_by(species.id.desc())
         .all()
     )
@@ -38,76 +38,80 @@ def page(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "today_data": rows,
             "email": email,
-            "company_id": company_id
+            "company_id": company_code,
+            "message": ""
         }
     )
 
 
 # ---------------------------------------------------------
-# SAVE / UPDATE
+# SAVE / UPDATE SPECIES
 # ---------------------------------------------------------
 @router.post("/species")
-async def save(
+def save_species(
     request: Request,
-
     species_name: str = Form(...),
-
-    # ❌ NEVER USE int HERE
-    # id: int = Form(None)
-
-    id: str = Form(""),   # <-- FIXED (string input safe)
+    id: str = Form(""),
 
     date: str = Form(""),
     time: str = Form(""),
-    email: str = Form(""),
-    company_id: str = Form(""),
 
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
-        return JSONResponse({"error": "Session expired"}, status_code=401)
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    email = session_email
-    company_id = session_company_id
-
-    # Convert ID safely
+    # Safe ID conversion
     record_id = int(id) if id and id.isdigit() else None
 
-    # Auto date/time
+    # Auto date / time if empty
     now = datetime.now()
     if not date:
         date = now.strftime("%Y-%m-%d")
     if not time:
         time = now.strftime("%H:%M:%S")
 
-    # Duplicate
-    dup = (
+    # Duplicate check
+    duplicate = (
         db.query(species)
         .filter(
             species.species_name == species_name,
-            species.company_id == company_id,
+            species.company_id == company_code,
             species.id != record_id
         )
         .first()
     )
 
-    if dup:
-        return JSONResponse({"error": "Species Already Exists!"}, status_code=400)
+    if duplicate:
+        rows = db.query(species).filter(
+            species.company_id == company_code
+        ).order_by(species.id.desc()).all()
+
+        return templates.TemplateResponse(
+            "criteria/species.html",
+            {
+                "request": request,
+                "today_data": rows,
+                "email": email,
+                "company_id": company_code,
+                "message": f"❌ Species '{species_name}' already exists!"
+            }
+        )
 
     # UPDATE
     if record_id:
         row = (
             db.query(species)
-            .filter(species.id == record_id, species.company_id == company_id)
+            .filter(species.id == record_id, species.company_id == company_code)
             .first()
         )
 
         if not row:
-            return JSONResponse({"error": "Not found"}, status_code=404)
+            return RedirectResponse("/species?msg=Not+Found", status_code=302)
 
         row.species_name = species_name
         row.date = date
@@ -121,29 +125,44 @@ async def save(
             date=date,
             time=time,
             email=email,
-            company_id=company_id
+            company_id=company_code
         )
         db.add(new_row)
 
     db.commit()
-    return JSONResponse({"success": True})
+
+    updated = db.query(species).filter(
+        species.company_id == company_code
+    ).order_by(species.id.desc()).all()
+
+    return templates.TemplateResponse(
+        "criteria/species.html",
+        {
+            "request": request,
+            "today_data": updated,
+            "email": email,
+            "company_id": company_code,
+            "message": f"✔ Species '{species_name}' saved successfully!"
+        }
+    )
 
 
 # ---------------------------------------------------------
-# DELETE
+# DELETE SPECIES
 # ---------------------------------------------------------
 @router.post("/species/delete/{id}")
-def delete(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_species(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
 
-    if not company_id:
-        return JSONResponse({"error": "Session expired"}, status_code=401)
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
 
     db.query(species).filter(
         species.id == id,
-        species.company_id == company_id
+        species.company_id == company_code
     ).delete()
 
     db.commit()
-    return JSONResponse({"status": "ok"})
+
+    return RedirectResponse("/species?msg=Deleted", status_code=302)

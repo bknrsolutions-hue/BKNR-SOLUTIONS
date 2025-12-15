@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRODUCTION AT MASTER | BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  .form-container{
+    width:90%;max-width:1100px;margin:0 auto;background:white;
+    padding:25px;border-radius:10px;
+    box-shadow:0 0 8px rgba(0,0,0,0.15);
+  }
+
+  .row{display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+  .col{width:50%;min-width:260px;display:flex;flex-direction:column;margin-bottom:10px;}
+
+  label{font-weight:600;color:#003366;margin-bottom:6px;}
+  input{
+    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
+    background:#f9fcff;font-size:14px;
+  }
+  input:focus{
+    border-color:#003366;outline:none;box-shadow:0 0 6px rgba(0,51,102,0.3);
+  }
+
+  .actions{text-align:center;margin-top:25px;}
+  .btn{
+    background:#003366;color:white;border:none;
+    padding:10px 20px;border-radius:6px;width:150px;
+    font-weight:600;cursor:pointer;
+  }
+  .btn-clear{background:#777;}
+  .btn:hover{opacity:0.9;}
+
+  table{
+    width:90%;max-width:1100px;margin:25px auto;
+    border-collapse:collapse;background:white;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+    border-radius:8px;overflow:hidden;
+  }
+  th,td{padding:10px;border-bottom:1px solid #ccc;font-size:14px;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#eef5ff;cursor:pointer;}
+  tr.selected{background:#cce5ff!important;}
+
+  #menuWrap{
+    display:none;width:90%;max-width:1100px;margin:10px auto;
+    text-align:right;position:relative;
+  }
+  #dotsBtn{
+    background:#003366;color:white;border:none;padding:6px 12px;
+    font-size:22px;border-radius:6px;font-weight:600;cursor:pointer;
+  }
+  #dropdownMenu{
+    display:none;position:absolute;right:0;background:white;
+    border:1px solid #ccc;width:180px;border-radius:8px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.25);
+  }
+  .menu-item{
+    padding:10px;font-size:14px;font-weight:600;color:#003366;
+    border-bottom:1px solid #eee;cursor:pointer;
+  }
+  .menu-item:hover{background:#e6f2ff;}
+</style>
+</head>
+
+<body>
+
+<h2>PRODUCTION AT MASTER</h2>
+
+<form onsubmit="saveRecord(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>Production At</label>
+        <input type="text" id="production_at_name" name="production_at_name" required>
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id" name="id">
+    <input type="hidden" id="meta_date" name="date">
+    <input type="hidden" id="meta_time" name="time">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
+    </div>
+  </div>
+</form>
+
+{% if today_data %}
+<div id="menuWrap">
+  <button id="dotsBtn">⋮</button>
+  <div id="dropdownMenu">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Production At</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Email</th>
+      <th>Company ID</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for row in today_data %}
+    <tr 
+      data-id="{{ row.id }}"
+      data-name="{{ row.production_at }}"
+    >
+      <td>{{ row.id }}</td>
+      <td>{{ row.production_at }}</td>
+      <td>{{ row.date }}</td>
+      <td>{{ row.time }}</td>
+      <td>{{ row.email }}</td>
+      <td>{{ row.company_id }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+
+<script>
+let selectedRow=null;
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+  const now=new Date();
+  meta_date.value = now.toISOString().slice(0,10);
+  meta_time.value = now.toTimeString().slice(0,8);
+
+  const rows=document.querySelectorAll("#dataTable tbody tr");
+  const menu=document.getElementById("menuWrap");
+
+  rows.forEach(r=>{
+    r.onclick=function(){
+      rows.forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow=r;
+      menu.style.display="block";
+    };
+  });
+
+  dotsBtn.onclick=()=>{
+    dropdownMenu.style.display =
+      dropdownMenu.style.display==="block" ? "none" : "block";
+  };
+});
+
+/* SAVE */
+async function saveRecord(e){
+  e.preventDefault();
+
+  const fd=new FormData();
+  if(record_id.value) fd.append("id", record_id.value);
+
+  fd.append("production_at_name", production_at_name.value);
+  fd.append("date", meta_date.value);
+  fd.append("time", meta_time.value);
+
+  const res=await fetch("/criteria/production_at",{method:"POST",body:fd});
+  if(res.ok) location.reload();
+  else alert("Save Failed!");
+}
+
+/* EDIT */
+function editSelected(){
+  record_id.value = selectedRow.dataset.id;
+  production_at_name.value = selectedRow.dataset.name;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* DELETE */
+async function deleteSelected(){
+  if(!confirm("Delete?")) return;
+  const id = selectedRow.dataset.id;
+  const res=await fetch(`/criteria/production_at/delete/${id}`,{method:"POST"});
+  if(res.ok) location.reload();
+}
+
+/* CLEAR */
+function clearForm(){
+  record_id.value="";
+  production_at_name.value="";
+  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
+  menuWrap.style.display="none";
+}
+</script>
+
+</body>
+</html>

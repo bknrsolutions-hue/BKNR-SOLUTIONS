@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Contractor Monthly Bill</title>
+
+<style>
+@page{ size:A4; margin:15mm; }
+
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  color:#000;
+  font-size:11px;
+  line-height:1.4;
+}
+.bill-container{width:100%;}
+
+.header{text-align:center;margin-bottom:6px;}
+.header h2{
+  margin:0;font-size:16px;color:#003366;letter-spacing:.5px;
+}
+
+.company-box{text-align:center;margin-bottom:8px;}
+.company-box b{font-size:12px;}
+
+.info{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+}
+.info div{width:48%;}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+}
+th{
+  text-align:left;
+  font-weight:bold;
+  padding:4px 3px;
+  color:#003366;
+}
+td{padding:4px 3px;}
+thead tr{border-bottom:1px solid #ccc;}
+tfoot tr{
+  border-top:1px solid #999;
+  font-weight:bold;
+}
+
+.total-box{margin-top:8px;width:100%;}
+.total-box table{
+  width:45%;
+  float:right;
+  border-collapse:collapse;
+}
+.total-box td{padding:4px;}
+.total-box tr td:last-child{text-align:right;}
+
+.terms{margin-top:14px;font-size:10.5px;}
+.terms h4{margin:4px 0;font-size:11px;color:#003366;}
+
+.sign{
+  margin-top:30px;
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+}
+.sign div{width:40%;text-align:center;}
+.sign .line{margin-top:35px;}
+</style>
+</head>
+
+<body>
+
+<div class="bill-container">
+
+<!-- HEADER -->
+<div class="header">
+  <h2>DE-HEADING MONTHLY BILL</h2>
+</div>
+
+<!-- COMPANY -->
+<div class="company-box">
+  <b>{{ company_name }}</b>
+</div>
+
+<!-- INFO -->
+<div class="info">
+  <div>
+    <b>Contractor :</b> {{ contractor_name }}<br>
+    <b>Address :</b> {{ contractor_address }}<br>
+    <b>GST No :</b> {{ contractor_gst or "-" }}<br>
+    <b>Bill Month :</b> {{ month_year }}
+  </div>
+  <div>
+    <b>Bill No :</b> {{ bill_no }}<br>
+    <b>Bill Date :</b> {{ bill_date.strftime("%d-%m-%Y") }}<br>
+    <b>Phone :</b> {{ contractor_phone }}
+  </div>
+</div>
+
+<!-- BANK -->
+<div class="info" style="margin-top:6px;">
+  <div>
+    <b>Bank :</b> {{ contractor_bank }}<br>
+    <b>Account No :</b> {{ contractor_account_no }}<br>
+    <b>IFSC :</b> {{ contractor_ifsc }}
+  </div>
+  <div></div>
+</div>
+
+<!-- TABLE -->
+<table>
+<thead>
+<tr>
+  <th>Date</th>
+  <th>Batch</th>
+  <th>HOSO</th>
+  <th>HLSO</th>
+  <th>Yield %</th>
+  <th>Rate</th>
+  <th style="text-align:right">Amount</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in rows %}
+<tr>
+  <td>{{ r.date }}</td>
+  <td>{{ r.batch_number }}</td>
+  <td>{{ "%.2f"|format(r.hoso_qty) }}</td>
+  <td>{{ "%.2f"|format(r.hlso_qty) }}</td>
+  <td>{{ "%.2f"|format(r.yield_percent) }}</td>
+  <td>{{ "%.2f"|format(r.rate_per_kg) }}</td>
+  <td style="text-align:right">{{ "%.2f"|format(r.amount) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr>
+  <td colspan="2">TOTAL</td>
+  <td>{{ "%.2f"|format(total_hoso) }}</td>
+  <td>{{ "%.2f"|format(total_hlso) }}</td>
+  <td>{{ "%.2f"|format(avg_yield) }}</td>
+  <td></td>
+  <td style="text-align:right">{{ "%.2f"|format(grand_total) }}</td>
+</tr>
+</tfoot>
+</table>
+
+<!-- GST & PAYABLE -->
+<div class="total-box">
+<table>
+<tr>
+  <td>Sub Total</td>
+  <td>{{ "%.2f"|format(grand_total) }}</td>
+</tr>
+
+{% if contractor_gst and contractor_gst_percent %}
+<tr>
+  <td>GST @ {{ contractor_gst_percent }}%</td>
+  <td>
+    {{ "%.2f"|format(grand_total * contractor_gst_percent / 100) }}
+  </td>
+</tr>
+<tr>
+  <td><b>Total Payable</b></td>
+  <td>
+    <b>
+      {{ "%.2f"|format(grand_total + (grand_total * contractor_gst_percent / 100)) }}
+    </b>
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td><b>Total Payable</b></td>
+  <td><b>{{ "%.2f"|format(grand_total) }}</b></td>
+</tr>
+{% endif %}
+</table>
+</div>
+
+<div style="clear:both"></div>
+
+<!-- TERMS -->
+<div class="terms">
+<h4>Terms & Conditions</h4>
+<ol>
+  <li>Bill prepared from approved de-heading entries.</li>
+  <li>Once bill is generated & mailed, it is final.</li>
+  <li>Any adjustments will be reflected in next month bill.</li>
+  <li>This is a system generated bill.</li>
+</ol>
+</div>
+
+<!-- SIGN -->
+<div class="sign">
+  <div><div class="line">Contractor Signature</div></div>
+  <div><div class="line">Authorized Signatory</div></div>
+</div>
+
+</div>
+
+<script>
+window.print();
+</script>
+
+</body>
+</html>

@@ -19,6 +19,12 @@ from app.routers.criteria.freezers import router as freezers_router
 from app.routers.criteria.production_types import router as production_types_router
 from app.routers.criteria.coldstore_locations import router as coldstore_locations_router
 from app.routers.criteria.grade_to_hoso import router as grade_to_hoso_router
+from app.routers.criteria.production_at import router as production_at_router
+from app.routers.criteria.purposes import router as purposes_router
+
+# ⭐ NEW IMPORT – THIS WAS MISSING
+from app.routers.criteria.hoso_hlso import router as hoso_hlso_router
+
 
 router = APIRouter(prefix="/criteria", tags=["Criteria"])
 
@@ -41,3 +47,8 @@ router.include_router(freezers_router)
 router.include_router(production_types_router)
 router.include_router(coldstore_locations_router)
 router.include_router(grade_to_hoso_router)
+router.include_router(production_at_router)
+router.include_router(purposes_router)
+
+# ⭐ ADD THIS — FIXES YOUR 404 PROBLEM
+router.include_router(hoso_hlso_router)

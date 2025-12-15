@@ -1,570 +1,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>RMP REPORT - BKNR SOLUTIONS</title>
+<meta charset="UTF-8">
+<title>RAW MATERIAL PURCHASING REPORT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <style>
-  :root{
-    --accent:#003366;
-    --muted:#a3bcd6;
-    --light:#eaf4ff;
-  }
-  *{box-sizing:border-box}
-  body {font-family: Arial, sans-serif; background:var(--light); margin:0; padding:0;}
-  header.hdr {text-align:center;color:var(--accent);padding:18px 10px;font-weight:700;font-size:20px;}
+:root{
+  --primary:#003366;
+  --light:#f3f7ff;
+  --border:#cfd9ea;
+  --card:#ffffff;
+}
+*{ box-sizing:border-box; font-family:Arial, sans-serif; }
+body{ margin:0; padding:18px; background:var(--light); }
 
-  /* FILTER / CONTROLS */
-  .controls {
-    width:96%; max-width:1200px; margin:8px auto; display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-  }
-  .filter { display:flex; flex-direction:column; width:18%; min-width:140px; }
-  .filter label{ font-weight:600; color:var(--accent); margin-bottom:6px; font-size:13px }
-  .filter input, .filter select { padding:8px; border:1px solid var(--muted); border-radius:6px; font-size:14px; background:#fff }
+.page-title{
+  text-align:center; font-size:22px; font-weight:bold;
+  color:var(--primary); margin-bottom:15px;
+}
 
-  .controls .small { width:120px; }
-  .controls .right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.filters{
+  display:flex; gap:10px; flex-wrap:wrap;
+  background:var(--card); border:1px solid var(--border);
+  padding:12px; border-radius:8px; max-width:1400px;
+  margin:0 auto 12px; align-items:flex-end;
+}
 
-  /* Buttons are hidden as requested */
-  .btn, .ghost { display: none !important; } 
+.fbox{ display:flex; flex-direction:column; gap:4px; }
+.fbox label{
+  font-size:12px; font-weight:bold; color:var(--primary);
+}
 
-  /* action area and 3-dot menu (not sticky) */
-  .action-bar { width:96%; max-width:1200px; margin:6px auto; display:flex; align-items:center; gap:8px; }
-  .dots { background:var(--accent); color:white; width:38px; height:38px; border-radius:8px; cursor:pointer; display:flex; justify-content:center; align-items:center; font-size:20px; }
-  .menu-box { position:relative; display:inline-block; }
-  .menu-list { display:none; position:absolute; right:0; top:42px; background:#fff; border:1px solid #ddd; border-radius:6px; min-width:180px; box-shadow:0 6px 18px rgba(0,0,0,0.12); z-index:50; }
-  .menu-list div { padding:10px 12px; cursor:pointer; font-size:14px; color:#222; }
-  .menu-list div:hover { background:#f0f8ff; }
+select,input[type=date]{
+  padding:7px; border-radius:5px;
+  border:1px solid var(--border);
+  min-width:150px; font-size:13px;
+}
+#searchBox{
+  padding:8px; width:260px;
+  border:1px solid var(--border);
+  border-radius:5px; font-size:13px;
+}
 
-  /* table area */
-  .table-wrap { width:96%; max-width:1200px; margin:6px auto 40px; overflow:auto; background:#fff; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.06); }
-  table { width:100%; border-collapse:collapse; min-width:1000px; }
-  thead th { position: sticky; top:0; background:var(--accent); color:#fff; padding:10px; text-align:left; z-index:10; }
-  th, td { padding:9px 10px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle; }
-  tbody tr:hover { background:#f5fbff; cursor:pointer; }
-  tr.selected { background:#cfe9ff !important; }
+.actions{
+  max-width:1400px; margin:8px auto;
+  display:flex; justify-content:space-between; align-items:center;
+}
+#rowCount{ font-size:13px; color:#444; }
 
-  /* colored rules (example thresholds) */
-  tr.rule-high-boxes { background: #fff7d6; } /* yellow-ish */
-  tr.rule-high-dc { background: #ffe6e6; } /* red-ish */
-  tr.rule-zero-g { background: #f2f2f2; color:#666 } /* gray */
-  .muted { color:#666; font-size:13px; }
+.menu-box{ position:relative; }
+.dots{
+  width:36px; height:36px;
+  background:var(--primary); color:white;
+  border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; cursor:pointer;
+}
 
-  /* footer totals */
-  tfoot td { font-weight:700; background:#f8fbff; padding:10px; }
+.menu-list{
+  position:absolute; right:0; top:42px;
+  width:220px; background:white;
+  border-radius:8px; border:1px solid #ddd;
+  display:none; z-index:999;
+  box-shadow:0 8px 22px rgba(0,0,0,0.12);
+}
+.menu-list div{
+  padding:10px; font-size:14px;
+  border-bottom:1px solid #f0f0f0;
+  cursor:pointer;
+}
+.menu-list div:hover{ background:#eef5ff; }
 
-  /* pagination and row count */
-  .pager { width:96%; max-width:1200px; margin:6px auto 18px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-  .pager .pages { display:flex; gap:6px; align-items:center; }
-  .pager button { padding:6px 10px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer }
-  .pager .current { font-weight:700; background:var(--accent); color:#fff; border-color:var(--accent) }
+.submenu{
+  display:none; margin-left:15px;
+  border-left:3px solid var(--primary);
+  background:white;
+}
+.submenu div{
+  padding:8px 12px; font-size:13px; cursor:pointer;
+}
+.submenu div:hover{ background:#eef5ff; }
 
-  /* loader overlay */
-  .loader { display:none; position:fixed; inset:0; background:rgba(255,255,255,0.6); z-index:120; justify-content:center; align-items:center; }
-  .loader .box { background:#fff; padding:18px 22px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.12); font-weight:700; }
+.table-wrap{
+  max-width:1400px; margin:0 auto;
+  background:white; border-radius:10px;
+  overflow:auto;
+  border:1px solid #dce6f4;
+  box-shadow:0 6px 22px rgba(0,0,0,0.06);
+}
 
-  /* responsive */
-  @media (max-width:900px){
-    .filter { width:48% }
-    table { min-width:900px }
-  }
-  @media (max-width:600px){
-    .filter { width:100% }
-    .controls .right { width:auto; justify-content:flex-end }
-    .table-wrap { width:100%; margin:6px 6px 40px }
-  }
+table{ width:100%; border-collapse:collapse; min-width:1300px; }
+thead th{
+  background:var(--primary); color:white;
+  padding:10px; font-size:13px;
+  position:sticky; top:0;
+}
+tbody td{
+  padding:8px; font-size:13px;
+  border-bottom:1px solid #f1f1f1;
+  white-space:nowrap;
+}
+tbody tr:hover{ background:#eef6ff; }
+tr.selected{ background:#cfe7ff !important; }
+
+tfoot td{
+  padding:10px; font-weight:bold;
+  background:#f8fbff;
+  border-top:2px solid #c4d1e0;
+}
 </style>
 </head>
+
 <body>
 
-<header class="hdr">RAW MATERIAL PURCHASING - REPORT</header>
+<div class="page-title">RAW MATERIAL PURCHASING REPORT</div>
 
-<div class="controls">
-  <div class="filter">
-    <label>Batch</label>
-    <select id="filter_batch">
+<!-- FILTERS -->
+<div class="filters">
+  <div class="fbox"><label>From Date</label><input type="date" id="f_from"></div>
+  <div class="fbox"><label>To Date</label><input type="date" id="f_to"></div>
+
+  <div class="fbox"><label>Batch</label>
+    <select id="f_batch">
       <option value="">All</option>
-      {% for b in batch_list %}
-      <option value="{{ b }}">{{ b }}</option>
-      {% endfor %}
+      {% for b in batches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
     </select>
   </div>
 
-  <div class="filter">
-    <label>Supplier</label>
-    <select id="filter_supplier">
+  <div class="fbox"><label>Supplier</label>
+    <select id="f_supplier">
       <option value="">All</option>
-      {% for s in supplier_list %}
-      <option value="{{ s }}">{{ s }}</option>
-      {% endfor %}
+      {% for s in suppliers %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
     </select>
   </div>
 
-  <div class="filter">
-    <label>Count</label>
-    <select id="filter_count">
+  <div class="fbox"><label>Variety</label>
+    <select id="f_variety">
       <option value="">All</option>
-      {% for c in count_list %}
-      <option value="{{ c }}">{{ c }}</option>
-      {% endfor %}
+      {% for v in varieties %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
     </select>
   </div>
 
-  <div class="filter">
-    <label>Variety</label>
-    <select id="filter_variety">
+  <div class="fbox"><label>Species</label>
+    <select id="f_species">
       <option value="">All</option>
-      {% for v in variety_list %}
-      <option value="{{ v }}">{{ v }}</option>
-      {% endfor %}
+      {% for sp in species %}<option value="{{ sp }}">{{ sp }}</option>{% endfor %}
     </select>
   </div>
 
-  <div class="filter" style="width:22%">
-    <label>Date Range</label>
-    <div style="display:flex; gap:6px;">
-      <input type="date" id="filter_from" style="flex:1">
-      <input type="date" id="filter_to" style="flex:1">
-    </div>
+  <div class="fbox"><label>Count</label>
+    <select id="f_count">
+      <option value="">All</option>
+      {% for c in counts %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
   </div>
 
-  <div class="right" style="width:auto; min-width:150px;">
-    <input id="quickSearch" placeholder="Search batch/supplier/variety/species/count" style="padding:9px;border:1px solid var(--muted);border-radius:6px;width:320px;min-width:150px">
-    </div>
+  <input id="searchBox" placeholder="Search batch / supplier / variety / remarks">
 </div>
 
-<div class="action-bar">
-  <div style="font-size:14px;color:#333;margin-left:6px" id="rowCount">Showing 0 rows</div>
-  <div style="margin-left:auto" class="menu-box">
+<!-- ACTIONS -->
+<div class="actions">
+  <div id="rowCount">0 rows</div>
+
+  <div class="menu-box">
     <div class="dots" id="dotsBtn">⋮</div>
-    <div class="menu-list" id="menuList">
-      <div id="printAction">🖨 Print (visible)</div>
-      <div id="pdfAction">📄 Export PDF (visible)</div>
-      <div id="xlsxAction">📤 Export XLSX (visible)</div>
-      <div id="deleteAction">🗑 Delete Selected</div>
-      <div id="refreshAction">🔄 Refresh (client)</div>
+
+    <div class="menu-list" id="menu">
+      <div onclick="editSelected()">✏️ Edit Selected</div>
+      <div onclick="deleteSelected()">🗑 Delete Selected</div>
+
+      <div id="printMenuBtn">🖨 Print ▼</div>
+      <div class="submenu" id="printMenu">
+        <div onclick="printTable()">Table View</div>
+        <div onclick="printSummary()">Summary View</div>
+      </div>
+
+      <div id="pdfMenuBtn">📄 Export PDF ▼</div>
+      <div class="submenu" id="pdfMenu">
+        <div onclick="pdfTable()">Table View</div>
+        <div onclick="pdfSummary()">Summary View</div>
+      </div>
+
+      <div onclick="excelSelected()">📊 Export Excel</div>
     </div>
   </div>
 </div>
 
+<!-- TABLE -->
 <div class="table-wrap">
-  <table id="reportTable" aria-describedby="rowCount">
-    <thead>
-      <tr>
-        <th style="width:36px"><input id="chk_all" type="checkbox" title="Select all visible"></th>
-        <th style="width:40px">ID</th>
-        <th>Batch</th>
-        <th>Supplier</th>
-        <th>Variety</th>
-        <th>Species</th>
-        <th>Count</th>
-        <th>G1</th>
-        <th>G2</th>
-        <th>DC</th>
-        <th>Received</th>
-        <th>Rate</th>
-        <th>Amount</th>
-        <th>Boxes</th>
-        <th style="min-width:110px">Date</th>
-      </tr>
-    </thead>
+<table>
+<thead>
+<tr>
+  <th><input type="checkbox" id="chk_all"></th>
+  <th>ID</th>
+  <th>Date</th>
+  <th>Time</th>
+  <th>Batch</th>
+  <th>Supplier</th>
+  <th>Variety</th>
+  <th>Species</th>
+  <th>Count</th>
+  <th>G1</th>
+  <th>G2</th>
+  <th>DC</th>
+  <th>Received</th>
+  <th>Rate</th>
+  <th>Amount</th>
+  <th>Boxes</th>
+  <th>Remarks</th>
+  <th>Email</th>
+</tr>
+</thead>
 
-    <tbody id="reportBody">
-      {% for r in report_data %}
-      <tr data-id="{{ r.id }}">
-        <td><input type="checkbox" class="rowCheck"></td>
-        <td class="col-id">{{ r.id }}</td>
-        <td class="col-batch">{{ r.batch_number }}</td>
-        <td class="col-supplier">{{ r.supplier_name }}</td>
-        <td class="col-variety">{{ r.variety_name }}</td>
-        <td class="col-species">{{ r.species }}</td>
-        <td class="col-count">{{ r.count }}</td>
-        <td class="col-g1">{{ r.g1_qty or 0 }}</td>
-        <td class="col-g2">{{ r.g2_qty or 0 }}</td>
-        <td class="col-dc">{{ r.dc_qty or 0 }}</td>
-        <td class="col-recv">{{ r.received_qty or 0 }}</td>
-        <td class="col-rate">{{ r.rate_per_kg or 0 }}</td>
-        <td class="col-amt">{{ r.amount or 0 }}</td>
-        <td class="col-boxes">{{ r.material_boxes or 0 }}</td>
-        <td class="col-date">{{ r.date }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
+<tbody id="tbody">
+{% for r in rows %}
+<tr data-id="{{ r.id }}">
+<td><input type="checkbox" class="rowCheck"></td>
+<td>{{ r.id }}</td>
+<td>{{ r.date }}</td>
+<td>{{ r.time.strftime("%H:%M:%S") if r.time else "" }}</td>
+<td>{{ r.batch_number }}</td>
+<td>{{ r.supplier_name }}</td>
+<td>{{ r.variety_name }}</td>
+<td>{{ r.species }}</td>
+<td>{{ r.count }}</td>
+<td class="g1">{{ r.g1_qty or 0 }}</td>
+<td class="g2">{{ r.g2_qty or 0 }}</td>
+<td class="dc">{{ r.dc_qty or 0 }}</td>
+<td class="rec">{{ r.received_qty or 0 }}</td>
+<td class="rate">{{ r.rate_per_kg or 0 }}</td>
+<td class="amt">{{ r.amount or 0 }}</td>
+<td>{{ r.material_boxes or 0 }}</td>
+<td>{{ r.remarks or "" }}</td>
+<td>{{ r.email or "" }}</td>
+</tr>
+{% endfor %}
+</tbody>
 
-    <tfoot>
-      <tr>
-        <td></td>
-        <td colspan="6">Totals</td>
-        <td id="tot_g1">0</td>
-        <td id="tot_g2">0</td>
-        <td id="tot_dc">0</td>
-        <td id="tot_recv">0</td>
-        <td></td>
-        <td id="tot_amt">0</td>
-        <td id="tot_boxes">0</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
+<tfoot>
+<tr>
+<td colspan="9">TOTAL</td>
+<td id="tot_g1">0</td>
+<td id="tot_g2">0</td>
+<td id="tot_dc">0</td>
+<td id="tot_rec">0</td>
+<td></td>
+<td id="tot_amt">0</td>
+<td colspan="3"></td>
+</tr>
+</tfoot>
+</table>
 </div>
-
-<div class="pager">
-  <div class="pages" id="paginationControls"></div>
-  <div>
-    Page size:
-    <select id="pageSize">
-      <option value="25">25</option>
-      <option value="50">50</option>
-      <option value="100">100</option>
-      <option value="all">All</option>
-    </select>
-  </div>
-</div>
-
-<div class="loader" id="loader"><div class="box">Working…</div></div>
 
 <script>
-/* -------------------------
-    Client-side interactive logic
-    ------------------------- */
-
-/* Elements */
-const filter_batch = document.getElementById('filter_batch');
-const filter_supplier = document.getElementById('filter_supplier');
-const filter_count = document.getElementById('filter_count');
-const filter_variety = document.getElementById('filter_variety');
-const filter_from = document.getElementById('filter_from');
-const filter_to = document.getElementById('filter_to');
-const quickSearch = document.getElementById('quickSearch');
-
-const reportBody = document.getElementById('reportBody');
-const rowsAll = Array.from(reportBody.querySelectorAll('tr'));
-const rowCountEl = document.getElementById('rowCount');
-
-const tot_g1 = document.getElementById('tot_g1');
-const tot_g2 = document.getElementById('tot_g2');
-const tot_dc = document.getElementById('tot_dc');
-const tot_recv = document.getElementById('tot_recv');
-const tot_amt = document.getElementById('tot_amt');
-const tot_boxes = document.getElementById('tot_boxes');
-
-const chk_all = document.getElementById('chk_all');
-const loader = document.getElementById('loader');
-
-const menuList = document.getElementById('menuList');
-const dotsBtn = document.getElementById('dotsBtn');
-
-const pageSizeSel = document.getElementById('pageSize');
-const paginationControls = document.getElementById('paginationControls');
-
-let currentPage = 1;
-let pageSize = pageSizeSel.value === 'all' ? 'all' : parseInt(pageSizeSel.value);
-
-/* Utility */
-function showLoader(on=true){
-  loader.style.display = on ? 'flex' : 'none';
+/* HELPERS */
+function parseDate(v){
+  return v ? new Date(v + "T00:00:00") : null;
 }
-function toNum(v){ return parseFloat(String(v).replace(/,/g,'')) || 0; }
-function textOf(el){ return el ? el.innerText.trim().toLowerCase() : ''; }
+const num=v=>parseFloat(v)||0;
 
-/* Filtering logic (applies to full dataset) */
-function filterRows(){
-  const batch = filter_batch.value.trim().toLowerCase();
-  const supplier = filter_supplier.value.trim().toLowerCase();
-  const count = filter_count.value.trim().toLowerCase();
-  const variety = filter_variety.value.trim().toLowerCase();
-  const from = filter_from.value;
-  const to = filter_to.value;
-  const q = quickSearch.value.trim().toLowerCase();
+/* ELEMENTS */
+const rows=[...document.querySelectorAll("#tbody tr")];
+const rowCount=document.getElementById("rowCount");
 
-  let visible = [];
-  rowsAll.forEach(r=>{
-    const b = textOf(r.querySelector('.col-batch'));
-    const s = textOf(r.querySelector('.col-supplier'));
-    const c = textOf(r.querySelector('.col-count'));
-    const v = textOf(r.querySelector('.col-variety'));
-    const d = (r.querySelector('.col-date')?.innerText || '').trim();
-    const rowText = (b + ' ' + s + ' ' + v + ' ' + c + ' ' + textOf(r.querySelector('.col-species'))).toLowerCase();
+/* MENU */
+dotsBtn.onclick=e=>{e.stopPropagation();menu.style.display=menu.style.display==="block"?"none":"block";};
+printMenuBtn.onclick=e=>{e.stopPropagation();printMenu.style.display=printMenu.style.display==="block"?"none":"block";};
+pdfMenuBtn.onclick=e=>{e.stopPropagation();pdfMenu.style.display=pdfMenu.style.display==="block"?"none":"block";};
+document.onclick=()=>{menu.style.display="none";printMenu.style.display="none";pdfMenu.style.display="none";};
 
-    let ok = true;
-    if(batch && b !== batch) ok=false;
-    if(supplier && s !== supplier) ok=false;
-    if(count && c !== count) ok=false;
-    if(variety && v !== variety) ok=false;
-    if(from && d < from) ok=false;
-    if(to && d > to) ok=false;
-    if(q && !rowText.includes(q)) ok=false;
+/* TOTALS */
+function totals(v){
+ let g1=0,g2=0,dc=0,rec=0,amt=0;
+ v.forEach(r=>{
+  g1+=num(r.querySelector(".g1").innerText);
+  g2+=num(r.querySelector(".g2").innerText);
+  dc+=num(r.querySelector(".dc").innerText);
+  rec+=num(r.querySelector(".rec").innerText);
+  amt+=num(r.querySelector(".amt").innerText);
+ });
+ tot_g1.innerText=g1.toFixed(2);
+ tot_g2.innerText=g2.toFixed(2);
+ tot_dc.innerText=dc.toFixed(2);
+ tot_rec.innerText=rec.toFixed(2);
+ tot_amt.innerText=amt.toFixed(2);
+}
 
-    r.style.display = ok ? '' : 'none';
-    if(ok) visible.push(r);
+/* FILTERS */
+function applyFilters(){
+ const f1=parseDate(f_from.value);
+ const f2=parseDate(f_to.value);
+ const fb=f_batch.value.toLowerCase();
+ const fs=f_supplier.value.toLowerCase();
+ const fv=f_variety.value.toLowerCase();
+ const fsp=f_species.value.toLowerCase();
+ const fc=f_count.value.toLowerCase();
+ const q=searchBox.value.toLowerCase();
+
+ let vis=[];
+ rows.forEach(r=>{
+  const c=r.children;
+  const d=parseDate(c[2].innerText);
+  let ok=true;
+
+  if(f1&&d&&d<f1) ok=false;
+  if(f2&&d&&d>f2) ok=false;
+  if(fb&&c[4].innerText.toLowerCase()!==fb) ok=false;
+  if(fs&&c[5].innerText.toLowerCase()!==fs) ok=false;
+  if(fv&&c[6].innerText.toLowerCase()!==fv) ok=false;
+  if(fsp&&c[7].innerText.toLowerCase()!==fsp) ok=false;
+  if(fc&&c[8].innerText.toLowerCase()!==fc) ok=false;
+  if(q&&!r.innerText.toLowerCase().includes(q)) ok=false;
+
+  r.style.display=ok?"":"none";
+  if(ok) vis.push(r);
+ });
+
+ rowCount.innerText=`${vis.length} rows`;
+ totals(vis);
+}
+
+/* SELECTION */
+chk_all.onchange = () => {
+  rows.forEach(r => {
+    if (r.style.display !== "none") {
+      r.querySelector(".rowCheck").checked = chk_all.checked;
+    }
   });
+};
 
-  return visible;
-}
+/* ACTIONS */
+const getIds=()=>[...document.querySelectorAll(".rowCheck:checked")].map(c=>c.closest("tr").dataset.id);
+function editSelected(){const i=getIds(); if(i.length!==1) alert("Select one row"); else location=`/processing/raw_material_purchasing/edit/${i[0]}`;}
+function deleteSelected(){alert("Delete API");}
+function printTable(){window.open(`/reports/raw_material_purchasing/print_table?ids=${getIds().join(",")}`);}
+function printSummary(){window.open(`/reports/raw_material_purchasing/print_summary?ids=${getIds().join(",")}`);}
+function pdfTable(){location=`/reports/raw_material_purchasing/export_pdf?ids=${getIds().join(",")}`;}
+function pdfSummary(){location=`/reports/raw_material_purchasing/export_pdf_summary?ids=${getIds().join(",")}`;}
+function excelSelected(){location=`/reports/raw_material_purchasing/export_excel?ids=${getIds().join(",")}`;}
 
-/* Apply row coloring rules (simple thresholds) */
-function applyRowRules(rows){
-  rows.forEach(r=>{
-    r.classList.remove('rule-high-boxes','rule-high-dc','rule-zero-g');
-    const boxes = toNum(r.querySelector('.col-boxes').innerText);
-    const dc = toNum(r.querySelector('.col-dc').innerText);
-    const g1 = toNum(r.querySelector('.col-g1').innerText);
-    const g2 = toNum(r.querySelector('.col-g2').innerText);
+/* LISTENERS */
+[f_from,f_to,f_batch,f_supplier,f_variety,f_species,f_count]
+.forEach(e=>e.addEventListener("change",applyFilters));
+searchBox.addEventListener("input",applyFilters);
 
-    if(boxes > 50) r.classList.add('rule-high-boxes');      // high boxes -> yellow
-    if(dc > 100) r.classList.add('rule-high-dc');          // high dc -> red
-    if(g1 === 0 && g2 === 0) r.classList.add('rule-zero-g');  // no g1/g2 -> gray
-  });
-}
-
-/* Compute totals for visible rows (only those currently shown & paginated) */
-function computeTotalsForRows(rows){
-  let tg1=0, tg2=0, tdc=0, trecv=0, tamt=0, tb=0;
-  rows.forEach(r =>{
-    tg1 += toNum(r.querySelector('.col-g1').innerText);
-    tg2 += toNum(r.querySelector('.col-g2').innerText);
-    tdc += toNum(r.querySelector('.col-dc').innerText);
-    trecv += toNum(r.querySelector('.col-recv').innerText);
-    tamt += toNum(r.querySelector('.col-amt').innerText);
-    tb += toNum(r.querySelector('.col-boxes').innerText);
-  });
-  tot_g1.innerText = tg1.toFixed(2);
-  tot_g2.innerText = tg2.toFixed(2);
-  tot_dc.innerText = tdc.toFixed(2);
-  tot_recv.innerText = trecv.toFixed(2);
-  tot_amt.innerText = tamt.toFixed(2);
-  tot_boxes.innerText = tb.toFixed(2);
-}
-
-/* PAGINATION */
-function renderPagination(totalRows){
-  paginationControls.innerHTML = '';
-  if(pageSize === 'all' || totalRows <= 0) {
-    // no pages
-    return;
-  }
-  const totalPages = Math.ceil(totalRows / pageSize);
-  const maxButtons = 7;
-  const start = Math.max(1, currentPage - Math.floor(maxButtons/2));
-  const end = Math.min(totalPages, start + maxButtons -1);
-
-  // prev
-  const prev = document.createElement('button');
-  prev.innerText = '‹';
-  prev.disabled = currentPage === 1;
-  prev.onclick = ()=>{ if(currentPage>1){ currentPage--; applyFilterAndPage(); } };
-  paginationControls.appendChild(prev);
-
-  for(let p=start;p<=end;p++){
-    const b = document.createElement('button');
-    b.innerText = p;
-    if(p === currentPage) b.classList.add('current');
-    b.onclick = ()=>{ currentPage = p; applyFilterAndPage(); };
-    paginationControls.appendChild(b);
-  }
-
-  // next
-  const next = document.createElement('button');
-  next.innerText = '›';
-  next.disabled = currentPage === totalPages;
-  next.onclick = ()=>{ if(currentPage<totalPages){ currentPage++; applyFilterAndPage(); } };
-  paginationControls.appendChild(next);
-}
-
-/* Returns rows to display for current page from visibleRows */
-function paginateRows(visibleRows){
-  if(pageSize === 'all') return visibleRows;
-  const total = visibleRows.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if(currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * pageSize;
-  const end = start + pageSize;
-  return visibleRows.slice(start, end);
-}
-
-/* Main apply: filter -> paginate -> show -> totals -> apply rules -> update UI */
-function applyFilterAndPage(){
-  showLoader(true);
-  setTimeout(()=>{ // small delay to show loader visually
-    // 1. filter
-    const visibleRows = filterRows();
-
-    // 2. pagination render
-    renderPagination(visibleRows.length);
-
-    // 3. hide all rows then show only paginated ones
-    rowsAll.forEach(r => r.style.display = r.style.display === 'none' ? 'none' : 'none'); // ensure hidden
-    const pageRows = paginateRows(visibleRows);
-    pageRows.forEach(r => r.style.display = '');
-
-    // 4. apply coloring rules to visible pageRows
-    applyRowRules(pageRows);
-
-    // 5. compute totals for currently shown rows
-    computeTotalsForRows(pageRows);
-
-    // 6. update row count label
-    const totalVisible = visibleRows.length;
-    const startIdx = Math.min((currentPage-1)* (pageSize==='all'? totalVisible: pageSize) + 1, totalVisible);
-    const endIdx = Math.min(currentPage*(pageSize==='all'? totalVisible: pageSize), totalVisible);
-    
-    // Handle case for 0 results
-    rowCountEl.innerText = `Showing ${totalVisible === 0 ? 0 : startIdx} - ${totalVisible === 0 ? 0 : endIdx} of ${totalVisible} rows`;
-
-    // 7. uncheck master checkbox
-    chk_all.checked = false;
-    // unselect all rows classes and individual checkboxes
-    rowsAll.forEach(r=> r.classList.remove('selected'));
-
-    showLoader(false);
-  }, 120);
-}
-
-/* -------------------------
-    AUTOFILTER LOGIC (NO APPLY/RESET BUTTONS)
-    ------------------------- */
-
-// ఫిల్టర్ ఎలిమెంట్స్‌ను గ్రూప్ చేయడం
-const filterElements = [
-    filter_batch, filter_supplier, filter_count, filter_variety,
-    filter_from, filter_to
-];
-
-// అన్ని సెలెక్ట్/డేట్ ఫీల్డ్‌లకు ఈవెంట్ లిజనర్‌ను జోడించడం
-filterElements.forEach(el => {
-    el.addEventListener('change', () => {
-        currentPage = 1; // Filter మారగానే మొదటి పేజీకి వెళ్లాలి
-        applyFilterAndPage();
-    });
-});
-
-/* Quick search debounce */
-let qTimer = null;
-quickSearch.addEventListener('input', ()=> {
-  clearTimeout(qTimer);
-  qTimer = setTimeout(()=> {
-    currentPage = 1;
-    applyFilterAndPage();
-  }, 250); // 250ms డిలే తరువాత ఫిల్టర్ అప్లై అవుతుంది
-});
-
-/* page size change */
-pageSizeSel.addEventListener('change', ()=>{
-  pageSize = pageSizeSel.value === 'all' ? 'all' : parseInt(pageSizeSel.value);
-  currentPage = 1;
-  applyFilterAndPage();
-});
-
-/* -------------------------
-    Selection (row click / checkboxes / select all)
-    ------------------------- */
-rowsAll.forEach(row=>{
-  // click row toggles only that row's checkbox
-  row.addEventListener('click', function(e){
-    if(e.target.tagName.toLowerCase() === 'input') return;
-    const cb = this.querySelector('.rowCheck');
-    cb.checked = !cb.checked;
-    this.classList.toggle('selected', cb.checked);
-  });
-
-  // checkbox change highlights row
-  const cb = row.querySelector('.rowCheck');
-  cb.addEventListener('change', function(){
-    const tr = this.closest('tr');
-    tr.classList.toggle('selected', this.checked);
-  });
-});
-
-// Select all visible rows
-chk_all.addEventListener('change', function(){
-  const on = this.checked;
-  const visibleRows = Array.from(rowsAll).filter(r => r.style.display !== 'none');
-  visibleRows.forEach(r=>{
-    const cb = r.querySelector('.rowCheck');
-    cb.checked = on;
-    r.classList.toggle('selected', on);
-  });
-});
-
-/* -------------------------
-    Menu actions (global 3-dot)
-    ------------------------- */
-dotsBtn.addEventListener('click', (e)=> {
-  menuList.style.display = menuList.style.display === 'block' ? 'none' : 'block';
-});
-document.addEventListener('click', (e)=> { if(!dotsBtn.contains(e.target) && !menuList.contains(e.target)) menuList.style.display='none' });
-
-function getSelectedIds(){
-  return Array.from(document.querySelectorAll('.rowCheck:checked'))
-           .map(cb => cb.closest('tr').dataset.id);
-}
-
-/* Delete selected */
-document.getElementById('deleteAction').addEventListener('click', async ()=>{
-  const ids = getSelectedIds();
-  if(!ids.length) return Swal.fire('Select rows first');
-  const ok = await Swal.fire({ title: `Delete ${ids.length} rows?`, icon:'warning', showCancelButton:true, confirmButtonText:'Yes, delete' });
-  if(!ok.isConfirmed) return;
-  showLoader(true);
-  try {
-    await fetch(`/reports/raw_material_purchasing_report/delete`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ ids })
-    });
-    // reload client side: remove those rows from DOM and re-run filters
-    ids.forEach(id=>{
-      const tr = document.querySelector(`tr[data-id='${id}']`);
-      if(tr) tr.remove();
-    });
-    // rebuild rowsAll after removal
-    setTimeout(()=> {
-      rowsAll.length = 0;
-      document.querySelectorAll('#reportBody tr').forEach(r=> rowsAll.push(r));
-      applyFilterAndPage();
-    }, 80);
-  } catch(err){
-    console.error(err);
-    Swal.fire('Error deleting');
-    showLoader(false);
-  }
-});
-
-/* Print / Export actions (work on visible paginated rows) */
-function visiblePaginatedIds(){
-  // return ids of rows that are visible (display != 'none')
-  return Array.from(rowsAll).filter(r => r.style.display !== 'none').map(r => r.dataset.id);
-}
-
-document.getElementById('printAction').addEventListener('click', ()=>{
-  const ids = visiblePaginatedIds();
-  const qs = ids.length ? `?ids=${ids.join(',')}` : '?ids=all';
-  window.open(`/reports/raw_material_purchasing_report/print${qs}`, '_blank');
-});
-
-document.getElementById('pdfAction').addEventListener('click', ()=>{
-  const ids = visiblePaginatedIds();
-  const qs = ids.length ? `?ids=${ids.join(',')}` : '?ids=all';
-  window.location = `/reports/raw_material_purchasing_report/export_pdf${qs}`;
-});
-
-document.getElementById('xlsxAction').addEventListener('click', ()=>{
-  const ids = visiblePaginatedIds();
-  const qs = ids.length ? `?ids=${ids.join(',')}` : '?ids=all';
-  window.location = `/reports/raw_material_purchasing_report/export_xlsx${qs}`;
-});
-
-document.getElementById('refreshAction').addEventListener('click', ()=>{
-  // just client refresh (re-run filters)
-  applyFilterAndPage();
-});
-
-/* initial render */
-applyFilterAndPage();
-
+applyFilters();
 </script>
 
 </body>

@@ -1,98 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>PEELING REPORT - BKNR SOLUTIONS</title>
+<meta charset="UTF-8">
+<title>PEELING REPORT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;background:#e6f2ff;margin:0;}
-h2{text-align:center;color:#003366;margin:20px 0;}
-
-.filter-box{
-  width:95%;max-width:1100px;margin:0 auto 20px auto;background:white;
-  padding:15px;border-radius:8px;box-shadow:0 0 8px rgba(0,0,0,0.15);
-  display:flex;gap:20px;flex-wrap:wrap;
+:root{
+  --primary:#003366;
+  --light:#f3f7ff;
+  --border:#cfd9ea;
+  --card:#ffffff;
 }
-label{font-weight:600;color:#003366;}
-input,select{padding:8px;border:1px solid #a3bcd6;border-radius:6px;min-width:200px;}
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;padding:18px;background:var(--light)}
 
+.page-title{
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+  color:var(--primary);
+  margin-bottom:14px;
+}
+
+/* ================= FILTERS ================= */
+.filters{
+  max-width:1400px;
+  margin:0 auto 12px;
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:12px;
+  border-radius:8px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+.fbox{display:flex;flex-direction:column}
+.fbox label{
+  font-size:12px;
+  font-weight:bold;
+  color:var(--primary);
+}
+select,input[type=date],#searchBox{
+  padding:7px;
+  border-radius:5px;
+  border:1px solid var(--border);
+  min-width:150px;
+  font-size:13px;
+}
+#searchBox{width:260px}
+
+/* ================= ACTIONS ================= */
+.actions{
+  max-width:1400px;
+  margin:8px auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+#rowCount{font-size:13px;color:#444}
+
+.menu-box{position:relative}
+.dots{
+  width:36px;height:36px;
+  background:var(--primary);
+  color:#fff;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  cursor:pointer;
+}
+.menu-list{
+  position:absolute;
+  right:0;
+  top:42px;
+  width:240px;
+  background:#fff;
+  border-radius:8px;
+  border:1px solid #ddd;
+  display:none;
+  z-index:999;
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
+.menu-list div{
+  padding:10px;
+  font-size:14px;
+  cursor:pointer;
+  border-bottom:1px solid #f0f0f0;
+}
+.menu-list div:hover{background:#eef5ff}
+
+/* ================= TABLE ================= */
+.table-wrap{
+  max-width:1400px;
+  margin:10px auto;
+  background:#fff;
+  border-radius:10px;
+  border:1px solid #dce6f4;
+  overflow:auto;
+  box-shadow:0 6px 22px rgba(0,0,0,.06);
+}
 table{
-  width:95%;max-width:1100px;margin:0 auto 30px;background:white;
-  border-collapse:collapse;box-shadow:0 0 8px rgba(0,0,0,0.15);
+  width:100%;
+  border-collapse:collapse;
+  min-width:1200px;
 }
-th,td{padding:10px;border-bottom:1px solid #dce6f5;}
-th{background:#003366;color:white;}
-.no-data{text-align:center;margin-top:20px;font-weight:600;}
+thead th{
+  background:var(--primary);
+  color:#fff;
+  padding:10px;
+  font-size:13px;
+  position:sticky;
+  top:0;
+}
+tbody td{
+  padding:8px;
+  font-size:13px;
+  border-bottom:1px solid #f1f1f1;
+  white-space:nowrap;
+}
+tbody tr:hover{background:#eef6ff}
+tfoot td{
+  padding:10px;
+  font-weight:bold;
+  background:#f8fbff;
+  border-top:2px solid #c4d1e0;
+}
+
+/* ================= SUMMARY ================= */
+.summary-title{
+  max-width:1400px;
+  margin:20px auto 6px;
+  font-weight:bold;
+  color:var(--primary);
+}
 </style>
 </head>
 
 <body>
 
-<h2>PEELING REPORT</h2>
+<div class="page-title">PEELING REPORT</div>
 
-<form method="get" class="filter-box">
+<!-- ================= FILTERS ================= -->
+<div class="filters">
+  <div class="fbox">
+    <label>From Date</label>
+    <input type="date" id="f_from">
+  </div>
+  <div class="fbox">
+    <label>To Date</label>
+    <input type="date" id="f_to">
+  </div>
 
-  <div>
-    <label>Batch</label><br>
-    <select name="batch" onchange="this.form.submit()">
+  <div class="fbox">
+    <label>Month</label>
+    <select id="f_month">
       <option value="">All</option>
-      {% for b in batch_list %}
-      <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
-      {% endfor %}
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
     </select>
   </div>
 
-  <div>
-    <label>From Date</label><br>
-    <input type="date" name="from_date" value="{{ selected_from }}" onchange="this.form.submit()">
+  <div class="fbox">
+    <label>Batch</label>
+    <select id="f_batch">
+      <option value="">All</option>
+      {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
+    </select>
   </div>
 
-  <div>
-    <label>To Date</label><br>
-    <input type="date" name="to_date" value="{{ selected_to }}" onchange="this.form.submit()">
+  <div class="fbox">
+    <label>Contractor</label>
+    <select id="f_contractor">
+      <option value="">All</option>
+      {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
+    </select>
   </div>
 
-</form>
+  <div class="fbox">
+    <label>HLSO Count</label>
+    <select id="f_count">
+      <option value="">All</option>
+      {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
+    </select>
+  </div>
 
-{% if peeling_data %}
+  <input id="searchBox" placeholder="Search batch / contractor">
+</div>
+
+<!-- ================= ACTIONS ================= -->
+<div class="actions">
+  <div id="rowCount">0 rows</div>
+  <div class="menu-box">
+    <div class="dots" id="dotsBtn">⋮</div>
+    <div class="menu-list" id="menu">
+      <div onclick="printReport()">🖨 Print Report</div>
+      <div onclick="printBill()">🧾 Print Monthly Bill</div>
+      <div onclick="pdfReport()">📄 Export PDF</div>
+      <div onclick="excelReport()">📊 Export Excel</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONTRACTOR SUMMARY ================= -->
+<div class="summary-title">Contractor Wise Totals</div>
+<div class="table-wrap">
 <table>
 <thead>
 <tr>
-  <th>ID</th>
+  <th>Contractor</th>
+  <th>Total HLSO Qty</th>
+  <th>Total Peeled Qty</th>
+  <th>Total Amount</th>
+</tr>
+</thead>
+<tbody id="contractorBody"></tbody>
+</table>
+</div>
+
+<!-- ================= MAIN TABLE ================= -->
+<div class="table-wrap">
+<table id="mainTable">
+<thead>
+<tr>
+  <th><input type="checkbox" id="chk_all"></th>
+  <th>Date</th>
   <th>Batch</th>
+  <th>Contractor</th>
   <th>HLSO Count</th>
   <th>HLSO Qty</th>
   <th>Peeled Qty</th>
   <th>Yield %</th>
-  <th>Contractor</th>
   <th>Rate</th>
   <th>Amount</th>
-  <th>Date</th>
 </tr>
 </thead>
 
-<tbody>
-{% for r in peeling_data %}
-<tr>
-  <td>{{ r.id }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.hlso_count }}</td>
-  <td>{{ r.hlso_qty }}</td>
-  <td>{{ r.peeled_qty }}</td>
-  <td>{{ r.yield_percent }}</td>
-  <td>{{ r.contractor }}</td>
-  <td>{{ r.rate_per_kg }}</td>
-  <td>{{ r.amount }}</td>
-  <td>{{ r.date }}</td>
+<tbody id="tbody">
+{% for r in rows %}
+<tr data-id="{{r.id}}" data-contractor="{{r.contractor_name}}">
+  <td><input type="checkbox" class="rowCheck"></td>
+  <td>{{r.date}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.contractor_name}}</td>
+  <td>{{r.hlso_count}}</td>
+  <td class="hlso">{{r.hlso_qty}}</td>
+  <td class="peeled">{{r.peeled_qty}}</td>
+  <td>{{r.yield_percent}}</td>
+  <td>{{r.rate}}</td>
+  <td class="amount">{{r.amount}}</td>
 </tr>
 {% endfor %}
 </tbody>
 
+<tfoot>
+<tr>
+  <td colspan="5">GRAND TOTAL</td>
+  <td id="gt_hlso">0</td>
+  <td id="gt_peeled">0</td>
+  <td></td>
+  <td></td>
+  <td id="gt_amount">0</td>
+</tr>
+</tfoot>
 </table>
+</div>
 
-{% else %}
-<p class="no-data">No records found.</p>
-{% endif %}
+<script>
+dotsBtn.onclick=e=>{
+  e.stopPropagation();
+  menu.style.display=menu.style.display==="block"?"none":"block";
+};
+document.onclick=()=>menu.style.display="none";
+
+const rows=[...document.querySelectorAll("#tbody tr")];
+const rowCount=document.getElementById("rowCount");
+const n=v=>parseFloat(v)||0;
+
+/* ================= FILTERS (DATE RANGE INCLUDED) ================= */
+function applyFilters(){
+  let vis=[];
+  rows.forEach(r=>{
+    let ok=true,c=r.children;
+    const rowDate=c[1].innerText;      // yyyy-mm-dd
+    const rowMonth=rowDate?rowDate.split("-")[1]:"";
+
+    if(f_from.value && rowDate < f_from.value) ok=false;
+    if(f_to.value && rowDate > f_to.value) ok=false;
+    if(f_batch.value && c[2].innerText!==f_batch.value) ok=false;
+    if(f_contractor.value && c[3].innerText!==f_contractor.value) ok=false;
+    if(f_count.value && c[4].innerText!==f_count.value) ok=false;
+    if(f_month.value && rowMonth!==f_month.value) ok=false;
+
+    if(searchBox.value &&
+      !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())
+    ) ok=false;
+
+    r.style.display=ok?"":"none";
+    if(ok)vis.push(r);
+  });
+
+  rowCount.innerText=`${vis.length} rows`;
+  totals(vis);
+  contractorTotals(vis);
+}
+
+/* ================= TOTALS ================= */
+function totals(v){
+  let h=0,p=0,a=0;
+  v.forEach(r=>{
+    h+=n(r.querySelector(".hlso").innerText);
+    p+=n(r.querySelector(".peeled").innerText);
+    a+=n(r.querySelector(".amount").innerText);
+  });
+  gt_hlso.innerText=h.toFixed(2);
+  gt_peeled.innerText=p.toFixed(2);
+  gt_amount.innerText=a.toFixed(2);
+}
+
+function contractorTotals(v){
+  let map={};
+  v.forEach(r=>{
+    let c=r.dataset.contractor;
+    if(!map[c]) map[c]={h:0,p:0,a:0};
+    map[c].h+=n(r.querySelector(".hlso").innerText);
+    map[c].p+=n(r.querySelector(".peeled").innerText);
+    map[c].a+=n(r.querySelector(".amount").innerText);
+  });
+
+  contractorBody.innerHTML="";
+  Object.keys(map).forEach(c=>{
+    contractorBody.innerHTML+=`
+      <tr>
+        <td>${c}</td>
+        <td>${map[c].h.toFixed(2)}</td>
+        <td>${map[c].p.toFixed(2)}</td>
+        <td>${map[c].a.toFixed(2)}</td>
+      </tr>`;
+  });
+}
+
+/* ================= MENU ACTIONS ================= */
+const getIds=()=>[...document.querySelectorAll(".rowCheck:checked")]
+  .map(c=>c.closest("tr").dataset.id).join(",");
+
+function printReport(){
+  window.open(`/reports/peeling_report/print?ids=${getIds()}`);
+}
+function pdfReport(){
+  location=`/reports/peeling_report/export_pdf?ids=${getIds()}`;
+}
+function excelReport(){
+  location=`/reports/peeling_report/export_excel?ids=${getIds()}`;
+}
+function printBill(){
+  if(!f_month.value||!f_contractor.value){
+    alert("Select Month and Contractor");
+    return;
+  }
+  window.open(
+    `/reports/peeling_report/contractor_monthly_bill?month=${f_month.value}&contractor=${encodeURIComponent(f_contractor.value)}`
+  );
+}
+
+[f_from,f_to,f_batch,f_contractor,f_count,f_month].forEach(e=>e.onchange=applyFilters);
+searchBox.oninput=applyFilters;
+applyFilters();
+</script>
 
 </body>
 </html>

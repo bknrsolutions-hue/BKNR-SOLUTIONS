@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Raw Material Purchasing Bill</title>
+
+<style>
+@page { size:A4 portrait; margin:15mm; }
+
+body{
+  font-family:Arial,sans-serif;
+  font-size:13px;
+  color:#222;
+  margin:0;
+}
+
+.title{
+  text-align:center;
+  font-size:20px;
+  font-weight:bold;
+  margin-bottom:18px;
+  color:#003366;
+  text-transform:uppercase;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.card{
+  width:49%;
+  padding:10px;
+  border:1px solid #d0d7e2;
+  border-radius:6px;
+}
+
+h3{
+  margin:0 0 6px;
+  font-size:14px;
+  border-bottom:1px solid #ccc;
+  color:#003366;
+}
+
+/* ---------- BATCH ---------- */
+.batch-box{
+  margin-top:18px;
+  padding:8px;
+  background:#eef4ff;
+  border-left:4px solid #003366;
+  border-radius:4px;
+}
+
+.batch-title{
+  font-size:15px;
+  font-weight:bold;
+  color:#003366;
+}
+
+.sub-info{
+  font-size:12px;
+  margin:2px 0;
+}
+
+/* ---------- TABLE ---------- */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+}
+
+th,td{
+  border:1px solid #999;
+  padding:5px;
+  font-size:12px;
+  text-align:center;
+}
+
+th{
+  background:#003366;
+  color:#fff;
+  font-size:11px;
+}
+
+/* ---------- TOTALS ---------- */
+.totals-box{
+  margin-top:6px;
+  padding:6px;
+  background:#f1f6ff;
+  border:1px solid #c7d4ea;
+  border-radius:4px;
+  font-weight:bold;
+  font-size:12px;
+  width:50%;
+}
+
+.grand-total{
+  margin-top:25px;
+  padding:12px;
+  background:#003366;
+  color:white;
+  font-size:14px;
+  font-weight:bold;
+  border-radius:6px;
+}
+
+/* ---------- TERMS & SIGNS ---------- */
+.terms{
+  margin-top:20px;
+  font-size:12px;
+}
+
+.signatures{
+  display:flex;
+  justify-content:space-between;
+  margin-top:30px;
+}
+
+.sign-box{
+  width:30%;
+  text-align:center;
+}
+
+.line{
+  border-bottom:1px solid #000;
+  margin-bottom:5px;
+}
+
+.page-break{
+  page-break-after:always;
+}
+</style>
+</head>
+
+<body>
+
+{% set supplier_ids = batches | map(attribute='supplier.id') | unique | list %}
+
+<!-- =====================================================
+     SINGLE SUPPLIER
+===================================================== -->
+{% if supplier_ids|length == 1 %}
+
+<div class="title">RAW MATERIAL PURCHASING SUMMARY</div>
+
+<div class="header">
+  <div class="card">
+    <h3>Supplier Details</h3>
+    <p><b>Name:</b> {{ batches[0].supplier.name }}</p>
+    <p><b>Address:</b> {{ batches[0].supplier.address }}</p>
+    <p><b>Email:</b> {{ batches[0].supplier.email }}</p>
+    <p><b>Phone:</b> {{ batches[0].supplier.phone }}</p>
+  </div>
+
+  <div class="card">
+    <h3>Company Details</h3>
+    <p><b>Company:</b> {{ company_name }}</p>
+    <p><b>Address:</b> {{ company_address }}</p>
+    <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
+  </div>
+</div>
+
+{% set ns = namespace(grand_qty=0, grand_amt=0) %}
+
+{% for batch in batches %}
+{% set ns.grand_qty = ns.grand_qty + batch.total_quantity %}
+{% set ns.grand_amt = ns.grand_amt + batch.total_amount %}
+
+<div class="batch-box">
+  <div class="batch-title">Batch No: {{ batch.batch_number }}</div>
+  <div class="sub-info"><b>Vehicle:</b> {{ batch.vehicle_number }}</div>
+  <div class="sub-info"><b>Challan:</b> {{ batch.challan_number }}</div>
+  <div class="sub-info"><b>Location:</b> {{ batch.location }}</div>
+  <div class="sub-info"><b>Date:</b> {{ batch.date }}</div>
+  <div class="sub-info"><b>Total Boxes:</b> {{ batch.total_boxes }}</div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Species</th><th>Variety</th><th>Count</th>
+  <th>G1</th><th>G2</th><th>DC</th>
+  <th>Recv</th><th>Rate</th><th>Amount</th>
+</tr>
+</thead>
+<tbody>
+{% for r in batch.rows %}
+<tr>
+  <td>{{ r.species }}</td>
+  <td>{{ r.variety_name }}</td>
+  <td>{{ r.count }}</td>
+  <td>{{ r.g1_qty }}</td>
+  <td>{{ r.g2_qty }}</td>
+  <td>{{ r.dc_qty }}</td>
+  <td>{{ r.received_qty }}</td>
+  <td>{{ r.rate_per_kg }}</td>
+  <td>{{ r.amount }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div class="totals-box">
+  Batch Quantity: {{ batch.total_quantity }} |
+  Batch Amount: ₹ {{ batch.total_amount }}
+</div>
+
+{% endfor %}
+
+<div class="grand-total">
+  GRAND TOTAL |
+  Quantity: {{ ns.grand_qty }} |
+  Amount: ₹ {{ ns.grand_amt }}
+</div>
+
+<div class="terms">
+<b>Terms & Conditions:</b>
+<ol>
+  <li>Material once accepted cannot be returned.</li>
+  <li>Weight and quality verified at receiving point.</li>
+  <li>Payment as per agreed terms.</li>
+</ol>
+</div>
+
+<div class="signatures">
+  <div class="sign-box"><div class="line"></div>Supplier</div>
+  <div class="sign-box"><div class="line"></div>Prepared By</div>
+  <div class="sign-box"><div class="line"></div>Authorised</div>
+</div>
+
+<!-- =====================================================
+     MULTI SUPPLIER → TERMS & SIGNS PER BATCH
+===================================================== -->
+{% else %}
+
+{% set current_supplier = None %}
+
+{% for batch in batches %}
+
+{% if current_supplier != batch.supplier.id %}
+{% if not loop.first %}
+<div class="page-break"></div>
+{% endif %}
+
+<div class="title">RAW MATERIAL PURCHASING BILL</div>
+
+<div class="header">
+  <div class="card">
+    <h3>Supplier Details</h3>
+    <p><b>Name:</b> {{ batch.supplier.name }}</p>
+    <p><b>Address:</b> {{ batch.supplier.address }}</p>
+    <p><b>Email:</b> {{ batch.supplier.email }}</p>
+    <p><b>Phone:</b> {{ batch.supplier.phone }}</p>
+  </div>
+
+  <div class="card">
+    <h3>Company Details</h3>
+    <p><b>Company:</b> {{ company_name }}</p>
+    <p><b>Address:</b> {{ company_address }}</p>
+    <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
+  </div>
+</div>
+
+{% set current_supplier = batch.supplier.id %}
+{% endif %}
+
+<div class="batch-box">
+  <div class="batch-title">Batch No: {{ batch.batch_number }}</div>
+  <div class="sub-info"><b>Vehicle:</b> {{ batch.vehicle_number }}</div>
+  <div class="sub-info"><b>Challan:</b> {{ batch.challan_number }}</div>
+  <div class="sub-info"><b>Location:</b> {{ batch.location }}</div>
+  <div class="sub-info"><b>Date:</b> {{ batch.date }}</div>
+  <div class="sub-info"><b>Total Boxes:</b> {{ batch.total_boxes }}</div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Species</th><th>Variety</th><th>Count</th>
+  <th>G1</th><th>G2</th><th>DC</th>
+  <th>Recv</th><th>Rate</th><th>Amount</th>
+</tr>
+</thead>
+<tbody>
+{% for r in batch.rows %}
+<tr>
+  <td>{{ r.species }}</td>
+  <td>{{ r.variety_name }}</td>
+  <td>{{ r.count }}</td>
+  <td>{{ r.g1_qty }}</td>
+  <td>{{ r.g2_qty }}</td>
+  <td>{{ r.dc_qty }}</td>
+  <td>{{ r.received_qty }}</td>
+  <td>{{ r.rate_per_kg }}</td>
+  <td>{{ r.amount }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div class="totals-box">
+  Batch Quantity: {{ batch.total_quantity }} |
+  Batch Amount: ₹ {{ batch.total_amount }}
+</div>
+
+<div class="terms">
+<b>Terms & Conditions:</b>
+<ol>
+  <li>Material once accepted cannot be returned.</li>
+  <li>Weight and quality verified at receiving point.</li>
+  <li>Payment as per agreed terms.</li>
+</ol>
+</div>
+
+<div class="signatures">
+  <div class="sign-box"><div class="line"></div>Supplier</div>
+  <div class="sign-box"><div class="line"></div>Prepared By</div>
+  <div class="sign-box"><div class="line"></div>Authorised</div>
+</div>
+
+{% endfor %}
+{% endif %}
+
+<script>
+window.onload = () => window.print();
+</script>
+
+</body>
+</html>

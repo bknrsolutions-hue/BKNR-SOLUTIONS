@@ -1,98 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>PRODUCTION REPORT - BKNR SOLUTIONS</title>
 
 <style>
-body{font-family:Arial;background:#e6f2ff;margin:0;}
-h2{text-align:center;color:#003366;margin:20px 0;}
+  body{font-family:Arial;background:#eaf4ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-size:22px;}
 
-.filter-box{
-  width:95%;max-width:1100px;margin:0 auto 20px;background:white;
-  padding:15px;border-radius:8px;box-shadow:0 0 8px rgba(0,0,0,0.15);
-  display:flex;gap:20px;flex-wrap:wrap;
-}
-label{font-weight:600;color:#003366;}
-input,select{padding:8px;border:1px solid #a3bcd6;border-radius:6px;min-width:180px;}
+  .filter-box{width:90%;max-width:1200px;margin:auto;display:flex;gap:12px;background:white;padding:10px;border-radius:8px;}
+  .filter-box select{flex:1;padding:8px;border:1px solid #7ca6d9;border-radius:6px;}
 
-table{
-  width:95%;max-width:1100px;margin:0 auto 30px;background:white;
-  border-collapse:collapse;box-shadow:0 0 8px rgba(0,0,0,0.15);
-}
-th,td{padding:10px;border-bottom:1px solid #dce6f5;}
-th{background:#003366;color:white;}
-.no-data{text-align:center;margin-top:20px;font-weight:600;}
+  table{width:90%;max-width:1200px;margin:25px auto;border-collapse:collapse;background:white;
+        box-shadow:0 3px 10px rgba(0,0,0,.15);}
+  th,td{padding:9px;border-bottom:1px solid #ddd;font-size:13px;}
+  th{background:#003366;color:white;}
+  .var-head{background:#d6ecff;font-weight:bold;}
+  .batch-foot{background:#b8dbff;font-weight:bold;}
+  .final-foot{background:#003366;color:white;font-weight:bold;}
 </style>
 </head>
-
 <body>
 
 <h2>PRODUCTION REPORT</h2>
 
-<form method="get" class="filter-box">
-
-  <div>
-    <label>Batch</label><br>
-    <select name="batch" onchange="this.form.submit()">
-      <option value="">All</option>
-      {% for b in batch_list %}
-      <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
+<form method="GET" action="/reports/production_report">
+<div class="filter-box">
+    <select name="batch">
+      <option value="">All Batches</option>
+      {% for b in batches %}
+      <option value="{{ b }}" {% if selected_batch==b %}selected{% endif %}>{{ b }}</option>
       {% endfor %}
     </select>
-  </div>
 
-  <div>
-    <label>From Date</label><br>
-    <input type="date" name="from_date" value="{{ selected_from }}" onchange="this.form.submit()">
-  </div>
+    <select name="variety">
+      <option value="">All Varieties</option>
+      {% for v in varieties %}
+      <option value="{{ v }}" {% if selected_variety==v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
 
-  <div>
-    <label>To Date</label><br>
-    <input type="date" name="to_date" value="{{ selected_to }}" onchange="this.form.submit()">
-  </div>
-
+    <button style="background:#003366;color:white;padding:7px 14px;border:none;border-radius:6px;">FILTER</button>
+</div>
 </form>
 
-{% if production_data %}
 <table>
 <thead>
 <tr>
-  <th>ID</th>
-  <th>Batch</th>
-  <th>Brand</th>
-  <th>Variety</th>
-  <th>Grade</th>
-  <th>Packing</th>
-  <th>No. of MC</th>
-  <th>Loose</th>
-  <th>Production Qty</th>
-  <th>Date</th>
+  <th>ID</th><th>Batch</th><th>Variety</th><th>Brand</th>
+  <th>Grade</th><th>Packing</th><th>MC</th><th>Loose</th>
+  <th>Qty(KG)</th><th>Glaze</th><th>Freezer</th><th>Date</th><th>Email</th>
 </tr>
 </thead>
 
 <tbody>
-{% for r in production_data %}
-<tr>
-  <td>{{ r.id }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.brand }}</td>
-  <td>{{ r.variety_name }}</td>
-  <td>{{ r.grade }}</td>
-  <td>{{ r.packing_style }}</td>
-  <td>{{ r.no_of_mc }}</td>
-  <td>{{ r.loose }}</td>
-  <td>{{ r.production_qty }}</td>
-  <td>{{ r.date }}</td>
-</tr>
+
+{% for batch,data in grouped.items() %}
+
+    <!-- VARIETY BLOCKS UNDER BATCH -->
+    {% for variety,rows in data.varieties.items() %}
+        {% set v_total = rows | map(attribute='production_qty') | sum %}
+
+        <tr class="var-head">
+           <td colspan="8">Batch: <b>{{ batch }}</b> | Variety: <b>{{ variety }}</b></td>
+           <td><b>{{ v_total|round(2) }}</b></td>
+           <td colspan="4"></td>
+        </tr>
+
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.id }}</td><td>{{ r.batch_number }}</td><td>{{ r.variety_name }}</td>
+          <td>{{ r.brand }}</td><td>{{ r.grade }}</td><td>{{ r.packing_style }}</td>
+          <td>{{ r.no_of_mc }}</td><td>{{ r.loose }}</td>
+          <td>{{ r.production_qty|round(2) }}</td>
+          <td>{{ r.glaze }}</td><td>{{ r.freezer }}</td>
+          <td>{{ r.date }}</td><td>{{ r.email }}</td>
+        </tr>
+        {% endfor %}
+    {% endfor %}
+
+    <tr class="batch-foot">
+        <td colspan="8" align="right">BATCH TOTAL →</td>
+        <td><b>{{ data.batch_total|round(2) }}</b></td>
+        <td colspan="4"></td>
+    </tr>
+
 {% endfor %}
+
 </tbody>
 
+<tfoot>
+<tr class="final-foot">
+  <td colspan="8" align="right">GRAND TOTAL →</td>
+  <td><b>{{ final_total|round(2) }}</b></td>
+  <td colspan="4"></td>
+</tr>
+</tfoot>
 </table>
-
-{% else %}
-<p class="no-data">No records found.</p>
-{% endif %}
 
 </body>
 </html>

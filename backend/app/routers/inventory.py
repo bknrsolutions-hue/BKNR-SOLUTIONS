@@ -1,14 +1,12 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter
 
+# 🔥 IMPORT ROUTERS
+from app.routers.inventory_management.stock_entry import router as stock_entry_router
+from app.routers.inventory_management.inventory_report import router as inventory_report_router  # <-- MUST ADD
+
+# PARENT GROUP
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
-templates = Jinja2Templates(directory="app/templates")
 
-@router.get("/stock_entry", response_class=HTMLResponse)
-async def stock_entry(request: Request):
-    return templates.TemplateResponse("inventory/stock_entry.html", {"request": request})
-
-@router.get("/pending_orders", response_class=HTMLResponse)
-async def pending_orders(request: Request):
-    return templates.TemplateResponse("inventory/pending_orders.html", {"request": request})
+# ===================== REGISTER ROUTES =====================
+router.include_router(stock_entry_router)
+router.include_router(inventory_report_router)  # <-- This enables /inventory/inventory_report 👍

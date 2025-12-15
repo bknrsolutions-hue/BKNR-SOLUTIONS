@@ -2,95 +2,100 @@
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.criteria import buyer_agents   # <-- lowercase model
+from app.database.models.criteria import buyer_agents
 
-router = APIRouter(tags=["BUYER AGENTS"])   # no prefix here
+router = APIRouter(prefix="/buyer_agents", tags=["Buyer Agents"])
 templates = Jinja2Templates(directory="app/templates")
 
 
 # ---------------------------------------------------------
-# SHOW PAGE
+# PAGE VIEW – LIST + FORM
 # ---------------------------------------------------------
-@router.get("/buyer_agents")
+@router.get("/")
 def buyer_agents_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("user_email")
-    company_id = request.session.get("company_id")
+    session_email = request.session.get("email")
+    company_code = request.session.get("company_code")   # STRING like BKNR5647
 
-    if not email or not company_id:
-        return RedirectResponse("/auth/login")
+    if not session_email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    today_data = db.query(buyer_agents).filter(
-        buyer_agents.company_id == company_id
-    ).order_by(buyer_agents.id.desc()).all()
+    data = (
+        db.query(buyer_agents)
+        .filter(buyer_agents.company_id == company_code)   # match string company_code
+        .order_by(buyer_agents.id.desc())
+        .all()
+    )
 
     return templates.TemplateResponse(
         "criteria/buyer_agents.html",
         {
             "request": request,
-            "today_data": today_data,
-            "email": email,
-            "company_id": company_id,
+            "today_data": data,
+            "email": session_email,
+            "company_id": company_code,
             "message": ""
         }
     )
 
 
 # ---------------------------------------------------------
-# SAVE / UPDATE BUYER AGENT
+# SAVE (ADD / UPDATE)
 # ---------------------------------------------------------
-@router.post("/buyer_agents")
+@router.post("/")
 def save_buyer_agent(
     request: Request,
     agent_name: str = Form(...),
     id: int = Form(None),
     date: str = Form(...),
     time: str = Form(...),
-    email: str = Form(""),
-    company_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
 
-    session_email = request.session.get("user_email")
-    session_company_id = request.session.get("company_id")
+    session_email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
-    if not session_email or not session_company_id:
-        return JSONResponse({"error": "Session expired"}, status_code=401)
+    if not session_email or not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    email = session_email
-    company_id = session_company_id
-
-    # Duplicate check
-    duplicate = db.query(buyer_agents).filter(
+    # Duplicate Check (same company)
+    exists = db.query(buyer_agents).filter(
         buyer_agents.agent_name == agent_name,
-        buyer_agents.company_id == company_id,
+        buyer_agents.company_id == company_code,
         buyer_agents.id != id
     ).first()
 
-    if duplicate:
-        return JSONResponse(
-            {"error": f"Agent '{agent_name}' already exists!"},
-            status_code=400
-        )
+    if exists:
+        data = db.query(buyer_agents).filter(
+            buyer_agents.company_id == company_code
+        ).order_by(buyer_agents.id.desc()).all()
+
+        return templates.TemplateResponse("criteria/buyer_agents.html", {
+            "request": request,
+            "today_data": data,
+            "email": session_email,
+            "company_id": company_code,
+            "message": f"❌ Agent '{agent_name}' already exists!"
+        })
 
     # UPDATE
     if id:
         row = db.query(buyer_agents).filter(
             buyer_agents.id == id,
-            buyer_agents.company_id == company_id
+            buyer_agents.company_id == company_code
         ).first()
 
         if not row:
-            return JSONResponse({"error": "Record not found"}, status_code=404)
+            return RedirectResponse("/buyer_agents?msg=Record+Not+Found", status_code=302)
 
         row.agent_name = agent_name
         row.date = date
         row.time = time
-        row.email = email
+        row.email = session_email
 
     # INSERT
     else:
@@ -98,32 +103,43 @@ def save_buyer_agent(
             agent_name=agent_name,
             date=date,
             time=time,
-            email=email,
-            company_id=company_id
+            email=session_email,
+            company_id=company_code   # store string company_code (consistent with your models)
         )
         db.add(new_row)
 
     db.commit()
 
-    return JSONResponse({"success": True})
+    data = db.query(buyer_agents).filter(
+        buyer_agents.company_id == company_code
+    ).order_by(buyer_agents.id.desc()).all()
+
+    return templates.TemplateResponse("criteria/buyer_agents.html", {
+        "request": request,
+        "today_data": data,
+        "email": session_email,
+        "company_id": company_code,
+        "message": f"✔️ Agent '{agent_name}' saved successfully!"
+    })
 
 
 # ---------------------------------------------------------
-# DELETE BUYER AGENT
+# DELETE
 # ---------------------------------------------------------
-@router.post("/buyer_agents/delete/{id}")
-def delete_buyer_agent(id: int, request: Request, db: Session = Depends(get_db)):
+@router.post("/delete/{id}")
+def delete_agent(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_id = request.session.get("company_id")
+    company_code = request.session.get("company_code")
 
-    if not company_id:
-        return JSONResponse({"error": "Session invalid"}, status_code=401)
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
 
     db.query(buyer_agents).filter(
         buyer_agents.id == id,
-        buyer_agents.company_id == company_id
+        buyer_agents.company_id == company_code
     ).delete()
 
     db.commit()
 
-    return JSONResponse({"status": "ok"})
+    # Redirect back to page with message (you can handle the msg query in template if needed)
+    return RedirectResponse("/buyer_agents?msg=Deleted", status_code=302)

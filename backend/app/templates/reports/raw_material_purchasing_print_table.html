@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RAW MATERIAL PURCHASING – TABLE VIEW (LANDSCAPE)</title>
+
+<style>
+    @page { size: A4 landscape; margin: 10mm; }
+
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 11px;
+        color: black;
+        margin: 0;
+        padding: 0;
+    }
+
+    .header-box { text-align: center; margin-bottom: 5px; }
+    .header-box h2 { margin: 0; font-size: 20px; color: #003366; }
+    .header-box p { margin: 2px 0; font-size: 12px; }
+
+    .report-title {
+        text-align: center;
+        font-size: 15px;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #003366;
+    }
+
+    .right-info { text-align: right; font-size: 11px; margin-bottom: 8px; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+        table-layout: fixed;
+    }
+
+    th, td {
+        border: 1px solid black;
+        padding: 5px 3px;
+        text-align: center;
+        word-break: break-word;
+    }
+
+    th {
+        background: #003366;
+        color: white;
+        font-weight: bold;
+    }
+
+    .subtotal { background: #e6f0ff; font-weight: bold; }
+</style>
+</head>
+
+<body>
+
+<div class="header-box">
+    <h2>{{ company_name }}</h2>
+    <p>{{ company_address }}</p>
+</div>
+
+<div class="report-title">RAW MATERIAL PURCHASING – TABLE VIEW</div>
+
+<div class="right-info">
+    Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M") }}
+</div>
+
+
+<!-- NAMESPACE — FIX FOR TOTALS -->
+{% set ns = namespace(g1=0, g2=0, dc=0, recv=0, amount=0) %}
+
+
+<table>
+<thead>
+<tr>
+    <th>ID</th>
+    <th>Date</th>
+    <th>Time</th>
+    <th>Batch</th>
+    <th>Supplier</th>
+    <th>Variety</th>
+    <th>Species</th>
+    <th>Count</th>
+    <th>G1</th>
+    <th>G2</th>
+    <th>DC</th>
+    <th>Received</th>
+    <th>Rate</th>
+    <th>Amount</th>
+    <th>Boxes</th>
+    <th>Remarks</th>
+    <th>Email</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in rows %}
+<tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.date }}</td>
+    <td>{{ r.time.strftime("%H:%M:%S") if r.time else '' }}</td>
+    <td>{{ r.batch_number }}</td>
+    <td>{{ r.supplier_name }}</td>
+    <td>{{ r.variety_name }}</td>
+    <td>{{ r.species }}</td>
+    <td>{{ r.count }}</td>
+    <td>{{ r.g1_qty }}</td>
+    <td>{{ r.g2_qty }}</td>
+    <td>{{ r.dc_qty }}</td>
+    <td>{{ r.received_qty }}</td>
+    <td>{{ r.rate_per_kg }}</td>
+    <td>{{ r.amount }}</td>
+    <td>{{ r.material_boxes }}</td>
+    <td>{{ r.remarks }}</td>
+    <td>{{ r.email }}</td>
+</tr>
+
+<!-- UPDATE TOTALS -->
+{% set ns.g1 = ns.g1 + (r.g1_qty or 0) %}
+{% set ns.g2 = ns.g2 + (r.g2_qty or 0) %}
+{% set ns.dc = ns.dc + (r.dc_qty or 0) %}
+{% set ns.recv = ns.recv + (r.received_qty or 0) %}
+{% set ns.amount = ns.amount + (r.amount or 0) %}
+
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr class="subtotal">
+    <td colspan="8">TOTAL</td>
+    <td>{{ "%.2f"|format(ns.g1) }}</td>
+    <td>{{ "%.2f"|format(ns.g2) }}</td>
+    <td>{{ "%.2f"|format(ns.dc) }}</td>
+    <td>{{ "%.2f"|format(ns.recv) }}</td>
+    <td></td>
+    <td>{{ "%.2f"|format(ns.amount) }}</td>
+    <td></td>
+    <td colspan="2"></td>
+</tr>
+</tfoot>
+
+</table>
+
+<script>
+    window.onload = function () { window.print(); };
+</script>
+
+</body>
+</html>

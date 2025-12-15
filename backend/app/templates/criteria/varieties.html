@@ -15,7 +15,7 @@
   }
 
   .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
-  .col{width:48%;display:flex;flex-direction:column;margin-bottom:10px;}
+  .col{width:23%;display:flex;flex-direction:column;margin-bottom:10px;}
 
   @media(max-width:768px){
     .col{width:100%;}
@@ -87,7 +87,6 @@
       </div>
     </div>
 
-    <!-- META HIDDEN -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_email" value="{{ email }}">
     <input type="hidden" id="meta_company_id" value="{{ company_id }}">
@@ -125,9 +124,9 @@
     <tr>
       <th>ID</th>
       <th>Variety</th>
-      <th>Peeling</th>
-      <th>Soaking</th>
-      <th>HOSO→Finished</th>
+      <th>Peeling Yield</th>
+      <th>Soaking Yield</th>
+      <th>HOSO → Finished</th>
       <th>Date</th>
       <th>Time</th>
     </tr>
@@ -144,9 +143,12 @@
     >
       <td>{{ row.id }}</td>
       <td>{{ row.variety_name }}</td>
-      <td>{{ row.peeling_yield }}</td>
-      <td>{{ row.soaking_yield }}</td>
-      <td>{{ row.hoso_to_finished_yield }}</td>
+
+      <!-- % symbol added automatically -->
+      <td>{{ row.peeling_yield }}%</td>
+      <td>{{ row.soaking_yield }}%</td>
+      <td>{{ row.hoso_to_finished_yield }}%</td>
+
       <td>{{ row.date }}</td>
       <td>{{ row.time }}</td>
     </tr>

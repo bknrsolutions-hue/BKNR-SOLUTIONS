@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DE-HEADING REPORT</title>
+
+<style>
+body{font-family:Arial;margin:20px}
+h2{text-align:center;color:#003366}
+h3{color:#003366;margin-top:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #999;padding:6px;text-align:center}
+th{background:#003366;color:#fff}
+tfoot td{font-weight:bold;background:#f2f6ff}
+.section{margin-bottom:25px}
+</style>
+</head>
+
+<body>
+
+<h2>DE-HEADING REPORT</h2>
+
+<!-- ================= CONTRACTOR TOTAL ================= -->
+<div class="section">
+<h3>Contractor Wise Summary</h3>
+<table>
+<tr>
+<th>Contractor</th>
+<th>Total HOSO</th>
+<th>Total HLSO</th>
+<th>Total Amount</th>
+</tr>
+{% for c in contractor_totals %}
+<tr>
+<td>{{ c.contractor }}</td>
+<td>{{ "%.2f"|format(c.hoso|default(0)) }}</td>
+<td>{{ "%.2f"|format(c.hlso|default(0)) }}</td>
+<td>{{ "%.2f"|format(c.amount|default(0)) }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= DETAILS ================= -->
+<div class="section">
+<h3>Detailed Entries</h3>
+<table id="detailTable">
+<thead>
+<tr>
+<th>ID</th>
+<th>Date</th>
+<th>Batch</th>
+<th>Count</th>
+<th>Species</th>
+<th>HOSO</th>
+<th>HLSO</th>
+<th>Yield %</th>
+<th>Contractor</th>
+<th>Rate</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody>
+{% for r in rows %}
+<tr>
+<td>{{ r.id }}</td>
+<td>{{ r.date }}</td>
+<td>{{ r.batch_number }}</td>
+<td>{{ r.hoso_count }}</td>
+<td>{{ r.species }}</td>
+<td class="hoso">{{ "%.2f"|format(r.hoso_qty|default(0)) }}</td>
+<td class="hlso">{{ "%.2f"|format(r.hlso_qty|default(0)) }}</td>
+<td>{{ "%.2f"|format(r.yield_percent|default(0)) }}</td>
+<td>{{ r.contractor }}</td>
+<td>{{ "%.2f"|format(r.rate_per_kg|default(0)) }}</td>
+<td class="amount">{{ "%.2f"|format(r.amount|default(0)) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr>
+<td colspan="5">GRAND TOTAL</td>
+<td id="gt_hoso">0</td>
+<td id="gt_hlso">0</td>
+<td id="gt_yield">0</td>
+<td colspan="2"></td>
+<td id="gt_amount">0</td>
+</tr>
+</tfoot>
+</table>
+</div>
+
+<!-- ================= BATCH TOTAL ================= -->
+<div class="section">
+<h3>Batch Wise Totals</h3>
+<table id="batchTable">
+<tr>
+<th>Batch</th>
+<th>Total HOSO</th>
+<th>Total HLSO</th>
+<th>Yield %</th>
+</tr>
+{% for b in batch_totals %}
+<tr>
+<td>{{ b.batch_number }}</td>
+<td class="b_hoso">{{ "%.2f"|format(b.hoso|default(0)) }}</td>
+<td class="b_hlso">{{ "%.2f"|format(b.hlso|default(0)) }}</td>
+<td class="b_yield">0</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<script>
+/* ================= GRAND TOTAL ================= */
+function n(v){return parseFloat(v)||0}
+
+let gh=0, gl=0, ga=0;
+document.querySelectorAll("#detailTable tbody tr").forEach(r=>{
+  gh+=n(r.querySelector(".hoso").innerText);
+  gl+=n(r.querySelector(".hlso").innerText);
+  ga+=n(r.querySelector(".amount").innerText);
+});
+
+document.getElementById("gt_hoso").innerText = gh.toFixed(2);
+document.getElementById("gt_hlso").innerText = gl.toFixed(2);
+document.getElementById("gt_amount").innerText = ga.toFixed(2);
+
+let gy = gh ? ((gl/gh)*100) : 0;
+document.getElementById("gt_yield").innerText = gy.toFixed(2) + " %";
+
+/* ================= BATCH YIELD ================= */
+document.querySelectorAll("#batchTable tr").forEach((r,i)=>{
+  if(i===0) return;
+  let h = n(r.querySelector(".b_hoso").innerText);
+  let l = n(r.querySelector(".b_hlso").innerText);
+  let y = h ? ((l/h)*100) : 0;
+  r.querySelector(".b_yield").innerText = y.toFixed(2) + " %";
+});
+
+/* PRINT */
+window.print();
+</script>
+
+</body>
+</html>

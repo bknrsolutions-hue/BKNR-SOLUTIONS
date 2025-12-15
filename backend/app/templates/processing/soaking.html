@@ -2,209 +2,278 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SOAKING FORM - BKNR SOLUTIONS</title>
+<title>SOAKING - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+body{font-family:Arial;background:#e6f2ff;margin:0}
+h2{text-align:center;color:#003366;margin:15px 0;font-weight:700}
 
-  .form-container{
-    width:95%;max-width:1100px;margin:0 auto;background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:8px;
-  }
+.form-container{
+  width:96%;max-width:1200px;margin:auto;
+  background:#fff;padding:14px;border-radius:14px;
+  box-shadow:0 0 8px rgba(0,0,0,.15)
+}
 
-  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px;}
-  .col{width:32%;min-width:250px;display:flex;flex-direction:column;}
+/* GRID */
+.row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
+.col{display:flex;flex-direction:column}
+@media(max-width:900px){.row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
 
-  label{font-weight:600;color:#003366;margin-bottom:5px;}
+label{font-weight:600;color:#003366;margin-bottom:6px}
+input,select{
+  padding:10px;border:1px solid #a3bcd6;
+  background:#f9fcff;border-radius:6px;font-size:14px
+}
+input[readonly]{background:#eee}
 
-  input,select{
-    padding:8px;border:1px solid #a3bcd6;border-radius:6px;background:#f9fcff;font-size:14px;
-  }
+/* BUTTON */
+.actions{text-align:center;margin-top:15px}
+.btn{
+  background:#003366;color:#fff;border:none;
+  padding:10px 22px;border-radius:6px;
+  font-weight:600;cursor:pointer
+}
 
-  input[disabled]{background:#eee;color:#666;}
+/* TABLE */
+table{
+  width:92%;max-width:1200px;margin:20px auto;
+  border-collapse:collapse;background:#fff;
+  border-radius:10px;overflow:hidden;
+  box-shadow:0 0 8px rgba(0,0,0,.15)
+}
+th,td{padding:10px;border-bottom:1px solid #ccc;font-size:14px}
+th{background:#003366;color:white}
+tr:hover{background:#e6f2ff;cursor:pointer}
+tr.selected{background:#cce5ff!important}
 
-  .actions{text-align:center;margin-top:25px;}
-  button{
-    background:#003366;color:white;border:none;padding:9px 18px;border-radius:6px;
-    font-weight:600;margin:0 10px;cursor:pointer;
-  }
-  .btn-clear{background:#777;}
-
-  /* Lookup Popup */
-  #lookupModal{
-    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.45);justify-content:center;align-items:center;z-index:9999;
-  }
-  #lookupModal .frame-box{
-    width:90%;max-width:900px;height:85vh;background:#fff;border-radius:10px;overflow:hidden;
-    position:relative;
-  }
-  #lookupFrame{width:100%;height:100%;border:none;}
-  .close-btn{
-    position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:#003366;cursor:pointer;
-  }
+/* 3 DOT MENU */
+#threeDotsMenu{
+  width:92%;max-width:1200px;
+  margin:10px auto;text-align:right;
+  display:none;position:relative
+}
+#dropdownMenu{
+  display:none;position:absolute;right:0;
+  background:white;border:1px solid #ccc;
+  border-radius:8px;width:160px;
+  box-shadow:0 2px 6px rgba(0,0,0,.3)
+}
+.menu-item{padding:10px;cursor:pointer;font-weight:600}
+.menu-item:hover{background:#e6f2ff}
 </style>
 </head>
 
 <body>
 
-<h2>SOAKING</h2>
+<h2>SOAKING ENTRY</h2>
 
-<form action="/processing/soaking" method="post" onsubmit="fillMeta(this)">
-  <div class="form-container">
+<form method="post" action="/processing/soaking" onsubmit="return validateQty()">
+<div class="form-container">
 
-    <!-- Row 1 -->
-    <div class="row">
-
-      <div class="col">
-        <label>Batch Number</label>
-        <select name="batch_number" onchange="openLookup(this,'batch')" required>
-          <option value="" disabled selected>Select Batch</option>
-          {% for b in batches %}
-          <option value="{{ b }}">{{ b }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add New Batch</option>
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Variety</label>
-        <select name="variety" onchange="openLookup(this,'variety')" required>
-          <option value="" disabled selected>Select Variety</option>
-          {% for v in varieties %}
-          <option value="{{ v }}">{{ v }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add Variety</option>
-        </select>
-      </div>
-
-      <div class="col">
-        <label>In Count</label>
-        <select name="in_count" onchange="openLookup(this,'count')" required>
-          <option value="" disabled selected>Select Count</option>
-          {% for c in counts %}
-          <option value="{{ c }}">{{ c }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add Count</option>
-        </select>
-      </div>
-
-    </div>
-
-    <!-- Row 2 -->
-    <div class="row">
-
-      <div class="col">
-        <label>In Quantity (kg)</label>
-        <input type="number" step="0.01" id="inQty" name="in_qty">
-      </div>
-
-      <div class="col">
-        <label>Chemical Name</label>
-        <select name="chemical_name" onchange="openLookup(this,'chemical')" required>
-          <option value="" disabled selected>Select Chemical</option>
-          {% for c in chemicals %}
-          <option value="{{ c }}">{{ c }}</option>
-          {% endfor %}
-          <option value="__add__">➕ Add Chemical</option>
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Chemical %</label>
-        <input type="number" step="0.01" id="chemPercent" name="chemical_percent">
-      </div>
-
-    </div>
-
-    <!-- Row 3 -->
-    <div class="row">
-
-      <div class="col">
-        <label>Chemical Quantity (kg)</label>
-        <input type="number" id="chemQty" name="chemical_qty" disabled>
-      </div>
-
-      <div class="col">
-        <label>Salt %</label>
-        <input type="number" step="0.01" id="saltPercent" name="salt_percent">
-      </div>
-
-      <div class="col">
-        <label>Salt Quantity (kg)</label>
-        <input type="number" id="saltQty" name="salt_qty" disabled>
-      </div>
-
-    </div>
-
-    <!-- Meta -->
-    <input type="hidden" name="date" id="meta_date">
-    <input type="hidden" name="time" id="meta_time">
-    <input type="hidden" name="email" id="meta_email">
-    <input type="hidden" name="company_id" id="meta_company_id">
-
-    <div class="actions">
-      <button type="submit">SAVE</button>
-      <button type="reset" class="btn-clear">CLEAR</button>
-    </div>
+<!-- ROW 1 -->
+<div class="row">
+  <div class="col">
+    <label>Batch</label>
+    <select id="batch" name="batch_number" onchange="loadCounts()" required>
+      <option value="" disabled selected>Select Batch</option>
+      {% for b in batches %}
+      <option value="{{b}}">{{b}}</option>
+      {% endfor %}
+    </select>
   </div>
-</form>
 
-<!-- LOOKUP MODAL -->
-<div id="lookupModal">
-  <div class="frame-box">
-    <span class="close-btn" onclick="closeLookup()">×</span>
-    <iframe id="lookupFrame"></iframe>
+  <div class="col">
+    <label>In Count</label>
+    <select id="in_count" name="in_count" required onchange="loadAvailableQty()">
+      <option value="" disabled selected>Select Batch First</option>
+    </select>
+  </div>
+
+  <div class="col">
+    <label>Variety</label>
+    <select id="variety" name="variety_name" required onchange="loadAvailableQty()">
+      {% for v in varieties %}
+      <option value="{{v}}">{{v}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col">
+    <label>Species</label>
+    <select id="species" name="species_name" required onchange="loadAvailableQty()">
+      {% for s in species %}
+      <option value="{{s}}">{{s}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col">
+    <label>Input Qty</label>
+    <input type="number" step="0.01" name="in_qty" id="qty" required oninput="calcQty()">
+    <small id="availableText" style="margin-top:5px;font-weight:600;color:#006400">
+      Available Qty : 0 kg
+    </small>
   </div>
 </div>
 
+<!-- ROW 2 -->
+<div class="row">
+  <div class="col">
+    <label>Chemical</label>
+    <select name="chemical_name" required>
+      {% for c in chemicals %}
+      <option value="{{c}}">{{c}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col">
+    <label>Chemical %</label>
+    <input type="number" step="0.01" id="chem_p" name="chemical_percent" oninput="calcQty()" required>
+  </div>
+
+  <div class="col">
+    <label>Chem Qty</label>
+    <input type="number" id="chem_qty" readonly>
+  </div>
+
+  <div class="col">
+    <label>Salt %</label>
+    <input type="number" step="0.01" id="salt_p" name="salt_percent" oninput="calcQty()" required>
+  </div>
+
+  <div class="col">
+    <label>Salt Qty</label>
+    <input type="number" id="salt_qty" readonly>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn">SAVE</button>
+</div>
+
+</div>
+</form>
+
+{% if today_data %}
+<!-- 3 DOT MENU -->
+<div id="threeDotsMenu">
+  <button class="btn" onclick="toggleMenu()">⋮</button>
+  <div id="dropdownMenu">
+    <div class="menu-item" onclick="editRow()">✏ Edit</div>
+    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
+  </div>
+</div>
+
+<table id="dataTable">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Batch</th>
+  <th>Count</th>
+  <th>Qty</th>
+  <th>Chemical</th>
+  <th>Chem %</th>
+  <th>Salt %</th>
+  <th>Date</th>
+</tr>
+</thead>
+<tbody>
+{% for r in today_data %}
+<tr data-id="{{r.id}}">
+  <td>{{r.id}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.in_count}}</td>
+  <td>{{r.in_qty}}</td>
+  <td>{{r.chemical_name}}</td>
+  <td>{{r.chemical_percent}}</td>
+  <td>{{r.salt_percent}}</td>
+  <td>{{r.date}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
 <script>
-// META AUTO-FILL
-function fillMeta(form){
-  const now=new Date();
-  form.date.value=now.toISOString().slice(0,10);
-  form.time.value=now.toTimeString().slice(0,8);
-  form.email.value="bknr.solutions@gmail.com";
-  form.company_id.value="BKNR001";
+let selected=null;
+let availableQty=0;
+
+/* LOAD COUNTS */
+async function loadCounts(){
+  if(!batch.value) return;
+  let r=await fetch("/processing/soaking/get_count/"+batch.value);
+  let d=await r.json();
+  in_count.innerHTML='<option disabled selected>Select Count</option>';
+  d.counts.forEach(c=>{
+    in_count.innerHTML+=`<option value="${c}">${c}</option>`;
+  });
 }
 
-// CALCULATIONS
-function recalc(){
-  const qty=parseFloat(document.getElementById("inQty").value)||0;
-  const cp=parseFloat(document.getElementById("chemPercent").value)||0;
-  const sp=parseFloat(document.getElementById("saltPercent").value)||0;
+/* AVAILABLE QTY */
+async function loadAvailableQty(){
+  if(!batch.value || !in_count.value || !species.value || !variety.value) return;
 
-  document.getElementById("chemQty").value = qty ? ((qty*cp)/100).toFixed(2) : "";
-  document.getElementById("saltQty").value = qty ? ((qty*sp)/100).toFixed(2) : "";
+  let url=`/processing/soaking/get_available_qty?batch=${batch.value}&count=${in_count.value}&species=${species.value}&variety=${variety.value}`;
+  let r=await fetch(url);
+  let d=await r.json();
+
+  availableQty=parseFloat(d.available_qty)||0;
+  availableText.innerText=`Available Qty : ${availableQty} kg`;
 }
 
-["inQty","chemPercent","saltPercent"].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el) el.addEventListener("input",recalc);
+/* CALC */
+function calcQty(){
+  let q=+qty.value||0;
+  let cp=+chem_p.value||0;
+  let sp=+salt_p.value||0;
+  chem_qty.value=(q*cp/100).toFixed(2);
+  salt_qty.value=(q*sp/100).toFixed(2);
+}
+
+/* VALIDATION */
+function validateQty(){
+  let q=+qty.value||0;
+  if(q>availableQty){
+    Swal.fire("Quantity exceeds available stock");
+    return false;
+  }
+  return true;
+}
+
+/* TABLE SELECT */
+document.addEventListener("DOMContentLoaded",()=>{
+  let table=document.getElementById("dataTable");
+  if(!table) return;
+  table.querySelectorAll("tbody tr").forEach(tr=>{
+    tr.onclick=()=>{
+      table.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      tr.classList.add("selected");
+      selected=tr;
+      threeDotsMenu.style.display="block";
+    };
+  });
 });
 
-// LOOKUP POPUP
-function openLookup(sel,type){
-  if(sel.value!=="__add__") return;
-
-  let url="";
-  if(type==="batch") url="/processing/gate_entry";
-  if(type==="variety") url="/criteria/varieties";
-  if(type==="count") url="/criteria/grade_to_hoso";
-  if(type==="chemical") url="/criteria/chemicals";
-
-  document.getElementById("lookupFrame").src=url;
-  document.getElementById("lookupModal").style.display="flex";
-  sel.value="";
+function toggleMenu(){
+  dropdownMenu.style.display=
+    dropdownMenu.style.display==="block"?"none":"block";
 }
-function closeLookup(){
-  document.getElementById("lookupModal").style.display="none";
-  location.reload();
+function editRow(){
+  if(selected) location=`/processing/soaking/edit/${selected.dataset.id}`;
 }
-
-// Init meta
-fillMeta(document.forms[0]);
+function deleteRow(){
+  if(!selected) return;
+  Swal.fire({icon:"warning",title:"Delete?",showCancelButton:true})
+  .then(r=>r.isConfirmed &&
+    fetch(`/processing/soaking/delete/${selected.dataset.id}`,{method:"POST"})
+    .then(()=>location.reload())
+  );
+}
 </script>
 
 </body>

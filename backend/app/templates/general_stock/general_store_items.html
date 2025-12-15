@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GENERAL STORE – ITEMS MASTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
+  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+
+  /* Form Container */
+  .form-container{
+    width:90%;max-width:1100px;margin:0 auto;background:#fff;
+    padding:25px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,.15);
+  }
+
+  /* ROW = 3 Columns */
+  .row{display:flex;flex-wrap:wrap;gap:15px;justify-content:center;margin-bottom:18px;}
+  .col{
+    flex:1;
+    min-width:30%;
+    max-width:33.33%;
+    display:flex;
+    flex-direction:column;
+  }
+  @media(max-width:768px){ .col{min-width:100%;} }
+
+  label{font-weight:600;color:#003366;margin-bottom:6px;}
+  input{
+    padding:10px;background:#f9fcff;border:1px solid #a3bcd6;
+    border-radius:6px;font-size:14px;
+  }
+  input:focus{outline:none;border-color:#003366;box-shadow:0 0 5px rgba(0,51,102,.3);}
+
+  .actions{text-align:center;margin-top:25px;}
+  .btn{
+    background:#003366;color:white;border:none;padding:10px 20px;border-radius:6px;
+    font-weight:600;width:160px;cursor:pointer;
+  }
+  .btn-clear{background:#777;}
+  .btn:hover{opacity:.9;}
+
+  /* Table */
+  table{
+    width:90%;max-width:1100px;margin:10px auto 30px;border-collapse:collapse;
+    background:#f7f7f7;border-radius:8px;overflow:hidden;box-shadow:0 0 8px rgba(0,0,0,.15);
+  }
+  th,td{padding:10px 12px;border-bottom:1px solid #ccc;font-size:14px;text-align:left;}
+  th{background:#003366;color:white;}
+  tr:hover{background:#e0ebff;cursor:pointer;}
+  tr.selected{background:#cce5ff !important;}
+
+  .menu-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;}
+  .menu-item:hover{background:#e6f2ff;}
+</style>
+</head>
+<body>
+
+<h2>GENERAL STORE — ITEM MASTER</h2>
+
+<!-- ================= FORM ================= -->
+<form onsubmit="submitItem(event)">
+  <div class="form-container">
+    <div class="row">
+      <div class="col">
+        <label>Item Name</label>
+        <input type="text" id="item_name" required placeholder="Enter Item Name">
+      </div>
+
+      <div class="col">
+        <label>Unit Name</label>
+        <input type="text" id="unit_name" required placeholder="KG / Liters / Box">
+      </div>
+
+      <div class="col">
+        <label>Minimum Stock Level</label>
+        <input type="number" step="0.01" id="minimum_level" required>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+    </div>
+  </div>
+</form>
+
+{% if items %}
+
+<!-- ========= 3 DOT MENU ========= -->
+<div id="threeDotsMenu" style="display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;">
+  <button id="dotsBtn" style="background:#003366;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:20px;">⋮</button>
+
+  <div id="dropdownMenu" style="display:none;position:absolute;right:0;background:white;border:1px solid #ccc;width:190px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:1000;">
+      <div onclick="editRow()" class="menu-item">✏️ Edit</div>
+      <div onclick="deleteRow()" class="menu-item">🗑️ Delete</div>
+      <div onclick="printRow()" class="menu-item">🖨️ Print</div>
+      <div onclick="exportPDF()" class="menu-item">📄 Export PDF</div>
+      <div onclick="exportExcel()" class="menu-item">📊 Export Excel</div>
+  </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<table id="itemTable">
+<thead>
+<tr>
+  <th>Item</th>
+  <th>Unit</th>
+  <th>Min Level</th>
+</tr>
+</thead>
+<tbody>
+{% for i in items %}
+<tr data-item="{{i[0]}}" data-unit="{{i[1]}}" data-min="{{i[2]}}">
+  <td>{{i[0]}}</td>
+  <td>{{i[1]}}</td>
+  <td>{{i[2]}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<script>
+let selected=null;
+
+/* SELECT ROW */
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll("#itemTable tbody tr").forEach(r=>{
+    r.onclick=()=>{
+      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected"); selected=r;
+      document.getElementById("threeDotsMenu").style.display="block";
+    }
+  });
+});
+
+/* MENU DROPDOWN */
+document.getElementById('dotsBtn').onclick=()=>{
+  const d=document.getElementById("dropdownMenu");
+  d.style.display= d.style.display==="block"?"none":"block";
+};
+
+/* SAVE ITEM */
+async function submitItem(e){
+  e.preventDefault();
+  const fd=new FormData();
+  fd.append("item_name",item_name.value);
+  fd.append("unit_name",unit_name.value);
+  fd.append("minimum_level",minimum_level.value);
+
+  const res=await fetch("/general_stock/items/add",{method:"POST",body:fd});
+  if(res.ok) alert("Saved Successfully"), location.reload();
+}
+
+/* EDIT */
+function editRow(){
+  if(!selected) return alert("Select row!");
+  item_name.value=selected.dataset.item;
+  unit_name.value=selected.dataset.unit;
+  minimum_level.value=selected.dataset.min;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* DELETE */
+async function deleteRow(){
+  if(!selected) return alert("Select row!");
+  if(!confirm("Delete Item?")) return;
+  const res=await fetch(`/general_stock/items/delete/${selected.dataset.item}/${selected.dataset.unit}`,{method:"POST"});
+  if(res.ok) location.reload();
+}
+
+/* PRINT + EXPORT */
+function printRow(){
+  if(!selected) return alert("Select row!");
+  const p=window.open(""); p.document.write(
+  `<h3>ITEM DETAILS</h3><p><b>Item:</b> ${selected.dataset.item}</p>
+  <p><b>Unit:</b> ${selected.dataset.unit}</p>
+  <p><b>Min Level:</b> ${selected.dataset.min}</p>`); p.print();
+}
+function exportPDF(){printRow();}
+function exportExcel(){
+  if(!selected) return alert("Select row!");
+  const data=`Item\tUnit\tMin\n${selected.dataset.item}\t${selected.dataset.unit}\t${selected.dataset.min}`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data])); a.download="item.xls"; a.click();
+}
+
+/* CLEAR */
+function clearForm(){
+  selected=null;
+  document.querySelectorAll("tr.selected").forEach(x=>x.classList.remove("selected"));
+  threeDotsMenu.style.display="none";
+}
+</script>
+</body>
+</html>
