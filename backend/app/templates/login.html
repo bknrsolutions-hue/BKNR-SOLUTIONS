@@ -6,139 +6,313 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{margin:0;background:linear-gradient(135deg,#0a3c7c,#0b578c);font-family:Arial}
-.card{width:420px;margin:70px auto;background:#fff;padding:26px;border-radius:14px;
-box-shadow:0 4px 16px rgba(0,0,0,.2);display:none}
-h2{text-align:center;color:#003366}
-label{font-size:13px;color:#003366;font-weight:700}
-input,textarea{width:100%;padding:11px;margin-top:8px;border-radius:6px;border:1px solid #bcc7dd}
-button{background:#003366;color:#fff;width:100%;margin-top:15px;padding:12px;border:none;
-border-radius:6px;font-weight:700;cursor:pointer}
-.link{text-align:center;margin-top:12px;font-size:13px}
-.link span{cursor:pointer;color:#064a90;font-weight:700}
-.msg{display:none;padding:10px;margin-top:10px;border-radius:6px;text-align:center}
-.error{background:#ffd3d3;color:#ae0000}
-.success{background:#d2ffe1;color:#005524}
+body{
+  margin:0;
+  background:linear-gradient(135deg,#0a3c7c,#0b578c);
+  font-family:Arial,sans-serif
+}
+.card{
+  width:420px;
+  margin:70px auto;
+  background:#fff;
+  padding:26px;
+  border-radius:14px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+  display:none;
+  animation:fade .4s ease
+}
+@keyframes fade{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+h2{
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  color:#003366;
+  margin-top:0
+}
+label{
+  font-size:13px;
+  color:#003366;
+  font-weight:700
+}
+input,textarea{
+  width:100%;
+  padding:11px;
+  margin-top:8px;
+  border-radius:6px;
+  border:1px solid #bcc7dd;
+  font-size:14px
+}
+button{
+  background:#003366;
+  color:#fff;
+  width:100%;
+  margin-top:15px;
+  padding:12px;
+  border:none;
+  border-radius:6px;
+  font-size:15px;
+  cursor:pointer;
+  font-weight:700
+}
+button:hover{background:#064a90}
+.link{
+  margin-top:12px;
+  text-align:center;
+  font-size:13px
+}
+.link span{
+  cursor:pointer;
+  color:#064a90;
+  font-weight:700
+}
+.msg{
+  display:none;
+  padding:10px;
+  margin-top:10px;
+  border-radius:6px;
+  text-align:center
+}
+.error{background:#ffd3d3;color:#ae0000;border:1px solid red}
+.success{background:#d2ffe1;color:#005524;border:1px solid green}
 </style>
 </head>
 
 <body>
 
+<!-- ================= REGISTER ================= -->
 <div id="registerBox" class="card">
 <h2>Company Registration</h2>
-<input id="company_name" placeholder="Company Name">
-<input id="user_name" placeholder="Your Name">
-<input id="designation" placeholder="Designation">
-<input id="mobile" placeholder="Mobile">
-<input id="email" placeholder="Email">
-<textarea id="address" placeholder="Address"></textarea>
+
+<label>Company Name</label>
+<input id="company_name">
+
+<label>Your Name</label>
+<input id="user_name">
+
+<label>Designation</label>
+<input id="designation">
+
+<label>Phone Number</label>
+<input id="mobile">
+
+<label>Email Address</label>
+<input id="email">
+
+<label>Company Address</label>
+<textarea id="address"></textarea>
+
 <button onclick="sendOTP()">Send OTP</button>
 <div id="regErr" class="msg error"></div>
-<div class="link"><span onclick="showBox('loginBox')">Login</span></div>
+
+<div class="link">
+Already Registered?
+<span onclick="showBox('loginBox')">Login</span>
+</div>
 </div>
 
+<!-- ================= OTP ================= -->
 <div id="otpBox" class="card">
 <h2>OTP Verification</h2>
-<input id="otp" placeholder="OTP">
+
+<label>Enter OTP</label>
+<input id="otp" maxlength="6">
+
 <button onclick="verifyOTP()">Verify OTP</button>
 <div id="otpErr" class="msg error"></div>
 </div>
 
+<!-- ================= PASSWORD ================= -->
 <div id="passBox" class="card">
-<h2>Set Password</h2>
-<input id="pass1" type="password" placeholder="Password">
-<input id="pass2" type="password" placeholder="Confirm Password">
+<h2>Set Login Password</h2>
+
+<label>Password (max 20 chars)</label>
+<input id="pass1" type="password" maxlength="20">
+
+<label>Confirm Password</label>
+<input id="pass2" type="password" maxlength="20">
+
 <button onclick="savePassword()">Save Password</button>
+
 <div id="passErr" class="msg error"></div>
+<div id="passOk" class="msg success"></div>
 </div>
 
+<!-- ================= LOGIN ================= -->
 <div id="loginBox" class="card">
 <h2>Login</h2>
-<input id="login_company_id" placeholder="Company ID">
-<input id="login_email" placeholder="Email">
-<input id="login_pwd" type="password" placeholder="Password">
+
+<label>Company ID</label>
+<input id="login_company_id">
+
+<label>Email</label>
+<input id="login_email">
+
+<label>Password</label>
+<input id="login_pwd" type="password" maxlength="20">
+
 <button onclick="doLogin()">Login</button>
+
 <div id="loginErr" class="msg error"></div>
+
 <div class="link">
 <span onclick="showBox('registerBox')">Register</span> |
-<span onclick="showBox('forgotBox')">Forgot?</span>
+<span onclick="showBox('forgotBox')">Forgot Password?</span>
 </div>
 </div>
 
+<!-- ================= FORGOT ================= -->
 <div id="forgotBox" class="card">
-<h2>Forgot Password</h2>
-<input id="forgot_email" placeholder="Email">
-<button onclick="sendForgotOTP()">Send OTP</button>
-<div id="forgotErr" class="msg error"></div>
-</div>
+<h2>Password Recovery</h2>
 
-<div id="resetBox" class="card">
-<h2>Reset Password</h2>
-<input id="reset_otp" placeholder="OTP">
-<input id="reset_pass1" type="password" placeholder="New Password">
-<input id="reset_pass2" type="password" placeholder="Confirm Password">
-<button onclick="resetPassword()">Reset</button>
-<div id="resetErr" class="msg error"></div>
+<label>Registered Email</label>
+<input id="forgot_email">
+
+<button onclick="sendResetLink()">Send Reset Link</button>
+
+<div id="forgotErr" class="msg error"></div>
+<div id="forgotOk" class="msg success"></div>
 </div>
 
 <script>
 const BASE="/auth";
-let regEmail="", forgotEmail="";
+let regEmail="";
 
 function showBox(id){
- document.querySelectorAll(".card").forEach(x=>x.style.display="none");
- document.getElementById(id).style.display="block";
+  document.querySelectorAll(".card").forEach(x=>x.style.display="none");
+  document.getElementById(id).style.display="block";
 }
-showBox("loginBox");
+showBox("registerBox");
 
+/* ================= REGISTER ================= */
 async function sendOTP(){
- let o={company_name:company_name.value,user_name:user_name.value,
- designation:designation.value,address:address.value,
- mobile:mobile.value,email:email.value};
- let r=await fetch(BASE+"/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)});
- let d=await r.json();
- if(r.ok){regEmail=o.email;showBox("otpBox")}else{regErr.innerHTML=d.detail;regErr.style.display="block"}
+  regErr.style.display="none";
+
+  let obj={
+    company_name:company_name.value.trim(),
+    user_name:user_name.value.trim(),
+    designation:designation.value.trim(),
+    address:address.value.trim(),
+    mobile:mobile.value.trim(),
+    email:email.value.trim()
+  };
+
+  if(Object.values(obj).includes("")){
+    regErr.innerHTML="All fields required";
+    regErr.style.display="block";
+    return;
+  }
+
+  let res=await fetch(`${BASE}/register`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(obj)
+  });
+
+  let data=await res.json();
+  if(res.ok){
+    regEmail=obj.email;
+    showBox("otpBox");
+  }else{
+    regErr.innerHTML=data.detail;
+    regErr.style.display="block";
+  }
 }
 
+/* ================= OTP ================= */
 async function verifyOTP(){
- let r=await fetch(BASE+"/verify-otp",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({email:regEmail,otp:otp.value})});
- let d=await r.json();
- if(r.ok){showBox("passBox")}else{otpErr.innerHTML=d.detail;otpErr.style.display="block"}
+  otpErr.style.display="none";
+
+  let res=await fetch(`${BASE}/verify-otp`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({email:regEmail,otp:otp.value})
+  });
+
+  let data=await res.json();
+  if(res.ok){
+    showBox("passBox");
+  }else{
+    otpErr.innerHTML=data.detail;
+    otpErr.style.display="block";
+  }
 }
 
+/* ================= PASSWORD ================= */
 async function savePassword(){
- if(pass1.value!==pass2.value){passErr.innerHTML="Mismatch";passErr.style.display="block";return}
- let r=await fetch(BASE+"/set-password",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({email:regEmail,password:pass1.value})});
- let d=await r.json();
- if(r.ok){alert("Company ID: "+d.company_id);showBox("loginBox")}
- else{passErr.innerHTML=d.detail;passErr.style.display="block"}
+  passErr.style.display="none";
+
+  if(pass1.value!==pass2.value){
+    passErr.innerHTML="Passwords do not match";
+    passErr.style.display="block";
+    return;
+  }
+
+  let res=await fetch(`${BASE}/set-password`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      email:regEmail,
+      password:pass1.value.substring(0,20)
+    })
+  });
+
+  let data=await res.json();
+  if(res.ok){
+    passOk.innerHTML="Password saved. Company ID: <b>"+data.company_id+"</b>";
+    passOk.style.display="block";
+    setTimeout(()=>showBox("loginBox"),2000);
+  }else{
+    passErr.innerHTML=data.detail;
+    passErr.style.display="block";
+  }
 }
 
+/* ================= LOGIN ================= */
 async function doLogin(){
- let r=await fetch(BASE+"/login",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({company_id:login_company_id.value,email:login_email.value,password:login_pwd.value})});
- let d=await r.json();
- if(r.ok){location.href="/home"}else{loginErr.innerHTML=d.detail;loginErr.style.display="block"}
+  loginErr.style.display="none";
+
+  let res=await fetch(`${BASE}/login`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      company_id:login_company_id.value,
+      email:login_email.value,
+      password:login_pwd.value.substring(0,20)
+    })
+  });
+
+  let data=await res.json();
+  if(res.ok){
+    window.location.href="/home";
+  }else{
+    loginErr.innerHTML=data.detail;
+    loginErr.style.display="block";
+  }
 }
 
-async function sendForgotOTP(){
- let r=await fetch(BASE+"/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({email:forgot_email.value})});
- let d=await r.json();
- if(r.ok){forgotEmail=forgot_email.value;showBox("resetBox")}
- else{forgotErr.innerHTML=d.detail;forgotErr.style.display="block"}
-}
+/* ================= FORGOT ================= */
+async function sendResetLink(){
+  forgotErr.style.display="none";
 
-async function resetPassword(){
- if(reset_pass1.value!==reset_pass2.value){resetErr.innerHTML="Mismatch";resetErr.style.display="block";return}
- let r=await fetch(BASE+"/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({email:forgotEmail,otp:reset_otp.value,new_password:reset_pass1.value})});
- let d=await r.json();
- if(r.ok){alert("Password reset");showBox("loginBox")}
- else{resetErr.innerHTML=d.detail;resetErr.style.display="block"}
+  let res=await fetch(`${BASE}/forgot-password`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({email:forgot_email.value})
+  });
+
+  let data=await res.json();
+  if(res.ok){
+    forgotOk.innerHTML="Reset link sent";
+    forgotOk.style.display="block";
+  }else{
+    forgotErr.innerHTML=data.detail;
+    forgotErr.style.display="block";
+  }
 }
 </script>
+
 </body>
 </html>

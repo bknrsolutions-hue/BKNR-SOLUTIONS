@@ -1,50 +1,61 @@
-import json
-from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from app.database import SessionLocal
 from app.database.models.users import OTPTable
+from datetime import datetime, timedelta
+import json
 
-OTP_EXPIRY_MINUTES = 5
+OTP_EXP_MINUTES = 10
 
 
-def store_otp(db: Session, email: str, otp: str, extra=None):
+def store_otp(email: str, otp: str, extra: dict = None):
+    db: Session = SessionLocal()
+
     record = db.query(OTPTable).filter(OTPTable.email == email).first()
 
+    if record:
+        record.otp = otp
+        record.extra = json.dumps(extra) if extra else None
+        record.is_used = False
+        record.created_at = datetime.utcnow()
+    else:
+        record = OTPTable(
+            email=email,
+            otp=otp,
+            extra=json.dumps(extra) if extra else None
+        )
+        db.add(record)
+
+    db.commit()
+    db.close()
+
+
+def verify_stored_otp(email: str, otp: str = None):
+    db: Session = SessionLocal()
+
+    record = db.query(OTPTable).filter(
+        OTPTable.email == email,
+        OTPTable.is_used == False
+    ).first()
+
     if not record:
-        record = OTPTable(email=email)
+        db.close()
+        return None
 
-    record.otp = str(otp)
-    record.extra = json.dumps(extra) if extra else None
-    record.is_used = False
-    record.created_at = datetime.utcnow()
+    if otp and record.otp != otp:
+        db.close()
+        return None
 
-    db.add(record)
+    if datetime.utcnow() > record.created_at + timedelta(minutes=OTP_EXP_MINUTES):
+        db.close()
+        return None
+
+    record.is_used = True
     db.commit()
 
-
-def verify_stored_otp(db: Session, email: str, otp: str = None):
-    record = db.query(OTPTable).filter(OTPTable.email == email).first()
-
-    if not record:
-        return None
-
-    # Expiry check
-    if datetime.utcnow() - record.created_at > timedelta(minutes=OTP_EXPIRY_MINUTES):
-        db.delete(record)
-        db.commit()
-        return None
-
-    # OTP verification
-    if otp:
-        if record.is_used:
-            return None
-
-        if record.otp != str(otp):
-            return None
-
-        record.is_used = True
-        db.commit()
-
-    return {
+    data = {
         "email": record.email,
         "extra": json.loads(record.extra) if record.extra else None
     }
+
+    db.close()
+    return data
