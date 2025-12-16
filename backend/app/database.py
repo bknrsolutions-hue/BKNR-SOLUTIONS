@@ -9,9 +9,8 @@ if not DATABASE_URL:
 
 engine = create_engine(
     DATABASE_URL,
-    future=True,
-    pool_pre_ping=True,
-    connect_args={"sslmode": "require"}
+    echo=False,
+    pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(
@@ -21,6 +20,7 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
 
 def get_db():
     db = SessionLocal()
