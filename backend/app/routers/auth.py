@@ -9,8 +9,7 @@ from app.security.password_handler import hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# ===================== REQUEST MODELS =====================
-
+# ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
     company_name: str
     user_name: str
@@ -32,10 +31,7 @@ class LoginReq(BaseModel):
     email: str
     password: str
 
-class ForgotReq(BaseModel):
-    email: str
-
-# ===================== REGISTER =====================
+# ================= REGISTER =================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
@@ -43,24 +39,21 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 
     otp = str(random.randint(1000, 9999))
 
-    # remove old OTP
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-    db.add(
-        OTPTable(
-            email=data.email,
-            otp=otp,
-            extra=json.dumps(data.dict()),
-            is_used=False
-        )
-    )
+    db.add(OTPTable(
+        email=data.email,
+        otp=otp,
+        extra=json.dumps(data.dict()),
+        is_used=False
+    ))
     db.commit()
 
-    print("OTP:", otp)  # Render blocks email – console lo chudu
+    print("OTP:", otp)  # Render logs lo chudu
 
     return {"message": "OTP sent"}
 
-# ===================== VERIFY OTP =====================
+# ================= VERIFY OTP =================
 @router.post("/verify-otp")
 def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
     rec = db.query(OTPTable).filter(
@@ -77,9 +70,9 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
     return {"message": "OTP verified"}
 
+# ================= SET PASSWORD =================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
-
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.is_used == True
@@ -90,13 +83,10 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
-    # ---------------- CHECK EXISTING COMPANY ----------------
-    company = db.query(Company).filter(
-        Company.email == extra["email"]
-    ).first()
+    company = db.query(Company).filter(Company.email == extra["email"]).first()
 
     if not company:
-        company_code = extra["company_name"][:4].upper() + str(random.randint(1000, 9999))
+        company_code = extra["company_name"][:4].upper() + str(random.randint(1000,9999))
         company = Company(
             company_name=extra["company_name"],
             address=extra["address"],
@@ -108,16 +98,9 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(company)
 
-    # ---------------- CHECK EXISTING USER ----------------
-    user = db.query(User).filter(
-        User.email == extra["email"],
-        User.company_id == company.id
-    ).first()
+    if db.query(User).filter(User.email == extra["email"], User.company_id == company.id).first():
+        raise HTTPException(400, "User already exists")
 
-    if user:
-        raise HTTPException(400, "User already exists. Please login.")
-
-    # ---------------- CREATE ADMIN USER ----------------
     user = User(
         company_id=company.id,
         name=extra["user_name"],
@@ -129,23 +112,17 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         permissions="ALL",
         is_verified=True
     )
-
     db.add(user)
+
+    db.delete(rec)  # 🔥 OTP cleanup
     db.commit()
 
-    return {
-        "message": "Password set successfully",
-        "company_id": company.company_code
-    }
+    return {"message": "Password set", "company_id": company.company_code}
 
-
-# ===================== LOGIN =====================
+# ================= LOGIN =================
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
-    company = db.query(Company).filter(
-        Company.company_code == data.company_id
-    ).first()
-
+    company = db.query(Company).filter(Company.company_code == data.company_id).first()
     if not company:
         raise HTTPException(400, "Invalid Company ID")
 
@@ -163,17 +140,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     return {"message": "Login success"}
 
-# ===================== FORGOT PASSWORD =====================
-@router.post("/forgot-password")
-def forgot_password(data: ForgotReq, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user:
-        raise HTTPException(404, "Email not registered")
-
-    print("Password reset requested for:", data.email)
-    return {"message": "Reset link sent"}
-
-# ===================== LOGOUT =====================
+# ================= LOGOUT =================
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
