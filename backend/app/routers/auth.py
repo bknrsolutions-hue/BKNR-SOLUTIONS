@@ -77,9 +77,9 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
     return {"message": "OTP verified"}
 
-# ===================== SET PASSWORD =====================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
+
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.is_used == True
@@ -90,19 +90,34 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
-    company_code = extra["company_name"][:4].upper() + str(random.randint(1000, 9999))
+    # ---------------- CHECK EXISTING COMPANY ----------------
+    company = db.query(Company).filter(
+        Company.email == extra["email"]
+    ).first()
 
-    company = Company(
-        company_name=extra["company_name"],
-        address=extra["address"],
-        email=extra["email"],
-        company_code=company_code,
-        is_active=True
-    )
-    db.add(company)
-    db.commit()
-    db.refresh(company)
+    if not company:
+        company_code = extra["company_name"][:4].upper() + str(random.randint(1000, 9999))
+        company = Company(
+            company_name=extra["company_name"],
+            address=extra["address"],
+            email=extra["email"],
+            company_code=company_code,
+            is_active=True
+        )
+        db.add(company)
+        db.commit()
+        db.refresh(company)
 
+    # ---------------- CHECK EXISTING USER ----------------
+    user = db.query(User).filter(
+        User.email == extra["email"],
+        User.company_id == company.id
+    ).first()
+
+    if user:
+        raise HTTPException(400, "User already exists. Please login.")
+
+    # ---------------- CREATE ADMIN USER ----------------
     user = User(
         company_id=company.id,
         name=extra["user_name"],
@@ -114,13 +129,15 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         permissions="ALL",
         is_verified=True
     )
+
     db.add(user)
     db.commit()
 
     return {
-        "message": "Company created",
-        "company_id": company_code
+        "message": "Password set successfully",
+        "company_id": company.company_code
     }
+
 
 # ===================== LOGIN =====================
 @router.post("/login")
