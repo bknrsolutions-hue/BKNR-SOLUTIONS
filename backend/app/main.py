@@ -23,9 +23,9 @@ app = FastAPI(
 # =============================================
 app.add_middleware(
     SessionMiddleware,
-    secret_key="bknr_secret_key_2025",
+    secret_key="bknr_secret_key_2025",  # move to ENV later
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8
+    max_age=60 * 60 * 8  # 8 hours
 )
 
 # =============================================
@@ -36,10 +36,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         open_paths = [
-            "/",
-            "/auth",
-            "/health",
-            "/static",
+            "/",          # Login page
+            "/auth",      # Login / Register
+            "/health",    # Health check
+            "/static",    # Static files
+            "/docs",      # Swagger
+            "/openapi.json"
         ]
 
         if not any(path.startswith(p) for p in open_paths):
@@ -60,70 +62,68 @@ templates.env.cache = {}
 app.state.templates = templates
 
 # =============================================
-# DATABASE (SAFE LOAD)
+# DATABASE
 # =============================================
-try:
-    from app.database import engine, Base
-    from app.database.models.users import *  # noqa
-    logging.info("✔ Database loaded")
-except Exception as e:
-    logging.warning(f"⚠ Database not ready: {e}")
+from app.database import engine, Base
+from app.database.models.users import *  # noqa
+
+logging.info("✔ Database loaded")
 
 # =============================================
-# ROUTERS (SAFE LOAD)
+# ROUTERS (NO SAFE SKIP FOR AUTH)
 # =============================================
-def safe_include(router):
+
+# ---- AUTH ROUTER (MANDATORY) ----
+from app.routers.auth import router as auth_router
+app.include_router(auth_router)
+
+# ---- OTHER ROUTERS (OPTIONAL) ----
+def include_optional(router):
     try:
         app.include_router(router)
     except Exception as e:
-        logging.warning(f"⚠ Router skipped: {e}")
+        logging.warning(f"⚠ Optional router skipped: {e}")
 
-try:
-    from app.routers.auth import router as auth_router
-    safe_include(auth_router)
+from app.routers.menu import router as menu_router
+include_optional(menu_router)
 
-    from app.routers.menu import router as menu_router
-    safe_include(menu_router)
+from app.routers.criteria_router import router as criteria_router
+include_optional(criteria_router)
 
-    from app.routers.criteria_router import router as criteria_router
-    safe_include(criteria_router)
+from app.routers.inventory import router as inventory_router
+include_optional(inventory_router)
 
-    from app.routers.inventory import router as inventory_router
-    safe_include(inventory_router)
+from app.routers.general_stock import router as general_stock_router
+include_optional(general_stock_router)
 
-    from app.routers.general_stock import router as general_stock_router
-    safe_include(general_stock_router)
+from app.routers.admin import router as admin_router
+include_optional(admin_router)
 
-    from app.routers.admin import router as admin_router
-    safe_include(admin_router)
+from app.routers.processing_router import router as processing_router
+include_optional(processing_router)
 
-    from app.routers.processing_router import router as processing_router
-    safe_include(processing_router)
+from app.routers.reports_router import router as reports_router
+include_optional(reports_router)
 
-    from app.routers.reports_router import router as reports_router
-    safe_include(reports_router)
+from app.routers.dashboard_router import router as dashboard_router
+include_optional(dashboard_router)
 
-    from app.routers.dashboard_router import router as dashboard_router
-    safe_include(dashboard_router)
+from app.routers.inventory_management.stock_entry import router as stock_entry_router
+include_optional(stock_entry_router)
 
-    from app.routers.inventory_management.stock_entry import router as stock_entry_router
-    safe_include(stock_entry_router)
+from app.routers.inventory_management.pending_orders import router as pending_orders_router
+include_optional(pending_orders_router)
 
-    from app.routers.inventory_management.pending_orders import router as pending_orders_router
-    safe_include(pending_orders_router)
+from app.routers.attendance.employee_registration import router as emp_reg_router
+include_optional(emp_reg_router)
 
-    from app.routers.attendance.employee_registration import router as emp_reg_router
-    safe_include(emp_reg_router)
+from app.routers.attendance.attendance_face import router as attendance_face_router
+include_optional(attendance_face_router)
 
-    from app.routers.attendance.attendance_face import router as attendance_face_router
-    safe_include(attendance_face_router)
+from app.routers.page_loader import router as page_loader_router
+include_optional(page_loader_router)
 
-    from app.routers.page_loader import router as page_loader_router
-    safe_include(page_loader_router)
-
-    logging.info("✔ Routers loaded")
-except Exception as e:
-    logging.warning(f"⚠ Router load issue: {e}")
+logging.info("✔ Routers loaded")
 
 # =============================================
 # PAGES
@@ -132,19 +132,22 @@ except Exception as e:
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+
 @app.get("/home", response_class=HTMLResponse)
 def home(request: Request):
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=303)
     return templates.TemplateResponse("menu.html", {"request": request})
 
+
 @app.get("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
 
+
 # =============================================
-# HEALTH CHECK (FINAL)
+# HEALTH CHECK
 # =============================================
 @app.get("/health")
 def health():
