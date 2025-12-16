@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # =============================================
-# INIT FASTAPI (ONLY ONCE)
+# INIT FASTAPI
 # =============================================
 app = FastAPI(
     title="BKNR ERP",
@@ -23,9 +23,9 @@ app = FastAPI(
 # =============================================
 app.add_middleware(
     SessionMiddleware,
-    secret_key="bknr_secret_key_2025",  # move to ENV later
+    secret_key="bknr_secret_key_2025",
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8  # 8 hours
+    max_age=60 * 60 * 8
 )
 
 # =============================================
@@ -36,12 +36,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         open_paths = [
-            "/",          # Login page
-            "/auth",      # Login / Register
-            "/health",    # Health check
-            "/static",    # Static files
-            "/docs",      # Swagger
-            "/openapi.json"
+            "/",
+            "/auth",
+            "/health",
+            "/static",
+            "/docs",
+            "/openapi.json",
         ]
 
         if not any(path.startswith(p) for p in open_paths):
@@ -70,14 +70,14 @@ from app.database.models.users import *  # noqa
 logging.info("✔ Database loaded")
 
 # =============================================
-# ROUTERS (NO SAFE SKIP FOR AUTH)
+# ROUTERS
 # =============================================
 
-# ---- AUTH ROUTER (MANDATORY) ----
+# ---- AUTH (MANDATORY) ----
 from app.routers.auth import router as auth_router
 app.include_router(auth_router)
 
-# ---- OTHER ROUTERS (OPTIONAL) ----
+# ---- OPTIONAL ROUTERS (SAFE) ----
 def include_optional(router):
     try:
         app.include_router(router)
@@ -102,9 +102,6 @@ include_optional(admin_router)
 from app.routers.processing_router import router as processing_router
 include_optional(processing_router)
 
-from app.routers.reports_router import router as reports_router
-include_optional(reports_router)
-
 from app.routers.dashboard_router import router as dashboard_router
 include_optional(dashboard_router)
 
@@ -122,6 +119,9 @@ include_optional(attendance_face_router)
 
 from app.routers.page_loader import router as page_loader_router
 include_optional(page_loader_router)
+
+# ❌ REPORTS ROUTER COMPLETELY REMOVED (WeasyPrint not supported)
+# DO NOT IMPORT OR INCLUDE reports_router ANYWHERE
 
 logging.info("✔ Routers loaded")
 
@@ -144,7 +144,6 @@ def home(request: Request):
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
-
 
 # =============================================
 # HEALTH CHECK
