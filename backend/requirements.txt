@@ -9,4 +9,4 @@ openpyxl
 pandas
 passlib[bcrypt]
 bcrypt
-
+python-multipart
