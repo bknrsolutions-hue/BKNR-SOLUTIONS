@@ -2,39 +2,44 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./test.db"
-)
+# =================================================
+# DATABASE URL (RENDER / PROD ONLY)
+# =================================================
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise RuntimeError("❌ DATABASE_URL not set")
+
+# =================================================
+# SQLALCHEMY ENGINE
+# =================================================
 engine = create_engine(
     DATABASE_URL,
+    pool_pre_ping=True,
     echo=False,
     future=True
 )
 
+# =================================================
+# SESSION
+# =================================================
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
+# =================================================
+# BASE
+# =================================================
 Base = declarative_base()
 
-
-
-# ---------------- DB DEPENDENCY -------------
+# =================================================
+# DB DEPENDENCY
+# =================================================
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
-# ---------------- TABLE CREATOR -------------
-def create_tables():
-    # Import all models (MANDATORY)
-    from app.database.models.auth import Company, User, OTPTable
-    Base.metadata.create_all(bind=engine)
-    print("✔ Tables Created Successfully")
