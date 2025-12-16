@@ -111,11 +111,6 @@ include_optional(stock_entry_router)
 from app.routers.inventory_management.pending_orders import router as pending_orders_router
 include_optional(pending_orders_router)
 
-from app.routers.attendance.employee_registration import router as emp_reg_router
-include_optional(emp_reg_router)
-
-from app.routers.attendance.attendance_face import router as attendance_face_router
-include_optional(attendance_face_router)
 
 from app.routers.page_loader import router as page_loader_router
 include_optional(page_loader_router)
