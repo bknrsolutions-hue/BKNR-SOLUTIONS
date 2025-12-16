@@ -7,4 +7,6 @@ itsdangerous
 jinja2
 openpyxl
 pandas
+passlib[bcrypt]
+bcrypt
 
