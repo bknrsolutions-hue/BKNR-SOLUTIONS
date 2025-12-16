@@ -22,13 +22,13 @@ app = FastAPI(
 # =============================================
 app.add_middleware(
     SessionMiddleware,
-    secret_key="bknr_secret_key_2025",
+    secret_key="bknr_secret_key_2025",  # ⚠️ later ENV lo pettali
     session_cookie="bknr_session",
     max_age=60 * 60 * 8  # 8 hours
 )
 
 # =============================================
-# AUTH MIDDLEWARE
+# AUTH MIDDLEWARE (LOGIN PROTECTION)
 # =============================================
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -37,15 +37,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # ---------- OPEN ROUTES ----------
         if (
             path == "/"
-            or path.startswith("/auth/")
-            or path.startswith("/static/")
+            or path.startswith("/auth")
+            or path.startswith("/static")
             or path.startswith("/docs")
             or path.startswith("/openapi.json")
             or path.startswith("/health")
         ):
             return await call_next(request)
 
-        # ---------- SESSION CHECK ----------
+        # ---------- PROTECTED ROUTES ----------
         if not request.session.get("email"):
             return RedirectResponse("/", status_code=303)
 
@@ -69,7 +69,7 @@ from app.database import engine, Base
 from app.database.models.users import *  # noqa
 
 # =============================================
-# AUTO CREATE TABLES
+# AUTO CREATE TABLES (RENDER SAFE)
 # =============================================
 @app.on_event("startup")
 def startup_event():
@@ -85,6 +85,8 @@ def startup_event():
 from app.routers.auth import router as auth_router
 app.include_router(auth_router)
 
+# (later migilina routers ikkada include cheyyachu)
+
 # =============================================
 # PAGES
 # =============================================
@@ -97,9 +99,6 @@ def login_page(request: Request):
 
 @app.get("/home", response_class=HTMLResponse)
 def home_page(request: Request):
-    if not request.session.get("email"):
-        return RedirectResponse("/", status_code=303)
-
     return templates.TemplateResponse(
         "menu.html",
         {"request": request}
