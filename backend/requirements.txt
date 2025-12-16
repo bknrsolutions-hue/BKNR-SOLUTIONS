@@ -6,4 +6,5 @@ jinja2
 python-multipart
 passlib[bcrypt]
 psycopg2-binary
+python-dotenv
 
