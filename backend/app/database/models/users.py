@@ -46,17 +46,13 @@ class User(Base):
 
     company = relationship("Company", back_populates="users")
 
-
-# =================== OTP MODEL ===================
+#OTP MODEL
 class OTPTable(Base):
     __tablename__ = "otp_table"
 
-    id = Column(Integer, primary_key=True, index=True)
-
-    email = Column(String, unique=True, nullable=False)
-    otp = Column(String, nullable=False)
-
-    extra = Column(JSON, nullable=True)   # ✅ FIXED
+    id = Column(Integer, primary_key=True)
+    email = Column(String, unique=True)
+    otp = Column(String)
+    extra = Column(String)          # ✅ MUST
     is_used = Column(Boolean, default=False)
-
     created_at = Column(DateTime, default=datetime.utcnow)
