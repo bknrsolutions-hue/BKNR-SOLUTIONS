@@ -36,8 +36,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         open_paths = [
-            "/",                 # login page
-            "/auth",             # auth APIs
+            "/",
+            "/auth",
             "/health",
             "/static",
             "/docs",
@@ -65,13 +65,12 @@ app.state.templates = templates
 # DATABASE
 # =============================================
 from app.database import engine, Base
-from app.database.models.users import *  # noqa
-from app.database.models.auth import *   # noqa (if exists)
+from app.database.models.users import *   # ✅ ONLY THIS
 
 logging.info("✔ Database loaded")
 
 # =============================================
-# AUTO CREATE TABLES (RENDER SAFE)
+# AUTO CREATE TABLES
 # =============================================
 @app.on_event("startup")
 def startup_event():
@@ -85,11 +84,9 @@ def startup_event():
 # ROUTERS
 # =============================================
 
-# ---- AUTH (MANDATORY) ----
 from app.routers.auth import router as auth_router
 app.include_router(auth_router)
 
-# ---- OPTIONAL ROUTERS (SAFE LOAD) ----
 def include_optional(router):
     try:
         app.include_router(router)
@@ -126,8 +123,6 @@ include_optional(pending_orders_router)
 from app.routers.page_loader import router as page_loader_router
 include_optional(page_loader_router)
 
-# ❌ REPORTS ROUTER COMPLETELY REMOVED (WeasyPrint not supported)
-
 logging.info("✔ Routers loaded")
 
 # =============================================
@@ -137,13 +132,11 @@ logging.info("✔ Routers loaded")
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-
 @app.get("/home", response_class=HTMLResponse)
 def home(request: Request):
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=303)
     return templates.TemplateResponse("menu.html", {"request": request})
-
 
 @app.get("/logout")
 def logout(request: Request):
