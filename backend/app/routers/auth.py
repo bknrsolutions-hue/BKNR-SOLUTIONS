@@ -1,16 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import random, json
+import random, json, smtplib
+from email.mime.text import MIMEText
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
 from app.security.password_handler import hash_password, verify_password
-from app.utils.email_service import send_otp_email
 
+# =====================================================
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+# =====================================================
 
-# ===================== REQUEST MODELS =====================
+# ================= SMTP CONFIG =================
+SMTP_EMAIL = "bknr.solutions@gmail.com"      # ✔ your gmail
+SMTP_PASSWORD = "YOUR_APP_PASSWORD"         # ✔ gmail app password
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
+
+def send_email(to_email: str, subject: str, body: str):
+    msg = MIMEText(body)
+    msg["From"] = SMTP_EMAIL
+    msg["To"] = to_email
+    msg["Subject"] = subject
+
+    server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+    server.starttls()
+    server.login(SMTP_EMAIL, SMTP_PASSWORD)
+    server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+    server.quit()
+
+# ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
     company_name: str
     user_name: str
@@ -35,30 +55,45 @@ class LoginReq(BaseModel):
 class ForgotReq(BaseModel):
     email: str
 
-# ===================== REGISTER =====================
+# =====================================================
+# REGISTER + SEND OTP
+# =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
+
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "Email already registered")
 
     otp = str(random.randint(1000, 9999))
 
+    # delete old OTP
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-    db.add(OTPTable(
-        email=data.email,
-        otp=otp,
-        extra=json.dumps(data.dict()),
-        is_used=False
-    ))
+    db.add(
+        OTPTable(
+            email=data.email,
+            otp=otp,
+            extra=json.dumps(data.dict()),
+            is_used=False
+        )
+    )
     db.commit()
 
-    send_otp_email(data.email, otp)
+    # send OTP email
+    send_email(
+        data.email,
+        "BKNR ERP - OTP Verification",
+        f"Your OTP is: {otp}"
+    )
+
     return {"message": "OTP sent to email"}
 
-# ===================== VERIFY OTP =====================
+# =====================================================
+# VERIFY OTP
+# =====================================================
 @router.post("/verify-otp")
 def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
+
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.otp == data.otp,
@@ -70,11 +105,15 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
     rec.is_used = True
     db.commit()
+
     return {"message": "OTP verified"}
 
-# ===================== SET PASSWORD =====================
+# =====================================================
+# SET PASSWORD + CREATE COMPANY + ADMIN USER
+# =====================================================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
+
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.is_used == True
@@ -85,6 +124,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
+    # ---------- COMPANY ----------
     company = db.query(Company).filter(
         Company.email == extra["email"]
     ).first()
@@ -102,8 +142,17 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(company)
 
-    if db.query(User).filter(User.email == extra["email"]).first():
-        raise HTTPException(400, "User already exists")
+    # ---------- USER ----------
+    user = db.query(User).filter(
+        User.email == extra["email"],
+        User.company_id == company.id
+    ).first()
+
+    if user:
+        raise HTTPException(400, "User already exists. Please login.")
+
+    # 🔥 bcrypt limit fix → password trimmed to 72
+    safe_password = data.password[:72]
 
     user = User(
         company_id=company.id,
@@ -111,19 +160,32 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         designation=extra["designation"],
         email=extra["email"],
         mobile=extra["mobile"],
-        password=hash_password(data.password),
+        password=hash_password(safe_password),
         role="admin",
         permissions="ALL",
         is_verified=True
     )
+
     db.add(user)
     db.commit()
 
-    return {"message": "Account created", "company_id": company.company_code}
+    send_email(
+        extra["email"],
+        "BKNR ERP - Company Created",
+        f"Your Company ID is: {company.company_code}"
+    )
 
-# ===================== LOGIN =====================
+    return {
+        "message": "Password set successfully",
+        "company_id": company.company_code
+    }
+
+# =====================================================
+# LOGIN
+# =====================================================
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
+
     company = db.query(Company).filter(
         Company.company_code == data.company_id
     ).first()
@@ -136,21 +198,40 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         User.company_id == company.id
     ).first()
 
-    if not user or not verify_password(data.password, user.password):
+    if not user or not verify_password(data.password[:72], user.password):
         raise HTTPException(400, "Invalid credentials")
 
+    # session
     request.session["email"] = user.email
     request.session["company_id"] = company.id
-    request.session["permissions"] = ["ALL"]
+    request.session["company_code"] = company.company_code
+    request.session["name"] = user.name
+    request.session["role"] = user.role
+    request.session["permissions"] = user.permissions
 
     return {"message": "Login success"}
 
-# ===================== FORGOT PASSWORD =====================
+# =====================================================
+# FORGOT PASSWORD
+# =====================================================
 @router.post("/forgot-password")
-def forgot(data: ForgotReq):
-    return {"message": "Contact admin to reset password"}
+def forgot_password(data: ForgotReq, db: Session = Depends(get_db)):
 
-# ===================== LOGOUT =====================
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(404, "Email not registered")
+
+    send_email(
+        data.email,
+        "BKNR ERP - Password Reset",
+        "Contact admin to reset password (auto reset coming soon)"
+    )
+
+    return {"message": "Reset email sent"}
+
+# =====================================================
+# LOGOUT
+# =====================================================
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
