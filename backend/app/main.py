@@ -139,6 +139,15 @@ def home(request: Request):
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
+from app.database import engine, Base
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ ALL TABLES CREATED / VERIFIED")
+    except Exception as e:
+        print("❌ TABLE CREATION FAILED:", e)
 
 # =============================================
 # HEALTH CHECK
