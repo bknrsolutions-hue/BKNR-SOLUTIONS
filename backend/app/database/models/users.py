@@ -56,9 +56,10 @@ class OTPTable(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    email = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False)
     otp = Column(String, nullable=False)
 
+    extra = Column(String, nullable=True)   # JSON string
     is_used = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)

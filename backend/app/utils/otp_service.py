@@ -1,35 +1,50 @@
-import time
+import json
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from app.database.models.users import OTPTable
 
-# TEMP MEMORY STORAGE  (in real-time DB table recommended)
-otp_storage = {}
-
-
-# STORE OTP WITH EXTRA DATA
-def store_otp(key, otp, extra=None):
-    otp_storage[key] = {
-        "otp": otp,
-        "timestamp": time.time(),
-        "extra": extra
-    }
+OTP_EXPIRY_MINUTES = 5
 
 
-# VERIFY OTP
-def verify_stored_otp(key, otp=None):
-    data = otp_storage.get(key)
+def store_otp(db: Session, email: str, otp: str, extra=None):
+    record = db.query(OTPTable).filter(OTPTable.email == email).first()
 
-    if not data:
+    if not record:
+        record = OTPTable(email=email)
+
+    record.otp = str(otp)
+    record.extra = json.dumps(extra) if extra else None
+    record.is_used = False
+    record.created_at = datetime.utcnow()
+
+    db.add(record)
+    db.commit()
+
+
+def verify_stored_otp(db: Session, email: str, otp: str = None):
+    record = db.query(OTPTable).filter(OTPTable.email == email).first()
+
+    if not record:
         return None
 
-    # Expire after 5 minutes
-    if time.time() - data["timestamp"] > 300:
-        otp_storage.pop(key, None)
+    # Expiry check
+    if datetime.utcnow() - record.created_at > timedelta(minutes=OTP_EXPIRY_MINUTES):
+        db.delete(record)
+        db.commit()
         return None
 
-    # If OTP provided → compare
+    # OTP verification
     if otp:
-        if str(data["otp"]) == str(otp):
-            return data
-        return None
+        if record.is_used:
+            return None
 
-    # If no OTP → return stored data (used during set-password)
-    return data
+        if record.otp != str(otp):
+            return None
+
+        record.is_used = True
+        db.commit()
+
+    return {
+        "email": record.email,
+        "extra": json.loads(record.extra) if record.extra else None
+    }

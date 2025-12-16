@@ -23,9 +23,9 @@ app = FastAPI(
 # =============================================
 app.add_middleware(
     SessionMiddleware,
-    secret_key="bknr_secret_key_2025",
+    secret_key="bknr_secret_key_2025",  # 🔒 move to ENV later
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8
+    max_age=60 * 60 * 8  # 8 hours
 )
 
 # =============================================
@@ -36,8 +36,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         open_paths = [
-            "/",
-            "/auth",
+            "/",                 # login page
+            "/auth",             # auth APIs
             "/health",
             "/static",
             "/docs",
@@ -66,8 +66,20 @@ app.state.templates = templates
 # =============================================
 from app.database import engine, Base
 from app.database.models.users import *  # noqa
+from app.database.models.auth import *   # noqa (if exists)
 
 logging.info("✔ Database loaded")
+
+# =============================================
+# AUTO CREATE TABLES (RENDER SAFE)
+# =============================================
+@app.on_event("startup")
+def startup_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ ALL TABLES CREATED / VERIFIED")
+    except Exception as e:
+        print("❌ TABLE CREATION FAILED:", e)
 
 # =============================================
 # ROUTERS
@@ -77,7 +89,7 @@ logging.info("✔ Database loaded")
 from app.routers.auth import router as auth_router
 app.include_router(auth_router)
 
-# ---- OPTIONAL ROUTERS (SAFE) ----
+# ---- OPTIONAL ROUTERS (SAFE LOAD) ----
 def include_optional(router):
     try:
         app.include_router(router)
@@ -111,12 +123,10 @@ include_optional(stock_entry_router)
 from app.routers.inventory_management.pending_orders import router as pending_orders_router
 include_optional(pending_orders_router)
 
-
 from app.routers.page_loader import router as page_loader_router
 include_optional(page_loader_router)
 
 # ❌ REPORTS ROUTER COMPLETELY REMOVED (WeasyPrint not supported)
-# DO NOT IMPORT OR INCLUDE reports_router ANYWHERE
 
 logging.info("✔ Routers loaded")
 
@@ -139,15 +149,6 @@ def home(request: Request):
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
-from app.database import engine, Base
-
-@app.on_event("startup")
-def startup_event():
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("✅ ALL TABLES CREATED / VERIFIED")
-    except Exception as e:
-        print("❌ TABLE CREATION FAILED:", e)
 
 # =============================================
 # HEALTH CHECK
