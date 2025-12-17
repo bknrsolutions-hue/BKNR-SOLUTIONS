@@ -5,11 +5,23 @@ pwd_context = CryptContext(
     deprecated="auto"
 )
 
-def hash_password(password: str) -> str:
-    # 🔥 bcrypt safe limit
-    safe_password = password.encode("utf-8")[:72]
-    return pwd_context.hash(safe_password)
+def _normalize_password(password: str) -> bytes:
+    """
+    bcrypt supports max 72 BYTES (not chars)
+    """
+    if not password:
+        return b""
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    safe_password = plain_password.encode("utf-8")[:72]
-    return pwd_context.verify(safe_password, hashed_password)
+    # convert to bytes
+    pwd_bytes = password.encode("utf-8")
+
+    # strict 72 bytes limit
+    return pwd_bytes[:72]
+
+def hash_password(password: str) -> str:
+    safe_bytes = _normalize_password(password)
+    return pwd_context.hash(safe_bytes)
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    safe_bytes = _normalize_password(password)
+    return pwd_context.verify(safe_bytes, hashed_password)

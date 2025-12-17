@@ -38,18 +38,13 @@ def send_email(to_email: str, subject: str, html_content: str) -> bool:
     }
 
     try:
-        res = requests.post(
-            BREVO_URL,
-            json=payload,
-            headers=headers,
-            timeout=10
-        )
+        res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
 
         if res.status_code >= 400:
             print("❌ Brevo error:", res.text)
             return False
 
-        print("✅ Email sent to:", to_email)
+        print("✅ Email sent:", to_email)
         return True
 
     except Exception as e:
@@ -88,7 +83,7 @@ class ForgotReq(BaseModel):
 
 
 # =====================================================
-# REGISTER + SEND OTP
+# REGISTER
 # =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
@@ -98,28 +93,20 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 
     otp = str(random.randint(1000, 9999))
 
-    db.query(OTPTable).filter(
-        OTPTable.email == data.email
-    ).delete()
+    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-    db.add(
-        OTPTable(
-            email=data.email,
-            otp=otp,
-            extra=json.dumps(data.dict()),
-            is_used=False
-        )
-    )
+    db.add(OTPTable(
+        email=data.email,
+        otp=otp,
+        extra=json.dumps(data.dict()),
+        is_used=False
+    ))
     db.commit()
 
     send_email(
         data.email,
         "BKNR ERP – OTP Verification",
-        f"""
-        <h3>Your OTP</h3>
-        <h1>{otp}</h1>
-        <p>Valid for 10 minutes</p>
-        """
+        f"<h3>Your OTP</h3><h1>{otp}</h1><p>Valid for 10 minutes</p>"
     )
 
     return {"message": "OTP sent"}
@@ -147,7 +134,7 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# SET PASSWORD + CREATE COMPANY + ADMIN USER
+# SET PASSWORD
 # =====================================================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
@@ -162,7 +149,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
-    # -------- COMPANY --------
+    # ---------- COMPANY ----------
     company = db.query(Company).filter(
         Company.email == extra["email"]
     ).first()
@@ -172,31 +159,27 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
             company_name=extra["company_name"],
             address=extra["address"],
             email=extra["email"],
-            company_code=extra["company_name"][:4].upper()
-            + str(random.randint(1000, 9999)),
+            company_code=extra["company_name"][:4].upper() + str(random.randint(1000, 9999)),
             is_active=True
         )
         db.add(company)
         db.commit()
         db.refresh(company)
 
-    # -------- USER CHECK --------
-    existing_user = db.query(User).filter(
+    # ---------- USER ----------
+    if db.query(User).filter(
         User.email == extra["email"],
         User.company_id == company.id
-    ).first()
+    ).first():
+        raise HTTPException(400, "User already exists")
 
-    if existing_user:
-        raise HTTPException(400, "User already exists. Please login.")
-
-    # -------- CREATE USER --------
     user = User(
         company_id=company.id,
         name=extra["user_name"],
         designation=extra["designation"],
         email=extra["email"],
         mobile=extra["mobile"],
-        password=hash_password(data.password),  # SAFE
+        password=hash_password(data.password),   # ✅ SAFE
         role="admin",
         permissions="ALL",
         is_verified=True
@@ -208,17 +191,10 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
     send_email(
         extra["email"],
         "BKNR ERP – Company Created",
-        f"""
-        <h3>Welcome to BKNR ERP</h3>
-        <p>Your Company ID:</p>
-        <h2>{company.company_code}</h2>
-        """
+        f"<h3>Your Company ID</h3><h2>{company.company_code}</h2>"
     )
 
-    return {
-        "message": "Account created successfully",
-        "company_id": company.company_code
-    }
+    return {"message": "Account created", "company_id": company.company_code}
 
 
 # =====================================================
@@ -265,7 +241,7 @@ def forgot_password(data: ForgotReq, db: Session = Depends(get_db)):
     send_email(
         data.email,
         "BKNR ERP – Password Reset",
-        "<p>Please contact admin to reset your password.</p>"
+        "<p>Please contact admin to reset password.</p>"
     )
 
     return {"message": "Reset email sent"}
