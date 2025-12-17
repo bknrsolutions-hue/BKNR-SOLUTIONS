@@ -10,3 +10,4 @@ pandas
 passlib[bcrypt]
 bcrypt
 python-multipart
+requests
