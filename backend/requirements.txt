@@ -11,3 +11,4 @@ passlib[bcrypt]
 bcrypt
 python-multipart
 requests
+weasyprint

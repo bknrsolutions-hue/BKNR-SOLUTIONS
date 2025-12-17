@@ -215,7 +215,15 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         User.company_id == company.id
     ).first()
 
-    if not user or not verify_password(data.password, user.password):
+    if not user:
+        raise HTTPException(400, "Invalid credentials")
+
+    # 🔥 AUTO-FIX old plain passwords
+    if user.password and not user.password.startswith("$pbkdf2"):
+        user.password = hash_password(user.password)
+        db.commit()
+
+    if not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
     request.session["email"] = user.email
