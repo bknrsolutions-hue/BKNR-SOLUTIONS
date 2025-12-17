@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import random, json, os, requests
+import random, json, os
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
