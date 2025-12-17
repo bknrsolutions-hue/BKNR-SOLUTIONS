@@ -11,24 +11,13 @@ from app.database import engine, Base
 app = FastAPI(title="BKNR ERP")
 
 # =====================================================
-# SESSION MIDDLEWARE  (⚠️ MUST BE FIRST)
-# =====================================================
-app.add_middleware(
-    SessionMiddleware,
-    secret_key="bknr_secret_key_2025",
-    session_cookie="bknr_session",
-    max_age=60 * 60 * 8   # 8 hours
-)
-
-# =====================================================
-# AUTH MIDDLEWARE
+# AUTH MIDDLEWARE  (ADD FIRST)
 # =====================================================
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
 
         path = request.url.path
 
-        # open routes
         if (
             path == "/"
             or path.startswith("/auth/")
@@ -39,14 +28,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
         ):
             return await call_next(request)
 
-        # ✅ SAFE session access now
+        # session will exist (because SessionMiddleware wraps this)
         if not request.session.get("email"):
             return RedirectResponse("/", status_code=303)
 
         return await call_next(request)
 
-# add auth middleware AFTER session
 app.add_middleware(AuthMiddleware)
+
+# =====================================================
+# SESSION MIDDLEWARE  (ADD LAST 🔥🔥🔥)
+# =====================================================
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="bknr_secret_key_2025",
+    session_cookie="bknr_session",
+    max_age=60 * 60 * 8
+)
 
 # =====================================================
 # STATIC + TEMPLATES
@@ -55,10 +53,10 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
-# DATABASE TABLES
+# DB TABLES
 # =====================================================
 @app.on_event("startup")
-def on_startup():
+def startup():
     Base.metadata.create_all(bind=engine)
 
 # =====================================================
@@ -75,7 +73,7 @@ def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/home", response_class=HTMLResponse)
-def home(request: Request):
+def home_page(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
 @app.get("/health")
