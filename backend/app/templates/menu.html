@@ -330,21 +330,6 @@ function loadBills(){
 }
 
 
-/******** ATTENDANCE *********/
-function loadAttendance(){
-  let html = `<h3>Attendance</h3>`;
-
-  if(allow("employee_register"))
-    html += `<button onclick="openPage('/employee/create')">Employee Registration</button>`;
-
-  html += `<button onclick="openPage('/attendance/punch')">Attendance Punch</button>`;
-
-  if(allow("face"))
-    html += `<button onclick="openPage('/attendance/face_attendance')">Face Attendance</button>`;
-
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
 
 /******** ADMIN *********/
 function loadAdmin(){
