@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import random, json, os
+import requests
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
@@ -11,6 +12,7 @@ from app.security.password_handler import hash_password, verify_password
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 # =====================================================
 
+
 # ================= BREVO CONFIG =================
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
@@ -18,15 +20,21 @@ BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 SENDER_EMAIL = "bknr.solutions@gmail.com"
 SENDER_NAME = "BKNR ERP"
 
-# =====================================================
+# =================================================
 def send_email(to_email: str, subject: str, html_content: str):
+
     if not BREVO_API_KEY:
         print("❌ BREVO_API_KEY missing")
-        return
+        return False
 
     payload = {
-        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
-        "to": [{"email": to_email}],
+        "sender": {
+            "email": SENDER_EMAIL,
+            "name": SENDER_NAME
+        },
+        "to": [
+            {"email": to_email}
+        ],
         "subject": subject,
         "htmlContent": html_content
     }
@@ -37,10 +45,20 @@ def send_email(to_email: str, subject: str, html_content: str):
         "content-type": "application/json"
     }
 
-    res = requests.post(BREVO_URL, json=payload, headers=headers)
+    try:
+        res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
 
-    if res.status_code >= 400:
-        print("❌ Email failed:", res.text)
+        if res.status_code >= 400:
+            print("❌ Brevo email failed:", res.text)
+            return False
+
+        print("✅ Email sent to:", to_email)
+        return True
+
+    except Exception as e:
+        print("❌ Brevo exception:", e)
+        return False
+
 
 # ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
