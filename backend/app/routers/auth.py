@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import random, json, smtplib
-from email.mime.text import MIMEText
+import random, json, os, requests
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
@@ -12,23 +11,36 @@ from app.security.password_handler import hash_password, verify_password
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 # =====================================================
 
-# ================= SMTP CONFIG =================
-SMTP_EMAIL = "bknr.solutions@gmail.com"      # ✔ your gmail
-SMTP_PASSWORD = "YOUR_APP_PASSWORD"         # ✔ gmail app password
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
+# ================= BREVO CONFIG =================
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
-def send_email(to_email: str, subject: str, body: str):
-    msg = MIMEText(body)
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = to_email
-    msg["Subject"] = subject
+SENDER_EMAIL = "bknr.solutions@gmail.com"
+SENDER_NAME = "BKNR ERP"
 
-    server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-    server.starttls()
-    server.login(SMTP_EMAIL, SMTP_PASSWORD)
-    server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
-    server.quit()
+# =====================================================
+def send_email(to_email: str, subject: str, html_content: str):
+    if not BREVO_API_KEY:
+        print("❌ BREVO_API_KEY missing")
+        return
+
+    payload = {
+        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
+    res = requests.post(BREVO_URL, json=payload, headers=headers)
+
+    if res.status_code >= 400:
+        print("❌ Email failed:", res.text)
 
 # ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
@@ -66,7 +78,6 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 
     otp = str(random.randint(1000, 9999))
 
-    # delete old OTP
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
     db.add(
@@ -79,14 +90,17 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     )
     db.commit()
 
-    # send OTP email
     send_email(
         data.email,
-        "BKNR ERP - OTP Verification",
-        f"Your OTP is: {otp}"
+        "BKNR ERP – OTP Verification",
+        f"""
+        <h3>Your OTP</h3>
+        <h2>{otp}</h2>
+        <p>Valid for 10 minutes</p>
+        """
     )
 
-    return {"message": "OTP sent to email"}
+    return {"message": "OTP sent"}
 
 # =====================================================
 # VERIFY OTP
@@ -109,7 +123,7 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
     return {"message": "OTP verified"}
 
 # =====================================================
-# SET PASSWORD + CREATE COMPANY + ADMIN USER
+# SET PASSWORD + CREATE COMPANY + ADMIN
 # =====================================================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
@@ -124,7 +138,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
-    # ---------- COMPANY ----------
+    # -------- COMPANY --------
     company = db.query(Company).filter(
         Company.email == extra["email"]
     ).first()
@@ -142,17 +156,14 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(company)
 
-    # ---------- USER ----------
-    user = db.query(User).filter(
+    # -------- USER --------
+    if db.query(User).filter(
         User.email == extra["email"],
         User.company_id == company.id
-    ).first()
+    ).first():
+        raise HTTPException(400, "User already exists")
 
-    if user:
-        raise HTTPException(400, "User already exists. Please login.")
-
-    # 🔥 bcrypt limit fix → password trimmed to 72
-    safe_password = data.password[:72]
+    safe_password = data.password[:72]  # bcrypt fix
 
     user = User(
         company_id=company.id,
@@ -171,12 +182,16 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     send_email(
         extra["email"],
-        "BKNR ERP - Company Created",
-        f"Your Company ID is: {company.company_code}"
+        "BKNR ERP – Company Created",
+        f"""
+        <h3>Welcome to BKNR ERP</h3>
+        <p>Your Company ID:</p>
+        <h2>{company.company_code}</h2>
+        """
     )
 
     return {
-        "message": "Password set successfully",
+        "message": "Account created",
         "company_id": company.company_code
     }
 
@@ -201,7 +216,6 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password[:72], user.password):
         raise HTTPException(400, "Invalid credentials")
 
-    # session
     request.session["email"] = user.email
     request.session["company_id"] = company.id
     request.session["company_code"] = company.company_code
@@ -223,8 +237,8 @@ def forgot_password(data: ForgotReq, db: Session = Depends(get_db)):
 
     send_email(
         data.email,
-        "BKNR ERP - Password Reset",
-        "Contact admin to reset password (auto reset coming soon)"
+        "BKNR ERP – Password Reset",
+        "<p>Please contact admin to reset password.</p>"
     )
 
     return {"message": "Reset email sent"}

@@ -118,7 +118,7 @@ Already Registered?
 <h2>OTP Verification</h2>
 
 <label>Enter OTP</label>
-<input id="otp" maxlength="6">
+<input id="otp" maxlength="4">
 
 <button onclick="verifyOTP()">Verify OTP</button>
 <div id="otpErr" class="msg error"></div>
@@ -196,7 +196,7 @@ async function sendOTP(){
     designation:designation.value.trim(),
     address:address.value.trim(),
     mobile:mobile.value.trim(),
-    email:email.value.trim()
+    email:email.value.trim().toLowerCase()
   };
 
   if(Object.values(obj).includes("")){
@@ -278,8 +278,8 @@ async function doLogin(){
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
-      company_id:login_company_id.value,
-      email:login_email.value,
+      company_id:login_company_id.value.trim(),
+      email:login_email.value.trim().toLowerCase(),
       password:login_pwd.value.substring(0,20)
     })
   });
@@ -300,12 +300,12 @@ async function sendResetLink(){
   let res=await fetch(`${BASE}/forgot-password`,{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({email:forgot_email.value})
+    body:JSON.stringify({email:forgot_email.value.trim().toLowerCase()})
   });
 
   let data=await res.json();
   if(res.ok){
-    forgotOk.innerHTML="Reset link sent";
+    forgotOk.innerHTML="Reset email sent";
     forgotOk.style.display="block";
   }else{
     forgotErr.innerHTML=data.detail;
