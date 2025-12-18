@@ -2,195 +2,242 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SOAKING REPORT - BKNR SOLUTIONS</title>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<title>SOAKING REPORT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --accent:#003366;
-  --muted:#a3bcd6;
-  --light:#eaf4ff;
+  --primary:#003366;
+  --light:#f3f7ff;
+  --border:#cfd9ea;
+  --card:#ffffff;
+}
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;padding:18px;background:var(--light)}
+
+.page-title{
+  text-align:center;font-size:22px;font-weight:700;
+  color:var(--primary);margin-bottom:15px
 }
 
-body{font-family:Arial; background:var(--light); margin:0;}
-h2{text-align:center;color:var(--accent);margin:20px 0;font-size:20px;font-weight:700;}
-
-.controls{
-    width:92%;max-width:1200px;margin:10px auto;display:flex;gap:10px;flex-wrap:wrap;
+/* FILTERS */
+.filters{
+  display:flex;gap:10px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--border);
+  padding:12px;border-radius:8px;
+  max-width:1400px;margin:0 auto 12px;
 }
-.filter{
-    display:flex;flex-direction:column;width:19%;min-width:140px;
+.fbox{display:flex;flex-direction:column;gap:4px}
+.fbox label{font-size:12px;font-weight:700;color:var(--primary)}
+select,input[type=date]{
+  padding:7px;border:1px solid var(--border);
+  border-radius:5px;min-width:150px;font-size:13px
 }
-.filter label{
-    font-weight:600;color:var(--accent);margin-bottom:6px;font-size:13px;
-}
-.filter select,input{
-    padding:8px;border:1px solid var(--muted);border-radius:6px;background:#fff;font-size:14px;
+#searchBox{
+  padding:8px;width:260px;
+  border:1px solid var(--border);
+  border-radius:5px;font-size:13px
 }
 
 /* ACTION BAR */
-.action-bar{width:92%;max-width:1200px;margin:5px auto;display:flex;justify-content:flex-end;}
+.actions{
+  max-width:1400px;margin:8px auto;
+  display:flex;justify-content:space-between;align-items:center
+}
+#rowCount{font-size:13px;color:#444}
+
+/* MENU */
+.menu-box{position:relative}
 .dots{
-    background:var(--accent);color:white;width:38px;height:38px;border-radius:8px;cursor:pointer;
-    display:flex;justify-content:center;align-items:center;font-size:24px;margin-left:8px;
+  width:36px;height:36px;background:var(--primary);
+  color:#fff;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer
 }
-.menu-box{
-    position:absolute;top:42px;right:0;background:white;border:1px solid #ddd;border-radius:6px;
-    width:160px;display:none;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:100;
+.menu-list{
+  position:absolute;right:0;top:42px;
+  width:220px;background:#fff;
+  border-radius:8px;border:1px solid #ddd;
+  display:none;z-index:999;
+  box-shadow:0 8px 22px rgba(0,0,0,.12)
 }
-.menu-box div{padding:10px;cursor:pointer;border-bottom:1px solid #eee;font-size:14px;}
-.menu-box div:hover{background:#f0f8ff}
+.menu-list div{
+  padding:10px;font-size:14px;
+  border-bottom:1px solid #f0f0f0;
+  cursor:pointer
+}
+.menu-list div:hover{background:#eef5ff}
 
 /* TABLE */
-.table-container{
-  width:92%;max-width:1200px;margin:10px auto 30px;overflow-x:auto;background:white;
-  border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.06);min-width:1100px;
+.table-wrap{
+  max-width:1400px;margin:0 auto;
+  background:#fff;border-radius:10px;
+  overflow:auto;border:1px solid #dce6f4;
+  box-shadow:0 6px 22px rgba(0,0,0,.06)
 }
-table{width:100%;border-collapse:collapse;}
-th,td{padding:9px 10px;border-bottom:1px solid #eee;font-size:13px;white-space:nowrap;}
-th{background:var(--accent);color:white;position:sticky;top:0;z-index:10;}
-tr:hover{background:#f5fbff;cursor:pointer;}
-tr.selected{background:#cfe9ff!important;}
-
-tfoot td{font-weight:700;background:#f8fbff;padding:10px;border-top:2px solid var(--muted);}
-
-@media(max-width:1000px){.filter{width:48%;}}
-@media(max-width:500px){.filter{width:100%;}}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+thead th{
+  background:var(--primary);color:#fff;
+  padding:10px;font-size:13px;position:sticky;top:0
+}
+tbody td{
+  padding:8px;font-size:13px;
+  border-bottom:1px solid #eee;white-space:nowrap
+}
+tbody tr:hover{background:#eef6ff}
+tfoot td{
+  padding:10px;font-weight:700;
+  background:#f8fbff;border-top:2px solid #c4d1e0
+}
 </style>
 </head>
 
 <body>
 
-<h2>SOAKING REPORT</h2>
+<div class="page-title">SOAKING REPORT</div>
 
-<form id="filterForm" method="GET" action="/reports/soaking_report">
+<!-- FILTERS -->
+<div class="filters">
+  <div class="fbox"><label>From Date</label><input type="date" id="f_from"></div>
+  <div class="fbox"><label>To Date</label><input type="date" id="f_to"></div>
 
-<div class="controls">
+  <div class="fbox"><label>Batch</label>
+    <select id="f_batch">
+      <option value="">All</option>
+      {% for b in batches %}<option>{{b}}</option>{% endfor %}
+    </select>
+  </div>
 
-    <div class="filter">
-        <label>Batch</label>
-        <select name="batch">
-            <option value="">All</option>
-            {% for b in batches %}
-            <option value="{{b}}" {% if selected_batch==b %}selected{% endif %}>{{b}}</option>
-            {% endfor %}
-        </select>
-    </div>
+  <div class="fbox"><label>Count</label>
+    <select id="f_count">
+      <option value="">All</option>
+      {% for c in counts %}<option>{{c}}</option>{% endfor %}
+    </select>
+  </div>
 
-    <div class="filter">
-        <label>Count</label>
-        <select name="count">
-            <option value="">All</option>
-            {% for c in counts %}
-            <option value="{{c}}" {% if selected_count==c %}selected{% endif %}>{{c}}</option>
-            {% endfor %}
-        </select>
-    </div>
+  <div class="fbox"><label>Chemical</label>
+    <select id="f_chemical">
+      <option value="">All</option>
+      {% for c in chemicals %}<option>{{c}}</option>{% endfor %}
+    </select>
+  </div>
 
-    <div class="filter">
-        <label>Variety</label>
-        <select name="variety">
-            <option value="">All</option>
-            {% for v in varieties %}
-            <option value="{{v}}" {% if selected_variety==v %}selected{% endif %}>{{v}}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="filter">
-        <label>Species</label>
-        <select name="species">
-            <option value="">All</option>
-            {% for s in species %}
-            <option value="{{s}}" {% if selected_species==s %}selected{% endif %}>{{s}}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="filter">
-        <label>Date</label>
-        <select name="date">
-            <option value="">All</option>
-            {% for d in dates %}
-            <option value="{{d}}" {% if selected_date==d %}selected{% endif %}>{{d}}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-</div>
-</form>
-
-<div class="action-bar">
-    <span id="rowCount" style="font-size:13px;color:#444;">Showing 0 rows</span>
-    <div style="position:relative;">
-        <div class="dots" onclick="toggleMenu()">⋮</div>
-        <div class="menu-box" id="menu">
-            <div onclick="printRows()">🖨 Print</div>
-            <div onclick="exportPDF()">📄 Export PDF</div>
-            <div onclick="exportExcel()">📊 Export Excel</div>
-        </div>
-    </div>
+  <input id="searchBox" placeholder="Search batch / chemical">
 </div>
 
-<div class="table-container">
-<table id="reportTable">
+<!-- ACTIONS -->
+<div class="actions">
+  <div id="rowCount">0 rows</div>
+  <div class="menu-box">
+    <div class="dots" id="dotsBtn">⋮</div>
+    <div class="menu-list" id="menu">
+      <div onclick="editSelected()">✏️ Edit Selected</div>
+      <div onclick="deleteSelected()">🗑 Delete Selected</div>
+      <div onclick="printTable()">🖨 Print</div>
+      <div onclick="exportExcel()">📊 Export Excel</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+<table>
 <thead>
 <tr>
-    <th><input type="checkbox" id="chk_all"></th>
-    <th>ID</th><th>Batch</th><th>Count</th><th>Variety</th>
-    <th>Species</th><th>In Qty</th><th>Chem%</th><th>Chem Qty</th>
-    <th>Salt%</th><th>Salt Qty</th><th>Date</th><th>Email</th>
+  <th><input type="checkbox" id="chk_all"></th>
+  <th>ID</th>
+  <th>Date</th>
+  <th>Batch</th>
+  <th>Count</th>
+  <th>Qty (Kg)</th>
+  <th>Chemical</th>
+  <th>Chem %</th>
+  <th>Chem Qty</th>
+  <th>Salt %</th>
+  <th>Salt Qty</th>
 </tr>
 </thead>
 
 <tbody id="tbody">
-{% for r in data %}
+{% for r in rows %}
 <tr data-id="{{r.id}}">
   <td><input type="checkbox" class="rowCheck"></td>
-  <td>{{r.id}}</td><td>{{r.batch_number}}</td><td>{{r.in_count}}</td>
-  <td>{{r.variety_name}}</td><td>{{r.species}}</td><td>{{r.in_qty}}</td>
-  <td>{{r.chemical_percent}}</td><td>{{r.chemical_qty}}</td>
-  <td>{{r.salt_percent}}</td><td>{{r.salt_qty}}</td>
-  <td>{{r.date}}</td><td>{{r.email}}</td>
+  <td>{{r.id}}</td>
+  <td>{{r.date}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.in_count}}</td>
+  <td class="qty">{{r.in_qty}}</td>
+  <td>{{r.chemical_name}}</td>
+  <td>{{r.chemical_percent}}</td>
+  <td class="chem">{{(r.in_qty * r.chemical_percent / 100) | round(2)}}</td>
+  <td>{{r.salt_percent}}</td>
+  <td class="salt">{{(r.in_qty * r.salt_percent / 100) | round(2)}}</td>
 </tr>
 {% endfor %}
 </tbody>
 
 <tfoot>
 <tr>
-  <td colspan="6">Totals</td>
-  <td id="t_qty">0</td><td></td><td id="t_chem">0</td>
-  <td></td><td id="t_salt">0</td><td colspan="2"></td>
+  <td colspan="5">TOTAL</td>
+  <td id="tot_qty">0</td>
+  <td colspan="2"></td>
+  <td id="tot_chem">0</td>
+  <td></td>
+  <td id="tot_salt">0</td>
 </tr>
 </tfoot>
 </table>
 </div>
 
-
 <script>
-const chk_all=document.getElementById("chk_all");
-chk_all.addEventListener("change",()=>{document.querySelectorAll(".rowCheck").forEach(c=>c.checked=chk_all.checked);calc()});
-document.querySelectorAll(".rowCheck").forEach(c=>c.onchange=calc);
+const rows=[...document.querySelectorAll("#tbody tr")];
+const num=v=>parseFloat(v)||0;
 
-function calc(){
-let qty=0,chem=0,salt=0;
-document.querySelectorAll("#tbody tr").forEach(r=>{
-  if(r.querySelector(".rowCheck").checked){
-    qty+=+(r.children[6].innerText||0);
-    chem+=+(r.children[8].innerText||0);
-    salt+=+(r.children[10].innerText||0);
-}})
-document.getElementById("t_qty").innerText=qty.toFixed(2);
-document.getElementById("t_chem").innerText=chem.toFixed(2);
-document.getElementById("t_salt").innerText=salt.toFixed(2);
-document.getElementById("rowCount").innerText=`Selected ${document.querySelectorAll(".rowCheck:checked").length} rows`;
+/* MENU */
+dotsBtn.onclick=e=>{
+ e.stopPropagation();
+ menu.style.display=menu.style.display==="block"?"none":"block";
+};
+document.onclick=()=>menu.style.display="none";
+
+/* TOTALS */
+function totals(v){
+ let q=0,c=0,s=0;
+ v.forEach(r=>{
+  q+=num(r.querySelector(".qty").innerText);
+  c+=num(r.querySelector(".chem").innerText);
+  s+=num(r.querySelector(".salt").innerText);
+ });
+ tot_qty.innerText=q.toFixed(2);
+ tot_chem.innerText=c.toFixed(2);
+ tot_salt.innerText=s.toFixed(2);
 }
-function toggleMenu(){document.getElementById("menu").style.display^="block";}
-function printRows(){open(`/reports/soaking/print`)}
-function exportPDF(){open(`/reports/soaking/pdf`)}
-function exportExcel(){open(`/reports/soaking/xlsx`)}
-document.querySelectorAll(".controls select").forEach(s=>s.onchange=()=>filterForm.submit());
+
+/* FILTER */
+function applyFilters(){
+ let vis=[];
+ rows.forEach(r=>{
+  let ok=true;
+  if(f_batch.value && r.children[3].innerText!==f_batch.value) ok=false;
+  if(f_count.value && r.children[4].innerText!==f_count.value) ok=false;
+  if(f_chemical.value && r.children[6].innerText!==f_chemical.value) ok=false;
+  if(searchBox.value && !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())) ok=false;
+  r.style.display=ok?"":"none";
+  if(ok) vis.push(r);
+ });
+ rowCount.innerText=`${vis.length} rows`;
+ totals(vis);
+}
+[f_batch,f_count,f_chemical].forEach(e=>e.onchange=applyFilters);
+searchBox.oninput=applyFilters;
+applyFilters();
+
+/* ACTIONS */
+const ids=()=>[...document.querySelectorAll(".rowCheck:checked")].map(c=>c.closest("tr").dataset.id);
+function editSelected(){if(ids().length!==1)alert("Select one");else location=`/processing/soaking/edit/${ids()[0]}`;}
+function deleteSelected(){alert("Delete API");}
+function printTable(){window.print();}
+function exportExcel(){location=`/reports/soaking/export_excel?ids=${ids().join(",")}`;}
 </script>
 
 </body>

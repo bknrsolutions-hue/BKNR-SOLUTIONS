@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Processing Summary – BKNR ERP</title>
+
+<style>
+:root{
+  --border:#d6dde7;
+  --text:#1f2937;
+}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:#f4f6f9;color:var(--text);padding:18px}
+
+/* ================= HEADER ================= */
+.header{max-width:1900px;margin:0 auto 14px}
+.header h2{margin:0;font-size:26px;color:#1f3a5f}
+.header p{margin:4px 0 0;font-size:13px;color:#6b7280}
+
+/* ================= FILTERS ================= */
+.filters{
+  max-width:1900px;margin:16px auto;
+  background:#fff;padding:14px;border-radius:10px;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:14px;border:1px solid var(--border)
+}
+.filters label{font-size:12px;font-weight:600;color:#475569}
+.filters select,.filters input{
+  margin-top:6px;padding:8px;
+  border-radius:6px;border:1px solid var(--border)
+}
+
+/* ================= KPI CARDS ================= */
+.cards{
+  max-width:1200px;margin:18px auto;
+  display:flex;gap:6px;overflow-x:auto
+}
+.card{
+  min-width:135px;padding:14px;
+  border-radius:12px;border:1px solid var(--border);
+  cursor:pointer
+}
+.card span{font-size:12px;color:#475569}
+.card h3{margin:6px 0 0;font-size:15px;font-weight:700}
+
+.card.gate{background:#eef2ff}
+.card.rmp{background:#ecfeff}
+.card.de{background:#f0fdf4}
+.card.peel{background:#fff7ed}
+.card.soak{background:#fdf4ff}
+.card.grade{background:#fefce8}
+.card.prod{background:#fff1f2}
+.card.yield{background:#e0f2fe}
+
+/* ================= SECTION ================= */
+.section{
+  max-width:1900px;margin:26px auto;
+  background:#fff;padding:18px;
+  border-radius:14px;border:1px solid var(--border)
+}
+.section-head{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:10px
+}
+.section-head h3{margin:0;font-size:18px;color:#1f3a5f}
+.back{cursor:pointer;font-size:13px;color:#475569}
+
+/* ================= TABLE ================= */
+table{width:100%;border-collapse:collapse}
+th{
+  background:#f1f5f9;
+  padding:9px;font-size:12px;
+  border-bottom:1px solid var(--border);
+  text-align:left
+}
+td{
+  padding:8px;font-size:12px;
+  border-bottom:1px solid #edf2f7
+}
+tr:hover{background:#f8fafc}
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+  <h2>Processing Summary</h2>
+  <p>Gate Entry → RMP → De-Heading → Peeling → Soaking → Grading → Production</p>
+</div>
+
+<!-- ================= FILTERS ================= -->
+<form method="get">
+<div class="filters">
+  <div>
+    <label>Batch Number</label>
+    <select name="batch">
+      <option value="">All</option>
+      {% for b in batches %}
+      <option value="{{ b }}" {% if selected_batch==b %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>From Date</label>
+    <input type="date" name="from_date" value="{{ from_date }}">
+  </div>
+  <div>
+    <label>To Date</label>
+    <input type="date" name="to_date" value="{{ to_date }}">
+  </div>
+</div>
+</form>
+
+<!-- ================= KPI CARDS ================= -->
+<div class="cards">
+  <div class="card gate" onclick="go('gate')"><span>Total Batches</span><h3>{{ total_batches }}</h3></div>
+  <div class="card rmp" onclick="go('rmp')"><span>RMP Qty (KG)</span><h3>{{ total_rmp }}</h3></div>
+  <div class="card de" onclick="go('de')"><span>De-Heading Qty</span><h3>{{ total_de }}</h3></div>
+  <div class="card peel" onclick="go('peel')"><span>Peeling Qty</span><h3>{{ total_peeling }}</h3></div>
+  <div class="card soak" onclick="go('soak')"><span>Soaking Qty</span><h3>{{ total_soaking }}</h3></div>
+  <div class="card grade" onclick="go('grade')"><span>Grading Qty</span><h3>{{ total_grading }}</h3></div>
+  <div class="card prod" onclick="go('prod')"><span>Production Qty</span><h3>{{ total_production }}</h3></div>
+  <div class="card yield"><span>Overall Yield %</span><h3>{{ overall_yield }}%</h3></div>
+</div>
+
+<!-- ================= GATE ENTRY ================= -->
+<div id="gate" class="section">
+<div class="section-head"><h3>Gate Entry</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Challan</th><th>Gate Pass</th>
+<th>Supplier</th><th>Location</th><th>Vehicle</th>
+<th>Material Boxes</th><th>Empty Boxes</th><th>Ice Boxes</th><th>Species</th>
+</tr>
+{% for r in gate_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.challan_number }}</td><td>{{ r.gate_pass_number }}</td>
+<td>{{ r.supplier_name }}</td><td>{{ r.purchasing_location }}</td>
+<td>{{ r.vehicle_number }}</td>
+<td>{{ r.no_of_material_boxes }}</td>
+<td>{{ r.no_of_empty_boxes }}</td>
+<td>{{ r.no_of_ice_boxes }}</td>
+<td>{{ r.species }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= RMP ================= -->
+<div id="rmp" class="section">
+<div class="section-head"><h3>Raw Material Purchasing</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Supplier</th><th>Variety</th><th>Species</th>
+<th>Count</th><th>G1</th><th>G2</th><th>DC</th>
+<th>Received Qty</th><th>Rate</th><th>Amount</th><th>Boxes</th><th>Remarks</th>
+</tr>
+{% for r in rmp_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.supplier_name }}</td><td>{{ r.variety_name }}</td><td>{{ r.species }}</td>
+<td>{{ r.count }}</td><td>{{ r.g1_qty }}</td><td>{{ r.g2_qty }}</td><td>{{ r.dc_qty }}</td>
+<td>{{ r.received_qty }}</td><td>{{ r.rate_per_kg }}</td><td>{{ r.amount }}</td>
+<td>{{ r.material_boxes }}</td><td>{{ r.remarks }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= DE HEADING ================= -->
+<div id="de" class="section">
+<div class="section-head"><h3>De-Heading</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>HOSO Count</th>
+<th>HOSO Qty</th><th>HLSO Qty</th><th>Yield %</th>
+<th>Contractor</th><th>Rate</th><th>Amount</th><th>Species</th>
+</tr>
+{% for r in de_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.hoso_count }}</td><td>{{ r.hoso_qty }}</td><td>{{ r.hlso_qty }}</td>
+<td>{{ r.yield_percent }}</td><td>{{ r.contractor }}</td>
+<td>{{ r.rate_per_kg }}</td><td>{{ r.amount }}</td><td>{{ r.species }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= PEELING ================= -->
+<div id="peel" class="section">
+<div class="section-head"><h3>Peeling</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Variety</th>
+<th>HLSO Count</th><th>HLSO Qty</th><th>Peeled Qty</th>
+<th>Yield %</th><th>Contractor</th><th>Rate</th><th>Amount</th>
+</tr>
+{% for r in peeling_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.variety_name }}</td><td>{{ r.hlso_count }}</td><td>{{ r.hlso_qty }}</td>
+<td>{{ r.peeled_qty }}</td><td>{{ r.yield_percent }}</td>
+<td>{{ r.contractor_name }}</td><td>{{ r.rate }}</td><td>{{ r.amount }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= SOAKING ================= -->
+<div id="soak" class="section">
+<div class="section-head"><h3>Soaking</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Variety</th><th>In Count</th>
+<th>In Qty</th><th>Chemical</th><th>Chem %</th><th>Chem Qty</th>
+<th>Salt %</th><th>Salt Qty</th><th>Species</th>
+</tr>
+{% for r in soaking_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.variety_name }}</td><td>{{ r.in_count }}</td><td>{{ r.in_qty }}</td>
+<td>{{ r.chemical_name }}</td><td>{{ r.chemical_percent }}</td><td>{{ r.chemical_qty }}</td>
+<td>{{ r.salt_percent }}</td><td>{{ r.salt_qty }}</td><td>{{ r.species }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= GRADING ================= -->
+<div id="grade" class="section">
+<div class="section-head"><h3>Grading</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Variety</th>
+<th>Graded Count</th><th>HOSO Count</th><th>Quantity</th><th>Species</th>
+</tr>
+{% for r in grading_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.variety_name }}</td><td>{{ r.graded_count }}</td>
+<td>{{ r.hoso_count }}</td><td>{{ r.quantity }}</td><td>{{ r.species }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= PRODUCTION ================= -->
+<div id="prod" class="section">
+<div class="section-head"><h3>Production</h3><div class="back" onclick="topScroll()">← Back</div></div>
+<table>
+<tr>
+<th>Date</th><th>Time</th><th>Batch</th><th>Brand</th><th>Variety</th>
+<th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th>
+<th>MC</th><th>Loose</th><th>Qty</th><th>Type</th><th>Species</th>
+</tr>
+{% for r in production_rows %}
+<tr>
+<td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.batch_number }}</td>
+<td>{{ r.brand }}</td><td>{{ r.variety_name }}</td>
+<td>{{ r.glaze }}</td><td>{{ r.freezer }}</td><td>{{ r.packing_style }}</td>
+<td>{{ r.grade }}</td><td>{{ r.no_of_mc }}</td><td>{{ r.loose }}</td>
+<td>{{ r.production_qty }}</td><td>{{ r.production_type }}</td><td>{{ r.species }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<script>
+function go(id){document.getElementById(id).scrollIntoView({behavior:"smooth"})}
+function topScroll(){window.scrollTo({top:0,behavior:"smooth"})}
+</script>
+
+</body>
+</html>

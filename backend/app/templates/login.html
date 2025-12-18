@@ -73,7 +73,8 @@ button:hover{background:#064a90}
   padding:10px;
   margin-top:10px;
   border-radius:6px;
-  text-align:center
+  text-align:center;
+  font-size:13px
 }
 .error{background:#ffd3d3;color:#ae0000;border:1px solid red}
 .success{background:#d2ffe1;color:#005524;border:1px solid green}
@@ -174,17 +175,24 @@ Already Registered?
 
 <div id="forgotErr" class="msg error"></div>
 <div id="forgotOk" class="msg success"></div>
+
+<div class="link">
+<span onclick="showBox('loginBox')">Back to Login</span>
+</div>
 </div>
 
 <script>
 const BASE="/auth";
 let regEmail="";
 
+/* ================= SWITCH UI ================= */
 function showBox(id){
   document.querySelectorAll(".card").forEach(x=>x.style.display="none");
   document.getElementById(id).style.display="block";
 }
-showBox("registerBox");
+
+/* DEFAULT SCREEN */
+showBox("loginBox");
 
 /* ================= REGISTER ================= */
 async function sendOTP(){
@@ -243,6 +251,7 @@ async function verifyOTP(){
 /* ================= PASSWORD ================= */
 async function savePassword(){
   passErr.style.display="none";
+  passOk.style.display="none";
 
   if(pass1.value!==pass2.value){
     passErr.innerHTML="Passwords do not match";
@@ -261,9 +270,9 @@ async function savePassword(){
 
   let data=await res.json();
   if(res.ok){
-    passOk.innerHTML="Password saved. Company ID: <b>"+data.company_id+"</b>";
+    passOk.innerHTML="Account created. Company ID: <b>"+data.company_id+"</b>";
     passOk.style.display="block";
-    setTimeout(()=>showBox("loginBox"),2000);
+    setTimeout(()=>showBox("loginBox"),2500);
   }else{
     passErr.innerHTML=data.detail;
     passErr.style.display="block";
@@ -296,6 +305,7 @@ async function doLogin(){
 /* ================= FORGOT ================= */
 async function sendResetLink(){
   forgotErr.style.display="none";
+  forgotOk.style.display="none";
 
   let res=await fetch(`${BASE}/forgot-password`,{
     method:"POST",
@@ -305,7 +315,7 @@ async function sendResetLink(){
 
   let data=await res.json();
   if(res.ok){
-    forgotOk.innerHTML="Reset email sent";
+    forgotOk.innerHTML="Reset link sent to your email";
     forgotOk.style.display="block";
   }else{
     forgotErr.innerHTML=data.detail;

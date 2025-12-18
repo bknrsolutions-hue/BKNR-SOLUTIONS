@@ -106,6 +106,7 @@ from app.routers.dashboard_router import router as dashboard_router
 from app.routers.inventory_management.stock_entry import router as stock_entry_router
 from app.routers.inventory_management.pending_orders import router as pending_orders_router
 from app.routers.page_loader import router as page_loader_router
+from app.routers.summary.processing import router as summary_processing_router
 
 routers = [
     auth_router,
@@ -120,6 +121,8 @@ routers = [
     stock_entry_router,
     pending_orders_router,
     page_loader_router,
+
+    summary_processing_router,
 ]
 
 for r in routers:

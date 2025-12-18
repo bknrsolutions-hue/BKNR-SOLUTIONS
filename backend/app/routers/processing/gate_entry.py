@@ -8,12 +8,8 @@ from app.database import get_db
 from app.database.models.processing import GateEntry
 from app.database.models.criteria import suppliers, purchasing_locations, vehicle_numbers
 
-router = APIRouter(
-    tags=["GATE ENTRY"]
-)
-
+router = APIRouter(tags=["GATE ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
-
 
 # =========================================================
 # LOAD PAGE
@@ -51,13 +47,11 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    today = date.today()
-
     today_rows = (
         db.query(GateEntry)
         .filter(
             GateEntry.company_id == comp,
-            GateEntry.date == today
+            GateEntry.date == date.today()
         )
         .order_by(GateEntry.id.desc())
         .all()
@@ -75,7 +69,6 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
             "message": request.session.pop("message", None)
         }
     )
-
 
 # =========================================================
 # SAVE NEW ENTRY
@@ -101,22 +94,17 @@ def save_entry(
     if not email or not comp:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # ---------------- COMPANY-WISE UNIQUE CHECKS ----------------
-    if db.query(GateEntry).filter(
+    # -------- COMPANY-WISE UNIQUE CHECK --------
+    dup = db.query(GateEntry).filter(
         GateEntry.company_id == comp,
-        GateEntry.batch_number == batch_number
-    ).first():
-        request.session["message"] = "❌ Batch number already exists!"
+        (GateEntry.batch_number == batch_number) |
+        (GateEntry.challan_number == challan_number)
+    ).first()
+
+    if dup:
+        request.session["message"] = "❌ Batch / Challan already exists!"
         return RedirectResponse("/processing/gate_entry", status_code=303)
 
-    if db.query(GateEntry).filter(
-        GateEntry.company_id == comp,
-        GateEntry.challan_number == challan_number
-    ).first():
-        request.session["message"] = "❌ Challan number already exists!"
-        return RedirectResponse("/processing/gate_entry", status_code=303)
-
-    # ---------------- INSERT ----------------
     row = GateEntry(
         batch_number=batch_number,
         challan_number=challan_number,
@@ -139,49 +127,29 @@ def save_entry(
     request.session["message"] = "✅ Gate Entry Saved Successfully!"
     return RedirectResponse("/processing/gate_entry", status_code=303)
 
-
 # =========================================================
 # EDIT PAGE
 # =========================================================
 @router.get("/gate_entry/edit/{id}", response_class=HTMLResponse)
 def edit_entry(id: int, request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("email")
-    comp  = request.session.get("company_code")
-
-    if not email or not comp:
+    comp = request.session.get("company_code")
+    if not comp:
         return RedirectResponse("/auth/login", status_code=302)
 
-    row = (
-        db.query(GateEntry)
-        .filter(
-            GateEntry.company_id == comp,
-            GateEntry.id == id
-        )
-        .first()
-    )
+    row = db.query(GateEntry).filter(
+        GateEntry.company_id == comp,
+        GateEntry.id == id
+    ).first()
 
     if not row:
         request.session["message"] = "❌ Record not found!"
         return RedirectResponse("/processing/gate_entry", status_code=303)
 
-    supplier_list = [x.supplier_name for x in db.query(suppliers).filter(suppliers.company_id == comp).all()]
-    location_list = [x.location_name for x in db.query(purchasing_locations).filter(purchasing_locations.company_id == comp).all()]
-    vehicle_list  = [x.vehicle_number for x in db.query(vehicle_numbers).filter(vehicle_numbers.company_id == comp).all()]
-
-    return templates.TemplateResponse(
-        "processing/gate_entry.html",
-        {
-            "request": request,
-            "edit_data": row,
-            "suppliers": supplier_list,
-            "locations": location_list,
-            "vehicles": vehicle_list,
-            "today_data": [],
-            "message": None
-        }
-    )
-
+    return gate_entry_page(request, db=db) | {
+        "edit_data": row,
+        "today_data": []
+    }
 
 # =========================================================
 # UPDATE ENTRY
@@ -215,6 +183,18 @@ def update_entry(
         request.session["message"] = "❌ Record not found!"
         return RedirectResponse("/processing/gate_entry", status_code=303)
 
+    # -------- UNIQUE CHECK (EXCLUDE SELF) --------
+    dup = db.query(GateEntry).filter(
+        GateEntry.company_id == comp,
+        GateEntry.id != id,
+        (GateEntry.batch_number == batch_number) |
+        (GateEntry.challan_number == challan_number)
+    ).first()
+
+    if dup:
+        request.session["message"] = "❌ Batch / Challan already exists!"
+        return RedirectResponse("/processing/gate_entry", status_code=303)
+
     row.batch_number = batch_number
     row.challan_number = challan_number
     row.gate_pass_number = gate_pass_number
@@ -229,7 +209,6 @@ def update_entry(
 
     request.session["message"] = "✅ Gate Entry Updated Successfully!"
     return RedirectResponse("/processing/gate_entry", status_code=303)
-
 
 # =========================================================
 # DELETE ENTRY

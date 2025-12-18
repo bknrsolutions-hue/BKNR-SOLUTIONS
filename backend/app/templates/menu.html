@@ -237,8 +237,9 @@ if(allow("grading_report"))
 if(allow("peeling_report"))
   html += `<button onclick="openPage('/reports/peeling_report')">Peeling Report</button>`;
 
-if(allow("soaking_report"))
-  html += `<button onclick="openPage('/reports/soaking_report')">Soaking Report</button>`;
+if (allow("soaking_report")) 
+  html += `<button onclick="openPage('/reports/soaking')">Soaking Report</button>`;
+
 
 if(allow("production_report"))
   html += `<button onclick="openPage('/reports/production_report')">Production Report</button>`;
@@ -302,12 +303,6 @@ function loadSummaries(){
 
   if(allow("processing_summary"))
     html += `<button onclick="openPage('/summary/processing')">Processing Summary</button>`;
-
-  if(allow("inventory_summary"))
-    html += `<button onclick="openPage('/summary/inventory')">Inventory Summary</button>`;
-
-  if(allow("purchase_summary"))
-    html += `<button onclick="openPage('/summary/purchasing')">Raw Purchase Summary</button>`;
 
   document.getElementById("sideMenu").innerHTML = html;
 }

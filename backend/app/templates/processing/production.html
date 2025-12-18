@@ -1,23 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>PRODUCTION ENTRY - BKNR SOLUTIONS</title>
 
 <style>
- body{font-family:Arial;background:#e6f2ff;margin:0;padding:0;}
- h2{text-align:center;color:#003366;padding:15px;}
- .wrap{width:95%;max-width:1200px;margin:auto;background:#fff;padding:20px;
-      box-shadow:0 0 8px rgba(0,0,0,0.2);border-radius:10px;}
- .row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:12px;}
- .col{flex:1;min-width:260px;}
- label{font-weight:600;color:#003366;}
- select,input{width:100%;padding:8px;border:1px solid #9db7d6;border-radius:6px;background:#f7fbff;}
- .actions{text-align:center;margin-top:15px;}
- button{padding:10px 22px;border:none;border-radius:6px;color:#fff;background:#003366;font-weight:600;cursor:pointer;}
- .clr{background:#777;}
- table{width:95%;margin:20px auto;border-collapse:collapse;background:white;box-shadow:0 0 6px rgba(0,0,0,0.1);}
- th,td{padding:7px;border-bottom:1px solid #ccc;font-size:14px;}th{background:#003366;color:white;}
+/* ================= BASE ================= */
+body{
+  font-family:Arial,sans-serif;
+  background:#e6f2ff;
+  margin:0;
+}
+h2{
+  text-align:center;
+  color:#003366;
+  margin:14px 0;
+  font-size:20px;
+}
+
+/* ================= CARD ================= */
+.wrap{
+  width:98%;
+  max-width:1400px;
+  margin:auto;
+  background:#fff;
+  padding:18px;
+  border-radius:12px;
+  box-shadow:0 0 10px rgba(0,0,0,.15);
+}
+
+/* ================= GRID (6 COLUMNS) ================= */
+.row{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:14px;
+  margin-bottom:12px;
+}
+.col{display:flex;flex-direction:column}
+
+/* ================= FORM ================= */
+label{
+  font-size:13px;
+  font-weight:700;
+  color:#003366;
+  margin-bottom:4px;
+}
+select,input{
+  padding:8px;
+  border:1px solid #9db7d6;
+  border-radius:6px;
+  background:#f7fbff;
+  font-size:14px;
+}
+input[readonly]{background:#eee}
+
+/* ================= ACTIONS ================= */
+.actions{
+  text-align:center;
+  margin-top:16px;
+}
+button{
+  padding:9px 22px;
+  border:none;
+  border-radius:6px;
+  background:#003366;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+.clr{background:#777}
+
+/* ================= TABLE ================= */
+table{
+  width:98%;
+  max-width:1400px;
+  margin:16px auto;
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 0 8px rgba(0,0,0,.12);
+}
+th,td{
+  padding:6px 8px;       /* 🔥 compact height */
+  font-size:13px;
+  text-align:center;
+  border-bottom:1px solid #ccc;
+}
+th{
+  background:#003366;
+  color:#fff;
+}
+tr:hover{background:#e9f1ff;cursor:pointer}
+tr.selected{background:#bed6ff !important}
+
+/* ================= 3 DOT MENU ================= */
+.menu-wrap{
+  width:98%;
+  max-width:1400px;
+  margin:6px auto;
+  text-align:right;
+  display:none;
+  position:relative;
+}
+.menu-btn{
+  background:#003366;
+  color:#fff;
+  border:none;
+  padding:5px 12px;
+  font-size:16px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.dropdown{
+  display:none;
+  position:absolute;
+  right:0;
+  top:38px;
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:8px;
+  width:140px;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  z-index:999;
+}
+.dropdown div{
+  padding:10px;
+  cursor:pointer;
+  font-size:14px;
+}
+.dropdown div:hover{background:#e6f2ff}
 </style>
 </head>
 
@@ -25,144 +135,201 @@
 
 <h2>PRODUCTION ENTRY</h2>
 
-<form method="post" action="/processing/production" onsubmit="fillMeta(this)">
+<form method="post"
+ action="{% if edit_data %}/processing/production/update/{{edit_data.id}}{% else %}/processing/production{% endif %}">
+
 <div class="wrap">
 
+<!-- ================= ROW 1 ================= -->
 <div class="row">
  <div class="col">
   <label>Batch Number</label>
-  <select name="batch_number">
-    <option value="" disabled selected>Select</option>
-    {% for b in batches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
-    <option value="__add__">➕ Add</option>
+  <select name="batch_number" required>
+   <option disabled selected>Select</option>
+   {% for b in batches %}
+   <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+   {% endfor %}
   </select>
  </div>
 
  <div class="col">
   <label>Brand</label>
-  <select name="brand">
-    <option value="" selected disabled>Select</option>
-    {% for b in brands %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+  <select name="brand" required>
+   <option disabled>Select</option>
+   {% for b in brands %}
+   <option value="{{b}}" {% if edit_data and edit_data.brand==b %}selected{% endif %}>{{b}}</option>
+   {% endfor %}
   </select>
  </div>
 
  <div class="col">
   <label>Variety</label>
-  <select name="variety">
-    <option value="" selected disabled>Select</option>
-    {% for v in varieties %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  <select name="variety_name" required>
+   <option disabled>Select</option>
+   {% for v in varieties %}
+   <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
+   {% endfor %}
   </select>
  </div>
-</div>
 
-<div class="row">
  <div class="col">
   <label>Glaze</label>
   <select name="glaze">
-    <option value="" selected disabled>Select</option>
-    {% for g in glazes %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+   <option disabled>Select</option>
+   {% for g in glazes %}
+   <option value="{{g}}" {% if edit_data and edit_data.glaze==g %}selected{% endif %}>{{g}}</option>
+   {% endfor %}
   </select>
  </div>
 
  <div class="col">
   <label>Freezer</label>
   <select name="freezer">
-    <option value="" selected disabled>Select</option>
-    {% for f in freezers %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+   <option disabled>Select</option>
+   {% for f in freezers %}
+   <option value="{{f}}" {% if edit_data and edit_data.freezer==f %}selected{% endif %}>{{f}}</option>
+   {% endfor %}
   </select>
  </div>
 
  <div class="col">
   <label>Packing Style</label>
-  <select name="packing_style" id="packer" onchange="calcQty()">
-    <option value="" selected disabled>Select</option>
-    {% for p in packing_styles %}
-    <option value="{{ p.packing_style }}" data-mc="{{ p.mc_weight }}" data-slab="{{ p.slab_weight }}">
-       {{ p.packing_style }}
-    </option>
-    {% endfor %}
+  <select name="packing_style" id="packer" onchange="calcQty()" required>
+   <option disabled>Select</option>
+   {% for p in packing_styles %}
+   <option value="{{p.packing_style}}"
+     data-mc="{{p.mc_weight}}"
+     data-slab="{{p.slab_weight}}"
+     {% if edit_data and edit_data.packing_style==p.packing_style %}selected{% endif %}>
+     {{p.packing_style}}
+   </option>
+   {% endfor %}
   </select>
  </div>
 </div>
 
+<!-- ================= ROW 2 ================= -->
 <div class="row">
  <div class="col">
   <label>Grade</label>
   <select name="grade">
-    <option value="" selected disabled>Select</option>
-    {% for g in grades %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+   <option disabled>Select</option>
+   {% for g in grades %}
+   <option value="{{g}}" {% if edit_data and edit_data.grade==g %}selected{% endif %}>{{g}}</option>
+   {% endfor %}
   </select>
  </div>
 
  <div class="col">
   <label>Species</label>
-  <select name="species_name">
-    <option value="" selected disabled>Select</option>
-    {% for s in species %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+  <select name="species" required>
+   <option disabled>Select</option>
+   {% for s in species %}
+   <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+   {% endfor %}
   </select>
  </div>
-</div>
 
-<div class="row">
  <div class="col">
   <label>No of MC</label>
-  <input type="number" id="mc" name="no_of_mc" oninput="calcQty()">
+  <input type="number" id="mc" name="no_of_mc"
+   value="{{edit_data.no_of_mc if edit_data else ''}}" oninput="calcQty()">
  </div>
+
  <div class="col">
   <label>Loose</label>
-  <input type="number" id="loose" name="loose" oninput="calcQty()">
+  <input type="number" id="loose" name="loose"
+   value="{{edit_data.loose if edit_data else ''}}" oninput="calcQty()">
  </div>
+
  <div class="col">
   <label>Production KG</label>
-  <input type="number" id="kg" name="production_qty" readonly>
+  <input type="number" id="kg" name="production_qty"
+   value="{{edit_data.production_qty if edit_data else ''}}" readonly>
  </div>
+
+ <div class="col"></div>
 </div>
 
 <div class="actions">
-  <button>SAVE</button>
-  <button type="reset" class="clr">CLEAR</button>
+ <button type="submit">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
+ <button type="button" class="clr" onclick="window.location='/processing/production'">CLEAR</button>
 </div>
 
 </div>
 </form>
 
-
 {% if today_data %}
-<table>
-<tr>
- <th>ID</th><th>Batch</th><th>Brand</th><th>Variety</th><th>Packing</th>
- <th>MC</th><th>Loose</th><th>KG</th><th>Date</th>
-</tr>
+<div class="menu-wrap" id="menuWrap">
+ <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+ <div class="dropdown" id="menuBox">
+  <div onclick="editRow()">✏️ Edit</div>
+  <div onclick="deleteRow()">🗑 Delete</div>
+ </div>
+</div>
 
-{% for r in today_data %}
+<table id="dataTable">
 <tr>
- <td>{{ r.id }}</td>
- <td>{{ r.batch_number }}</td>
- <td>{{ r.brand }}</td>
- <td>{{ r.variety_name }}</td>
- <td>{{ r.packing_style }}</td>
- <td>{{ r.no_of_mc }}</td>
- <td>{{ r.loose }}</td>
- <td>{{ r.production_qty }}</td>
- <td>{{ r.date }}</td>
+ <th>ID</th>
+ <th>Batch</th>
+ <th>Brand</th>
+ <th>Variety</th>
+ <th>Packing</th>
+ <th>MC</th>
+ <th>Loose</th>
+ <th>KG</th>
+ <th>Date</th>
+</tr>
+{% for r in today_data %}
+<tr data-id="{{r.id}}">
+ <td>{{r.id}}</td>
+ <td>{{r.batch_number}}</td>
+ <td>{{r.brand}}</td>
+ <td>{{r.variety_name}}</td>
+ <td>{{r.packing_style}}</td>
+ <td>{{r.no_of_mc}}</td>
+ <td>{{r.loose}}</td>
+ <td>{{r.production_qty}}</td>
+ <td>{{r.date}}</td>
 </tr>
 {% endfor %}
 </table>
 {% endif %}
 
-
 <script>
+let selected=null;
+
+document.querySelectorAll("#dataTable tr[data-id]").forEach(r=>{
+ r.onclick=()=>{
+  document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
+  r.classList.add("selected");
+  selected=r;
+  document.getElementById("menuWrap").style.display="block";
+ }
+});
+
+function toggleMenu(){
+ let m=document.getElementById("menuBox");
+ m.style.display=m.style.display==="block"?"none":"block";
+}
+function editRow(){
+ if(!selected)return alert("Select row");
+ location="/processing/production/edit/"+selected.dataset.id;
+}
+function deleteRow(){
+ if(!selected||!confirm("Delete record?"))return;
+ fetch("/processing/production/delete/"+selected.dataset.id,{method:"POST"})
+ .then(()=>location.reload());
+}
 function calcQty(){
  let mc=parseFloat(document.getElementById("mc").value)||0;
  let loose=parseFloat(document.getElementById("loose").value)||0;
  let opt=document.getElementById("packer").selectedOptions[0];
- if(!opt) return;
-
- let kg=(mc*(opt.dataset.mc||0)) + (loose*(opt.dataset.slab||0));
+ if(!opt)return;
+ let kg=(mc*(opt.dataset.mc||0))+(loose*(opt.dataset.slab||0));
  document.getElementById("kg").value=kg?kg.toFixed(2):"";
 }
-
-function fillMeta(f){ return true; }
+calcQty();
 </script>
 
 </body>
