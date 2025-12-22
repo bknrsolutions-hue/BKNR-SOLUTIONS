@@ -6,10 +6,11 @@ from sqlalchemy import func
 
 from app.database import get_db
 from app.database.models.processing import Grading, Peeling
-from app.database.models.criteria import varieties, contractors, peeling_rates
+from app.database.models.criteria import varieties, contractors, peeling_rates, species
 
-router = APIRouter(tags=["PEELING"])
-
+router = APIRouter(
+    tags=["PEELING"]
+)
 
 # =====================================================
 # SHOW PAGE
@@ -23,30 +24,48 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # ---------- BATCHES (FROM GRADING) ----------
     batch_list = [
         b[0] for b in
         db.query(Grading.batch_number)
         .filter(Grading.company_id == company_id)
         .distinct()
+        .order_by(Grading.batch_number)
         .all()
+        if b[0]
     ]
 
+    # ---------- VARIETIES ----------
     variety_list = [
         v[0] for v in
         db.query(varieties.variety_name)
         .filter(varieties.company_id == company_id)
-        .distinct()
+        .order_by(varieties.variety_name)
         .all()
+        if v[0]
     ]
 
+    # ---------- CONTRACTORS ----------
     contractor_list = [
         c[0] for c in
         db.query(contractors.contractor_name)
         .filter(contractors.company_id == company_id)
-        .distinct()
+        .order_by(contractors.contractor_name)
         .all()
+        if c[0]
     ]
 
+    # ---------- SPECIES (MASTER LOOKUP) ----------
+    species_list = [
+        s[0] for s in
+        db.query(species.species_name)
+        .filter(species.company_id == company_id)
+        .order_by(species.species_name)
+        .all()
+        if s[0]
+    ]
+
+    # ---------- TODAY DATA ----------
     today_data = (
         db.query(Peeling)
         .filter(
@@ -62,9 +81,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "batches": batch_list,
-            "hlso_counts": [],   # loaded by JS
+            "hlso_counts": [],        # loaded by JS
             "varieties": variety_list,
             "contractors": contractor_list,
+            "species": species_list,  # ✅ added
             "today_data": today_data,
             "edit_data": None
         }
@@ -86,6 +106,7 @@ def get_hlso(batch: str, request: Request, db: Session = Depends(get_db)):
             Grading.batch_number == batch
         )
         .distinct()
+        .order_by(Grading.graded_count)
         .all()
     )
 
@@ -102,6 +123,7 @@ def get_rate(
     request: Request,
     db: Session = Depends(get_db)
 ):
+
     company_id = request.session.get("company_code")
 
     row = (
@@ -111,10 +133,54 @@ def get_rate(
             peeling_rates.contractor_name == contractor,
             peeling_rates.variety_name == variety
         )
+        .order_by(peeling_rates.effective_from.desc())
         .first()
     )
 
-    return {"rate": row[0] if row else 0}
+    return {"rate": float(row[0]) if row else 0}
+
+
+# =====================================================
+# GET AVAILABLE HLSO QTY (GRADING - PEELING USED)
+# =====================================================
+@router.get("/peeling/get_available_qty/{batch}/{hlso_count}/{species_name}")
+def get_available_qty(
+    batch: str,
+    hlso_count: str,
+    species_name: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+
+    company_id = request.session.get("company_code")
+
+    # ---------- TOTAL FROM GRADING ----------
+    total_graded = (
+        db.query(func.sum(Grading.quantity))
+        .filter(
+            Grading.company_id == company_id,
+            Grading.batch_number == batch,
+            Grading.graded_count == hlso_count,
+            Grading.species == species_name
+        )
+        .scalar()
+    ) or 0
+
+    # ---------- TOTAL USED IN PEELING ----------
+    total_used = (
+        db.query(func.sum(Peeling.hlso_qty))
+        .filter(
+            Peeling.company_id == company_id,
+            Peeling.batch_number == batch,
+            Peeling.hlso_count == hlso_count,
+            Peeling.species == species_name
+        )
+        .scalar()
+    ) or 0
+
+    available = round(total_graded - total_used, 2)
+
+    return {"available_qty": max(available, 0)}
 
 
 # =====================================================
@@ -132,6 +198,7 @@ def save_peeling(
     rate: float = Form(...),
     amount: float = Form(...),
     yield_percent: float = Form(...),
+    species_name: str = Form(...),   # ✅ added
     db: Session = Depends(get_db)
 ):
 
@@ -151,6 +218,7 @@ def save_peeling(
         rate=rate,
         amount=amount,
         yield_percent=yield_percent,
+        species=species_name,           # ✅ saved
         date=date.today(),
         time=datetime.now().time(),
         email=email,
@@ -191,45 +259,6 @@ def edit_peeling(id: int, request: Request, db: Session = Depends(get_db)):
     page.context["edit_data"] = row
     page.context["today_data"] = None
     return page
-
-
-# =====================================================
-# GET AVAILABLE HLSO QTY (Grading - Peeling Used)
-# =====================================================
-@router.get("/peeling/get_available_qty/{batch}/{hlso_count}")
-def get_available_qty(
-    batch: str,
-    hlso_count: str,
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    company_id = request.session.get("company_code")
-
-    # TOTAL FROM GRADING
-    total_graded = (
-        db.query(func.sum(Grading.quantity))
-        .filter(
-            Grading.company_id == company_id,
-            Grading.batch_number == batch,
-            Grading.graded_count == hlso_count
-        )
-        .scalar()
-    ) or 0
-
-    # TOTAL USED IN PEELING
-    total_used = (
-        db.query(func.sum(Peeling.hlso_qty))
-        .filter(
-            Peeling.company_id == company_id,
-            Peeling.batch_number == batch,
-            Peeling.hlso_count == hlso_count
-        )
-        .scalar()
-    ) or 0
-
-    available = round(total_graded - total_used, 2)
-
-    return {"available_qty": available}
 
 
 # =====================================================

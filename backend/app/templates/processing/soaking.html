@@ -28,7 +28,7 @@ input,select{
   padding:10px;border:1px solid #a3bcd6;
   background:#f9fcff;border-radius:6px;font-size:14px
 }
-input[readonly]{background:#eee}
+input[readonly],input:disabled{background:#eee}
 
 /* BUTTON */
 .actions{text-align:center;margin-top:15px}
@@ -113,7 +113,10 @@ tr.selected{background:#cce5ff!important}
 
   <div class="col">
     <label>Input Qty</label>
-    <input type="number" step="0.01" name="in_qty" id="qty" required oninput="calcQty()">
+    <input type="number" step="0.01"
+           name="in_qty" id="qty"
+           required
+           oninput="calcQty();toggleRejection();">
     <small id="availableText" style="margin-top:5px;font-weight:600;color:#006400">
       Available Qty : 0 kg
     </small>
@@ -133,7 +136,8 @@ tr.selected{background:#cce5ff!important}
 
   <div class="col">
     <label>Chemical %</label>
-    <input type="number" step="0.01" id="chem_p" name="chemical_percent" oninput="calcQty()" required>
+    <input type="number" step="0.01" id="chem_p"
+           name="chemical_percent" oninput="calcQty()" required>
   </div>
 
   <div class="col">
@@ -143,12 +147,23 @@ tr.selected{background:#cce5ff!important}
 
   <div class="col">
     <label>Salt %</label>
-    <input type="number" step="0.01" id="salt_p" name="salt_percent" oninput="calcQty()" required>
+    <input type="number" step="0.01" id="salt_p"
+           name="salt_percent" oninput="calcQty()" required>
   </div>
 
   <div class="col">
     <label>Salt Qty</label>
     <input type="number" id="salt_qty" readonly>
+  </div>
+
+  <!-- ✅ NEW COLUMN : REJECTION -->
+  <div class="col">
+    <label>Rejection Qty</label>
+    <input type="number" step="0.01"
+           id="rejection_qty"
+           name="rejection_qty"
+           value="0"
+           disabled>
   </div>
 </div>
 
@@ -233,6 +248,19 @@ function calcQty(){
   let sp=+salt_p.value||0;
   chem_qty.value=(q*cp/100).toFixed(2);
   salt_qty.value=(q*sp/100).toFixed(2);
+}
+
+/* ✅ REJECTION TOGGLE */
+function toggleRejection(){
+  let q=+qty.value||0;
+  let rej=document.getElementById("rejection_qty");
+
+  if(q===0){
+    rej.disabled=false;     // ENABLE
+  }else{
+    rej.disabled=true;      // DISABLE
+    rej.value=0;
+  }
 }
 
 /* VALIDATION */

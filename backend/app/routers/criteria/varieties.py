@@ -1,3 +1,4 @@
+from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -17,8 +18,8 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/varieties")
 def varieties_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("email")                 # FIXED
-    company_code = request.session.get("company_code")   # FIXED
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
@@ -47,43 +48,35 @@ def varieties_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/varieties")
 def save_variety(
     request: Request,
-
     variety_name: str = Form(...),
     peeling_yield: str = Form(""),
     soaking_yield: str = Form(""),
     hoso_to_finished_yield: str = Form(""),
-
-    id: str = Form(""),        # FIXED: incoming from JS as string
+    id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
-
     db: Session = Depends(get_db)
 ):
 
-    # SESSION
-    email = request.session.get("email")                 
-    company_code = request.session.get("company_code")   
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # SAFE ID CONVERSION
     record_id = int(id) if id and id.isdigit() else None
 
-    # AUTO DATE/TIME
     now = datetime.now()
-    if not date:
-        date = now.strftime("%Y-%m-%d")
-    if not time:
-        time = now.strftime("%H:%M:%S")
+    date = date or now.strftime("%Y-%m-%d")
+    time = time or now.strftime("%H:%M:%S")
 
-    # DUPLICATE CHECK (company-wise)
+    # DUPLICATE CHECK
     duplicate = (
         db.query(varieties)
         .filter(
             varieties.variety_name == variety_name,
             varieties.company_id == company_code,
-            varieties.id != (record_id if record_id else 0)
+            varieties.id != record_id
         )
         .first()
     )
@@ -91,10 +84,10 @@ def save_variety(
     if duplicate:
         return JSONResponse(
             {"error": f"Variety '{variety_name}' already exists!"},
-            status_code=400,
+            status_code=400
         )
 
-    # UPDATE MODE
+    # UPDATE
     if record_id:
         row = (
             db.query(varieties)
@@ -113,9 +106,9 @@ def save_variety(
         row.time = time
         row.email = email
 
-    # INSERT MODE
+    # INSERT
     else:
-        new_row = varieties(
+        db.add(varieties(
             variety_name=variety_name,
             peeling_yield=peeling_yield,
             soaking_yield=soaking_yield,
@@ -124,10 +117,13 @@ def save_variety(
             time=time,
             email=email,
             company_id=company_code
-        )
-        db.add(new_row)
+        ))
 
     db.commit()
+
+    # 🔥 AUTO GENERATE / SYNC GRADE → HOSO
+    sync_grade_to_hoso(db, company_code, email)
+
     return JSONResponse({"success": True})
 
 
@@ -137,9 +133,10 @@ def save_variety(
 @router.post("/varieties/delete/{id}")
 def delete_variety(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_code = request.session.get("company_code")   # FIXED
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
 
-    if not company_code:
+    if not company_code or not email:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(varieties).filter(
@@ -148,4 +145,8 @@ def delete_variety(id: int, request: Request, db: Session = Depends(get_db)):
     ).delete()
 
     db.commit()
+
+    # 🔥 RE-SYNC AFTER DELETE
+    sync_grade_to_hoso(db, company_code, email)
+
     return JSONResponse({"status": "ok"})

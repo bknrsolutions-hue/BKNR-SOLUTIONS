@@ -6,16 +6,18 @@ from sqlalchemy import func
 from datetime import datetime, date
 
 from app.database import get_db
-from app.database.models.processing import DeHeading, RawMaterialPurchasing
+from app.database.models.processing import (
+    DeHeading,
+    RawMaterialPurchasing,
+    Grading,
+    Soaking
+)
 from app.database.models.criteria import peeling_rates, contractors, species
 
 # =====================================================
 # ROUTER
 # =====================================================
-router = APIRouter(
-    tags=["DE-HEADING"]
-)
-
+router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
@@ -32,37 +34,31 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     # ---------- BATCH LIST ----------
     batches = [
-        x[0]
-        for x in (
-            db.query(RawMaterialPurchasing.batch_number)
-            .filter(RawMaterialPurchasing.company_id == company_code)
-            .distinct()
-            .order_by(RawMaterialPurchasing.batch_number)
-            .all()
-        )
+        x[0] for x in
+        db.query(RawMaterialPurchasing.batch_number)
+        .filter(RawMaterialPurchasing.company_id == company_code)
+        .distinct()
+        .order_by(RawMaterialPurchasing.batch_number)
+        .all()
         if x[0]
     ]
 
     # ---------- CONTRACTORS ----------
     contractor_list = [
-        c.contractor_name
-        for c in (
-            db.query(contractors)
-            .filter(contractors.company_id == company_code)
-            .order_by(contractors.contractor_name)
-            .all()
-        )
+        c.contractor_name for c in
+        db.query(contractors)
+        .filter(contractors.company_id == company_code)
+        .order_by(contractors.contractor_name)
+        .all()
     ]
 
     # ---------- SPECIES ----------
     species_list = [
-        s.species_name
-        for s in (
-            db.query(species)
-            .filter(species.company_id == company_code)
-            .order_by(species.species_name)
-            .all()
-        )
+        s.species_name for s in
+        db.query(species)
+        .filter(species.company_id == company_code)
+        .order_by(species.species_name)
+        .all()
     ]
 
     # ---------- TODAY DATA ----------
@@ -97,24 +93,22 @@ def get_hoso(batch: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
 
     counts = [
-        r[0]
-        for r in (
-            db.query(RawMaterialPurchasing.count)
-            .filter(
-                RawMaterialPurchasing.batch_number == batch,
-                RawMaterialPurchasing.company_id == company_code
-            )
-            .distinct()
-            .order_by(RawMaterialPurchasing.count)
-            .all()
+        r[0] for r in
+        db.query(RawMaterialPurchasing.count)
+        .filter(
+            RawMaterialPurchasing.batch_number == batch,
+            RawMaterialPurchasing.company_id == company_code
         )
+        .distinct()
+        .order_by(RawMaterialPurchasing.count)
+        .all()
         if r[0]
     ]
 
     return {"counts": counts}
 
 # =====================================================
-# GET AVAILABLE QTY
+# GET AVAILABLE QTY (FINAL LOGIC)
 # =====================================================
 @router.get("/get_available_qty/{batch}/{count}")
 def get_available_qty(
@@ -125,28 +119,88 @@ def get_available_qty(
 ):
 
     company_code = request.session.get("company_code")
+    if not company_code:
+        return {"available_qty": 0}
 
+    # ===========================
+    # RMP RECEIVED (HOSO)
+    # ===========================
     received = (
-        db.query(func.sum(RawMaterialPurchasing.received_qty))
+        db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0))
         .filter(
             RawMaterialPurchasing.batch_number == batch,
             RawMaterialPurchasing.count == count,
             RawMaterialPurchasing.company_id == company_code
         )
-        .scalar() or 0
+        .scalar()
     )
 
-    used = (
-        db.query(func.sum(DeHeading.hoso_qty))
+    # ===========================
+    # DE-HEADING USED
+    # ===========================
+    deheading_used = (
+        db.query(func.coalesce(func.sum(DeHeading.hoso_qty), 0))
         .filter(
             DeHeading.batch_number == batch,
             DeHeading.hoso_count == count,
             DeHeading.company_id == company_code
         )
-        .scalar() or 0
+        .scalar()
     )
 
-    return {"available_qty": round(received - used, 2)}
+    # ===========================
+    # GRADING PLUS (OTHER → THIS COUNT)
+    # ===========================
+    grading_plus = (
+        db.query(func.coalesce(func.sum(Grading.quantity), 0))
+        .filter(
+            Grading.batch_number == batch,
+            Grading.graded_count == count,
+            Grading.variety_name == "HOSO",
+            Grading.company_id == company_code,
+            Grading.hoso_count != Grading.graded_count
+        )
+        .scalar()
+    )
+
+    # ===========================
+    # SOAKING USED
+    # ===========================
+    soaking_used = (
+        db.query(func.coalesce(func.sum(Soaking.in_qty), 0))
+        .filter(
+            Soaking.batch_number == batch,
+            Soaking.in_count == count,
+            Soaking.variety_name == "HOSO",
+            Soaking.company_id == company_code
+        )
+        .scalar()
+    )
+
+    # ===========================
+    # SOAKING REJECTION (ADD BACK)
+    # ===========================
+    soaking_rejection = (
+        db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0))
+        .filter(
+            Soaking.batch_number == batch,
+            Soaking.in_count == count,
+            Soaking.variety_name == "HOSO",
+            Soaking.company_id == company_code
+        )
+        .scalar()
+    )
+
+    available_qty = (
+        received
+        + grading_plus
+        - deheading_used
+        - soaking_used
+        + soaking_rejection
+    )
+
+    return {"available_qty": round(max(available_qty, 0), 2)}
+
 
 # =====================================================
 # GET RATE
@@ -168,6 +222,8 @@ def get_rate(contractor: str, request: Request, db: Session = Depends(get_db)):
     )
 
     return {"rate": float(row.rate) if row else 0}
+
+
 
 # =====================================================
 # SAVE NEW

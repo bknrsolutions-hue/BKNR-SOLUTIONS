@@ -5,6 +5,9 @@ from app.database import Base
 # ---------------------------------------------------------
 # GATE ENTRY
 # ---------------------------------------------------------
+from sqlalchemy import Column, Integer, String, Float, Date, Time, UniqueConstraint
+from app.database import Base
+
 class GateEntry(Base):
     __tablename__ = "gate_entry"
 
@@ -22,13 +25,21 @@ class GateEntry(Base):
     no_of_empty_boxes = Column(Float)
     no_of_ice_boxes = Column(Float)
 
-    species = Column(String(100))  # optional species lookup
+    species = Column(String(100))
 
     date = Column(Date)
     time = Column(Time)
     email = Column(String)
     company_id = Column(String(50))
 
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id",
+            "gate_pass_number",
+            "challan_number",
+            name="uix_company_gatepass_challan"
+        ),
+    )
 
 # ---------------------------------------------------------
 # RAW MATERIAL PURCHASING
@@ -128,7 +139,7 @@ class Peeling(Base):
     peeled_qty = Column(Float)
 
     yield_percent = Column(Float)
-
+    species = Column(String(100))
     contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
     rate = Column(Float)
     amount = Column(Float)
@@ -160,6 +171,7 @@ class Soaking(Base):
 
     salt_percent = Column(Float)
     salt_qty = Column(Float)
+    rejection_qty = Column(Float, default=0)
 
     species = Column(String(100))
     company_id = Column(String(50))

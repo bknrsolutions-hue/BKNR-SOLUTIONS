@@ -84,6 +84,19 @@ action="{% if edit_data %}/processing/de_heading/update/{{edit_data.id}}{% else 
 <div class="form-container">
 <div class="form-grid">
 
+  <div class="field">
+  <label>Species</label>
+  <select name="species" required>
+    <option value="">Select</option>
+    {% for s in species %}
+      <option value="{{s}}"
+        {% if edit_data and edit_data.species==s %}selected{% endif %}>
+        {{s}}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
 <div class="field">
 <label>Batch</label>
 <select name="batch_number" id="batch_dd" required>
@@ -104,15 +117,6 @@ action="{% if edit_data %}/processing/de_heading/update/{{edit_data.id}}{% else 
 </select>
 </div>
 
-<div class="field">
-<label>Species</label>
-<select name="species" required>
-<option value="">Select</option>
-{% for s in species %}
-<option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-{% endfor %}
-</select>
-</div>
 
 <div class="field">
 <label>HOSO Qty</label>

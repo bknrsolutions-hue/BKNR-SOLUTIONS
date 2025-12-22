@@ -1,4 +1,4 @@
-# app/routers/criteria/species.py
+from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="app/templates")
 def species_page(request: Request, db: Session = Depends(get_db)):
 
     email = request.session.get("email")
-    company_code = request.session.get("company_code")  # STRING company_id
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
@@ -52,10 +52,8 @@ def save_species(
     request: Request,
     species_name: str = Form(...),
     id: str = Form(""),
-
     date: str = Form(""),
     time: str = Form(""),
-
     db: Session = Depends(get_db)
 ):
 
@@ -65,17 +63,13 @@ def save_species(
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
-    # Safe ID conversion
     record_id = int(id) if id and id.isdigit() else None
 
-    # Auto date / time if empty
     now = datetime.now()
-    if not date:
-        date = now.strftime("%Y-%m-%d")
-    if not time:
-        time = now.strftime("%H:%M:%S")
+    date = date or now.strftime("%Y-%m-%d")
+    time = time or now.strftime("%H:%M:%S")
 
-    # Duplicate check
+    # DUPLICATE CHECK
     duplicate = (
         db.query(species)
         .filter(
@@ -109,9 +103,8 @@ def save_species(
             .filter(species.id == record_id, species.company_id == company_code)
             .first()
         )
-
         if not row:
-            return RedirectResponse("/species?msg=Not+Found", status_code=302)
+            return RedirectResponse("/criteria/species", status_code=302)
 
         row.species_name = species_name
         row.date = date
@@ -131,20 +124,10 @@ def save_species(
 
     db.commit()
 
-    updated = db.query(species).filter(
-        species.company_id == company_code
-    ).order_by(species.id.desc()).all()
+    # 🔥 AUTO GENERATE / SYNC GRADE → HOSO COMBINATIONS
+    sync_grade_to_hoso(db, company_code, email)
 
-    return templates.TemplateResponse(
-        "criteria/species.html",
-        {
-            "request": request,
-            "today_data": updated,
-            "email": email,
-            "company_id": company_code,
-            "message": f"✔ Species '{species_name}' saved successfully!"
-        }
-    )
+    return RedirectResponse("/criteria/species", status_code=302)
 
 
 # ---------------------------------------------------------
@@ -165,4 +148,8 @@ def delete_species(id: int, request: Request, db: Session = Depends(get_db)):
 
     db.commit()
 
-    return RedirectResponse("/species?msg=Deleted", status_code=302)
+    # 🔥 RE-SYNC AFTER DELETE ALSO
+    email = request.session.get("email")
+    sync_grade_to_hoso(db, company_code, email)
+
+    return RedirectResponse("/criteria/species", status_code=302)

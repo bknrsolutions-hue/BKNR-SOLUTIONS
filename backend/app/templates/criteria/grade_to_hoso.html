@@ -1,293 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
-<title>GRADE → HOSO MASTER</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade → HOSO / HLSO</title>
 
 <style>
-  body { font-family: Arial, sans-serif; background:#e6f2ff; margin:0; padding:0; }
-  h2 { text-align:center; color:#003366; margin:20px 0; font-weight:700; }
+body{font-family:Arial;background:#f4f6f9;margin:0}
+h2{text-align:center;color:#003366;margin:16px}
 
-  .form-container {
-    width:90%; max-width:1100px; margin:0 auto; background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,0.15); padding:25px; border-radius:10px;
-  }
+.form-box{
+  background:#fff;
+  margin:16px auto;
+  padding:18px;
+  max-width:1000px;
+  border-radius:10px;
+  box-shadow:0 0 8px rgba(0,0,0,.15)
+}
+.row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+label{font-size:13px;font-weight:700}
+select{padding:8px;border-radius:6px;border:1px solid #9db7d6}
 
-  .row { display:flex; flex-wrap:wrap; justify-content:space-between; margin-bottom:18px; }
-  .col { width:48%; display:flex; flex-direction:column; margin-bottom:10px; }
+button{
+  margin-top:14px;
+  padding:10px 18px;
+  background:#003366;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  cursor:pointer
+}
 
-  @media(max-width:768px){
-    .col { width:100%; }
-    .btn { width:100%; margin-bottom:10px; }
-  }
-
-  label { font-weight:600; color:#003366; margin-bottom:6px; }
-
-  select, input {
-    padding:10px; border:1px solid #a3bcd6; border-radius:6px;
-    font-size:14px; background:#f9fcff;
-  }
-
-  .actions { text-align:center; margin-top:25px; }
-  .btn {
-    background:#003366; color:white; border:none; padding:10px 20px;
-    border-radius:6px; font-weight:600; cursor:pointer; width:160px;
-  }
-  .btn-clear { background:#777; }
-
-  table {
-    width:90%; max-width:1200px; margin:20px auto;
-    border-collapse:collapse; background:#f7f7f7;
-    box-shadow:0 0 8px rgba(0,0,0,0.15); border-radius:8px; overflow:hidden;
-  }
-
-  th,td {
-    padding:10px 12px; border-bottom:1px solid #ccc; text-align:left; font-size:14px;
-  }
-  th { background:#003366; color:white; }
-  tr:hover { background:#e0ebff; cursor:pointer; }
-  tr.selected { background:#cce5ff !important; }
-
-  #menuBox { width:90%; max-width:1100px; margin:10px auto; text-align:right; display:none; }
-  #dotsBtn {
-    background:#003366; color:white; border:none; padding:6px 12px;
-    border-radius:6px; cursor:pointer; font-weight:600; font-size:20px;
-  }
-
-  #dropdownMenu {
-    display:none; width:200px; background:white; border:1px solid #ccc;
-    border-radius:8px; position:absolute; right:5%; z-index:1000;
-    box-shadow:0 2px 6px rgba(0,0,0,0.2);
-  }
-
-  .menu-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
-  .menu-item:hover { background:#e6f2ff; }
+table{
+  width:98%;
+  margin:20px auto;
+  border-collapse:collapse;
+  background:#fff
+}
+th,td{
+  border:1px solid #cfd9ea;
+  padding:8px;
+  font-size:12px
+}
+th{background:#eaf2ff}
 </style>
 </head>
+
 <body>
 
-<h2>GRADE → HOSO MASTER</h2>
+<h2>Grade → HOSO / HLSO Mapping</h2>
 
-<form onsubmit="submitForm(event)">
-  <div class="form-container">
+<form method="post" class="form-box">
+  <div class="row">
 
-    <div class="row">
-
-      <div class="col">
-        <label>Grade</label>
-        <select id="grade_name" required>
-          <option value="">Select</option>
-          {% for g in lookup.grades %}
-          <option value="{{ g }}">{{ g }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col">
-        <label>NW Grade</label>
-        <select id="nw_grade" required>
-          <option value="">Select</option>
-          {% for g in lookup.nwgrades %}
-          <option value="{{ g }}">{{ g }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Glaze</label>
-        <select id="glaze_name" required>
-          <option value="">Select</option>
-          {% for g in lookup.glazes %}
-          <option value="{{ g }}">{{ g }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Variety</label>
-        <select id="variety_name" required>
-          <option value="">Select</option>
-          {% for v in lookup.varieties %}
-          <option value="{{ v }}">{{ v }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col">
-        <label>Species</label>
-        <select id="species_name" required>
-          <option value="">Select</option>
-          {% for s in lookup.species %}
-          <option value="{{ s }}">{{ s }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col">
-        <label>HOSO Count</label>
-        <input type="number" id="hoso_count" required>
-      </div>
-
-      <div class="col">
-        <label>HLSO Count</label>
-        <input type="number" id="hlso_count" required>
-      </div>
-
+    <div>
+      <label>Species</label>
+      <select name="species" required>
+        {% for s in species %}
+        <option>{{ s }}</option>
+        {% endfor %}
+      </select>
     </div>
 
-    <input type="hidden" id="record_id">
+    <div>
+      <label>Grade</label>
+      <select name="grade_name" required>
+        {% for g in grades %}
+        <option>{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-    <div class="actions">
-      <button class="btn" type="submit">SAVE</button>
-      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+    <div>
+      <label>Variety</label>
+      <select name="variety_name" required>
+        {% for v in varieties %}
+        <option value="{{ v.variety_name }}">{{ v.variety_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Glaze</label>
+      <select name="glaze_name" required>
+        {% for g in glazes %}
+        <option>{{ g }}</option>
+        {% endfor %}
+      </select>
     </div>
 
   </div>
+
+  <button type="submit">Save / Update</button>
 </form>
 
+<table>
+<tr>
+  <th>Species</th>
+  <th>Grade</th>
+  <th>Variety</th>
+  <th>Glaze</th>
+  <th>HLSO</th>
+  <th>HOSO</th>
+  <th>NW Grade</th>
+</tr>
 
-{% if today_data %}
-<div id="menuBox">
-  <button id="dotsBtn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
-  </div>
-</div>
-
-<table id="dataTable">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Grade</th>
-      <th>NW Grade</th>
-      <th>Glaze</th>
-      <th>Variety</th>
-      <th>Species</th>
-      <th>HOSO</th>
-      <th>HLSO</th>
-      <th>Email</th>
-      <th>Company</th>
-      <th>Date</th>
-      <th>Time</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for row in today_data %}
-    <tr
-      data-id="{{ row.id }}"
-      data-grade="{{ row.grade_name }}"
-      data-nwgrade="{{ row.nw_grade }}"
-      data-glaze="{{ row.glaze_name }}"
-      data-variety="{{ row.variety_name }}"
-      data-species="{{ row.species }}"
-      data-hoso="{{ row.hoso_count }}"
-      data-hlso="{{ row.hlso_count }}"
-      data-email="{{ row.email }}"
-      data-company="{{ row.company_id }}"
-    >
-      <td>{{ row.id }}</td>
-      <td>{{ row.grade_name }}</td>
-      <td>{{ row.nw_grade }}</td>
-      <td>{{ row.glaze_name }}</td>
-      <td>{{ row.variety_name }}</td>
-      <td>{{ row.species }}</td>
-      <td>{{ row.hoso_count }}</td>
-      <td>{{ row.hlso_count }}</td>
-      <td>{{ row.email }}</td>
-      <td>{{ row.company_id }}</td>
-      <td>{{ row.date }}</td>
-      <td>{{ row.time }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
+{% for r in rows %}
+<tr>
+  <td>{{ r.species }}</td>
+  <td>{{ r.grade_name }}</td>
+  <td>{{ r.variety_name }}</td>
+  <td>{{ r.glaze_name }}</td>
+  <td>{{ r.hlso_count }}</td>
+  <td>{{ r.hoso_count }}</td>
+  <td>{{ r.nw_grade }}</td>
+</tr>
+{% endfor %}
 </table>
-{% endif %}
-
-<script>
-let selectedRow=null;
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const rows=document.querySelectorAll("#dataTable tbody tr");
-  const menu=document.getElementById("menuBox");
-
-  rows.forEach(row=>{
-    row.addEventListener("click",()=>{
-      rows.forEach(r=>r.classList.remove("selected"));
-      row.classList.add("selected");
-      selectedRow=row;
-      menu.style.display="block";
-    });
-  });
-
-  document.getElementById("dotsBtn").onclick=()=>{
-    const d=document.getElementById("dropdownMenu");
-    d.style.display=d.style.display==="block"?"none":"block";
-  };
-});
-
-
-function editSelected(){
-  if(!selectedRow) return alert("Select a row!");
-
-  document.getElementById("record_id").value=selectedRow.dataset.id;
-  document.getElementById("grade_name").value=selectedRow.dataset.grade;
-  document.getElementById("nw_grade").value=selectedRow.dataset.nwgrade;
-  document.getElementById("glaze_name").value=selectedRow.dataset.glaze;
-  document.getElementById("variety_name").value=selectedRow.dataset.variety;
-  document.getElementById("species_name").value=selectedRow.dataset.species;
-  document.getElementById("hoso_count").value=selectedRow.dataset.hoso;
-  document.getElementById("hlso_count").value=selectedRow.dataset.hlso;
-
-  window.scrollTo({ top: 0, behavior:"smooth" });
-}
-
-async function deleteSelected(){
-  if(!selectedRow) return alert("Select a row!");
-  if(!confirm("Are you sure?")) return;
-
-  const id=selectedRow.dataset.id;
-  const res=await fetch(`/criteria/grade_to_hoso/delete/${id}`,{ method:"POST" });
-
-  if(res.ok) location.reload();
-  else alert("Delete Failed");
-}
-
-function clearForm(){
-  selectedRow=null;
-  document.getElementById("record_id").value="";
-  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
-  document.getElementById("menuBox").style.display="none";
-}
-
-async function submitForm(e){
-  e.preventDefault();
-
-  const fd=new FormData();
-  const id=document.getElementById("record_id").value;
-
-  if(id) fd.append("id",id);
-
-  fd.append("grade_name",document.getElementById("grade_name").value);
-  fd.append("nw_grade",document.getElementById("nw_grade").value);
-  fd.append("glaze_name",document.getElementById("glaze_name").value);
-  fd.append("variety_name",document.getElementById("variety_name").value);
-  fd.append("species_name",document.getElementById("species_name").value);
-  fd.append("hoso_count",document.getElementById("hoso_count").value);
-  fd.append("hlso_count",document.getElementById("hlso_count").value);
-
-  const now=new Date();
-  fd.append("date",now.toISOString().slice(0,10));
-  fd.append("time",now.toTimeString().slice(0,8));
-
-  const res=await fetch("/criteria/grade_to_hoso",{ method:"POST", body:fd });
-
-  if(res.ok) location.reload();
-  else alert("Save Failed");
-}
-</script>
 
 </body>
 </html>

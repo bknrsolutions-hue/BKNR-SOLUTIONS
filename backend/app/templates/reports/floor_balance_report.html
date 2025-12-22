@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FLOOR BALANCE – {{ variety }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#eef4ff;
+  margin:0;
+  padding:18px
+}
+h2{text-align:center;color:#003366;margin-bottom:18px}
+
+/* ================= TABLE ================= */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.12)
+}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #dbe4f3;
+  font-size:14px
+}
+th{
+  background:#003366;
+  color:#fff;
+  text-align:left
+}
+.qty{
+  font-weight:800;
+  color:#0f766e;
+  cursor:pointer
+}
+.qty:hover{text-decoration:underline}
+
+/* ================= MODALS ================= */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  justify-content:center;
+  align-items:center;
+  z-index:999
+}
+.modal-box{
+  background:#fff;
+  width:92%;
+  max-width:900px;
+  border-radius:14px;
+  padding:18px
+}
+.close{
+  float:right;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:700
+}
+
+/* ================= BADGES ================= */
+.badge{
+  padding:4px 10px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:800
+}
+.grd{background:#e0f2fe;color:#075985}
+.pr{background:#ecfeff;color:#155e75}
+.dh{background:#fef3c7;color:#92400e}
+.peel{background:#ede9fe;color:#5b21b6}
+
+.click{
+  cursor:pointer;
+  font-weight:700;
+  color:#2563eb
+}
+.click:hover{text-decoration:underline}
+</style>
+</head>
+
+<body>
+
+<h2>FLOOR BALANCE – {{ variety }}</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Batch</th>
+  <th>Species</th>
+  <th>Count</th>
+  <th>Available Qty (kg)</th>
+</tr>
+</thead>
+<tbody>
+{% for r in rows %}
+<tr>
+  <td>{{ r.batch }}</td>
+  <td>{{ r.species }}</td>
+  <td>{{ r.count }}</td>
+  <td class="qty"
+      onclick="openUsage('{{ variety }}','{{ r.batch }}','{{ r.count }}')">
+      {{ r.available_qty }}
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<!-- ================= POPUP 1 : USAGE ================= -->
+<div class="modal" id="usageModal">
+  <div class="modal-box">
+    <span class="close" onclick="closeUsage()">✖</span>
+    <h3 id="usageTitle"></h3>
+
+    <table>
+      <thead>
+        <tr><th>Source</th><th>Qty (kg)</th></tr>
+      </thead>
+      <tbody id="usageBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= POPUP 2 : DETAILS ================= -->
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <span class="close" onclick="closeDetail()">✖</span>
+    <h3 id="detailTitle"></h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Batch</th>
+          <th>Count</th>
+          <th>Qty</th>
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody id="detailBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ================= USAGE POPUP ================= */
+async function openUsage(variety,batch,count){
+  document.getElementById("usageTitle").innerText =
+    `Usage – ${variety} | ${batch} | Count ${count}`;
+
+  let res = await fetch(
+    `/reports/floor_balance_usage?variety=${variety}&batch=${batch}&count=${count}`
+  );
+  let data = await res.json();
+
+  let html="";
+  data.forEach(r=>{
+    html+=`
+      <tr>
+        <td><span class="badge ${r.type.toLowerCase()}">${r.type}</span></td>
+        <td class="click"
+            onclick="openDetails('${r.type}','${variety}','${batch}','${count}')">
+            ${r.qty}
+        </td>
+      </tr>`;
+  });
+
+  document.getElementById("usageBody").innerHTML = html;
+  document.getElementById("usageModal").style.display="flex";
+}
+
+/* ================= DETAIL POPUP ================= */
+async function openDetails(type,variety,batch,count){
+  document.getElementById("detailTitle").innerText =
+    `${type} DETAILS – ${batch} | ${count}`;
+
+  let res = await fetch(
+    `/reports/floor_balance_details?type=${type}&variety=${variety}&batch=${batch}&count=${count}`
+  );
+  let data = await res.json();
+
+  let html="";
+  data.forEach(r=>{
+    html+=`
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.batch}</td>
+        <td>${r.count}</td>
+        <td>${r.qty}</td>
+        <td>${r.ref}</td>
+      </tr>`;
+  });
+
+  document.getElementById("detailBody").innerHTML = html;
+  document.getElementById("detailModal").style.display="flex";
+}
+
+function closeUsage(){
+  document.getElementById("usageModal").style.display="none";
+}
+function closeDetail(){
+  document.getElementById("detailModal").style.display="none";
+}
+</script>
+
+</body>
+</html>

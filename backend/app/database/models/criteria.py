@@ -300,24 +300,43 @@ class freezers(Base, metacolumns):
     )
 
 
-# GRADE TO HOSO MAP
-class grade_to_hoso(Base, metacolumns):
+# ---------------------------------------------------------
+# GRADE + VARIETY + GLAZE → HOSO / HLSO MAP
+# ---------------------------------------------------------
+from sqlalchemy import Column, Integer, String, Float, UniqueConstraint
+from app.database import Base
+
+class grade_to_hoso(Base):
     __tablename__ = "grade_to_hoso"
+
     id = Column(Integer, primary_key=True)
-    grade_name = Column(String(255), nullable=False, index=True)
-    glaze_name = Column(String(100), nullable=False, index=True)
-    variety_name = Column(String(100), nullable=False, index=True)
-    species = Column(String(255))
-    nw_grade = Column(String(100))
-    hoso_count = Column(String(50))
+
+    # COMBINATION
+    species = Column(String(100), nullable=False)
+    grade_name = Column(String(50), nullable=False)      # 16/20, 21/25, BKN, DC
+    variety_name = Column(String(100), nullable=False)
+    glaze_name = Column(String(50), nullable=False)
+
+    # CALCULATED
     hlso_count = Column(Integer)
+    hoso_count = Column(Integer)
+    nw_grade = Column(String(50))
+
+    email = Column(String(255))
+    company_id = Column(String(50))
 
     __table_args__ = (
         UniqueConstraint(
-            "company_id", "grade_name", "glaze_name", "variety_name",
-            name="uix_company_grade_glaze_variety"
+            "company_id",
+            "species",
+            "grade_name",
+            "variety_name",
+            "glaze_name",
+            name="uix_grade_variety_glaze_species"
         ),
     )
+
+
 # ---------------------------------------------------------
 # HOSO → HLSO YIELDS MODEL
 # ---------------------------------------------------------
@@ -339,4 +358,4 @@ class HOSO_HLSO_Yields(Base):
     time = Column(String(20))                             # Auto time
     email = Column(String(200))                           # Created/Updated by
 
-    company_id = Column(String(50), index=True)           # Multi-company support
+    company_id = Column(String(50), index=True)

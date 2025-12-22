@@ -1,12 +1,14 @@
 # app/routers/criteria/grades.py
 
+from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.database import get_db
-from app.database.models.criteria import grades   # model
+from app.database.models.criteria import grades
 
 router = APIRouter(tags=["GRADES"])
 templates = Jinja2Templates(directory="app/templates")
@@ -18,7 +20,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/grades")
 def grades_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("email")           # unified session key
+    email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
@@ -49,12 +51,10 @@ def grades_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/grades")
 def save_grade(
     request: Request,
-
     grade_name: str = Form(...),
-    id: str = Form(""),             # ← safe string ID
-    date: str = Form(...),
-    time: str = Form(...),
-
+    id: str = Form(""),
+    date: str = Form(""),
+    time: str = Form(""),
     db: Session = Depends(get_db)
 ):
 
@@ -64,10 +64,13 @@ def save_grade(
     if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # Safely convert ID
     record_id = int(id) if id and id.isdigit() else None
 
-    # Duplicate check
+    now = datetime.now()
+    date = date or now.strftime("%Y-%m-%d")
+    time = time or now.strftime("%H:%M:%S")
+
+    # DUPLICATE CHECK
     duplicate = (
         db.query(grades)
         .filter(
@@ -88,10 +91,7 @@ def save_grade(
     if record_id:
         row = (
             db.query(grades)
-            .filter(
-                grades.id == record_id,
-                grades.company_id == company_code
-            )
+            .filter(grades.id == record_id, grades.company_id == company_code)
             .first()
         )
 
@@ -105,16 +105,19 @@ def save_grade(
 
     # INSERT
     else:
-        new_row = grades(
+        db.add(grades(
             grade_name=grade_name,
             date=date,
             time=time,
             email=email,
             company_id=company_code
-        )
-        db.add(new_row)
+        ))
 
     db.commit()
+
+    # 🔥 AUTO GENERATE / SYNC GRADE → HOSO
+    sync_grade_to_hoso(db, company_code, email)
+
     return JSONResponse({"success": True})
 
 
@@ -125,8 +128,9 @@ def save_grade(
 def delete_grade(id: int, request: Request, db: Session = Depends(get_db)):
 
     company_code = request.session.get("company_code")
+    email = request.session.get("email")
 
-    if not company_code:
+    if not company_code or not email:
         return JSONResponse({"error": "Session expired!"}, status_code=401)
 
     db.query(grades).filter(
@@ -135,5 +139,8 @@ def delete_grade(id: int, request: Request, db: Session = Depends(get_db)):
     ).delete()
 
     db.commit()
+
+    # 🔥 RE-SYNC AFTER DELETE
+    sync_grade_to_hoso(db, company_code, email)
 
     return JSONResponse({"status": "ok"})

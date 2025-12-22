@@ -1,28 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>PROCESSING DASHBOARD — BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;background:#e8f3ff;margin:0;padding:0;}
-h2{text-align:center;color:#003366;margin:15px 0;font-size:22px;font-weight:800;}
+body{margin:0;font-family:Arial;background:#0f172a;color:#fff}
+h2{text-align:center;margin:14px 0;font-size:22px;font-weight:800}
 
-.container{
-    width:90%;max-width:1250px;margin:auto;
-    display:grid;grid-template-columns:repeat(4,1fr);
-    gap:15px;margin-top:20px;
+.dashboard{width:96%;margin:auto}
+
+/* ================= TOP CARDS ================= */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:12px;
 }
 
 .card{
-    background:white;border-radius:10px;padding:18px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    text-align:center;cursor:pointer;
-    transition:.2s;
+  padding:14px;
+  border-radius:10px;
+  transition:.2s;
+  background:#1e293b;
 }
-.card:hover{transform:scale(1.03);}
+.card:hover{transform:scale(1.03)}
 
-.card h3{margin:0;color:#00509e;font-size:15px;font-weight:700;}
-.card span{display:block;font-size:22px;color:#002447;margin-top:8px;font-weight:900;}
+.card h4{margin:0;font-size:13px}
+.value{
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+}
+.today{
+  font-size:12px;
+  margin-top:4px;
+  cursor:pointer;
+  opacity:.85;
+}
+.value:hover,.today:hover{text-decoration:underline}
+
+/* COLORS */
+.blue{background:#2563eb}
+.green{background:#16a34a}
+.orange{background:#ea580c}
+.purple{background:#7c3aed}
+.teal{background:#0d9488}
+.pink{background:#db2777}
+.gray{background:#334155}
+
+/* ================= FLOOR BALANCE ================= */
+.section-title{
+  margin:18px 0 10px;
+  font-size:16px;
+  font-weight:700;
+}
+
+.floor-cards{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:12px;
+}
+
+.floor-card{
+  background:#020617;
+  border:1px solid #1e293b;
+  padding:12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.floor-card:hover{border-color:#38bdf8}
+.floor-card h5{margin:0;color:#38bdf8;font-size:13px}
+.floor-card span{font-size:20px;font-weight:800}
+
+/* ================= REPORT SECTION ================= */
+#reportSection{
+  margin-top:18px;
+  border:1px solid #1e293b;
+  border-radius:12px;
+  height:460px;
+  display:none;
+  background:#020617;
+}
+
+.report-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 12px;
+  border-bottom:1px solid #1e293b;
+}
+
+.report-header button{
+  background:#ef4444;
+  border:none;
+  color:white;
+  padding:4px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+#reportFrame{
+  width:100%;
+  height:410px;
+  border:none;
+  background:#fff;
+}
 </style>
 </head>
 
@@ -30,29 +113,135 @@ h2{text-align:center;color:#003366;margin:15px 0;font-size:22px;font-weight:800;
 
 <h2>PROCESSING — LIVE DASHBOARD</h2>
 
-<div class="container">
+<div class="dashboard">
 
-    <div class="card" onclick="location.href='/reports/de_heading'">
-        <h3>DE-HEADING TOTAL</h3>
-        <span>{{ de_heading_qty }}</span>
-    </div>
+<!-- ================= TOP SUMMARY CARDS ================= -->
+<div class="cards">
 
-    <div class="card" onclick="location.href='/reports/grading'">
-        <h3>GRADING TOTAL</h3>
-        <span>{{ grading_qty }}</span>
+  <div class="card blue">
+    <h4>Gate Entry</h4>
+    <div class="value"
+         onclick="openReport('/reports/gate_entry','Gate Entry – All')">
+      {{ gate_total }}
     </div>
+    <div class="today"
+         onclick="openReport('/reports/gate_entry?mode=today','Gate Entry – Today')">
+      Today : {{ gate_today }}
+    </div>
+  </div>
 
-    <div class="card" onclick="location.href='/reports/peeling'">
-        <h3>PEELING TOTAL</h3>
-        <span>{{ peeling_qty }}</span>
+  <div class="card green">
+    <h4>Raw Material</h4>
+    <div class="value"
+         onclick="openReport('/reports/raw_material_purchasing','RMP – All')">
+      {{ rmp_total }} kg
     </div>
+    <div class="today"
+         onclick="openReport('/reports/raw_material_purchasing?mode=today','RMP – Today')">
+      Today : {{ rmp_today }} kg
+    </div>
+  </div>
 
-    <div class="card" onclick="location.href='/reports/soaking'">
-        <h3>SOAKING TOTAL</h3>
-        <span>{{ soaking_qty }}</span>
+  <div class="card orange">
+    <h4>De-Heading</h4>
+    <div class="value"
+         onclick="openReport('/reports/de_heading','De-Heading – All')">
+      {{ dh_total }} kg
     </div>
+    <div class="today"
+         onclick="openReport('/reports/de_heading?mode=today','De-Heading – Today')">
+      Today : {{ dh_today }} kg
+    </div>
+  </div>
+
+  <div class="card purple">
+    <h4>Grading</h4>
+    <div class="value"
+         onclick="openReport('/reports/grading_report','Grading – All')">
+      {{ grading_total }} kg
+    </div>
+    <div class="today"
+         onclick="openReport('/reports/grading_report?mode=today','Grading – Today')">
+      Today : {{ grading_today }} kg
+    </div>
+  </div>
+
+  <div class="card teal">
+    <h4>Peeling</h4>
+    <div class="value"
+         onclick="openReport('/reports/peeling_report','Peeling – All')">
+      {{ peeling_total }} kg
+    </div>
+    <div class="today"
+         onclick="openReport('/reports/peeling_report?mode=today','Peeling – Today')">
+      Today : {{ peeling_today }} kg
+    </div>
+  </div>
+
+  <div class="card pink">
+    <h4>Soaking</h4>
+    <div class="value"
+         onclick="openReport('/reports/soaking','Soaking – All')">
+      {{ soaking_total }} kg
+    </div>
+    <div class="today"
+         onclick="openReport('/reports/soaking?mode=today','Soaking – Today')">
+      Today : {{ soaking_today }} kg
+    </div>
+  </div>
+
+  <div class="card gray">
+    <h4>Production</h4>
+    <div class="value"
+         onclick="openReport('/reports/production_report','Production – All')">
+      {{ production_total }} kg
+    </div>
+    <div class="today"
+         onclick="openReport('/reports/production_report?mode=today','Production – Today')">
+      Today : {{ production_today }} kg
+    </div>
+  </div>
 
 </div>
+
+<!-- ================= FLOOR BALANCE ================= -->
+<div class="section-title">FLOOR BALANCE (VARIETY WISE)</div>
+
+<div class="floor-cards">
+{% for f in floor_balances %}
+  <div class="floor-card"
+       onclick="openReport(
+         '/reports/floor_balance_report?variety={{ f.variety }}',
+         'Floor Balance – {{ f.variety }}'
+       )">
+    <h5>{{ f.variety }}</h5>
+    <span>{{ f.available_qty }} kg</span>
+  </div>
+{% endfor %}
+</div>
+
+<!-- ================= REPORT IFRAME ================= -->
+<div id="reportSection">
+  <div class="report-header">
+    <strong id="reportTitle">Report</strong>
+    <button onclick="closeReport()">Close</button>
+  </div>
+  <iframe id="reportFrame"></iframe>
+</div>
+
+</div>
+
+<script>
+function openReport(url,title){
+  document.getElementById("reportSection").style.display="block";
+  document.getElementById("reportFrame").src=url;
+  document.getElementById("reportTitle").innerText=title;
+}
+function closeReport(){
+  document.getElementById("reportFrame").src="";
+  document.getElementById("reportSection").style.display="none";
+}
+</script>
 
 </body>
 </html>

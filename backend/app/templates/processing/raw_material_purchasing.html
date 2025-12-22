@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>PRODUCTION ENTRY - BKNR SOLUTIONS</title>
+<title>RAW MATERIAL PURCHASING - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-/* ================= BASE ================= */
 body{
   font-family:Arial,sans-serif;
   background:#e6f2ff;
@@ -14,310 +16,353 @@ body{
 h2{
   text-align:center;
   color:#003366;
-  margin:14px 0;
-  font-size:20px;
+  margin:20px 0;
 }
 
-/* ================= CARD ================= */
-.wrap{
-  width:98%;
+/* ================= FORM ================= */
+.form-container{
+  width:96%;
   max-width:1400px;
-  margin:auto;
+  margin:0 auto;
   background:#fff;
-  padding:18px;
-  border-radius:12px;
-  box-shadow:0 0 10px rgba(0,0,0,.15);
+  padding:22px;
+  border-radius:10px;
+  box-shadow:0 0 8px rgba(0,0,0,.15);
+  overflow-x:auto; /* mobile safety */
 }
 
-/* ================= GRID (6 COLUMNS) ================= */
+/* ALWAYS 6 COLUMNS */
 .row{
   display:grid;
   grid-template-columns:repeat(6,1fr);
   gap:14px;
-  margin-bottom:12px;
+  margin-bottom:16px;
 }
-.col{display:flex;flex-direction:column}
 
-/* ================= FORM ================= */
+.col{
+  display:flex;
+  flex-direction:column;
+}
+
 label{
   font-size:13px;
-  font-weight:700;
+  font-weight:600;
   color:#003366;
-  margin-bottom:4px;
+  margin-bottom:6px;
 }
-select,input{
+
+input,select{
   padding:8px;
-  border:1px solid #9db7d6;
+  border:1px solid #a3bcd6;
   border-radius:6px;
-  background:#f7fbff;
+  background:#f9fcff;
   font-size:14px;
 }
-input[readonly]{background:#eee}
 
-/* ================= ACTIONS ================= */
+/* Disabled (formula fields) */
+input:disabled{
+  background:#eef2f7;
+  color:#374151;
+  font-weight:600;
+}
+
+/* BUTTONS */
 .actions{
   text-align:center;
-  margin-top:16px;
+  margin-top:18px;
 }
-button{
-  padding:9px 22px;
-  border:none;
-  border-radius:6px;
+.btn{
   background:#003366;
   color:#fff;
-  font-weight:700;
+  border:none;
+  padding:10px 22px;
+  border-radius:6px;
+  font-weight:600;
   cursor:pointer;
 }
-.clr{background:#777}
+.btn-clear{background:#777}
 
 /* ================= TABLE ================= */
 table{
-  width:98%;
+  width:96%;
   max-width:1400px;
-  margin:16px auto;
+  margin:22px auto;
   border-collapse:collapse;
   background:#fff;
-  box-shadow:0 0 8px rgba(0,0,0,.12);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 0 8px rgba(0,0,0,.15);
 }
 th,td{
-  padding:6px 8px;     /* 🔥 SMALL HEIGHT */
-  font-size:13px;
-  text-align:center;
+  padding:9px;
   border-bottom:1px solid #ccc;
+  font-size:13px;
 }
 th{
   background:#003366;
   color:#fff;
 }
-tr:hover{background:#e9f1ff;cursor:pointer}
-tr.selected{background:#bed6ff !important}
+tr:hover{background:#e6f2ff;cursor:pointer}
+tr.selected{background:#cce5ff!important}
 
-/* ================= 3 DOT MENU ================= */
-.menu-wrap{
-  width:98%;
+/* ================= MENU ================= */
+#threeDotsMenu{
+  width:96%;
   max-width:1400px;
-  margin:6px auto;
+  margin:10px auto;
   text-align:right;
+  position:relative;
   display:none;
 }
-.menu-btn{
-  background:#003366;
-  color:#fff;
-  border:none;
-  padding:5px 10px;
-  font-size:16px;
-  border-radius:6px;
-  cursor:pointer;
-}
-.dropdown{
+#dropdownMenu{
   display:none;
   position:absolute;
-  right:30px;
+  right:0;
   background:#fff;
   border:1px solid #ccc;
   border-radius:8px;
-  width:140px;
-  z-index:999;
+  width:180px;
+  box-shadow:0 2px 6px rgba(0,0,0,.35);
+  z-index:1000;
 }
-.dropdown div{
+.menu-item{
   padding:10px;
   cursor:pointer;
-  font-size:14px;
 }
-.dropdown div:hover{background:#e6f2ff}
+.menu-item:hover{background:#e6f2ff}
 </style>
 </head>
 
 <body>
 
-<h2>PRODUCTION ENTRY</h2>
+<h2>RAW MATERIAL PURCHASING</h2>
 
 <form method="post"
- action="{% if edit_data %}/processing/production/update/{{edit_data.id}}{% else %}/processing/production{% endif %}">
+action="{% if edit_data %}/processing/raw_material_purchasing/update/{{edit_data.id}}{% else %}/processing/raw_material_purchasing{% endif %}">
 
-<div class="wrap">
+<div class="form-container">
 
-<!-- ROW 1 -->
+<!-- ================= ROW 1 ================= -->
 <div class="row">
- <div class="col">
-  <label>Batch Number</label>
-  <select name="batch_number" required>
-   <option disabled selected>Select</option>
-   {% for b in batches %}
-   <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Batch Number</label>
+    <select name="batch_number" id="batch_dd" required>
+      <option disabled selected>Select Batch</option>
+      {% for b in batch_list %}
+      <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+      {% endfor %}
+    </select>
+  </div>
 
- <div class="col">
-  <label>Brand</label>
-  <select name="brand" required>
-   <option disabled>Select</option>
-   {% for b in brands %}
-   <option value="{{b}}" {% if edit_data and edit_data.brand==b %}selected{% endif %}>{{b}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Supplier Name</label>
+    <input name="supplier_name" id="supplier_name" readonly
+           value="{{edit_data.supplier_name if edit_data else ''}}">
+  </div>
 
- <div class="col">
-  <label>Variety</label>
-  <select name="variety_name" required>
-   <option disabled>Select</option>
-   {% for v in varieties %}
-   <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Variety</label>
+    <select name="variety_name" required>
+      <option disabled selected>Select Variety</option>
+      {% for v in variety_list %}
+      <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
+      {% endfor %}
+    </select>
+  </div>
 
- <div class="col">
-  <label>Glaze</label>
-  <select name="glaze">
-   <option disabled>Select</option>
-   {% for g in glazes %}
-   <option value="{{g}}" {% if edit_data and edit_data.glaze==g %}selected{% endif %}>{{g}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Species</label>
+    <select name="species">
+      <option disabled selected>Select Species</option>
+      {% for s in species_list %}
+      <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+      {% endfor %}
+    </select>
+  </div>
 
- <div class="col">
-  <label>Freezer</label>
-  <select name="freezer">
-   <option disabled>Select</option>
-   {% for f in freezers %}
-   <option value="{{f}}" {% if edit_data and edit_data.freezer==f %}selected{% endif %}>{{f}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Count</label>
+    <input name="count" value="{{edit_data.count if edit_data else ''}}">
+  </div>
 
- <div class="col">
-  <label>Packing Style</label>
-  <select name="packing_style" id="packer" onchange="calcQty()" required>
-   <option disabled>Select</option>
-   {% for p in packing_styles %}
-   <option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}"
-     {% if edit_data and edit_data.packing_style==p.packing_style %}selected{% endif %}>
-     {{p.packing_style}}
-   </option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>Material Boxes</label>
+    <input type="number" step="0.01" name="material_boxes"
+           value="{{edit_data.material_boxes if edit_data else 0}}">
+  </div>
 </div>
 
-<!-- ROW 2 -->
+<!-- ================= ROW 2 ================= -->
 <div class="row">
- <div class="col">
-  <label>Grade</label>
-  <select name="grade">
-   <option disabled>Select</option>
-   {% for g in grades %}
-   <option value="{{g}}" {% if edit_data and edit_data.grade==g %}selected{% endif %}>{{g}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>G1 Qty (kg)</label>
+    <input type="number" step="0.01" name="g1_qty" id="g1"
+           value="{{edit_data.g1_qty if edit_data else 0}}">
+  </div>
 
- <div class="col">
-  <label>Species</label>
-  <select name="species" required>
-   <option disabled>Select</option>
-   {% for s in species %}
-   <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-   {% endfor %}
-  </select>
- </div>
+  <div class="col">
+    <label>G2 Qty (kg)</label>
+    <input type="number" step="0.01" name="g2_qty" id="g2"
+           value="{{edit_data.g2_qty if edit_data else 0}}">
+  </div>
 
- <div class="col">
-  <label>No of MC</label>
-  <input type="number" id="mc" name="no_of_mc"
-   value="{{edit_data.no_of_mc if edit_data else ''}}" oninput="calcQty()">
- </div>
+  <div class="col">
+    <label>DC Qty (kg)</label>
+    <input type="number" step="0.01" name="dc_qty" id="dc"
+           value="{{edit_data.dc_qty if edit_data else 0}}">
+  </div>
 
- <div class="col">
-  <label>Loose</label>
-  <input type="number" id="loose" name="loose"
-   value="{{edit_data.loose if edit_data else ''}}" oninput="calcQty()">
- </div>
+  <!-- FORMULA -->
+  <div class="col">
+    <label>Received Qty</label>
+    <input type="number" step="0.01"
+           id="received_qty"
+           value="{{edit_data.received_qty if edit_data else 0}}"
+           disabled>
+  </div>
 
- <div class="col">
-  <label>Production KG</label>
-  <input type="number" id="kg" name="production_qty"
-   value="{{edit_data.production_qty if edit_data else ''}}" readonly>
- </div>
+  <div class="col">
+    <label>Rate / KG</label>
+    <input type="number" step="0.01" name="rate_per_kg" id="rate"
+           value="{{edit_data.rate_per_kg if edit_data else 0}}">
+  </div>
 
- <div class="col"></div>
+  <!-- FORMULA -->
+  <div class="col">
+    <label>Amount</label>
+    <input type="number" step="0.01"
+           id="amount"
+           value="{{edit_data.amount if edit_data else 0}}"
+           disabled>
+  </div>
+</div>
+
+<!-- ================= ROW 3 ================= -->
+<div class="row">
+  <div class="col">
+    <label>Remarks</label>
+    <input name="remarks" value="{{edit_data.remarks if edit_data else ''}}">
+  </div>
 </div>
 
 <div class="actions">
- <button type="submit">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
- <button type="button" class="clr" onclick="window.location='/processing/production'">CLEAR</button>
+  <button class="btn" type="submit">
+    {% if edit_data %}UPDATE{% else %}SAVE{% endif %}
+  </button>
+  <button class="btn btn-clear" type="button"
+          onclick="window.location='/processing/raw_material_purchasing'">
+    RESET
+  </button>
 </div>
 
 </div>
 </form>
 
 {% if today_data %}
-<div class="menu-wrap" id="menuWrap">
- <button class="menu-btn" onclick="toggleMenu()">⋮</button>
- <div class="dropdown" id="menuBox">
-  <div onclick="editRow()">✏️ Edit</div>
-  <div onclick="deleteRow()">🗑 Delete</div>
- </div>
+<!-- ================= MENU ================= -->
+<div id="threeDotsMenu">
+  <button class="btn" id="dotsBtn">⋮</button>
+  <div id="dropdownMenu">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
+    <div class="menu-item" onclick="printSelected()">🖨 Print</div>
+  </div>
 </div>
 
+<!-- ================= TABLE ================= -->
 <table id="dataTable">
+<thead>
 <tr>
- <th>ID</th><th>Batch</th><th>Brand</th><th>Variety</th>
- <th>Packing</th><th>MC</th><th>Loose</th><th>KG</th><th>Date</th>
+  <th>ID</th><th>Batch</th><th>Supplier</th><th>Variety</th>
+  <th>Species</th><th>Count</th>
+  <th>G1</th><th>G2</th><th>DC</th>
+  <th>Received</th><th>Rate</th><th>Amount</th>
+  <th>Boxes</th><th>Date</th><th>Time</th>
+  <th>Email</th><th>Company</th>
 </tr>
+</thead>
+<tbody>
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
- <td>{{r.id}}</td>
- <td>{{r.batch_number}}</td>
- <td>{{r.brand}}</td>
- <td>{{r.variety_name}}</td>
- <td>{{r.packing_style}}</td>
- <td>{{r.no_of_mc}}</td>
- <td>{{r.loose}}</td>
- <td>{{r.production_qty}}</td>
- <td>{{r.date}}</td>
+  <td>{{r.id}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.supplier_name}}</td>
+  <td>{{r.variety_name}}</td>
+  <td>{{r.species}}</td>
+  <td>{{r.count}}</td>
+  <td>{{r.g1_qty}}</td>
+  <td>{{r.g2_qty}}</td>
+  <td>{{r.dc_qty}}</td>
+  <td>{{r.received_qty}}</td>
+  <td>{{r.rate_per_kg}}</td>
+  <td>{{r.amount}}</td>
+  <td>{{r.material_boxes}}</td>
+  <td>{{r.date}}</td>
+  <td>{{r.time}}</td>
+  <td>{{r.email}}</td>
+  <td>{{r.company_id}}</td>
 </tr>
 {% endfor %}
+</tbody>
 </table>
 {% endif %}
 
 <script>
-let selected=null;
+let batchSupplierMap = {{ batch_supplier_map_json | safe }};
+let selectedRow = null;
 
-document.querySelectorAll("#dataTable tr[data-id]").forEach(r=>{
- r.onclick=()=>{
-  document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
-  r.classList.add("selected");
-  selected=r;
-  document.getElementById("menuWrap").style.display="block";
- }
+/* Batch -> Supplier */
+batch_dd.addEventListener("change",()=>{
+  supplier_name.value = batchSupplierMap[batch_dd.value] || "";
 });
 
-function toggleMenu(){
- let m=document.getElementById("menuBox");
- m.style.display=m.style.display==="block"?"none":"block";
+/* FORMULA CALCULATIONS */
+function calcFormula(){
+  let g1v = parseFloat(g1.value) || 0;
+  let g2v = parseFloat(g2.value) || 0;
+  let dcv = parseFloat(dc.value) || 0;
+  let ratev = parseFloat(rate.value) || 0;
+
+  let recv = g1v + g2v + dcv;
+  received_qty.value = recv.toFixed(2);
+  amount.value = (recv * ratev).toFixed(2);
 }
-function editRow(){
- if(!selected)return alert("Select row");
- location="/processing/production/edit/"+selected.dataset.id;
+[g1,g2,dc,rate].forEach(el=>{
+  el.addEventListener("input",calcFormula);
+});
+
+/* ROW SELECT */
+document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+  r.addEventListener("click",()=>{
+    document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
+    r.classList.add("selected");
+    selectedRow=r;
+    threeDotsMenu.style.display="block";
+  });
+});
+
+/* MENU */
+dotsBtn?.addEventListener("click",()=>{
+  dropdownMenu.style.display =
+    dropdownMenu.style.display==="block"?"none":"block";
+});
+
+function editSelected(){
+  if(!selectedRow) return alert("Select row");
+  location="/processing/raw_material_purchasing/edit/"+selectedRow.dataset.id;
 }
-function deleteRow(){
- if(!selected||!confirm("Delete record?"))return;
- fetch("/processing/production/delete/"+selected.dataset.id,{method:"POST"})
- .then(()=>location.reload());
+function deleteSelected(){
+  if(!selectedRow) return;
+  if(!confirm("Delete record?")) return;
+  fetch("/processing/raw_material_purchasing/delete/"+selectedRow.dataset.id,
+        {method:"POST"}).then(()=>location.reload());
 }
-function calcQty(){
- let mc=parseFloat(mc?.value)||0;
- let loose=parseFloat(loose?.value)||0;
- let opt=packer?.selectedOptions[0];
- if(!opt)return;
- let kg=(mc*(opt.dataset.mc||0))+(loose*(opt.dataset.slab||0));
- document.getElementById("kg").value=kg?kg.toFixed(2):"";
+function printSelected(){
+  if(!selectedRow) return;
+  let w=window.open("","_blank");
+  w.document.write("<h3>RAW MATERIAL PURCHASING</h3><table border='1'>"+selectedRow.innerHTML+"</table>");
+  w.print();
 }
-calcQty();
 </script>
 
 </body>

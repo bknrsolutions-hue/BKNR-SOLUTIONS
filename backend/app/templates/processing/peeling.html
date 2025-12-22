@@ -8,153 +8,67 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-body{
-  font-family:Arial,sans-serif;
-  background:#e6f2ff;
-  margin:0
-}
+body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0}
+h2{text-align:center;color:#003366;margin:15px 0;font-weight:700}
 
-h2{
-  text-align:center;
-  color:#003366;
-  margin:15px 0;
-  font-weight:700
-}
-
-/* ================= FORM ================= */
 .form-container{
-  width:96%;
-  max-width:1200px;
-  margin:0 auto;
-  background:#fff;
-  padding:10px;
-  border-radius:15px;
+  width:96%;max-width:1200px;margin:0 auto;
+  background:#fff;padding:10px;border-radius:15px;
   box-shadow:0 0 8px rgba(0,0,0,.15)
 }
 
-/* 🔥 PERFECT ERP GRID – 6 EQUAL COLUMNS */
+/* GRID */
 .row{
   display:grid;
   grid-template-columns:repeat(6, minmax(0,1fr));
-  column-gap:10px;
-  row-gap:10px;
-  margin-bottom:10px
+  gap:10px;margin-bottom:10px
 }
+.col{display:flex;flex-direction:column}
 
-.col{
-  display:flex;
-  flex-direction:column;
-  min-width:0
-}
+@media(max-width:900px){.row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
 
-/* ================= RESPONSIVE ================= */
-@media(max-width:900px){
-  .row{ grid-template-columns:repeat(4, minmax(0,1fr)); }
-}
-@media(max-width:900px){
-  .row{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-}
-@media(max-width:600px){
-  .row{ grid-template-columns:repeat(1, minmax(0,1fr)); }
-}
-
-/* ================= INPUTS ================= */
-label{
-  font-weight:600;
-  color:#003366;
-  margin-bottom:6px
-}
-
+label{font-weight:600;color:#003366;margin-bottom:6px}
 input,select{
-  padding:10px;
-  border:1px solid #a3bcd6;
-  background:#f9fcff;
-  border-radius:6px;
-  font-size:14px
+  padding:10px;border:1px solid #a3bcd6;
+  background:#f9fcff;border-radius:6px;font-size:14px
 }
+input[readonly]{background:#eee}
 
-input[readonly]{ background:#eee }
-
-/* ================= BUTTONS ================= */
-.actions{
-  text-align:center;
-  margin-top:20px
-}
-
+/* BUTTONS */
+.actions{text-align:center;margin-top:20px}
 .btn{
-  background:#003366;
-  color:#fff;
-  border:none;
-  padding:10px 20px;
-  border-radius:6px;
-  font-weight:600;
-  cursor:pointer
+  background:#003366;color:#fff;border:none;
+  padding:10px 20px;border-radius:6px;
+  font-weight:600;cursor:pointer
 }
+.btn-clear{background:#777}
 
-.btn-clear{ background:#777 }
-
-/* ================= TABLE ================= */
+/* TABLE */
 table{
-  width:92%;
-  max-width:1200px;
-  margin:20px auto;
-  border-collapse:collapse;
-  background:#fff;
-  border-radius:10px;
-  overflow:hidden;
+  width:92%;max-width:1200px;margin:20px auto;
+  border-collapse:collapse;background:#fff;
+  border-radius:10px;overflow:hidden;
   box-shadow:0 0 8px rgba(0,0,0,.15)
 }
+th,td{padding:10px;border-bottom:1px solid #ccc;font-size:14px}
+th{background:#003366;color:#fff}
+tr:hover{background:#e6f2ff;cursor:pointer}
+tr.selected{background:#cce5ff!important}
 
-th,td{
-  padding:10px;
-  border-bottom:1px solid #ccc;
-  font-size:14px
-}
-
-th{
-  background:#003366;
-  color:#fff
-}
-
-tr:hover{
-  background:#e6f2ff;
-  cursor:pointer
-}
-
-tr.selected{
-  background:#cce5ff!important
-}
-
-/* ================= THREE DOT MENU ================= */
+/* 3 DOT MENU */
 #threeDotsMenu{
-  width:92%;
-  max-width:1200px;
-  margin:10px auto;
-  text-align:right;
-  position:relative;
-  display:none
+  width:92%;max-width:1200px;margin:10px auto;
+  text-align:right;display:none;position:relative
 }
-
 #dropdownMenu{
-  display:none;
-  position:absolute;
-  right:0;
-  background:#fff;
-  border:1px solid #ccc;
-  border-radius:8px;
-  width:180px;
-  box-shadow:0 2px 6px rgba(0,0,0,.3);
-  z-index:1000
+  display:none;position:absolute;right:0;
+  background:#fff;border:1px solid #ccc;
+  border-radius:8px;width:180px;
+  box-shadow:0 2px 6px rgba(0,0,0,.3)
 }
-
-.menu-item{
-  padding:10px;
-  cursor:pointer
-}
-
-.menu-item:hover{
-  background:#e6f2ff
-}
+.menu-item{padding:10px;cursor:pointer}
+.menu-item:hover{background:#e6f2ff}
 </style>
 </head>
 
@@ -167,14 +81,25 @@ tr.selected{
 
 <div class="form-container">
 
-<!-- ================= ROW 1 : 6 COLUMNS ================= -->
+<!-- ================= ROW 1 ================= -->
 <div class="row">
+
   <div class="col">
-    <label>Batch Number</label>
+    <label>Batch</label>
     <select name="batch_number" id="batch" required onchange="loadHLSO()">
       <option value="" disabled selected>Select Batch</option>
       {% for b in batches %}
       <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col">
+    <label>Species</label>
+    <select name="species_name" id="species" required onchange="loadAvailableQty()">
+      <option value="" disabled selected>Select Species</option>
+      {% for s in species %}
+      <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
       {% endfor %}
     </select>
   </div>
@@ -187,7 +112,7 @@ tr.selected{
   </div>
 
   <div class="col">
-    <label>HLSO Quantity (kg)</label>
+    <label>HLSO Qty (kg)</label>
     <input type="number" step="0.01" name="hlso_qty" id="hlso_qty" required>
     <small id="availableText" style="margin-top:4px;font-weight:600;color:#006400">
       Available Qty : 0 kg
@@ -199,7 +124,7 @@ tr.selected{
     <select name="variety_name" id="variety" onchange="loadRate()" required>
       <option value="" disabled selected>Select Variety</option>
       {% for v in varieties %}
-      <option value="{{v}}">{{v}}</option>
+      <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
       {% endfor %}
     </select>
   </div>
@@ -209,33 +134,36 @@ tr.selected{
     <input type="number" step="0.01" id="peeled" name="peeled_qty" required>
   </div>
 
-  <div class="col">
-    <label>Yield %</label>
-    <input type="text" id="yield" name="yield_percent" readonly>
-  </div>
 </div>
 
-<!-- ================= ROW 2 : 3 COLUMNS (SAME SIZE AS TOP COLUMN) ================= -->
+<!-- ================= ROW 2 ================= -->
 <div class="row">
-  <div class="col" style="grid-column:1">
+
+  <div class="col">
     <label>Contractor</label>
     <select name="contractor_name" id="contractor" onchange="loadRate()" required>
       <option value="" disabled selected>Select Contractor</option>
       {% for c in contractors %}
-      <option value="{{c}}">{{c}}</option>
+      <option value="{{c}}" {% if edit_data and edit_data.contractor_name==c %}selected{% endif %}>{{c}}</option>
       {% endfor %}
     </select>
   </div>
 
-  <div class="col" style="grid-column:2">
+  <div class="col">
     <label>Rate (₹/kg)</label>
     <input type="text" id="rate" name="rate" readonly>
   </div>
 
-  <div class="col" style="grid-column:3">
+  <div class="col">
+    <label>Yield %</label>
+    <input type="text" id="yield" name="yield_percent" readonly>
+  </div>
+
+  <div class="col">
     <label>Amount (₹)</label>
     <input type="text" id="amount" name="amount" readonly>
   </div>
+
 </div>
 
 <div class="actions">
@@ -255,31 +183,39 @@ tr.selected{
   <div id="dropdownMenu">
     <div class="menu-item" onclick="editRow()">✏ Edit</div>
     <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
-    <div class="menu-item" onclick="printRow()">🖨 Print</div>
   </div>
 </div>
 
 <table id="dataTable">
 <thead>
 <tr>
-<th>ID</th><th>Batch</th><th>HLSO</th><th>Qty</th>
-<th>Peeled</th><th>Yield</th>
-<th>Contractor</th><th>Rate</th><th>Amount</th><th>Date</th>
+  <th>ID</th>
+  <th>Batch</th>
+  <th>Species</th>
+  <th>HLSO</th>
+  <th>HLSO Qty</th>
+  <th>Peeled Qty</th>
+  <th>Yield %</th>
+  <th>Contractor</th>
+  <th>Rate</th>
+  <th>Amount</th>
+  <th>Date</th>
 </tr>
 </thead>
 <tbody>
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
-<td>{{r.id}}</td>
-<td>{{r.batch_number}}</td>
-<td>{{r.hlso_count}}</td>
-<td>{{r.hlso_qty}}</td>
-<td>{{r.peeled_qty}}</td>
-<td>{{r.yield_percent}}</td>
-<td>{{r.contractor_name}}</td>
-<td>{{r.rate}}</td>
-<td>{{r.amount}}</td>
-<td>{{r.date}}</td>
+  <td>{{r.id}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.species}}</td>
+  <td>{{r.hlso_count}}</td>
+  <td>{{r.hlso_qty}}</td>
+  <td>{{r.peeled_qty}}</td>
+  <td>{{r.yield_percent}}</td>
+  <td>{{r.contractor_name}}</td>
+  <td>{{r.rate}}</td>
+  <td>{{r.amount}}</td>
+  <td>{{r.date}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -300,10 +236,12 @@ async function loadHLSO(){
   availableText.innerText="Available Qty : 0 kg";
 }
 
-// AVAILABLE QTY
+// AVAILABLE QTY (WITH SPECIES)
 async function loadAvailableQty(){
-  if(!batch.value||!hlso.value)return;
-  let r=await fetch(`/processing/peeling/get_available_qty/${batch.value}/${hlso.value}`);
+  if(!batch.value||!hlso.value||!species.value)return;
+  let r=await fetch(
+    `/processing/peeling/get_available_qty/${batch.value}/${hlso.value}/${species.value}`
+  );
   let d=await r.json();
   availableText.innerText=`Available Qty : ${d.available_qty} kg`;
 }
@@ -311,7 +249,9 @@ async function loadAvailableQty(){
 // RATE
 async function loadRate(){
   if(!contractor.value||!variety.value)return;
-  let r=await fetch(`/processing/peeling/get_rate?contractor=${contractor.value}&variety=${variety.value}`);
+  let r=await fetch(
+    `/processing/peeling/get_rate?contractor=${contractor.value}&variety=${variety.value}`
+  );
   let d=await r.json();
   rate.value=d.rate;
   calc();
@@ -342,19 +282,13 @@ dotsBtn?.addEventListener("click",()=>{
     dropdownMenu.style.display==="block"?"none":"block";
 });
 
-function editRow(){if(selected)location=`/processing/peeling/edit/${selected.dataset.id}`}
+function editRow(){ if(selected) location=`/processing/peeling/edit/${selected.dataset.id}` }
 function deleteRow(){
   if(!selected)return;
   Swal.fire({icon:"warning",title:"Delete?",showCancelButton:true})
   .then(r=>r.isConfirmed &&
     fetch(`/processing/peeling/delete/${selected.dataset.id}`,{method:"POST"})
     .then(()=>location.reload()))
-}
-function printRow(){
-  if(!selected)return;
-  let w=window.open();
-  w.document.write(selected.outerHTML);
-  w.print();
 }
 </script>
 

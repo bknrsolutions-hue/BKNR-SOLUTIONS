@@ -12,6 +12,7 @@ from app.routers.reports.grading_report import router as grading_router
 from app.routers.reports.peeling_report import router as peeling_router
 from app.routers.reports.soaking_report import router as soaking_router
 from app.routers.reports.production_report import router as production_router
+from app.routers.reports.floor_balance_report import router as floor_balance_router
 
 router = APIRouter(
     prefix="/reports",
@@ -26,6 +27,7 @@ router.include_router(grading_router)
 router.include_router(peeling_router)
 router.include_router(soaking_router)      # /reports/soaking
 router.include_router(production_router)
+router.include_router(floor_balance_router)
 
 # ---------------- 🔥 ALIAS FIX (MENU COMPATIBILITY) ----------------
 @router.get("/soaking_report", include_in_schema=False)

@@ -14,8 +14,9 @@ from app.database.models.processing import (
 )
 from app.database.models.criteria import varieties, species, chemicals
 
-router = APIRouter(tags=["SOAKING"])
-
+router = APIRouter(
+    tags=["SOAKING"]
+)
 
 # =====================================================
 # SHOW PAGE
@@ -33,28 +34,37 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         b[0] for b in
         db.query(RawMaterialPurchasing.batch_number)
         .filter(RawMaterialPurchasing.company_id == company_id)
-        .distinct().all()
+        .distinct()
+        .order_by(RawMaterialPurchasing.batch_number)
+        .all()
+        if b[0]
     ]
 
     variety_list = [
         v[0] for v in
         db.query(varieties.variety_name)
         .filter(varieties.company_id == company_id)
-        .distinct().all()
+        .order_by(varieties.variety_name)
+        .all()
+        if v[0]
     ]
 
     species_list = [
         s[0] for s in
         db.query(species.species_name)
         .filter(species.company_id == company_id)
-        .distinct().all()
+        .order_by(species.species_name)
+        .all()
+        if s[0]
     ]
 
     chemical_list = [
         c[0] for c in
         db.query(chemicals.chemical_name)
         .filter(chemicals.company_id == company_id)
-        .distinct().all()
+        .order_by(chemicals.chemical_name)
+        .all()
+        if c[0]
     ]
 
     today_data = (
@@ -110,7 +120,7 @@ def get_count(batch: str, request: Request, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# GET AVAILABLE QTY (ALL VARIETIES – FINAL MASTER LOGIC)
+# GET AVAILABLE QTY (FINAL – FLOOR BALANCE LOGIC)
 # =====================================================
 @router.get("/soaking/get_available_qty")
 def get_available_qty(
@@ -121,13 +131,14 @@ def get_available_qty(
     request: Request,
     db: Session = Depends(get_db)
 ):
+
     company_id = request.session.get("company_code")
     if not company_id:
         return {"available_qty": 0}
 
-    # ===========================
-    # 🔵 HOSO LOGIC
-    # ===========================
+    # =================================================
+    # 🔵 HOSO (RMP + GRADING IN - GRADING OUT - DH - SOAK + REJ)
+    # =================================================
     if variety == "HOSO":
 
         rmp_qty = db.query(
@@ -140,7 +151,7 @@ def get_available_qty(
             RawMaterialPurchasing.variety_name == "HOSO"
         ).scalar()
 
-        grading_add = db.query(
+        grading_plus = db.query(
             func.coalesce(func.sum(Grading.quantity), 0)
         ).filter(
             Grading.company_id == company_id,
@@ -150,7 +161,7 @@ def get_available_qty(
             Grading.variety_name == "HOSO"
         ).scalar()
 
-        grading_out = db.query(
+        grading_minus = db.query(
             func.coalesce(func.sum(Grading.quantity), 0)
         ).filter(
             Grading.company_id == company_id,
@@ -160,7 +171,7 @@ def get_available_qty(
             Grading.variety_name == "HOSO"
         ).scalar()
 
-        deheading_qty = db.query(
+        deheading_used = db.query(
             func.coalesce(func.sum(DeHeading.hoso_qty), 0)
         ).filter(
             DeHeading.company_id == company_id,
@@ -169,8 +180,18 @@ def get_available_qty(
             DeHeading.species == species
         ).scalar()
 
-        soaking_qty = db.query(
+        soaking_in = db.query(
             func.coalesce(func.sum(Soaking.in_qty), 0)
+        ).filter(
+            Soaking.company_id == company_id,
+            Soaking.batch_number == batch,
+            Soaking.in_count == count,
+            Soaking.species == species,
+            Soaking.variety_name == "HOSO"
+        ).scalar()
+
+        soaking_rej = db.query(
+            func.coalesce(func.sum(Soaking.rejection_qty), 0)
         ).filter(
             Soaking.company_id == company_id,
             Soaking.batch_number == batch,
@@ -181,35 +202,38 @@ def get_available_qty(
 
         available = (
             rmp_qty
-            + grading_add
-            - grading_out
-            - deheading_qty
-            - soaking_qty
+            + grading_plus
+            - grading_minus
+            - deheading_used
+            - soaking_in
+            + soaking_rej
         )
 
-    # ===========================
-    # 🟢 HLSO LOGIC
-    # ===========================
+    # =================================================
+    # 🟢 HLSO (ONLY GRADING → PEELING → SOAKING)
+    # =================================================
     elif variety == "HLSO":
 
-        grading_hlso = db.query(
-            func.coalesce(func.sum(DeHeading.hlso_qty), 0)
+        grading_qty = db.query(
+            func.coalesce(func.sum(Grading.quantity), 0)
         ).filter(
-            DeHeading.company_id == company_id,
-            DeHeading.batch_number == batch,
-            DeHeading.hoso_count == count,
-            DeHeading.species == species
+            Grading.company_id == company_id,
+            Grading.batch_number == batch,
+            Grading.graded_count == count,
+            Grading.species == species,
+            Grading.variety_name == "HLSO"
         ).scalar()
 
-        peeling_qty = db.query(
+        peeling_used = db.query(
             func.coalesce(func.sum(Peeling.hlso_qty), 0)
         ).filter(
             Peeling.company_id == company_id,
             Peeling.batch_number == batch,
-            Peeling.hlso_count == count
+            Peeling.hlso_count == count,
+            Peeling.species == species
         ).scalar()
 
-        soaking_qty = db.query(
+        soaking_in = db.query(
             func.coalesce(func.sum(Soaking.in_qty), 0)
         ).filter(
             Soaking.company_id == company_id,
@@ -219,11 +243,21 @@ def get_available_qty(
             Soaking.variety_name == "HLSO"
         ).scalar()
 
-        available = grading_hlso - peeling_qty - soaking_qty
+        soaking_rej = db.query(
+            func.coalesce(func.sum(Soaking.rejection_qty), 0)
+        ).filter(
+            Soaking.company_id == company_id,
+            Soaking.batch_number == batch,
+            Soaking.in_count == count,
+            Soaking.species == species,
+            Soaking.variety_name == "HLSO"
+        ).scalar()
 
-    # ===========================
-    # 🟡 OTHER VARIETIES (PD / PDTO etc.)
-    # ===========================
+        available = grading_qty - peeling_used - soaking_in + soaking_rej
+
+    # =================================================
+    # 🟡 OTHER VARIETIES (PD / PDTO / ETC.)
+    # =================================================
     else:
 
         peeled_qty = db.query(
@@ -231,22 +265,32 @@ def get_available_qty(
         ).filter(
             Peeling.company_id == company_id,
             Peeling.batch_number == batch,
-            Peeling.hlso_count == count,
             Peeling.variety_name == variety,
+            Peeling.hlso_count == count,   # 🔒 18 = 18
             Peeling.species == species
         ).scalar()
 
-        soaking_qty = db.query(
+        soaking_in = db.query(
             func.coalesce(func.sum(Soaking.in_qty), 0)
         ).filter(
             Soaking.company_id == company_id,
             Soaking.batch_number == batch,
-            Soaking.in_count == count,
             Soaking.variety_name == variety,
+            Soaking.in_count == count,
             Soaking.species == species
         ).scalar()
 
-        available = peeled_qty - soaking_qty
+        soaking_rej = db.query(
+            func.coalesce(func.sum(Soaking.rejection_qty), 0)
+        ).filter(
+            Soaking.company_id == company_id,
+            Soaking.batch_number == batch,
+            Soaking.variety_name == variety,
+            Soaking.in_count == count,
+            Soaking.species == species
+        ).scalar()
+
+        available = peeled_qty - soaking_in + soaking_rej
 
     return {"available_qty": round(max(available, 0), 2)}
 
@@ -261,6 +305,7 @@ def save_soaking(
     variety_name: str = Form(...),
     in_count: str = Form(...),
     in_qty: float = Form(...),
+    rejection_qty: float = Form(0),
     chemical_name: str = Form(...),
     chemical_percent: float = Form(...),
     salt_percent: float = Form(...),
@@ -274,11 +319,15 @@ def save_soaking(
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
+    if in_qty != 0:
+        rejection_qty = 0
+
     entry = Soaking(
         batch_number=batch_number,
         variety_name=variety_name,
         in_count=in_count,
         in_qty=in_qty,
+        rejection_qty=rejection_qty,
         chemical_name=chemical_name,
         chemical_percent=chemical_percent,
         chemical_qty=round(in_qty * chemical_percent / 100, 2),

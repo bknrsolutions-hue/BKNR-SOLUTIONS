@@ -157,14 +157,27 @@ function openPage(route){
   document.getElementById("frame").src = route;
 }
 
+
 /******** DASHBOARD *********/
 function loadDash(){
   let html = `
       <h3>Dashboards</h3>
-      <button onclick="openPage('/dashboard/processing')">Processing</button>
-      <button onclick="openPage('/dashboard/inventory')">Inventory</button>
-      <button onclick="openPage('/dashboard/general_stock')">General Stock</button>
-      <button onclick="openPage('/dashboard/purchasing')">Purchasing</button>
+
+      <button onclick="openPage('/dashboard/processing_dashboard')">
+        Processing Dashboard
+      </button>
+
+      <button onclick="openPage('/dashboard/inventory_dashboard')">
+        Inventory Dashboard
+      </button>
+
+      <button onclick="openPage('/dashboard/general_stock_dashboard')">
+        General Stock
+      </button>
+
+      <button onclick="openPage('/dashboard/purchasing_dashboard')">
+        Purchasing Dashboard
+      </button>
   `;
   document.getElementById("sideMenu").innerHTML = html;
 }
@@ -244,6 +257,9 @@ if (allow("soaking_report"))
 if(allow("production_report"))
   html += `<button onclick="openPage('/reports/production_report')">Production Report</button>`;
 
+  if(allow("floor_balance_report"))
+  html += `<button onclick="openPage('/reports/floor_balance_report')">Floor Balance Report</button>`;
+
   html += `<h3>Inventory Reports</h3>`;
 
   if(allow("inventory_report"))
@@ -254,6 +270,9 @@ if(allow("production_report"))
   if(allow("gs_report"))
     html += `<button onclick="openPage('/general_stock/report')">General Store Report</button>`;
 
+  if(allow("gs_report"))
+    html += `<button onclick="openPage('/general_stock/report')">General Store Report</button>`;
+ 
   document.getElementById("sideMenu").innerHTML = html;
 }
 
