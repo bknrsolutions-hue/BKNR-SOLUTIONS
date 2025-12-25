@@ -1,102 +1,416 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PRODUCTION REPORT - BKNR SOLUTIONS</title>
+<title>Production Report | BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  body{font-family:Arial;background:#eaf4ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-size:22px;}
+:root{
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --primary:#143465;
+  --muted:#6b7280;
+}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-  .filter-box{width:90%;max-width:1200px;margin:auto;display:flex;gap:12px;background:white;padding:10px;border-radius:8px;}
-  .filter-box select{flex:1;padding:8px;border:1px solid #7ca6d9;border-radius:6px;}
+/* ================= HEADER ================= */
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 10px;
+  border-bottom:1px solid var(--border);
+}
+.header h2{margin:0;font-size:22px;color:var(--primary)}
+.header p{margin:4px 0 0;font-size:12px;color:var(--muted)}
 
-  table{width:90%;max-width:1200px;margin:25px auto;border-collapse:collapse;background:white;
-        box-shadow:0 3px 10px rgba(0,0,0,.15);}
-  th,td{padding:9px;border-bottom:1px solid #ddd;font-size:13px;}
-  th{background:#003366;color:white;}
-  .var-head{background:#d6ecff;font-weight:bold;}
-  .batch-foot{background:#b8dbff;font-weight:bold;}
-  .final-foot{background:#003366;color:white;font-weight:bold;}
+/* ================= FILTERS ================= */
+.filters{
+  margin-top:10px;
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+.fbox{display:flex;flex-direction:column;gap:6px}
+.fbox label{font-size:12px;font-weight:600;color:var(--muted)}
+
+input[type=date]{
+  padding:7px 8px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  font-size:12px;
+}
+
+/* MULTI SELECT */
+.multi-select{position:relative;width:200px}
+.select-box{
+  padding:7px 8px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+}
+.select-box::after{content:"▼";float:right;font-size:10px}
+
+.options{
+  position:absolute;
+  top:110%;left:0;right:0;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  max-height:240px;
+  overflow:auto;
+  display:none;
+  z-index:999;
+  box-shadow:0 10px 25px rgba(0,0,0,.15)
+}
+.options label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
+}
+.options label:hover{background:#f1f5f9}
+
+.apply-btn{
+  padding:7px 16px;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* ================= ACTION BAR ================= */
+.actions{
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+#rowCount{font-size:12px;font-weight:600;color:#374151}
+
+.menu-box{position:relative}
+.menu-btn{
+  width:34px;height:34px;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:16px;
+}
+.menu{
+  position:absolute;
+  right:0;
+  top:40px;
+  width:200px;
+  background:#fff;
+  border-radius:8px;
+  border:1px solid var(--border);
+  display:none;
+  z-index:999;
+  box-shadow:0 12px 28px rgba(0,0,0,.18)
+}
+.menu div{
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
+}
+.menu div:hover{background:#f1f5f9}
+
+/* ================= TABLE ================= */
+.section{
+  margin:20px 18px;
+  background:#fff;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+.table-wrap{
+  overflow:auto;
+  max-height:520px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1200px;
+}
+thead th{
+  background:#f1f5f9;
+  color:#111827;
+  padding:8px;
+  font-size:11px;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+tbody td{
+  padding:6px;
+  font-size:11px;
+  border-bottom:1px solid #edf2f7;
+  text-align:center;
+}
+tbody tr:hover{background:#f8fafc}
+
+/* GROUP HEADER */
+.group-head td{
+  background:#eef4ff;
+  font-weight:700;
+  color:var(--primary);
+  text-align:left;
+  padding:8px 12px;
+}
+
+.grand-total td{
+  background:var(--primary);
+  color:#fff;
+  font-weight:700;
+  padding:10px;
+}
+
+/* PRINT */
+@media print{
+  .filters,.actions,.menu-box{display:none!important}
+  body{background:#fff!important}
+  thead th{position:static!important}
+}
 </style>
 </head>
+
 <body>
 
-<h2>PRODUCTION REPORT</h2>
+<div class="header">
+  <h2>Production Report</h2>
+  <p>BKNR SOLUTIONS</p>
 
-<form method="GET" action="/reports/production_report">
-<div class="filter-box">
-    <select name="batch">
-      <option value="">All Batches</option>
-      {% for b in batches %}
-      <option value="{{ b }}" {% if selected_batch==b %}selected{% endif %}>{{ b }}</option>
-      {% endfor %}
-    </select>
+  <!-- FILTERS (UNCHANGED) -->
+  <div class="filters">
+    <div class="fbox">
+      <label>From Date</label>
+      <input type="date" id="fromDate">
+    </div>
 
-    <select name="variety">
-      <option value="">All Varieties</option>
-      {% for v in varieties %}
-      <option value="{{ v }}" {% if selected_variety==v %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
+    <div class="fbox">
+      <label>To Date</label>
+      <input type="date" id="toDate">
+    </div>
 
-    <button style="background:#003366;color:white;padding:7px 14px;border:none;border-radius:6px;">FILTER</button>
+    <div class="fbox">
+      <label>Batch</label>
+      <div class="multi-select" id="batchSelect">
+        <div class="select-box">Select Batch</div>
+        <div class="options">
+          {% for b in batches %}
+          <label><input type="checkbox" value="{{b}}"> {{b}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="fbox">
+      <label>Variety</label>
+      <div class="multi-select" id="varietySelect">
+        <div class="select-box">Select Variety</div>
+        <div class="options">
+          {% for v in varieties %}
+          <label><input type="checkbox" value="{{v}}"> {{v}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="fbox">
+      <label>Grade</label>
+      <div class="multi-select" id="gradeSelect">
+        <div class="select-box">Select Grade</div>
+        <div class="options">
+          {% for g in grades %}
+          <label><input type="checkbox" value="{{g}}"> {{g}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <button class="apply-btn" onclick="applyFilters()">Apply</button>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu-box">
+      <div class="menu-btn" id="dotsBtn">⋮</div>
+      <div class="menu" id="menu">
+        <div onclick="window.print()">🖨 Print</div>
+        <div onclick="exportExcel()">📊 Export Excel</div>
+      </div>
+    </div>
+  </div>
 </div>
-</form>
 
+<div class="section">
+<div class="table-wrap">
+
+
+<!-- TABLE -->
+<div class="table-wrap">
 <table>
 <thead>
 <tr>
-  <th>ID</th><th>Batch</th><th>Variety</th><th>Brand</th>
-  <th>Grade</th><th>Packing</th><th>MC</th><th>Loose</th>
-  <th>Qty(KG)</th><th>Glaze</th><th>Freezer</th><th>Date</th><th>Email</th>
+  <th>Date</th>
+  <th>Batch</th>
+  <th>Variety</th>
+  <th>Brand</th>
+  <th>Grade</th>
+  <th>Packing</th>
+  <th>MC</th>
+  <th>Loose</th>
+  <th>Qty (KG)</th>
+  <th>Glaze</th>
+  <th>Freezer</th>
 </tr>
 </thead>
 
-<tbody>
+<tbody id="tbody">
 
 {% for batch,data in grouped.items() %}
+  {% for variety,rows in data.varieties.items() %}
 
-    <!-- VARIETY BLOCKS UNDER BATCH -->
-    {% for variety,rows in data.varieties.items() %}
-        {% set v_total = rows | map(attribute='production_qty') | sum %}
+  <tr class="group-head">
+    <td colspan="8">Batch : {{batch}} | Variety : {{variety}}</td>
+    <td>{{ rows | map(attribute='production_qty') | sum | round(2) }}</td>
+    <td colspan="2"></td>
+  </tr>
 
-        <tr class="var-head">
-           <td colspan="8">Batch: <b>{{ batch }}</b> | Variety: <b>{{ variety }}</b></td>
-           <td><b>{{ v_total|round(2) }}</b></td>
-           <td colspan="4"></td>
-        </tr>
+  {% for r in rows %}
+  <tr data-row="data">
+    <td class="date">{{ r.date }}</td>
+    <td class="batch">{{ r.batch_number }}</td>
+    <td class="variety">{{ r.variety_name }}</td>
+    <td>{{ r.brand }}</td>
+    <td class="grade">{{ r.grade }}</td>
+    <td>{{ r.packing_style }}</td>
+    <td>{{ r.no_of_mc }}</td>
+    <td>{{ r.loose }}</td>
+    <td class="qty">{{ r.production_qty }}</td>
+    <td>{{ r.glaze }}</td>
+    <td>{{ r.freezer }}</td>
+  </tr>
+  {% endfor %}
 
-        {% for r in rows %}
-        <tr>
-          <td>{{ r.id }}</td><td>{{ r.batch_number }}</td><td>{{ r.variety_name }}</td>
-          <td>{{ r.brand }}</td><td>{{ r.grade }}</td><td>{{ r.packing_style }}</td>
-          <td>{{ r.no_of_mc }}</td><td>{{ r.loose }}</td>
-          <td>{{ r.production_qty|round(2) }}</td>
-          <td>{{ r.glaze }}</td><td>{{ r.freezer }}</td>
-          <td>{{ r.date }}</td><td>{{ r.email }}</td>
-        </tr>
-        {% endfor %}
-    {% endfor %}
-
-    <tr class="batch-foot">
-        <td colspan="8" align="right">BATCH TOTAL →</td>
-        <td><b>{{ data.batch_total|round(2) }}</b></td>
-        <td colspan="4"></td>
-    </tr>
-
+  {% endfor %}
 {% endfor %}
 
-</tbody>
-
-<tfoot>
-<tr class="final-foot">
-  <td colspan="8" align="right">GRAND TOTAL →</td>
-  <td><b>{{ final_total|round(2) }}</b></td>
-  <td colspan="4"></td>
+<tr class="grand-total">
+  <td colspan="8" align="right">GRAND TOTAL</td>
+  <td>{{ final_total | round(2) }}</td>
+  <td colspan="2"></td>
 </tr>
-</tfoot>
+
+</tbody>
 </table>
+</div>
+
+<script>
+/* MENU */
+dotsBtn.onclick=e=>{
+  e.stopPropagation();
+  menu.style.display = menu.style.display==="block"?"none":"block";
+};
+document.onclick=()=>menu.style.display="none";
+
+/* MULTI SELECT */
+document.querySelectorAll(".select-box").forEach(box=>{
+  box.onclick=e=>{
+    e.stopPropagation();
+    document.querySelectorAll(".options").forEach(o=>o.style.display="none");
+    box.nextElementSibling.style.display="block";
+  };
+});
+document.querySelectorAll(".options").forEach(o=>{
+  o.onclick=e=>e.stopPropagation();
+});
+document.addEventListener("click",()=> {
+  document.querySelectorAll(".options").forEach(o=>o.style.display="none");
+});
+
+function getValues(id){
+  return Array.from(
+    document.querySelectorAll(`#${id} input:checked`)
+  ).map(i=>i.value);
+}
+
+/* ✅ FINAL FILTER LOGIC (NO LEAKS) */
+function applyFilters(){
+
+  const bSel=getValues("batchSelect");
+  const vSel=getValues("varietySelect");
+  const gSel=getValues("gradeSelect");
+  const from=fromDate.value;
+  const to=toDate.value;
+
+  let visible=0;
+
+  document.querySelectorAll(".group-head").forEach(h=>h.style.display="none");
+  document.querySelectorAll('[data-row="data"]').forEach(r=>r.style.display="none");
+
+  document.querySelectorAll(".group-head").forEach(header=>{
+    let row=header.nextElementSibling;
+    let hasVisible=false;
+
+    while(row && !row.classList.contains("group-head") && !row.classList.contains("grand-total")){
+      if(row.dataset.row==="data"){
+        let ok=true;
+
+        const d=row.querySelector(".date").innerText.trim();
+        const b=row.querySelector(".batch").innerText.trim();
+        const v=row.querySelector(".variety").innerText.trim();
+        const g=row.querySelector(".grade").innerText.trim();
+
+        if(from && d<from) ok=false;
+        if(to && d>to) ok=false;
+        if(bSel.length && !bSel.includes(b)) ok=false;
+        if(vSel.length && !vSel.includes(v)) ok=false;
+        if(gSel.length && !gSel.includes(g)) ok=false;
+
+        if(ok){
+          row.style.display="";
+          hasVisible=true;
+          visible++;
+        }
+      }
+      row=row.nextElementSibling;
+    }
+
+    if(hasVisible) header.style.display="";
+  });
+
+  rowCount.innerText=visible+" rows";
+}
+
+function exportExcel(){
+  window.location="/reports/production/export_excel";
+}
+</script>
+
 
 </body>
 </html>

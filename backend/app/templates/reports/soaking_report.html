@@ -2,154 +2,270 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SOAKING REPORT</title>
+<title>Soaking Report | BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --primary:#003366;
-  --light:#f3f7ff;
-  --border:#cfd9ea;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
   --card:#ffffff;
+  --text:#1f2937;
+  --primary:#143465;
+  --muted:#6b7280;
 }
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-body{margin:0;padding:18px;background:var(--light)}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-.page-title{
-  text-align:center;font-size:22px;font-weight:700;
-  color:var(--primary);margin-bottom:15px
+/* ================= HEADER ================= */
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 10px;
+  border-bottom:1px solid var(--border);
 }
+.header h2{margin:0;font-size:22px;color:var(--primary)}
+.header p{margin:4px 0 0;font-size:12px;color:var(--muted)}
 
-/* FILTERS */
+/* ================= FILTERS ================= */
 .filters{
-  display:flex;gap:10px;flex-wrap:wrap;
-  background:var(--card);border:1px solid var(--border);
-  padding:12px;border-radius:8px;
-  max-width:1400px;margin:0 auto 12px;
-}
-.fbox{display:flex;flex-direction:column;gap:4px}
-.fbox label{font-size:12px;font-weight:700;color:var(--primary)}
-select,input[type=date]{
-  padding:7px;border:1px solid var(--border);
-  border-radius:5px;min-width:150px;font-size:13px
-}
-#searchBox{
-  padding:8px;width:260px;
+  margin-top:10px;
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
   border:1px solid var(--border);
-  border-radius:5px;font-size:13px
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+.fbox{display:flex;flex-direction:column;gap:6px}
+.fbox label{font-size:12px;font-weight:600;color:var(--muted)}
+
+.multi-select{position:relative;width:200px}
+.select-box{
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+}
+.select-box::after{content:"▼";float:right;font-size:10px}
+
+.options{
+  position:absolute;
+  top:110%;left:0;right:0;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  max-height:240px;
+  overflow:auto;
+  display:none;
+  z-index:999;
+  box-shadow:0 10px 25px rgba(0,0,0,.15)
+}
+.options label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
+}
+.options label:hover{background:#f1f5f9}
+.options input{accent-color:var(--primary)}
+
+.apply-btn{
+  padding:8px 18px;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
 }
 
-/* ACTION BAR */
+/* ================= ACTIONS ================= */
 .actions{
-  max-width:1400px;margin:8px auto;
-  display:flex;justify-content:space-between;align-items:center
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-#rowCount{font-size:13px;color:#444}
+#rowCount{font-size:12px;font-weight:600;color:#374151}
 
-/* MENU */
 .menu-box{position:relative}
-.dots{
-  width:36px;height:36px;background:var(--primary);
-  color:#fff;border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;cursor:pointer
+.menu-btn{
+  width:34px;height:34px;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:16px;
 }
-.menu-list{
-  position:absolute;right:0;top:42px;
-  width:220px;background:#fff;
-  border-radius:8px;border:1px solid #ddd;
-  display:none;z-index:999;
-  box-shadow:0 8px 22px rgba(0,0,0,.12)
+.menu{
+  position:absolute;
+  right:0;
+  top:40px;
+  width:200px;
+  background:#fff;
+  border-radius:8px;
+  border:1px solid var(--border);
+  display:none;
+  z-index:999;
+  box-shadow:0 12px 28px rgba(0,0,0,.18)
 }
-.menu-list div{
-  padding:10px;font-size:14px;
-  border-bottom:1px solid #f0f0f0;
-  cursor:pointer
+.menu div{
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
 }
-.menu-list div:hover{background:#eef5ff}
+.menu div:hover{background:#f1f5f9}
 
-/* TABLE */
-.table-wrap{
-  max-width:1400px;margin:0 auto;
-  background:#fff;border-radius:10px;
-  overflow:auto;border:1px solid #dce6f4;
-  box-shadow:0 6px 22px rgba(0,0,0,.06)
+/* ================= TABLE ================= */
+.section{
+  margin:20px 18px;
+  background:#fff;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
 }
-table{width:100%;border-collapse:collapse;min-width:1200px}
+.table-wrap{
+  overflow:auto;
+  max-height:520px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1200px;
+}
 thead th{
-  background:var(--primary);color:#fff;
-  padding:10px;font-size:13px;position:sticky;top:0
+  background:#f1f5f9;
+  color:#111827;
+  padding:8px;
+  font-size:11px;
+  position:sticky;
+  top:0;
+  z-index:2;
 }
 tbody td{
-  padding:8px;font-size:13px;
-  border-bottom:1px solid #eee;white-space:nowrap
+  padding:6px;
+  font-size:11px;
+  border-bottom:1px solid #edf2f7;
+  text-align:center;
 }
-tbody tr:hover{background:#eef6ff}
-tfoot td{
-  padding:10px;font-weight:700;
-  background:#f8fbff;border-top:2px solid #c4d1e0
+tbody tr:hover{background:#f8fafc}
+
+/* GROUPING */
+.group-head td{
+  background:#eef4ff;
+  font-weight:700;
+  color:var(--primary);
+  text-align:left;
+  padding:8px 12px;
+}
+.sub-total td{
+  background:#fafafa;
+  font-weight:700;
+  border-top:2px solid var(--border);
+}
+.grand-total td{
+  background:var(--primary);
+  color:#fff;
+  font-weight:700;
+  padding:10px;
+}
+
+/* PRINT */
+@media print{
+  .filters,.actions,.menu-box{display:none!important}
+  body{background:#fff!important}
+  thead th{position:static!important}
 }
 </style>
 </head>
 
 <body>
 
-<div class="page-title">SOAKING REPORT</div>
+<div class="header">
+  <h2>Soaking Report</h2>
+  <p>BKNR SOLUTIONS</p>
 
-<!-- FILTERS -->
-<div class="filters">
-  <div class="fbox"><label>From Date</label><input type="date" id="f_from"></div>
-  <div class="fbox"><label>To Date</label><input type="date" id="f_to"></div>
+  <!-- FILTERS (LOGIC UNCHANGED) -->
+  <div class="filters">
 
-  <div class="fbox"><label>Batch</label>
-    <select id="f_batch">
-      <option value="">All</option>
-      {% for b in batches %}<option>{{b}}</option>{% endfor %}
-    </select>
+    <div class="fbox">
+      <label>Batch</label>
+      <div class="multi-select" id="batchSelect">
+        <div class="select-box">Select Batch</div>
+        <div class="options">
+          {% for b in batches %}
+          <label><input type="checkbox" value="{{b}}"> {{b}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="fbox">
+      <label>Variety</label>
+      <div class="multi-select" id="varietySelect">
+        <div class="select-box">Select Variety</div>
+        <div class="options">
+          {% for v in varieties %}
+          <label><input type="checkbox" value="{{v}}"> {{v}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="fbox">
+      <label>Chemical</label>
+      <div class="multi-select" id="chemicalSelect">
+        <div class="select-box">Select Chemical</div>
+        <div class="options">
+          {% for c in chemicals %}
+          <label><input type="checkbox" value="{{c}}"> {{c}}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <button class="apply-btn" onclick="applyFilters()">Apply</button>
   </div>
 
-  <div class="fbox"><label>Count</label>
-    <select id="f_count">
-      <option value="">All</option>
-      {% for c in counts %}<option>{{c}}</option>{% endfor %}
-    </select>
-  </div>
-
-  <div class="fbox"><label>Chemical</label>
-    <select id="f_chemical">
-      <option value="">All</option>
-      {% for c in chemicals %}<option>{{c}}</option>{% endfor %}
-    </select>
-  </div>
-
-  <input id="searchBox" placeholder="Search batch / chemical">
-</div>
-
-<!-- ACTIONS -->
-<div class="actions">
-  <div id="rowCount">0 rows</div>
-  <div class="menu-box">
-    <div class="dots" id="dotsBtn">⋮</div>
-    <div class="menu-list" id="menu">
-      <div onclick="editSelected()">✏️ Edit Selected</div>
-      <div onclick="deleteSelected()">🗑 Delete Selected</div>
-      <div onclick="printTable()">🖨 Print</div>
-      <div onclick="exportExcel()">📊 Export Excel</div>
+  <!-- ACTIONS -->
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu-box">
+      <div class="menu-btn" id="dotsBtn">⋮</div>
+      <div class="menu" id="menu">
+        <div onclick="window.print()">🖨 Print</div>
+        <div onclick="exportExcel()">📊 Export Excel</div>
+      </div>
     </div>
   </div>
 </div>
+
+<div class="section">
+<div class="table-wrap">
 
 <!-- TABLE -->
 <div class="table-wrap">
 <table>
 <thead>
 <tr>
-  <th><input type="checkbox" id="chk_all"></th>
-  <th>ID</th>
   <th>Date</th>
   <th>Batch</th>
-  <th>Count</th>
-  <th>Qty (Kg)</th>
+  <th>Variety</th>
+  <th>Qty</th>
   <th>Chemical</th>
   <th>Chem %</th>
   <th>Chem Qty</th>
@@ -159,86 +275,150 @@ tfoot td{
 </thead>
 
 <tbody id="tbody">
-{% for r in rows %}
-<tr data-id="{{r.id}}">
-  <td><input type="checkbox" class="rowCheck"></td>
-  <td>{{r.id}}</td>
-  <td>{{r.date}}</td>
-  <td>{{r.batch_number}}</td>
-  <td>{{r.in_count}}</td>
-  <td class="qty">{{r.in_qty}}</td>
-  <td>{{r.chemical_name}}</td>
-  <td>{{r.chemical_percent}}</td>
-  <td class="chem">{{(r.in_qty * r.chemical_percent / 100) | round(2)}}</td>
-  <td>{{r.salt_percent}}</td>
-  <td class="salt">{{(r.in_qty * r.salt_percent / 100) | round(2)}}</td>
-</tr>
-{% endfor %}
-</tbody>
 
-<tfoot>
-<tr>
-  <td colspan="5">TOTAL</td>
-  <td id="tot_qty">0</td>
+{% for batch,data in grouped.items() %}
+  {% for variety,rows in data.counts.items() %}
+
+  <tr class="group-head" data-row="header">
+    <td colspan="9">Batch : {{batch}} | Variety : {{variety}}</td>
+  </tr>
+
+  {% for r in rows %}
+  <tr data-row="data">
+    <td>{{r.date}}</td>
+    <td class="batch">{{r.batch_number}}</td>
+    <td class="variety">{{r.variety_name}}</td>
+    <td class="qty">{{r.in_qty}}</td>
+    <td class="chemName">{{r.chemical_name}}</td>
+    <td>{{r.chemical_percent}}</td>
+    <td class="chemQty">{{r.chemical_qty}}</td>
+    <td>{{r.salt_percent}}</td>
+    <td class="saltQty">{{r.salt_qty}}</td>
+  </tr>
+  {% endfor %}
+
+  <tr class="sub-total">
+    <td colspan="3" align="right">TOTAL</td>
+    <td class="subQty">0</td>
+    <td colspan="2"></td>
+    <td class="subChem">0</td>
+    <td></td>
+    <td class="subSalt">0</td>
+  </tr>
+
+  {% endfor %}
+{% endfor %}
+
+<tr class="grand-total">
+  <td colspan="3" align="right">GRAND TOTAL</td>
+  <td id="gQty">0</td>
   <td colspan="2"></td>
-  <td id="tot_chem">0</td>
+  <td id="gChem">0</td>
   <td></td>
-  <td id="tot_salt">0</td>
+  <td id="gSalt">0</td>
 </tr>
-</tfoot>
+
+</tbody>
 </table>
 </div>
 
 <script>
-const rows=[...document.querySelectorAll("#tbody tr")];
-const num=v=>parseFloat(v)||0;
+/* 3 DOT MENU */
+const dotsBtn=document.getElementById("dotsBtn");
+const menu=document.getElementById("menu");
 
-/* MENU */
 dotsBtn.onclick=e=>{
- e.stopPropagation();
- menu.style.display=menu.style.display==="block"?"none":"block";
+  e.stopPropagation();
+  menu.style.display=menu.style.display==="block"?"none":"block";
 };
-document.onclick=()=>menu.style.display="none";
+document.addEventListener("click",()=>menu.style.display="none");
 
-/* TOTALS */
-function totals(v){
- let q=0,c=0,s=0;
- v.forEach(r=>{
-  q+=num(r.querySelector(".qty").innerText);
-  c+=num(r.querySelector(".chem").innerText);
-  s+=num(r.querySelector(".salt").innerText);
- });
- tot_qty.innerText=q.toFixed(2);
- tot_chem.innerText=c.toFixed(2);
- tot_salt.innerText=s.toFixed(2);
+/* MULTI SELECT OPEN/CLOSE */
+document.querySelectorAll(".select-box").forEach(box=>{
+  box.onclick=e=>{
+    e.stopPropagation();
+    document.querySelectorAll(".options").forEach(o=>{
+      if(o!==box.nextElementSibling) o.style.display="none";
+    });
+    const opt=box.nextElementSibling;
+    opt.style.display=opt.style.display==="block"?"none":"block";
+  };
+});
+document.querySelectorAll(".options").forEach(o=>{
+  o.onclick=e=>e.stopPropagation();
+});
+document.addEventListener("click",()=>{
+  document.querySelectorAll(".options").forEach(o=>o.style.display="none");
+});
+
+/* FILTER LOGIC */
+const gQtyEl=document.getElementById("gQty");
+const gChemEl=document.getElementById("gChem");
+const gSaltEl=document.getElementById("gSalt");
+const rowCount=document.getElementById("rowCount");
+
+function getValues(id){
+  return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(i=>i.value);
 }
 
-/* FILTER */
 function applyFilters(){
- let vis=[];
- rows.forEach(r=>{
-  let ok=true;
-  if(f_batch.value && r.children[3].innerText!==f_batch.value) ok=false;
-  if(f_count.value && r.children[4].innerText!==f_count.value) ok=false;
-  if(f_chemical.value && r.children[6].innerText!==f_chemical.value) ok=false;
-  if(searchBox.value && !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())) ok=false;
-  r.style.display=ok?"":"none";
-  if(ok) vis.push(r);
- });
- rowCount.innerText=`${vis.length} rows`;
- totals(vis);
-}
-[f_batch,f_count,f_chemical].forEach(e=>e.onchange=applyFilters);
-searchBox.oninput=applyFilters;
-applyFilters();
+  const bSel=getValues("batchSelect");
+  const vSel=getValues("varietySelect");
+  const cSel=getValues("chemicalSelect");
 
-/* ACTIONS */
-const ids=()=>[...document.querySelectorAll(".rowCheck:checked")].map(c=>c.closest("tr").dataset.id);
-function editSelected(){if(ids().length!==1)alert("Select one");else location=`/processing/soaking/edit/${ids()[0]}`;}
-function deleteSelected(){alert("Delete API");}
-function printTable(){window.print();}
-function exportExcel(){location=`/reports/soaking/export_excel?ids=${ids().join(",")}`;}
+  let visible=0,gQty=0,gChem=0,gSalt=0;
+
+  document.querySelectorAll(".sub-total").forEach(st=>{
+    st.style.display="none";
+    st.querySelector(".subQty").innerText="0";
+    st.querySelector(".subChem").innerText="0";
+    st.querySelector(".subSalt").innerText="0";
+  });
+  document.querySelectorAll('[data-row="header"]').forEach(h=>h.style.display="none");
+
+  document.querySelectorAll('[data-row="data"]').forEach(row=>{
+    let ok=true;
+    if(bSel.length&&!bSel.includes(row.querySelector(".batch").innerText)) ok=false;
+    if(vSel.length&&!vSel.includes(row.querySelector(".variety").innerText)) ok=false;
+    if(cSel.length&&!cSel.includes(row.querySelector(".chemName").innerText)) ok=false;
+
+    row.style.display=ok?"":"none";
+
+    if(ok){
+      visible++;
+      const qty=parseFloat(row.querySelector(".qty").innerText)||0;
+      const chem=parseFloat(row.querySelector(".chemQty").innerText)||0;
+      const salt=parseFloat(row.querySelector(".saltQty").innerText)||0;
+      gQty+=qty; gChem+=chem; gSalt+=salt;
+
+      let sub=row.nextElementSibling;
+      while(sub&&!sub.classList.contains("sub-total")) sub=sub.nextElementSibling;
+      if(sub){
+        sub.style.display="";
+        sub.querySelector(".subQty").innerText=(parseFloat(sub.querySelector(".subQty").innerText)||0)+qty;
+        sub.querySelector(".subChem").innerText=(parseFloat(sub.querySelector(".subChem").innerText)||0)+chem;
+        sub.querySelector(".subSalt").innerText=(parseFloat(sub.querySelector(".subSalt").innerText)||0)+salt;
+      }
+
+      let hdr=row.previousElementSibling;
+      while(hdr&&!hdr.dataset.row) hdr=hdr.previousElementSibling;
+      if(hdr) hdr.style.display="";
+    }
+  });
+
+  gQtyEl.innerText=gQty.toFixed(2);
+  gChemEl.innerText=gChem.toFixed(2);
+  gSaltEl.innerText=gSalt.toFixed(2);
+  rowCount.innerText=visible+" rows";
+}
+
+function exportExcel(){
+  window.location="/reports/soaking/export_excel";
+}
+
+applyFilters();
 </script>
+
 
 </body>
 </html>

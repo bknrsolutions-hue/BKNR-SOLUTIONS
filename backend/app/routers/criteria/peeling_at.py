@@ -1,4 +1,4 @@
-# app/routers/criteria/production_at.py
+# app/routers/criteria/peeling_at.py
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -7,14 +7,17 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import get_db
-from app.database.models.criteria import production_at as ProductionAt
+from app.database.models.criteria import peeling_at as PeelingAt
 
-router = APIRouter(tags=["PRODUCTION AT MASTER"])
+router = APIRouter(tags=["PEELING AT MASTER"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/production_at")
-def production_at_page(request: Request, db: Session = Depends(get_db)):
+# ---------------------------------------------------------
+# PAGE LOAD
+# ---------------------------------------------------------
+@router.get("/peeling_at")
+def peeling_at_page(request: Request, db: Session = Depends(get_db)):
 
     email = request.session.get("email")
     company_code = request.session.get("company_code")
@@ -23,14 +26,14 @@ def production_at_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/", status_code=302)
 
     rows = (
-        db.query(ProductionAt)
-        .filter(ProductionAt.company_id == company_code)
-        .order_by(ProductionAt.id.desc())
+        db.query(PeelingAt)
+        .filter(PeelingAt.company_id == company_code)
+        .order_by(PeelingAt.id.desc())
         .all()
     )
 
     return templates.TemplateResponse(
-        "criteria/production_at.html",
+        "criteria/peeling_at.html",
         {
             "request": request,
             "today_data": rows,
@@ -40,11 +43,14 @@ def production_at_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/production_at")
-def save_production_at(
+# ---------------------------------------------------------
+# SAVE / UPDATE
+# ---------------------------------------------------------
+@router.post("/peeling_at")
+def save_peeling_at(
     request: Request,
 
-    production_at_name: str = Form(...),   # MUST MATCH HTML NAME
+    peeling_at_name: str = Form(...),   # ✅ matches HTML
     id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
@@ -66,13 +72,13 @@ def save_production_at(
     if not time:
         time = now.strftime("%H:%M:%S")
 
-    # DUPLICATE
+    # DUPLICATE CHECK
     dup = (
-        db.query(ProductionAt)
+        db.query(PeelingAt)
         .filter(
-            ProductionAt.production_at == production_at_name,
-            ProductionAt.company_id == company_code,
-            ProductionAt.id != (record_id if record_id else 0)
+            PeelingAt.peeling_at == peeling_at_name,
+            PeelingAt.company_id == company_code,
+            PeelingAt.id != (record_id if record_id else 0)
         )
         .first()
     )
@@ -80,26 +86,29 @@ def save_production_at(
     if dup:
         return JSONResponse({"error": "Already Exists!"}, status_code=400)
 
+    # UPDATE
     if record_id:
         row = (
-            db.query(ProductionAt)
+            db.query(PeelingAt)
             .filter(
-                ProductionAt.id == record_id,
-                ProductionAt.company_id == company_code
-            ).first()
+                PeelingAt.id == record_id,
+                PeelingAt.company_id == company_code
+            )
+            .first()
         )
 
         if not row:
             return JSONResponse({"error": "Not Found"}, status_code=404)
 
-        row.production_at = production_at_name
+        row.peeling_at = peeling_at_name
         row.date = date
         row.time = time
         row.email = email
 
+    # INSERT
     else:
-        new_row = ProductionAt(
-            production_at=production_at_name,
+        new_row = PeelingAt(
+            peeling_at=peeling_at_name,
             date=date,
             time=time,
             email=email,
@@ -111,14 +120,21 @@ def save_production_at(
     return JSONResponse({"success": True})
 
 
-@router.post("/production_at/delete/{id}")
-def delete(id: int, request: Request, db: Session = Depends(get_db)):
+# ---------------------------------------------------------
+# DELETE
+# ---------------------------------------------------------
+@router.post("/peeling_at/delete/{id}")
+def delete_peeling_at(
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
 
     company_code = request.session.get("company_code")
 
-    db.query(ProductionAt).filter(
-        ProductionAt.id == id,
-        ProductionAt.company_id == company_code
+    db.query(PeelingAt).filter(
+        PeelingAt.id == id,
+        PeelingAt.company_id == company_code
     ).delete()
 
     db.commit()

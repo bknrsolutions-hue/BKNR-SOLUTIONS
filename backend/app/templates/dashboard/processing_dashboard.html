@@ -2,45 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PROCESSING DASHBOARD — BKNR SOLUTIONS</title>
+<title>PROCESSING DASHBOARD – BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body{margin:0;font-family:Arial;background:#0f172a;color:#fff}
-h2{text-align:center;margin:14px 0;font-size:22px;font-weight:800}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<style>
+body{
+  margin:0;
+  font-family:"Segoe UI",Arial,sans-serif;
+  background:#f1f5f9;
+  color:#020617;
+}
+h2{text-align:center;color:#003366;margin:14px 0;font-weight:900}
 .dashboard{width:96%;margin:auto}
 
-/* ================= TOP CARDS ================= */
+/* CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(8,1fr);
-  gap:12px;
+  gap:12px;margin-bottom:14px
 }
-
 .card{
-  padding:14px;
-  border-radius:10px;
-  transition:.2s;
-  background:#1e293b;
+  padding:14px;border-radius:14px;color:#fff;
+  box-shadow:0 6px 16px rgba(0,0,0,.18)
 }
-.card:hover{transform:scale(1.03)}
+.card h4{margin:0;font-size:13px;opacity:.9}
+.value{font-size:22px;font-weight:900;cursor:pointer}
+.today{font-size:12px;cursor:pointer;opacity:.9}
 
-.card h4{margin:0;font-size:13px}
-.value{
-  font-size:22px;
-  font-weight:900;
-  cursor:pointer;
-}
-.today{
-  font-size:12px;
-  margin-top:4px;
-  cursor:pointer;
-  opacity:.85;
-}
-.value:hover,.today:hover{text-decoration:underline}
-
-/* COLORS */
 .blue{background:#2563eb}
 .green{background:#16a34a}
 .orange{background:#ea580c}
@@ -48,198 +38,256 @@ h2{text-align:center;margin:14px 0;font-size:22px;font-weight:800}
 .teal{background:#0d9488}
 .pink{background:#db2777}
 .gray{background:#334155}
+.indigo{background:#4f46e5}
 
-/* ================= FLOOR BALANCE ================= */
-.section-title{
-  margin:18px 0 10px;
-  font-size:16px;
-  font-weight:700;
+/* FILTER BAR */
+.filter-bar{
+  background:#fff;padding:12px;border-radius:12px;
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+  display:flex;gap:14px;align-items:end;margin-bottom:14px
+}
+.filter-bar label{font-size:12px;font-weight:900;color:#003366}
+.filter-bar input{
+  padding:6px 8px;border-radius:6px;border:1px solid #cbd5f5
+}
+.filter-bar button{
+  padding:8px 18px;background:#003366;color:#fff;
+  border:none;border-radius:8px;font-weight:900;cursor:pointer
 }
 
-.floor-cards{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:12px;
+/* CHART GRID */
+.chart-grid{
+  display:grid;grid-template-columns:60% 40%;
+  gap:14px;margin-bottom:14px
+}
+.chart-box{
+  background:#fff;padding:12px;border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.15)
+}
+.chart-head{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:6px
+}
+.chart-head strong{color:#003366;font-size:14px}
+.chart-head select,input{
+  padding:6px 8px;border-radius:8px;
+  border:1px solid #cbd5f5;font-size:12px
 }
 
-.floor-card{
-  background:#020617;
-  border:1px solid #1e293b;
-  padding:12px;
-  border-radius:10px;
-  cursor:pointer;
-}
-.floor-card:hover{border-color:#38bdf8}
-.floor-card h5{margin:0;color:#38bdf8;font-size:13px}
-.floor-card span{font-size:20px;font-weight:800}
+canvas{max-height:220px}
 
-/* ================= REPORT SECTION ================= */
-#reportSection{
-  margin-top:18px;
-  border:1px solid #1e293b;
-  border-radius:12px;
-  height:460px;
-  display:none;
-  background:#020617;
+/* FLOOR */
+.floor-box{
+  background:#fff;padding:12px;border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.15)
+}
+.floor-frame{
+  width:100%;height:600px;border:none;border-radius:10px
 }
 
-.report-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:8px 12px;
-  border-bottom:1px solid #1e293b;
+@media(max-width:1200px){
+  .cards{grid-template-columns:repeat(4,1fr)}
+  .chart-grid{grid-template-columns:1fr}
 }
-
-.report-header button{
-  background:#ef4444;
-  border:none;
-  color:white;
-  padding:4px 10px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-#reportFrame{
-  width:100%;
-  height:410px;
-  border:none;
-  background:#fff;
+@media(max-width:700px){
+  .cards{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
 
 <body>
 
-<h2>PROCESSING — LIVE DASHBOARD</h2>
+<h2>PROCESSING – LIVE DASHBOARD</h2>
 
 <div class="dashboard">
 
-<!-- ================= TOP SUMMARY CARDS ================= -->
+<!-- ================= CARDS ================= -->
 <div class="cards">
 
   <div class="card blue">
     <h4>Gate Entry</h4>
-    <div class="value"
-         onclick="openReport('/reports/gate_entry','Gate Entry – All')">
-      {{ gate_total }}
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/gate_entry?mode=today','Gate Entry – Today')">
-      Today : {{ gate_today }}
-    </div>
+    <div class="value" onclick="openReport('/reports/gate_entry')">{{ gate_total }}</div>
+    <div class="today" onclick="openToday('/processing/gate_entry')">Today : {{ gate_today }}</div>
   </div>
 
   <div class="card green">
     <h4>Raw Material</h4>
-    <div class="value"
-         onclick="openReport('/reports/raw_material_purchasing','RMP – All')">
-      {{ rmp_total }} kg
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/raw_material_purchasing?mode=today','RMP – Today')">
-      Today : {{ rmp_today }} kg
-    </div>
+    <div class="value" onclick="openReport('/reports/raw_material_purchasing')">{{ rmp_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/raw_material_purchasing')">Today : {{ rmp_today }} kg</div>
   </div>
 
   <div class="card orange">
     <h4>De-Heading</h4>
-    <div class="value"
-         onclick="openReport('/reports/de_heading','De-Heading – All')">
-      {{ dh_total }} kg
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/de_heading?mode=today','De-Heading – Today')">
-      Today : {{ dh_today }} kg
-    </div>
+    <div class="value" onclick="openReport('/reports/de_heading')">{{ dh_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/de_heading')">Today : {{ dh_today }} kg</div>
   </div>
 
   <div class="card purple">
     <h4>Grading</h4>
-    <div class="value"
-         onclick="openReport('/reports/grading_report','Grading – All')">
-      {{ grading_total }} kg
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/grading_report?mode=today','Grading – Today')">
-      Today : {{ grading_today }} kg
-    </div>
+    <div class="value" onclick="openReport('/reports/grading_report')">{{ grading_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/grading')">Today : {{ grading_today }} kg</div>
   </div>
 
   <div class="card teal">
     <h4>Peeling</h4>
-    <div class="value"
-         onclick="openReport('/reports/peeling_report','Peeling – All')">
-      {{ peeling_total }} kg
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/peeling_report?mode=today','Peeling – Today')">
-      Today : {{ peeling_today }} kg
-    </div>
+    <div class="value" onclick="openReport('/reports/peeling_report')">{{ peeling_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/peeling')">Today : {{ peeling_today }} kg</div>
   </div>
 
   <div class="card pink">
     <h4>Soaking</h4>
-    <div class="value"
-         onclick="openReport('/reports/soaking','Soaking – All')">
-      {{ soaking_total }} kg
-    </div>
-    <div class="today"
-         onclick="openReport('/reports/soaking?mode=today','Soaking – Today')">
-      Today : {{ soaking_today }} kg
-    </div>
+    <div class="value" onclick="openReport('/reports/soaking')">{{ soaking_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/soaking')">Today : {{ soaking_today }} kg</div>
   </div>
 
   <div class="card gray">
     <h4>Production</h4>
-    <div class="value"
-         onclick="openReport('/reports/production_report','Production – All')">
-      {{ production_total }} kg
+    <div class="value" onclick="openReport('/reports/production_report')">{{ production_total }} kg</div>
+    <div class="today" onclick="openToday('/processing/production')">Today : {{ production_today }} kg</div>
+  </div>
+
+  <div class="card indigo">
+    <h4>Floor Balance</h4>
+    <div class="value" onclick="scrollToFloor()">{{ floor_total }} kg</div>
+    <div class="today">Live</div>
+  </div>
+
+</div>
+
+<!-- ================= GLOBAL FILTER ================= -->
+<form method="GET" action="/dashboard/processing_dashboard">
+<div class="filter-bar">
+  <div>
+    <label>From Date</label><br>
+    <input type="date" name="from_date" value="{{ selected_from }}">
+  </div>
+  <div>
+    <label>To Date</label><br>
+    <input type="date" name="to_date" value="{{ selected_to }}">
+  </div>
+ 
+  <div>
+    <button type="submit">APPLY</button>
+  </div>
+</div>
+</form>
+
+<!-- ================= CHARTS ================= -->
+<div class="chart-grid">
+
+  <!-- DAY FLOW -->
+  <div class="chart-box">
+    <div class="chart-head">
+      <strong>DAY WISE FLOW</strong>
+      <select id="dayFormSelect" onchange="updateDayFlow()">
+        <option value="gate">Gate Entry</option>
+        <option value="rmp">Raw Material</option>
+        <option value="dh">De-Heading</option>
+        <option value="grading">Grading</option>
+        <option value="peeling">Peeling</option>
+        <option value="soaking">Soaking</option>
+        <option value="production">Production</option>
+      </select>
     </div>
-    <div class="today"
-         onclick="openReport('/reports/production_report?mode=today','Production – Today')">
-      Today : {{ production_today }} kg
+    <canvas id="dayFlowChart"></canvas>
+  </div>
+
+  <!-- HOURLY FLOW (UPDATED) -->
+  <div class="chart-box">
+    <div class="chart-head">
+      <strong>HOURLY FLOW</strong>
+      <div style="display:flex;gap:6px">
+        <select id="hourFormSelect" onchange="updateHourlyChart()">
+          <option value="production">Production</option>
+          <option value="gate">Gate Entry</option>
+          <option value="rmp">Raw Material</option>
+          <option value="dh">De-Heading</option>
+          <option value="grading">Grading</option>
+          <option value="peeling">Peeling</option>
+          <option value="soaking">Soaking</option>
+        </select>
+        <input type="date" id="hourChartDate" value="{{ selected_hour_date }}">
+      </div>
     </div>
+    <canvas id="hourFlowChart"></canvas>
   </div>
 
 </div>
 
 <!-- ================= FLOOR BALANCE ================= -->
-<div class="section-title">FLOOR BALANCE (VARIETY WISE)</div>
-
-<div class="floor-cards">
-{% for f in floor_balances %}
-  <div class="floor-card"
-       onclick="openReport(
-         '/reports/floor_balance_report?variety={{ f.variety }}',
-         'Floor Balance – {{ f.variety }}'
-       )">
-    <h5>{{ f.variety }}</h5>
-    <span>{{ f.available_qty }} kg</span>
-  </div>
-{% endfor %}
-</div>
-
-<!-- ================= REPORT IFRAME ================= -->
-<div id="reportSection">
-  <div class="report-header">
-    <strong id="reportTitle">Report</strong>
-    <button onclick="closeReport()">Close</button>
-  </div>
-  <iframe id="reportFrame"></iframe>
+<div class="floor-box" id="floorSection">
+  <iframe src="/reports/floor_balance_report" class="floor-frame"></iframe>
 </div>
 
 </div>
 
 <script>
-function openReport(url,title){
-  document.getElementById("reportSection").style.display="block";
-  document.getElementById("reportFrame").src=url;
-  document.getElementById("reportTitle").innerText=title;
+function openReport(u){window.open(u,"_blank")}
+function openToday(u){window.open(u+"?view=table","_blank")}
+function scrollToFloor(){
+  document.getElementById("floorSection").scrollIntoView({behavior:"smooth"})
 }
-function closeReport(){
-  document.getElementById("reportFrame").src="";
-  document.getElementById("reportSection").style.display="none";
+
+/* DAY FLOW */
+const flowDates = {{ flow_dates | tojson }};
+const flowData  = {{ flow_data  | tojson }};
+
+const dayChart = new Chart(document.getElementById("dayFlowChart"),{
+  type:"line",
+  data:{labels:flowDates,datasets:[{
+    data:flowData.gate,
+    fill:true,
+    borderColor:"#003366",
+    backgroundColor:"rgba(0,51,102,.18)",
+    tension:.35
+  }]},
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+});
+
+function updateDayFlow(){
+  dayChart.data.datasets[0].data = flowData[
+    document.getElementById("dayFormSelect").value
+  ];
+  dayChart.update();
+}
+
+/* HOURLY FLOW */
+const hourly = {{ hourly_data | tojson }};
+
+let hourChart = new Chart(document.getElementById("hourFlowChart"),{
+  type:"bar",
+  data:{labels:hourly.hours,datasets:[{
+    data:hourly.production,
+    backgroundColor:"#16a34a",
+    borderRadius:6
+  }]},
+  options:{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.raw+" kg"}}
+    },
+    scales:{y:{beginAtZero:true}}
+  },
+  plugins:[{
+    id:"labels",
+    afterDatasetsDraw(chart){
+      const {ctx}=chart;
+      chart.getDatasetMeta(0).data.forEach((b,i)=>{
+        const v=chart.data.datasets[0].data[i];
+        if(!v) return;
+        ctx.fillStyle="#020617";
+        ctx.font="11px Segoe UI";
+        ctx.textAlign="center";
+        ctx.fillText(v+" kg",b.x,b.y-6);
+      });
+    }
+  }]
+});
+
+function updateHourlyChart(){
+  const f=document.getElementById("hourFormSelect").value;
+  hourChart.data.datasets[0].data = hourly[f];
+  hourChart.update();
 }
 </script>
 

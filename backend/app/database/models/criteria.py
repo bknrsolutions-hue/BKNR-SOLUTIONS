@@ -359,3 +359,14 @@ class HOSO_HLSO_Yields(Base):
     email = Column(String(200))                           # Created/Updated by
 
     company_id = Column(String(50), index=True)
+
+
+    # PEELING AT MASTER
+class peeling_at(Base, metacolumns):
+    __tablename__ = "peeling_at"
+    id = Column(Integer, primary_key=True)
+    peeling_at = Column(String(255), nullable=False, index=True)
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "peeling_at", name="uix_company_peeling_at"),
+    )

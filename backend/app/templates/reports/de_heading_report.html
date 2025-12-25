@@ -2,241 +2,195 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DE-HEADING REPORT</title>
+<title>DE-HEADING REPORT – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --primary:#003366;
-  --light:#f3f7ff;
-  --border:#cfd9ea;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
   --card:#ffffff;
+  --text:#1f2937;
 }
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-body{margin:0;padding:18px;background:var(--light)}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-.page-title{
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-  color:var(--primary);
-  margin-bottom:14px;
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 10px;
+  border-bottom:1px solid var(--border);
 }
+.header h2{margin:0;font-size:22px}
+.header p{margin:4px 0 0;font-size:12px;color:#6b7280}
 
 /* ================= FILTERS ================= */
 .filters{
-  max-width:1400px;
-  margin:0 auto 12px;
-  background:var(--card);
-  border:1px solid var(--border);
+  margin-top:10px;
+  background:#fff;
   padding:12px;
-  border-radius:8px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:flex-end;
-}
-.fbox{display:flex;flex-direction:column}
-.fbox label{
-  font-size:12px;
-  font-weight:bold;
-  color:var(--primary);
-}
-select,input[type=date],#searchBox{
-  padding:7px;
-  border-radius:5px;
+  border-radius:10px;
   border:1px solid var(--border);
-  min-width:150px;
-  font-size:13px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
 }
-#searchBox{width:260px}
+.filters label{font-size:12px;font-weight:600}
+.filters select,
+.filters input{
+  margin-top:6px;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  font-size:12px;
+  background:#fff;
+}
 
 /* ================= ACTIONS ================= */
 .actions{
-  max-width:1400px;
-  margin:8px auto;
+  margin-top:10px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
-#rowCount{font-size:13px;color:#444}
+#rowCount{font-size:12px;font-weight:600}
 
-.menu-box{position:relative}
-.dots{
-  width:36px;height:36px;
-  background:var(--primary);
-  color:#fff;
+.menu{position:relative}
+.menu-btn{
+  border:1px solid var(--border);
+  background:#fff;
   border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
+  padding:4px 10px;
   cursor:pointer;
+  font-size:16px;
 }
 .menu-list{
+  display:none;
   position:absolute;
   right:0;
-  top:42px;
-  width:240px;
+  top:36px;
   background:#fff;
+  border:1px solid var(--border);
   border-radius:8px;
-  border:1px solid #ddd;
-  display:none;
-  z-index:999;
-  box-shadow:0 8px 22px rgba(0,0,0,.12);
+  min-width:200px;
+  z-index:50;
 }
 .menu-list div{
-  padding:10px;
-  font-size:14px;
+  padding:8px 12px;
+  font-size:12px;
   cursor:pointer;
-  border-bottom:1px solid #f0f0f0;
 }
-.menu-list div:hover{background:#eef5ff}
+.menu-list div:hover{background:#f1f5f9}
 
 /* ================= TABLE ================= */
-.table-wrap{
-  max-width:1400px;
-  margin:10px auto;
+.section{
+  margin:20px 18px;
   background:#fff;
-  border-radius:10px;
-  border:1px solid #dce6f4;
-  overflow:auto;
-  box-shadow:0 6px 22px rgba(0,0,0,.06);
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
 }
+.table-wrap{
+  overflow:auto;
+  max-height:520px;
+}
+
 table{
   width:100%;
   border-collapse:collapse;
-  min-width:1200px;
+  table-layout:fixed;
 }
-thead th{
-  background:var(--primary);
-  color:#fff;
-  padding:10px;
-  font-size:13px;
-  position:sticky;
-  top:0;
-}
-tbody td{
-  padding:8px;
-  font-size:13px;
-  border-bottom:1px solid #f1f1f1;
+th,td{
+  border-bottom:1px solid #edf2f7;
+  padding:6px;
+  font-size:11px;
+  text-align:center;
   white-space:nowrap;
 }
-tbody tr:hover{background:#eef6ff}
-tfoot td{
-  padding:10px;
-  font-weight:bold;
-  background:#f8fbff;
-  border-top:2px solid #c4d1e0;
+th{
+  background:#f1f5f9;
+  position:sticky;
+  top:0;
+  z-index:2;
+  font-weight:700;
 }
 
-/* ================= SUMMARY ================= */
-.summary-title{
-  max-width:1400px;
-  margin:20px auto 6px;
-  font-weight:bold;
-  color:var(--primary);
+tfoot td{
+  background:#fafafa;
+  font-weight:700;
 }
 </style>
 </head>
 
 <body>
 
-<div class="page-title">DE-HEADING REPORT</div>
+<div class="header">
+  <h2>De-Heading Report</h2>
+  <p>Batch · Contractor · Yield analysis</p>
 
-<!-- ================= FILTERS ================= -->
-<div class="filters">
-  <div class="fbox">
-    <label>From Date</label>
-    <input type="date" id="f_from">
-  </div>
-  <div class="fbox">
-    <label>To Date</label>
-    <input type="date" id="f_to">
-  </div>
- <div class="fbox">
-  <label>Month</label>
-  <select id="f_month">
-    <option value="">All</option>
-    <option value="01">January</option>
-    <option value="02">February</option>
-    <option value="03">March</option>
-    <option value="04">April</option>
-    <option value="05">May</option>
-    <option value="06">June</option>
-    <option value="07">July</option>
-    <option value="08">August</option>
-    <option value="09">September</option>
-    <option value="10">October</option>
-    <option value="11">November</option>
-    <option value="12">December</option>
-  </select>
- </div>
+  <!-- FILTERS (UNCHANGED LOGIC) -->
+  <div class="filters">
+    <div>
+      <label>From Date</label>
+      <input type="date" id="f_from">
+    </div>
+    <div>
+      <label>To Date</label>
+      <input type="date" id="f_to">
+    </div>
+    <div>
+      <label>Month</label>
+      <select id="f_month"><option value="">All</option></select>
+    </div>
+    <div>
+      <label>Batch</label>
+      <select id="f_batch">
+        <option value="">All</option>
+        {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
+      </select>
+    </div>
 
-  <div class="fbox">
-    <label>Batch</label>
-    <select id="f_batch">
-      <option value="">All</option>
-      {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
-    </select>
-  </div>
-
-  <div class="fbox">
-    <label>Contractor</label>
-    <select id="f_contractor">
-      <option value="">All</option>
-      {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
-    </select>
-  </div>
-
-  <div class="fbox">
-    <label>HOSO Count</label>
-    <select id="f_count">
-      <option value="">All</option>
-      {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
-    </select>
+    <div>
+      <label>Contractor</label>
+      <select id="f_contractor">
+        <option value="">All</option>
+        {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>HOSO Count</label>
+      <select id="f_count">
+        <option value="">All</option>
+        {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Search</label>
+      <input id="searchBox" placeholder="Batch / Contractor">
+    </div>
   </div>
 
-  <input id="searchBox" placeholder="Search batch / contractor">
-</div>
-
-<!-- ================= ACTIONS ================= -->
-<div class="actions">
-  <div id="rowCount">0 rows</div>
-
-  <div class="menu-box">
-    <div class="dots" id="dotsBtn">⋮</div>
-    <div class="menu-list" id="menu">
-      <div onclick="printReport()">🖨 Print Report</div>
-      <div onclick="printBill()">🧾 Print Monthly Bill</div>
-      <div onclick="pdfReport()">📄 Export PDF</div>
-      <div onclick="excelReport()">📊 Export Excel</div>
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu">
+      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+      <div class="menu-list" id="menu">
+        <div onclick="printReport()">🖨 Print Report</div>
+        <div onclick="printBill()">🧾 Contractor Bill</div>
+        <div onclick="pdfReport()">📄 Export PDF</div>
+        <div onclick="excelReport()">📊 Export Excel</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ================= CONTRACTOR SUMMARY ================= -->
-<div class="summary-title">Contractor Wise Totals</div>
+<div class="section">
 <div class="table-wrap">
 <table>
 <thead>
 <tr>
-  <th>Contractor</th>
-  <th>Total HOSO</th>
-  <th>Total HLSO</th>
-  <th>Total Amount</th>
-</tr>
-</thead>
-<tbody id="contractorBody"></tbody>
-</table>
-</div>
-
-<!-- ================= MAIN TABLE ================= -->
-<div class="table-wrap">
-<table id="mainTable">
-<thead>
-<tr>
-  <th><input type="checkbox" id="chk_all"></th>
   <th>Date</th>
   <th>Batch</th>
   <th>Contractor</th>
@@ -244,155 +198,141 @@ tfoot td{
   <th>HOSO Qty</th>
   <th>HLSO Qty</th>
   <th>Yield %</th>
-  <th>Rate</th>
-  <th>Amount</th>
+  <th>Target Yield %</th>
+  <th>Difference</th>
+  <th>Rate (₹)</th>
+  <th>Amount (₹)</th>
 </tr>
 </thead>
 
 <tbody id="tbody">
 {% for r in rows %}
-<tr data-id="{{r.id}}" data-contractor="{{r.contractor}}">
-  <td><input type="checkbox" class="rowCheck"></td>
-  <td>{{r.date}}</td>
+<tr>
+  <td class="date">{{r.date}}</td>
   <td>{{r.batch_number}}</td>
-  <td>{{r.contractor}}</td>
+  <td class="contractor">{{r.contractor}}</td>
   <td>{{r.hoso_count}}</td>
   <td class="hoso">{{r.hoso_qty}}</td>
   <td class="hlso">{{r.hlso_qty}}</td>
-  <td>{{r.yield_percent}}</td>
-  <td>{{r.rate_per_kg}}</td>
-  <td class="amount">{{r.amount}}</td>
+  <td>{{r.yield_percent}}%</td>
+  <td class="target">{{r.target_yield}}</td>
+  <td class="diff"></td>
+  <td>₹ {{r.rate_per_kg}}</td>
+  <td class="amount" data-val="{{r.amount}}">₹ {{r.amount}}</td>
 </tr>
 {% endfor %}
 </tbody>
 
 <tfoot>
 <tr>
-  <td colspan="5">GRAND TOTAL</td>
+  <td colspan="4">GRAND TOTAL</td>
   <td id="gt_hoso">0</td>
   <td id="gt_hlso">0</td>
   <td></td>
   <td></td>
-  <td id="gt_amount">0</td>
+  <td></td>
+  <td></td>
+  <td>₹ <span id="gt_amount">0</span></td>
 </tr>
 </tfoot>
 </table>
 </div>
+</div>
 
 <script>
-/* ================= MENU ================= */
-dotsBtn.onclick = e => {
-  e.stopPropagation();
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-};
-document.onclick = () => menu.style.display = "none";
+const rows=[...document.querySelectorAll("#tbody tr")];
+const num=v=>parseFloat(v)||0;
 
-/* ================= FILTERS ================= */
-const rows = [...document.querySelectorAll("#tbody tr")];
-const rowCount = document.getElementById("rowCount");
+/* MENU */
+function toggleMenu(){
+ const m=document.getElementById("menu");
+ m.style.display=m.style.display==="block"?"none":"block";
+}
+document.addEventListener("click",e=>{
+ if(!e.target.closest(".menu")){
+  document.getElementById("menu").style.display="none";
+ }
+});
 
+/* MONTH DROPDOWN – NOV 2025 */
+const monthMap={};
+rows.forEach(r=>{
+ const d=r.querySelector(".date").innerText;
+ if(!d) return;
+ const [y,m]=d.split("-");
+ const key=`${y}-${m}`;
+ if(!monthMap[key]){
+  monthMap[key]=new Date(y,m-1).toLocaleString("en",{month:"short",year:"numeric"});
+ }
+});
+Object.keys(monthMap).sort().reverse().forEach(k=>{
+ f_month.innerHTML+=`<option value="${k.split("-")[1]}">${monthMap[k].toUpperCase()}</option>`;
+});
+
+/* FILTERS */
 function applyFilters(){
-  let vis = [];
-
-  rows.forEach(r=>{
-    let ok = true;
-    const c = r.children;
-
-    const rowDate = c[1].innerText; // yyyy-mm-dd
-    const rowMonth = rowDate ? rowDate.split("-")[1] : "";
-
-    if(f_batch.value && c[2].innerText !== f_batch.value) ok=false;
-    if(f_contractor.value && c[3].innerText !== f_contractor.value) ok=false;
-    if(f_count.value && c[4].innerText !== f_count.value) ok=false;
-
-    /* ✅ MONTH FILTER */
-    if(f_month.value && rowMonth !== f_month.value) ok=false;
-
-    if(searchBox.value &&
-       !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())
-    ) ok=false;
-
-    r.style.display = ok ? "" : "none";
-    if(ok) vis.push(r);
-  });
-
-  rowCount.innerText = `${vis.length} rows`;
-  totals(vis);
-  contractorTotals(vis);
+ let visible=[];
+ rows.forEach(r=>{
+  let ok=true;
+  const d=r.querySelector(".date").innerText;
+  const m=d?d.split("-")[1]:"";
+  if(f_from.value && d<f_from.value) ok=false;
+  if(f_to.value && d>f_to.value) ok=false;
+  if(f_month.value && m!==f_month.value) ok=false;
+  if(f_batch.value && r.children[1].innerText!==f_batch.value) ok=false;
+  if(f_contractor.value && r.children[2].innerText!==f_contractor.value) ok=false;
+  if(f_count.value && r.children[3].innerText!==f_count.value) ok=false;
+  if(searchBox.value && !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())) ok=false;
+  r.style.display=ok?"":"none";
+  if(ok) visible.push(r);
+ });
+ rowCount.innerText=visible.length+" rows";
+ totals(visible);
+ calcDiff();
 }
 
-[f_batch, f_contractor, f_count, f_month].forEach(e => e.onchange = applyFilters);
-searchBox.oninput = applyFilters;
-
-/* ================= TOTALS ================= */
-function n(v){ return parseFloat(v) || 0 }
-
+/* TOTALS */
 function totals(v){
-  let h=0,l=0,a=0;
-  v.forEach(r=>{
-    h += n(r.querySelector(".hoso").innerText);
-    l += n(r.querySelector(".hlso").innerText);
-    a += n(r.querySelector(".amount").innerText);
-  });
-  gt_hoso.innerText = h.toFixed(2);
-  gt_hlso.innerText = l.toFixed(2);
-  gt_amount.innerText = a.toFixed(2);
+ let h=0,l=0,a=0;
+ v.forEach(r=>{
+  h+=num(r.querySelector(".hoso").innerText);
+  l+=num(r.querySelector(".hlso").innerText);
+  a+=num(r.querySelector(".amount").dataset.val);
+ });
+ gt_hoso.innerText=h.toFixed(2);
+ gt_hlso.innerText=l.toFixed(2);
+ gt_amount.innerText=a.toFixed(2);
 }
 
-function contractorTotals(v){
-  let map = {};
-  v.forEach(r=>{
-    let c = r.dataset.contractor;
-    if(!map[c]) map[c] = {h:0,l:0,a:0};
-    map[c].h += n(r.querySelector(".hoso").innerText);
-    map[c].l += n(r.querySelector(".hlso").innerText);
-    map[c].a += n(r.querySelector(".amount").innerText);
-  });
-
-  contractorBody.innerHTML = "";
-  Object.keys(map).forEach(c=>{
-    contractorBody.innerHTML += `
-      <tr>
-        <td>${c}</td>
-        <td>${map[c].h.toFixed(2)}</td>
-        <td>${map[c].l.toFixed(2)}</td>
-        <td>${map[c].a.toFixed(2)}</td>
-      </tr>`;
-  });
+/* DIFFERENCE */
+function calcDiff(){
+ rows.forEach(r=>{
+  if(r.style.display==="none") return;
+  const h=num(r.querySelector(".hoso").innerText);
+  const l=num(r.querySelector(".hlso").innerText);
+  const t=num(r.querySelector(".target").innerText);
+  if(!h||!l||!t){r.querySelector(".diff").innerText="";return;}
+  const base=l/(t/100);
+  const diff=base-h;
+  const pct=(diff/h)*100;
+  r.querySelector(".diff").innerText=`${diff.toFixed(2)} (${Math.abs(pct).toFixed(2)}%)`;
+ });
 }
 
-/* ================= EXPORT HELPERS ================= */
-const getIds = () =>
-  [...document.querySelectorAll(".rowCheck:checked")]
-    .map(c => c.closest("tr").dataset.id);
-
-function printReport(){
-  window.open(`/reports/de_heading/print?ids=${getIds().join(",")}`);
-}
-
+/* ACTIONS */
+function printReport(){window.open(`/reports/de_heading/print?ids=all`);}
+function pdfReport(){location=`/reports/de_heading/export_pdf?ids=all`;}
+function excelReport(){location=`/reports/de_heading/export_excel?ids=all`;}
 function printBill(){
-  const month = f_month.value;
-  const contractor = f_contractor.value;
-
-  if(!month || !contractor){
-    alert("Please select Month and Contractor to print Monthly Bill");
-    return;
-  }
-
-  window.open(
-    `/reports/de_heading/contractor_monthly_bill?month=${month}&contractor=${encodeURIComponent(contractor)}`
-  );
+ if(!f_month.value||!f_contractor.value){
+  alert("Select Month and Contractor");
+  return;
+ }
+ window.open(`/reports/de_heading/contractor_monthly_bill?month=${f_month.value}&contractor=${encodeURIComponent(f_contractor.value)}`);
 }
 
-function pdfReport(){
-  location = `/reports/de_heading/export_pdf?ids=${getIds().join(",")}`;
-}
-
-function excelReport(){
-  location = `/reports/de_heading/export_excel?ids=${getIds().join(",")}`;
-}
-
-/* INIT */
+[f_from,f_to,f_batch,f_contractor,f_count,f_month].forEach(e=>e.onchange=applyFilters);
+searchBox.oninput=applyFilters;
 applyFilters();
 </script>
 

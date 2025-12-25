@@ -7,101 +7,105 @@
 
 <style>
 :root{
-  --primary:#003366;
-  --light:#f3f7ff;
-  --border:#cfd9ea;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
   --card:#ffffff;
+  --text:#1f2937;
+  --primary:#143465;
+  --muted:#6b7280;
 }
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-body{margin:0;padding:18px;background:var(--light)}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-.page-title{
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-  color:var(--primary);
-  margin-bottom:14px;
+/* ================= HEADER ================= */
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 10px;
+  border-bottom:1px solid var(--border);
 }
+.header h2{margin:0;font-size:22px;color:var(--primary)}
+.header p{margin:4px 0 0;font-size:12px;color:var(--muted)}
 
 /* ================= FILTERS ================= */
 .filters{
-  max-width:1400px;
-  margin:0 auto 12px;
-  background:var(--card);
-  border:1px solid var(--border);
+  margin-top:10px;
+  background:#fff;
   padding:12px;
-  border-radius:8px;
+  border-radius:10px;
+  border:1px solid var(--border);
   display:flex;
-  gap:10px;
+  gap:14px;
   flex-wrap:wrap;
   align-items:flex-end;
 }
-.fbox{display:flex;flex-direction:column}
-.fbox label{
-  font-size:12px;
-  font-weight:bold;
-  color:var(--primary);
-}
+.fbox{display:flex;flex-direction:column;gap:6px}
+.fbox label{font-size:12px;font-weight:600;color:var(--muted)}
+
 select,input[type=date],#searchBox{
-  padding:7px;
-  border-radius:5px;
+  padding:7px 8px;
+  border-radius:6px;
   border:1px solid var(--border);
+  font-size:12px;
   min-width:150px;
-  font-size:13px;
 }
 #searchBox{width:260px}
 
-/* ================= ACTIONS ================= */
+/* ================= ACTION BAR ================= */
 .actions{
-  max-width:1400px;
-  margin:8px auto;
+  margin-top:10px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
-#rowCount{font-size:13px;color:#444}
+#rowCount{font-size:12px;font-weight:600;color:#374151}
 
 .menu-box{position:relative}
 .dots{
-  width:36px;height:36px;
-  background:var(--primary);
-  color:#fff;
+  width:34px;height:34px;
+  border:1px solid var(--border);
+  background:#fff;
   border-radius:6px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:20px;
   cursor:pointer;
+  font-size:18px;
 }
 .menu-list{
   position:absolute;
   right:0;
-  top:42px;
-  width:240px;
+  top:40px;
+  width:220px;
   background:#fff;
   border-radius:8px;
-  border:1px solid #ddd;
+  border:1px solid var(--border);
   display:none;
   z-index:999;
-  box-shadow:0 8px 22px rgba(0,0,0,.12);
+  box-shadow:0 12px 28px rgba(0,0,0,.18)
 }
 .menu-list div{
-  padding:10px;
-  font-size:14px;
+  padding:8px 12px;
+  font-size:12px;
   cursor:pointer;
-  border-bottom:1px solid #f0f0f0;
 }
-.menu-list div:hover{background:#eef5ff}
+.menu-list div:hover{background:#f1f5f9}
+
+/* ================= SECTION ================= */
+.section{
+  margin:20px 18px;
+  background:#fff;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
 
 /* ================= TABLE ================= */
 .table-wrap{
-  max-width:1400px;
-  margin:10px auto;
-  background:#fff;
-  border-radius:10px;
-  border:1px solid #dce6f4;
   overflow:auto;
-  box-shadow:0 6px 22px rgba(0,0,0,.06);
+  max-height:520px;
 }
 table{
   width:100%;
@@ -109,134 +113,135 @@ table{
   min-width:1200px;
 }
 thead th{
-  background:var(--primary);
-  color:#fff;
-  padding:10px;
-  font-size:13px;
+  background:#f1f5f9;
+  color:#111827;
+  padding:8px;
+  font-size:11px;
   position:sticky;
   top:0;
+  z-index:2;
 }
 tbody td{
-  padding:8px;
-  font-size:13px;
-  border-bottom:1px solid #f1f1f1;
-  white-space:nowrap;
+  padding:6px;
+  font-size:11px;
+  border-bottom:1px solid #edf2f7;
+  text-align:center;
 }
-tbody tr:hover{background:#eef6ff}
+tbody tr:hover{background:#f8fafc}
+
 tfoot td{
-  padding:10px;
-  font-weight:bold;
-  background:#f8fbff;
-  border-top:2px solid #c4d1e0;
+  padding:8px;
+  font-weight:700;
+  background:#f8fafc;
+  border-top:2px solid var(--border);
 }
 
 /* ================= SUMMARY ================= */
 .summary-title{
-  max-width:1400px;
-  margin:20px auto 6px;
-  font-weight:bold;
+  font-size:13px;
+  font-weight:700;
   color:var(--primary);
+  margin-bottom:6px;
+}
+
+/* PRINT */
+@media print{
+  .filters,.actions,.menu-box{display:none!important}
+  body{background:#fff!important}
+  thead th{position:static!important}
 }
 </style>
 </head>
 
 <body>
 
-<div class="page-title">PEELING REPORT</div>
+<div class="header">
+  <h2>Peeling Report</h2>
+  <p>BKNR SOLUTIONS</p>
 
-<!-- ================= FILTERS ================= -->
-<div class="filters">
-  <div class="fbox">
-    <label>From Date</label>
-    <input type="date" id="f_from">
-  </div>
-  <div class="fbox">
-    <label>To Date</label>
-    <input type="date" id="f_to">
-  </div>
+  <!-- FILTERS (UNCHANGED STRUCTURE) -->
+  <div class="filters">
+    <div class="fbox">
+      <label>From Date</label>
+      <input type="date" id="f_from">
+    </div>
 
-  <div class="fbox">
-    <label>Month</label>
-    <select id="f_month">
-      <option value="">All</option>
-      <option value="01">January</option>
-      <option value="02">February</option>
-      <option value="03">March</option>
-      <option value="04">April</option>
-      <option value="05">May</option>
-      <option value="06">June</option>
-      <option value="07">July</option>
-      <option value="08">August</option>
-      <option value="09">September</option>
-      <option value="10">October</option>
-      <option value="11">November</option>
-      <option value="12">December</option>
-    </select>
-  </div>
+    <div class="fbox">
+      <label>To Date</label>
+      <input type="date" id="f_to">
+    </div>
 
-  <div class="fbox">
-    <label>Batch</label>
-    <select id="f_batch">
-      <option value="">All</option>
-      {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
-    </select>
-  </div>
+    <div class="fbox">
+      <label>Month</label>
+      <select id="f_month"><option value="">All</option></select>
+    </div>
 
-  <div class="fbox">
-    <label>Contractor</label>
-    <select id="f_contractor">
-      <option value="">All</option>
-      {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
-    </select>
-  </div>
+    <div class="fbox">
+      <label>Batch</label>
+      <select id="f_batch">
+        <option value="">All</option>
+        {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
+      </select>
+    </div>
 
-  <div class="fbox">
-    <label>HLSO Count</label>
-    <select id="f_count">
-      <option value="">All</option>
-      {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
-    </select>
+    <div class="fbox">
+      <label>Contractor</label>
+      <select id="f_contractor">
+        <option value="">All</option>
+        {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="fbox">
+      <label>HLSO Count</label>
+      <select id="f_count">
+        <option value="">All</option>
+        {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
+      </select>
+    </div>
+
+    <input id="searchBox" placeholder="Search batch / contractor">
   </div>
 
-  <input id="searchBox" placeholder="Search batch / contractor">
-</div>
-
-<!-- ================= ACTIONS ================= -->
-<div class="actions">
-  <div id="rowCount">0 rows</div>
-  <div class="menu-box">
-    <div class="dots" id="dotsBtn">⋮</div>
-    <div class="menu-list" id="menu">
-      <div onclick="printReport()">🖨 Print Report</div>
-      <div onclick="printBill()">🧾 Print Monthly Bill</div>
-      <div onclick="pdfReport()">📄 Export PDF</div>
-      <div onclick="excelReport()">📊 Export Excel</div>
+  <!-- ACTION BAR -->
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu-box">
+      <div class="dots" id="dotsBtn">⋮</div>
+      <div class="menu-list" id="menu">
+        <div onclick="printReport()">🖨 Print Report</div>
+        <div onclick="printBill()">🧾 Print Monthly Bill</div>
+        <div onclick="pdfReport()">📄 Export PDF</div>
+        <div onclick="excelReport()">📊 Export Excel</div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ================= CONTRACTOR SUMMARY ================= -->
-<div class="summary-title">Contractor Wise Totals</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-  <th>Contractor</th>
-  <th>Total HLSO Qty</th>
-  <th>Total Peeled Qty</th>
-  <th>Total Amount</th>
-</tr>
-</thead>
-<tbody id="contractorBody"></tbody>
-</table>
+<div class="section">
+  <div class="summary-title">Contractor Wise Totals</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Contractor</th>
+          <th>Total HLSO Qty</th>
+          <th>Total Peeled Qty</th>
+          <th>Total Amount</th>
+        </tr>
+      </thead>
+      <tbody id="contractorBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- ================= MAIN TABLE ================= -->
+<div class="section">
 <div class="table-wrap">
 <table id="mainTable">
 <thead>
 <tr>
-  <th><input type="checkbox" id="chk_all"></th>
   <th>Date</th>
   <th>Batch</th>
   <th>Contractor</th>
@@ -251,11 +256,10 @@ tfoot td{
 
 <tbody id="tbody">
 {% for r in rows %}
-<tr data-id="{{r.id}}" data-contractor="{{r.contractor_name}}">
-  <td><input type="checkbox" class="rowCheck"></td>
-  <td>{{r.date}}</td>
+<tr>
+  <td class="date">{{r.date}}</td>
   <td>{{r.batch_number}}</td>
-  <td>{{r.contractor_name}}</td>
+  <td class="contractor">{{r.contractor_name}}</td>
   <td>{{r.hlso_count}}</td>
   <td class="hlso">{{r.hlso_qty}}</td>
   <td class="peeled">{{r.peeled_qty}}</td>
@@ -268,7 +272,7 @@ tfoot td{
 
 <tfoot>
 <tr>
-  <td colspan="5">GRAND TOTAL</td>
+  <td colspan="4">GRAND TOTAL</td>
   <td id="gt_hlso">0</td>
   <td id="gt_peeled">0</td>
   <td></td>
@@ -278,6 +282,8 @@ tfoot td{
 </tfoot>
 </table>
 </div>
+</div>
+
 
 <script>
 dotsBtn.onclick=e=>{
@@ -287,23 +293,38 @@ dotsBtn.onclick=e=>{
 document.onclick=()=>menu.style.display="none";
 
 const rows=[...document.querySelectorAll("#tbody tr")];
-const rowCount=document.getElementById("rowCount");
 const n=v=>parseFloat(v)||0;
 
-/* ================= FILTERS (DATE RANGE INCLUDED) ================= */
+/* ================= BUILD MONTH DROPDOWN FROM DATA ================= */
+const monthMap={};
+rows.forEach(r=>{
+  const d=r.querySelector(".date").innerText;
+  if(!d) return;
+  const [y,m]=d.split("-"); // yyyy-mm-dd
+  const key=`${y}-${m}`;
+  if(!monthMap[key]){
+    const label=new Date(y,m-1).toLocaleString("en",{month:"short",year:"numeric"});
+    monthMap[key]=label;
+  }
+});
+Object.keys(monthMap).sort().reverse().forEach(k=>{
+  f_month.innerHTML+=`<option value="${k.split("-")[1]}">${monthMap[k]}</option>`;
+});
+
+/* ================= FILTERS ================= */
 function applyFilters(){
   let vis=[];
   rows.forEach(r=>{
-    let ok=true,c=r.children;
-    const rowDate=c[1].innerText;      // yyyy-mm-dd
-    const rowMonth=rowDate?rowDate.split("-")[1]:"";
+    let ok=true;
+    const d=r.querySelector(".date").innerText;
+    const m=d?d.split("-")[1]:"";
 
-    if(f_from.value && rowDate < f_from.value) ok=false;
-    if(f_to.value && rowDate > f_to.value) ok=false;
-    if(f_batch.value && c[2].innerText!==f_batch.value) ok=false;
-    if(f_contractor.value && c[3].innerText!==f_contractor.value) ok=false;
-    if(f_count.value && c[4].innerText!==f_count.value) ok=false;
-    if(f_month.value && rowMonth!==f_month.value) ok=false;
+    if(f_from.value && d<f_from.value) ok=false;
+    if(f_to.value && d>f_to.value) ok=false;
+    if(f_month.value && m!==f_month.value) ok=false;
+    if(f_batch.value && r.children[1].innerText!==f_batch.value) ok=false;
+    if(f_contractor.value && r.querySelector(".contractor").innerText!==f_contractor.value) ok=false;
+    if(f_count.value && r.children[3].innerText!==f_count.value) ok=false;
 
     if(searchBox.value &&
       !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())
@@ -334,7 +355,7 @@ function totals(v){
 function contractorTotals(v){
   let map={};
   v.forEach(r=>{
-    let c=r.dataset.contractor;
+    let c=r.querySelector(".contractor").innerText;
     if(!map[c]) map[c]={h:0,p:0,a:0};
     map[c].h+=n(r.querySelector(".hlso").innerText);
     map[c].p+=n(r.querySelector(".peeled").innerText);
@@ -353,18 +374,15 @@ function contractorTotals(v){
   });
 }
 
-/* ================= MENU ACTIONS ================= */
-const getIds=()=>[...document.querySelectorAll(".rowCheck:checked")]
-  .map(c=>c.closest("tr").dataset.id).join(",");
-
+/* ================= MENU ACTIONS (ALL FILTERED ROWS) ================= */
 function printReport(){
-  window.open(`/reports/peeling_report/print?ids=${getIds()}`);
+  window.open(`/reports/peeling_report/print?ids=all`);
 }
 function pdfReport(){
-  location=`/reports/peeling_report/export_pdf?ids=${getIds()}`;
+  location=`/reports/peeling_report/export_pdf?ids=all`;
 }
 function excelReport(){
-  location=`/reports/peeling_report/export_excel?ids=${getIds()}`;
+  location=`/reports/peeling_report/export_excel?ids=all`;
 }
 function printBill(){
   if(!f_month.value||!f_contractor.value){

@@ -2,331 +2,266 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GATE ENTRY REPORT - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate Entry Report – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-    :root {
-        --accent:#003366;
-        --muted:#a3bcd6;
-        --light:#eaf4ff;
-    }
+:root{
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --primary:#003366;
+}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-    body {
-        font-family: Arial, sans-serif;
-        background: var(--light);
-        margin: 0;
-        padding: 0;
-    }
+/* ================= HEADER ================= */
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 12px;
+  border-bottom:1px solid var(--border);
+}
+.header h2{margin:0;font-size:22px;color:var(--primary)}
+.header p{margin:4px 0 0;font-size:12px;color:#6b7280}
 
-    header {
-        text-align:left;
-        padding:18px 20px;
-        font-size:22px;
-        font-weight:700;
-        color:var(--accent);
-    }
+/* ================= FILTERS ================= */
+.filters{
+  margin-top:12px;
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.filters label{
+  font-size:12px;
+  font-weight:600;
+}
+.filters select,
+.filters input{
+  margin-top:6px;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  font-size:12px;
+}
 
-    /* FILTER SECTION */
-    .controls {
-        width:96%; 
-        max-width:1200px;
-        margin:10px auto;
-        display:flex;
-        gap:10px;
-        flex-wrap:wrap;
-    }
+/* ================= ACTION BAR ================= */
+.actions{
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+#rowCount{font-size:12px;font-weight:600}
 
-    .filter {
-        width:15%;
-        min-width:100px;
-        display:flex;
-        flex-direction:column;
-    }
+.menu{position:relative}
+.menu-btn{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:6px;
+  padding:4px 10px;
+  cursor:pointer;
+  font-size:16px;
+}
+.menu-list{
+  display:none;
+  position:absolute;
+  right:0;
+  top:36px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  min-width:180px;
+  z-index:50;
+}
+.menu-list div{
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
+}
+.menu-list div:hover{background:#f1f5f9}
 
-    .filter label {
-        font-size:13px;
-        font-weight:600;
-        margin-bottom:4px;
-        color:var(--accent);
-    }
+/* ================= TABLE CARD ================= */
+.section{
+  margin:20px 18px;
+  background:#fff;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+.table-wrap{
+  overflow:auto;
+  max-height:520px;
+}
 
-    .filter select,
-    .filter input {
-        padding:7px;
-        border:1px solid var(--muted);
-        border-radius:6px;
-        background:white;
-    }
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+th,td{
+  border-bottom:1px solid #edf2f7;
+  padding:6px;
+  font-size:11px;
+  text-align:left;
+  word-wrap:break-word;
+}
+th{
+  background:#f1f5f9;
+  position:sticky;
+  top:0;
+  z-index:2;
+  font-weight:700;
+}
 
-    .controls .right {
-        margin-left:auto;
-        display:flex;
-        align-items:center;
-    }
+tr:hover{background:#f8fbff}
+tr.selected{background:#e0efff !important}
 
-    /* ACTION BAR */
-    .action-bar {
-        width:96%; 
-        max-width:1200px; 
-        margin:10px auto;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-    }
-
-    .menu-box { position:relative; }
-
-    .dots {
-        background:var(--accent);
-        color:white;
-        font-size:22px;
-        padding:6px 12px;
-        cursor:pointer;
-        border-radius:6px;
-    }
-
-    .menu-list {
-        position:absolute;
-        right:0;
-        top:40px;
-        background:#fff;
-        border:1px solid #ccc;
-        border-radius:6px;
-        width:170px;
-        display:none;
-        box-shadow:0 6px 18px rgba(0,0,0,0.15);
-        z-index:10;
-    }
-
-    .menu-list div {
-        padding:10px;
-        cursor:pointer;
-        font-size:14px;
-        border-bottom:1px solid #eee;
-    }
-    .menu-list div:hover {
-        background:#eaf4ff;
-    }
-
-    /* TABLE */
-    .table-wrap {
-        width:96%; 
-        max-width:1200px;
-        margin:10px auto;
-        background:#fff;
-        border-radius:8px;
-        overflow:auto;
-        box-shadow:0 4px 14px rgba(0,0,0,0.1);
-    }
-
-    table {
-        width:100%;
-        border-collapse:collapse;
-    }
-
-    /* HEADER WRAP TEXT */
-    th {
-        background:#003366;
-        color:white;
-        padding:6px 8px;
-        border-bottom:1px solid #ddd;
-        white-space:normal;
-        word-wrap:break-word;
-        font-size:12px;
-        text-align:left;
-        position:sticky;
-        top:0;
-        z-index:5;
-        line-height:14px;
-    }
-
-    /* ROW HEIGHT SMALL */
-    td {
-        padding:4px 8px;
-        border-bottom:1px solid #eee;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        font-size:12px;
-        line-height:16px;
-    }
-
-    tfoot td {
-        font-weight:bold;
-        background:#f2f7ff;
-        padding:6px;
-        font-size:13px;
-    }
-
-    tr:hover { background:#f0f8ff; cursor:pointer; }
-    tr.selected { background:#cfe9ff !important; }
-
-    /* PAGINATION */
-    .pager {
-        width:96%; max-width:1200px;
-        margin:10px auto 40px;
-        display:flex;
-        justify-content:space-between;
-    }
-
-    .pager button {
-        padding:6px;
-        border:1px solid #ccc;
-        border-radius:6px;
-        background:white;
-        cursor:pointer;
-    }
-
-    .pager button.current {
-        background:var(--accent);
-        color:white;
-    }
+tfoot td{
+  background:#fafafa;
+  font-weight:700;
+}
 </style>
 </head>
 
 <body>
 
-<header>Gate Entry Report</header>
+<div class="header">
+  <h2>Gate Entry Report</h2>
+  <p>Inbound material · supplier wise gate entries</p>
 
-<!-- ================= FILTERS ================= -->
-<div class="controls">
-
-    <div class="filter">
-        <label>Batch Number</label>
-        <select id="flt_batch">
-            <option value="">All</option>
-            {% for b in batches %}
-            <option value="{{ b }}">{{ b }}</option>
-            {% endfor %}
-        </select>
+  <!-- FILTERS -->
+  <div class="filters">
+    <div>
+      <label>Batch Number</label>
+      <select id="flt_batch">
+        <option value="">All</option>
+        {% for b in batches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+      </select>
     </div>
 
-    <div class="filter">
-        <label>Challan Number</label>
-        <select id="flt_challan">
-            <option value="">All</option>
-            {% for c in challans %}
-            <option value="{{ c }}">{{ c }}</option>
-            {% endfor %}
-        </select>
+    <div>
+      <label>Challan Number</label>
+      <select id="flt_challan">
+        <option value="">All</option>
+        {% for c in challans %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
     </div>
 
-    <div class="filter">
-        <label>Supplier Name</label>
-        <select id="flt_supplier">
-            <option value="">All</option>
-            {% for s in suppliers %}
-            <option value="{{ s }}">{{ s }}</option>
-            {% endfor %}
-        </select>
+    <div>
+      <label>Supplier</label>
+      <select id="flt_supplier">
+        <option value="">All</option>
+        {% for s in suppliers %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
     </div>
 
-    <div class="filter">
-        <label>Gate Pass Number</label>
-        <select id="flt_gatepass">
-            <option value="">All</option>
-            {% for g in gates %}
-            <option value="{{ g }}">{{ g }}</option>
-            {% endfor %}
-        </select>
+    <div>
+      <label>Gate Pass</label>
+      <select id="flt_gatepass">
+        <option value="">All</option>
+        {% for g in gates %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+      </select>
     </div>
 
-    <!-- 🔥 DATE RANGE FILTER -->
-    <div class="filter">
-        <label>From Date</label>
-        <input type="date" id="flt_from">
+    <div>
+      <label>From Date</label>
+      <input type="date" id="flt_from">
     </div>
 
-    <div class="filter">
-        <label>To Date</label>
-        <input type="date" id="flt_to">
+    <div>
+      <label>To Date</label>
+      <input type="date" id="flt_to">
     </div>
 
-    <div class="right">
-        <input id="quickSearch" placeholder="Search anything..." 
-        style="padding:8px;width:250px;border-radius:6px;border:1px solid var(--muted)">
+    <div>
+      <label>Quick Search</label>
+      <input id="quickSearch" placeholder="Search anything...">
     </div>
+  </div>
 
+  <!-- ACTIONS -->
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu">
+      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+      <div class="menu-list" id="menuList">
+        <div onclick="editSelected()">✏ Edit Selected</div>
+        <div onclick="deleteSelected()">🗑 Delete Selected</div>
+        <div onclick="printSelected()">🖨 Print Selected</div>
+        <div onclick="pdfSelected()">📄 Export PDF</div>
+        <div onclick="excelSelected()">📊 Export Excel</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- ================= ACTION BAR ================= -->
-<div class="action-bar">
-    <div id="rowCount">Showing 0 rows</div>
-
-    <div class="menu-box">
-        <div class="dots" onclick="toggleMenu()">⋮</div>
-
-        <div class="menu-list" id="menuList">
-            <div onclick="editSelected()">✏ Edit Selected</div>
-            <div onclick="deleteSelected()">🗑 Delete Selected</div>
-            <div onclick="printSelected()">🖨 Print Selected</div>
-            <div onclick="pdfSelected()">📄 Export PDF</div>
-            <div onclick="excelSelected()">📊 Export Excel</div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= TABLE ================= -->
+<!-- TABLE -->
+<div class="section">
 <div class="table-wrap">
 <table id="gateTable">
 <thead>
 <tr>
-    <th><input type="checkbox" id="chk_all"></th>
-    <th>ID</th>
-    <th>Date</th>
-    <th>Time</th>
-    <th>Batch Number</th>
-    <th>Challan Number</th>
-    <th>Gate Pass Number</th>
-    <th>Supplier Name</th>
-    <th>Purchasing Location</th>
-    <th>Vehicle Number</th>
-    <th>Material Boxes</th>
-    <th>Empty Boxes</th>
-    <th>Ice Boxes</th>
-    <th>Email</th>
-    <th>Company ID</th>
+  <th><input type="checkbox" id="chk_all"></th>
+  <th>ID</th>
+  <th>Date</th>
+  <th>Time</th>
+  <th>Batch</th>
+  <th>Challan</th>
+  <th>Gate Pass</th>
+  <th>Supplier</th>
+  <th>Purchase Location</th>
+  <th>Vehicle</th>
+  <th>Material Boxes</th>
+  <th>Empty Boxes</th>
+  <th>Ice Boxes</th>
+  <th>Email</th>
+  <th>Company</th>
 </tr>
 </thead>
 
 <tbody id="reportBody">
 {% for r in rows %}
 <tr data-id="{{ r.id }}">
-    <td><input type="checkbox" class="rowCheck"></td>
-    <td>{{ r.id }}</td>
-    <td>{{ r.date }}</td>
-    <td>{{ r.time.strftime("%H:%M:%S") }}</td>
-    <td>{{ r.batch_number }}</td>
-    <td>{{ r.challan_number }}</td>
-    <td>{{ r.gate_pass_number }}</td>
-    <td>{{ r.supplier_name }}</td>
-    <td>{{ r.purchasing_location }}</td>
-    <td>{{ r.vehicle_number }}</td>
-    <td>{{ r.no_of_material_boxes }}</td>
-    <td>{{ r.no_of_empty_boxes }}</td>
-    <td>{{ r.no_of_ice_boxes }}</td>
-    <td>{{ r.email }}</td>
-    <td>{{ r.company_id }}</td>
+  <td><input type="checkbox" class="rowCheck"></td>
+  <td>{{ r.id }}</td>
+  <td>{{ r.date }}</td>
+  <td>{{ r.time.strftime("%H:%M:%S") }}</td>
+  <td>{{ r.batch_number }}</td>
+  <td>{{ r.challan_number }}</td>
+  <td>{{ r.gate_pass_number }}</td>
+  <td>{{ r.supplier_name }}</td>
+  <td>{{ r.purchasing_location }}</td>
+  <td>{{ r.vehicle_number }}</td>
+  <td>{{ r.no_of_material_boxes }}</td>
+  <td>{{ r.no_of_empty_boxes }}</td>
+  <td>{{ r.no_of_ice_boxes }}</td>
+  <td>{{ r.email }}</td>
+  <td>{{ r.company_id }}</td>
 </tr>
 {% endfor %}
 </tbody>
 
-<!-- 🔥 SUBTOTAL -->
 <tfoot>
 <tr>
-    <td></td>
-    <td colspan="9" style="text-align:right;">TOTAL BOXES :</td>
-    <td id="sub_material">0</td>
-    <td id="sub_empty">0</td>
-    <td id="sub_ice">0</td>
-    <td colspan="2"></td>
+  <td></td>
+  <td colspan="9" style="text-align:right">TOTAL BOXES</td>
+  <td id="sub_material">0</td>
+  <td id="sub_empty">0</td>
+  <td id="sub_ice">0</td>
+  <td colspan="2"></td>
 </tr>
 </tfoot>
-
 </table>
 </div>
-
+</div>
 <!-- ================= SCRIPT ================= -->
 <script>
 
@@ -460,7 +395,7 @@ search.oninput = applyFilters;
 
 applyFilters();
 
-</script>
+</script
 
 </body>
 </html>

@@ -16,7 +16,7 @@ class GateEntry(Base):
     batch_number = Column(String(100))
     challan_number = Column(String)
     gate_pass_number = Column(String)
-
+    receiving_center = Column(String)   # 👈 NEW COLUMN
     supplier_name = Column(String)
     purchasing_location = Column(String(255))
     vehicle_number = Column(String)

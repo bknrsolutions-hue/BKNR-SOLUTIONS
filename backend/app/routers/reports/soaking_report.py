@@ -1,193 +1,193 @@
 # ============================================================
-# 🔥 SOAKING REPORT ROUTER (FINAL – TYPE SAFE)
+# 🔥 SOAKING REPORT ROUTER – FINAL (BATCH + VARIETY GROUPING)
+# URL: /reports/soaking
 # ============================================================
 
-from fastapi import APIRouter, Request, Depends, Query
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import date, datetime
 from io import BytesIO
 from openpyxl import Workbook
-from weasyprint import HTML
 
 from app.database import get_db
 from app.database.models.processing import Soaking
-from app.database.models.users import User
 
+# ------------------------------------------------------------
+# ROUTER INIT
+# ------------------------------------------------------------
 router = APIRouter(
-    prefix="/soaking",
     tags=["SOAKING REPORT"]
 )
 
 templates = Jinja2Templates(directory="app/templates")
 
-# -----------------------------------------------------------
-# MAIN REPORT PAGE
-# URL: /reports/soaking
-# -----------------------------------------------------------
-@router.get("", response_class=HTMLResponse)
-def soaking_report_page(
+# ------------------------------------------------------------
+# MAIN SOAKING REPORT PAGE
+# ------------------------------------------------------------
+@router.get("/soaking", response_class=HTMLResponse)
+def soaking_report(
     request: Request,
-    from_date: date | None = Query(None),
-    to_date: date | None = Query(None),
-    batch: str | None = Query(None),
-    count: str | None = Query(None),
-    chemical: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
 
-    # 🔥 FIX: CAST TO STRING
-    company_id = str(request.session.get("company_id"))
+    # ---------------- SESSION CHECK ----------------
+    company_code = request.session.get("company_code")
     email = request.session.get("email")
 
-    if not company_id or not email:
-        return RedirectResponse("/", status_code=303)
+    if not company_code or not email:
+        return RedirectResponse("/auth/login", status_code=303)
 
-    q = db.query(Soaking).filter(Soaking.company_id == company_id)
+    # ---------------- FETCH DATA ----------------
+    rows = (
+        db.query(Soaking)
+        .filter(Soaking.company_id == company_code)
+        .order_by(
+            Soaking.batch_number.desc(),
+            Soaking.date.desc(),
+            Soaking.id.desc()
+        )
+        .all()
+    )
 
-    if from_date:
-        q = q.filter(Soaking.date >= from_date)
-    if to_date:
-        q = q.filter(Soaking.date <= to_date)
-    if batch:
-        q = q.filter(Soaking.batch_number == batch)
-    if count:
-        q = q.filter(Soaking.in_count == count)
-    if chemical:
-        q = q.filter(Soaking.chemical_name == chemical)
+    # ---------------- GROUPING (Batch → Variety) ----------------
+    grouped = {}
 
-    rows = q.order_by(Soaking.id.desc()).all()
+    final_qty = 0.0
+    final_chem = 0.0
+    final_salt = 0.0
 
+    for r in rows:
+        qty = float(r.in_qty or 0)
+        chem_qty = qty * float(r.chemical_percent or 0) / 100
+        salt_qty = qty * float(r.salt_percent or 0) / 100
+
+        # runtime calculated values (HTML uses these)
+        r.chemical_qty = round(chem_qty, 2)
+        r.salt_qty = round(salt_qty, 2)
+
+        batch = (r.batch_number or "UNKNOWN").strip()
+        variety = (r.variety_name or "UNKNOWN").strip()
+
+        if batch not in grouped:
+            grouped[batch] = {"counts": {}}
+
+        if variety not in grouped[batch]["counts"]:
+            grouped[batch]["counts"][variety] = []
+
+        grouped[batch]["counts"][variety].append(r)
+
+        final_qty += qty
+        final_chem += chem_qty
+        final_salt += salt_qty
+
+    # ---------------- FILTER DROPDOWNS ----------------
     batches = [
         x[0] for x in
         db.query(Soaking.batch_number)
-        .filter(Soaking.company_id == company_id)
-        .distinct().order_by(Soaking.batch_number)
+        .filter(Soaking.company_id == company_code)
+        .distinct()
+        .order_by(Soaking.batch_number.desc())
+        .all()
         if x[0]
     ]
 
-    counts = [
+    varieties = [
         x[0] for x in
-        db.query(Soaking.in_count)
-        .filter(Soaking.company_id == company_id)
-        .distinct().order_by(Soaking.in_count)
+        db.query(Soaking.variety_name)
+        .filter(Soaking.company_id == company_code)
+        .distinct()
+        .order_by(Soaking.variety_name)
+        .all()
         if x[0]
     ]
 
     chemicals = [
         x[0] for x in
         db.query(Soaking.chemical_name)
-        .filter(Soaking.company_id == company_id)
-        .distinct().order_by(Soaking.chemical_name)
+        .filter(Soaking.company_id == company_code)
+        .distinct()
+        .order_by(Soaking.chemical_name)
+        .all()
         if x[0]
     ]
 
+    # ---------------- RENDER ----------------
     return templates.TemplateResponse(
         "reports/soaking_report.html",
         {
             "request": request,
-            "rows": rows,
+
+            # table
+            "grouped": grouped,
+
+            # filters
             "batches": batches,
-            "counts": counts,
+            "varieties": varieties,
             "chemicals": chemicals,
-            "from_date": from_date,
-            "to_date": to_date,
+
+            # totals
+            "final_qty": round(final_qty, 2),
+            "final_chem": round(final_chem, 2),
+            "final_salt": round(final_salt, 2),
         }
     )
 
-# -----------------------------------------------------------
-# PRINT TABLE
-# -----------------------------------------------------------
-@router.get("/print_table", response_class=HTMLResponse)
-def print_table(
+# ------------------------------------------------------------
+# EXPORT EXCEL
+# ------------------------------------------------------------
+@router.get("/soaking/export_excel")
+def export_soaking_excel(
     request: Request,
-    ids: str = Query(None),
     db: Session = Depends(get_db)
 ):
 
-    company_id = request.session.get("company_id")
-    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/auth/login", status_code=303)
 
-    q = db.query(Soaking).filter(Soaking.company_id == company_id)
-
-    if ids and ids.lower() != "all":
-        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
-        q = q.filter(Soaking.id.in_(id_list))
-
-    rows = q.order_by(Soaking.id.asc()).all()
-
-    totals = {
-        "qty": sum(r.in_qty or 0 for r in rows),
-        "chem": sum((r.in_qty or 0) * (r.chemical_percent or 0) / 100 for r in rows),
-        "salt": sum((r.in_qty or 0) * (r.salt_percent or 0) / 100 for r in rows),
-    }
-
-    comp = get_company_info(db, email)
-
-    return templates.TemplateResponse(
-        "reports/soaking_print_table.html",
-        {
-            "request": request,
-            "rows": rows,
-            "totals": totals,
-            "company_name": comp["name"],
-            "company_address": comp["address"],
-            "printed_on": datetime.now()
-        }
+    rows = (
+        db.query(Soaking)
+        .filter(Soaking.company_id == company_code)
+        .order_by(
+            Soaking.batch_number.desc(),
+            Soaking.date.desc(),
+            Soaking.id.desc()
+        )
+        .all()
     )
-
-# -----------------------------------------------------------
-# EXPORT PDF
-# -----------------------------------------------------------
-@router.get("/export_pdf")
-def export_pdf(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
-    html = print_table(request, ids, db).body.decode()
-    pdf = HTML(string=html).write_pdf()
-
-    return StreamingResponse(
-        BytesIO(pdf),
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=SOAKING_REPORT.pdf"}
-    )
-
-# -----------------------------------------------------------
-# EXPORT EXCEL
-# -----------------------------------------------------------
-@router.get("/export_excel")
-def export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
-
-    company_id = request.session.get("company_id")
-
-    q = db.query(Soaking).filter(Soaking.company_id == company_id)
-
-    if ids and ids.lower() != "all":
-        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
-        q = q.filter(Soaking.id.in_(id_list))
-
-    rows = q.all()
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "SOAKING_REPORT"
+    ws.title = "SOAKING REPORT"
 
     ws.append([
-        "Date", "Batch", "Count", "Qty",
-        "Chemical", "Chemical %",
-        "Salt %", "Chemical Qty", "Salt Qty"
+        "Date",
+        "Batch",
+        "Variety",
+        "Quantity",
+        "Chemical",
+        "Chemical %",
+        "Chemical Qty",
+        "Salt %",
+        "Salt Qty"
     ])
 
     for r in rows:
+        qty = float(r.in_qty or 0)
+        chem_qty = qty * float(r.chemical_percent or 0) / 100
+        salt_qty = qty * float(r.salt_percent or 0) / 100
+
         ws.append([
             r.date,
             r.batch_number,
-            r.in_count,
-            r.in_qty,
+            r.variety_name,
+            qty,
             r.chemical_name,
             r.chemical_percent,
+            round(chem_qty, 2),
             r.salt_percent,
-            (r.in_qty or 0) * (r.chemical_percent or 0) / 100,
-            (r.in_qty or 0) * (r.salt_percent or 0) / 100
+            round(salt_qty, 2)
         ])
 
     out = BytesIO()
@@ -197,5 +197,7 @@ def export_excel(request: Request, ids: str = Query(None), db: Session = Depends
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=SOAKING_REPORT.xlsx"}
+        headers={
+            "Content-Disposition": "attachment; filename=SOAKING_REPORT.xlsx"
+        }
     )

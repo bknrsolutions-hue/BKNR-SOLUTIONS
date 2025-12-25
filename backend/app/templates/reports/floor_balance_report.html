@@ -2,212 +2,317 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FLOOR BALANCE – {{ variety }}</title>
+<title>Floor Balance</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
 <style>
-body{
-  font-family:Arial,sans-serif;
-  background:#eef4ff;
-  margin:0;
-  padding:18px
+body{margin:0;padding:10px;font-family:Arial;background:#f1f5f9}
+
+/* ================= GRAND TOTAL ================= */
+.grand-total{
+  background:#ecf0f0;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  font-size:13px;
+  font-weight:900;
+  margin-bottom:8px;
 }
-h2{text-align:center;color:#003366;margin-bottom:18px}
+
+/* ================= FILTERS ================= */
+.filters{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.filters select{
+  padding:6px;
+  font-weight:700;
+  border-radius:6px;
+}
+
+/* ================= LAYOUT ================= */
+.main{display:flex;gap:12px;height:calc(100vh - 180px)}
+.dashboard{display:flex;gap:6px;width:70%}
+
+/* ================= PANELS ================= */
+.panel{
+  width:33%;
+  background:#fff;
+  border-radius:10px;
+  padding:8px;
+  overflow:auto;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+.title{text-align:center;font-weight:900;margin-bottom:6px}
+
+/* ================= PIE ================= */
+.pie-box{
+  width:30%;
+  background:#fff;
+  border-radius:10px;
+  padding:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
 
 /* ================= TABLE ================= */
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  border-radius:12px;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,.12)
-}
-th,td{
-  padding:12px;
-  border-bottom:1px solid #dbe4f3;
-  font-size:14px
-}
-th{
-  background:#003366;
-  color:#fff;
-  text-align:left
-}
-.qty{
-  font-weight:800;
-  color:#0f766e;
-  cursor:pointer
-}
-.qty:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse}
+th,td{padding:6px;border-bottom:1px solid #e5e7eb;font-size:12px}
+th{background:#003366;color:#fff;position:sticky;top:0}
 
-/* ================= MODALS ================= */
-.modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  justify-content:center;
-  align-items:center;
-  z-index:999
-}
-.modal-box{
-  background:#fff;
-  width:92%;
-  max-width:900px;
-  border-radius:14px;
-  padding:18px
-}
-.close{
-  float:right;
+/* ================= ROWS ================= */
+.detail-row{cursor:pointer}
+.detail-row:hover{background:#f1f5f9}
+
+.subtotal{
+  background:#ecfeff;
+  font-weight:900;
   cursor:pointer;
-  font-size:18px;
-  font-weight:700
 }
-
-/* ================= BADGES ================= */
-.badge{
-  padding:4px 10px;
-  border-radius:6px;
-  font-size:12px;
-  font-weight:800
-}
-.grd{background:#e0f2fe;color:#075985}
-.pr{background:#ecfeff;color:#155e75}
-.dh{background:#fef3c7;color:#92400e}
-.peel{background:#ede9fe;color:#5b21b6}
-
-.click{
-  cursor:pointer;
-  font-weight:700;
-  color:#2563eb
-}
-.click:hover{text-decoration:underline}
+.subtotal:hover{background:#cffafe}
 </style>
 </head>
 
 <body>
 
-<h2>FLOOR BALANCE – {{ variety }}</h2>
-
-<table>
-<thead>
-<tr>
-  <th>Batch</th>
-  <th>Species</th>
-  <th>Count</th>
-  <th>Available Qty (kg)</th>
-</tr>
-</thead>
-<tbody>
-{% for r in rows %}
-<tr>
-  <td>{{ r.batch }}</td>
-  <td>{{ r.species }}</td>
-  <td>{{ r.count }}</td>
-  <td class="qty"
-      onclick="openUsage('{{ variety }}','{{ r.batch }}','{{ r.count }}')">
-      {{ r.available_qty }}
-  </td>
-</tr>
+{% set gt = namespace(total=0) %}
+{% for r in rows_batch %}
+  {% set gt.total = gt.total + r.available_qty %}
 {% endfor %}
-</tbody>
-</table>
 
-<!-- ================= POPUP 1 : USAGE ================= -->
-<div class="modal" id="usageModal">
-  <div class="modal-box">
-    <span class="close" onclick="closeUsage()">✖</span>
-    <h3 id="usageTitle"></h3>
-
-    <table>
-      <thead>
-        <tr><th>Source</th><th>Qty (kg)</th></tr>
-      </thead>
-      <tbody id="usageBody"></tbody>
-    </table>
-  </div>
+<div class="grand-total">
+  TOTAL FLOOR BALANCE : {{ "%.2f"|format(gt.total) }} KG
 </div>
 
-<!-- ================= POPUP 2 : DETAILS ================= -->
-<div class="modal" id="detailModal">
-  <div class="modal-box">
-    <span class="close" onclick="closeDetail()">✖</span>
-    <h3 id="detailTitle"></h3>
+<!-- ================= FILTERS ================= -->
+<div class="filters">
+  <select id="fBatch" onchange="applyFilters()">
+    <option value="">All Batches</option>
+    {% for r in rows_batch | unique(attribute='batch') %}
+      <option value="{{ r.batch }}">{{ r.batch }}</option>
+    {% endfor %}
+  </select>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Batch</th>
-          <th>Count</th>
-          <th>Qty</th>
-          <th>Reference</th>
-        </tr>
-      </thead>
-      <tbody id="detailBody"></tbody>
-    </table>
-  </div>
+  <select id="fVariety" onchange="applyFilters()">
+    <option value="">All Varieties</option>
+    {% for r in rows_variety | unique(attribute='variety') %}
+      <option value="{{ r.variety }}">{{ r.variety }}</option>
+    {% endfor %}
+  </select>
+
+  <select id="fCount" onchange="applyFilters()">
+    <option value="">All Counts</option>
+    {% for r in rows_count | unique(attribute='count') %}
+      <option value="{{ r.count }}">{{ r.count }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="main">
+
+<!-- ================= LEFT TABLES ================= -->
+<div class="dashboard">
+
+<!-- ================= BATCH WISE ================= -->
+<div class="panel">
+<div class="title">Batch Wise</div>
+<table>
+<thead>
+<tr><th>Batch</th><th>Variety</th><th>Count</th><th>Qty</th></tr>
+</thead>
+<tbody>
+{% set ns = namespace(last=None,total=0) %}
+{% for r in rows_batch %}
+  {% if r.batch != ns.last and ns.last %}
+    <tr class="subtotal" onclick="toggleGroup('batch','{{ ns.last }}')">
+      <td colspan="3">Total – {{ ns.last }}</td>
+      <td>{{ "%.2f"|format(ns.total) }}</td>
+    </tr>
+    {% set ns.total = 0 %}
+  {% endif %}
+  {% set ns.last = r.batch %}
+  <tr class="detail-row"
+      data-group="batch"
+      data-key="{{ r.batch }}"
+      data-batch="{{ r.batch }}"
+      data-variety="{{ r.variety }}"
+      data-count="{{ r.count }}"
+      data-qty="{{ r.available_qty }}">
+    <td>{{ r.batch }}</td>
+    <td>{{ r.variety }}</td>
+    <td>{{ r.count }}</td>
+    <td>{{ "%.2f"|format(r.available_qty) }}</td>
+  </tr>
+  {% set ns.total = ns.total + r.available_qty %}
+{% endfor %}
+<tr class="subtotal">
+  <td colspan="3">Total – {{ ns.last }}</td>
+  <td>{{ "%.2f"|format(ns.total) }}</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- ================= VARIETY WISE ================= -->
+<div class="panel">
+<div class="title">Variety Wise</div>
+<table>
+<thead>
+<tr><th>Variety</th><th>Batch</th><th>Count</th><th>Qty</th></tr>
+</thead>
+<tbody>
+{% set nv = namespace(last=None,total=0) %}
+{% for r in rows_variety %}
+  {% if r.variety != nv.last and nv.last %}
+    <tr class="subtotal" onclick="toggleGroup('variety','{{ nv.last }}')">
+      <td colspan="3">Total – {{ nv.last }}</td>
+      <td>{{ "%.2f"|format(nv.total) }}</td>
+    </tr>
+    {% set nv.total = 0 %}
+  {% endif %}
+  {% set nv.last = r.variety %}
+  <tr class="detail-row"
+      data-group="variety"
+      data-key="{{ r.variety }}"
+      data-batch="{{ r.batch }}"
+      data-variety="{{ r.variety }}"
+      data-count="{{ r.count }}"
+      data-qty="{{ r.available_qty }}">
+    <td>{{ r.variety }}</td>
+    <td>{{ r.batch }}</td>
+    <td>{{ r.count }}</td>
+    <td>{{ "%.2f"|format(r.available_qty) }}</td>
+  </tr>
+  {% set nv.total = nv.total + r.available_qty %}
+{% endfor %}
+<tr class="subtotal">
+  <td colspan="3">Total – {{ nv.last }}</td>
+  <td>{{ "%.2f"|format(nv.total) }}</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- ================= COUNT WISE ================= -->
+<div class="panel">
+<div class="title">Count Wise</div>
+<table>
+<thead>
+<tr><th>Count</th><th>Batch</th><th>Variety</th><th>Qty</th></tr>
+</thead>
+<tbody>
+{% set nc = namespace(last=None,total=0) %}
+{% for r in rows_count %}
+  {% if r.count != nc.last and nc.last %}
+    <tr class="subtotal" onclick="toggleGroup('count','{{ nc.last }}')">
+      <td colspan="3">Total – {{ nc.last }}</td>
+      <td>{{ "%.2f"|format(nc.total) }}</td>
+    </tr>
+    {% set nc.total = 0 %}
+  {% endif %}
+  {% set nc.last = r.count %}
+  <tr class="detail-row"
+      data-group="count"
+      data-key="{{ r.count }}"
+      data-batch="{{ r.batch }}"
+      data-variety="{{ r.variety }}"
+      data-count="{{ r.count }}"
+      data-qty="{{ r.available_qty }}">
+    <td>{{ r.count }}</td>
+    <td>{{ r.batch }}</td>
+    <td>{{ r.variety }}</td>
+    <td>{{ "%.2f"|format(r.available_qty) }}</td>
+  </tr>
+  {% set nc.total = nc.total + r.available_qty %}
+{% endfor %}
+<tr class="subtotal">
+  <td colspan="3">Total – {{ nc.last }}</td>
+  <td>{{ "%.2f"|format(nc.total) }}</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</div>
+
+<!-- ================= PIE ================= -->
+<div class="pie-box">
+  <h3 style="text-align:center">Variety Distribution (Batch Wise)</h3>
+  <canvas id="pieChart"></canvas>
+</div>
+
 </div>
 
 <script>
-/* ================= USAGE POPUP ================= */
-async function openUsage(variety,batch,count){
-  document.getElementById("usageTitle").innerText =
-    `Usage – ${variety} | ${batch} | Count ${count}`;
+let pie;
 
-  let res = await fetch(
-    `/reports/floor_balance_usage?variety=${variety}&batch=${batch}&count=${count}`
-  );
-  let data = await res.json();
+/* ================= FILTERS ================= */
+function applyFilters(){
+  const fb=fBatch.value, fv=fVariety.value, fc=fCount.value;
 
-  let html="";
-  data.forEach(r=>{
-    html+=`
-      <tr>
-        <td><span class="badge ${r.type.toLowerCase()}">${r.type}</span></td>
-        <td class="click"
-            onclick="openDetails('${r.type}','${variety}','${batch}','${count}')">
-            ${r.qty}
-        </td>
-      </tr>`;
+  document.querySelectorAll(".detail-row").forEach(r=>{
+    let ok=true;
+    if(fb && r.dataset.batch!==fb) ok=false;
+    if(fv && r.dataset.variety!==fv) ok=false;
+    if(fc && r.dataset.count!==fc) ok=false;
+    r.style.display = ok ? "table-row" : "none";
   });
 
-  document.getElementById("usageBody").innerHTML = html;
-  document.getElementById("usageModal").style.display="flex";
+  updatePie();
 }
 
-/* ================= DETAIL POPUP ================= */
-async function openDetails(type,variety,batch,count){
-  document.getElementById("detailTitle").innerText =
-    `${type} DETAILS – ${batch} | ${count}`;
-
-  let res = await fetch(
-    `/reports/floor_balance_details?type=${type}&variety=${variety}&batch=${batch}&count=${count}`
-  );
-  let data = await res.json();
-
-  let html="";
-  data.forEach(r=>{
-    html+=`
-      <tr>
-        <td>${r.date}</td>
-        <td>${r.batch}</td>
-        <td>${r.count}</td>
-        <td>${r.qty}</td>
-        <td>${r.ref}</td>
-      </tr>`;
+/* ================= SUBTOTAL TOGGLE ================= */
+function toggleGroup(type,key){
+  document.querySelectorAll(
+    `.detail-row[data-group="${type}"][data-key="${key}"]`
+  ).forEach(r=>{
+    r.style.display = r.style.display==="none" ? "table-row" : "none";
   });
-
-  document.getElementById("detailBody").innerHTML = html;
-  document.getElementById("detailModal").style.display="flex";
+  updatePie();
 }
 
-function closeUsage(){
-  document.getElementById("usageModal").style.display="none";
+/* ================= PIE (ONLY BATCH WISE) ================= */
+function updatePie(){
+  const map={};
+
+  document
+    .querySelectorAll('.panel:first-child .detail-row')
+    .forEach(r=>{
+      if(r.style.display==="none") return;
+      map[r.dataset.variety]=(map[r.dataset.variety]||0)+parseFloat(r.dataset.qty);
+    });
+
+  if(pie) pie.destroy();
+
+  pie=new Chart(pieChart,{
+    type:"pie",
+    data:{
+      labels:Object.keys(map),
+      datasets:[{data:Object.values(map)}]
+    },
+    options:{
+      onClick:(e,els)=>{
+        if(!els.length) return;
+        fVariety.value = pie.data.labels[els[0].index];
+        applyFilters();
+      },
+      plugins:{
+        legend:{position:"bottom"},
+        datalabels:{
+          formatter:v=>v.toFixed(2)+" KG",
+          font:{weight:"bold"}
+        }
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
 }
-function closeDetail(){
-  document.getElementById("detailModal").style.display="none";
-}
+
+updatePie();
 </script>
 
 </body>

@@ -20,6 +20,7 @@ from app.routers.criteria.production_types import router as production_types_rou
 from app.routers.criteria.coldstore_locations import router as coldstore_locations_router
 from app.routers.criteria.grade_to_hoso import router as grade_to_hoso_router
 from app.routers.criteria.production_at import router as production_at_router
+from app.routers.criteria.peeling_at import router as peeling_at_router
 from app.routers.criteria.purposes import router as purposes_router
 
 # ⭐ NEW IMPORT – THIS WAS MISSING
@@ -48,6 +49,7 @@ router.include_router(production_types_router)
 router.include_router(coldstore_locations_router)
 router.include_router(grade_to_hoso_router)
 router.include_router(production_at_router)
+router.include_router(peeling_at_router)
 router.include_router(purposes_router)
 
 # ⭐ ADD THIS — FIXES YOUR 404 PROBLEM

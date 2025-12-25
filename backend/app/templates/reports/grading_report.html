@@ -1,106 +1,319 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>GRADING SUMMARY REPORT</title>
+<meta charset="UTF-8">
+<title>Grading Summary – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;background:#f3f7ff;padding:18px}
-h2{text-align:center;color:#003366}
+:root{
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+}
+*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--bg);
+  padding:16px 18px 10px;
+  border-bottom:1px solid var(--border);
+}
+.header h2{margin:0;font-size:22px}
+.header p{margin:4px 0 0;font-size:12px;color:#6b7280}
+
+.filters{
+  margin-top:10px;
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.filters label{font-size:12px;font-weight:600}
+.filters select{
+  margin-top:6px;
+  padding:6px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-size:12px;
+}
 
 .actions{
- max-width:1300px;margin:10px auto;
- display:flex;justify-content:space-between
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
+#rowCount{font-size:12px;font-weight:600}
 
+.menu{position:relative}
+.menu-btn{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:6px;
+  padding:4px 10px;
+  cursor:pointer;
+  font-size:16px;
+}
+.menu-list{
+  display:none;
+  position:absolute;
+  right:0;
+  top:36px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  min-width:180px;
+  z-index:50;
+}
+.menu-list div{
+  padding:8px 12px;
+  font-size:12px;
+  cursor:pointer;
+}
+.menu-list div:hover{background:#f1f5f9}
+
+.section{
+  margin:20px 18px;
+  background:#fff;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
 .table-wrap{
- max-width:1300px;margin:auto;
- background:#fff;border-radius:8px;
- overflow:auto
+  overflow-x:auto;
+  overflow-y:auto;
+  max-height:520px;
 }
 
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:center}
-th{background:#003366;color:#fff}
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+th,td{
+  border-bottom:1px solid #edf2f7;
+  padding:6px;
+  font-size:11px;
+  text-align:center;
+  word-wrap:break-word;
+}
+th{
+  background:#f1f5f9;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
 
-.qty{font-weight:bold;color:#003366;cursor:pointer;text-decoration:underline}
+.qty{
+  font-weight:600;
+  cursor:pointer;
+  text-decoration:underline;
+}
 
-.red{background:#ffe5e5}
-.green{background:#e6ffea}
-.orange{background:#fff3cd}
+.subtotal td{
+  background:#fafafa;
+  font-weight:700;
+}
+
+.expand-row{background:#fbfcfe}
+.expand-box{
+  display:grid;
+  grid-template-columns:140px 1fr;
+  gap:10px;
+}
+.expand-left{
+  font-size:12px;
+  font-weight:700;
+  border-right:1px solid var(--border);
+  padding-right:8px;
+}
+.expand-content{overflow-x:auto}
+
+.expand-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+.expand-table th,
+.expand-table td{
+  border:1px solid var(--border);
+  padding:5px;
+  font-size:10px;
+}
+.expand-table th{background:#f8fafc}
 </style>
 </head>
 
 <body>
 
-<h2>GRADING SUMMARY REPORT</h2>
+<div class="header">
+  <h2>Grading Summary</h2>
+  <p>Batch · Species wise grading summary</p>
 
-<div class="actions">
-  <div id="rowCount">0 rows</div>
-  <div>
-    <button onclick="exportExcel()">📊 Excel</button>
-    <button onclick="exportPDF()">📄 PDF</button>
+  <div class="filters">
+    <div>
+      <label>Batch</label>
+      <select id="fBatch" onchange="applyFilters()"><option value="">All</option></select>
+    </div>
+    <div>
+      <label>Species</label>
+      <select id="fSpecies" onchange="applyFilters()"><option value="">All</option></select>
+    </div>
+    <div>
+      <label>HOSO Count</label>
+      <select id="fCount" onchange="applyFilters()"><option value="">All</option></select>
+    </div>
+    <div>
+      <label>Variety</label>
+      <select id="fVariety" onchange="applyFilters()"><option value="">All</option></select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div id="rowCount"></div>
+    <div class="menu">
+      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+      <div class="menu-list" id="menu">
+        <div onclick="window.print()">Print – Table</div>
+        <div onclick="exportExcel()">Export Excel</div>
+        <div onclick="exportPDF()">Export PDF</div>
+      </div>
+    </div>
   </div>
 </div>
 
+<div class="section">
 <div class="table-wrap">
-<table>
+<table id="mainTable">
 <thead>
 <tr>
- <th>#</th>
- <th>Batch</th>
- <th>Species</th>
- <th>HOSO Count</th>
- <th>Variety</th>
- <th>Total HOSO Qty</th>
- <th>Total Graded Qty</th>
- <th>Yield %</th>
+  <th>#</th>
+  <th>Batch</th>
+  <th>Species</th>
+  <th>HOSO Count</th>
+  <th>Variety</th>
+  <th>Actual HOSO Qty (KG)</th>
+  <th>Total Graded Qty (KG)</th>
+  <th>Workout Count</th>
+  <th>Yield %</th>
+  <th>Grading HOSO Qty (KG)</th>
+  <th>Weight Diff (KG)</th>
+  <th>Weight Diff (%)</th>
 </tr>
 </thead>
 
-<tbody id="tbody">
+<tbody>
 {% for r in rows %}
-<tr class="{% if r.yield_pct > 100 %}red{% elif r.yield_pct >= 90 %}green{% else %}orange{% endif %}">
- <td>{{ r.id }}</td>
- <td>{{ r.batch }}</td>
- <td>{{ r.species }}</td>
- <td>{{ r.hoso_count }}</td>
- <td>{{ r.variety }}</td>
+<tr class="data-row {% if r.is_subtotal %}subtotal{% endif %}"
+ data-batch="{{r.batch}}"
+ data-species="{{r.species}}"
+ data-count="{{r.hoso_count}}"
+ data-variety="{{r.variety}}">
 
- <td class="qty" onclick="openRMP('{{ r.batch }}','{{ r.species }}','{{ r.hoso_count }}')">
-   {{ r.hoso_qty }}
- </td>
+<td>{{r.id}}</td>
+<td>{{r.batch}}</td>
+<td>{{r.species}}</td>
+<td>{{r.hoso_count}}</td>
+<td>{{r.variety}}</td>
 
- <td class="qty" onclick="openGrading('{{ r.batch }}','{{ r.species }}','{{ r.hoso_count }}','{{ r.variety }}')">
-   {{ r.graded_qty }}
- </td>
+<td class="qty" {% if not r.is_subtotal %}onclick="expandRow(this,'hoso','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')"{% endif %}>{{r.hoso_qty}}</td>
 
- <td>{{ r.yield_pct }}%</td>
+<td class="qty" {% if not r.is_subtotal %}onclick="expandRow(this,'graded','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')"{% endif %}>{{r.graded_qty}}</td>
+
+<td>{{r.workout_count}}</td>
+<td>{{r.yield_pct}}%</td>
+<td>{{r.grading_hoso_qty}}</td>
+<td>{{r.weight_diff_kg}}</td>
+<td>{{r.weight_diff_pct}}%</td>
+</tr>
+
+<tr class="expand-row" style="display:none">
+<td colspan="12">
+  <div class="expand-box">
+    <div class="expand-left">DETAILS</div>
+    <div class="expand-content"></div>
+  </div>
+</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
 </div>
+</div>
 
 <script>
-document.getElementById("rowCount").innerText =
-  document.querySelectorAll("#tbody tr").length + " rows";
+function toggleMenu(){
+ const m=document.getElementById("menu");
+ m.style.display=m.style.display==="block"?"none":"block";
+}
+document.addEventListener("click",e=>{
+ if(!e.target.closest(".menu")){
+   document.getElementById("menu").style.display="none";
+ }
+});
 
-function openRMP(batch,species,count){
- window.open(`/reports/raw_material_purchasing?batch=${batch}&species=${species}&count=${count}&variety=HOSO`);
+function initFilters(){
+ const rows=[...document.querySelectorAll(".data-row")];
+ ["batch","species","count","variety"].forEach(k=>{
+   const sel=document.getElementById("f"+k.charAt(0).toUpperCase()+k.slice(1));
+   [...new Set(rows.map(r=>r.dataset[k]))].forEach(v=>{
+     if(v){
+       const o=document.createElement("option");
+       o.value=v;o.text=v;sel.appendChild(o);
+     }
+   });
+ });
+ applyFilters();
 }
 
-function openGrading(batch,species,count,variety){
- window.open(`/reports/grading_report?batch=${batch}&species=${species}&hoso_count=${count}&variety=${variety}`);
+function applyFilters(){
+ let b=fBatch.value,s=fSpecies.value,c=fCount.value,v=fVariety.value;
+ let rows=document.querySelectorAll(".data-row"),visible=0;
+ rows.forEach(r=>{
+   let ok=(!b||r.dataset.batch===b)&&(!s||r.dataset.species===s)&&(!c||r.dataset.count===c)&&(!v||r.dataset.variety===v);
+   r.style.display=ok?"":"none";
+   r.nextElementSibling.style.display="none";
+   if(ok&&!r.classList.contains("subtotal"))visible++;
+ });
+ rowCount.innerText=visible+" rows";
 }
 
-function exportExcel(){
- location = `/reports/grading_summary/export_excel`;
+function expandRow(el,source,batch,species,count,variety){
+ const tr=el.closest("tr"),sub=tr.nextElementSibling;
+ document.querySelectorAll(".expand-row").forEach(r=>{if(r!==sub)r.style.display="none";});
+ if(sub.style.display==="table-row"){sub.style.display="none";return;}
+ fetch(`/reports/grading_report/details?source=${source}&batch=${batch}&species=${species}&hoso_count=${count}&variety=${variety}`)
+ .then(r=>r.json()).then(data=>{
+   if(!data||data.length===0){
+     sub.querySelector(".expand-content").innerHTML="<div style='font-size:11px;color:#6b7280'>No details available</div>";
+     sub.style.display="table-row";return;
+   }
+   let html="<table class='expand-table'><tr>";
+   Object.keys(data[0]).forEach(k=>{if(k!=="Form")html+="<th>"+k.toUpperCase()+"</th>";});
+   html+="</tr>";
+   data.forEach(r=>{
+     html+="<tr>";
+     Object.keys(r).forEach(k=>{if(k!=="Form")html+="<td>"+(r[k]??"")+"</td>";});
+     html+="</tr>";
+   });
+   html+="</table>";
+   sub.querySelector(".expand-content").innerHTML=html;
+   sub.style.display="table-row";
+ });
 }
 
-function exportPDF(){
- location = `/reports/grading_summary/export_pdf`;
-}
+function exportExcel(){location="/reports/grading_report/export_excel";}
+function exportPDF(){location="/reports/grading_report/export_pdf";}
+initFilters();
 </script>
 
 </body>
