@@ -1,73 +1,50 @@
 from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import math
 
 from app.database import get_db
+# HOSO_HLSO_Yields ని ఇంపోర్ట్ చేయడం మర్చిపోవద్దు
 from app.database.models.criteria import (
-    grades,
     varieties,
-    glazes,
-    species,
-    grade_to_hoso
+    grade_to_hoso,
+    HOSO_HLSO_Yields 
 )
 
-router = APIRouter(
-    prefix="/grade_to_hoso",
-    tags=["GRADE TO HOSO"]
-)
-
+router = APIRouter(tags=["GRADE TO HOSO"])
 templates = Jinja2Templates(directory="app/templates")
 
+GRADE_ORDER = [
+    "8/12","13/15","16/20","21/25","26/30","31/35",
+    "31/40","41/50","51/60","61/70","71/90",
+    "91/110","111/130","131/150","100/200",
+    "20/40","40/60","60/80","80/120","BKN","DC"
+]
 
-# ---------------------------------------------------------
-# PAGE LOAD
-# ---------------------------------------------------------
-@router.get("")
-def page(request: Request, db: Session = Depends(get_db)):
-
-    email = request.session.get("email")
+@router.get("/grade_to_hoso")
+def grade_to_hoso_report(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-
-    if not email or not company_id:
+    email = request.session.get("email")
+    if not company_id or not email:
         return RedirectResponse("/auth/login", status_code=302)
 
-    grade_list = [g.grade_name for g in db.query(grades)
-                  .filter(grades.company_id == company_id).all()]
-
-    variety_list = db.query(varieties)\
-        .filter(varieties.company_id == company_id).all()
-
-    glaze_list = [g.glaze_name for g in db.query(glazes)
-                  .filter(glazes.company_id == company_id).all()]
-
-    species_list = [s.species_name for s in db.query(species)
-                    .filter(species.company_id == company_id).all()]
-
-    rows = db.query(grade_to_hoso)\
-        .filter(grade_to_hoso.company_id == company_id)\
-        .order_by(grade_to_hoso.id.desc())\
+    rows = (
+        db.query(grade_to_hoso)
+        .filter(grade_to_hoso.company_id == company_id)
+        .order_by(
+            grade_to_hoso.species,
+            grade_to_hoso.grade_name,
+            grade_to_hoso.variety_name,
+            grade_to_hoso.glaze_name
+        )
         .all()
-
-    return templates.TemplateResponse(
-        "criteria/grade_to_hoso.html",
-        {
-            "request": request,
-            "grades": grade_list,
-            "varieties": variety_list,
-            "glazes": glaze_list,
-            "species": species_list,
-            "rows": rows
-        }
     )
+    return templates.TemplateResponse("criteria/grade_to_hoso.html", {"request": request, "rows": rows})
 
-
-# ---------------------------------------------------------
-# SAVE / CALCULATE
-# ---------------------------------------------------------
-@router.post("")
-def save(
+@router.post("/grade_to_hoso")
+def save_grade_to_hoso(
     request: Request,
     species: str = Form(...),
     grade_name: str = Form(...),
@@ -75,86 +52,71 @@ def save(
     glaze_name: str = Form(...),
     db: Session = Depends(get_db)
 ):
-
-    email = request.session.get("email")
     company_id = request.session.get("company_code")
+    email = request.session.get("email")
 
-    if not email or not company_id:
-        return JSONResponse({"error": "Session expired"}, status_code=401)
+    if not company_id or not email:
+        return RedirectResponse("/auth/login", status_code=302)
 
-    # ================= GRADE ORDER =================
-    GRADE_ORDER = [
-        "8/12","13/15","16/20","21/25","26/30","31/35",
-        "31/40","41/50","51/60","61/70","71/90",
-        "91/110","111/130","131/150","100/200",
-        "20/40","40/60","60/80","80/120","BKN","DC"
-    ]
+    # -------- NORMALIZE --------
+    s_val = species.strip()
+    g_val = grade_name.strip().upper()
+    v_val = variety_name.strip().upper()
+    gl_val = glaze_name.strip().upper()
 
-    # ---------------- CALCULATION ----------------
-    if grade_name in ["BKN", "DC"]:
+    if g_val in ["BKN", "DC"]:
         hlso = 0
         hoso = 0
-        nw_grade = grade_name
-
+        nw_grade = g_val
     else:
-        # HIGHER COUNT (16/20 → 20)
-        high = int(grade_name.split("/")[-1])
+        # 1️⃣ HLSO CALCULATION (Based on Grade High Count)
+        high = int(g_val.split("/")[-1])
+        glaze_factor = (
+            1 if gl_val == "NWNC"
+            else (100 - float(gl_val.replace("%", ""))) / 100
+        )
 
-        # GLAZE FACTOR
-        if glaze_name == "NWNC":
-            glaze_factor = 1
-        else:
-            glaze_factor = (100 - float(glaze_name.replace("%", ""))) / 100
-
-        # VARIETY YIELDS
         var = db.query(varieties).filter(
             varieties.company_id == company_id,
-            varieties.variety_name == variety_name
+            varieties.variety_name == v_val
         ).first()
 
-        peel = (float(var.peeling_yield or 100)) / 100
-        soak = (float(var.soaking_yield or 100)) / 100
+        peel = (float(var.peeling_yield or 100)) / 100 if var else 1
+        soak = (float(var.soaking_yield or 100)) / 100 if var else 1
 
-        # HLSO (ROUND DOWN)
         hlso = math.floor(high / glaze_factor / peel / soak)
 
-        # HOSO RULE
-        if hlso <= 40:
-            minus = 1
-        elif hlso <= 70:
-            minus = 2
-        elif hlso <= 110:
-            minus = 5
-        else:
-            minus = 15
+        # 2️⃣ HOSO LOOKUP (Instead of Formula)
+        # ఇక్కడ మనం కాలిక్యులేట్ చేసిన HLSO ని మాస్టర్ టేబుల్ లో వెతుకుతున్నాం
+        yield_row = (
+            db.query(HOSO_HLSO_Yields)
+            .filter(
+                HOSO_HLSO_Yields.company_id == company_id,
+                func.lower(HOSO_HLSO_Yields.species) == s_val.lower(),
+                HOSO_HLSO_Yields.hlso_count >= hlso
+            )
+            .order_by(HOSO_HLSO_Yields.hlso_count.asc())
+            .first()
+        )
 
-        hoso = int((hlso * 1.54) - minus)
+        # ఒకవేళ మాస్టర్ లో దొరికితే ఆ HOSO తీసుకుంటుంది, లేదంటే 0 చూపిస్తుంది
+        hoso = yield_row.hoso_count if yield_row else 0
 
-        # ---------- NW GRADE AUTO UPGRADE ----------
+        # 3️⃣ NW GRADE
         try:
-            idx = GRADE_ORDER.index(grade_name)
+            idx = GRADE_ORDER.index(g_val)
         except ValueError:
             idx = 0
+        step = 3 if hlso > 70 else 2 if hlso > 50 else 1 if hlso > 20 else 0
+        nw_grade = GRADE_ORDER[min(idx + step, len(GRADE_ORDER) - 1)]
 
-        if hlso <= 20:
-            step = 0
-        elif hlso <= 50:
-            step = 1
-        elif hlso <= 70:
-            step = 2
-        else:
-            step = 3
-
-        nw_idx = min(idx + step, len(GRADE_ORDER) - 1)
-        nw_grade = GRADE_ORDER[nw_idx]
-
-    # ---------------- UPSERT ----------------
+    # -------- UPSERT --------
     row = db.query(grade_to_hoso).filter(
         grade_to_hoso.company_id == company_id,
-        grade_to_hoso.species == species,
-        grade_to_hoso.grade_name == grade_name,
-        grade_to_hoso.variety_name == variety_name,
-        grade_to_hoso.glaze_name == glaze_name
+        grade_to_hoso.species == s_val,
+        grade_to_hoso.grade_name == g_val,
+        grade_to_hoso.variety_name == v_val,
+        grade_to_hoso.glaze_name == gl_val
     ).first()
 
     if row:
@@ -162,19 +124,11 @@ def save(
         row.hoso_count = hoso
         row.nw_grade = nw_grade
     else:
-        db.add(
-            grade_to_hoso(
-                species=species,
-                grade_name=grade_name,
-                variety_name=variety_name,
-                glaze_name=glaze_name,
-                hlso_count=hlso,
-                hoso_count=hoso,
-                nw_grade=nw_grade,
-                email=email,
-                company_id=company_id
-            )
-        )
+        db.add(grade_to_hoso(
+            species=s_val, grade_name=g_val, variety_name=v_val, glaze_name=gl_val,
+            hlso_count=hlso, hoso_count=hoso, nw_grade=nw_grade,
+            email=email, company_id=company_id
+        ))
 
     db.commit()
-    return RedirectResponse("/criteria/grade_to_hoso", status_code=302)
+    return RedirectResponse("/criteria/grade_to_hoso", status_code=303)

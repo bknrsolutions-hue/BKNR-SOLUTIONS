@@ -1,12 +1,12 @@
 # ============================================================
-# GATE ENTRY REPORT ROUTER (FULL + FIXED + FINAL)
+# GATE ENTRY REPORT ROUTER (FINAL + HTML MATCHED)
 # ============================================================
 
-from fastapi import APIRouter, Request, Depends, Query, Body
+from fastapi import APIRouter, Request, Depends, Query, Body, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
 from io import BytesIO
 from openpyxl import Workbook
 from weasyprint import HTML
@@ -26,31 +26,31 @@ def get_company_info(db: Session, comp_code: str):
     c = db.query(Company).filter(Company.company_code == comp_code).first()
     if not c:
         return "", ""
-    return c.company_name, c.address
+    return c.company_name or "", c.address or ""
 
 
 # ------------------------------------------------------------
-# REPORT PAGE (ALL DATA LOADING)
+# REPORT PAGE
 # ------------------------------------------------------------
 @router.get("/gate_entry", response_class=HTMLResponse)
 def gate_entry_report(
     request: Request,
     db: Session = Depends(get_db),
-    from_date: str = Query(None),
-    to_date: str = Query(None)
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None)
 ):
-
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
+    role = request.session.get("role")  # 👈 admin / user
 
     if not email or not comp_code:
         return RedirectResponse("/", status_code=302)
 
-    # ------------- FIXED → ALWAYS LOAD ALL DATA ----------------
+    # Safe date defaults
     if not from_date:
-        from_date = "2000-01-01"
+        from_date = date(2000, 1, 1)
     if not to_date:
-        to_date = "2100-01-01"
+        to_date = date(2100, 1, 1)
 
     rows = (
         db.query(GateEntry)
@@ -63,36 +63,56 @@ def gate_entry_report(
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    # Dropdown filters
+    # ---------------- FILTER DROPDOWNS (HTML MATCH) ----------------
     batches = sorted({r.batch_number for r in rows if r.batch_number})
     challans = sorted({r.challan_number for r in rows if r.challan_number})
     suppliers = sorted({r.supplier_name for r in rows if r.supplier_name})
     gates = sorted({r.gate_pass_number for r in rows if r.gate_pass_number})
-    dates = sorted({r.date for r in rows if r.date})
+    receiving_centers = sorted({r.receiving_center for r in rows if r.receiving_center})
+    vehicles = sorted({r.vehicle_number for r in rows if r.vehicle_number})
+    purchasing_locations = sorted({
+        r.purchasing_location for r in rows if r.purchasing_location
+    })
 
     return templates.TemplateResponse(
         "reports/gate_entry_report.html",
         {
             "request": request,
             "rows": rows,
+
+            # filters
             "batches": batches,
             "challans": challans,
             "suppliers": suppliers,
             "gates": gates,
-            "dates": dates,
+            "receiving_centers": receiving_centers,
+            "vehicles": vehicles,
+            "purchasing_locations": purchasing_locations,
+            # company
             "company_name": company_name,
-            "company_address": company_address
+            "company_address": company_address,
+
+            # permissions
+            "is_admin": role == "admin",
         }
     )
 
 
 # ------------------------------------------------------------
-# DELETE MULTIPLE ENTRIES
+# DELETE MULTIPLE (ADMIN ONLY)
 # ------------------------------------------------------------
 @router.post("/gate_entry/delete")
-def delete_selected(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
-
+def delete_selected(
+    request: Request,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
+    role = request.session.get("role")
+
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Permission denied")
+
     ids = payload.get("ids", [])
 
     for _id in ids:
@@ -110,11 +130,14 @@ def delete_selected(request: Request, payload: dict = Body(...), db: Session = D
 
 
 # ------------------------------------------------------------
-# PRINT PAGE (AUTO PRINT)
+# PRINT VIEW
 # ------------------------------------------------------------
 @router.get("/gate_entry/print", response_class=HTMLResponse)
-def print_view(request: Request, ids: str = None, db: Session = Depends(get_db)):
-
+def print_view(
+    request: Request,
+    ids: str | None = None,
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
 
     q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
@@ -135,17 +158,20 @@ def print_view(request: Request, ids: str = None, db: Session = Depends(get_db))
             "printed_on": datetime.now(),
             "company_name": company_name,
             "company_address": company_address,
-            "auto": 1
+            "auto": 1,
         }
     )
 
 
 # ------------------------------------------------------------
-# EXPORT PDF (PRINT TABLE STYLE)
+# EXPORT PDF
 # ------------------------------------------------------------
 @router.get("/gate_entry/export_pdf")
-def export_pdf(request: Request, ids: str = None, db: Session = Depends(get_db)):
-
+def export_pdf(
+    request: Request,
+    ids: str | None = None,
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
 
     q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
@@ -165,11 +191,10 @@ def export_pdf(request: Request, ids: str = None, db: Session = Depends(get_db))
         "company_name": company_name,
         "company_address": company_address,
         "printed_on": datetime.now(),
-        "auto": 0
+        "auto": 0,
     })
 
     pdf_bytes = HTML(string=html_src).write_pdf()
-
     fname = f"GATE_REPORT_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
 
     return StreamingResponse(
@@ -183,8 +208,11 @@ def export_pdf(request: Request, ids: str = None, db: Session = Depends(get_db))
 # EXPORT EXCEL
 # ------------------------------------------------------------
 @router.get("/gate_entry/export_xlsx")
-def export_excel(request: Request, ids: str = None, db: Session = Depends(get_db)):
-
+def export_excel(
+    request: Request,
+    ids: str | None = None,
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
 
     q = db.query(GateEntry).filter(GateEntry.company_id == comp_code)
@@ -194,21 +222,20 @@ def export_excel(request: Request, ids: str = None, db: Session = Depends(get_db
         q = q.filter(GateEntry.id.in_(id_list))
 
     rows = q.order_by(GateEntry.id.asc()).all()
-
     company_name, company_address = get_company_info(db, comp_code)
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Gate Entry Report"
 
-    # Header
     ws.append([company_name])
     ws.append([company_address])
     ws.append([""])
 
     ws.append([
-        "ID", "DATE", "TIME", "BATCH", "CHALLAN", "GATE PASS",
-        "SUPPLIER", "LOCATION", "VEHICLE",
+        "ID", "DATE", "TIME", "BATCH NUMBER", "CHALLAN NUMBER",
+        "GATE PASS NUMBER", "SUPPLIER NAME", "RECEIVING CENTER",
+        "PURCHASING LOCATION", "VEHICLE NUMBER",
         "MATERIAL BOXES", "EMPTY BOXES", "ICE BOXES",
         "EMAIL", "COMPANY"
     ])
@@ -217,18 +244,19 @@ def export_excel(request: Request, ids: str = None, db: Session = Depends(get_db
         ws.append([
             r.id,
             str(r.date) if r.date else "",
-            r.time.strftime("%H:%M:%S") if getattr(r, "time", None) else "",
+            r.time.strftime("%H:%M:%S") if r.time else "",
             r.batch_number or "",
             r.challan_number or "",
             r.gate_pass_number or "",
             r.supplier_name or "",
+            r.receiving_center or "",
             r.purchasing_location or "",
             r.vehicle_number or "",
             r.no_of_material_boxes or 0,
             r.no_of_empty_boxes or 0,
             r.no_of_ice_boxes or 0,
             r.email or "",
-            r.company_id or ""
+            r.company_id or "",
         ])
 
     stream = BytesIO()

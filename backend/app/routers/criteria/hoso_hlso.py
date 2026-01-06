@@ -1,10 +1,9 @@
-# app/routers/criteria/hoso_hlso.py
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
+import math
 
 from app.database import get_db
 from app.database.models.criteria import HOSO_HLSO_Yields, species
@@ -59,7 +58,7 @@ def hoso_hlso_page(request: Request, db: Session = Depends(get_db)):
 def save_hoso_hlso(
     request: Request,
     species: str = Form(...),
-    hoso_count: str = Form(...),          # can be "10" or "10 to 20"
+    hoso_count: str = Form(...),          # "10" or "10 to 20"
     hlso_yield_pct: float = Form(...),
     db: Session = Depends(get_db)
 ):
@@ -91,6 +90,12 @@ def save_hoso_hlso(
     # -----------------------------
     for c in counts:
 
+        # 🔥 HLSO COUNT CALCULATION (ROUND DOWN)
+        # hlso_count = hoso_count / 2.2 / (hlso_yield_pct / 100)
+        hlso_count = math.floor(
+            c / 2.2 / (hlso_yield_pct / 100)
+        )
+
         row = (
             db.query(HOSO_HLSO_Yields)
             .filter(
@@ -104,6 +109,7 @@ def save_hoso_hlso(
         # UPDATE IF EXISTS
         if row:
             row.hlso_yield_pct = hlso_yield_pct
+            row.hlso_count = hlso_count
             row.date = now.date()
             row.time = now.time()
             row.email = email
@@ -115,6 +121,7 @@ def save_hoso_hlso(
                     species=species,
                     hoso_count=c,
                     hlso_yield_pct=hlso_yield_pct,
+                    hlso_count=hlso_count,
                     date=now.date(),
                     time=now.time(),
                     email=email,

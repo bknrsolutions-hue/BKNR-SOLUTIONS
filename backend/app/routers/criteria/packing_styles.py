@@ -51,8 +51,9 @@ def save_packing_style(
     request: Request,
 
     packing_style: str = Form(...),
-    mc_weight: str = Form(""),
-    slab_weight: str = Form(""),
+    mc_weight: float = Form(0.0),
+    slab_weight: float = Form(0.0),
+
 
     id: str = Form(""),      # safe string
     date: str = Form(...),

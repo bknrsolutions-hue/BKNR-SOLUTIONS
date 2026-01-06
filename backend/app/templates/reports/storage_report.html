@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Storage Cost Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+}
+*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ================= HEADER & FILTERS ================= */
+.header{
+  position: sticky; top: 0; z-index: 100;
+  background: #fff; padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.header h2{ margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+.header p{ margin: 2px 0; font-size: 11px; color: var(--muted); }
+
+.section{
+  margin: 12px 18px; background: #fff; padding: 12px;
+  border-radius: 10px; border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.filter-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.field label{
+  font-size: 10px; font-weight: 700; color: var(--primary);
+  text-transform: uppercase; margin-bottom: 4px; display: block;
+}
+.field select, .field input{
+  width: 100%; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--border); font-size: 11px;
+  background: #fff; outline: none; transition: 0.2s;
+}
+.field select:focus, .field input:focus { border-color: var(--accent); }
+
+.btn-primary{
+  background: var(--primary); color: #fff; border: none;
+  padding: 8px 20px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; transition: 0.2s;
+}
+.btn-primary:hover{ background: var(--accent); transform: translateY(-1px); }
+
+/* ================= SUMMARY BOXES ================= */
+.summary{
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 15px; margin: 0 18px 12px;
+}
+.summary-box{
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 12px; padding: 15px; text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-bottom: 3px solid var(--accent);
+}
+.summary-box h3{ margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; }
+.summary-box p{ margin: 4px 0 0; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+
+/* ================= TABLE AREA ================= */
+.table-wrap{
+  margin: 12px 18px; background: #fff;
+  border-radius: 10px; border: 1px solid var(--border);
+  overflow: auto; max-height: 500px;
+}
+
+table{ width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+thead th{
+  background: #f1f5f9; color: #475569; padding: 10px 4px;
+  font-size: 10px; font-weight: 700; position: sticky;
+  top: 0; text-align: center; border-bottom: 2px solid var(--border);
+}
+
+tbody td{
+  padding: 8px 4px; font-size: 10.5px;
+  border-bottom: 1px solid #f1f5f9; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+tbody tr:hover{ background: #f8fbff; }
+
+/* TOTAL FOOTER */
+tfoot td{
+  padding: 10px; font-weight: 800; background: #f8fafc;
+  border-top: 2px solid var(--border); color: var(--primary);
+  font-size: 11px;
+}
+
+/* Specific Column Widths for 13 Columns */
+th:nth-child(1) { width: 85px; } /* Date */
+th:nth-child(2) { width: 60px; } /* Batch */
+th:nth-child(5) { width: 90px; } /* Freezer */
+th:nth-child(13) { color: #d97706; } /* Holding Cost Highlighting */
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Storage Cost Report</h2>
+  <p>Production-wise & Freezer-wise costing</p>
+</div>
+
+<!-- ================= FILTERS ================= -->
+<form method="get" class="section">
+<div class="filter-grid">
+
+  <div class="field">
+    <label>Production For</label>
+    <select name="production_for">
+      <option value="">All</option>
+      {% for p in production_for_list %}
+      <option value="{{p}}" {% if p==request.query_params.get('production_for') %}selected{% endif %}>{{p}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Production At</label>
+    <select name="production_at">
+      <option value="">All</option>
+      {% for p in production_at_list %}
+      <option value="{{p}}" {% if p==request.query_params.get('production_at') %}selected{% endif %}>{{p}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Freezer</label>
+    <select name="freezer">
+      <option value="">All</option>
+      {% for f in freezers %}
+      <option value="{{f}}" {% if f==request.query_params.get('freezer') %}selected{% endif %}>{{f}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label>From Date</label>
+    <input type="date" name="from_date" value="{{selected_from}}">
+  </div>
+
+  <div class="field">
+    <label>To Date</label>
+    <input type="date" name="to_date" value="{{selected_to}}">
+  </div>
+
+</div>
+
+<div style="text-align:right;margin-top:14px">
+  <button class="btn btn-primary">Apply Filters</button>
+</div>
+</form>
+
+<!-- ================= SUMMARY ================= -->
+<div class="summary">
+  <div class="summary-box">
+    <h3>{{ total_qty_sum }}</h3>
+    <p>Total Quantity (KG)</p>
+  </div>
+  <div class="summary-box">
+    <h3>₹ {{ total_payable_sum }}</h3>
+    <p>Total Production Cost</p>
+  </div>
+  <div class="summary-box">
+    <h3>₹ {{ total_holding_sum }}</h3>
+    <p>Total Holding Cost</p>
+  </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th>Date</th>
+  <th>Batch</th>
+  <th>Production For</th>
+  <th>Production At</th>
+  <th>Freezer</th>
+  <th>Glaze</th>
+  <th>Variety</th>
+  <th>Qty (KG)</th>
+  <th>Cost / KG</th>
+  <th>Payable ₹</th>
+  <th>Free Days</th>
+  <th>Holding / MC / Day</th>
+  <th>Holding ₹</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in report_data %}
+<tr>
+  <td>{{r.date}}</td>
+  <td>{{r.batch_number}}</td>
+  <td>{{r.production_for}}</td>
+  <td>{{r.production_at}}</td>
+  <td>{{r.freezer}}</td>
+  <td>{{r.glaze}}</td>
+  <td>{{r.variety}}</td>
+  <td>{{r.quantity}}</td>
+  <td>{{r.production_cost_per_kg}}</td>
+  <td>{{r.payable_amount}}</td>
+  <td>{{r.holding_free_days}}</td>
+  <td>{{r.holding_cost_per_mc_day}}</td>
+  <td>{{r.holding_cost}}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr>
+  <td colspan="7">TOTAL</td>
+  <td>{{ total_qty_sum }}</td>
+  <td></td>
+  <td>{{ total_payable_sum }}</td>
+  <td></td>
+  <td></td>
+  <td>{{ total_holding_sum }}</td>
+</tr>
+</tfoot>
+</table>
+</div>
+<script>
+/* ===============================
+   AUTO REFRESH STORAGE REPORT
+   =============================== */
+
+/* refresh every 30 seconds */
+setInterval(() => {
+  window.location.reload();
+}, 30000); // 30000 ms = 30 sec
+</script>
+
+</body>
+</html>

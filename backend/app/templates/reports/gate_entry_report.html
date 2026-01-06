@@ -5,397 +5,373 @@
 <title>Gate Entry Report – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
 :root{
+  --primary:#143465;
+  --accent: #3b82f6;
   --border:#d6dde7;
   --bg:#f4f6f9;
   --card:#ffffff;
   --text:#1f2937;
-  --primary:#003366;
+  --muted:#64748b;
 }
-*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
-body{margin:0;background:var(--bg);color:var(--text)}
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden;}
 
-/* ================= HEADER ================= */
-.header{
-  position:sticky;
-  top:0;
-  z-index:100;
-  background:var(--bg);
-  padding:16px 18px 12px;
-  border-bottom:1px solid var(--border);
+/* ================= HEADER & FILTERS ================= */
+.header-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 1000;
 }
-.header h2{margin:0;font-size:22px;color:var(--primary)}
-.header p{margin:4px 0 0;font-size:12px;color:#6b7280}
+.header-main {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+}
+.header-main h2 { margin:0; font-size:20px; color:var(--primary); font-weight: 800; }
+.header-main p { margin:4px 0 0; font-size:12px; color:var(--muted); }
 
-/* ================= FILTERS ================= */
+/* FILTERS GRID (Compact) */
 .filters{
-  margin-top:12px;
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
 }
-.filters label{
-  font-size:12px;
-  font-weight:600;
+.filters div { display: flex; flex-direction: column; gap: 4px; }
+.filters label{ font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filters select, .filters input{
+  width:100%; padding: 6px 8px; font-size: 12px;
+  border-radius: 6px; border: 1px solid var(--border);
+  outline: none; transition: 0.2s;
 }
-.filters select,
-.filters input{
-  margin-top:6px;
-  padding:6px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  font-size:12px;
-}
+.filters select:focus, .filters input:focus { border-color: var(--accent); }
 
 /* ================= ACTION BAR ================= */
-.actions{
-  margin-top:10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+.action-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 15px 20px 0;
 }
-#rowCount{font-size:12px;font-weight:600}
+#rowCount { font-size: 13px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 4px 12px; border-radius: 20px; border: 1px solid #e0e7ff; }
 
-.menu{position:relative}
-.menu-btn{
-  border:1px solid var(--border);
-  background:#fff;
-  border-radius:6px;
-  padding:4px 10px;
-  cursor:pointer;
-  font-size:16px;
+/* 3 DOT MENU */
+.menu { position: relative; }
+.menu-btn {
+  background: #fff; border: 1px solid var(--border);
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
 }
-.menu-list{
-  display:none;
-  position:absolute;
-  right:0;
-  top:36px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:8px;
-  min-width:180px;
-  z-index:50;
+.menu-list {
+  display:none; position:absolute; right:0; top:40px;
+  background:#fff; border:1px solid var(--border);
+  border-radius:10px; min-width:200px; z-index:1100;
+  box-shadow:0 10px 25px rgba(0,0,0,.15); overflow: hidden;
 }
-.menu-list div{
-  padding:8px 12px;
-  font-size:12px;
-  cursor:pointer;
+.menu-list div {
+  padding:10px 15px; font-size:13px; font-weight: 600; cursor:pointer;
+  display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9;
 }
-.menu-list div:hover{background:#f1f5f9}
+.menu-list div:hover { background: #f1f5ff; color: var(--accent); }
+.menu-list div:last-child { border-bottom: none; }
 
-/* ================= TABLE CARD ================= */
+/* ================= TABLE AREA ================= */
 .section{
-  margin:20px 18px;
-  background:#fff;
-  padding:14px;
-  border-radius:12px;
+  margin: 15px 20px 30px;
+  background:#fff; border-radius:14px;
   border:1px solid var(--border);
+  overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
-.table-wrap{
-  overflow:auto;
-  max-height:520px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
-}
-th,td{
-  border-bottom:1px solid #edf2f7;
-  padding:6px;
-  font-size:11px;
-  text-align:left;
-  word-wrap:break-word;
+.table-wrap{ overflow:auto; max-height: calc(100vh - 320px); }
+table{ width:100%; border-collapse:collapse; font-size:12px; }
+th, td{
+  padding: 12px 10px; border-bottom:1px solid #edf2f7; text-align:left;
 }
 th{
-  background:#f1f5f9;
-  position:sticky;
-  top:0;
-  z-index:2;
-  font-weight:700;
+  background:#f8fafc; color: #475569; font-weight: 700;
+  text-transform: uppercase; font-size: 11px; position: sticky; top: 0; z-index: 2;
 }
+tr:hover{ background:#f8fbff; cursor:pointer; }
+tr.selected{ background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
-tr:hover{background:#f8fbff}
-tr.selected{background:#e0efff !important}
+/* FOOTER / TOTALS */
+tfoot td{ background:#f1f5f9; font-weight: 800; color: var(--primary); padding: 15px 10px; border-top: 2px solid var(--border); }
 
-tfoot td{
-  background:#fafafa;
-  font-weight:700;
+/* TOAST */
+.toast{
+  position:fixed; top:20px; right:20px;
+  background: var(--primary); color:#fff;
+  padding:12px 20px; border-radius:8px;
+  font-size:13px; font-weight: 600; z-index:9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>Gate Entry Report</h2>
-  <p>Inbound material · supplier wise gate entries</p>
-
-  <!-- FILTERS -->
-  <div class="filters">
+<div class="header-container">
+  <div class="header-main">
     <div>
-      <label>Batch Number</label>
-      <select id="flt_batch">
-        <option value="">All</option>
-        {% for b in batches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
-      </select>
+        <h2>Gate Entry Report</h2>
+        <p><i class="fa-solid fa-file-invoice"></i> Inbound material · Factory wise gate entries</p>
     </div>
-
-    <div>
-      <label>Challan Number</label>
-      <select id="flt_challan">
-        <option value="">All</option>
-        {% for c in challans %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Supplier</label>
-      <select id="flt_supplier">
-        <option value="">All</option>
-        {% for s in suppliers %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Gate Pass</label>
-      <select id="flt_gatepass">
-        <option value="">All</option>
-        {% for g in gates %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>From Date</label>
-      <input type="date" id="flt_from">
-    </div>
-
-    <div>
-      <label>To Date</label>
-      <input type="date" id="flt_to">
-    </div>
-
-    <div>
-      <label>Quick Search</label>
-      <input id="quickSearch" placeholder="Search anything...">
-    </div>
+    <div style="font-size: 11px; font-weight: 700; color: var(--muted);">BKNR ERP · 2026</div>
   </div>
 
-  <!-- ACTIONS -->
-  <div class="actions">
-    <div id="rowCount">0 rows</div>
-    <div class="menu">
-      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
-      <div class="menu-list" id="menuList">
-        <div onclick="editSelected()">✏ Edit Selected</div>
-        <div onclick="deleteSelected()">🗑 Delete Selected</div>
-        <div onclick="printSelected()">🖨 Print Selected</div>
-        <div onclick="pdfSelected()">📄 Export PDF</div>
-        <div onclick="excelSelected()">📊 Export Excel</div>
-      </div>
+  <div class="filters">
+    <div><label>Batch Number</label>
+      <select id="f_batch"><option value="">All Batches</option>{% for b in batches %}<option>{{b}}</option>{% endfor %}</select>
     </div>
+    <div><label>Challan Number</label>
+      <select id="f_challan"><option value="">All Challans</option>{% for c in challans %}<option>{{c}}</option>{% endfor %}</select>
+    </div>
+    <div><label>Supplier Name</label>
+      <select id="f_supplier"><option value="">All Suppliers</option>{% for s in suppliers %}<option>{{s}}</option>{% endfor %}</select>
+    </div>
+    <div><label>Factory</label>
+      <select id="f_factory"><option value="">All Factories</option>{% for f in receiving_centers %}<option>{{f}}</option>{% endfor %}</select>
+    </div>
+    <div><label>Gate Pass</label>
+      <select id="f_gate"><option value="">All GP</option>{% for g in gates %}<option>{{g}}</option>{% endfor %}</select>
+    </div>
+    <div><label>From Date</label><input type="date" id="f_from"></div>
+    <div><label>To Date</label><input type="date" id="f_to"></div>
+    <div><label>Quick Search</label><input id="f_search" placeholder="Search rows..."></div>
   </div>
 </div>
 
-<!-- TABLE -->
+<div class="action-bar">
+    <div id="rowCount">0 rows found</div>
+    <div class="menu">
+      <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div class="menu-list" id="menuList">
+        {% if is_admin %}
+          <div onclick="enableEdit()"><i class="fa-solid fa-pen"></i> Edit Mode (Dbl Click)</div>
+          <div onclick="saveEdit()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</div>
+          <div onclick="deleteRow()"><i class="fa-solid fa-trash-can"></i> Delete Selected</div>
+        {% endif %}
+        <div onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</div>
+        <div onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+        <div onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+      </div>
+    </div>
+</div>
+
 <div class="section">
 <div class="table-wrap">
-<table id="gateTable">
+<table id="mainTable">
 <thead>
 <tr>
-  <th><input type="checkbox" id="chk_all"></th>
   <th>ID</th>
   <th>Date</th>
   <th>Time</th>
-  <th>Batch</th>
-  <th>Challan</th>
+  <th>Batch #</th>
+  <th>Challan #</th>
   <th>Gate Pass</th>
   <th>Supplier</th>
-  <th>Purchase Location</th>
-  <th>Vehicle</th>
-  <th>Material Boxes</th>
-  <th>Empty Boxes</th>
-  <th>Ice Boxes</th>
-  <th>Email</th>
-  <th>Company</th>
+  <th>Center</th>
+  <th>Location</th>
+  <th>Vehicle #</th>
+  <th style="text-align: center;">Material</th>
+  <th style="text-align: center;">Empty</th>
+  <th style="text-align: center;">Ice</th>
 </tr>
 </thead>
 
-<tbody id="reportBody">
+<tbody id="tbody">
 {% for r in rows %}
-<tr data-id="{{ r.id }}">
-  <td><input type="checkbox" class="rowCheck"></td>
-  <td>{{ r.id }}</td>
-  <td>{{ r.date }}</td>
-  <td>{{ r.time.strftime("%H:%M:%S") }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.challan_number }}</td>
-  <td>{{ r.gate_pass_number }}</td>
-  <td>{{ r.supplier_name }}</td>
-  <td>{{ r.purchasing_location }}</td>
-  <td>{{ r.vehicle_number }}</td>
-  <td>{{ r.no_of_material_boxes }}</td>
-  <td>{{ r.no_of_empty_boxes }}</td>
-  <td>{{ r.no_of_ice_boxes }}</td>
-  <td>{{ r.email }}</td>
-  <td>{{ r.company_id }}</td>
+<tr data-id="{{r.id}}" onclick="selectRow(this)">
+  <td>{{r.id}}</td>
+  <td>{{r.date}}</td>
+  <td style="color: var(--muted);">{{r.time.strftime("%H:%M:%S")}}</td>
+  <td style="font-weight: 700;">{{r.batch_number}}</td>
+  <td>{{r.challan_number}}</td>
+  <td>{{r.gate_pass_number}}</td>
+  <td>{{r.supplier_name}}</td>
+  <td>{{r.receiving_center}}</td>
+  <td>{{r.purchasing_location}}</td>
+  <td>{{r.vehicle_number}}</td>
+  <td style="text-align: center; font-weight: 700;">{{r.no_of_material_boxes}}</td>
+  <td style="text-align: center;">{{r.no_of_empty_boxes}}</td>
+  <td style="text-align: center;">{{r.no_of_ice_boxes}}</td>
 </tr>
 {% endfor %}
 </tbody>
 
 <tfoot>
 <tr>
-  <td></td>
-  <td colspan="9" style="text-align:right">TOTAL BOXES</td>
-  <td id="sub_material">0</td>
-  <td id="sub_empty">0</td>
-  <td id="sub_ice">0</td>
-  <td colspan="2"></td>
+  <td colspan="10" style="text-align:right">TOTAL SUM</td>
+  <td id="t_mat" style="text-align: center; color: var(--accent);">0</td>
+  <td id="t_emp" style="text-align: center;">0</td>
+  <td id="t_ice" style="text-align: center;">0</td>
 </tr>
 </tfoot>
 </table>
 </div>
 </div>
-<!-- ================= SCRIPT ================= -->
+
 <script>
+/* Context data from Jinja */
+const IS_ADMIN = {{ is_admin | tojson }};
+const LOOKUP_SUPPLIERS = {{ suppliers | default([]) | tojson }};
+const LOOKUP_FACTORIES = {{ receiving_centers | default([]) | tojson }};
+const LOOKUP_VEHICLES  = {{ vehicles | default([]) | tojson }};
+const LOOKUP_LOCATIONS = {{ purchasing_locations | default([]) | tojson }};
 
-const rows = Array.from(document.querySelectorAll("#reportBody tr"));
-const batch = document.getElementById("flt_batch");
-const challan = document.getElementById("flt_challan");
-const supplier = document.getElementById("flt_supplier");
-const gatepass = document.getElementById("flt_gatepass");
-const flt_from = document.getElementById("flt_from");
-const flt_to = document.getElementById("flt_to");
-const search = document.getElementById("quickSearch");
-const chk_all = document.getElementById("chk_all");
+const rows=[...document.querySelectorAll("#tbody tr")];
+let selected=null;
+let editMode=false;
 
-/* MENU */
+/* MENU TOGGLE */
 function toggleMenu(){
-    let m = document.getElementById("menuList");
-    m.style.display = m.style.display==="block" ? "none" : "block";
+  const m = document.getElementById("menuList");
+  m.style.display = m.style.display==="block"?"none":"block";
 }
-window.onclick = e=>{
-    if(!e.target.closest(".menu-box"))
-        document.getElementById("menuList").style.display="none";
-};
+window.onclick=e=>{ if(!e.target.closest(".menu")) menuList.style.display="none"; };
 
-/* SELECTED ROWS */
-function getSelected(){
-    return Array.from(document.querySelectorAll(".rowCheck:checked"))
-        .map(cb => cb.closest("tr").dataset.id);
+/* ROW SELECTION */
+function selectRow(tr){
+  rows.forEach(r=>r.classList.remove("selected"));
+  tr.classList.add("selected");
+  selected=tr;
 }
 
-chk_all.onclick = ()=>{
-    let on = chk_all.checked;
-    rows.forEach(r=>{
-        let cb = r.querySelector(".rowCheck");
-        cb.checked = on;
-        r.classList.toggle("selected", on);
-    });
-};
-
-/* EDIT */
-function editSelected(){
-    let ids = getSelected();
-    if(ids.length !== 1) return alert("Select 1 row to edit");
-    window.location = `/processing/gate_entry/edit/${ids[0]}`;
-}
-
-/* DELETE */
-async function deleteSelected(){
-    let ids = getSelected();
-    if(ids.length === 0) return alert("Select rows to delete");
-
-    if(!confirm("Delete selected rows?")) return;
-
-    await fetch("/reports/gate_entry/delete", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ids})
-    });
-
-    location.reload();
-}
-
-/* PRINT */
-function printSelected(){
-    let ids = getSelected();
-    if(ids.length === 0) return alert("Select rows");
-
-    window.open(`/reports/gate_entry/print?ids=${ids.join(",")}`, "_blank");
-}
-
-/* EXPORT PDF */
-function pdfSelected(){
-    let ids = getSelected();
-    if(ids.length === 0) return alert("Select rows");
-    window.location = `/reports/gate_entry/export_pdf?ids=${ids.join(",")}`;
-}
-
-/* EXCEL */
-function excelSelected(){
-    let ids = getSelected();
-    if(ids.length === 0) return alert("Select rows");
-    window.location = `/reports/gate_entry/export_xlsx?ids=${ids.join(",")}`;
-}
-
-/* SUBTOTAL CALC */
-function calculateSubtotal(){
-    let mat=0, emp=0, ice=0;
-
-    rows.forEach(r=>{
-        if(r.style.display !== "none"){
-            mat += parseInt(r.children[10].innerText) || 0;
-            emp += parseInt(r.children[11].innerText) || 0;
-            ice += parseInt(r.children[12].innerText) || 0;
-        }
-    });
-
-    document.getElementById("sub_material").innerText = mat;
-    document.getElementById("sub_empty").innerText = emp;
-    document.getElementById("sub_ice").innerText = ice;
-}
-
-/* FILTERS */
+/* FILTER LOGIC (Preserved) */
 function applyFilters(){
-    rows.forEach(r => {
-        let ok = true;
-        let rowDate = r.children[2].innerText;
+  let mat=0,emp=0,ice=0,count=0;
+  const f_batch = document.getElementById("f_batch");
+  const f_challan = document.getElementById("f_challan");
+  const f_supplier = document.getElementById("f_supplier");
+  const f_factory = document.getElementById("f_factory");
+  const f_gate = document.getElementById("f_gate");
+  const f_from = document.getElementById("f_from");
+  const f_to = document.getElementById("f_to");
+  const f_search = document.getElementById("f_search");
 
-        if(flt_from.value && rowDate < flt_from.value) ok=false;
-        if(flt_to.value && rowDate > flt_to.value) ok=false;
+  rows.forEach(r=>{
+    let ok=true;
+    let d=r.children[1].innerText;
+    if(f_from.value && d<f_from.value) ok=false;
+    if(f_to.value && d>f_to.value) ok=false;
+    if(f_batch.value && r.children[3].innerText!==f_batch.value) ok=false;
+    if(f_challan.value && r.children[4].innerText!==f_challan.value) ok=false;
+    if(f_gate.value && r.children[5].innerText!==f_gate.value) ok=false;
+    if(f_supplier.value && r.children[6].innerText!==f_supplier.value) ok=false;
+    if(f_factory.value && r.children[7].innerText!==f_factory.value) ok=false;
+    if(f_search.value && !r.innerText.toLowerCase().includes(f_search.value.toLowerCase())) ok=false;
 
-        if(batch.value && r.children[4].innerText !== batch.value) ok=false;
-        if(challan.value && r.children[5].innerText !== challan.value) ok=false;
-        if(supplier.value && r.children[7].innerText !== supplier.value) ok=false;
-        if(gatepass.value && r.children[6].innerText !== gatepass.value) ok=false;
-
-        if(search.value.trim() && 
-           !r.innerText.toLowerCase().includes(search.value.toLowerCase()))
-            ok=false;
-
-        r.style.display = ok ? "" : "none";
-    });
-
-    calculateSubtotal();
+    r.style.display = ok ? "" : "none";
+    if(ok){
+      count++;
+      mat+=+r.children[10].innerText||0;
+      emp+=+r.children[11].innerText||0;
+      ice+=+r.children[12].innerText||0;
+    }
+  });
+  document.getElementById("rowCount").innerText = count+" rows found";
+  document.getElementById("t_mat").innerText = mat;
+  document.getElementById("t_emp").innerText = emp;
+  document.getElementById("t_ice").innerText = ice;
 }
-
-document.querySelectorAll(".controls select").forEach(s=>{
-    s.onchange = applyFilters;
-});
-flt_from.onchange = applyFilters;
-flt_to.onchange = applyFilters;
-search.oninput = applyFilters;
-
+document.querySelectorAll(".filters select, .filters input").forEach(e=>e.oninput=applyFilters);
 applyFilters();
 
-</script
+/* INLINE EDIT (Admin Only) */
+function makeSelect(list, value){
+  const s=document.createElement("select");
+  list.forEach(v=>{
+    const o=document.createElement("option");
+    o.value=o.text=v;
+    if(v===value) o.selected=true;
+    s.appendChild(o);
+  });
+  s.className = "filters input"; // use filter styles for sizing
+  return s;
+}
+
+function enableEdit(){
+  if(!IS_ADMIN) return alert("Permission denied");
+  if(!selected) return alert("Please select a row first");
+  editMode=true;
+  showToast("Edit Mode Enabled: Double click any cell");
+
+  selected.querySelectorAll("td").forEach((td,i)=>{
+    if(i<=2) return;
+    td.ondblclick=()=>{
+      if(!editMode || td.querySelector("input,select")) return;
+      let v=td.innerText;
+      let el;
+      if(i===6) el=makeSelect(LOOKUP_SUPPLIERS,v);
+      else if(i===7) el=makeSelect(LOOKUP_FACTORIES,v);
+      else if(i===8) el=makeSelect(LOOKUP_LOCATIONS,v);
+      else if(i===9) el=makeSelect(LOOKUP_VEHICLES,v);
+      else{
+        el=document.createElement("input");
+        el.value=v;
+        el.style.width="100%";
+      }
+      td.innerHTML="";
+      td.appendChild(el);
+      el.focus();
+    };
+  });
+}
+
+function saveEdit(){
+  if(!IS_ADMIN) return;
+  if(!selected) return;
+
+  const t=selected.querySelectorAll("td");
+  const val=i=>t[i].querySelector("input,select")?.value || t[i].innerText;
+
+  const data={
+    batch_number: val(3),
+    challan_number: val(4),
+    gate_pass_number: val(5),
+    supplier_name: val(6),
+    receiving_center: val(7),
+    purchasing_location: val(8),
+    vehicle_number: val(9),
+    no_of_material_boxes: val(10),
+    no_of_empty_boxes: val(11),
+    no_of_ice_boxes: val(12),
+  };
+
+  fetch(`/processing/gate_entry/update/${selected.dataset.id}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:new URLSearchParams(data)
+  }).then(()=>{
+    showToast("Successfully Updated");
+    setTimeout(()=>location.reload(),800);
+  });
+}
+
+function deleteRow(){
+  if(!IS_ADMIN) return;
+  if(!selected) return;
+  if(!confirm("Delete this entry forever?")) return;
+  fetch(`/processing/gate_entry/delete/${selected.dataset.id}`,{method:"POST"})
+    .then(()=>location.reload());
+}
+
+function exportExcel(){ window.location="/reports/gate_entry/export_xlsx?filtered=1"; }
+function exportPDF(){ window.location="/reports/gate_entry/export_pdf?filtered=1"; }
+
+function showToast(msg){
+  const d=document.createElement("div");
+  d.className="toast";
+  d.innerHTML=`<i class="fa-solid fa-circle-check"></i> ${msg}`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),2000);
+}
+</script>
 
 </body>
 </html>

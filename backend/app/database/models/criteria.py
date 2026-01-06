@@ -4,12 +4,15 @@ from sqlalchemy import (
     String,
     Float,
     Date,
+    Time,
     UniqueConstraint
 )
 from app.database import Base
 
 
+# =========================================================
 # COMMON COLUMNS
+# =========================================================
 class metacolumns:
     date = Column(String(50))
     time = Column(String(50))
@@ -37,13 +40,10 @@ class purposes(Base, metacolumns):
     id = Column(Integer, primary_key=True)
     purpose_name = Column(String(255), nullable=False, index=True)
 
-    # company_id is coming from metacolumns (inherited)
-    # so no need to re-declare it here
-
     __table_args__ = (
         UniqueConstraint(
-            "company_id", 
-            "purpose_name", 
+            "company_id",
+            "purpose_name",
             name="uix_company_purpose"
         ),
     )
@@ -57,6 +57,46 @@ class production_at(Base, metacolumns):
 
     __table_args__ = (
         UniqueConstraint("company_id", "production_at", name="uix_company_prod_at"),
+    )
+
+
+# --------------------------------------------------------
+# PRODUCTION FOR – COSTING MASTER (SINGLE TABLE)
+# --------------------------------------------------------
+class production_for(Base, metacolumns):
+    __tablename__ = "production_for"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # -------- CRITERIA FIELDS --------
+    production_for = Column(String(255), nullable=False)
+    apply_from = Column(Date, nullable=False)
+    free_days = Column(Integer, nullable=False, default=0)
+
+    # -------- COSTING FIELDS (OPTIONAL FOR CRITERIA) --------
+    freezer_name = Column(String(255), nullable=True)
+    glaze_percent = Column(String(50), nullable=True)
+
+    production_cost_per_kg = Column(Float, nullable=False, default=0)
+    repacking_cost_per_kg = Column(Float, nullable=False, default=0)
+    rate_per_mc_day = Column(Float, nullable=False, default=0)
+
+    ice_rate_per_kg = Column(Float, nullable=False, default=0)
+    grading_rate_per_kg = Column(Float, nullable=False, default=0)
+    peeling_rate_per_kg = Column(Float, nullable=False, default=0)
+    deheading_rate_per_kg = Column(Float, nullable=False, default=0)
+
+    status = Column(String(20), nullable=False, default="Active")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id",
+            "production_for",
+            "apply_from",
+            "freezer_name",
+            "glaze_percent",
+            name="uix_company_production_for_costing"
+        ),
     )
 
 
@@ -173,31 +213,26 @@ class chemicals(Base, metacolumns):
         UniqueConstraint("company_id", "chemical_name", name="uix_company_chemical"),
     )
 
-# ---------------------------------------------------------
+
 # CONTRACTORS
-# ---------------------------------------------------------
 class contractors(Base, metacolumns):
     __tablename__ = "contractors"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # ================= BASIC DETAILS =================
     contractor_name = Column(String(255), nullable=False, index=True)
     phone = Column(String(50))
     contractor_email = Column(String(255))
     address = Column(String(255))
 
-    # ================= GST DETAILS =================
     gst_number = Column(String(50))
-    gst_percent = Column(Float)            # 5 / 12 / 18
-    gst_applicable_from = Column(Date)     # date picker
+    gst_percent = Column(Float)
+    gst_applicable_from = Column(Date)
 
-    # ================= BANK DETAILS =================
     bank_name = Column(String(100))
     account_no = Column(String(100))
     ifsc = Column(String(20))
 
-    # ================= UNIQUE =================
     __table_args__ = (
         UniqueConstraint(
             "company_id",
@@ -205,6 +240,7 @@ class contractors(Base, metacolumns):
             name="uix_company_contractor"
         ),
     )
+
 
 # SUPPLIERS
 class suppliers(Base, metacolumns):
@@ -219,9 +255,8 @@ class suppliers(Base, metacolumns):
         UniqueConstraint("company_id", "supplier_name", name="uix_company_supplier"),
     )
 
-#PEELING RATES
-from sqlalchemy import Date, Time
 
+# PEELING RATES
 class peeling_rates(Base, metacolumns):
     __tablename__ = "peeling_rates"
 
@@ -236,7 +271,6 @@ class peeling_rates(Base, metacolumns):
     effective_from = Column(Date)
     status = Column(String(50), default="Active")
 
-    # 🔥 OVERRIDE METACOLUMNS
     date = Column(Date)
     time = Column(Time)
 
@@ -263,17 +297,15 @@ class purchasing_locations(Base, metacolumns):
     )
 
 
-# VEHICLE NUMBERS MASTER
+# VEHICLE NUMBERS
 class vehicle_numbers(Base, metacolumns):
     __tablename__ = "vehicle_numbers"
-
     id = Column(Integer, primary_key=True)
     vehicle_number = Column(String(100), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("company_id", "vehicle_number", name="uix_company_vehicle"),
     )
-
 
 
 # COLDSTORE LOCATIONS
@@ -300,24 +332,17 @@ class freezers(Base, metacolumns):
     )
 
 
-# ---------------------------------------------------------
 # GRADE + VARIETY + GLAZE → HOSO / HLSO MAP
-# ---------------------------------------------------------
-from sqlalchemy import Column, Integer, String, Float, UniqueConstraint
-from app.database import Base
-
 class grade_to_hoso(Base):
     __tablename__ = "grade_to_hoso"
 
     id = Column(Integer, primary_key=True)
 
-    # COMBINATION
     species = Column(String(100), nullable=False)
-    grade_name = Column(String(50), nullable=False)      # 16/20, 21/25, BKN, DC
+    grade_name = Column(String(50), nullable=False)
     variety_name = Column(String(100), nullable=False)
     glaze_name = Column(String(50), nullable=False)
 
-    # CALCULATED
     hlso_count = Column(Integer)
     hoso_count = Column(Integer)
     nw_grade = Column(String(50))
@@ -337,31 +362,23 @@ class grade_to_hoso(Base):
     )
 
 
-# ---------------------------------------------------------
-# HOSO → HLSO YIELDS MODEL
-# ---------------------------------------------------------
-
-
-
-
-
+# HOSO → HLSO YIELDS
 class HOSO_HLSO_Yields(Base):
     __tablename__ = "hoso_hlso_yields"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    species = Column(String(100), nullable=False)         # Species name
-    hoso_count = Column(Integer, nullable=False)          # HOSO count number
-    hlso_yield_pct = Column(Float, nullable=False)        # % yield
-
-    date = Column(String(20))                             # Auto date
-    time = Column(String(20))                             # Auto time
-    email = Column(String(200))                           # Created/Updated by
-
+    species = Column(String(100), nullable=False)
+    hoso_count = Column(Integer, nullable=False)
+    hlso_yield_pct = Column(Float, nullable=False)
+    hlso_count = Column(Integer, nullable=False)
+    date = Column(String(20))
+    time = Column(String(20))
+    email = Column(String(200))
     company_id = Column(String(50), index=True)
 
 
-    # PEELING AT MASTER
+# PEELING AT
 class peeling_at(Base, metacolumns):
     __tablename__ = "peeling_at"
     id = Column(Integer, primary_key=True)

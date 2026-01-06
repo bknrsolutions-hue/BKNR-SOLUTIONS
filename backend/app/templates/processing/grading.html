@@ -5,182 +5,202 @@
 <title>GRADING - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700}
+:root{
+  --primary:#143465;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+  --success: #166534;
+}
 
-  .form-container{
-    width:95%;max-width:1280px;margin:0 auto;
-    background:#fff;padding:25px;border-radius:10px;
-    box-shadow:0 0 8px rgba(0,0,0,.2)
-  }
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 
-  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:15px}
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:16px 25px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
-  .col{
-    width:15.5%;
-    display:flex;flex-direction:column;margin-bottom:10px
-  }
+/* FORM SECTION */
+.section{
+  margin:18px; background:var(--card); padding:25px;
+  border-radius:16px; border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
 
-  @media(max-width:900px){.col{width:48%}}
-  @media(max-width:600px){.col{width:100%}}
+.section-title {
+    font-size: 13px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; 
+    display: flex; align-items: center; gap: 8px;
+}
 
-  label{font-weight:600;color:#003366;margin-bottom:4px}
+.form-grid{
+  display:grid; grid-template-columns:repeat(6, 1fr); gap:16px;
+}
+@media(max-width:1100px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
-  input,select{
-    padding:8px;border:1px solid #aac1dd;background:#f9fcff;
-    border-radius:6px;font-size:14px
-  }
+.field{display:flex; flex-direction:column; gap: 5px;}
+.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
-  .actions{text-align:center;margin-top:20px}
-  .btn{
-    background:#003366;color:#fff;border:none;
-    padding:10px 25px;border-radius:7px;
-    font-weight:700;cursor:pointer
-  }
-  .btn-clear{background:#777}
+input, select{
+  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
+  font-size:13px; background:#fff; outline: none; transition: 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
-  table{
-    width:95%;max-width:1280px;margin:25px auto;
-    border-collapse:collapse;background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,.15)
-  }
-  th,td{
-    padding:6px 8px;border-bottom:1px solid #ccc;
-    font-size:13px;white-space:nowrap
-  }
-  th{background:#003366;color:#fff}
-  tr:hover{background:#e9f1ff;cursor:pointer}
-  tr.selected{background:#bed6ff!important}
+/* ACTIONS */
+.actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
+.btn{
+  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
+}
+.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
-  #threeDotsMenu{
-    width:95%;max-width:1280px;margin:5px auto;
-    text-align:right;display:none
-  }
+/* TABLE */
+.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
 
-  #dropdownMenu{
-    display:none;position:absolute;right:50px;background:#fff;
-    width:160px;border-radius:8px;z-index:1000;
-    border:1px solid #ccc
-  }
-  .menu-item{padding:10px;cursor:pointer}
-  .menu-item:hover{background:#e6f2ff}
+.table-wrap{
+  margin:12px 18px; background:var(--card); border-radius:16px;
+  border:1px solid var(--border); overflow:hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
 
-  #lookupModal{
-    display:none;position:fixed;left:0;top:0;width:100%;height:100%;
-    background:rgba(0,0,0,.45);justify-content:center;align-items:center;
-    z-index:9999
-  }
+table{ width:100%; border-collapse:collapse; font-size: 12px; }
+thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
+tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+tbody tr:hover{background:#f8fbff; cursor:pointer}
+tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
-  .lookup-box{
-    background:#fff;width:90%;max-width:900px;height:85vh;
-    border-radius:10px;position:relative;overflow:hidden
-  }
+/* 3 DOT MENU */
+#threeDotsMenu{ position:relative; display: none; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:#fff; border:1px solid var(--border); border-radius:10px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+.menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
+.menu-item:hover{background:#f1f5ff; color: var(--accent);}
 
-  .close-popup{
-    position:absolute;top:10px;right:20px;
-    font-size:22px;font-weight:bold;cursor:pointer;color:#003366
-  }
-
-  iframe{width:100%;height:100%;border:none}
+/* LOOKUP POPUP */
+#lookupModal{ display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); justify-content:center; align-items:center; z-index: 9999; }
+.lookup-box{ background:#fff; width:90%; max-width:1000px; height:85vh; border-radius:16px; position:relative; overflow:hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+.close-popup{ position:absolute; top:15px; right:20px; font-size:24px; font-weight:bold; cursor:pointer; color:var(--muted); z-index: 10; transition: 0.2s; }
+.close-popup:hover{ color: var(--primary); transform: scale(1.1); }
+iframe{ width:100%; height:100%; border:none; }
 </style>
 </head>
 
 <body>
 
-<h2>GRADING</h2>
-
-<form method="post"
-action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/processing/grading{% endif %}">
-<div class="form-container">
-
-<!-- ROW 1 -->
-<div class="row">
-  <div class="col">
-    <label>Batch</label>
-    <select id="batch" name="batch_number" required>
-      <option disabled {% if not edit_data %}selected{% endif %}>Select</option>
-      {% for b in batches %}
-      <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
-      {% endfor %}
-      <option value="__lookup_batch__">+ add new</option>
-    </select>
+<div class="header">
+  <div class="header-titles">
+      <h2>Grading Entry</h2>
+      <p><i class="fa-solid fa-filter-list"></i> Product categorization and grade management</p>
   </div>
-
-  <div class="col">
-    <label>HOSO Count</label>
-    <select id="hoso" name="hoso_count" required>
-      {% if edit_data %}
-      <option value="{{edit_data.hoso_count}}">{{edit_data.hoso_count}}</option>
-      {% else %}
-      <option disabled selected>Select Batch</option>
-      {% endif %}
-    </select>
-  </div>
-
-  <div class="col">
-    <label>Variety</label>
-    <select id="variety" name="variety_name" required>
-      <option disabled>Select</option>
-      {% for v in variety_list %}
-      <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
-      {% endfor %}
-      <option value="__lookup_variety__">+ add new</option>
-    </select>
-  </div>
-
-  <div class="col">
-    <label>Graded Count</label>
-    <input name="graded_count" value="{{edit_data.graded_count if edit_data else ''}}">
-  </div>
-
-  <div class="col">
-    <label>Quantity (kg)</label>
-    <input type="number" step="0.01" name="quantity"
-    value="{{edit_data.quantity if edit_data else ''}}">
-  </div>
-
-  <div class="col">
-    <label>Species</label>
-    <select id="species" name="species_val" required>
-      <option disabled>Select</option>
-      {% for s in species_list %}
-      <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-      {% endfor %}
-      <option value="__lookup_species__">+ add new</option>
-    </select>
-  </div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR SOLUTIONS</div>
 </div>
 
-<div class="actions">
-  <button class="btn">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
-  <button type="button" class="btn btn-clear"
-  onclick="window.location='/processing/grading'">CLEAR</button>
-</div>
+<form method="post" action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/processing/grading{% endif %}">
+<div class="section">
+  <div class="section-title">Grading Details</div>
+  <div class="form-grid">
 
+    <div class="field">
+      <label>Batch</label>
+      <select id="batch" name="batch_number" required>
+        <option disabled {% if not edit_data %}selected{% endif %}>Select Batch</option>
+        {% for b in batches %}
+        <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+        {% endfor %}
+        <option value="__lookup_batch__" style="color:var(--accent); font-weight:bold;">➕ Add New Batch</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>HOSO Count</label>
+      <select id="hoso" name="hoso_count" required>
+        {% if edit_data %}
+        <option value="{{edit_data.hoso_count}}">{{edit_data.hoso_count}}</option>
+        {% else %}
+        <option disabled selected>Select Batch First</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <select id="variety" name="variety_name" required>
+        <option disabled selected>Select Variety</option>
+        {% for v in variety_list %}
+        <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
+        {% endfor %}
+        <option value="__lookup_variety__" style="color:var(--accent); font-weight:bold;">➕ Add Variety</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Graded Count</label>
+      <input name="graded_count" value="{{edit_data.graded_count if edit_data else ''}}" placeholder="Enter Grade">
+    </div>
+
+    <div class="field">
+      <label>Quantity (kg)</label>
+      <input type="number" step="0.01" name="quantity" value="{{edit_data.quantity if edit_data else ''}}" placeholder="0.00">
+    </div>
+
+    <div class="field">
+      <label>Species</label>
+      <select id="species" name="species_val" required>
+        <option disabled selected>Select Species</option>
+        {% for s in species_list %}
+        <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+        {% endfor %}
+        <option value="__lookup_species__" style="color:var(--accent); font-weight:bold;">➕ Add Species</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn" onclick="window.location='/processing/grading'"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+    <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Grading{% else %}Save Grading{% endif %}</button>
+  </div>
 </div>
 </form>
 
 {% if today_data %}
-<div id="threeDotsMenu">
-  <button class="btn" id="dotsBtn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
-  </div>
+<div class="table-header-tool">
+    <h3>Today's Grading Records</h3>
+    <div id="threeDotsMenu">
+      <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="dropdownMenu">
+        <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit Entry</div>
+        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+      </div>
+    </div>
 </div>
 
+<div class="table-wrap">
 <table id="dataTable">
 <thead>
 <tr>
   <th>ID</th>
-  <th>Batch</th>
-  <th>HOSO</th>
+  <th>Batch #</th>
+  <th>HOSO Count</th>
   <th>Variety</th>
-  <th>Grade</th>
-  <th>Qty</th>
+  <th>Graded Count</th>
+  <th>Qty (KG)</th>
   <th>Species</th>
   <th>Date</th>
   <th>Time</th>
@@ -190,11 +210,11 @@ action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
   <td>{{r.id}}</td>
-  <td>{{r.batch_number}}</td>
+  <td style="font-weight:700;">{{r.batch_number}}</td>
   <td>{{r.hoso_count}}</td>
   <td>{{r.variety_name}}</td>
-  <td>{{r.graded_count}}</td>
-  <td>{{r.quantity}}</td>
+  <td style="color:var(--accent); font-weight:600;">{{r.graded_count}}</td>
+  <td style="font-weight:700;">{{r.quantity}}</td>
   <td>{{r.species}}</td>
   <td>{{r.date}}</td>
   <td>{{r.time}}</td>
@@ -202,9 +222,9 @@ action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/
 {% endfor %}
 </tbody>
 </table>
+</div>
 {% endif %}
 
-<!-- LOOKUP POPUP -->
 <div id="lookupModal">
   <div class="lookup-box">
     <span class="close-popup" onclick="closeLookup()">×</span>
@@ -213,6 +233,13 @@ action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/
 </div>
 
 <script>
+const lookupModal = document.getElementById("lookupModal");
+const lookupFrame = document.getElementById("lookupFrame");
+const batch = document.getElementById("batch");
+const hoso = document.getElementById("hoso");
+const variety = document.getElementById("variety");
+const species = document.getElementById("species");
+
 function openLookup(url){
   lookupFrame.src=url;
   lookupModal.style.display="flex";
@@ -229,7 +256,7 @@ batch.onchange=()=>{
   }else{
     fetch("/processing/grading/get_hoso/"+batch.value)
     .then(r=>r.json()).then(d=>{
-      hoso.innerHTML="";
+      hoso.innerHTML="<option disabled selected>Select Count</option>";
       d.counts.forEach(c=>{
         let o=document.createElement("option");
         o.value=o.text=c;hoso.appendChild(o);
@@ -241,7 +268,12 @@ batch.onchange=()=>{
 variety.onchange=()=>{if(variety.value==="__lookup_variety__"){openLookup("/criteria/varieties");variety.value="";}}
 species.onchange=()=>{if(species.value==="__lookup_species__"){openLookup("/criteria/species");species.value="";}}
 
+/* TABLE SELECTION */
 let selectedRow=null;
+const threeDotsMenu = document.getElementById("threeDotsMenu");
+const dotsBtn = document.getElementById("dotsBtn");
+const dropdownMenu = document.getElementById("dropdownMenu");
+
 document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
   r.onclick=()=>{
     document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
@@ -251,17 +283,32 @@ document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
   };
 });
 
-dotsBtn.onclick=()=>dropdownMenu.style.display=
-  dropdownMenu.style.display==="block"?"none":"block";
+dotsBtn.onclick=(e)=>{
+  e.stopPropagation();
+  dropdownMenu.style.display = dropdownMenu.style.display==="block"?"none":"block";
+}
+document.onclick=()=>dropdownMenu.style.display="none";
 
 function editSelected(){
-  if(!selectedRow)return Swal.fire("Select row");
+  if(!selectedRow)return Swal.fire("Select a row first!");
   location="/processing/grading/edit/"+selectedRow.dataset.id;
 }
 function deleteSelected(){
-  if(!selectedRow)return Swal.fire("Select row");
-  fetch("/processing/grading/delete/"+selectedRow.dataset.id,{method:"POST"})
-  .then(()=>location.reload());
+  if(!selectedRow)return Swal.fire("Select a row first!");
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetch("/processing/grading/delete/"+selectedRow.dataset.id,{method:"POST"})
+      .then(()=>location.reload());
+    }
+  })
 }
 </script>
 

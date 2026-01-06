@@ -1,125 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Grade → HOSO / HLSO</title>
+<title>Grade → HOSO / HLSO | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-body{font-family:Arial;background:#f4f6f9;margin:0}
-h2{text-align:center;color:#003366;margin:16px}
+  :root {
+    --primary: #143465;
+    --accent: #3b82f6;
+    --bg: #f3f4f6;
+    --border: #d1d5db;
+    --text: #1f2937;
+    --success: #059669;
+  }
 
-.form-box{
-  background:#fff;
-  margin:16px auto;
-  padding:18px;
-  max-width:1000px;
-  border-radius:10px;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
-}
-.row{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:14px;
-}
-label{font-size:13px;font-weight:700}
-select{padding:8px;border-radius:6px;border:1px solid #9db7d6}
+  body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+  
+  /* HEADER */
+  .header {
+    background: #fff; padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .header h2 { margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
 
-button{
-  margin-top:14px;
-  padding:10px 18px;
-  background:#003366;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  cursor:pointer
-}
+  /* FILTER BAR */
+  .filter-section {
+    margin: 15px 20px; display: flex; align-items: center; gap: 15px;
+    background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .filter-section label { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+  
+  select {
+    padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);
+    font-size: 13px; outline: none; background: #f9fafb; min-width: 150px;
+  }
 
-table{
-  width:98%;
-  margin:20px auto;
-  border-collapse:collapse;
-  background:#fff
-}
-th,td{
-  border:1px solid #cfd9ea;
-  padding:8px;
-  font-size:12px
-}
-th{background:#eaf2ff}
+  /* TABLE AREA */
+  .table-wrap {
+    margin: 0 20px 20px; background: #fff; border-radius: 10px;
+    border: 1px solid var(--border); overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  
+  thead th {
+    background: #f8fafc; color: #64748b; font-weight: 700; 
+    text-transform: uppercase; font-size: 11px; padding: 12px;
+    text-align: center; border-bottom: 2px solid var(--border);
+    position: sticky; top: 0;
+  }
+
+  tbody td { padding: 12px; text-align: center; border-bottom: 1px solid #f1f5f9; }
+  
+  tr:hover { background: #f8fbff; }
+
+  /* BADGES */
+  .badge-hlso { background: #eff6ff; color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+  .badge-hoso { background: #ecfdf5; color: var(--success); padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+  .badge-none { color: #9ca3af; font-style: italic; }
+  
+  .nw-grade { font-weight: 800; color: var(--primary); }
+
+  @media (max-width: 768px) {
+    .filter-section { flex-direction: column; align-items: flex-start; }
+    .table-wrap { overflow-x: auto; }
+  }
 </style>
 </head>
 
 <body>
 
-<h2>Grade → HOSO / HLSO Mapping</h2>
+<div class="header">
+  <h2><i class="fa-solid fa-calculator"></i> Grade → HOSO / HLSO</h2>
+  <div style="font-size: 11px; color: #64748b; font-weight: 600;">REPORT VIEW</div>
+</div>
 
-<form method="post" class="form-box">
-  <div class="row">
-
-    <div>
-      <label>Species</label>
-      <select name="species" required>
-        {% for s in species %}
-        <option>{{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Grade</label>
-      <select name="grade_name" required>
-        {% for g in grades %}
-        <option>{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Variety</label>
-      <select name="variety_name" required>
-        {% for v in varieties %}
-        <option value="{{ v.variety_name }}">{{ v.variety_name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Glaze</label>
-      <select name="glaze_name" required>
-        {% for g in glazes %}
-        <option>{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
+<div class="filter-section">
+  <div>
+    <label><i class="fa-solid fa-filter"></i> Filter by Grade:</label>
+    <select id="gradeFilter" onchange="filterByGrade()">
+      <option value="">All Grades</option>
+      {% for g in rows | map(attribute='grade_name') | unique | sort %}
+        <option value="{{ g }}">{{ g }}</option>
+      {% endfor %}
+    </select>
   </div>
+  <div style="font-size: 12px; color: #64748b;">
+    <span id="rowCount">0</span> records found
+  </div>
+</div>
 
-  <button type="submit">Save / Update</button>
-</form>
-
-<table>
+<div class="table-wrap">
+<table id="hosoTable">
+<thead>
 <tr>
   <th>Species</th>
   <th>Grade</th>
   <th>Variety</th>
   <th>Glaze</th>
-  <th>HLSO</th>
-  <th>HOSO</th>
+  <th>HLSO Count</th>
+  <th>HOSO Count</th>
   <th>NW Grade</th>
 </tr>
+</thead>
 
+<tbody>
 {% for r in rows %}
-<tr>
-  <td>{{ r.species }}</td>
+<tr data-grade="{{ r.grade_name }}">
+  <td style="font-weight: 600;">{{ r.species }}</td>
   <td>{{ r.grade_name }}</td>
   <td>{{ r.variety_name }}</td>
   <td>{{ r.glaze_name }}</td>
-  <td>{{ r.hlso_count }}</td>
-  <td>{{ r.hoso_count }}</td>
-  <td>{{ r.nw_grade }}</td>
+  <td><span class="badge-hlso">{{ r.hlso_count }}</span></td>
+  <td>
+    {% if r.hoso_count %}
+      <span class="badge-hoso">{{ r.hoso_count }}</span>
+    {% else %}
+      <span class="badge-none">Not Set</span>
+    {% endif %}
+  </td>
+  <td class="nw-grade">{{ r.nw_grade }}</td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="7" style="padding: 40px; color: #64748b;">No data available. Please calculate and save first.</td>
 </tr>
 {% endfor %}
+</tbody>
 </table>
+</div>
+
+<script>
+function filterByGrade(){
+  const selected = document.getElementById("gradeFilter").value;
+  const rows = document.querySelectorAll("#hosoTable tbody tr");
+  let count = 0;
+
+  rows.forEach(row => {
+    if (!row.dataset.grade) return;
+    if (selected === "" || row.dataset.grade === selected){
+      row.style.display = "";
+      count++;
+    } else {
+      row.style.display = "none";
+    }
+  });
+  document.getElementById("rowCount").innerText = count;
+}
+
+// Initial count
+filterByGrade();
+</script>
 
 </body>
 </html>

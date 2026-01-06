@@ -5,192 +5,223 @@
 <title>SOAKING - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-body{font-family:Arial;background:#e6f2ff;margin:0}
-h2{text-align:center;color:#003366;margin:15px 0;font-weight:700}
-
-.form-container{
-  width:96%;max-width:1200px;margin:auto;
-  background:#fff;padding:14px;border-radius:14px;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
+:root{
+  --primary:#143465;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+  --success: #166534;
+  --warning: #f59e0b;
 }
 
-/* GRID */
-.row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px}
-.col{display:flex;flex-direction:column}
-@media(max-width:900px){.row{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:600px){.row{grid-template-columns:1fr}}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 
-label{font-weight:600;color:#003366;margin-bottom:6px}
-input,select{
-  padding:10px;border:1px solid #a3bcd6;
-  background:#f9fcff;border-radius:6px;font-size:14px
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:16px 25px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
 }
-input[readonly],input:disabled{background:#eee}
+.header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
-/* BUTTON */
-.actions{text-align:center;margin-top:15px}
+/* FORM SECTION */
+.section{
+  margin:18px; background:var(--card); padding:25px;
+  border-radius:16px; border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-size: 13px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; 
+    display: flex; align-items: center; gap: 8px;
+}
+
+.form-grid{
+  display:grid; grid-template-columns:repeat(5, 1fr); gap:16px;
+}
+@media(max-width:1100px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+
+.field{display:flex; flex-direction:column; gap: 5px;}
+.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+
+input, select{
+  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
+  font-size:13px; background:#fff; outline: none; transition: 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+input[readonly], input:disabled{ background:#f1f5f9; color: var(--muted); cursor: not-allowed; }
+
+.available-badge {
+    font-size: 11px; font-weight: 700; color: var(--success);
+    background: #dcfce7; padding: 2px 8px; border-radius: 4px; display: inline-block;
+}
+
+/* ACTIONS */
+.actions{ margin-top:25px; display:flex; justify-content:flex-end; gap:12px; }
 .btn{
-  background:#003366;color:#fff;border:none;
-  padding:10px 22px;border-radius:6px;
-  font-weight:600;cursor:pointer
+  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
 }
+.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
 /* TABLE */
-table{
-  width:92%;max-width:1200px;margin:20px auto;
-  border-collapse:collapse;background:#fff;
-  border-radius:10px;overflow:hidden;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
+.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
+
+.table-wrap{
+  margin:12px 18px; background:var(--card); border-radius:16px;
+  border:1px solid var(--border); overflow:hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
 }
-th,td{padding:10px;border-bottom:1px solid #ccc;font-size:14px}
-th{background:#003366;color:white}
-tr:hover{background:#e6f2ff;cursor:pointer}
-tr.selected{background:#cce5ff!important}
+
+table{ width:100%; border-collapse:collapse; font-size: 12px; }
+thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
+tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+tbody tr:hover{background:#f8fbff; cursor:pointer}
+tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
 /* 3 DOT MENU */
-#threeDotsMenu{
-  width:92%;max-width:1200px;
-  margin:10px auto;text-align:right;
-  display:none;position:relative
-}
-#dropdownMenu{
-  display:none;position:absolute;right:0;
-  background:white;border:1px solid #ccc;
-  border-radius:8px;width:160px;
-  box-shadow:0 2px 6px rgba(0,0,0,.3)
-}
-.menu-item{padding:10px;cursor:pointer;font-weight:600}
-.menu-item:hover{background:#e6f2ff}
+#threeDotsMenu{ position:relative; display: none; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:#fff; border:1px solid var(--border); border-radius:10px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+.menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
+.menu-item:hover{background:#f1f5ff; color: var(--accent);}
 </style>
 </head>
 
 <body>
 
-<h2>SOAKING ENTRY</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>Soaking Entry</h2>
+      <p><i class="fa-solid fa-flask-vial"></i> Chemical treatment and moisture management</p>
+  </div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR SOLUTIONS</div>
+</div>
 
 <form method="post" action="/processing/soaking" onsubmit="return validateQty()">
-<div class="form-container">
+<div class="section">
+  <div class="section-title">Material Input Details</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Batch</label>
+      <select id="batch" name="batch_number" onchange="loadCounts()" required>
+        <option value="" disabled selected>Select Batch</option>
+        {% for b in batches %}
+        <option value="{{b}}">{{b}}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-<!-- ROW 1 -->
-<div class="row">
-  <div class="col">
-    <label>Batch</label>
-    <select id="batch" name="batch_number" onchange="loadCounts()" required>
-      <option value="" disabled selected>Select Batch</option>
-      {% for b in batches %}
-      <option value="{{b}}">{{b}}</option>
-      {% endfor %}
-    </select>
+    <div class="field">
+      <label>In Count</label>
+      <select id="in_count" name="in_count" required onchange="loadAvailableQty()">
+        <option value="" disabled selected>Select Batch First</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <select id="variety" name="variety_name" required onchange="loadAvailableQty()">
+        {% for v in varieties %}
+        <option value="{{v}}">{{v}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Species</label>
+      <select id="species" name="species_name" required onchange="loadAvailableQty()">
+        {% for s in species %}
+        <option value="{{s}}">{{s}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Input Qty (KG)</label>
+      <input type="number" step="0.01" name="in_qty" id="qty" placeholder="0.00" required oninput="calcQty();toggleRejection();">
+      <div style="margin-top: 4px;"><span id="availableText" class="available-badge">Available : 0 kg</span></div>
+    </div>
   </div>
 
-  <div class="col">
-    <label>In Count</label>
-    <select id="in_count" name="in_count" required onchange="loadAvailableQty()">
-      <option value="" disabled selected>Select Batch First</option>
-    </select>
+  <div class="section-title" style="margin-top: 30px;">Treatment Parameters</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Chemical</label>
+      <select name="chemical_name" required>
+        {% for c in chemicals %}
+        <option value="{{c}}">{{c}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Chemical %</label>
+      <input type="number" step="0.01" id="chem_p" name="chemical_percent" placeholder="%" oninput="calcQty()" required>
+    </div>
+
+    <div class="field">
+      <label>Chem Qty (Calc)</label>
+      <input type="number" id="chem_qty" readonly placeholder="0.00">
+    </div>
+
+    <div class="field">
+      <label>Salt %</label>
+      <input type="number" step="0.01" id="salt_p" name="salt_percent" placeholder="%" oninput="calcQty()" required>
+    </div>
+
+    <div class="field">
+      <label>Salt Qty (Calc)</label>
+      <input type="number" id="salt_qty" readonly placeholder="0.00">
+    </div>
+
+    <div class="field">
+      <label>Rejection Qty</label>
+      <input type="number" step="0.01" id="rejection_qty" name="rejection_qty" value="0" disabled placeholder="Enabled if Input Qty is 0">
+    </div>
   </div>
 
-  <div class="col">
-    <label>Variety</label>
-    <select id="variety" name="variety_name" required onchange="loadAvailableQty()">
-      {% for v in varieties %}
-      <option value="{{v}}">{{v}}</option>
-      {% endfor %}
-    </select>
+  <div class="actions">
+    <button type="button" class="btn" onclick="location.reload()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+    <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Soaking Entry</button>
   </div>
-
-  <div class="col">
-    <label>Species</label>
-    <select id="species" name="species_name" required onchange="loadAvailableQty()">
-      {% for s in species %}
-      <option value="{{s}}">{{s}}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col">
-    <label>Input Qty</label>
-    <input type="number" step="0.01"
-           name="in_qty" id="qty"
-           required
-           oninput="calcQty();toggleRejection();">
-    <small id="availableText" style="margin-top:5px;font-weight:600;color:#006400">
-      Available Qty : 0 kg
-    </small>
-  </div>
-</div>
-
-<!-- ROW 2 -->
-<div class="row">
-  <div class="col">
-    <label>Chemical</label>
-    <select name="chemical_name" required>
-      {% for c in chemicals %}
-      <option value="{{c}}">{{c}}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col">
-    <label>Chemical %</label>
-    <input type="number" step="0.01" id="chem_p"
-           name="chemical_percent" oninput="calcQty()" required>
-  </div>
-
-  <div class="col">
-    <label>Chem Qty</label>
-    <input type="number" id="chem_qty" readonly>
-  </div>
-
-  <div class="col">
-    <label>Salt %</label>
-    <input type="number" step="0.01" id="salt_p"
-           name="salt_percent" oninput="calcQty()" required>
-  </div>
-
-  <div class="col">
-    <label>Salt Qty</label>
-    <input type="number" id="salt_qty" readonly>
-  </div>
-
-  <!-- ✅ NEW COLUMN : REJECTION -->
-  <div class="col">
-    <label>Rejection Qty</label>
-    <input type="number" step="0.01"
-           id="rejection_qty"
-           name="rejection_qty"
-           value="0"
-           disabled>
-  </div>
-</div>
-
-<div class="actions">
-  <button class="btn">SAVE</button>
-</div>
-
 </div>
 </form>
 
 {% if today_data %}
-<!-- 3 DOT MENU -->
-<div id="threeDotsMenu">
-  <button class="btn" onclick="toggleMenu()">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editRow()">✏ Edit</div>
-    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
-  </div>
+<div class="table-header-tool">
+    <h3>Today's Soaking Batches</h3>
+    <div id="threeDotsMenu">
+      <button class="menu-trigger" onclick="toggleMenu()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="dropdownMenu">
+        <div class="menu-item" onclick="editRow()"><i class="fa-solid fa-pen-to-square"></i> Edit Entry</div>
+        <div class="menu-item" onclick="deleteRow()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+      </div>
+    </div>
 </div>
 
+<div class="table-wrap">
 <table id="dataTable">
 <thead>
 <tr>
   <th>ID</th>
   <th>Batch</th>
   <th>Count</th>
-  <th>Qty</th>
+  <th>Qty (KG)</th>
   <th>Chemical</th>
   <th>Chem %</th>
   <th>Salt %</th>
@@ -201,22 +232,36 @@ tr.selected{background:#cce5ff!important}
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
   <td>{{r.id}}</td>
-  <td>{{r.batch_number}}</td>
-  <td>{{r.in_count}}</td>
-  <td>{{r.in_qty}}</td>
+  <td style="font-weight: 700;">{{r.batch_number}}</td>
+  <td style="color: var(--accent); font-weight: 600;">{{r.in_count}}</td>
+  <td style="font-weight: 700;">{{r.in_qty}}</td>
   <td>{{r.chemical_name}}</td>
-  <td>{{r.chemical_percent}}</td>
-  <td>{{r.salt_percent}}</td>
-  <td>{{r.date}}</td>
+  <td>{{r.chemical_percent}}%</td>
+  <td>{{r.salt_percent}}%</td>
+  <td style="color: var(--muted); font-size: 11px;">{{r.date}}</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
+</div>
 {% endif %}
 
 <script>
 let selected=null;
 let availableQty=0;
+
+const batch = document.getElementById("batch");
+const in_count = document.getElementById("in_count");
+const variety = document.getElementById("variety");
+const species = document.getElementById("species");
+const qty = document.getElementById("qty");
+const availableText = document.getElementById("availableText");
+const chem_p = document.getElementById("chem_p");
+const chem_qty = document.getElementById("chem_qty");
+const salt_p = document.getElementById("salt_p");
+const salt_qty = document.getElementById("salt_qty");
+const dropdownMenu = document.getElementById("dropdownMenu");
+const threeDotsMenu = document.getElementById("threeDotsMenu");
 
 /* LOAD COUNTS */
 async function loadCounts(){
@@ -232,13 +277,11 @@ async function loadCounts(){
 /* AVAILABLE QTY */
 async function loadAvailableQty(){
   if(!batch.value || !in_count.value || !species.value || !variety.value) return;
-
   let url=`/processing/soaking/get_available_qty?batch=${batch.value}&count=${in_count.value}&species=${species.value}&variety=${variety.value}`;
   let r=await fetch(url);
   let d=await r.json();
-
   availableQty=parseFloat(d.available_qty)||0;
-  availableText.innerText=`Available Qty : ${availableQty} kg`;
+  availableText.innerText=`Available : ${availableQty} kg`;
 }
 
 /* CALC */
@@ -250,16 +293,17 @@ function calcQty(){
   salt_qty.value=(q*sp/100).toFixed(2);
 }
 
-/* ✅ REJECTION TOGGLE */
+/* REJECTION TOGGLE */
 function toggleRejection(){
   let q=+qty.value||0;
   let rej=document.getElementById("rejection_qty");
-
   if(q===0){
-    rej.disabled=false;     // ENABLE
+    rej.disabled=false;
+    rej.style.background = "#fff";
   }else{
-    rej.disabled=true;      // DISABLE
+    rej.disabled=true;
     rej.value=0;
+    rej.style.background = "#f1f5f9";
   }
 }
 
@@ -267,7 +311,12 @@ function toggleRejection(){
 function validateQty(){
   let q=+qty.value||0;
   if(q>availableQty){
-    Swal.fire("Quantity exceeds available stock");
+    Swal.fire({
+        icon: 'error',
+        title: 'Stock Alert',
+        text: 'Input quantity exceeds available stock!',
+        confirmButtonColor: '#3b82f6'
+    });
     return false;
   }
   return true;
@@ -288,19 +337,32 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 
 function toggleMenu(){
-  dropdownMenu.style.display=
-    dropdownMenu.style.display==="block"?"none":"block";
+  dropdownMenu.style.display= (dropdownMenu.style.display==="block") ? "none" : "block";
 }
+
+document.onclick = (e) => {
+    if(!e.target.closest('.menu-trigger')) dropdownMenu.style.display="none";
+}
+
 function editRow(){
   if(selected) location=`/processing/soaking/edit/${selected.dataset.id}`;
 }
+
 function deleteRow(){
   if(!selected) return;
-  Swal.fire({icon:"warning",title:"Delete?",showCancelButton:true})
-  .then(r=>r.isConfirmed &&
-    fetch(`/processing/soaking/delete/${selected.dataset.id}`,{method:"POST"})
-    .then(()=>location.reload())
-  );
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "This soaking record will be permanently deleted!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(r=>{
+    if(r.isConfirmed){
+        fetch(`/processing/soaking/delete/${selected.dataset.id}`,{method:"POST"})
+        .then(()=>location.reload());
+    }
+  });
 }
 </script>
 

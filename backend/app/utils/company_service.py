@@ -1,15 +1,29 @@
-from app.database.models.users import Company
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from app.database.models.users import User, Company
 
-def get_company_id(request, db):
-    company_code = request.session.get("company_code")
 
-    if not company_code:
-        return None
+def get_gate_entry_report_emails(db: Session, company_code: str):
 
-    comp = (
+    company = (
         db.query(Company)
         .filter(Company.company_code == company_code)
         .first()
     )
 
-    return comp.id if comp else None
+    if not company:
+        return []
+
+    users = (
+        db.query(User.email)
+        .filter(
+            User.company_id == company.id,
+            or_(
+                User.permissions == "ALL",
+                User.permissions.ilike("%gate_entry_report%")
+            )
+        )
+        .all()
+    )
+
+    return [u.email for u in users]

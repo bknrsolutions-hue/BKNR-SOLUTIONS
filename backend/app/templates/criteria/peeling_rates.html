@@ -4,79 +4,139 @@
 <meta charset="UTF-8">
 <title>PEELING RATES | BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0}
-h2{text-align:center;color:#003366;margin:18px 0}
+  :root {
+    --primary: #143465;
+    --accent: #3b82f6;
+    --border: #d1d5db;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
+  }
 
-.form-container{
-  width:95%;max-width:1200px;margin:auto;background:#fff;
-  padding:22px;border-radius:10px;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
-}
+  * { box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-/* ⭐ 6 columns */
-.form-grid{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:14px;
-}
+  h2 {
+    background: #fff; margin: 0; padding: 15px;
+    text-align: center; color: var(--primary);
+    font-size: 18px; font-weight: 800; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 1px;
+  }
 
-.field{display:flex;flex-direction:column}
-label{font-size:13px;font-weight:600;color:#003366;margin-bottom:4px}
+  /* ================= FORM CONTAINER ================= */
+  .form-container {
+    width: 95%; max-width: 1200px; margin: 25px auto;
+    background: #fff; padding: 25px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
 
-select,input{
-  height:36px;border:1px solid #a3bcd6;border-radius:6px;
-  padding:6px 8px;background:#f9fcff;font-size:14px;
-}
+  /* ⭐ Modern 6-Column Grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+  }
 
-.actions{text-align:right;margin-top:16px}
-button{
-  background:#003366;color:#fff;border:none;
-  padding:8px 20px;border-radius:6px;
-  font-weight:600;cursor:pointer
-}
+  .field { display: flex; flex-direction: column; }
+  
+  label {
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
 
-/* TABLE */
-table{
-  width:95%;max-width:1200px;margin:22px auto;
-  border-collapse:collapse;background:#fff;
-  box-shadow:0 0 8px rgba(0,0,0,.12)
-}
-th,td{padding:9px;border-bottom:1px solid #ccc;text-align:center;font-size:14px}
-th{background:#003366;color:white}
-tr:hover{background:#eef5ff;cursor:pointer}
-tr.selected{background:#cce5ff!important}
+  select, input {
+    height: 40px; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    background: #fff; font-size: 14px;
+    transition: all 0.2s; outline: none;
+  }
 
-/* 3 DOT MENU */
-#menuWrap{
-  display:none;width:95%;max-width:1200px;
-  margin:10px auto;text-align:right;position:relative
-}
-#dotsBtn{
-  background:#003366;color:white;border:none;
-  padding:6px 12px;font-size:22px;
-  border-radius:6px;cursor:pointer
-}
-#dropdownMenu{
-  display:none;position:absolute;right:0;
-  background:white;border:1px solid #ccc;
-  width:160px;border-radius:8px;
-  box-shadow:0 3px 8px rgba(0,0,0,.25)
-}
-.menu-item{
-  padding:10px;font-size:14px;font-weight:600;
-  color:#003366;border-bottom:1px solid #eee;
-  cursor:pointer
-}
-.menu-item:hover{background:#e6f2ff}
+  select:focus, input:focus { 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+  }
 
-@media(max-width:1100px){
-  .form-grid{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:700px){
-  .form-grid{grid-template-columns:repeat(2,1fr)}
-}
+  /* ================= ACTIONS ================= */
+  .actions { text-align: right; margin-top: 20px; }
+  
+  button {
+    background: var(--primary); color: #fff; border: none;
+    padding: 10px 25px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    text-transform: uppercase; transition: 0.2s;
+  }
+  
+  button:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  /* ================= TABLE AREA ================= */
+  table {
+    width: 95%; max-width: 1200px; margin: 20px auto 40px;
+    border-collapse: collapse; background: #fff;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  th {
+    background: #f1f5f9; color: #475569; padding: 12px;
+    font-size: 11px; text-transform: uppercase;
+    border-bottom: 2px solid var(--border);
+    text-align: center;
+  }
+
+  td {
+    padding: 12px; border-bottom: 1px solid #f1f5f9;
+    font-size: 13px; color: var(--text); text-align: center;
+  }
+
+  tr:hover { background: #f8fbff; cursor: pointer; }
+  tr.selected { background: #eff6ff !important; border-left: 5px solid var(--accent); }
+
+  /* ================= 3 DOTS MENU ================= */
+  #menuWrap {
+    display: none; width: 95%; max-width: 1200px;
+    margin: 10px auto; text-align: right; position: relative;
+  }
+
+  #dotsBtn {
+    background: var(--primary); color: white; border: none;
+    padding: 6px 14px; font-size: 20px;
+    border-radius: 6px; cursor: pointer; transition: 0.2s;
+  }
+  #dotsBtn:hover { background: var(--accent); }
+
+  #dropdownMenu {
+    display: none; position: absolute; right: 0; top: 40px;
+    background: white; border: 1px solid var(--border);
+    width: 180px; border-radius: 8px; z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden;
+  }
+
+  .menu-item {
+    padding: 12px 15px; font-size: 13px; font-weight: 600;
+    color: var(--primary); border-bottom: 1px solid #f1f5f9;
+    cursor: pointer; transition: 0.2s; text-align: left;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+  /* Responsive Adjustments */
+  @media(max-width: 1100px){
+    .form-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media(max-width: 700px){
+    .form-grid { grid-template-columns: repeat(1, 1fr); }
+    .actions { text-align: center; }
+    button { width: 100%; }
+  }
 </style>
 </head>
 

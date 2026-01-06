@@ -1,138 +1,503 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>PENDING ORDERS – BKNR SOLUTIONS</title>
+<meta charset="UTF-8">
+<title>Pending Orders – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
- body{font-family:Arial;background:#e6f2ff;margin:0;padding:0;}
- h2{text-align:center;color:#fff;background:#003366;padding:14px;margin:0;}
- .box{width:95%;max-width:1200px;margin:18px auto;background:white;
-      padding:20px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,0.2);}
- .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
- .col{flex:1;min-width:250px;}
- label{font-weight:600;color:#003366;margin-bottom:5px;display:block;}
- select,input{width:100%;padding:8px;border:1px solid #9db7d6;border-radius:6px;background:#f7fbff;}
- button{padding:10px 22px;color:white;border-radius:6px;border:none;background:#003366;font-weight:600;cursor:pointer;}
- .clr{background:#777;}
- table{width:95%;margin:18px auto;border-collapse:collapse;background:white;box-shadow:0 0 6px rgba(0,0,0,0.15);}
- th,td{padding:7px;border-bottom:1px solid #ddd;font-size:13px;}
- th{background:#003366;color:white;}
- .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#0009;
-        display:none;align-items:center;justify-content:center;}
- .modal{background:white;padding:22px;border-radius:10px;width:340px;text-align:center;}
- .modal input{width:90%;padding:8px;margin-top:10px;}
+:root{
+  --primary:#143465;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --accent: #3b82f6;
+  --card:#ffffff;
+}
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
+
+/* --- MAIN LAYOUT (Stable Form, Scrollable Table) --- */
+body {
+  margin: 0;
+  background: var(--bg);
+  height: 100vh; /* Full Height */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* No body scroll */
+}
+
+/* Header & Form shouldn't shrink */
+.header, #flash-message, .section {
+  flex-shrink: 0;
+}
+
+/* HEADER */
+.header{
+  background:#fff; padding:12px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.header h2{margin:0;color:var(--primary); font-weight: 800; font-size: 18px;}
+
+/* FORM SECTION */
+.section{
+  margin:10px 18px;background:#fff;padding:15px;
+  border-radius:12px;border:1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.form-grid{
+  display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:10px
+}
+.field{display:flex;flex-direction:column; gap: 2px;}
+.field label{font-size:10px;font-weight:700; color: #64748b; text-transform: uppercase;}
+.field input,.field select{
+  padding:8px;border-radius:6px;border:1px solid var(--border);
+  font-size: 12px; outline: none;
+}
+.field input[readonly] { background-color: #f8fafc; color: #475569; cursor: not-allowed; font-weight: 600; }
+.field input:focus { border-color: var(--accent); }
+
+/* ITEMS TABLE IN FORM */
+.items-table-wrap { overflow-x: auto; margin-top: 10px; }
+.items-table{width:100%;border-collapse:collapse;font-size:11px;}
+.items-table th,.items-table td{
+  border:1px solid var(--border);padding:5px;text-align:center;
+}
+.items-table th { background: #f8fafc; color: #475569; font-weight: 700; white-space: nowrap;}
+.items-table input, .items-table select { width: 100%; font-size: 11px; padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px;}
+
+.btn-remove { 
+    background:#fee2e2; color:#ef4444; border:none; padding:2px 6px; 
+    border-radius:4px; cursor:pointer; 
+}
+
+/* --- TABLE WRAPPER (Scrollable Area) --- */
+.table-wrap {
+  margin: 10px 18px 0 18px;
+  background: #fff;
+  border-radius: 14px 14px 0 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-header-tool {
+    padding: 10px 20px; display: flex; justify-content: space-between;
+    align-items: center; border-bottom: 1px solid var(--border); background: #fff;
+    flex-shrink: 0;
+}
+.table-header-tool h3 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; }
+
+.data-container {
+    height: auto; 
+    flex-grow: 1; 
+    overflow-y: auto; /* Scroll here */
+    overflow-x: auto;
+}
+
+#threeDotsMenu { position: relative; display: none; }
+.menu-trigger {
+  background: #fff; border: 1px solid var(--border);
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+#dropdownMenu {
+  display: none; position: absolute; right: 0; top: 35px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,.15);
+  z-index: 1000; overflow: hidden;
+}
+.menu-item {
+  padding: 10px 15px; font-size: 12px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary);
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover { background: #f1f5ff; color: var(--accent); }
+
+/* DATA TABLE */
+.data-table { width:100%; border-collapse:collapse; font-size:10px; table-layout: auto; }
+.data-table th, .data-table td{ 
+    border:1px solid var(--border); 
+    padding:8px 5px; 
+    text-align:center; 
+    white-space: nowrap;
+}
+.data-table th { 
+    background: #f1f5f9; color: #475569; font-weight: 700; 
+    text-transform: uppercase; font-size: 9px; 
+    position: sticky; top: 0; z-index: 5;
+}
+.po-cell{background:#f8faff;font-weight:700; color: var(--accent); vertical-align: middle !important;}
+.subtotal-row td{background:#f3f6fb;font-weight:800}
+tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
+
+.btn-add-row {
+    padding: 6px 12px; background: #fff; border: 1px solid var(--border);
+    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
+}
+.btn-save-po {
+    padding: 6px 20px; background: var(--accent); color: #fff; border: none;
+    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
+}
+
+/* STATUS COLORS */
+.status-select {
+    padding: 2px; border-radius: 4px; font-size: 9px; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--border); outline: none;
+    text-transform: uppercase;
+}
+.status-pending { background: #fef2f2; color: #ef4444; }
+.status-processing { background: #fffbeb; color: #f59e0b; }
+.status-completed { background: #f0fdf4; color: #16a34a; }
+
+/* PRINT STYLES */
+@media print {
+  body { height: auto; display: block; overflow: visible; }
+  body * { visibility: hidden; background: #fff !important; }
+  .table-wrap, .table-wrap * { visibility: visible; }
+  .table-wrap { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; margin: 0; padding: 0;}
+  .table-header-tool, #threeDotsMenu, .status-select { display: none !important; }
+  .data-container { height: auto !important; overflow: visible !important; }
+  .data-table { font-size: 9pt; width: 100%; border: 1px solid #000; }
+  .data-table th, .data-table td { border: 1px solid #ccc !important; padding: 4px !important; }
+  .po-cell { color: #000 !important; }
+}
 </style>
 </head>
 
 <body>
 
-<h2>PENDING ORDERS</h2>
+<div class="header">
+  <h2>Pending Orders</h2>
+  <div style="font-size: 12px; color: #64748b; font-weight: 600;">BKNR ERP System</div>
+</div>
 
-<form method="post" action="/inventory/pending_orders" onsubmit="fillMeta()">
-<div class="box">
+{% if message %}
+<div id="flash-message" style="margin: 18px; padding: 12px; background: #dcfce7; color: #166534; border-radius: 8px; font-size: 14px; font-weight: 600; border: 1px solid #bbf7d0;">
+    <i class="fa-solid fa-circle-check"></i> {{ message }}
+</div>
+<script>
+  setTimeout(function() {
+    const msg = document.getElementById('flash-message');
+    if (msg) {
+      msg.style.transition = "opacity 0.5s ease";
+      msg.style.opacity = "0";
+      setTimeout(() => msg.remove(), 500);
+    }
+  }, 3000);
+</script>
+{% endif %}
 
-  <div class="row">
-    <div class="col"><label>PO Number</label>
-      <input name="po_number" placeholder="Enter PO" required>
-    </div>
-
-    <div class="col"><label>Buyer</label>
-      <select name="buyer" id="buyer">{% for b in buyers %}<option>{{b}}</option>{% endfor %}<option value="__add__">＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>Agent</label>
-      <select name="agent" id="agent">{% for a in agents %}<option>{{a}}</option>{% endfor %}<option value="__add__">＋ Add</option></select>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col"><label>Brand</label>
-      <select name="brand" id="brand">{% for b in brands %}<option>{{b}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>Country</label>
-      <select name="country" id="country">{% for c in countries %}<option>{{c}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>Packing Style</label>
-      <select name="packing_style" id="pack">
-      {% for p in packing %}<option value="{{p.packing_style}}">{{p.packing_style}}</option>{% endfor %}
-      <option>＋ Add</option></select>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col"><label>Count Glaze%</label>
-      <select name="count_glaze" id="cg">{% for g in glazes %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>Weight Glaze%</label>
-      <select name="weight_glaze" id="wg">{% for g in glazes %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>Variety</label>
-      <select name="variety" id="var">{% for v in varieties %}<option>{{v}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col"><label>Grade</label>
-      <select name="grade" id="grade">{% for g in grades %}<option>{{g}}</option>{% endfor %}<option>＋ Add</option></select>
-    </div>
-
-    <div class="col"><label>No. of MC</label>
-      <input type="number" name="no_of_mc" min="0" required>
-    </div>
-
-    <div class="col"><label>Shipment Date</label>
-      <input type="date" name="shipment_date" required>
+<div class="modal fade" id="salesDispatchModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header" style="background: #1e293b; color: white;">
+        <h5 class="modal-title" style="font-size: 16px; font-weight: 800;">🚀 MOVE TO SALES DISPATCH</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="salesDispatchForm" method="POST" action="/inventory/move_to_sales">
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-bold small text-muted">PO NUMBER</label>
+              <input type="text" name="po_number" id="sales_po_number" class="form-control fw-bold bg-light" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">INVOICE NO</label>
+              <input type="text" name="invoice_no" class="form-control" placeholder="INV/24/..." required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">INVOICE DATE</label>
+              <input type="date" name="invoice_date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">CONTAINER NO</label>
+              <input type="text" name="container_no" class="form-control" placeholder="MSKU...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">S. BILL NO</label>
+              <input type="text" name="shipping_bill" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-4">Move to Sales</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
-  <input type="hidden" name="email" id="meta_email">
-  <input type="hidden" name="company_id" id="meta_cid">
+<div class="modal fade" id="criteriaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header" style="background: var(--primary); color: white;">
+        <h5 class="modal-title" id="modalTitle">Add New</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe id="criteriaIframe" src="" style="width:100%; height:500px; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <div style="text-align:center;margin-top:15px;">
-    <button type="submit">SAVE</button>
-    <button type="reset" class="clr">CLEAR</button>
+<form method="post" action="/inventory/pending_orders">
+<div class="section">
+  <div class="form-grid">
+    <div class="field"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
+    <div class="field"><label>Company Name</label><input name="company_name" id="company_name" value="{{ current_user_company if current_user_company else 'BKNR EXPORTS' }}" readonly required></div>
+    <div class="field"><label>PO Number</label><input name="po_number" required placeholder="Ex: PO-2024-001" value="{{ edit_rows[0].po_number if edit_rows else '' }}"></div>
+    <div class="field">
+      <label>Buyer</label>
+      <select name="buyer" class="lookup" data-url="/criteria/buyers" required>
+        <option value="">Select Buyer</option>
+        {% for b in buyers %}<option value="{{b}}" {% if edit_rows and edit_rows[0].buyer == b %}selected{% endif %}>{{b}}</option>{% endfor %}
+        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Agent</label>
+      <select name="agent" class="lookup" data-url="/criteria/buyer_agents">
+        <option value="">Select Agent</option>
+        {% for a in agents %}<option value="{{a}}" {% if edit_rows and edit_rows[0].agent_name == a %}selected{% endif %}>{{a}}</option>{% endfor %}
+        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Country</label>
+      <select name="country" class="lookup" data-url="/criteria/countries">
+        <option value="">Select Country</option>
+        {% for c in countries %}<option value="{{c}}" {% if edit_rows and edit_rows[0].country == c %}selected{% endif %}>{{c}}</option>{% endfor %}
+        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
+      </select>
+    </div>
+    <div class="field"><label>Shipment Date</label><input type="date" name="shipment_date" value="{{ edit_rows[0].shipment_date if edit_rows else '' }}"></div>
   </div>
 
+  <div class="items-table-wrap">
+    <table class="items-table" id="itemsTable">
+      <thead>
+        <tr>
+          <th>Brand</th><th>Packing</th><th>Freezer</th><th>C.G%</th><th>W.G%</th><th>Species</th><th>Variety</th><th>Grade</th><th>Pcs</th><th>MC</th><th>S.Price($)</th><th>Exch Rate</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if edit_rows %}
+          {% for item in edit_rows %}
+          <tr>
+            <td><select name="brand" class="lookup" data-url="/criteria/brands">{% for b in brands %}<option value="{{b}}" {% if item.brand == b %}selected{% endif %}>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="packing_style" class="lookup" data-url="/criteria/packing_styles">{% for p in packing %}<option value="{{p.packing_style}}" {% if item.packing_style == p.packing_style %}selected{% endif %}>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="freezer" class="lookup" data-url="/criteria/freezers">{% for f in freezers %}<option value="{{f}}" {% if item.freezer == f %}selected{% endif %}>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="count_glaze">{% for g in glazes %}<option value="{{g}}" {% if item.count_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
+            <td><select name="weight_glaze">{% for g in glazes %}<option value="{{g}}" {% if item.weight_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
+            <td><select name="species" class="lookup" data-url="/criteria/species">{% for s in species %}<option value="{{s}}" {% if item.species == s %}selected{% endif %}>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="variety" class="lookup" data-url="/criteria/varieties">{% for v in varieties %}<option value="{{v}}" {% if item.variety == v %}selected{% endif %}>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="grade" class="lookup" data-url="/criteria/grades">{% for g in grades %}<option value="{{g}}" {% if item.grade == g %}selected{% endif %}>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><input type="number" name="no_of_pieces" value="{{ item.no_of_pieces }}"></td> 
+            <td><input type="number" name="no_of_mc" value="{{ item.no_of_mc }}" required></td>
+            <td><input type="number" step="0.01" name="selling_price" value="{{ item.selling_price }}"></td>
+            <td><input type="number" step="0.01" name="exchange_rate" value="{{ item.exchange_rate }}"></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)">✖</button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td><select name="brand" class="lookup" data-url="/criteria/brands"><option value="">Select</option>{% for b in brands %}<option>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="packing_style" class="lookup" data-url="/criteria/packing_styles"><option value="">Select</option>{% for p in packing %}<option>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="freezer" class="lookup" data-url="/criteria/freezers"><option value="">Select</option>{% for f in freezers %}<option>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="count_glaze"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
+            <td><select name="weight_glaze"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
+            <td><select name="species" class="lookup" data-url="/criteria/species"><option value="">Select</option>{% for s in species %}<option>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="variety" class="lookup" data-url="/criteria/varieties"><option value="">Select</option>{% for v in varieties %}<option>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><select name="grade" class="lookup" data-url="/criteria/grades"><option value="">Select</option>{% for g in grades %}<option>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td><input type="number" name="no_of_pieces"></td> 
+            <td><input type="number" name="no_of_mc" required></td>
+            <td><input type="number" step="0.01" name="selling_price"></td>
+            <td><input type="number" step="0.01" name="exchange_rate"></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)">✖</button></td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:10px;display:flex;justify-content:space-between">
+    <button type="button" class="btn-add-row" onclick="addRow()">➕ Row</button>
+    <button type="submit" class="btn-save-po">{% if edit_rows %}Update{% else %}Save Order{% endif %}</button>
+  </div>
 </div>
 </form>
 
-{% if table_data %}
-<table>
-<tr><th>ID</th><th>PO</th><th>Buyer</th><th>Brand</th><th>Packing</th><th>MC</th><th>Shipment</th><th>Date</th></tr>
-{% for r in table_data %}
-<tr>
- <td>{{r.id}}</td><td>{{r.po_number}}</td><td>{{r.buyer}}</td>
- <td>{{r.brand}}</td><td>{{r.packing_style}}</td>
- <td>{{r.no_of_mc}}</td><td>{{r.shipment_date}}</td><td>{{r.date}}</td>
-</tr>
-{% endfor %}
-</table>
+{% if po_groups %}
+<div class="table-wrap">
+  <div class="table-header-tool">
+      <h3>Active Purchase Orders</h3>
+      <div id="threeDotsMenu">
+        <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <div id="dropdownMenu">
+          <div class="menu-item" onclick="editPO()"><i class="fa-solid fa-pen-to-square"></i> Edit PO</div>
+          <div class="menu-item" onclick="deletePO()"><i class="fa-solid fa-trash-can"></i> Delete PO</div>
+          <div class="menu-item" onclick="printPO()"><i class="fa-solid fa-print"></i> Print</div>
+          <div class="menu-item" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+          <div class="menu-item" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+        </div>
+      </div>
+  </div>
+
+  <div class="data-container">
+    <table class="data-table" id="dataTable">
+      <thead>
+        <tr>
+          <th>Sl</th><th>Company</th><th>PO</th><th>Buyer</th><th>Agent</th><th>Ship.Dt</th><th>Brand</th><th>Pack</th><th>Frz</th><th>C.G</th><th>W.G</th><th>Species</th><th>Variety</th><th>Grd</th><th>Pcs</th><th>MC</th><th>Price</th><th>Exch</th><th style="background:#fffbeb;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+       {% for po, rows in po_groups.items() %}
+        {% set ns = namespace(total_mc=0) %}
+        {% for r in rows %}
+          {% set ns.total_mc = ns.total_mc + (r.no_of_mc | int) %}
+          <tr onclick="selectPO('{{po}}')" data-po="{{po}}">
+            {% if loop.first %}
+              <td style="background:#f1f5f9; font-weight:800; vertical-align:middle;" rowspan="{{ rows|length + 1 }}">{{ r.sl_no }}</td>
+              <td class="po-cell" style="font-size: 9px;" rowspan="{{ rows|length }}">{{ r.company_name }}</td>
+              <td class="po-cell" rowspan="{{ rows|length }}">{{ r.po_number }}</td>
+              <td class="po-cell" rowspan="{{ rows|length }}">{{ r.buyer }}</td>
+              <td class="po-cell" rowspan="{{ rows|length }}">{{ r.agent_name }}</td>
+              <td class="po-cell" rowspan="{{ rows|length }}">{{ r.shipment_date }}</td>
+            {% endif %}
+            <td>{{ r.brand }}</td><td>{{ r.packing_style }}</td><td>{{ r.freezer }}</td><td>{{ r.count_glaze }}</td><td>{{ r.weight_glaze }}</td><td>{{ r.species }}</td><td>{{ r.variety }}</td><td>{{ r.grade }}</td><td>{{ r.no_of_pieces }}</td><td style="font-weight:700">{{ r.no_of_mc }}</td><td style="font-weight:700; color:#16a34a;">${{ r.selling_price }}</td><td style="font-weight:700; color:#4338ca;">₹{{ r.exchange_rate }}</td>
+            
+            {% if loop.first %}
+            <td rowspan="{{ rows|length }}" style="vertical-align: middle; background:#fffbeb;">
+              {% set current_status = rows[0].progress_steps if rows[0].progress_steps else 'pending' %}
+              
+              <select class="status-select status-{{ current_status | lower }}" onchange="updateStatusStyle(this, '{{ po }}')">
+                <option value="pending" {% if current_status|lower == 'pending' %}selected{% endif %}>PENDING</option>
+                <option value="processing" {% if current_status|lower == 'processing' %}selected{% endif %}>PROCESSING</option>
+                <option value="completed" {% if current_status|lower == 'completed' %}selected{% endif %}>COMPLETED</option>
+              </select>
+            </td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+        <tr class="subtotal-row" onclick="selectPO('{{po}}')" data-po="{{po}}">
+          <td colspan="9" style="text-align:right; font-size: 9px;">Total MC for {{ po }}:</td>
+          <td style="font-weight:800; color:var(--primary); background:#e2e8f0;">{{ ns.total_mc }}</td> 
+          <td colspan="4"></td>
+        </tr>
+       {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endif %}
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-function fillMeta(){
- document.getElementById("meta_email").value  = localStorage.getItem("userEmail") || "";
- document.getElementById("meta_cid").value    = localStorage.getItem("companyID") || "";
+let activePO = null;
+const threeDotsMenu = document.getElementById("threeDotsMenu");
+const dropdownMenu  = document.getElementById("dropdownMenu");
+const criteriaModal = new bootstrap.Modal(document.getElementById('criteriaModal'));
+const salesModal = new bootstrap.Modal(document.getElementById('salesDispatchModal'));
+
+// --- UPDATED: SAVE STATUS TO BACKEND USING progress_steps ---
+function updateStatusStyle(select, po) {
+    const newStatus = select.value;
+
+    // 1. Change UI Color Immediately
+    select.className = "status-select status-" + newStatus;
+
+    // 2. Open Sales Modal if Completed
+    if (newStatus === 'completed') {
+        document.getElementById('sales_po_number').value = po;
+        salesModal.show();
+    }
+
+    // 3. Send AJAX request to save in 'progress_steps' column
+    fetch('/inventory/update_po_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            po_number: po,
+            status: newStatus 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log("Status saved to progress_steps: " + newStatus);
+        } else {
+            console.error("Failed to save status");
+            alert("Warning: Status not saved to database.");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Network Error: Could not save status.");
+    });
+}
+// ------------------------------------------------------------
+
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('lookup') && e.target.value === "__add__") {
+    const url = e.target.getAttribute('data-url');
+    const label = e.target.closest('.field')?.querySelector('label')?.innerText || "Criteria";
+    if(url) {
+      document.getElementById('modalTitle').innerText = "Add New " + label;
+      document.getElementById('criteriaIframe').src = url;
+      criteriaModal.show();
+    }
+    e.target.selectedIndex = 0;
+  }
+});
+
+function addRow(){
+  const t = document.querySelector("#itemsTable tbody");
+  const rows = t.querySelectorAll("tr");
+  const r = rows[rows.length - 1].cloneNode(true);
+  r.querySelectorAll("input").forEach(i => i.value = "");
+  r.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+  t.appendChild(r);
 }
 
-// any dropdown "+ Add" prompt
-document.querySelectorAll("select").forEach(sel=>{
- sel.addEventListener("change",()=>{
-  if(sel.value.includes("Add")){
-    let v=prompt("Enter new value:");
-    if(v){
-      let o=document.createElement("option");o.text=v;o.value=v;
-      sel.insertBefore(o,sel.lastElementChild);sel.value=v;
-    }else sel.value="";
-  }
- });
+function removeRow(btn){
+  const t = document.querySelector("#itemsTable tbody");
+  if(t.querySelectorAll("tr").length > 1) btn.closest("tr").remove();
+  else alert("At least one row is required.");
+}
+
+function selectPO(po){
+  activePO = po;
+  threeDotsMenu.style.display = "block";
+  document.querySelectorAll("#dataTable tr").forEach(r => r.classList.remove("active"));
+  document.querySelectorAll(`#dataTable tr[data-po='${po}']`).forEach(r => r.classList.add("active"));
+}
+
+document.getElementById("menuBtn")?.addEventListener("click", e => {
+  e.stopPropagation();
+  dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
 });
+
+window.addEventListener("click", () => {
+  if(dropdownMenu) dropdownMenu.style.display = "none";
+});
+
+function editPO(){ if(activePO) location = "/inventory/pending_orders?edit=" + activePO; }
+function deletePO(){ if(activePO && confirm("Delete PO : " + activePO + " ?")){ const f = document.createElement("form"); f.method = "POST"; f.action = "/inventory/pending_orders/delete_po/" + activePO; document.body.appendChild(f); f.submit(); } }
+function printPO(){ window.print(); }
+function exportPDF(){ window.open("/inventory/pending_orders/export/pdf", "_blank"); }
+function exportExcel(){ window.open("/inventory/pending_orders/export/excel", "_blank"); }
 </script>
 
 </body>

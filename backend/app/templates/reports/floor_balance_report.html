@@ -2,78 +2,167 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Floor Balance</title>
+<title>Floor Balance – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <style>
-body{margin:0;padding:10px;font-family:Arial;background:#f1f5f9}
-
-/* ================= GRAND TOTAL ================= */
-.grand-total{
-  background:#ecf0f0;
-  padding:10px;
-  border-radius:10px;
-  text-align:center;
-  font-size:13px;
-  font-weight:900;
-  margin-bottom:8px;
+:root{
+  --primary:#143465;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+  --subtotal-bg: #eff6ff;
 }
+
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
+body{margin:0; padding:0; background:var(--bg); color:var(--text); overflow-x:hidden;}
+
+/* ================= HEADER & GRAND TOTAL ================= */
+.header-dash {
+  background: #fff;
+  padding: 16px 25px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.grand-total {
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(20, 52, 101, 0.2);
+}
+.grand-total span { font-weight: 400; font-size: 12px; opacity: 0.8; margin-right: 8px; }
 
 /* ================= FILTERS ================= */
-.filters{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:10px;
+.filters-bar {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 15px 25px;
+  background: #fdfdfe;
 }
-.filters select{
-  padding:6px;
-  font-weight:700;
-  border-radius:6px;
+.filters-bar select {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  outline: none;
+  background: #fff;
+  color: var(--primary);
+  cursor: pointer;
+  min-width: 160px;
 }
+.filters-bar select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* ================= LAYOUT ================= */
-.main{display:flex;gap:12px;height:calc(100vh - 180px)}
-.dashboard{display:flex;gap:6px;width:70%}
+.main-content {
+  display: flex;
+  gap: 20px;
+  padding: 0 25px 25px;
+  height: calc(100vh - 160px);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  width: 72%;
+}
 
 /* ================= PANELS ================= */
-.panel{
-  width:33%;
-  background:#fff;
-  border-radius:10px;
-  padding:8px;
-  overflow:auto;
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
-}
-.title{text-align:center;font-weight:900;margin-bottom:6px}
-
-/* ================= PIE ================= */
-.pie-box{
-  width:30%;
-  background:#fff;
-  border-radius:10px;
-  padding:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
+.panel {
+  background: var(--card);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
-/* ================= TABLE ================= */
-table{width:100%;border-collapse:collapse}
-th,td{padding:6px;border-bottom:1px solid #e5e7eb;font-size:12px}
-th{background:#003366;color:#fff;position:sticky;top:0}
-
-/* ================= ROWS ================= */
-.detail-row{cursor:pointer}
-.detail-row:hover{background:#f1f5f9}
-
-.subtotal{
-  background:#ecfeff;
-  font-weight:900;
-  cursor:pointer;
+.panel-title {
+  padding: 12px;
+  background: #f8fafc;
+  text-align: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.subtotal:hover{background:#cffafe}
+
+.table-container {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: #fff;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px 8px;
+  text-align: left;
+  position: sticky; top: 0; z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: var(--text); }
+
+/* ================= ROWS & TOTALS ================= */
+.detail-row { cursor: pointer; transition: 0.2s; }
+.detail-row:hover { background: #f8fbff; color: var(--accent); }
+
+.subtotal {
+  background: var(--subtotal-bg);
+  font-weight: 800;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 11px;
+}
+.subtotal:hover { background: #dbeafe; }
+
+/* ================= PIE CHART BOX ================= */
+.pie-box {
+  width: 28%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+.pie-box h3 {
+  margin: 0 0 20px 0;
+  font-size: 15px;
+  color: var(--primary);
+  text-align: center;
+  font-weight: 800;
+}
+
+/* Scrollbar Style */
+.table-container::-webkit-scrollbar { width: 5px; }
+.table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 </style>
 </head>
 
@@ -84,175 +173,146 @@ th{background:#003366;color:#fff;position:sticky;top:0}
   {% set gt.total = gt.total + r.available_qty %}
 {% endfor %}
 
-<div class="grand-total">
-  TOTAL FLOOR BALANCE : {{ "%.2f"|format(gt.total) }} KG
+<div class="header-dash">
+    <div class="header-titles">
+        <h2 style="margin:0; font-size:20px; color:var(--primary); font-weight:800;">Floor Balance</h2>
+        <p style="margin:4px 0 0; font-size:12px; color:var(--muted); font-weight:500;">Real-time stock on floor</p>
+    </div>
+    <div class="grand-total">
+        <span>TOTAL FLOOR BALANCE</span> {{ "%.2f"|format(gt.total) }} KG
+    </div>
 </div>
 
-<!-- ================= FILTERS ================= -->
-<div class="filters">
+<div class="filters-bar">
   <select id="fBatch" onchange="applyFilters()">
-    <option value="">All Batches</option>
+    <option value="">📁 All Batches</option>
     {% for r in rows_batch | unique(attribute='batch') %}
       <option value="{{ r.batch }}">{{ r.batch }}</option>
     {% endfor %}
   </select>
 
   <select id="fVariety" onchange="applyFilters()">
-    <option value="">All Varieties</option>
+    <option value="">🐟 All Varieties</option>
     {% for r in rows_variety | unique(attribute='variety') %}
       <option value="{{ r.variety }}">{{ r.variety }}</option>
     {% endfor %}
   </select>
 
   <select id="fCount" onchange="applyFilters()">
-    <option value="">All Counts</option>
+    <option value="">🔢 All Counts</option>
     {% for r in rows_count | unique(attribute='count') %}
       <option value="{{ r.count }}">{{ r.count }}</option>
     {% endfor %}
   </select>
 </div>
 
-<div class="main">
+<div class="main-content">
 
-<!-- ================= LEFT TABLES ================= -->
-<div class="dashboard">
+    <div class="dashboard-grid">
 
-<!-- ================= BATCH WISE ================= -->
-<div class="panel">
-<div class="title">Batch Wise</div>
-<table>
-<thead>
-<tr><th>Batch</th><th>Variety</th><th>Count</th><th>Qty</th></tr>
-</thead>
-<tbody>
-{% set ns = namespace(last=None,total=0) %}
-{% for r in rows_batch %}
-  {% if r.batch != ns.last and ns.last %}
-    <tr class="subtotal" onclick="toggleGroup('batch','{{ ns.last }}')">
-      <td colspan="3">Total – {{ ns.last }}</td>
-      <td>{{ "%.2f"|format(ns.total) }}</td>
-    </tr>
-    {% set ns.total = 0 %}
-  {% endif %}
-  {% set ns.last = r.batch %}
-  <tr class="detail-row"
-      data-group="batch"
-      data-key="{{ r.batch }}"
-      data-batch="{{ r.batch }}"
-      data-variety="{{ r.variety }}"
-      data-count="{{ r.count }}"
-      data-qty="{{ r.available_qty }}">
-    <td>{{ r.batch }}</td>
-    <td>{{ r.variety }}</td>
-    <td>{{ r.count }}</td>
-    <td>{{ "%.2f"|format(r.available_qty) }}</td>
-  </tr>
-  {% set ns.total = ns.total + r.available_qty %}
-{% endfor %}
-<tr class="subtotal">
-  <td colspan="3">Total – {{ ns.last }}</td>
-  <td>{{ "%.2f"|format(ns.total) }}</td>
-</tr>
-</tbody>
-</table>
-</div>
+        <div class="panel">
+            <div class="panel-title">Batch Wise Breakdown</div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Batch</th><th>Variety</th><th>Count</th><th style="text-align:right">Qty</th></tr></thead>
+                    <tbody>
+                    {% set ns = namespace(last=None,total=0) %}
+                    {% for r in rows_batch %}
+                      {% if r.batch != ns.last and ns.last %}
+                        <tr class="subtotal" onclick="toggleGroup('batch','{{ ns.last }}')">
+                          <td colspan="3"><i class="fa-solid fa-caret-down"></i> Total – {{ ns.last }}</td>
+                          <td style="text-align:right">{{ "%.2f"|format(ns.total) }}</td>
+                        </tr>
+                        {% set ns.total = 0 %}
+                      {% endif %}
+                      {% set ns.last = r.batch %}
+                      <tr class="detail-row" data-group="batch" data-key="{{ r.batch }}" data-batch="{{ r.batch }}" data-variety="{{ r.variety }}" data-count="{{ r.count }}" data-qty="{{ r.available_qty }}">
+                        <td>{{ r.batch }}</td><td>{{ r.variety }}</td><td>{{ r.count }}</td><td style="text-align:right">{{ "%.2f"|format(r.available_qty) }}</td>
+                      </tr>
+                      {% set ns.total = ns.total + r.available_qty %}
+                    {% endfor %}
+                    <tr class="subtotal"><td colspan="3">Total – {{ ns.last }}</td><td style="text-align:right">{{ "%.2f"|format(ns.total) }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-<!-- ================= VARIETY WISE ================= -->
-<div class="panel">
-<div class="title">Variety Wise</div>
-<table>
-<thead>
-<tr><th>Variety</th><th>Batch</th><th>Count</th><th>Qty</th></tr>
-</thead>
-<tbody>
-{% set nv = namespace(last=None,total=0) %}
-{% for r in rows_variety %}
-  {% if r.variety != nv.last and nv.last %}
-    <tr class="subtotal" onclick="toggleGroup('variety','{{ nv.last }}')">
-      <td colspan="3">Total – {{ nv.last }}</td>
-      <td>{{ "%.2f"|format(nv.total) }}</td>
-    </tr>
-    {% set nv.total = 0 %}
-  {% endif %}
-  {% set nv.last = r.variety %}
-  <tr class="detail-row"
-      data-group="variety"
-      data-key="{{ r.variety }}"
-      data-batch="{{ r.batch }}"
-      data-variety="{{ r.variety }}"
-      data-count="{{ r.count }}"
-      data-qty="{{ r.available_qty }}">
-    <td>{{ r.variety }}</td>
-    <td>{{ r.batch }}</td>
-    <td>{{ r.count }}</td>
-    <td>{{ "%.2f"|format(r.available_qty) }}</td>
-  </tr>
-  {% set nv.total = nv.total + r.available_qty %}
-{% endfor %}
-<tr class="subtotal">
-  <td colspan="3">Total – {{ nv.last }}</td>
-  <td>{{ "%.2f"|format(nv.total) }}</td>
-</tr>
-</tbody>
-</table>
-</div>
+        <div class="panel">
+            <div class="panel-title">Variety Wise Breakdown</div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Variety</th><th>Batch</th><th>Count</th><th style="text-align:right">Qty</th></tr></thead>
+                    <tbody>
+                    {% set nv = namespace(last=None,total=0) %}
+                    {% for r in rows_variety %}
+                      {% if r.variety != nv.last and nv.last %}
+                        <tr class="subtotal" onclick="toggleGroup('variety','{{ nv.last }}')">
+                          <td colspan="3"><i class="fa-solid fa-caret-down"></i> Total – {{ nv.last }}</td>
+                          <td style="text-align:right">{{ "%.2f"|format(nv.total) }}</td>
+                        </tr>
+                        {% set nv.total = 0 %}
+                      {% endif %}
+                      {% set nv.last = r.variety %}
+                      <tr class="detail-row" data-group="variety" data-key="{{ r.variety }}" data-batch="{{ r.batch }}" data-variety="{{ r.variety }}" data-count="{{ r.count }}" data-qty="{{ r.available_qty }}">
+                        <td>{{ r.variety }}</td><td>{{ r.batch }}</td><td>{{ r.count }}</td><td style="text-align:right">{{ "%.2f"|format(r.available_qty) }}</td>
+                      </tr>
+                      {% set nv.total = nv.total + r.available_qty %}
+                    {% endfor %}
+                    <tr class="subtotal"><td colspan="3">Total – {{ nv.last }}</td><td style="text-align:right">{{ "%.2f"|format(nv.total) }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-<!-- ================= COUNT WISE ================= -->
-<div class="panel">
-<div class="title">Count Wise</div>
-<table>
-<thead>
-<tr><th>Count</th><th>Batch</th><th>Variety</th><th>Qty</th></tr>
-</thead>
-<tbody>
-{% set nc = namespace(last=None,total=0) %}
-{% for r in rows_count %}
-  {% if r.count != nc.last and nc.last %}
-    <tr class="subtotal" onclick="toggleGroup('count','{{ nc.last }}')">
-      <td colspan="3">Total – {{ nc.last }}</td>
-      <td>{{ "%.2f"|format(nc.total) }}</td>
-    </tr>
-    {% set nc.total = 0 %}
-  {% endif %}
-  {% set nc.last = r.count %}
-  <tr class="detail-row"
-      data-group="count"
-      data-key="{{ r.count }}"
-      data-batch="{{ r.batch }}"
-      data-variety="{{ r.variety }}"
-      data-count="{{ r.count }}"
-      data-qty="{{ r.available_qty }}">
-    <td>{{ r.count }}</td>
-    <td>{{ r.batch }}</td>
-    <td>{{ r.variety }}</td>
-    <td>{{ "%.2f"|format(r.available_qty) }}</td>
-  </tr>
-  {% set nc.total = nc.total + r.available_qty %}
-{% endfor %}
-<tr class="subtotal">
-  <td colspan="3">Total – {{ nc.last }}</td>
-  <td>{{ "%.2f"|format(nc.total) }}</td>
-</tr>
-</tbody>
-</table>
-</div>
+        <div class="panel">
+            <div class="panel-title">Count Wise Breakdown</div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Count</th><th>Batch</th><th>Variety</th><th style="text-align:right">Qty</th></tr></thead>
+                    <tbody>
+                    {% set nc = namespace(last=None,total=0) %}
+                    {% for r in rows_count %}
+                      {% if r.count != nc.last and nc.last %}
+                        <tr class="subtotal" onclick="toggleGroup('count','{{ nc.last }}')">
+                          <td colspan="3"><i class="fa-solid fa-caret-down"></i> Total – {{ nc.last }}</td>
+                          <td style="text-align:right">{{ "%.2f"|format(nc.total) }}</td>
+                        </tr>
+                        {% set nc.total = 0 %}
+                      {% endif %}
+                      {% set nc.last = r.count %}
+                      <tr class="detail-row" data-group="count" data-key="{{ r.count }}" data-batch="{{ r.batch }}" data-variety="{{ r.variety }}" data-count="{{ r.count }}" data-qty="{{ r.available_qty }}">
+                        <td>{{ r.count }}</td><td>{{ r.batch }}</td><td>{{ r.variety }}</td><td style="text-align:right">{{ "%.2f"|format(r.available_qty) }}</td>
+                      </tr>
+                      {% set nc.total = nc.total + r.available_qty %}
+                    {% endfor %}
+                    <tr class="subtotal"><td colspan="3">Total – {{ nc.last }}</td><td style="text-align:right">{{ "%.2f"|format(nc.total) }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-</div>
+    </div>
 
-<!-- ================= PIE ================= -->
-<div class="pie-box">
-  <h3 style="text-align:center">Variety Distribution (Batch Wise)</h3>
-  <canvas id="pieChart"></canvas>
-</div>
+    <div class="pie-box">
+      <h3>Variety Distribution</h3>
+      <div style="flex-grow:1; display:flex; align-items:center;">
+          <canvas id="pieChart"></canvas>
+      </div>
+      <div style="margin-top:15px; font-size:10px; color:var(--muted); text-align:center;">
+          *Click on a slice to filter the list
+      </div>
+    </div>
 
 </div>
 
 <script>
 let pie;
+const chartColors = ['#143465', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
-/* ================= FILTERS ================= */
 function applyFilters(){
-  const fb=fBatch.value, fv=fVariety.value, fc=fCount.value;
+  const fb=document.getElementById('fBatch').value;
+  const fv=document.getElementById('fVariety').value;
+  const fc=document.getElementById('fCount').value;
 
   document.querySelectorAll(".detail-row").forEach(r=>{
     let ok=true;
@@ -265,54 +325,61 @@ function applyFilters(){
   updatePie();
 }
 
-/* ================= SUBTOTAL TOGGLE ================= */
 function toggleGroup(type,key){
-  document.querySelectorAll(
-    `.detail-row[data-group="${type}"][data-key="${key}"]`
-  ).forEach(r=>{
+  document.querySelectorAll(`.detail-row[data-group="${type}"][data-key="${key}"]`).forEach(r=>{
     r.style.display = r.style.display==="none" ? "table-row" : "none";
   });
   updatePie();
 }
 
-/* ================= PIE (ONLY BATCH WISE) ================= */
 function updatePie(){
   const map={};
-
-  document
-    .querySelectorAll('.panel:first-child .detail-row')
-    .forEach(r=>{
+  document.querySelectorAll('.panel:first-child .detail-row').forEach(r=>{
       if(r.style.display==="none") return;
       map[r.dataset.variety]=(map[r.dataset.variety]||0)+parseFloat(r.dataset.qty);
-    });
+  });
 
   if(pie) pie.destroy();
-
-  pie=new Chart(pieChart,{
-    type:"pie",
-    data:{
-      labels:Object.keys(map),
-      datasets:[{data:Object.values(map)}]
+  
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  pie = new Chart(ctx, {
+    type: "doughnut", // Changed to doughnut for a modern look
+    data: {
+      labels: Object.keys(map),
+      datasets: [{
+        data: Object.values(map),
+        backgroundColor: chartColors,
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
     },
-    options:{
-      onClick:(e,els)=>{
+    options: {
+      cutout: '60%',
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: (e, els) => {
         if(!els.length) return;
-        fVariety.value = pie.data.labels[els[0].index];
+        document.getElementById('fVariety').value = pie.data.labels[els[0].index];
         applyFilters();
       },
-      plugins:{
-        legend:{position:"bottom"},
-        datalabels:{
-          formatter:v=>v.toFixed(2)+" KG",
-          font:{weight:"bold"}
+      plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 10, weight: '600' } } },
+        datalabels: {
+          color: '#fff',
+          formatter: (v, ctx) => {
+              let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              let pc = (v * 100 / sum).toFixed(1) + "%";
+              return v > (sum * 0.05) ? pc : ""; // Only show if slice is > 5%
+          },
+          font: { weight: "bold", size: 10 }
         }
       }
     },
-    plugins:[ChartDataLabels]
+    plugins: [ChartDataLabels]
   });
 }
 
-updatePie();
+window.onload = updatePie;
 </script>
 
 </body>

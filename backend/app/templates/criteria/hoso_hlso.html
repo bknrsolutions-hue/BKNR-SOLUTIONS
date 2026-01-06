@@ -2,255 +2,230 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>HOSO → HLSO YIELDS MASTER | BKNR SOLUTIONS</title>
+<title>HOSO → HLSO YIELDS | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
-
-  .form-container{
-    width:90%;max-width:1100px;margin:0 auto;background:#fff;
-    padding:25px;border-radius:10px;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);
+  :root {
+    --primary: #143465;
+    --accent: #3b82f6;
+    --bg: #f4f6f9;
+    --border: #d1d5db;
+    --text: #1f2937;
   }
 
-  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
-  .col{width:32%;min-width:260px;display:flex;flex-direction:column;margin-bottom:10px;}
+  body { font-family: Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
 
-  label{font-weight:600;color:#003366;margin-bottom:6px;}
-  select,input{
-    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
-    background:#f9fcff;font-size:14px;
-  }
-  select:focus,input:focus{
-    border-color:#003366;outline:none;box-shadow:0 0 6px rgba(0,51,102,0.25);
+  .header {
+    background: #fff;
+    padding: 15px 25px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
-  .actions{text-align:center;margin-top:25px;}
-  .btn{
-    background:#003366;color:white;border:none;
-    padding:10px 20px;border-radius:6px;
-    width:150px;font-weight:600;cursor:pointer;
+  .header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--primary);
+    font-weight: 800;
+    text-transform: uppercase;
   }
-  .btn-clear{background:#777;}
-  .btn:hover{opacity:0.9;}
 
-  table{
-    width:90%;max-width:1100px;margin:25px auto;
-    border-collapse:collapse;background:white;
-    border-radius:8px;overflow:hidden;
-    box-shadow:0 0 8px rgba(0,0,0,0.1);
-  }
-  th,td{padding:10px 12px;border-bottom:1px solid #ccc;font-size:14px;}
-  th{background:#003366;color:white;}
-  tr:hover{background:#eef5ff;cursor:pointer;}
-  tr.selected{background:#cce5ff!important;}
+  .section { margin: 20px; }
 
-  #menuWrap{
-    display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;
+  .card {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   }
-  #dotsBtn{
-    background:#003366;color:white;border:none;padding:6px 12px;
-    font-size:22px;border-radius:6px;cursor:pointer;font-weight:600;
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
   }
-  #dropdownMenu{
-    display:none;position:absolute;right:0;background:white;
-    border:1px solid #ccc;width:180px;border-radius:8px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.25);
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
-  .menu-item{
-    padding:10px;font-size:14px;font-weight:600;color:#003366;
-    border-bottom:1px solid #eee;cursor:pointer;
+
+  .field label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
   }
-  .menu-item:hover{background:#e6f2ff;}
+
+  input, select {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .actions {
+    margin-top: 25px;
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-save { background: var(--primary); color: #fff; }
+  .btn-clear { background: #e2e8f0; }
+
+  .table-wrap {
+    margin-top: 25px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  tr:hover { background: #f8fbff; cursor: pointer; }
+  tr.selected { background: #eff6ff !important; }
+
 </style>
 </head>
 
 <body>
 
-<h2>HOSO → HLSO YIELDS MASTER</h2>
+<div class="header">
+  <h2>HOSO → HLSO Yields Master</h2>
+  <div style="font-size:12px;font-weight:600;">BKNR SOLUTIONS</div>
+</div>
+
+<div class="section">
 
 <form onsubmit="saveRecord(event)">
-<div class="form-container">
+  <div class="card">
+    <div class="form-grid">
 
-<div class="row">
-  <div class="col">
-    <label>Species</label>
-    <select id="species" required onchange="addNewSpecies(this)">
-      <option value="" disabled selected>Select Species</option>
-      {% for s in species_list %}
-        <option value="{{ s }}">{{ s }}</option>
-      {% endfor %}
-      <option value="__add__">➕ Add New Species</option>
-    </select>
+      <div class="field">
+        <label>Species</label>
+        <select id="species" required>
+          <option value="" disabled selected>Select Species</option>
+          {% for s in species_list %}
+            <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>HOSO Count (Eg: 10 or 10 to 20)</label>
+        <input type="text" id="hoso_count" required>
+      </div>
+
+      <div class="field">
+        <label>HLSO Yield (%)</label>
+        <input type="number" id="hlso_yield_pct" step="0.01" required>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-save" type="submit">
+        <i class="fa-solid fa-floppy-disk"></i> SAVE
+      </button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">
+        CLEAR
+      </button>
+    </div>
+
   </div>
-
-  <div class="col">
-    <label>HOSO Count (Eg: 10 or 10 to 20)</label>
-    <input type="text" id="hoso_count" required>
-  </div>
-
-  <div class="col">
-    <label>HLSO Yield (%)</label>
-    <input type="number" id="hlso_yield_pct" step="0.01" required>
-  </div>
-</div>
-
-<input type="hidden" id="record_id">
-<input type="hidden" id="meta_email" value="{{ email }}">
-<input type="hidden" id="meta_company_id" value="{{ company_id }}">
-<input type="hidden" id="meta_date">
-<input type="hidden" id="meta_time">
-
-<div class="actions">
-  <button class="btn" type="submit">SAVE</button>
-  <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
-</div>
-
-</div>
 </form>
 
 {% if today_data %}
-<div id="menuWrap">
-  <button id="dotsBtn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
-    <div class="menu-item" onclick="printSelected()">🖨️ Print</div>
-  </div>
-</div>
-
+<div class="table-wrap">
 <table id="dataTable">
 <thead>
 <tr>
   <th>ID</th>
   <th>Species</th>
   <th>HOSO Count</th>
-  <th>HLSO Yield (%)</th>
-  <th>Date</th>
-  <th>Time</th>
+  <th>Yield (%)</th>
+  <th>HLSO Count</th>
+  <th>Date & Time</th>
 </tr>
 </thead>
+
 <tbody>
 {% for row in today_data %}
-<tr data-id="{{ row.id }}"
-    data-species="{{ row.species }}"
-    data-hoso="{{ row.hoso_count }}"
-    data-yield="{{ row.hlso_yield_pct }}">
-  <td>{{ row.id }}</td>
+<tr data-id="{{ row.id }}">
+  <td>#{{ row.id }}</td>
   <td>{{ row.species }}</td>
   <td>{{ row.hoso_count }}</td>
   <td>{{ row.hlso_yield_pct }}%</td>
-  <td>{{ row.date }}</td>
-  <td>{{ row.time }}</td>
+  <td><strong>{{ row.hlso_count }}</strong></td>
+  <td>{{ row.date }} | {{ row.time }}</td>
 </tr>
 {% endfor %}
 </tbody>
+
 </table>
+</div>
 {% endif %}
 
+</div>
+
 <script>
-let selectedRow=null;
-
-/* INIT */
-document.addEventListener("DOMContentLoaded",()=>{
-  const now=new Date();
-  meta_date.value=now.toISOString().slice(0,10);
-  meta_time.value=now.toTimeString().slice(0,8);
-
-  document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
-    r.onclick=()=>{
-      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
-      r.classList.add("selected");
-      selectedRow=r;
-      menuWrap.style.display="block";
-    }
-  });
-
-  dotsBtn.onclick=()=>{
-    dropdownMenu.style.display=
-      dropdownMenu.style.display==="block"?"none":"block";
-  }
-});
-
-/* SPECIES ADD */
-function addNewSpecies(sel){
-  if(sel.value==="__add__"){
-    const v=prompt("Enter New Species");
-    if(v){
-      const o=document.createElement("option");
-      o.value=v;o.textContent=v;
-      sel.insertBefore(o,sel.lastElementChild);
-      sel.value=v;
-    }else sel.value="";
-  }
-}
-
-/* RANGE PARSER */
-function parseRange(v){
-  if(v.includes("to")){
-    let [s,e]=v.split("to").map(x=>parseInt(x.trim()));
-    return Array.from({length:e-s+1},(_,i)=>s+i);
-  }
-  return [parseInt(v)];
-}
-
-/* SAVE (RANGE SUPPORT) */
-async function saveRecord(e){
+function saveRecord(e){
   e.preventDefault();
+  const fd = new FormData();
+  fd.append("species", species.value);
+  fd.append("hoso_count", hoso_count.value);
+  fd.append("hlso_yield_pct", hlso_yield_pct.value);
 
-  const counts=parseRange(hoso_count.value);
-  const yieldPct=parseFloat(hlso_yield_pct.value);
-
-  for(let c of counts){
-    const fd=new FormData();
-    fd.append("species",species.value);
-    fd.append("hoso_count",c);
-    fd.append("hlso_yield_pct",yieldPct);
-    fd.append("date",meta_date.value);
-    fd.append("time",meta_time.value);
-
-    await fetch("/criteria/hoso_hlso",{method:"POST",body:fd});
-  }
-  location.reload();
+  fetch("/criteria/hoso_hlso", { method:"POST", body: fd })
+    .then(()=>location.reload());
 }
 
-/* EDIT */
-function editSelected(){
-  if(!selectedRow) return;
-  species.value=selectedRow.dataset.species;
-  hoso_count.value=selectedRow.dataset.hoso;
-  hlso_yield_pct.value=selectedRow.dataset.yield;
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-/* DELETE */
-async function deleteSelected(){
-  if(!selectedRow) return;
-  if(!confirm("Delete this record?")) return;
-  await fetch(`/criteria/hoso_hlso/delete/${selectedRow.dataset.id}`,{method:"POST"});
-  location.reload();
-}
-
-/* PRINT */
-function printSelected(){
-  if(!selectedRow) return;
-  const w=window.open();
-  w.document.write(`<h2>HOSO → HLSO Yield</h2>
-    <p>Species: ${selectedRow.dataset.species}</p>
-    <p>HOSO: ${selectedRow.dataset.hoso}</p>
-    <p>Yield: ${selectedRow.dataset.yield}%</p>`);
-  w.print();
-}
-
-/* CLEAR */
 function clearForm(){
-  selectedRow=null;
   species.value="";
   hoso_count.value="";
   hlso_yield_pct.value="";
-  menuWrap.style.display="none";
 }
 </script>
 

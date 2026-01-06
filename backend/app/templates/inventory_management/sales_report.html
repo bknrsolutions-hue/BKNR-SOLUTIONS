@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Realization Report | BKNR ERP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a; --accent: #2563eb; --success: #059669; --border: #e2e8f0;
+        }
+        body { background: #f8fafc; color: var(--primary); font-family: 'Inter', sans-serif; margin: 0; padding: 25px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Header & Filter */
+        .header-box { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .header-box h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; }
+        
+        /* Summary Cards (Top) */
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--accent); }
+        .card span { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .card h2 { margin: 8px 0 0; font-size: 22px; color: var(--primary); }
+
+        /* Table Area */
+        .table-card { background: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border); }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table thead { background: var(--primary); color: #fff; }
+        .data-table th { padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-right: 1px solid rgba(255,255,255,0.1); }
+        .data-table td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+        
+        .merge-bg { background: #f9fafb; font-weight: 600; border-right: 1px solid var(--border); }
+        .text-success { color: var(--success); font-weight: 700; }
+        .grand-total-row { background: #f1f5f9; font-weight: 800; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-box">
+        <h1><i class="fa-solid fa-file-invoice"></i> Sales Realization Report</h1>
+        <form action="/inventory/sales_report" method="get">
+            <select name="company" onchange="this.form.submit()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600;">
+                <option value="all">All Entities</option>
+                <option value="BKNR" {% if selected_company == 'BKNR' %}selected{% endif %}>BKNR EXPORTS</option>
+            </select>
+        </form>
+    </div>
+
+    {# --- Global Calculations --- #}
+    {% set ns = namespace(mc=0, usd=0, inr=0) %}
+    {% for item in sales_data %}
+        {% set packing = item.packing_style | string %}
+        {% set unit_wt = packing.split('x')[0] | float if 'x' in packing else 1.0 %}
+        {% set row_usd = (unit_wt * (item.no_of_mc | float) * (item.price | float)) %}
+        {% set ns.mc = ns.mc + (item.no_of_mc | float) %}
+        {% set ns.usd = ns.usd + row_usd %}
+        {% set ns.inr = ns.inr + (row_usd * (item.exchange_rate | float if item.exchange_rate else 83.0)) %}
+    {% endfor %}
+
+    <div class="summary-grid">
+        <div class="card">
+            <span>Total Dispatches</span>
+            <h2>{{ (sales_data | groupby('invoice_no') | list | length) }} Invoices</h2>
+        </div>
+        <div class="card">
+            <span>Total Volume</span>
+            <h2>{{ ns.mc | int }} MC</h2>
+        </div>
+        <div class="card">
+            <span>Revenue (USD)</span>
+            <h2>$ {{ "{:,.2f}".format(ns.usd) }}</h2>
+        </div>
+        <div class="card" style="border-top-color: var(--success);">
+            <span>Revenue (INR)</span>
+            <h2 class="text-success">₹ {{ "{:,.2f}".format(ns.inr) }}</h2>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Invoice / Date</th>
+                    <th>Buyer / Country</th>
+                    <th>SB & Container</th>
+                    <th>Brand</th>
+                    <th>Packing Style</th>
+                    <th>Qty (MC)</th>
+                    <th>Unit Wt</th>
+                    <th>Price ($)</th>
+                    <th>Exch. Rate</th>
+                    <th>Final Amount (INR)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice_no, items in sales_data | groupby('invoice_no') %}
+                    {% for item in items %}
+                        {% set p = item.packing_style | string %}
+                        {% set wt = p.split('x')[0] | float if 'x' in p else 1.0 %}
+                        {% set ex = item.exchange_rate | float if item.exchange_rate else 83.0 %}
+                        {% set row_val = (wt * (item.no_of_mc | float) * (item.price | float) * ex) %}
+                    <tr>
+                        {% if loop.first %}
+                        <td rowspan="{{ items|length }}" class="merge-bg">{{ invoice_no }}<br><small>{{ item.invoice_date }}</small></td>
+                        <td rowspan="{{ items|length }}" class="merge-bg">{{ item.buyer_name }}<br><small>{{ item.country }}</small></td>
+                        <td rowspan="{{ items|length }}" class="merge-bg">SB: {{ item.shipping_bill or '-' }}<br>CT: {{ item.container_no or '-' }}</td>
+                        {% endif %}
+                        <td>{{ item.brand }}</td>
+                        <td>{{ item.packing_style }}</td>
+                        <td>{{ item.no_of_mc }}</td>
+                        <td>{{ wt }} Kg</td>
+                        <td>$ {{ "{:,.2f}".format(item.price) }}</td>
+                        <td>₹ {{ ex }}</td>
+                        <td class="text-success">₹ {{ "{:,.2f}".format(row_val) }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="grand-total-row">
+                    <td colspan="5" style="text-align: right; padding-right: 20px;">GRAND TOTAL:</td>
+                    <td>{{ ns.mc | int }}</td>
+                    <td colspan="3"></td>
+                    <td class="text-success">₹ {{ "{:,.2f}".format(ns.inr) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>

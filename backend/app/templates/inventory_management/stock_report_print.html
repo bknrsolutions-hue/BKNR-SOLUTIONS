@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stock Report – BKNR ERP</title>
+
+<style>
+@page{
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+body{
+  font-family: Arial, sans-serif;
+  font-size: 9px;
+  color:#000;
+}
+
+h2{
+  text-align:center;
+  margin:0;
+  font-size:14px;
+}
+.company{
+  text-align:center;
+  font-size:10px;
+  margin-bottom:8px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  border:1px solid #444;
+  padding:4px;
+  text-align:center;
+  white-space:nowrap;
+}
+th{
+  background:#eaeaea;
+  font-weight:700;
+}
+
+.in-text{color:green;font-weight:700}
+.out-text{color:red;font-weight:700}
+
+.total-row td{
+  font-weight:700;
+  background:#f0f4ff;
+}
+.qty{text-align:right}
+</style>
+</head>
+
+<body>
+
+<h2>STOCK REPORT</h2>
+<div class="company">
+  {{ company_name }}<br>
+  Printed on : {{ printed_on.strftime('%d-%m-%Y %H:%M:%S') }}
+</div>
+
+{% set totals = namespace(mc=0, loose=0, qty=0) %}
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Date</th>
+<th>Time</th>
+<th>Type</th>
+<th>Batch</th>
+<th>Location</th>
+<th>Prod For</th>
+<th>Prod At</th>
+<th>Freezer</th>
+<th>Packing</th>
+<th>Glaze</th>
+<th>Variety</th>
+<th>Grade</th>
+<th>MC</th>
+<th>Loose</th>
+<th>Qty</th>
+<th>Email</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in rows %}
+
+{% if r.cargo_movement_type == 'OUT' %}
+  {% set mc = -1 * (r.no_of_mc or 0) %}
+  {% set loose = -1 * (r.loose or 0) %}
+  {% set qty = -1 * (r.quantity or 0) %}
+{% else %}
+  {% set mc = r.no_of_mc or 0 %}
+  {% set loose = r.loose or 0 %}
+  {% set qty = r.quantity or 0 %}
+{% endif %}
+
+{% set totals.mc = totals.mc + mc %}
+{% set totals.loose = totals.loose + loose %}
+{% set totals.qty = totals.qty + qty %}
+
+<tr>
+<td>{{ r.id }}</td>
+<td>{{ r.date }}</td>
+<td>{{ r.time.strftime('%H:%M:%S') if r.time }}</td>
+<td>
+{% if r.cargo_movement_type == 'IN' %}
+<span class="in-text">IN</span>
+{% else %}
+<span class="out-text">OUT</span>
+{% endif %}
+</td>
+<td>{{ r.batch_number }}</td>
+<td>{{ r.location }}</td>
+<td>{{ r.production_for or '' }}</td>
+<td>{{ r.production_at or '' }}</td>
+<td>{{ r.freezer }}</td>
+<td>{{ r.packing_style }}</td>
+<td>{{ r.glaze }}</td>
+<td>{{ r.variety }}</td>
+<td>{{ r.grade }}</td>
+<td>{{ mc }}</td>
+<td>{{ loose }}</td>
+<td class="qty">{{ "%.2f"|format(qty) }}</td>
+<td>{{ r.email }}</td>
+</tr>
+
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr class="total-row">
+<td colspan="13">TOTAL</td>
+<td>{{ totals.mc }}</td>
+<td>{{ totals.loose }}</td>
+<td class="qty">{{ "%.2f"|format(totals.qty) }}</td>
+<td></td>
+</tr>
+</tfoot>
+</table>
+
+</body>
+</html>

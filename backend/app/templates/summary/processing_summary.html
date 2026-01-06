@@ -3,134 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <title>Processing Summary – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --border:#d6dde7;
-  --text:#1f2937;
-  --bg:#f4f6f9;
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
 }
-*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
-body{margin:0;background:var(--bg);color:var(--text)}
+*{box-sizing:border-box;font-family: 'Inter', Segoe UI, sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text); scroll-behavior: smooth;}
 
 /* ================= HEADER ================= */
 .header{
-  position:sticky;
-  top:0;
-  z-index:100;
-  background:var(--bg);
-  padding:16px 18px 10px;
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:12px 18px;
   border-bottom:1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.header h2{margin:0;font-size:24px;color:#1f3a5f}
-.header p{margin:4px 0 0;font-size:13px;color:#6b7280}
+.header h2{margin:0;font-size:18px;color:var(--primary); font-weight:800; text-transform:uppercase;}
+.header p{margin:2px 0;font-size:10px;color:var(--muted); letter-spacing: 0.5px;}
 
 /* ================= FILTERS ================= */
 .filters{
-  margin-top:10px;
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  border:1px solid var(--border)
+  margin-top:10px; background:#f9fafb; padding:10px;
+  border-radius:8px; display:grid; grid-template-columns:repeat(3,1fr);
+  gap:12px; border:1px solid var(--border);
 }
-.filters label{font-size:12px;font-weight:600}
-.filters select,.filters input{
-  margin-top:6px;
-  padding:8px;
-  border-radius:6px;
-  border:1px solid var(--border)
+.filters label{font-size:10px; font-weight:700; color:var(--primary); text-transform: uppercase;}
+.filters select, .filters input{
+  margin-top:4px; padding:6px; border-radius:6px;
+  border:1px solid var(--border); font-size:11px; outline:none;
 }
 
 /* ================= ACTIONS ================= */
-.actions{
-  margin-top:10px;
-  display:flex;
-  gap:8px;
-}
+.actions{ margin-top:10px; display:flex; gap:8px; }
 .actions button{
-  padding:6px 12px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  background:#fff;
-  cursor:pointer;
-  font-size:12px;
+  padding:6px 15px; border-radius:6px; border:1px solid var(--border);
+  background:#fff; cursor:pointer; font-size:11px; font-weight:600; transition: 0.2s;
 }
+.actions button:hover{ background: var(--primary); color: #fff; }
 
-/* ================= CARDS ================= */
+/* ================= CARDS (STICKY) ================= */
 .cards{
-  position:sticky;
-  top:170px;
-  z-index:90;
-  background:var(--bg);
-  padding:10px 18px;
-  display:grid;
-  grid-template-columns:repeat(8,1fr);
-  gap:8px;
+  position:sticky; top:145px; z-index:90;
+  background:var(--bg); padding:10px 18px;
+  display:grid; grid-template-columns:repeat(8,1fr); gap:8px;
 }
 .card{
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  cursor:pointer;
+  padding:10px; border-radius:10px; border:1px solid var(--border);
+  cursor:pointer; text-align: center; transition: 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.card span{font-size:11px;color:#475569}
-.card h3{margin:6px 0 0;font-size:15px;font-weight:700}
+.card:hover{ transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.card span{font-size:9px; color:var(--muted); font-weight:700; text-transform: uppercase;}
+.card h3{margin:4px 0 0; font-size:14px; font-weight:800; color: var(--primary);}
 
-.gate{background:#eef2ff}
-.rmp{background:#ecfeff}
-.de{background:#f0fdf4}
-.peel{background:#fff7ed}
-.soak{background:#fdf4ff}
-.grade{background:#fefce8}
-.prod{background:#fff1f2}
-.yield{background:#e0f2fe}
+/* Card Colors */
+.gate{background:#eff6ff; border-bottom: 3px solid #3b82f6;}
+.rmp{background:#ecfeff; border-bottom: 3px solid #06b6d4;}
+.de{background:#f0fdf4; border-bottom: 3px solid #22c55e;}
+.peel{background:#fff7ed; border-bottom: 3px solid #f97316;}
+.soak{background:#fdf4ff; border-bottom: 3px solid #d946ef;}
+.grade{background:#fefce8; border-bottom: 3px solid #eab308;}
+.prod{background:#fff1f2; border-bottom: 3px solid #f43f5e;}
+.yield{background:#143465; color: #fff; border-bottom: 3px solid #000;}
+.yield h3, .yield span{ color: #fff; }
 
-/* ================= SECTIONS ================= */
+/* ================= SECTIONS & TABLES ================= */
 .section{
-  margin:26px 18px;
-  background:#fff;
-  padding:16px;
-  border-radius:12px;
-  border:1px solid var(--border)
+  margin:20px 18px; background:#fff; padding:15px;
+  border-radius:12px; border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
-.section h3{
-  margin:0 0 10px;
-  font-size:17px;
-  color:#1f3a5f
-}
+.section h3{ margin:0 0 12px; font-size:15px; color:var(--primary); text-transform: uppercase; font-weight: 800; border-left: 4px solid var(--accent); padding-left: 10px; }
 
-/* ================= TABLE ================= */
-.table-wrap{
-  max-height:420px;
-  overflow:auto;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
-}
-th,td{
-  border-bottom:1px solid #edf2f7;
-  padding:6px;
-  font-size:11px;
-  word-wrap:break-word;
-}
-th{
-  background:#f1f5f9;
-  position:sticky;
-  top:0;
-  z-index:2;
-}
-.subtotal td{
-  background:#f8fafc;
-  font-weight:600;
-}
-.grand td{
-  background:#e5e7eb;
-  font-weight:800;
+.table-wrap{ max-height:400px; overflow:auto; border-radius: 8px; border: 1px solid #f1f5f9;}
+table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+th,td{ border-bottom:1px solid #f1f5f9; padding:8px 6px; font-size:10.5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+th{ background:#f8fafc; color: #475569; font-weight: 700; position:sticky; top:0; z-index:2; text-transform: uppercase; font-size: 9px;}
+
+.subtotal td{ background:#f1f5f9; font-weight:700; color: var(--accent); font-size: 10px; text-align: left !important; padding-left: 15px;}
+.grand td{ background:var(--primary) !important; color:#fff !important; font-weight:800; font-size: 11px;}
+
+@media print{
+  .header, .filters, .actions, .cards{ position: static; display: block; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .table-wrap { max-height: none; overflow: visible; }
 }
 </style>
 
@@ -139,17 +101,16 @@ th{
 
 <body>
 
-<!-- ================= HEADER ================= -->
 <div class="header">
   <h2>Processing Summary</h2>
-  <p>Gate Entry → RMP → De-Heading → Peeling → Soaking → Grading → Production</p>
+  <p>Live Process Tracking: Gate Entry → RMP → De-Heading → Peeling → Soaking → Grading → Production</p>
 
   <form method="get" id="filterForm">
     <div class="filters">
       <div>
-        <label>Batch</label>
+        <label>Batch Number</label>
         <select name="batch" onchange="submitForm()">
-          <option value="">All</option>
+          <option value="">All Batches</option>
           {% for b in batches %}
           <option value="{{ b }}" {% if selected_batch==b %}selected{% endif %}>{{ b }}</option>
           {% endfor %}
@@ -167,134 +128,129 @@ th{
   </form>
 
   <div class="actions">
-    <button onclick="window.print()">Print</button>
-    <button onclick="exportPDF()">PDF</button>
-    <button onclick="exportExcel()">Excel</button>
+    <button onclick="window.print()">🖨️ Print</button>
+    <button onclick="exportPDF()">📄 Export PDF</button>
+    <button onclick="exportExcel()">📊 Export Excel</button>
   </div>
 </div>
 
-<!-- ================= CARDS ================= -->
 <div class="cards">
   <div class="card gate" onclick="go('gate')"><span>Batches</span><h3>{{ total_batches }}</h3></div>
-  <div class="card rmp" onclick="go('rmp')"><span>RMP Qty</span><h3>{{ total_rmp_qty }}</h3></div>
+  <div class="card rmp" onclick="go('rmp')"><span>RMP Qty (KG)</span><h3>{{ total_rmp_qty }}</h3></div>
   <div class="card de" onclick="go('de')"><span>De-Heading</span><h3>{{ total_de_hoso }}</h3></div>
   <div class="card peel" onclick="go('peel')"><span>Peeling</span><h3>{{ total_peeling_qty }}</h3></div>
   <div class="card soak" onclick="go('soak')"><span>Soaking</span><h3>{{ total_soaking_qty }}</h3></div>
   <div class="card grade" onclick="go('grade')"><span>Grading</span><h3>{{ total_grading_qty }}</h3></div>
   <div class="card prod" onclick="go('prod')"><span>Production</span><h3>{{ total_production_qty }}</h3></div>
-  <div class="card yield"><span>Yield %</span><h3>{{ overall_yield }}%</h3></div>
+  <div class="card yield"><span>Overall Yield</span><h3>{{ overall_yield }}%</h3></div>
 </div>
 
-<!-- ================= SAFE TABLE MACRO ================= -->
-
-
-{% macro render_table(id,title,rows,qty_field) %}
+{% macro render_table(id, title, rows, qty_field) %}
 <div class="section" id="{{ id }}">
-<h3>{{ title }}</h3>
+  <h3>{{ title }}</h3>
 
-{% if rows|length == 0 %}
-<p style="font-size:12px;color:#6b7280">No data available</p>
-{% else %}
+  {% if not rows %}
+  <p style="font-size:12px; color:#6b7280; padding: 10px;">No records found for this selection.</p>
+  {% else %}
 
-{# ---- GET COLUMNS SAFELY ---- #}
-{% set all_cols = rows[0].__table__.columns %}
-{% set ns_cols = namespace(cols=[]) %}
-{% for c in all_cols %}
-  {% if c.name != 'company_id' %}
-    {% set _ = ns_cols.cols.append(c) %}
+  {# Get Columns Safely #}
+  {% set all_cols = rows[0].__table__.columns %}
+  {% set ns_cols = namespace(cols=[]) %}
+  {% for c in all_cols %}
+    {% if c.name not in ['company_id', 'created_at', 'updated_at'] %}
+      {% set _ = ns_cols.cols.append(c) %}
+    {% endif %}
+  {% endfor %}
+  {% set cols = ns_cols.cols %}
+  {% set col_count = cols|length %}
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {% for c in cols %}
+          <th>{{ c.name.replace('_',' ').upper() }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(pd=None, pv=None, ds=0, vs=0, gs=0) %}
+        {% for r in rows %}
+          {% set d = r.date %}
+          {% set v = r.variety_name if 'variety_name' in r.__dict__ else (r.variety if 'variety' in r.__dict__ else 'N/A') %}
+          {% set q = r.__dict__.get(qty_field, 0) or 0 %}
+
+          {# Variety Subtotal #}
+          {% if ns.pv and ns.pv != v %}
+          <tr class="subtotal"><td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ "%.2f"|format(ns.vs) }} KG</td></tr>
+          {% set ns.vs = 0 %}
+          {% endif %}
+
+          {# Date Subtotal #}
+          {% if ns.pd and ns.pd != d %}
+          <tr class="subtotal"><td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ "%.2f"|format(ns.ds) }} KG</td></tr>
+          {% set ns.ds = 0 %}
+          {% endif %}
+
+          <tr>
+            {% for c in cols %}
+            <td>{{ r.__dict__[c.name] if r.__dict__[c.name] is not none else '' }}</td>
+            {% endfor %}
+          </tr>
+
+          {% set ns.ds = ns.ds + q|float %}
+          {% set ns.vs = ns.vs + q|float %}
+          {% set ns.gs = ns.gs + q|float %}
+          {% set ns.pd = d %}
+          {% set ns.pv = v %}
+        {% endfor %}
+
+        {# Final Subtotals for the last group #}
+        <tr class="subtotal"><td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ "%.2f"|format(ns.vs) }} KG</td></tr>
+        <tr class="subtotal"><td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ "%.2f"|format(ns.ds) }} KG</td></tr>
+        <tr class="grand"><td colspan="{{ col_count }}">GRAND TOTAL: {{ "%.2f"|format(ns.gs) }} KG</td></tr>
+      </tbody>
+    </table>
+  </div>
   {% endif %}
-{% endfor %}
-{% set cols = ns_cols.cols %}
-{% set col_count = cols|length %}
-
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-{% for c in cols %}
-<th>{{ c.name.replace('_',' ').title() }}</th>
-{% endfor %}
-</tr>
-</thead>
-<tbody>
-
-{% set ns = namespace(pd=None,pv=None,ds=0,vs=0,gs=0) %}
-
-{% for r in rows %}
-{% set d = r.date %}
-{% set v = r.variety_name if 'variety_name' in r.__dict__ and r.variety_name else 'N/A' %}
-{% set q = r.__dict__.get(qty_field,0) or 0 %}
-
-{# ---- VARIETY SUBTOTAL ---- #}
-{% if ns.pv and ns.pv != v %}
-<tr class="subtotal">
-  <td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ ns.vs }}</td>
-</tr>
-{% set ns.vs = 0 %}
-{% endif %}
-
-{# ---- DATE SUBTOTAL ---- #}
-{% if ns.pd and ns.pd != d %}
-<tr class="subtotal">
-  <td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ ns.ds }}</td>
-</tr>
-{% set ns.ds = 0 %}
-{% endif %}
-
-<tr>
-{% for c in cols %}
-<td>{{ r.__dict__[c.name] }}</td>
-{% endfor %}
-</tr>
-
-{% set ns.ds = ns.ds + q %}
-{% set ns.vs = ns.vs + q %}
-{% set ns.gs = ns.gs + q %}
-{% set ns.pd = d %}
-{% set ns.pv = v %}
-
-{% endfor %}
-
-<tr class="subtotal">
-  <td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ ns.vs }}</td>
-</tr>
-<tr class="subtotal">
-  <td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ ns.ds }}</td>
-</tr>
-<tr class="grand">
-  <td colspan="{{ col_count }}">GRAND TOTAL: {{ ns.gs }}</td>
-</tr>
-
-</tbody>
-</table>
-</div>
-
-{% endif %}
 </div>
 {% endmacro %}
 
-
-{{ render_table('gate','Gate Entry',gate_rows,'no_of_material_boxes') }}
-{{ render_table('rmp','Raw Material Purchasing',rmp_rows,'received_qty') }}
-{{ render_table('de','De-Heading',de_rows,'hoso_qty') }}
-{{ render_table('peel','Peeling',peeling_rows,'peeled_qty') }}
-{{ render_table('soak','Soaking',soaking_rows,'in_qty') }}
-{{ render_table('grade','Grading',grading_rows,'quantity') }}
-{{ render_table('prod','Production',production_rows,'production_qty') }}
+{{ render_table('gate','Gate Entry Records', gate_rows, 'no_of_material_boxes') }}
+{{ render_table('rmp','Raw Material Purchasing', rmp_rows, 'received_qty') }}
+{{ render_table('de','De-Heading Process', de_rows, 'hoso_qty') }}
+{{ render_table('peel','Peeling Process', peeling_rows, 'peeled_qty') }}
+{{ render_table('soak','Soaking Process', soaking_rows, 'in_qty') }}
+{{ render_table('grade','Grading Process', grading_rows, 'quantity') }}
+{{ render_table('prod','Final Production', production_rows, 'production_qty') }}
 
 <script>
+// Scroll to Section
 function go(id){
-  const y = document.getElementById(id).getBoundingClientRect().top + window.pageYOffset - 230;
-  window.scrollTo({top:y,behavior:"smooth"});
+  const el = document.getElementById(id);
+  if(el){
+    const y = el.getBoundingClientRect().top + window.pageYOffset - 220;
+    window.scrollTo({top: y, behavior: "smooth"});
+  }
 }
-function submitForm(){document.getElementById("filterForm").submit();}
+
+// Auto Submit
+function submitForm(){ document.getElementById("filterForm").submit(); }
+
+// PDF Export
 function exportPDF(){
-  html2pdf().set({
-    filename:'Processing_Summary.pdf',
-    html2canvas:{scale:2},
-    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
-  }).from(document.body).save();
+  const element = document.body;
+  const opt = {
+    margin: 0.2,
+    filename: 'Processing_Summary.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+  };
+  html2pdf().set(opt).from(element).save();
 }
+
+// Excel Export (Basic CSV/HTML)
 function exportExcel(){
   let html = document.body.outerHTML;
   let a = document.createElement('a');

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stock Report – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --success: #059669;
+  --danger: #dc2626;
+}
+*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ================= HEADER & FILTERS ================= */
+.header{
+  position: sticky; top: 0; z-index: 100;
+  background: #fff; padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.header h2{ margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+.header p{ margin: 2px 0; font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+
+.filters{
+  margin-top: 8px; display: grid;
+  grid-template-columns: repeat(12, 1fr); /* ✅ Added column for Species */
+  gap: 8px; background: #f9fafb; padding: 10px;
+  border-radius: 8px; border: 1px solid var(--border);
+}
+.filters div{ display: flex; flex-direction: column; gap: 3px; }
+.filters label{ font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+
+.filters select, .filters input{
+  padding: 5px; border-radius: 5px; border: 1px solid var(--border);
+  font-size: 10.5px; background: #fff; outline: none; transition: 0.2s;
+}
+.filters select:focus, .filters input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+
+/* ================= ACTIONS ================= */
+.actions{
+  margin-top: 6px; display: flex;
+  justify-content: space-between; align-items: center;
+}
+#rowCount{ font-size: 11px; font-weight: 700; color: var(--accent); background: #eff6ff; padding: 2px 8px; border-radius: 4px; }
+
+.menu-btn{
+  width: 32px; height: 32px; border: 1px solid var(--border);
+  background: #fff; border-radius: 6px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; transition: 0.2s;
+}
+.menu-btn:hover { background: #f3f4f6; }
+
+.menu-list{
+  position: absolute; right: 0; top: 38px;
+  width: 200px; background: #fff; border-radius: 8px;
+  border: 1px solid var(--border); display: none; z-index: 999;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;
+}
+.menu-list div{
+  padding: 10px 15px; font-size: 11px; font-weight: 500;
+  border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.menu-list div:hover{ background: #f0f7ff; color: var(--accent); }
+
+/* ================= TABLE AREA ================= */
+.section{ margin: 10px 14px; }
+.table-wrap{
+  background: #fff; border-radius: 10px; border: 1px solid var(--border);
+  overflow: auto; max-height: 550px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+table{ width: 100%; border-collapse: collapse; min-width: 1900px; } /* Increased width for new column */
+
+thead th{
+  background: #f1f5f9; color: #475569; padding: 10px 6px;
+  font-size: 10px; font-weight: 700; position: sticky;
+  top: 0; text-align: center; border-bottom: 2px solid var(--border);
+  text-transform: uppercase; z-index: 10;
+}
+
+tbody td{
+  padding: 8px 6px; font-size: 10.5px;
+  border-bottom: 1px solid #f1f5f9; text-align: center;
+  white-space: nowrap;
+}
+
+tr:hover{ background: #f8fbff; }
+tr.selected{ background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+th.total-cell{
+  background: #e0f2fe !important; color: var(--primary);
+  font-weight: 800; border-bottom: 2px solid var(--accent);
+  font-size: 11px;
+}
+
+.in-text{ color: var(--success); font-weight: 800; background: #ecfdf5; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
+.out-text{ color: var(--danger); font-weight: 800; background: #fef2f2; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
+
+select.inline{
+  width: 100%; font-size: 10px; padding: 2px;
+  border: 1px solid var(--accent); border-radius: 4px;
+}
+[contenteditable="true"]{
+  outline: 2px solid var(--accent);
+  background: #fff !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+@media print {
+  .header, .filters, .actions { display: none !important; }
+  .section { margin: 0; }
+  .table-wrap { border: none; max-height: none; overflow: visible; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Stock Report</h2>
+  <p>{{ company_name }}</p>
+
+  <div class="filters">
+    <div>
+      <label>From Date</label>
+      <input type="date" id="from_date" value="{{ from_date }}">
+    </div>
+    <div>
+      <label>To Date</label>
+      <input type="date" id="to_date" value="{{ to_date }}">
+    </div>
+
+    <div><label>Batch</label><select id="f_batch"><option value="">All</option>{% for x in f_batches %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Prod For</label><select id="f_pf"><option value="">All</option>{% for x in f_production_fors %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Prod At</label><select id="f_pa"><option value="">All</option>{% for x in f_production_ats %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Brand</label><select id="f_brand"><option value="">All</option>{% for x in f_brands %}<option>{{x}}</option>{% endfor %}</select></div>
+    
+    <div><label>Species</label><select id="f_species"><option value="">All</option>{% for x in f_species %}<option>{{x}}</option>{% endfor %}</select></div>
+    
+    <div><label>Variety</label><select id="f_var"><option value="">All</option>{% for x in f_varieties %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Grade</label><select id="f_grade"><option value="">All</option>{% for x in f_grades %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Freezer</label><select id="f_fr"><option value="">All</option>{% for x in f_freezers %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Glaze</label><select id="f_glaze"><option value="">All</option>{% for x in f_glazes %}<option>{{x}}</option>{% endfor %}</select></div>
+    <div><label>Search</label><input id="f_search"></div>
+  </div>
+
+  <div class="actions">
+    <div id="rowCount">0 rows</div>
+    <div class="menu">
+      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+      <div class="menu-list" id="menuList">
+        {% if is_admin %}
+        <div onclick="enableEdit()">✏ Inline Edit</div>
+        <div onclick="saveEdit()">💾 Save</div>
+        <div onclick="deleteRow()">🗑 Delete</div>
+        {% endif %}
+        <div onclick="window.print()">🖨 Print</div>
+        <div onclick="window.open('/inventory/stock_report/export_pdf?from_date={{from_date}}&to_date={{to_date}}')">📄 PDF</div>
+        <div onclick="window.open('/inventory/stock_report/export_xlsx?from_date={{from_date}}&to_date={{to_date}}')">📊 Excel</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th colspan="18"></th> 
+  <th class="total-cell" id="t_mc">0</th>
+  <th class="total-cell" id="t_loose">0</th>
+  <th class="total-cell" id="t_qty">0.00</th>
+  <th></th>
+</tr>
+<tr>
+<th>ID</th><th>Date</th><th>Time</th><th>Type</th>
+<th>Batch</th><th>Location</th>
+<th>Prod For</th><th>Prod At</th>
+<th>Prod Type</th><th>Purpose</th><th>PO No</th><th>Brand</th>
+
+<th>Freezer</th><th>Glaze</th><th>Species</th><th>Packing Style</th><th>Variety</th><th>Grade</th>
+<th>No of MC</th><th>Loose</th><th>Quantity</th><th>Email</th>
+</tr>
+</thead>
+
+<tbody id="tbody">
+{% for r in rows %}
+<tr onclick="selectRow(this)">
+<td>{{ r.id }}</td>
+<td>{{ r.date }}</td>
+<td>{{ r.time.strftime('%H:%M:%S') if r.time }}</td>
+<td>{% if r.cargo_movement_type=='IN' %}<span class="in-text">IN</span>{% else %}<span class="out-text">OUT</span>{% endif %}</td>
+<td>{{ r.batch_number }}</td>
+<td>{{ r.location }}</td>
+<td>{{ r.production_for }}</td>
+<td>{{ r.production_at }}</td>
+<td>{{ r.type_of_production }}</td>
+<td>{{ r.purpose }}</td>
+<td>{{ r.po_number }}</td>
+<td>{{ r.brand }}</td>
+
+<td>{{ r.freezer }}</td>
+<td>{{ r.glaze }}</td>
+<td style="font-weight: 700; color: var(--primary);">{{ r.species }}</td>
+<td>{{ r.packing_style }}</td>
+<td>{{ r.variety }}</td>
+<td>{{ r.grade }}</td>
+
+{% if r.cargo_movement_type=='OUT' %}
+<td>-{{ r.no_of_mc }}</td>
+<td>-{{ r.loose }}</td>
+<td class="qty">-{{ "%.2f"|format(r.quantity) }}</td>
+{% else %}
+<td>{{ r.no_of_mc }}</td>
+<td>{{ r.loose }}</td>
+<td class="qty">{{ "%.2f"|format(r.quantity) }}</td>
+{% endif %}
+<td>{{ r.email }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<script>
+/* ================= GLOBAL DATA ================= */
+const PACKING_MAP = {{ PACKING_MAP | tojson if PACKING_MAP else {} }};
+const LOOKUPS = {
+  batch: {{ f_batches | tojson if f_batches else [] }},
+  production_for: {{ production_for_list | tojson if production_for_list else [] }},
+  production_at: {{ production_at_list | tojson if production_at_list else [] }},
+  production_type: {{ production_types_list | tojson if production_types_list else [] }},
+  purpose: {{ purposes_list | tojson if purposes_list else [] }},
+  po_number: {{ po_numbers_list | tojson if po_numbers_list else [] }},
+  brand: {{ (brands_list if brands_list else []) | tojson }},
+  freezer: {{ freezers_list | tojson if freezers_list else [] }},
+  glaze: {{ glazes_list | tojson if glazes_list else [] }},
+  species: {{ species_list | tojson if species_list else [] }}, /* ✅ Added Species Lookup */
+  packing: {{ packing_styles_list | tojson if packing_styles_list else [] }},
+  variety: {{ varieties_list | tojson if varieties_list else [] }},
+  grade: {{ grades_list | tojson if grades_list else [] }}
+};
+
+const rows=[...document.querySelectorAll("#tbody tr")];
+const menuList = document.getElementById("menuList");
+let selected=null;
+
+function toggleMenu(){
+  menuList.style.display = menuList.style.display==="block"?"none":"block";
+}
+window.onclick=e=>{
+  if(!e.target.closest(".menu")) menuList.style.display="none";
+};
+
+function selectRow(tr){
+  rows.forEach(r=>r.classList.remove("selected"));
+  tr.classList.add("selected");
+  selected=tr;
+}
+
+/* ================= FILTER + TOTAL ================= */
+function applyFilters(){
+  let c=0, mc=0, loose=0, qty=0;
+
+  rows.forEach(r=>{
+    const t=r.children;
+    let ok=true;
+
+    if(f_batch.value && t[4].innerText!==f_batch.value) ok=false;
+    if(f_pf.value && t[6].innerText!==f_pf.value) ok=false;
+    if(f_pa.value && t[7].innerText!==f_pa.value) ok=false;
+    if(f_brand.value && t[11].innerText!==f_brand.value) ok=false;
+    if(f_species.value && t[14].innerText!==f_species.value) ok=false; /* ✅ Added Filter logic for Species */
+    if(f_fr.value && t[12].innerText!==f_fr.value) ok=false;
+    if(f_glaze.value && t[13].innerText!==f_glaze.value) ok=false;
+    if(f_var.value && t[16].innerText!==f_var.value) ok=false; /* Index shifted because of species */
+    if(f_grade.value && t[17].innerText!==f_grade.value) ok=false; /* Index shifted because of species */
+    
+    if(f_search.value && !r.innerText.toLowerCase().includes(f_search.value.toLowerCase())) ok=false;
+
+    r.style.display=ok?"":"none";
+
+    if(ok){
+      c++;
+      const sign = t[3].innerText.trim()==="OUT" ? -1 : 1;
+      mc    += sign * Math.abs(parseFloat(t[18].innerText)||0); /* Index shifted */
+      loose += sign * Math.abs(parseFloat(t[19].innerText)||0); /* Index shifted */
+      qty   += sign * Math.abs(parseFloat(t[20].innerText)||0); /* Index shifted */
+    }
+  });
+
+  document.getElementById("rowCount").innerText=c+" rows";
+  document.getElementById("t_mc").innerText=mc;
+  document.getElementById("t_loose").innerText=loose;
+  document.getElementById("t_qty").innerText=qty.toFixed(2);
+}
+
+document.querySelectorAll(".filters select, .filters input").forEach(e=>e.oninput=applyFilters);
+applyFilters();
+
+/* ================= INLINE EDIT ================= */
+function enableEdit(){
+  if(!selected) return alert("Select row first");
+
+  makeSelect(4, LOOKUPS.batch);
+  makeSelect(6, LOOKUPS.production_for);
+  makeSelect(7, LOOKUPS.production_at);
+  makeSelect(8, LOOKUPS.production_type);
+  makeSelect(9, LOOKUPS.purpose);
+  makeSelect(10, LOOKUPS.po_number);
+  makeSelect(11, LOOKUPS.brand);
+  makeSelect(12, LOOKUPS.freezer);
+  makeSelect(13, LOOKUPS.glaze);
+  makeSelect(14, LOOKUPS.species); /* ✅ Added Species Edit */
+  makeSelect(15, LOOKUPS.packing);
+  makeSelect(16, LOOKUPS.variety);
+  makeSelect(17, LOOKUPS.grade);
+
+  selected.children[18].contentEditable=true; /* MC Cell */
+  selected.children[19].contentEditable=true; /* Loose Cell */
+  selected.children[18].style.background="#fff7ed";
+  selected.children[19].style.background="#fff7ed";
+  selected.children[18].oninput=recalcQty;
+  selected.children[19].oninput=recalcQty;
+}
+
+function makeSelect(idx, list){
+  const td=selected.children[idx];
+  const cur=td.innerText.trim();
+  let s=`<select class="inline">`;
+  list.forEach(v=>{
+    s+=`<option ${v===cur?"selected":""}>${v}</option>`;
+  });
+  s+="</select>";
+  td.innerHTML=s;
+}
+
+function recalcQty(){
+  const packingTd = selected.children[15]; /* Index shifted */
+  const packName = packingTd.querySelector("select") ? packingTd.querySelector("select").value : packingTd.innerText.trim();
+  const pack = PACKING_MAP[packName];
+  if(!pack) return;
+  const mcVal = parseFloat(selected.children[18].innerText)||0; /* Index shifted */
+  const looseVal = parseFloat(selected.children[19].innerText)||0; /* Index shifted */
+  selected.children[20].innerText=((mcVal*pack.mc_weight)+(looseVal*pack.slab_weight)).toFixed(2);
+}
+
+async function saveEdit(){
+  if(!selected) return;
+  const t=selected.children;
+  const val=i=>{
+    const s=t[i].querySelector("select");
+    return s?s.value:t[i].innerText.trim();
+  };
+
+  const payload={
+    id: t[0].innerText.trim(),
+    batch_number: val(4),
+    production_for: val(6),
+    production_at: val(7),
+    type_of_production: val(8),
+    purpose: val(9),
+    po_number: val(10),
+    brand: val(11),
+    freezer: val(12),
+    glaze: val(13),
+    species: val(14), /* ✅ Added Species to Payload */
+    packing_style: val(15),
+    variety: val(16),
+    grade: val(17),
+    no_of_mc: Math.abs(parseFloat(t[18].innerText)||0),
+    loose: Math.abs(parseFloat(t[19].innerText)||0)
+  };
+
+  const r=await fetch("/inventory/stock_report/update",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+  if(r.ok) location.reload(); else alert("Save failed");
+}
+
+async function deleteRow(){
+  if(!selected || !confirm("Delete?")) return;
+  await fetch("/inventory/stock_report/delete",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({id:selected.children[0].innerText.trim()})
+  });
+  location.reload();
+}
+</script>
+
+</body>
+</html>

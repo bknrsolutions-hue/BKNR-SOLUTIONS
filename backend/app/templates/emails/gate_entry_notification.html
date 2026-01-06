@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New Vehicle Arrived</title>
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f4f6f9;
+            padding:20px;
+        }
+        .card{
+            max-width:600px;
+            margin:auto;
+            background:#ffffff;
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:20px;
+        }
+        h2{
+            color:#143465;
+            margin:0 0 15px 0;
+        }
+        table{
+            width:100%;
+            border-collapse:collapse;
+            font-size:14px;
+        }
+        td{
+            padding:6px 4px;
+        }
+        td.label{
+            font-weight:bold;
+            width:45%;
+        }
+        .footer{
+            margin-top:20px;
+            font-size:12px;
+            color:#666;
+            text-align:center;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+
+        <!-- HEADER WITH RECEIVING CENTER -->
+        <h2>🚚 New Vehicle Arrived at {{ receiving_center }}</h2>
+
+        <table>
+            <tr><td class="label">Batch Number</td><td>{{ batch_number }}</td></tr>
+            <tr><td class="label">Challan Number</td><td>{{ challan_number }}</td></tr>
+            <tr><td class="label">Gate Pass Number</td><td>{{ gate_pass_number }}</td></tr>
+
+            <tr><td class="label">Supplier Name</td><td>{{ supplier_name }}</td></tr>
+            <tr><td class="label">Purchasing Location</td><td>{{ purchasing_location }}</td></tr>
+            <tr><td class="label">Vehicle Number</td><td>{{ vehicle_number }}</td></tr>
+
+            <tr><td class="label">Material Boxes</td><td>{{ no_of_material_boxes }}</td></tr>
+            <tr><td class="label">Empty Boxes</td><td>{{ no_of_empty_boxes }}</td></tr>
+            <tr><td class="label">Ice Boxes</td><td>{{ no_of_ice_boxes }}</td></tr>
+
+            <tr><td class="label">Species</td><td>{{ species }}</td></tr>
+            <tr><td class="label">Date</td><td>{{ date }}</td></tr>
+            <tr><td class="label">Time</td><td>{{ time }}</td></tr>
+            <tr><td class="label">Entered By</td><td>{{ email }}</td></tr>
+        </table>
+
+        <div class="footer">
+            This is an automated notification from <b>BKNR ERP</b>.
+        </div>
+
+    </div>
+</body>
+</html>

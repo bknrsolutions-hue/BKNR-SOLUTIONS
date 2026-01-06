@@ -1,277 +1,515 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>STOCK ENTRY – BKNR SOLUTIONS</title>
+<meta charset="UTF-8">
+<title>Stock Entry – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
- body{font-family:Arial;background:#e6f2ff;margin:0;padding:0;}
- h2{text-align:center;color:#fff;background:#003366;padding:12px;margin:0;}
- .box{width:95%;max-width:1200px;margin:18px auto;background:white;
-      padding:20px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,0.2);}
- .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
- .col{flex:1;min-width:250px;}
- label{font-weight:600;color:#003366;margin-bottom:6px;display:block;}
- select,input{width:100%;padding:8px;border:1px solid #9db7d6;border-radius:6px;background:#f7fbff;}
- button{padding:10px 22px;border:none;border-radius:6px;color:#fff;background:#003366;font-weight:600;cursor:pointer;}
- .clr{background:#666;}
- table{width:95%;margin:18px auto;border-collapse:collapse;background:white;
-       box-shadow:0 0 6px rgba(0,0,0,0.15);}
- th,td{padding:7px;border-bottom:1px solid #ddd;font-size:13px;}
- th{background:#003366;color:#fff;}
- .po_popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);
-           align-items:center;justify-content:center;}
- .po_box{background:white;padding:22px;border-radius:8px;text-align:center;width:320px;}
- input[type=text]{font-size:14px;}
+:root{
+  --primary:#143465;
+  --secondary: #1e293b;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+}
+
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ================= HEADER ================= */
+.header{
+  padding:16px 25px;
+  border-bottom:1px solid var(--border);
+  background:#fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+
+/* ================= SECTION CARDS ================= */
+.section{
+  margin:18px;
+  background:var(--card);
+  padding:22px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-size: 13px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 18px; 
+    display: flex; align-items: center; gap: 8px;
+}
+
+/* FORM GRID */
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:16px;
+}
+@media(max-width:1200px){.form-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+
+.field{display:flex;flex-direction:column; gap: 5px;}
+.field label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform: uppercase;
+}
+.field select, .field input{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  font-size:13px;
+  background:#fff;
+  outline: none;
+  transition: 0.2s;
+}
+.field select:focus, .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.hidden{display:none}
+
+/* BUTTONS */
+.actions{
+  margin-top:20px;
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+}
+.btn{
+  padding:10px 24px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:#fff;
+  transition: 0.2s;
+}
+.btn-primary{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  box-shadow: 0 4px 10px rgba(59,130,246,0.3);
+}
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+
+.btn-search {
+    background: var(--secondary);
+    color: #fff; border: none;
+}
+
+/* --- TABLE STYLING --- */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+th, td {
+  padding: 12px 8px;
+  border: 1px solid #edf2f7;
+  text-align: center;
+}
+th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.text-green { color: #16a34a; font-weight: 800; }
+.text-red { color: #dc2626; font-weight: 800; }
+tbody tr:hover { background: #f8fbff; }
+
+input[readonly] {
+    background: #f1f5f9;
+    color: var(--primary);
+    font-weight: 700;
+}
 </style>
 </head>
+
 <body>
 
-<h2>STOCK ENTRY</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>Stock Entry</h2>
+      <p><i class="fa-solid fa-right-left"></i> IN Entry & Report-based OUT</p>
+  </div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR ERP System</div>
+</div>
 
-<form method="post" action="/inventory/stock_entry" onsubmit="return fillMeta()">
-<div class="box">
-
-  <!-- ROW 1 -->
-  <div class="row">
-    <div class="col">
-      <label>Batch Number (Gate Entry)</label>
-      <select name="batch_number" required>
-        <option disabled selected>Select</option>
-        {% for b in batches %}
-          <option value="{{ b }}">{{ b }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <label>Type of Production</label>
-      <select name="type_of_production" required>
-        <option disabled selected>Select</option>
-        {% for p in production_types %}
-          <option value="{{ p }}">{{ p }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
+<div class="section">
+  <div class="form-grid" style="grid-template-columns: 250px;">
+    <div class="field">
       <label>Cargo Movement Type</label>
-      <select name="cargo_movement_type" id="moveType" required onchange="toggleOUT()">
-        <option disabled selected>Select</option>
-        <option>IN</option>
-        <option>OUT</option>
+      <select id="movement" onchange="toggleMode()" style="border-width: 2px; border-color: var(--accent);">
+        <option value="">-- Choose Movement --</option>
+        <option value="IN">📥 STOCK IN</option>
+        <option value="OUT">📤 STOCK OUT</option>
       </select>
     </div>
   </div>
+</div>
 
-
-  <!-- ROW 2 -->
-  <div class="row">
-    <div class="col">
-      <label>Brand</label>
-      <select name="brand" required>
-        <option disabled selected>Select</option>
-        {% for x in brands %}
-          <option value="{{ x }}">{{ x }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <label>Freezer</label>
-      <select name="freezer" required>
-        <option disabled selected>Select</option>
-        {% for x in freezers %}
-          <option value="{{ x }}">{{ x }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <label>Packing Style</label>
-      <select name="packing_style" id="packer" required onchange="calcQty()">
-        <option disabled selected>Select</option>
-        {% for p in packing_styles %}
-          <option value="{{ p.packing_style }}" data-mc="{{ p.mc_weight }}" data-slab="{{ p.slab_weight }}">
-            {{ p.packing_style }}
+<form method="post" action="/inventory/stock_entry">
+<div class="section hidden" id="inBox">
+    <div class="section-title"><i class="fa-solid fa-circle-down"></i> Stock In Details</div>
+    <div class="form-grid">
+      <div class="field"><label>Batch</label>
+        <select name="batch_number">
+          <option value="">Select</option>
+          {% for b in batches %}<option>{{b}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Type of Production</label>
+        <select name="type_of_production">
+          <option>N/A</option>
+          {% for p in production_types %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Location</label>
+        <select name="location">
+          <option value="">Select</option>
+          {% for l in locations %}<option>{{l}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Production For</label>
+        <select name="production_for">
+          <option value="">Select</option>
+          {% for p in production_for_list %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Brand</label>
+        <select name="brand">
+          <option value="">Select</option>
+          {% for b in brands %}<option>{{b}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Freezer</label>
+        <select name="freezer">
+          <option value="">Select</option>
+          {% for f in freezers %}<option>{{f}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Packing Style</label>
+        <select name="packing_style" id="packer" onchange="calcQty()">
+          <option value="">Select</option>
+          {% for p in packing_styles %}
+          <option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">
+            {{p.packing_style}}
           </option>
-        {% endfor %}
-      </select>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Glaze</label>
+        <select name="glaze">
+          <option value="">Select</option>
+          {% for g in glazes %}<option>{{g}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Species</label>
+        <select name="species">
+          <option value="">Select</option>
+          {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Variety</label>
+        <select name="variety">
+          <option value="">Select</option>
+          {% for v in varieties %}<option>{{v}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Grade</label>
+        <select name="grade">
+          <option value="">Select</option>
+          {% for g in grades %}<option>{{g}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>No of MC</label>
+        <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0">
+      </div>
+      <div class="field"><label>Loose</label>
+        <input id="loose" name="loose" type="number" oninput="calcQty()" placeholder="0">
+      </div>
+      <div class="field"><label>Total Qty (Calculated)</label>
+        <input id="qty" name="quantity" readonly placeholder="0.00">
+      </div>
+      <div class="field"><label>Purpose</label>
+        <select name="purpose">
+          <option value="">Select</option>
+          {% for p in purposes %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>PO Number</label>
+        <select name="po_number">
+          <option>N/A</option>
+          {% for p in po_numbers %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Production At</label>
+        <select name="production_at">
+          <option value="">Select</option>
+          {% for p in production_places %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
     </div>
-  </div>
-
-
-  <!-- ROW 3 -->
-  <div class="row">
-    <div class="col">
-      <label>Glaze %</label>
-      <select name="glaze" required>
-        <option disabled selected>Select</option>
-        {% for g in glazes %}
-          <option value="{{ g }}">{{ g }}</option>
-        {% endfor %}
-      </select>
+    <input type="hidden" name="cargo_movement_type" value="IN">
+    <div class="actions">
+      <button class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE STOCK IN</button>
     </div>
-
-    <div class="col">
-      <label>Variety</label>
-      <select name="variety" required>
-        <option disabled selected>Select</option>
-        {% for v in varieties %}
-          <option value="{{ v }}">{{ v }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <label>Grade</label>
-      <select name="grade" required>
-        <option disabled selected>Select</option>
-        {% for g in grades %}
-          <option value="{{ g }}">{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
-
-
-  <!-- 🔥 NEW ROW: LOCATION LOOKUP -->
-  <div class="row">
-    <div class="col">
-      <label>Location</label>
-      <select name="location" required>
-        <option disabled selected>Select</option>
-        {% for l in locations %}
-          <option value="{{ l }}">{{ l }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
-
-
-  <!-- ROW 4 -->
-  <div class="row">
-    <div class="col">
-      <label>No. of MC</label>
-      <input type="number" id="mc" name="no_of_mc" required oninput="calcQty()">
-    </div>
-    <div class="col">
-      <label>Loose Slabs</label>
-      <input type="number" id="loose" name="loose" required oninput="calcQty()">
-    </div>
-    <div class="col">
-      <label>Total Quantity (KG)</label>
-      <input type="number" id="qty" name="quantity" readonly>
-    </div>
-  </div>
-
-
-  <!-- ROW 5 = OUT Only -->
-  <div class="row">
-    <div class="col">
-      <label>Purpose</label>
-      <select name="purpose" id="purpose" disabled>
-        <option disabled selected>Select</option>
-        {% for p in purposes %}
-          <option value="{{ p }}">{{ p }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <label>PO Number</label>
-      <select name="po_number" id="ponum" disabled onchange="poAdd()">
-        <option disabled selected>Select</option>
-        {% for p in po_numbers %}
-          <option value="{{ p }}">{{ p }}</option>
-        {% endfor %}
-        <option value="__ADD__">➕ Add New</option>
-      </select>
-    </div>
-
-    <div class="col">
-      <label>Production At</label>
-      <select name="production_at" required>
-        <option disabled selected>Select</option>
-        {% for p in production_places %}
-          <option value="{{ p }}">{{ p }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
-
-  <!-- META -->
-  <input type="hidden" name="email" id="meta_email">
-  <input type="hidden" name="company_id" id="meta_company_id">
-
-  <div style="text-align:center;margin-top:18px;">
-    <button type="submit">SAVE</button>
-    <button type="reset" class="clr">CLEAR</button>
-  </div>
 </div>
 </form>
 
+<div class="section hidden" id="outBox">
+    <div class="section-title"><i class="fa-solid fa-circle-up"></i> Stock Out Search</div>
+    <form id="outForm" method="post" action="/inventory/stock_out_save">
+    <div class="form-grid">
+      <div class="field"><label>Production For</label>
+        <select name="production_for">
+          <option value="">Select</option>
+          {% for p in production_for_list %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Brand</label>
+        <select name="brand">
+          <option value="">Select</option>
+          {% for b in brands %}<option>{{b}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Production At</label>
+        <select name="production_at">
+          <option value="">Select</option>
+          {% for p in production_places %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Freezer</label>
+        <select name="freezer">
+          <option value="">Select</option>
+          {% for f in freezers %}<option>{{f}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Packing Style</label>
+        <select name="packing_style">
+          <option value="">Select</option>
+          {% for p in packing_styles %}<option>{{p.packing_style}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Glaze</label>
+        <select name="glaze">
+          <option value="">Select</option>
+          {% for g in glazes %}<option>{{g}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Species</label>
+        <select name="species">
+          <option value="">Select</option>
+          {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Variety</label>
+        <select name="variety">
+          <option value="">Select</option>
+          {% for v in varieties %}<option>{{v}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Grade</label>
+        <select name="grade">
+          <option value="">Select</option>
+          {% for g in grades %}<option>{{g}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Purpose</label>
+        <select name="purpose">
+          <option value="">Select</option>
+          {% for p in purposes %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>PO Number</label>
+        <select name="po_number">
+          <option>N/A</option>
+          {% for p in po_numbers %}<option>{{p}}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button>
+    </div>
 
-<!-- TABLE -->
+    <div class="table-container">
+        <table id="reportTable" class="hidden">
+        <thead>
+        <tr>
+          <th>Location</th>
+          <th>Batch Number</th>
+          <th>Available MC</th>
+          <th>Available Loose</th>
+          <th style="background: #fff4f4;">OUT MC</th>
+          <th style="background: #fff4f4;">OUT Loose</th>
+        </tr>
+        </thead>
+        <tbody id="reportRows"></tbody>
+        </table>
+    </div>
+    
+    <div id="hiddenInputs"></div>
+    <div class="actions hidden" id="outSaveBox">
+      <button class="btn btn-primary"><i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT</button>
+    </div>
+    </form>
+</div>
+
 {% if table_data %}
-<table>
-  <tr>
-    <th>ID</th><th>Batch</th><th>Brand</th><th>Variety</th><th>Grade</th>
-    <th>Movement</th><th>KG</th><th>PO</th><th>Date</th><th>Location</th>
-  </tr>
-  {% for r in table_data %}
-  <tr>
-    <td>{{ r.id }}</td>
-    <td>{{ r.batch_number }}</td>
-    <td>{{ r.brand }}</td>
-    <td>{{ r.variety }}</td>
-    <td>{{ r.grade }}</td>
-    <td>{{ r.cargo_movement_type }}</td>
-    <td>{{ r.quantity }}</td>
-    <td>{{ r.po_number }}</td>
-    <td>{{ r.date }}</td>
-    <td>{{ r.location }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="section">
+    <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Transactions</div>
+    <div class="table-container">
+        <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Type</th>
+          <th>Batch</th>
+          <th>Loc</th>
+          <th>Prod For</th>
+          <th>Prod At</th>
+          <th>Type</th>
+          <th>Purpose</th>
+          <th>PO No</th>
+          <th>Brand</th>
+          <th>Freezer</th>
+          <th>Glaze</th>
+          <th>Packing</th>
+          <th>Species</th>
+          <th>Variety</th>
+          <th>Grade</th>
+          <th>MC</th>
+          <th>Lse</th>
+          <th>Total Qty</th>
+          <th>User</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for r in table_data %}
+        <tr>
+          <td>{{r.id}}</td>
+          <td>{{r.date}}</td>
+          <td>{{r.time}}</td>
+          <td class="{% if r.cargo_movement_type == 'IN' %}text-green{% else %}text-red{% endif %}">
+            {{r.cargo_movement_type}}
+          </td>
+          <td>{{r.batch_number}}</td>
+          <td>{{r.location}}</td>
+          <td>{{r.production_for}}</td>
+          <td>{{r.production_at}}</td>
+          <td>{{r.type_of_production}}</td>
+          <td>{{r.purpose or ""}}</td>
+          <td>{{r.po_number or ""}}</td>
+          <td>{{r.brand}}</td>
+          <td>{{r.freezer}}</td>
+          <td>{{r.glaze}}</td>
+          <td>{{r.packing_style}}</td>
+          <td style="font-weight: 700; color: var(--accent);">{{r.species}}</td>
+          <td>{{r.variety}}</td>
+          <td>{{r.grade}}</td>
+          <td>{{r.no_of_mc}}</td>
+          <td>{{r.loose}}</td>
+          <td style="font-weight: 700;">{{r.quantity}}</td>
+          <td style="font-size: 9px; color: var(--muted);">{{r.email}}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 
-
 <script>
+const movement = document.getElementById('movement');
+const inBox = document.getElementById('inBox');
+const outBox = document.getElementById('outBox');
+const packer = document.getElementById('packer');
+const mc = document.getElementById('mc');
+const loose = document.getElementById('loose');
+const qty = document.getElementById('qty');
+const reportTable = document.getElementById('reportTable');
+const outSaveBox = document.getElementById('outSaveBox');
+const reportRows = document.getElementById('reportRows');
+const hiddenInputs = document.getElementById('hiddenInputs');
+const outForm = document.getElementById('outForm');
+
+function toggleMode(){
+  inBox.classList.toggle("hidden", movement.value!=="IN");
+  outBox.classList.toggle("hidden", movement.value!=="OUT");
+}
+
 function calcQty(){
-  let mc    = parseFloat(document.getElementById("mc").value)||0;
-  let loose = parseFloat(document.getElementById("loose").value)||0;
-  let opt   = document.getElementById("packer").selectedOptions[0];
-  if(!opt) return;
-  let mc_w   = parseFloat(opt.dataset.mc)||0;
-  let slab_w = parseFloat(opt.dataset.slab)||0;
-  document.getElementById("qty").value = (mc*mc_w + loose*slab_w).toFixed(2);
+  let opt = packer.selectedOptions[0];
+  if(!opt || !opt.dataset.mc) return;
+  qty.value = ((+mc.value||0)*(+opt.dataset.mc||0) + (+loose.value||0)*(+opt.dataset.slab||0)).toFixed(2);
 }
 
-function toggleOUT(){
-  let isOut = document.getElementById("moveType").value === "OUT";
-  document.getElementById("purpose").disabled = !isOut;
-  document.getElementById("ponum").disabled   = !isOut;
+async function searchStock(){
+  const params = new URLSearchParams(new FormData(outForm));
+  const res = await fetch("/inventory/stock_out_report?"+params);
+  const data = await res.json();
+  reportTable.classList.remove("hidden");
+  outSaveBox.classList.remove("hidden");
+  reportRows.innerHTML="";
+  hiddenInputs.innerHTML="";
+  data.forEach((r,i)=>{
+    reportRows.innerHTML+=`
+      <tr>
+        <td>${r.location}</td>
+        <td><span class="text-green">${r.batch}</span></td>
+        <td>${r.mc}</td>
+        <td>${r.loose}</td>
+        <td><input type="number" id="mc_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td>
+        <td><input type="number" id="lo_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td>
+      </tr>`;
+    hiddenInputs.innerHTML+=`
+      <input type="hidden" name="out_batch" value="${r.batch}">
+      <input type="hidden" name="out_location" value="${r.location}">
+      <input type="hidden" name="out_mc" id="hmc_${i}">
+      <input type="hidden" name="out_loose" id="hlo_${i}">`;
+  });
 }
 
-function poAdd(){
-  let sel = document.getElementById("ponum");
-  if(sel.value === "__ADD__"){
-    let v = prompt("Enter PO Number:");
-    if(v){
-      let o = document.createElement("option");
-      o.value=o.text=v;
-      sel.insertBefore(o, sel.lastElementChild);
-      sel.value=v;
-    } else sel.value="";
-  }
-}
-
-function fillMeta(){
-  document.getElementById("meta_email").value      = localStorage.getItem("userEmail");
-  document.getElementById("meta_company_id").value = localStorage.getItem("companyID");
+outForm.onsubmit=()=>{
+  document.querySelectorAll("[id^=hmc_]").forEach((h,i)=>{
+    h.value=document.getElementById("mc_"+i).value||0;
+    document.getElementById("hlo_"+i).value=document.getElementById("lo_"+i).value||0;
+  });
   return true;
-}
+};
 </script>
 
 </body>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Production For – Costing Master</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  :root {
+    --primary: #143465;
+    --accent: #3b82f6;
+    --border: #d1d5db;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --success: #16a34a;
+  }
+
+  * { box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+  /* ================= HEADER ================= */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff; padding: 15px 25px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .header h2 { margin: 0; font-size: 20px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* ================= SECTION / CARD ================= */
+  .section {
+    margin: 20px; background: var(--card);
+    padding: 25px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  /* ================= FORM GRID ================= */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+  }
+
+  .field { display: flex; flex-direction: column; }
+  .field label {
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;
+  }
+  .field input, .field select {
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); font-size: 13px;
+    background: #fff; transition: all 0.2s; outline: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* ================= FREEZER BOX ================= */
+  .freezer-box {
+    margin-top: 20px; border: 1px solid #e2e8f0;
+    border-radius: 12px; padding: 18px;
+    background: #f8fbff; /* Soft blue background */
+  }
+  .freezer-head {
+    font-size: 13px; font-weight: 800; color: var(--primary);
+    margin-bottom: 15px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .freezer-head::before { content: "❄️"; }
+
+  /* ================= GLAZES BOX STYLE ================= */
+  .glaze-row {
+    margin-top: 10px; display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  .glaze-cell {
+    background: #fff; padding: 10px; border-radius: 8px;
+    border: 1px solid var(--border); display: flex; flex-direction: column;
+    transition: 0.2s;
+  }
+  .glaze-cell:hover { border-color: var(--accent); }
+  .glaze-cell span {
+    font-size: 10px; font-weight: 800; color: var(--muted);
+    text-align: center; margin-bottom: 5px; text-transform: uppercase;
+  }
+  .glaze-cell input {
+    text-align: center; border: none; font-weight: 600;
+    font-size: 14px; color: var(--primary); outline: none;
+  }
+
+  /* ================= ACTIONS ================= */
+  .actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+  .btn {
+    padding: 10px 22px; border-radius: 8px; font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+    text-transform: uppercase; border: 1px solid var(--border);
+  }
+  .btn-primary { background: var(--primary); color: #fff; border: none; }
+  .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
+
+  /* ================= TABLE AREA ================= */
+  .table-wrap {
+    margin: 20px; background: var(--card);
+    border-radius: 12px; border: 1px solid var(--border);
+    overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #f1f5f9; color: #475569; font-size: 11px;
+    padding: 12px 8px; text-transform: uppercase;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    font-size: 13px; padding: 12px 8px;
+    border-bottom: 1px solid #f1f5f9; text-align: center;
+  }
+  tbody tr:hover { background: #f8fbff; cursor: pointer; }
+  tbody tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+  /* ================= 3 DOT MENU ================= */
+  #threeDotsMenu { margin: 10px 20px; display: none; text-align: right; }
+  #threeDotsMenu button {
+    background: var(--primary); color: white; border: none;
+    padding: 5px 12px; border-radius: 6px; font-size: 20px; cursor: pointer;
+  }
+  #dropdownMenu {
+    display: none; position: absolute; right: 20px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; width: 180px; z-index: 1000;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden;
+  }
+  .menu-item {
+    padding: 12px 15px; font-size: 13px; font-weight: 600;
+    color: var(--primary); border-bottom: 1px solid #f1f5f9; cursor: pointer;
+  }
+  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+  /* ================= SUCCESS MSG ================= */
+  #successMsg {
+    position: fixed; top: 25px; right: 25px;
+    background: var(--success); color: #fff;
+    padding: 15px 25px; border-radius: 12px;
+    font-weight: 700; font-size: 14px; z-index: 9999;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: none;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+  @media(max-width: 1200px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
+  @media(max-width: 700px){ .form-grid{ grid-template-columns: 1fr; } .actions{ justify-content: center; } .btn{ width: 100%; } }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Production For – Costing Master</h2>
+  <p>Freezer & Glaze wise costing</p>
+</div>
+
+<div id="successMsg">✔ Saved Successfully</div>
+
+<form id="costingForm">
+<div class="section">
+
+<div class="form-grid">
+  <div class="field"><label>Production For</label><input name="production_for" required></div>
+  <div class="field"><label>Apply From</label><input type="date" name="apply_from" required></div>
+  <div class="field"><label>Free Days</label><input type="number" name="free_days" value="0"></div>
+  <div class="field">
+    <label>Status</label>
+    <select name="status"><option>Active</option><option>Inactive</option></select>
+  </div>
+  <div class="field"><label>Ice ₹ / KG</label><input type="number" step="0.01" name="ice_rate_per_kg"></div>
+  <div class="field"><label>Grading ₹ / KG</label><input type="number" step="0.01" name="grading_rate_per_kg"></div>
+  <div class="field"><label>Peeling ₹ / KG</label><input type="number" step="0.01" name="peeling_rate_per_kg"></div>
+  <div class="field"><label>Deheading ₹ / KG</label><input type="number" step="0.01" name="deheading_rate_per_kg"></div>
+</div>
+
+<div class="freezer-box">
+  <div class="freezer-head">Freezer Costing</div>
+
+  <div class="form-grid">
+    <div class="field"><label>Freezer Name</label><input name="freezer_name"></div>
+    <div class="field"><label>Repack ₹ / KG</label><input type="number" step="0.01" name="repacking_cost_per_kg"></div>
+    <div class="field"><label>MC / Day</label><input type="number" step="0.01" name="rate_per_mc_day"></div>
+  </div>
+
+  <div class="glaze-row">
+    {% for g in ["NWNC","20","25","30","35","40","45","50","55","60"] %}
+    <div class="glaze-cell">
+      <span>{{g}}%</span>
+      <input type="number" step="0.01" name="prod_cost_{{g}}">
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-primary">Save</button>
+</div>
+
+</div>
+</form>
+
+<!-- 3 DOT MENU -->
+<div id="threeDotsMenu">
+  <button class="btn">⋮</button>
+  <div id="dropdownMenu">
+    <div class="menu-item" onclick="editRow()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
+    <div class="menu-item" onclick="printRow()">🖨 Print</div>
+    <div class="menu-item" onclick="exportPDF()">📄 Export PDF</div>
+    <div class="menu-item" onclick="exportExcel()">📊 Export Excel</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+<table id="dataTable">
+<thead>
+<tr>
+  <th>ID</th><th>Production</th><th>Apply From</th><th>Freezer</th>
+  <th>Glaze</th><th>Prod ₹</th><th>Repack ₹</th><th>MC/Day</th>
+  <th>Ice</th><th>Grade</th><th>Peel</th><th>DH</th><th>Status</th>
+</tr>
+</thead>
+<tbody>
+{% for r in today_data %}
+<tr data-id="{{r.id}}">
+<td>{{r.id}}</td>
+<td>{{r.production_for}}</td>
+<td>{{r.apply_from}}</td>
+<td>{{r.freezer_name}}</td>
+<td>{{r.glaze_percent}}</td>
+<td>{{r.production_cost_per_kg}}</td>
+<td>{{r.repacking_cost_per_kg}}</td>
+<td>{{r.rate_per_mc_day}}</td>
+<td>{{r.ice_rate_per_kg}}</td>
+<td>{{r.grading_rate_per_kg}}</td>
+<td>{{r.peeling_rate_per_kg}}</td>
+<td>{{r.deheading_rate_per_kg}}</td>
+<td>{{r.status}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<script>
+let selectedRow=null;
+
+document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+  r.onclick=()=>{
+    document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
+    r.classList.add("selected");
+    selectedRow=r;
+    threeDotsMenu.style.display="block";
+  }
+});
+
+document.querySelector("#threeDotsMenu button").onclick=()=>{
+  dropdownMenu.style.display =
+    dropdownMenu.style.display==="block"?"none":"block";
+};
+
+function editRow(){
+  if(selectedRow) location="/criteria/production_for?edit="+selectedRow.dataset.id;
+}
+function deleteRow(){
+  if(selectedRow && confirm("Delete?")){
+    fetch("/criteria/production_for/delete/"+selectedRow.dataset.id,{method:"POST"})
+      .then(()=>location.reload());
+  }
+}
+function printRow(){ window.print(); }
+function exportPDF(){ alert("PDF export – backend pending"); }
+function exportExcel(){ alert("Excel export – backend pending"); }
+
+/* AJAX SUBMIT + SUCCESS MESSAGE */
+const form=document.getElementById("costingForm");
+const successMsg=document.getElementById("successMsg");
+
+form.addEventListener("submit",function(e){
+  e.preventDefault();
+  const fd=new FormData(form);
+
+  fetch("/criteria/production_for",{
+    method:"POST",
+    body:fd
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.success){
+      successMsg.style.display="block";
+      setTimeout(()=>location.reload(),1000);
+    }
+  });
+});
+</script>
+
+</body>
+</html>

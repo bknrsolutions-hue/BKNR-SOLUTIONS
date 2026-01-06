@@ -5,28 +5,86 @@
 <title>General Stock Report</title>
 
 <style>
-body{background:#eef6ff;font-family:Arial;margin:0;padding:0;}
-h2{text-align:center;padding:15px;color:#003366;font-size:22px;}
+:root{
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc2626;
+}
+*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
+/* ================= HEADER ================= */
+h2 {
+  background: #fff; margin: 0; padding: 15px;
+  text-align: center; color: var(--primary);
+  font-size: 18px; font-weight: 800; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 1px;
+}
+
+/* ================= FILTERS ================= */
 .filter-box{
-    width:95%;max-width:1200px;margin:10px auto;background:white;padding:15px;
-    border-radius:8px;box-shadow:0 0 8px rgba(0,0,0,.15);
-    display:flex;gap:10px;flex-wrap:wrap;
-}
-select,input{
-    padding:9px;border-radius:6px;border:1px solid #a3bcd6;font-size:14px;background:#f8fbff;
+  width: 95%; max-width: 1200px; margin: 15px auto;
+  background: #fff; padding: 12px; border-radius: 10px;
+  border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
 }
 
-/* Table */
+select, input{
+  padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border);
+  font-size: 12px; background: #fff; outline: none; transition: 0.2s;
+  min-width: 150px; flex: 1;
+}
+select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+button {
+  padding: 7px 18px; background: var(--primary); color: #fff;
+  border: none; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; transition: 0.2s;
+}
+button:hover { background: var(--accent); transform: translateY(-1px); }
+
+/* ================= TABLE ================= */
 table{
-    width:95%;max-width:1200px;margin:15px auto;border-collapse:collapse;background:white;
-    box-shadow:0 0 8px rgba(0,0,0,.15);border-radius:8px;overflow:hidden;
+  width: 95%; max-width: 1200px; margin: 0 auto 30px;
+  background: #fff; border-collapse: collapse;
+  border-radius: 10px; overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border: 1px solid var(--border);
 }
-th{background:#003366;color:white;padding:9px;}
-td{padding:8px;font-size:14px;border-bottom:1px solid #ccc;}
-tr:hover{background:#def;}
 
-.low{color:red;font-weight:bold;}
+th{
+  background: #f1f5f9; color: #475569; padding: 12px 8px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  border-bottom: 2px solid var(--border); text-align: center;
+}
+
+td{
+  padding: 10px 8px; font-size: 11.5px;
+  border-bottom: 1px solid #f1f5f9; text-align: center;
+  color: #374151;
+}
+
+tr:hover{ background: #f8fbff; }
+
+/* Low Stock Alert */
+.low {
+  color: var(--danger); font-weight: 800;
+  background: #fef2f2; padding: 3px 8px;
+  border-radius: 4px; display: inline-block;
+}
+
+/* Column Tweaks */
+td:nth-child(3) { font-weight: 600; color: var(--primary); text-align: left; padding-left: 15px; } /* Item Name */
+
+@media (max-width: 768px) {
+  .filter-box { flex-direction: column; align-items: stretch; }
+  table { display: block; overflow-x: auto; }
+}
 </style>
 </head>
 

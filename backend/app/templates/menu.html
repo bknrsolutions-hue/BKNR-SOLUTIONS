@@ -5,144 +5,183 @@
 <title>BKNR ERP – Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<style>
 body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
-  background: #eef5ff;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f4f7f9;
 }
 
-/* HEADER */
+/* CORPORATE HEADER */
 .header {
-  background: linear-gradient(90deg, #004080, #0066cc);
-  padding: 16px 20px;
+  background: #0f172a; /* Deep Corporate Navy */
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: white;
-  box-shadow: 0 2px 6px rgba(5, 5, 47, 0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .header .company-title {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .header .logout {
-  background: red;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 10px;
-  margin-left: 12px;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  margin-left: 15px;
   cursor: pointer;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  font-weight: 700;
+  transition: 0.3s;
+}
+
+.header .logout:hover {
+  background: #ef4444;
+  color: white;
 }
 
 .header .user-info {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-/* TOP MENU */
+/* TOP NAVIGATION */
 .top-menu {
-  background: #a1c6e4;
+  background: #ffffff;
   display: flex;
-  gap: 30px;
-  padding: 12px 35px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  gap: 10px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
 }
 
 .top-menu button {
   background: none;
   border: none;
-  font-size: 15px;
+  padding: 15px 12px;
+  font-size: 13px;
   cursor: pointer;
   font-weight: 600;
-  color: #0d263f;
+  color: #64748b;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  transition: 0.2s;
 }
+
+.top-menu button i { margin-right: 6px; }
 
 .top-menu button.active,
 .top-menu button:hover {
-  color: #0d264b;
-  border-bottom: 3px solid #0066ff;
+  color: #2563eb;
+  border-bottom: 3px solid #2563eb;
 }
 
 .container {
   display: flex;
-  height: calc(100vh - 95px);
+  height: calc(100vh - 105px);
 }
 
-/** LEFT MENU **/
+/** LEFT SIDEBAR **/
 .left-menu {
-  width: 195px;
-  background: #a1c6e4;
-  border-right: 1px solid #cdd5e0;
-  padding: 12px;
+  width: 190px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 15px 12px;
   overflow-y: auto;
 }
 
 .left-menu h3 {
-  font-size: 13px;
-  margin: 14px 8px 6px;
-  color: #1a1a1a;
+  font-size: 11px;
+  margin: 18px 8px 8px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
 }
 
 .left-menu button {
   width: 100%;
   text-align: left;
-  padding: 9px 10px;
-  margin-bottom: 6px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
   border: none;
-  background: #f1f4ff;
+  background: transparent;
   cursor: pointer;
   border-radius: 6px;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: 0.2s;
+}
+
+.left-menu button i {
+  margin-right: 10px;
+  width: 16px;
+  text-align: center;
+  opacity: 0.7;
 }
 
 .left-menu button:hover {
-  background: #cfe2ff;
+  background: #f1f5f9;
+  color: #2563eb;
 }
 
 iframe {
   width: 100%;
-  height: calc(100vh - 120px);
+  height: 100%;
   border: none;
+  background: #f8fafc;
 }
 
+.frame-container {
+  flex: 1;
+  padding: 10px;
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div class="company-title">{{ request.session.get('company_code') }}</div>
+  <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
   <div style="display:flex; align-items:center;">
-    <div class="user-info">{{ request.session.get('name') }}</div>
-    <div class="logout" onclick="logout()">Logout</div>
+    <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name') }}</div>
+    <div class="logout" onclick="logout()">LOGOUT</div>
   </div>
 </div>
 
 <div class="top-menu">
-  <button class="active" onclick="setActive(this); loadDash()">Dashboards</button>
-  <button onclick="setActive(this); loadOps()">Operations</button>
-  <button onclick="setActive(this); loadReports()">Reports</button>
-  <button onclick="setActive(this); loadCriteria()">Criteria</button>
-  <button onclick="setActive(this); loadSummaries()">Summaries</button>
-  <button onclick="setActive(this); loadBills()">Bills & Accounts</button>
-  <button onclick="setActive(this); loadAttendance()">Attendance</button>
-  <button onclick="setActive(this); loadAdmin()">Admin</button>
+  <button class="active" onclick="setActive(this); loadDash()"><i class="fa-solid fa-gauge"></i> Dashboards</button>
+  <button onclick="setActive(this); loadOps()"><i class="fa-solid fa-gears"></i> Operations</button>
+  <button onclick="setActive(this); loadReports()"><i class="fa-solid fa-file-invoice"></i> Reports</button>
+  <button onclick="setActive(this); loadCriteria()"><i class="fa-solid fa-list-check"></i> Criteria</button>
+  <button onclick="setActive(this); loadSummaries()"><i class="fa-solid fa-clipboard-list"></i> Summaries</button>
+  <button onclick="setActive(this); loadBills()"><i class="fa-solid fa-wallet"></i> Bills & Accounts</button>
+  <button onclick="setActive(this); loadAttendance()"><i class="fa-solid fa-calendar-days"></i> Attendance</button>
+  <button onclick="setActive(this); loadAdmin()"><i class="fa-solid fa-user-shield"></i> Admin</button>
 </div>
 
 <div class="container">
   <div id="sideMenu" class="left-menu"></div>
-  <div style="flex:1">
+  <div class="frame-container">
     <iframe id="frame"></iframe>
   </div>
 </div>
 
 <script>
 const permissions = {{ request.session.get('permissions')|tojson }};
-console.log(permissions);
 
 function allow(key){
   return permissions.includes("ALL") || permissions.includes(key);
@@ -157,214 +196,106 @@ function openPage(route){
   document.getElementById("frame").src = route;
 }
 
-
 /******** DASHBOARD *********/
 function loadDash(){
   let html = `
       <h3>Dashboards</h3>
-
-      <button onclick="openPage('/dashboard/processing_dashboard')">
-        Processing Dashboard
-      </button>
-
-      <button onclick="openPage('/dashboard/inventory_dashboard')">
-        Inventory Dashboard
-      </button>
-
-      <button onclick="openPage('/dashboard/general_stock_dashboard')">
-        General Stock
-      </button>
-
-      <button onclick="openPage('/dashboard/purchasing_dashboard')">
-        Purchasing Dashboard
-      </button>
+      <button onclick="openPage('/dashboard/processing_dashboard')"><i class="fa-solid fa-chart-line"></i> Processing Dashboard</button>
+      <button onclick="openPage('/dashboard/inventory_dashboard')"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard</button>
+      <button onclick="openPage('/dashboard/general_stock_dashboard')"><i class="fa-solid fa-box-open"></i> General Stock</button>
+      <button onclick="openPage('/dashboard/purchasing_dashboard')"><i class="fa-solid fa-cart-shopping"></i> Purchasing Dashboard</button>
   `;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
-
 /******** OPERATIONS *********/
 function loadOps(){
-  let html = `<h3>Processing</h3>`;
-
-  if(allow("gate_entry"))
-    html += `<button onclick="openPage('/processing/gate_entry')">Gate Entry</button>`;
-
-  if(allow("raw_material_purchasing"))
-    html += `<button onclick="openPage('/processing/raw_material_purchasing')">Raw Material Purchasing</button>`;
-
-  if(allow("de_heading"))
-    html += `<button onclick="openPage('/processing/de_heading')">De Heading</button>`;
-
-  if(allow("grading"))
-    html += `<button onclick="openPage('/processing/grading')">Grading</button>`;
-
-  if(allow("peeling"))
-    html += `<button onclick="openPage('/processing/peeling')">Peeling</button>`;
-
-  if(allow("soaking"))
-    html += `<button onclick="openPage('/processing/soaking')">Soaking</button>`;
-
-  if(allow("production"))
-    html += `<button onclick="openPage('/processing/production')">Production</button>`;
-
-  html += `<h3>Inventory</h3>`;
-
-  if(allow("stock_entry"))
-    html += `<button onclick="openPage('/inventory/stock_entry')">Stock Entry</button>`;
-
-  if(allow("pending_orders"))
-    html += `<button onclick="openPage('/inventory/pending_orders')">Pending Orders</button>`;
-
-  html += `<h3>General Store</h3>`;
-
-  if(allow("gs_entry"))
-    html += `<button onclick="openPage('/general_stock/entry')">General Stock Entry</button>`;
-
-  if(allow("gs_items"))
-    html += `<button onclick="openPage('/general_stock/items')">Items Master</button>`;
-
-  if(allow("gs_report"))
-    html += `<button onclick="openPage('/general_stock/report')">Stock Report</button>`;
-
+  let html = `<h3>Operations</h3>`;
+  if(allow("gate_entry")) html += `<button onclick="openPage('/processing/gate_entry')"><i class="fa-solid fa-door-open"></i> Gate Entry</button>`;
+  if(allow("raw_material_purchasing")) html += `<button onclick="openPage('/processing/raw_material_purchasing')"><i class="fa-solid fa-truck-ramp-box"></i> Raw Material Purchasing</button>`;
+  if(allow("de_heading")) html += `<button onclick="openPage('/processing/de_heading')"><i class="fa-solid fa-scissors"></i> De-Heading</button>`;
+  if(allow("grading")) html += `<button onclick="openPage('/processing/grading')"><i class="fa-solid fa-filter"></i> Grading</button>`;
+  if(allow("peeling")) html += `<button onclick="openPage('/processing/peeling')"><i class="fa-solid fa-hand-holding-droplet"></i> Peeling</button>`;
+  if(allow("soaking")) html += `<button onclick="openPage('/processing/soaking')"><i class="fa-solid fa-droplet"></i> Soaking</button>`;
+  if(allow("production")) html += `<button onclick="openPage('/processing/production')"><i class="fa-solid fa-industry"></i> Production</button>`;
+  if(allow("stock_entry")) html += `<button onclick="openPage('/inventory/stock_entry')"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry</button>`;
+  if(allow("pending_orders")) html += `<button onclick="openPage('/inventory/pending_orders')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders</button>`;
+  if(allow("general_store_entry")) html += `<button onclick="openPage('/general_stock/entry')"><i class="fa-solid fa-shop"></i> General Store Entry</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
-
 
 /******** REPORTS *********/
 function loadReports(){
   let html = `<h3>Processing Reports</h3>`;
-
-if(allow("gate_entry_report"))
-  html += `<button onclick="openPage('/reports/gate_entry')">Gate Entry Report</button>`;
-
-if(allow("rmp_report"))
-  html += `<button onclick="openPage('/reports/raw_material_purchasing')">Raw Material Purchase Report</button>`;
-
-if(allow("de_heading_report"))
-  html += `<button onclick="openPage('/reports/de_heading')">De-Heading Report</button>`;
-
-if(allow("grading_report"))
-  html += `<button onclick="openPage('/reports/grading_report')">Grading Report</button>`;
-
-if(allow("peeling_report"))
-  html += `<button onclick="openPage('/reports/peeling_report')">Peeling Report</button>`;
-
-if (allow("soaking_report")) 
-  html += `<button onclick="openPage('/reports/soaking')">Soaking Report</button>`;
-
-
-if(allow("production_report"))
-  html += `<button onclick="openPage('/reports/production_report')">Production Report</button>`;
-
-  if(allow("floor_balance_report"))
-  html += `<button onclick="openPage('/reports/floor_balance_report')">Floor Balance Report</button>`;
+  if(allow("gate_entry_report")) html += `<button onclick="openPage('/reports/gate_entry')"><i class="fa-solid fa-file-lines"></i> Gate Entry Report</button>`;
+  if(allow("rmp_report")) html += `<button onclick="openPage('/reports/raw_material_purchasing')"><i class="fa-solid fa-file-invoice"></i> RM Purchase Report</button>`;
+  if(allow("de_heading_report")) html += `<button onclick="openPage('/reports/de_heading')"><i class="fa-solid fa-file-medical"></i> De-Heading Report</button>`;
+  if(allow("grading_report")) html += `<button onclick="openPage('/reports/grading_report')"><i class="fa-solid fa-file-shield"></i> Grading Report</button>`;
+  if(allow("peeling_report")) html += `<button onclick="openPage('/reports/peeling_report')"><i class="fa-solid fa-file-import"></i> Peeling Report</button>`;
+  if(allow("soaking_report")) html += `<button onclick="openPage('/reports/soaking')"><i class="fa-solid fa-file-word"></i> Soaking Report</button>`;
+  if(allow("production_report")) html += `<button onclick="openPage('/reports/production_report')"><i class="fa-solid fa-file-export"></i> Production Report</button>`;
+  if(allow("floor_balance_report")) html += `<button onclick="openPage('/reports/floor_balance_report')"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report</button>`;
 
   html += `<h3>Inventory Reports</h3>`;
-
-  if(allow("inventory_report"))
-    html += `<button onclick="openPage('/inventory/report')">Stock Status</button>`;
-
+  if(allow("inventory_report")) html += `<button onclick="openPage('/inventory/stock_report')"><i class="fa-solid fa-boxes-packing"></i> Stock Status</button>`;
+  if(allow("storage_cost_report")) html += `<button onclick="openPage('/reports/storage_cost_report')"><i class="fa-solid fa-coins"></i> Storage & Cost Report</button>`;
+  if(allow("pending_orders_report")) html += `<button onclick="openPage('/reports/pending_orders_report')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders Report</button>`;
+  if(allow("sales_dispatch_report")) html += `<button onclick="openPage('/inventory/sales_report')"><i class="fa-solid fa-file-invoice-dollar"></i> Sales Dispatch Report</button>`;
   html += `<h3>General Store Reports</h3>`;
-
-  if(allow("gs_report"))
-    html += `<button onclick="openPage('/general_stock/report')">General Store Report</button>`;
-
-  if(allow("gs_report"))
-    html += `<button onclick="openPage('/general_stock/report')">General Store Report</button>`;
- 
+  if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> General Store Report</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
-
 
 /******** CRITERIA *********/
 function loadCriteria(){
   let html = `<h3>Master Criteria</h3>`;
-  
   const forms = [
-    ["suppliers", "Suppliers"],
-    ["buyers", "Buyers"],
-    ["buyer_agents", "Buyer Agents"],
-    ["species", "Species"],
-    ["varieties", "Varieties"],
-    ["grades", "Grades"],
-    ["glazes", "Glazes"],
-    ["packing_styles", "Packing Styles"],
-    ["chemicals", "Chemicals"],
-    ["freezers", "Freezers"],
-    ["countries", "Countries"],
-    ["vehicle_numbers", "Vehicle Numbers"],
-    ["production_at", "Production At"],
-    ["peeling_at", "Peeling At"],
-    ["production_types", "Production Types"],
-    ["purposes", "Purposes"],
-    ["purchasing_locations", "Purchasing Locations"],
-    ["grade_to_hoso", "Grade to HOSO"],
-    ["hoso_hlso", "HOSO & HLSO"],
-    ["peeling_rates", "Peeling Rates"],
-    ["contractors", "Contractors"],
-    ["coldstore_locations", "Coldstore locations"],
-    ["brands", "Brands"]
+    ["suppliers", "Suppliers"], ["buyers", "Buyers"], ["buyer_agents", "Buyer Agents"],
+    ["species", "Species"], ["varieties", "Varieties"], ["grades", "Grades"],
+    ["glazes", "Glazes"], ["packing_styles", "Packing Styles"], ["chemicals", "Chemicals"],
+    ["freezers", "Freezers"], ["countries", "Countries"], ["vehicle_numbers", "Vehicle Numbers"],
+    ["production_at", "Production At"], ["peeling_at", "Peeling At"], ["production_types", "Production Types"],
+    ["purposes", "Purposes"], ["purchasing_locations", "Purchasing Locations"], ["grade_to_hoso", "Grade to HOSO"],
+    ["hoso_hlso", "HOSO & HLSO"], ["peeling_rates", "Peeling Rates"], ["contractors", "Contractors"],
+    ["coldstore_locations", "Coldstore locations"], ["production_for", "Production For"], ["brands", "Brands"]
   ];
-
   forms.forEach(f=>{
-    if(allow(f[0])){
-      html += `<button onclick="openPage('/criteria/${f[0]}')">${f[1]}</button>`;
-    }
+    if(allow(f[0])) html += `<button onclick="openPage('/criteria/${f[0]}')"><i class="fa-solid fa-caret-right"></i> ${f[1]}</button>`;
   });
-
   document.getElementById("sideMenu").innerHTML = html;
 }
-
 
 /******** SUMMARIES *********/
 function loadSummaries(){
   let html = `<h3>Summaries</h3>`;
-
-  if(allow("processing_summary"))
-    html += `<button onclick="openPage('/summary/processing')">Processing Summary</button>`;
-
+  if(allow("processing_summary")) html += `<button onclick="openPage('/summary/processing')"><i class="fa-solid fa-rectangle-list"></i> Processing Summary</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
-
 
 /******** BILLS *********/
 function loadBills(){
   let html = `<h3>Bills & Accounts</h3>`;
-
-  if(allow("vendor_bills"))
-    html += `<button onclick="openPage('/bills/vendor')">Vendor Bills</button>`;
-
-  if(allow("customer_bills"))
-    html += `<button onclick="openPage('/bills/customer')">Customer Bills</button>`;
-
-  if(allow("contractor_payment"))
-    html += `<button onclick="openPage('/accounts/contractor_settlement')">Contractor Settlement</button>`;
-
+  if(allow("vendor_bills")) html += `<button onclick="openPage('/bills/vendor')"><i class="fa-solid fa-file-invoice-dollar"></i> Vendor Bills</button>`;
+  if(allow("customer_bills")) html += `<button onclick="openPage('/bills/customer')"><i class="fa-solid fa-receipt"></i> Customer Bills</button>`;
+  if(allow("contractor_payment")) html += `<button onclick="openPage('/accounts/contractor_settlement')"><i class="fa-solid fa-handshake-angle"></i> Contractor Settlement</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
-
-
 
 /******** ADMIN *********/
 function loadAdmin(){
   let html = `<h3>Admin</h3>`;
-
-  if(allow("add_user"))
-    html += `<button onclick="openPage('/admin/add_user')">Add User</button>`;
-
+  if(allow("add_user")) html += `<button onclick="openPage('/admin/add_user')"><i class="fa-solid fa-user-plus"></i> Add User</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
-
-/***** LOGOUT ******/
 async function logout(){
-  await fetch("/auth/logout");
-  window.location.href="/";
+  if(confirm("Are you sure you want to logout?")) {
+    await fetch("/auth/logout");
+    window.location.href="/";
+  }
 }
 
 loadDash();
 </script>
-
 </body>
 </html>

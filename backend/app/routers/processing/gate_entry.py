@@ -4,6 +4,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 
+from app.services.brevo_email import send_bulk_email
+from app.utils.company_service import get_gate_entry_report_emails
+
 from app.database import get_db
 from app.database.models.processing import GateEntry
 from app.database.models.criteria import (
@@ -150,6 +153,42 @@ def save_entry(
 
     db.add(row)
     db.commit()
+    db.refresh(row)
+
+    # ================= EMAIL TRIGGER =================
+    try:
+        emails = get_gate_entry_report_emails(db, comp)
+
+        if emails:
+            html = templates.get_template(
+                "emails/gate_entry_notification.html"
+            ).render(
+                batch_number=row.batch_number,
+                challan_number=row.challan_number,
+                gate_pass_number=row.gate_pass_number,
+                receiving_center=row.receiving_center,
+                supplier_name=row.supplier_name,
+                purchasing_location=row.purchasing_location,
+                vehicle_number=row.vehicle_number,
+                no_of_material_boxes=row.no_of_material_boxes,
+                no_of_empty_boxes=row.no_of_empty_boxes,
+                no_of_ice_boxes=row.no_of_ice_boxes,
+                species=row.species,
+                date=row.date,
+                time=row.time,
+                email=row.email,
+                company_id=row.company_id
+            )
+
+            send_bulk_email(
+                emails,
+                f"New Vehicle Arrived at {row.receiving_center}",
+                html
+            )
+
+    except Exception as e:
+        print("❌ Gate Entry mail error:", e)
+    # =================================================
 
     request.session["message"] = "✅ Gate Entry Saved Successfully!"
     return RedirectResponse("/processing/gate_entry", status_code=303)

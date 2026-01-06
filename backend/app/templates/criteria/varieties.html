@@ -2,58 +2,99 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>VARIETIES MASTER</title>
+<title>VARIETIES MASTER | BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
-
-  .form-container{
-    width:90%;max-width:1100px;margin:0 auto;background:#fff;
-    box-shadow:0 0 8px rgba(0,0,0,0.15);padding:25px;border-radius:10px;
+  :root{
+    --primary: #143465;
+    --accent: #3b82f6;
+    --border: #d1d5db;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
   }
 
-  .row{display:flex;flex-wrap:wrap;justify-content:space-between;margin-bottom:18px;}
-  .col{width:23%;display:flex;flex-direction:column;margin-bottom:10px;}
+  *{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+  body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-  @media(max-width:768px){
-    .col{width:100%;}
-    .btn{width:100%;margin-bottom:10px;}
+  h2 {
+    background: #fff; margin: 0; padding: 15px;
+    text-align: center; color: var(--primary);
+    font-size: 18px; font-weight: 800; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 1px;
   }
 
-  label{font-weight:600;color:#003366;margin-bottom:6px;}
-
-  input{
-    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
-    font-size:14px;background:#f9fcff;
+  /* ================= FORM CONTAINER ================= */
+  .form-container {
+    width: 90%; max-width: 1100px; margin: 25px auto;
+    background: #fff; padding: 30px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   }
 
-  .actions{text-align:center;margin-top:25px;}
-  .btn{
-    background:#003366;color:white;border:none;padding:10px 20px;
-    border-radius:6px;font-weight:600;cursor:pointer;width:160px;
-  }
-  .btn-clear{background:#777;}
+  .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 15px; }
+  .col { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
 
-  table{
-    width:90%;max-width:1100px;margin:10px auto 30px;border-collapse:collapse;
-    background:#f7f7f7;box-shadow:0 0 8px rgba(0,0,0,0.15);
-    border-radius:8px;overflow:hidden;
+  label {
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; margin-bottom: 6px;
   }
 
-  th,td{
-    padding:10px 12px;text-align:left;
-    border-bottom:1px solid #ccc;font-size:14px;
+  input {
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; background: #fff;
+    transition: all 0.2s; outline: none;
   }
-  th{background:#003366;color:white;}
-  tr:hover{background:#e0ebff;cursor:pointer;}
-  tr.selected{background:#cce5ff !important;}
+  input:focus { 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+  }
 
-  .menu-item{
-    padding:10px;cursor:pointer;font-size:14px;border-bottom:1px solid #eee;
+  /* ================= ACTIONS & BUTTONS ================= */
+  .actions { text-align: center; margin-top: 25px; display: flex; justify-content: center; gap: 12px; }
+  .btn {
+    background: var(--primary); color: white; border: none;
+    padding: 12px 30px; border-radius: 8px; font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+    text-transform: uppercase; min-width: 140px;
   }
-  .menu-item:hover{background:#e6f2ff;}
+  .btn-clear { background: #f1f5f9; color: var(--muted); }
+  .btn:hover { background: var(--accent); color: #fff; transform: translateY(-1px); }
+
+  /* ================= TABLE AREA ================= */
+  table {
+    width: 90%; max-width: 1100px; margin: 10px auto 40px;
+    border-collapse: collapse; background: #fff;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  th {
+    background: #f1f5f9; color: #475569; padding: 12px;
+    font-size: 11px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+    text-align: left;
+  }
+
+  td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: var(--text); }
+  tr:hover { background: #f8fbff; cursor: pointer; }
+  tr.selected { background: #eff6ff !important; border-left: 5px solid var(--accent); }
+
+  /* Action Menu Styling */
+  .menu-item {
+    padding: 12px 15px; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary);
+    transition: 0.2s; text-align: left;
+  }
+  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+  @media(max-width: 768px){
+    .form-container, table { width: 95%; }
+    .col { min-width: 100%; }
+    .actions { flex-direction: column; }
+    .btn { width: 100%; }
+  }
 </style>
 </head>
 
@@ -61,10 +102,8 @@
 
 <h2>VARIETIES MASTER</h2>
 
-<!-- FORM -->
 <form onsubmit="submitVariety(event)">
   <div class="form-container">
-
     <div class="row">
       <div class="col">
         <label>Variety Name</label>
@@ -73,17 +112,17 @@
 
       <div class="col">
         <label>Peeling Yield (%)</label>
-        <input type="number" id="peeling_yield" step="0.01">
+        <input type="number" id="peeling_yield" step="0.01" placeholder="0.00">
       </div>
 
       <div class="col">
         <label>Soaking Yield (%)</label>
-        <input type="number" id="soaking_yield" step="0.01">
+        <input type="number" id="soaking_yield" step="0.01" placeholder="0.00">
       </div>
 
       <div class="col">
-        <label>HOSO → Finished Yield (%)</label>
-        <input type="number" id="hoso_to_finished_yield" step="0.01">
+        <label>HOSO → Finished (%)</label>
+        <input type="number" id="hoso_to_finished_yield" step="0.01" placeholder="0.00">
       </div>
     </div>
 
@@ -95,30 +134,20 @@
       <button class="btn" type="submit">SAVE</button>
       <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
     </div>
-
   </div>
 </form>
 
 {% if today_data %}
 
-<!-- MENU -->
-<div id="threeDotsMenu" style="
-  display:none;width:90%;max-width:1100px;margin:10px auto;
-  text-align:right;position:relative;">
-  <button id="dotsBtn" style="
-    background:#003366;color:white;border:none;padding:6px 12px;
-    border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
+<div id="threeDotsMenu" style="display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;">
+  <button id="dotsBtn" style="background:var(--primary);color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
 
-  <div id="dropdownMenu" style="
-    display:none;position:absolute;right:0;background:white;border:1px solid #ccc;
-    border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);
-    width:200px;z-index:1000;">
+  <div id="dropdownMenu" style="display:none;position:absolute;right:0;background:white;border:1px solid #ccc;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);width:180px;z-index:1000;">
     <div onclick="editSelected()" class="menu-item">✏️ Edit</div>
-    <div onclick="deleteSelected()" class="menu-item">🗑️ Delete</div>
+    <div onclick="deleteSelected()" class="menu-item" style="color:red;">🗑️ Delete</div>
   </div>
 </div>
 
-<!-- TABLE -->
 <table id="dataTable">
   <thead>
     <tr>
@@ -131,7 +160,6 @@
       <th>Time</th>
     </tr>
   </thead>
-
   <tbody>
     {% for row in today_data %}
     <tr
@@ -142,15 +170,12 @@
       data-hoso="{{ row.hoso_to_finished_yield }}"
     >
       <td>{{ row.id }}</td>
-      <td>{{ row.variety_name }}</td>
-
-      <!-- % symbol added automatically -->
+      <td style="font-weight:600; color:var(--primary);">{{ row.variety_name }}</td>
       <td>{{ row.peeling_yield }}%</td>
       <td>{{ row.soaking_yield }}%</td>
       <td>{{ row.hoso_to_finished_yield }}%</td>
-
-      <td>{{ row.date }}</td>
-      <td>{{ row.time }}</td>
+      <td style="color:var(--muted); font-size:12px;">{{ row.date }}</td>
+      <td style="color:var(--muted); font-size:12px;">{{ row.time }}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -159,48 +184,45 @@
 {% endif %}
 
 <script>
-
 let selectedRow=null;
 
+/* ------------------- SAVE ------------------- */
 async function submitVariety(e){
   e.preventDefault();
-
   const name=document.getElementById("variety_name").value.trim();
   const peel=document.getElementById("peeling_yield").value;
   const soak=document.getElementById("soaking_yield").value;
   const hoso=document.getElementById("hoso_to_finished_yield").value;
-
   const record_id=document.getElementById("record_id").value;
 
   const now=new Date();
   const date=now.toISOString().slice(0,10);
   const time=now.toTimeString().slice(0,8);
-
   const email=document.getElementById("meta_email").value;
   const company_id=document.getElementById("meta_company_id").value;
 
   const fd=new FormData();
   if(record_id) fd.append("id",record_id);
-
   fd.append("variety_name",name);
   fd.append("peeling_yield",peel);
   fd.append("soaking_yield",soak);
   fd.append("hoso_to_finished_yield",hoso);
-
   fd.append("date",date);
   fd.append("time",time);
   fd.append("email",email);
   fd.append("company_id",company_id);
 
   const res=await fetch("/criteria/varieties",{method:"POST",body:fd});
-
   if(res.ok){ alert("Saved Successfully!"); location.reload(); }
   else alert("Save Failed!");
 }
 
+/* ------------------- SELECT ROW ------------------- */
 document.addEventListener("DOMContentLoaded",()=>{
   const rows=document.querySelectorAll("#dataTable tbody tr");
   const menu=document.getElementById("threeDotsMenu");
+  const dotsBtn=document.getElementById("dotsBtn");
+  const dropdownMenu=document.getElementById("dropdownMenu");
 
   rows.forEach(row=>{
     row.addEventListener("click",()=>{
@@ -210,32 +232,31 @@ document.addEventListener("DOMContentLoaded",()=>{
       menu.style.display="block";
     });
   });
+
+  dotsBtn.onclick=(e)=>{
+    e.stopPropagation();
+    dropdownMenu.style.display=(dropdownMenu.style.display==="block")?"none":"block";
+  };
+  
+  document.onclick=()=>{ dropdownMenu.style.display="none"; };
 });
 
-document.getElementById("dotsBtn").addEventListener("click",()=>{
-  const d=document.getElementById("dropdownMenu");
-  d.style.display=d.style.display==="block"?"none":"block";
-});
-
+/* ------------------- EDIT/DELETE ------------------- */
 function editSelected(){
-  if(!selectedRow) return alert("Select a row!");
-
-  document.getElementById("record_id").value=selectedRow.dataset.id;
-  document.getElementById("variety_name").value=selectedRow.dataset.name;
-  document.getElementById("peeling_yield").value=selectedRow.dataset.peeling;
-  document.getElementById("soaking_yield").value=selectedRow.dataset.soaking;
-  document.getElementById("hoso_to_finished_yield").value=selectedRow.dataset.hoso;
-
+  if(!selectedRow) return;
+  const d = selectedRow.dataset;
+  document.getElementById("record_id").value=d.id;
+  document.getElementById("variety_name").value=d.name;
+  document.getElementById("peeling_yield").value=d.peeling;
+  document.getElementById("soaking_yield").value=d.soaking;
+  document.getElementById("hoso_to_finished_yield").value=d.hoso;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
 async function deleteSelected(){
-  if(!selectedRow) return alert("Select a row!");
-  if(!confirm("Are you sure?")) return;
-
+  if(!selectedRow || !confirm("Are you sure?")) return;
   const id=selectedRow.dataset.id;
   const res=await fetch(`/criteria/varieties/delete/${id}`,{method:"POST"});
-
   if(res.ok) location.reload();
   else alert("Delete Failed");
 }
@@ -250,8 +271,6 @@ function clearForm(){
   document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display="none";
 }
-
 </script>
-
 </body>
 </html>

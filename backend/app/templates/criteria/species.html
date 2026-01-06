@@ -2,51 +2,99 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SPECIES MASTER</title>
+<title>SPECIES MASTER | BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
-
-  .form-container{
-    width:90%;max-width:1100px;margin:0 auto;background:#fff;
-    padding:25px;border-radius:10px;
-    box-shadow:0 0 8px rgba(0,0,0,0.1);
+  :root{
+    --primary: #143465;
+    --accent: #3b82f6;
+    --border: #d1d5db;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
   }
 
-  .row{display:flex;flex-wrap:wrap;margin-bottom:15px;}
-  .col{flex:1;min-width:300px;display:flex;flex-direction:column;}
+  *{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+  body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-  label{font-weight:600;margin-bottom:6px;color:#003366;}
-  input{
-    padding:10px;border:1px solid #a3bcd6;border-radius:6px;
-    background:#f9fcff;font-size:14px;
+  h2 {
+    background: #fff; margin: 0; padding: 15px;
+    text-align: center; color: var(--primary);
+    font-size: 18px; font-weight: 800; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 1px;
   }
 
-  .actions{text-align:center;margin-top:20px;}
-  .btn{
-    background:#003366;color:white;padding:10px 20px;border:none;
-    border-radius:6px;font-weight:600;cursor:pointer;width:150px;
-  }
-  .btn-clear{background:#777;}
-
-  table{
-    width:90%;max-width:1100px;margin:25px auto;border-collapse:collapse;
-    background:#fff;border-radius:10px;overflow:hidden;
-    box-shadow:0 0 8px rgba(0,0,0,0.1);
+  /* ================= FORM CONTAINER ================= */
+  .form-container {
+    width: 90%; max-width: 1100px; margin: 25px auto;
+    background: #fff; padding: 30px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   }
 
-  th,td{padding:10px;border-bottom:1px solid #ddd;font-size:14px;}
-  th{background:#003366;color:white;}
-  tr:hover{background:#eef5ff;}
-  tr.selected{background:#cce5ff!important;}
+  .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 10px; }
+  .col { flex: 1; min-width: 280px; max-width: 500px; display: flex; flex-direction: column; }
 
-  #actionWrap{display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;}
-  #dotsBtn{background:#003366;color:white;border:none;padding:6px 14px;border-radius:6px;font-size:22px;cursor:pointer;}
-  #menuBox{display:none;position:absolute;right:0;top:40px;width:170px;background:white;border:1px solid #ccc;border-radius:8px;}
-  .menu-item{padding:10px;font-weight:600;color:#003366;border-bottom:1px solid #eee;cursor:pointer;}
-  .menu-item:hover{background:#e8f0ff;}
+  label {
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  input {
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; background: #fff;
+    transition: all 0.2s; outline: none;
+  }
+  input:focus { 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+  }
+
+  /* ================= ACTIONS & BUTTONS ================= */
+  .actions { text-align: center; margin-top: 25px; display: flex; justify-content: center; gap: 12px; }
+  .btn {
+    background: var(--primary); color: white; border: none;
+    padding: 12px 30px; border-radius: 8px; font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+    text-transform: uppercase; min-width: 140px;
+  }
+  .btn-clear { background: #f1f5f9; color: var(--muted); }
+  .btn:hover { background: var(--accent); color: #fff; transform: translateY(-1px); }
+
+  /* ================= TABLE AREA ================= */
+  table {
+    width: 90%; max-width: 1100px; margin: 10px auto 40px;
+    border-collapse: collapse; background: #fff;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  th {
+    background: #f1f5f9; color: #475569; padding: 12px;
+    font-size: 11px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+    text-align: left;
+  }
+
+  td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: var(--text); }
+  tr:hover { background: #f8fbff; cursor: pointer; }
+  tr.selected { background: #eff6ff !important; border-left: 5px solid var(--accent); }
+
+  /* Action Menu Styling */
+  .menu-item {
+    padding: 12px 15px; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary);
+    transition: 0.2s; text-align: left;
+  }
+  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+  @media(max-width: 768px){
+    .form-container, table { width: 95%; }
+    .col { max-width: 100%; }
+    .actions { flex-direction: column; }
+    .btn { width: 100%; }
+  }
 </style>
 
 </head>
@@ -60,7 +108,7 @@
     <div class="row">
       <div class="col">
         <label>Species Name</label>
-        <input type="text" id="species_name" required>
+        <input type="text" id="species_name" placeholder="Enter Species Name" required>
       </div>
     </div>
 
@@ -79,25 +127,30 @@
 </form>
 
 {% if today_data %}
-<div id="actionWrap">
-  <button id="dotsBtn">⋮</button>
-  <div id="menuBox">
+<div id="actionWrap" style="display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;">
+  <button id="dotsBtn" style="background:var(--primary);color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
+  <div id="menuBox" style="display:none;position:absolute;right:0;top:40px;width:170px;background:white;border:1px solid #ccc;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);z-index:1000;">
     <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
+    <div class="menu-item" onclick="deleteSelected()" style="color:red;">🗑 Delete</div>
   </div>
 </div>
 
 <table id="dataTable">
   <thead>
     <tr>
-      <th>ID</th><th>Species</th><th>Date</th><th>Time</th><th>Email</th><th>Company</th>
+      <th>ID</th>
+      <th>Species</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Email</th>
+      <th>Company</th>
     </tr>
   </thead>
   <tbody>
   {% for row in today_data %}
     <tr data-id="{{ row.id }}" data-name="{{ row.species_name }}">
       <td>{{ row.id }}</td>
-      <td>{{ row.species_name }}</td>
+      <td style="font-weight:600; color:var(--primary);">{{ row.species_name }}</td>
       <td>{{ row.date }}</td>
       <td>{{ row.time }}</td>
       <td>{{ row.email }}</td>
@@ -112,51 +165,65 @@
 let selectedRow=null;
 
 document.addEventListener("DOMContentLoaded", ()=>{
-  document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+  const rows = document.querySelectorAll("#dataTable tbody tr");
+  const actionWrap = document.getElementById("actionWrap");
+  const dotsBtn = document.getElementById("dotsBtn");
+  const menuBox = document.getElementById("menuBox");
+
+  rows.forEach(r=>{
     r.onclick=()=>{
-      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      rows.forEach(x=>x.classList.remove("selected"));
       r.classList.add("selected");
       selectedRow=r;
       actionWrap.style.display="block";
     };
   });
 
-  dotsBtn.onclick=()=>{
+  dotsBtn.onclick=(e)=>{
+    e.stopPropagation();
     menuBox.style.display = menuBox.style.display==="block" ? "none" : "block";
   };
+
+  document.onclick = () => { menuBox.style.display = "none"; };
 });
 
 async function saveRecord(e){
   e.preventDefault();
   const fd=new FormData();
-  fd.append("id", record_id.value || "");
-  fd.append("species_name", species_name.value);
-  fd.append("date", meta_date.value);
-  fd.append("time", meta_time.value);
-  fd.append("email", meta_email.value);
-  fd.append("company_id", meta_company_id.value);
+  fd.append("id", document.getElementById("record_id").value || "");
+  fd.append("species_name", document.getElementById("species_name").value);
+  fd.append("date", document.getElementById("meta_date").value);
+  fd.append("time", document.getElementById("meta_time").value);
+  fd.append("email", document.getElementById("meta_email").value);
+  fd.append("company_id", document.getElementById("meta_company_id").value);
 
   const res=await fetch("/criteria/species",{method:"POST",body:fd});
-  if(res.ok) location.reload();
+  if(res.ok) {
+    alert("Saved Successfully!");
+    location.reload();
+  }
   else alert("Save failed");
 }
 
 function editSelected(){
-  record_id.value = selectedRow.dataset.id;
-  species_name.value = selectedRow.dataset.name;
+  document.getElementById("record_id").value = selectedRow.dataset.id;
+  document.getElementById("species_name").value = selectedRow.dataset.name;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
 async function deleteSelected(){
+  if(!confirm("Are you sure?")) return;
   const id=selectedRow.dataset.id;
-  await fetch(`/criteria/species/delete/${id}`,{method:"POST"});
-  location.reload();
+  const res = await fetch(`/criteria/species/delete/${id}`,{method:"POST"});
+  if(res.ok) location.reload();
+  else alert("Delete failed");
 }
 
 function clearForm(){
-  record_id.value="";
-  species_name.value="";
-  actionWrap.style.display="none";
+  document.getElementById("record_id").value="";
+  document.getElementById("species_name").value="";
+  document.querySelectorAll("tr.selected").forEach(r=>r.classList.remove("selected"));
+  document.getElementById("actionWrap").style.display="none";
 }
 </script>
 

@@ -5,204 +5,236 @@
 <title>Gate Entry – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
 :root{
+  --primary:#143465;
+  --accent: #3b82f6;
   --border:#d6dde7;
   --bg:#f4f6f9;
   --card:#ffffff;
   --text:#1f2937;
-  --muted:#6b7280;
-  --primary:#143465;
+  --muted:#64748b;
+  --success: #166534;
 }
-*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
 body{margin:0;background:var(--bg);color:var(--text)}
 
 /* HEADER */
 .header{
   position:sticky;top:0;z-index:100;
-  background:var(--bg);
-  padding:16px 20px;
+  background:#fff;
+  padding:16px 25px;
   border-bottom:1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.header h2{margin:0;font-size:22px;color:var(--primary)}
-.header p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+
+/* FLASH MESSAGE */
+#flashMessage{
+  margin:18px;
+  background:#dcfce7;
+  color:var(--success);
+  padding:12px 20px;
+  border-radius:10px;
+  font-weight:600;
+  border: 1px solid #bbf7d0;
+  font-size: 14px;
+}
 
 /* FORM CARD */
 .section{
   margin:18px;
   background:var(--card);
-  padding:18px;
-  border-radius:14px;
+  padding:25px;
+  border-radius:16px;
   border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-size: 13px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; 
+    display: flex; align-items: center; gap: 8px;
 }
 
 /* GRID */
 .form-grid{
   display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:14px;
+  grid-template-columns:repeat(5,1fr);
+  gap:16px;
 }
 @media(max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
 @media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
-.field{display:flex;flex-direction:column}
+.field{display:flex;flex-direction:column; gap: 5px;}
 .field label{
-  font-size:12px;
-  font-weight:600;
+  font-size:11px;
+  font-weight:700;
   color:var(--muted);
-  margin-bottom:4px;
+  text-transform: uppercase;
 }
 .field input,.field select{
-  padding:8px 10px;
-  border-radius:6px;
+  padding:10px 12px;
+  border-radius:8px;
   border:1px solid var(--border);
   font-size:13px;
   background:#fff;
+  outline: none;
+  transition: 0.2s;
+}
+.field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
 }
 
 /* ACTIONS */
 .actions{
-  margin-top:18px;
+  margin-top:20px;
   display:flex;
   justify-content:flex-end;
-  gap:10px;
+  gap:12px;
 }
 .btn{
-  padding:9px 18px;
-  border-radius:6px;
+  padding:10px 22px;
+  border-radius:8px;
   font-size:13px;
-  font-weight:600;
+  font-weight:700;
   cursor:pointer;
   border:1px solid var(--border);
   background:#fff;
+  transition: 0.2s;
 }
 .btn-primary{
-  background:var(--primary);
+  background:var(--accent);
   color:#fff;
   border:none;
+  box-shadow: 0 4px 10px rgba(59,130,246,0.3);
 }
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
-/* TABLE */
+/* TABLE WRAP & 3-DOT MENU */
+.table-header-tool {
+    padding: 0 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
+
 .table-wrap{
-  margin:18px;
+  margin:12px 18px 30px;
   background:var(--card);
-  border-radius:14px;
+  border-radius:16px;
   border:1px solid var(--border);
   overflow:hidden;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
 }
-table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed; /* ✅ no horizontal scroll */
-}
+
+table{ width:100%; border-collapse:collapse; font-size: 12px; }
 thead th{
-  background:#f1f5f9;
-  font-size:12px;
-  padding:8px;
-  border-bottom:1px solid var(--border);
-  text-align:center;
-  word-wrap:break-word;
+  background:#f8fafc;
+  font-size:11px;
+  padding:14px 10px;
+  border-bottom: 1px solid var(--border);
+  color: #475569;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 tbody td{
-  font-size:12px;
-  padding:8px;
-  border-bottom:1px solid #edf2f7;
+  padding:12px 10px;
+  border-bottom: 1px solid #edf2f7;
   text-align:center;
-  word-wrap:break-word;
+  color: var(--primary);
 }
-tbody tr:hover{background:#f8fbff;cursor:pointer}
-tbody tr.selected{background:#e0ecff}
+tbody tr:hover{background:#f8fbff; cursor:pointer}
+tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
 /* 3 DOT MENU */
 #threeDotsMenu{
-  margin:10px 18px 0;
-  display:none;
-  text-align:right;
   position:relative;
+  display: none;
 }
+.menu-trigger {
+  background: #fff; border: 1px solid var(--border);
+  width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+
 #dropdownMenu{
   display:none;
   position:absolute;
-  right:0;
+  right:0; top: 40px;
   background:#fff;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:10px;
   width:180px;
-  box-shadow:0 6px 16px rgba(0,0,0,.25);
+  box-shadow:0 10px 25px rgba(0,0,0,.15);
+  z-index: 1000;
+  overflow: hidden;
 }
 .menu-item{
-  padding:10px;
+  padding:12px 15px;
   font-size:13px;
   font-weight:600;
   cursor:pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9;
 }
-.menu-item:hover{background:#f1f5ff}
-
-/* POPUP */
-#lookupModal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-}
-.lookup-box{
-  background:#fff;
-  width:80%;
-  height:80vh;
-  border-radius:10px;
-  position:relative;
-}
-iframe{width:100%;height:100%;border:none}
-.close-popup{
-  position:absolute;
-  right:16px;top:10px;
-  font-size:22px;
-  cursor:pointer;
-}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover{background:#f1f5ff; color: var(--accent);}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <h2>Gate Entry</h2>
-  <p>Incoming raw material entry</p>
+  <div class="header-titles">
+      <h2>Gate Entry</h2>
+      <p><i class="fa-solid fa-truck-ramp-box"></i> Incoming raw material management</p>
+  </div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR ERP System</div>
 </div>
 
 {% if message %}
-<div style="margin:18px;background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;font-weight:600">
-  {{message}}
-</div>
+<div id="flashMessage"><i class="fa-solid fa-circle-check"></i> {{ message }}</div>
 {% endif %}
 
 <form method="post"
 action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else %}/processing/gate_entry{% endif %}">
 
 <div class="section">
+  <div class="section-title">Material Entry Form</div>
   <div class="form-grid">
 
     <div class="field">
       <label>Batch Number</label>
-      <input name="batch_number" value="{{edit_data.batch_number if edit_data else ''}}" required>
+      <input name="batch_number" value="{{edit_data.batch_number if edit_data else ''}}" required placeholder="Enter Batch #">
     </div>
 
     <div class="field">
       <label>Challan Number</label>
-      <input name="challan_number" value="{{edit_data.challan_number if edit_data else ''}}" required>
+      <input name="challan_number" value="{{edit_data.challan_number if edit_data else ''}}" required placeholder="Enter Challan #">
     </div>
 
     <div class="field">
       <label>Gate Pass Number</label>
-      <input name="gate_pass_number" value="{{edit_data.gate_pass_number if edit_data else ''}}" required>
+      <input name="gate_pass_number" value="{{edit_data.gate_pass_number if edit_data else ''}}" required placeholder="Enter GP #">
     </div>
 
     <div class="field">
       <label>Factory Name</label>
       <select name="receiving_center" id="receiving_dd" required>
-        <option disabled selected>Select Center</option>
+        <option value="" disabled selected>Select Center</option>
         {% for p in peeling_ats %}
         <option value="{{p}}" {% if edit_data and edit_data.receiving_center==p %}selected{% endif %}>{{p}}</option>
         {% endfor %}
@@ -213,7 +245,7 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
     <div class="field">
       <label>Purchasing Location</label>
       <select name="purchasing_location" id="location_dd" required>
-        <option disabled selected>Select Location</option>
+        <option value="" disabled selected>Select Location</option>
         {% for l in locations %}
         <option value="{{l}}" {% if edit_data and edit_data.purchasing_location==l %}selected{% endif %}>{{l}}</option>
         {% endfor %}
@@ -224,7 +256,7 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
     <div class="field">
       <label>Supplier</label>
       <select name="supplier_name" id="supplier_dd" required>
-        <option disabled selected>Select Supplier</option>
+        <option value="" disabled selected>Select Supplier</option>
         {% for s in suppliers %}
         <option value="{{s}}" {% if edit_data and edit_data.supplier_name==s %}selected{% endif %}>{{s}}</option>
         {% endfor %}
@@ -235,7 +267,7 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
     <div class="field">
       <label>Vehicle Number</label>
       <select name="vehicle_number" id="vehicle_dd" required>
-        <option disabled selected>Select Vehicle</option>
+        <option value="" disabled selected>Select Vehicle</option>
         {% for v in vehicles %}
         <option value="{{v}}" {% if edit_data and edit_data.vehicle_number==v %}selected{% endif %}>{{v}}</option>
         {% endfor %}
@@ -261,20 +293,24 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
   </div>
 
   <div class="actions">
-    <button type="button" class="btn" onclick="location='/processing/gate_entry'">Clear</button>
-    <button class="btn btn-primary">{% if edit_data %}Update{% else %}Save Gate Entry{% endif %}</button>
+    <button type="button" class="btn" onclick="location='/processing/gate_entry'"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+    <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Entry{% else %}Save Gate Entry{% endif %}</button>
   </div>
 </div>
 </form>
 
 {% if today_data %}
-<div id="threeDotsMenu">
-  <button class="btn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteSelected()">🗑 Delete</div>
-    <div class="menu-item" onclick="printSelected()">🖨 Print</div>
-  </div>
+<div class="table-header-tool">
+    <h3>Recent Gate Entries</h3>
+    
+    <div id="threeDotsMenu">
+      <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="dropdownMenu">
+        <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
+        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete</div>
+        <div class="menu-item" onclick="printSelected()"><i class="fa-solid fa-print"></i> Print</div>
+      </div>
+    </div>
 </div>
 
 <div class="table-wrap">
@@ -284,17 +320,17 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
   <th>ID</th>
   <th>Date</th>
   <th>Time</th>
-  <th>Batch Number</th>
-  <th>Challan Number</th>
-  <th>Factory Name</th>
-  <th>Supplier Name</th>
-  <th>Purchasing Location</th>
-  <th>Vehicle Number</th>
-  <th>Gate Pass Number</th>
-  <th>Material Boxes</th>
-  <th>Empty Boxes</th>
+  <th>Batch #</th>
+  <th>Challan #</th>
+  <th>Factory</th>
+  <th>Supplier</th>
+  <th>Location</th>
+  <th>Vehicle #</th>
+  <th>GP #</th>
+  <th>Mat. Boxes</th>
+  <th>Emp. Boxes</th>
   <th>Ice Boxes</th>
-  <th>Entry Email</th>
+  <th>Email</th>
 </tr>
 </thead>
 <tbody>
@@ -303,17 +339,17 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
   <td>{{r.id}}</td>
   <td>{{r.date}}</td>
   <td>{{r.time}}</td>
-  <td>{{r.batch_number}}</td>
+  <td style="font-weight: 700;">{{r.batch_number}}</td>
   <td>{{r.challan_number}}</td>
   <td>{{r.receiving_center}}</td>
-  <td>{{r.supplier_name}}
+  <td>{{r.supplier_name}}</td>
   <td>{{r.purchasing_location}}</td>
   <td>{{r.vehicle_number}}</td>
   <td>{{r.gate_pass_number}}</td>
   <td>{{r.no_of_material_boxes}}</td>
   <td>{{r.no_of_empty_boxes}}</td>
   <td>{{r.no_of_ice_boxes}}</td>
-  <td>{{r.email}}</td>
+  <td style="font-size: 10px; color: var(--muted);">{{r.email}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -323,38 +359,60 @@ action="{% if edit_data %}/processing/gate_entry/update/{{edit_data.id}}{% else 
 
 <script>
 let selectedRow=null;
+const threeDotsMenu = document.getElementById("threeDotsMenu");
+const dropdownMenu = document.getElementById("dropdownMenu");
 
-document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
-  r.onclick=()=>{
-    document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
-    r.classList.add("selected");
-    selectedRow=r;
-    threeDotsMenu.style.display="block";
-  }
-});
+const table=document.getElementById("dataTable");
+if(table){
+  table.querySelectorAll("tbody tr").forEach(r=>{
+    r.onclick=()=>{
+      table.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
+      r.classList.add("selected");
+      selectedRow=r;
+      threeDotsMenu.style.display="block";
+    }
+  });
+}
 
-document.querySelector("#threeDotsMenu .btn")?.addEventListener("click",()=>{
+document.getElementById("menuBtn")?.addEventListener("click",(e)=>{
+  e.stopPropagation();
   dropdownMenu.style.display =
     dropdownMenu.style.display==="block" ? "none" : "block";
 });
 
-function editSelected(){ location="/processing/gate_entry/edit/"+selectedRow.dataset.id }
+window.onclick = () => {
+  if(dropdownMenu) dropdownMenu.style.display = "none";
+}
+
+function editSelected(){ if(selectedRow) location="/processing/gate_entry/edit/"+selectedRow.dataset.id }
 function deleteSelected(){
-  if(confirm("Delete record?"))
+  if(selectedRow && confirm("Are you sure you want to delete this record?")){
     fetch("/processing/gate_entry/delete/"+selectedRow.dataset.id,{method:"POST"})
-    .then(()=>location.reload());
+      .then(()=>location.reload());
+  }
 }
 function printSelected(){ window.print(); }
 
+/* LOOKUP */
 ["supplier_dd","location_dd","vehicle_dd","receiving_dd"].forEach(id=>{
   const el=document.getElementById(id);
   el?.addEventListener("change",()=>{
     if(el.value==="__lookup__"){
-      openLookup("/criteria/"+id.replace("_dd","s"));
+      window.open("/criteria","_blank");
       el.value="";
     }
   });
 });
+
+/* FLASH MESSAGE AUTO HIDE */
+const flash=document.getElementById("flashMessage");
+if(flash){
+  setTimeout(()=>{
+    flash.style.transition="opacity .4s";
+    flash.style.opacity="0";
+    setTimeout(()=>flash.remove(),400);
+  },2000);
+}
 </script>
 
 </body>

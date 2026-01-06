@@ -5,187 +5,211 @@
 <title>PEELING - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0}
-h2{text-align:center;color:#003366;margin:15px 0;font-weight:700}
-
-.form-container{
-  width:96%;max-width:1200px;margin:0 auto;
-  background:#fff;padding:10px;border-radius:15px;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
+:root{
+  --primary:#143465;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+  --success: #166534;
 }
 
-/* GRID */
-.row{
-  display:grid;
-  grid-template-columns:repeat(6, minmax(0,1fr));
-  gap:10px;margin-bottom:10px
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:16px 25px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
 }
-.col{display:flex;flex-direction:column}
+.header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
-@media(max-width:900px){.row{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:600px){.row{grid-template-columns:1fr}}
-
-label{font-weight:600;color:#003366;margin-bottom:6px}
-input,select{
-  padding:10px;border:1px solid #a3bcd6;
-  background:#f9fcff;border-radius:6px;font-size:14px
+/* FORM SECTION */
+.section{
+  margin:18px; background:var(--card); padding:25px;
+  border-radius:16px; border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
-input[readonly]{background:#eee}
 
-/* BUTTONS */
-.actions{text-align:center;margin-top:20px}
+.section-title {
+    font-size: 13px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; 
+    display: flex; align-items: center; gap: 8px;
+}
+
+.form-grid{
+  display:grid; grid-template-columns:repeat(6, 1fr); gap:12px;
+}
+@media(max-width:1100px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+
+.field{display:flex; flex-direction:column; gap: 5px;}
+.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+
+input, select{
+  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
+  font-size:13px; background:#fff; outline: none; transition: 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+input[readonly]{ background:#f8fafc; color: var(--primary); font-weight: 600; }
+
+.available-badge {
+    font-size: 10px; font-weight: 700; color: var(--success);
+    background: #dcfce7; padding: 2px 6px; border-radius: 4px; display: inline-block;
+}
+
+/* ACTIONS */
+.actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
 .btn{
-  background:#003366;color:#fff;border:none;
-  padding:10px 20px;border-radius:6px;
-  font-weight:600;cursor:pointer
+  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
 }
-.btn-clear{background:#777}
+.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
+.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
 /* TABLE */
-table{
-  width:92%;max-width:1200px;margin:20px auto;
-  border-collapse:collapse;background:#fff;
-  border-radius:10px;overflow:hidden;
-  box-shadow:0 0 8px rgba(0,0,0,.15)
+.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
+
+.table-wrap{
+  margin:12px 18px; background:var(--card); border-radius:16px;
+  border:1px solid var(--border); overflow:hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
 }
-th,td{padding:10px;border-bottom:1px solid #ccc;font-size:14px}
-th{background:#003366;color:#fff}
-tr:hover{background:#e6f2ff;cursor:pointer}
-tr.selected{background:#cce5ff!important}
+
+table{ width:100%; border-collapse:collapse; font-size: 12px; }
+thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
+tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+tbody tr:hover{background:#f8fbff; cursor:pointer}
+tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
 /* 3 DOT MENU */
-#threeDotsMenu{
-  width:92%;max-width:1200px;margin:10px auto;
-  text-align:right;display:none;position:relative
-}
-#dropdownMenu{
-  display:none;position:absolute;right:0;
-  background:#fff;border:1px solid #ccc;
-  border-radius:8px;width:180px;
-  box-shadow:0 2px 6px rgba(0,0,0,.3)
-}
-.menu-item{padding:10px;cursor:pointer}
-.menu-item:hover{background:#e6f2ff}
+#threeDotsMenu{ position:relative; display: none; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:#fff; border:1px solid var(--border); border-radius:10px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+.menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
+.menu-item:hover{background:#f1f5ff; color: var(--accent);}
 </style>
 </head>
 
 <body>
 
-<h2>{% if edit_data %}EDIT PEELING{% else %}PEELING ENTRY{% endif %}</h2>
-
-<form method="post"
- action="{% if edit_data %}/processing/peeling/update/{{edit_data.id}}{% else %}/processing/peeling{% endif %}">
-
-<div class="form-container">
-
-<!-- ================= ROW 1 ================= -->
-<div class="row">
-
-  <div class="col">
-    <label>Batch</label>
-    <select name="batch_number" id="batch" required onchange="loadHLSO()">
-      <option value="" disabled selected>Select Batch</option>
-      {% for b in batches %}
-      <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
-      {% endfor %}
-    </select>
+<div class="header">
+  <div class="header-titles">
+      <h2>{% if edit_data %}Edit Peeling{% else %}Peeling Entry{% endif %}</h2>
+      <p><i class="fa-solid fa-shrimp"></i> Shelling and meat extraction management</p>
   </div>
-
-  <div class="col">
-    <label>Species</label>
-    <select name="species_name" id="species" required onchange="loadAvailableQty()">
-      <option value="" disabled selected>Select Species</option>
-      {% for s in species %}
-      <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col">
-    <label>HLSO Count</label>
-    <select name="hlso_count" id="hlso" required onchange="loadAvailableQty()">
-      <option value="" disabled selected>Select Batch First</option>
-    </select>
-  </div>
-
-  <div class="col">
-    <label>HLSO Qty (kg)</label>
-    <input type="number" step="0.01" name="hlso_qty" id="hlso_qty" required>
-    <small id="availableText" style="margin-top:4px;font-weight:600;color:#006400">
-      Available Qty : 0 kg
-    </small>
-  </div>
-
-  <div class="col">
-    <label>Variety</label>
-    <select name="variety_name" id="variety" onchange="loadRate()" required>
-      <option value="" disabled selected>Select Variety</option>
-      {% for v in varieties %}
-      <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col">
-    <label>Peeled Qty (kg)</label>
-    <input type="number" step="0.01" id="peeled" name="peeled_qty" required>
-  </div>
-
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR SOLUTIONS</div>
 </div>
 
-<!-- ================= ROW 2 ================= -->
-<div class="row">
+<form method="post" action="{% if edit_data %}/processing/peeling/update/{{edit_data.id}}{% else %}/processing/peeling{% endif %}">
+<div class="section">
+  <div class="section-title">Peeling Processing Form</div>
+  
+  <div class="form-grid">
+    <div class="field">
+      <label>Batch</label>
+      <select name="batch_number" id="batch" required onchange="loadHLSO()">
+        <option value="" disabled selected>Select Batch</option>
+        {% for b in batches %}
+        <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <div class="col">
-    <label>Contractor</label>
-    <select name="contractor_name" id="contractor" onchange="loadRate()" required>
-      <option value="" disabled selected>Select Contractor</option>
-      {% for c in contractors %}
-      <option value="{{c}}" {% if edit_data and edit_data.contractor_name==c %}selected{% endif %}>{{c}}</option>
-      {% endfor %}
-    </select>
+    <div class="field">
+      <label>Species</label>
+      <select name="species_name" id="species" required onchange="loadAvailableQty()">
+        <option value="" disabled selected>Select Species</option>
+        {% for s in species %}
+        <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>HLSO Count</label>
+      <select name="hlso_count" id="hlso" required onchange="loadAvailableQty()">
+        <option value="" disabled selected>Select Count</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>HLSO Qty (kg)</label>
+      <input type="number" step="0.01" name="hlso_qty" id="hlso_qty" placeholder="0.00" required>
+      <div style="margin-top: 5px;"><span id="availableText" class="available-badge">Available : 0 kg</span></div>
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <select name="variety_name" id="variety" onchange="loadRate()" required>
+        <option value="" disabled selected>Select Variety</option>
+        {% for v in varieties %}
+        <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Peeled Qty (kg)</label>
+      <input type="number" step="0.01" id="peeled" name="peeled_qty" placeholder="0.00" required>
+    </div>
+
+    <div class="field">
+      <label>Contractor</label>
+      <select name="contractor_name" id="contractor" onchange="loadRate()" required>
+        <option value="" disabled selected>Select Contractor</option>
+        {% for c in contractors %}
+        <option value="{{c}}" {% if edit_data and edit_data.contractor_name==c %}selected{% endif %}>{{c}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Rate (₹/kg)</label>
+      <input type="text" id="rate" name="rate" readonly placeholder="0.00">
+    </div>
+
+    <div class="field">
+      <label>Yield %</label>
+      <input type="text" id="yield" name="yield_percent" readonly placeholder="0.00">
+    </div>
+
+    <div class="field">
+      <label>Amount (₹)</label>
+      <input type="text" id="amount" name="amount" readonly placeholder="0.00">
+    </div>
   </div>
 
-  <div class="col">
-    <label>Rate (₹/kg)</label>
-    <input type="text" id="rate" name="rate" readonly>
+  <div class="actions">
+    <button type="button" class="btn" onclick="location.href='/processing/peeling'"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Peeling{% else %}Save Entry{% endif %}</button>
   </div>
-
-  <div class="col">
-    <label>Yield %</label>
-    <input type="text" id="yield" name="yield_percent" readonly>
-  </div>
-
-  <div class="col">
-    <label>Amount (₹)</label>
-    <input type="text" id="amount" name="amount" readonly>
-  </div>
-
-</div>
-
-<div class="actions">
-  <button class="btn" type="submit">{% if edit_data %}UPDATE{% else %}SAVE{% endif %}</button>
-  <button class="btn btn-clear" type="reset"
-    onclick="{% if edit_data %}location.href='/processing/peeling'{% endif %}">
-    CLEAR
-  </button>
-</div>
-
 </div>
 </form>
 
 {% if today_data %}
-<div id="threeDotsMenu">
-  <button class="btn" id="dotsBtn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editRow()">✏ Edit</div>
-    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
-  </div>
+<div class="table-header-tool">
+    <h3>Today's Peeling Activity</h3>
+    <div id="threeDotsMenu">
+      <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+      <div id="dropdownMenu">
+        <div class="menu-item" onclick="editRow()"><i class="fa-solid fa-pen-to-square"></i> Edit Entry</div>
+        <div class="menu-item" onclick="deleteRow()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+      </div>
+    </div>
 </div>
 
+<div class="table-wrap">
 <table id="dataTable">
 <thead>
 <tr>
@@ -206,24 +230,34 @@ tr.selected{background:#cce5ff!important}
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
   <td>{{r.id}}</td>
-  <td>{{r.batch_number}}</td>
+  <td style="font-weight: 700;">{{r.batch_number}}</td>
   <td>{{r.species}}</td>
   <td>{{r.hlso_count}}</td>
-  <td>{{r.hlso_qty}}</td>
-  <td>{{r.peeled_qty}}</td>
+  <td style="font-weight: 600;">{{r.hlso_qty}}</td>
+  <td style="font-weight: 600; color: var(--accent);">{{r.peeled_qty}}</td>
   <td>{{r.yield_percent}}</td>
   <td>{{r.contractor_name}}</td>
   <td>{{r.rate}}</td>
-  <td>{{r.amount}}</td>
-  <td>{{r.date}}</td>
+  <td style="font-weight: 700;">{{r.amount}}</td>
+  <td style="font-size: 11px; color: var(--muted);">{{r.date}}</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
+</div>
 {% endif %}
 
 <script>
 let selected=null;
+const batch = document.getElementById("batch");
+const hlso = document.getElementById("hlso");
+const species = document.getElementById("species");
+const hlso_qty = document.getElementById("hlso_qty");
+const peeled = document.getElementById("peeled");
+const rate = document.getElementById("rate");
+const yield_el = document.getElementById("yield");
+const amount = document.getElementById("amount");
+const availableText = document.getElementById("availableText");
 
 // LOAD HLSO COUNTS
 async function loadHLSO(){
@@ -233,25 +267,23 @@ async function loadHLSO(){
   hlso.innerHTML='<option disabled selected>Select HLSO</option>'+
     d.counts.map(v=>`<option value="${v}">${v}</option>`).join("");
   hlso_qty.value="";
-  availableText.innerText="Available Qty : 0 kg";
+  availableText.innerText="Available : 0 kg";
 }
 
 // AVAILABLE QTY (WITH SPECIES)
 async function loadAvailableQty(){
   if(!batch.value||!hlso.value||!species.value)return;
-  let r=await fetch(
-    `/processing/peeling/get_available_qty/${batch.value}/${hlso.value}/${species.value}`
-  );
+  let r=await fetch(`/processing/peeling/get_available_qty/${batch.value}/${hlso.value}/${species.value}`);
   let d=await r.json();
-  availableText.innerText=`Available Qty : ${d.available_qty} kg`;
+  availableText.innerText=`Available : ${d.available_qty} kg`;
 }
 
 // RATE
 async function loadRate(){
+  const contractor = document.getElementById("contractor");
+  const variety = document.getElementById("variety");
   if(!contractor.value||!variety.value)return;
-  let r=await fetch(
-    `/processing/peeling/get_rate?contractor=${contractor.value}&variety=${variety.value}`
-  );
+  let r=await fetch(`/processing/peeling/get_rate?contractor=${contractor.value}&variety=${variety.value}`);
   let d=await r.json();
   rate.value=d.rate;
   calc();
@@ -262,7 +294,8 @@ function calc(){
   let h=parseFloat(hlso_qty.value)||0;
   let p=parseFloat(peeled.value)||0;
   let r=parseFloat(rate.value)||0;
-  yield.value=h?((p/h)*100).toFixed(2):0;
+  // backend కి వెళ్ళే వాల్యూలో % ఉండకూడదు
+  yield_el.value=h?((p/h)*100).toFixed(2):"0.00";
   amount.value=(p*r).toFixed(2);
 }
 hlso_qty.oninput=calc;
@@ -272,23 +305,36 @@ peeled.oninput=calc;
 document.querySelectorAll("#dataTable tbody tr").forEach(tr=>{
   tr.onclick=()=>{
     document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
-    tr.classList.add("selected");selected=tr;
-    threeDotsMenu.style.display="block";
+    tr.classList.add("selected");
+    selected=tr;
+    document.getElementById("threeDotsMenu").style.display="block";
   }
 });
 
-dotsBtn?.addEventListener("click",()=>{
-  dropdownMenu.style.display=
-    dropdownMenu.style.display==="block"?"none":"block";
+document.getElementById("dotsBtn")?.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  const menu = document.getElementById("dropdownMenu");
+  menu.style.display = menu.style.display==="block"?"none":"block";
 });
+
+document.onclick=()=>document.getElementById("dropdownMenu").style.display="none";
 
 function editRow(){ if(selected) location=`/processing/peeling/edit/${selected.dataset.id}` }
 function deleteRow(){
   if(!selected)return;
-  Swal.fire({icon:"warning",title:"Delete?",showCancelButton:true})
-  .then(r=>r.isConfirmed &&
-    fetch(`/processing/peeling/delete/${selected.dataset.id}`,{method:"POST"})
-    .then(()=>location.reload()))
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Delete this entry?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3b82f6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(r=>{
+    if(r.isConfirmed){
+      fetch(`/processing/peeling/delete/${selected.dataset.id}`,{method:"POST"})
+      .then(()=>location.reload())
+    }
+  });
 }
 </script>
 

@@ -1,416 +1,373 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Production Report | BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Production Report | BKNR SOLUTIONS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-:root{
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --primary:#143465;
-  --muted:#6b7280;
-}
-*{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
-body{margin:0;background:var(--bg);color:var(--text)}
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --group-bg: #eff6ff;
+        }
 
-/* ================= HEADER ================= */
-.header{
-  position:sticky;
-  top:0;
-  z-index:100;
-  background:var(--bg);
-  padding:16px 18px 10px;
-  border-bottom:1px solid var(--border);
-}
-.header h2{margin:0;font-size:22px;color:var(--primary)}
-.header p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+        * { box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body { margin: 0; background-color: var(--bg); color: var(--text-main); line-height: 1.5; }
 
-/* ================= FILTERS ================= */
-.filters{
-  margin-top:10px;
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  display:flex;
-  gap:18px;
-  flex-wrap:wrap;
-  align-items:flex-end;
-}
-.fbox{display:flex;flex-direction:column;gap:6px}
-.fbox label{font-size:12px;font-weight:600;color:var(--muted)}
+        /* ================= HEADER & NAV ================= */
+        .header-wrapper {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-input[type=date]{
-  padding:7px 8px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  font-size:12px;
-}
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .brand-section h2 { margin: 0; font-size: 1.5rem; color: var(--primary); font-weight: 800; letter-spacing: -0.5px; }
+        .brand-section p { margin: 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 
-/* MULTI SELECT */
-.multi-select{position:relative;width:200px}
-.select-box{
-  padding:7px 8px;
-  border:1px solid var(--border);
-  border-radius:6px;
-  background:#fff;
-  cursor:pointer;
-  font-size:12px;
-}
-.select-box::after{content:"▼";float:right;font-size:10px}
+        /* ================= FILTERS UI ================= */
+        .filters-container {
+            background: #fff;
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            align-items: flex-end;
+        }
 
-.options{
-  position:absolute;
-  top:110%;left:0;right:0;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:8px;
-  max-height:240px;
-  overflow:auto;
-  display:none;
-  z-index:999;
-  box-shadow:0 10px 25px rgba(0,0,0,.15)
-}
-.options label{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  font-size:12px;
-  cursor:pointer;
-}
-.options label:hover{background:#f1f5f9}
+        .fbox { display: flex; flex-direction: column; gap: 0.5rem; }
+        .fbox label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
-.apply-btn{
-  padding:7px 16px;
-  background:var(--primary);
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  font-size:12px;
-  font-weight:600;
-  cursor:pointer;
-}
+        input[type=date], .select-box {
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            background: #fff;
+            width: 100%;
+        }
 
-/* ================= ACTION BAR ================= */
-.actions{
-  margin-top:10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-#rowCount{font-size:12px;font-weight:600;color:#374151}
+        input[type=date]:focus, .select-box:hover { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
-.menu-box{position:relative}
-.menu-btn{
-  width:34px;height:34px;
-  border:1px solid var(--border);
-  background:#fff;
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  font-size:16px;
-}
-.menu{
-  position:absolute;
-  right:0;
-  top:40px;
-  width:200px;
-  background:#fff;
-  border-radius:8px;
-  border:1px solid var(--border);
-  display:none;
-  z-index:999;
-  box-shadow:0 12px 28px rgba(0,0,0,.18)
-}
-.menu div{
-  padding:8px 12px;
-  font-size:12px;
-  cursor:pointer;
-}
-.menu div:hover{background:#f1f5f9}
+        .multi-select { position: relative; }
+        .select-box { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .select-box::after { content: "\f107"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 0.7rem; }
 
-/* ================= TABLE ================= */
-.section{
-  margin:20px 18px;
-  background:#fff;
-  padding:14px;
-  border-radius:12px;
-  border:1px solid var(--border);
-}
-.table-wrap{
-  overflow:auto;
-  max-height:520px;
-}
+        .options {
+            position: absolute;
+            top: calc(100% + 5px); left: 0; right: 0;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1100;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-table{
-  width:100%;
-  border-collapse:collapse;
-  min-width:1200px;
-}
-thead th{
-  background:#f1f5f9;
-  color:#111827;
-  padding:8px;
-  font-size:11px;
-  position:sticky;
-  top:0;
-  z-index:2;
-}
-tbody td{
-  padding:6px;
-  font-size:11px;
-  border-bottom:1px solid #edf2f7;
-  text-align:center;
-}
-tbody tr:hover{background:#f8fafc}
+        .options label {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0.6rem 1rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main);
+            text-transform: none; font-weight: 500;
+        }
+        .options label:hover { background: var(--bg); }
 
-/* GROUP HEADER */
-.group-head td{
-  background:#eef4ff;
-  font-weight:700;
-  color:var(--primary);
-  text-align:left;
-  padding:8px 12px;
-}
+        .apply-btn {
+            padding: 0.6rem 1.5rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .apply-btn:hover { background: #1e40af; }
 
-.grand-total td{
-  background:var(--primary);
-  color:#fff;
-  font-weight:700;
-  padding:10px;
-}
+        /* ================= ACTIONS ================= */
+        .action-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 0;
+        }
+        #rowCount { font-size: 0.85rem; font-weight: 700; color: var(--accent); background: rgba(59,130,246,0.1); padding: 4px 12px; border-radius: 20px; }
 
-/* PRINT */
-@media print{
-  .filters,.actions,.menu-box{display:none!important}
-  body{background:#fff!important}
-  thead th{position:static!important}
-}
-</style>
+        .menu-box { position: relative; }
+        .menu-btn {
+            width: 38px; height: 38px; border: 1px solid var(--border);
+            background: #fff; border-radius: 8px; cursor: pointer;
+            display: grid; place-items: center; transition: all 0.2s;
+        }
+        .menu-btn:hover { background: var(--bg); color: var(--primary); }
+
+        .menu {
+            position: absolute; right: 0; top: 45px; width: 180px;
+            background: #fff; border-radius: 10px; border: 1px solid var(--border);
+            display: none; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); z-index: 1000; overflow: hidden;
+        }
+        .menu div { padding: 0.75rem 1rem; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .menu div:hover { background: var(--bg); color: var(--primary); }
+
+        /* ================= TABLE UI ================= */
+        .table-section { margin: 1.5rem; background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .table-wrap { overflow-x: auto; width: 100%; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        thead th {
+            background: #f8fafc;
+            padding: 1rem 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0;
+        }
+
+        tbody td { padding: 0.85rem 0.75rem; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        tbody tr:hover { background: #fdfdfd; }
+
+        .group-head td {
+            background: var(--group-bg);
+            font-weight: 800;
+            color: var(--primary);
+            text-align: left !important;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.8rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .qty-val { font-weight: 700; color: var(--primary); }
+
+        .grand-total td {
+            background: #1e293b;
+            color: #fff;
+            font-weight: 800;
+            padding: 1.25rem;
+            font-size: 1rem;
+        }
+
+        /* PRINT SETTINGS */
+        @media print {
+            .header-wrapper, .action-bar { display: none !important; }
+            .table-section { border: none; margin: 0; box-shadow: none; }
+            body { background: #fff; }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>Production Report</h2>
-  <p>BKNR SOLUTIONS</p>
-
-  <!-- FILTERS (UNCHANGED) -->
-  <div class="filters">
-    <div class="fbox">
-      <label>From Date</label>
-      <input type="date" id="fromDate">
-    </div>
-
-    <div class="fbox">
-      <label>To Date</label>
-      <input type="date" id="toDate">
-    </div>
-
-    <div class="fbox">
-      <label>Batch</label>
-      <div class="multi-select" id="batchSelect">
-        <div class="select-box">Select Batch</div>
-        <div class="options">
-          {% for b in batches %}
-          <label><input type="checkbox" value="{{b}}"> {{b}}</label>
-          {% endfor %}
+<div class="header-wrapper">
+    <div class="header-top">
+        <div class="brand-section">
+            <h2>Production Report</h2>
+            <p>BKNR SOLUTIONS • ERP SYSTEM</p>
         </div>
-      </div>
-    </div>
-
-    <div class="fbox">
-      <label>Variety</label>
-      <div class="multi-select" id="varietySelect">
-        <div class="select-box">Select Variety</div>
-        <div class="options">
-          {% for v in varieties %}
-          <label><input type="checkbox" value="{{v}}"> {{v}}</label>
-          {% endfor %}
+        <div class="menu-box">
+            <div class="menu-btn" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+            <div class="menu" id="menu">
+                <div onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</div>
+                <div onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            </div>
         </div>
-      </div>
     </div>
 
-    <div class="fbox">
-      <label>Grade</label>
-      <div class="multi-select" id="gradeSelect">
-        <div class="select-box">Select Grade</div>
-        <div class="options">
-          {% for g in grades %}
-          <label><input type="checkbox" value="{{g}}"> {{g}}</label>
-          {% endfor %}
+    <div class="filters-container">
+        <div class="fbox">
+            <label>From Date</label>
+            <input type="date" id="fromDate">
         </div>
-      </div>
+        <div class="fbox">
+            <label>To Date</label>
+            <input type="date" id="toDate">
+        </div>
+        <div class="fbox">
+            <label>Batch Number</label>
+            <div class="multi-select" id="batchSelect">
+                <div class="select-box">All Batches</div>
+                <div class="options">
+                    {% for b in batches %}<label><input type="checkbox" value="{{b}}"> {{b}}</label>{% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="fbox">
+            <label>Variety</label>
+            <div class="multi-select" id="varietySelect">
+                <div class="select-box">All Varieties</div>
+                <div class="options">
+                    {% for v in varieties %}<label><input type="checkbox" value="{{v}}"> {{v}}</label>{% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="fbox">
+            <label>Grade</label>
+            <div class="multi-select" id="gradeSelect">
+                <div class="select-box">All Grades</div>
+                <div class="options">
+                    {% for g in grades %}<label><input type="checkbox" value="{{g}}"> {{g}}</label>{% endfor %}
+                </div>
+            </div>
+        </div>
+        <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
     </div>
 
-    <button class="apply-btn" onclick="applyFilters()">Apply</button>
-  </div>
-
-  <!-- ACTION BAR -->
-  <div class="actions">
-    <div id="rowCount">0 rows</div>
-    <div class="menu-box">
-      <div class="menu-btn" id="dotsBtn">⋮</div>
-      <div class="menu" id="menu">
-        <div onclick="window.print()">🖨 Print</div>
-        <div onclick="exportExcel()">📊 Export Excel</div>
-      </div>
+    <div class="action-bar">
+        <div id="rowCount">0 rows visible</div>
     </div>
-  </div>
 </div>
 
-<div class="section">
-<div class="table-wrap">
-
-
-<!-- TABLE -->
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-  <th>Date</th>
-  <th>Batch</th>
-  <th>Variety</th>
-  <th>Brand</th>
-  <th>Grade</th>
-  <th>Packing</th>
-  <th>MC</th>
-  <th>Loose</th>
-  <th>Qty (KG)</th>
-  <th>Glaze</th>
-  <th>Freezer</th>
-</tr>
-</thead>
-
-<tbody id="tbody">
-
-{% for batch,data in grouped.items() %}
-  {% for variety,rows in data.varieties.items() %}
-
-  <tr class="group-head">
-    <td colspan="8">Batch : {{batch}} | Variety : {{variety}}</td>
-    <td>{{ rows | map(attribute='production_qty') | sum | round(2) }}</td>
-    <td colspan="2"></td>
-  </tr>
-
-  {% for r in rows %}
-  <tr data-row="data">
-    <td class="date">{{ r.date }}</td>
-    <td class="batch">{{ r.batch_number }}</td>
-    <td class="variety">{{ r.variety_name }}</td>
-    <td>{{ r.brand }}</td>
-    <td class="grade">{{ r.grade }}</td>
-    <td>{{ r.packing_style }}</td>
-    <td>{{ r.no_of_mc }}</td>
-    <td>{{ r.loose }}</td>
-    <td class="qty">{{ r.production_qty }}</td>
-    <td>{{ r.glaze }}</td>
-    <td>{{ r.freezer }}</td>
-  </tr>
-  {% endfor %}
-
-  {% endfor %}
-{% endfor %}
-
-<tr class="grand-total">
-  <td colspan="8" align="right">GRAND TOTAL</td>
-  <td>{{ final_total | round(2) }}</td>
-  <td colspan="2"></td>
-</tr>
-
-</tbody>
-</table>
+<div class="table-section">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Variety</th>
+                    <th>Brand</th>
+                    <th>Grade</th>
+                    <th>Packing</th>
+                    <th>MC</th>
+                    <th>Loose</th>
+                    <th>Qty (KG)</th>
+                    <th>Glaze</th>
+                    <th>Freezer</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                {% for batch,data in grouped.items() %}
+                    {% for variety,rows in data.varieties.items() %}
+                    <tr class="group-head">
+                        <td colspan="8">
+                            <i class="fa-solid fa-layer-group"></i> &nbsp; BATCH: {{batch}} | VARIETY: {{variety}}
+                        </td>
+                        <td class="qty-val">{{ rows | map(attribute='production_qty') | sum | round(2) }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                    {% for r in rows %}
+                    <tr data-row="data">
+                        <td class="date">{{ r.date }}</td>
+                        <td class="batch">{{ r.batch_number }}</td>
+                        <td class="variety">{{ r.variety_name }}</td>
+                        <td>{{ r.brand }}</td>
+                        <td class="grade">{{ r.grade }}</td>
+                        <td>{{ r.packing_style }}</td>
+                        <td>{{ r.no_of_mc }}</td>
+                        <td>{{ r.loose }}</td>
+                        <td class="qty qty-val">{{ r.production_qty }}</td>
+                        <td>{{ r.glaze }}</td>
+                        <td>{{ r.freezer }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                {% endfor %}
+                <tr class="grand-total">
+                    <td colspan="8" align="right">GRAND TOTAL</td>
+                    <td>{{ final_total | round(2) }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-/* MENU */
-dotsBtn.onclick=e=>{
-  e.stopPropagation();
-  menu.style.display = menu.style.display==="block"?"none":"block";
-};
-document.onclick=()=>menu.style.display="none";
+    /* DROPDOWN MENU */
+    const dotsBtn = document.getElementById('dotsBtn');
+    const menu = document.getElementById('menu');
+    
+    dotsBtn.onclick = e => {
+        e.stopPropagation();
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+    };
+    document.onclick = () => menu.style.display = "none";
 
-/* MULTI SELECT */
-document.querySelectorAll(".select-box").forEach(box=>{
-  box.onclick=e=>{
-    e.stopPropagation();
-    document.querySelectorAll(".options").forEach(o=>o.style.display="none");
-    box.nextElementSibling.style.display="block";
-  };
-});
-document.querySelectorAll(".options").forEach(o=>{
-  o.onclick=e=>e.stopPropagation();
-});
-document.addEventListener("click",()=> {
-  document.querySelectorAll(".options").forEach(o=>o.style.display="none");
-});
+    /* MULTI SELECT TOGGLE */
+    document.querySelectorAll(".select-box").forEach(box => {
+        box.onclick = e => {
+            e.stopPropagation();
+            const currentOptions = box.nextElementSibling;
+            document.querySelectorAll(".options").forEach(o => {
+                if(o !== currentOptions) o.style.display = "none";
+            });
+            currentOptions.style.display = currentOptions.style.display === "block" ? "none" : "block";
+        };
+    });
 
-function getValues(id){
-  return Array.from(
-    document.querySelectorAll(`#${id} input:checked`)
-  ).map(i=>i.value);
-}
+    document.addEventListener("click", () => {
+        document.querySelectorAll(".options").forEach(o => o.style.display = "none");
+    });
 
-/* ✅ FINAL FILTER LOGIC (NO LEAKS) */
-function applyFilters(){
-
-  const bSel=getValues("batchSelect");
-  const vSel=getValues("varietySelect");
-  const gSel=getValues("gradeSelect");
-  const from=fromDate.value;
-  const to=toDate.value;
-
-  let visible=0;
-
-  document.querySelectorAll(".group-head").forEach(h=>h.style.display="none");
-  document.querySelectorAll('[data-row="data"]').forEach(r=>r.style.display="none");
-
-  document.querySelectorAll(".group-head").forEach(header=>{
-    let row=header.nextElementSibling;
-    let hasVisible=false;
-
-    while(row && !row.classList.contains("group-head") && !row.classList.contains("grand-total")){
-      if(row.dataset.row==="data"){
-        let ok=true;
-
-        const d=row.querySelector(".date").innerText.trim();
-        const b=row.querySelector(".batch").innerText.trim();
-        const v=row.querySelector(".variety").innerText.trim();
-        const g=row.querySelector(".grade").innerText.trim();
-
-        if(from && d<from) ok=false;
-        if(to && d>to) ok=false;
-        if(bSel.length && !bSel.includes(b)) ok=false;
-        if(vSel.length && !vSel.includes(v)) ok=false;
-        if(gSel.length && !gSel.includes(g)) ok=false;
-
-        if(ok){
-          row.style.display="";
-          hasVisible=true;
-          visible++;
-        }
-      }
-      row=row.nextElementSibling;
+    function getValues(id) {
+        return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(i => i.value);
     }
 
-    if(hasVisible) header.style.display="";
-  });
+    /* FILTER LOGIC */
+    function applyFilters() {
+        const bSel = getValues("batchSelect");
+        const vSel = getValues("varietySelect");
+        const gSel = getValues("gradeSelect");
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
 
-  rowCount.innerText=visible+" rows";
-}
+        let visible = 0;
 
-function exportExcel(){
-  window.location="/reports/production/export_excel";
-}
+        document.querySelectorAll(".group-head").forEach(h => h.style.display = "none");
+        document.querySelectorAll('[data-row="data"]').forEach(r => r.style.display = "none");
+
+        document.querySelectorAll(".group-head").forEach(header => {
+            let row = header.nextElementSibling;
+            let hasVisible = false;
+
+            while (row && !row.classList.contains("group-head") && !row.classList.contains("grand-total")) {
+                if (row.dataset.row === "data") {
+                    let ok = true;
+                    const d = row.querySelector(".date").innerText.trim();
+                    const b = row.querySelector(".batch").innerText.trim();
+                    const v = row.querySelector(".variety").innerText.trim();
+                    const g = row.querySelector(".grade").innerText.trim();
+
+                    if (from && d < from) ok = false;
+                    if (to && d > to) ok = false;
+                    if (bSel.length && !bSel.includes(b)) ok = false;
+                    if (vSel.length && !vSel.includes(v)) ok = false;
+                    if (gSel.length && !gSel.includes(g)) ok = false;
+
+                    if (ok) {
+                        row.style.display = "";
+                        hasVisible = true;
+                        visible++;
+                    }
+                }
+                row = row.nextElementSibling;
+            }
+            if (hasVisible) header.style.display = "";
+        });
+
+        document.getElementById('rowCount').innerText = visible + " rows found";
+    }
+
+    function exportExcel() {
+        window.location = "/reports/production/export_excel";
+    }
 </script>
-
 
 </body>
 </html>
