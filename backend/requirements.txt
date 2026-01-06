@@ -12,3 +12,4 @@ bcrypt
 python-multipart
 requests
 weasyprint
+reportlab
