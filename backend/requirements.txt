@@ -90,3 +90,4 @@ xhtml2pdf==0.2.17
 xlsxwriter==3.2.9
 yarl==1.22.0
 zopfli==0.4.0
+pytz==2024.1
