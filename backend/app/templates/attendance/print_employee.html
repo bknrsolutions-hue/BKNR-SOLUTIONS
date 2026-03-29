@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee_Master_{{ e.employee_id if e else '' }}</title>
+    <style>
+        /* PDF Page Setup */
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1e293b;
+            font-size: 10px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+
+        .container {
+            width: 100%;
+        }
+
+        /* Top Header Section */
+        .header-table {
+            width: 100%;
+            border-bottom: 2.5px solid #143465;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+
+        .company-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #143465;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .company-address {
+            color: #64748b;
+            font-weight: 600;
+            font-size: 9.5px;
+            max-width: 450px;
+            margin-top: 2px;
+        }
+
+        .record-title {
+            background: #143465;
+            color: white;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 5px;
+            border-radius: 2px;
+        }
+
+        /* Section Headings */
+        .section-title {
+            background-color: #f8fafc;
+            border-left: 4px solid #143465;
+            padding: 5px 10px;
+            font-weight: 800;
+            color: #143465;
+            text-transform: uppercase;
+            margin-top: 15px;
+            margin-bottom: 6px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Data Layout Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .data-table td {
+            padding: 4px 8px;
+            vertical-align: top;
+            border: 0.5px solid #e2e8f0;
+        }
+
+        .label {
+            color: #64748b;
+            font-size: 7.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .value {
+            font-size: 10px;
+            font-weight: 700;
+            color: #000;
+            min-height: 12px;
+        }
+
+        /* Signature Blocks */
+        .sig-table {
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .sig-box {
+            border-top: 1.5px solid #1e293b;
+            text-align: center;
+            padding-top: 6px;
+            font-weight: bold;
+            font-size: 10px;
+            width: 200px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            margin-top: 30px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 8px;
+        }
+
+        /* Print Controls */
+        @media print {
+            .no-print { display: none !important; }
+            body { -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print" style="text-align: center; background: #f1f5f9; padding: 15px; border-bottom: 1px solid #cbd5e1;">
+    <p style="margin: 0 0 10px 0; font-weight: bold; color: #475569;">Employee Master Print Preview</p>
+    <button onclick="window.print()" style="padding: 10px 25px; font-weight: bold; background: #143465; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <i class="fa fa-print"></i> PRINT THIS RECORD
+    </button>
+</div>
+
+<div class="container">
+    <table class="header-table">
+        <tr>
+            <td>
+                <div class="company-name">{{ company.company_name if company else 'BKNR SOLUTIONS' }}</div>
+                <div class="company-address">{{ company.address if company else 'Main Office Address, State, India' }}</div>
+                <div class="record-title">EMPLOYEE MASTER RECORD</div>
+            </td>
+            <td style="text-align: right; vertical-align: top;">
+                <div style="font-size: 9px; margin-bottom: 4px;"><b>Printed:</b> {{ printed_on }}</div>
+                <div style="font-size: 11px; font-weight: 800; color: #143465;">CODE: {{ company.company_code if company else '-' }}</div>
+                <div style="margin-top: 10px;">
+                    <span style="padding: 3px 8px; border-radius: 3px; font-weight: 800; border: 1.5px solid #143465; color: #143465;">
+                        {{ e.status if e else 'ACTIVE' }}
+                    </span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title"><span>1. Primary & Personal Details</span></div>
+    <table class="data-table">
+        <tr>
+            <td width="20%"><span class="label">Employee ID</span><div class="value">{{ e.employee_id }}</div></td>
+            <td width="40%"><span class="label">Full Name</span><div class="value">{{ e.employee_name }}</div></td>
+            <td width="20%"><span class="label">Gender</span><div class="value">{{ e.gender or '-' }}</div></td>
+            <td width="20%"><span class="label">Blood Group</span><div class="value">{{ e.blood_group or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td><span class="label">Date of Birth</span><div class="value">{{ e.dob or '-' }}</div></td>
+            <td><span class="label">Personal Email</span><div class="value">{{ e.personal_email or '-' }}</div></td>
+            <td><span class="label">Mobile Number</span><div class="value">{{ e.mobile }}</div></td>
+            <td><span class="label">Marital Status</span><div class="value">{{ e.marital_status or '-' }}</div></td>
+        </tr>
+    </table>
+
+    <div class="section-title"><span>2. Employment & Work Details</span></div>
+    <table class="data-table">
+        <tr>
+            <td width="25%"><span class="label">Designation</span><div class="value">{{ e.designation }}</div></td>
+            <td width="25%"><span class="label">Department</span><div class="value">{{ e.department }}</div></td>
+            <td width="25%"><span class="label">Employee Type</span><div class="value">{{ e.employee_type }}</div></td>
+            <td width="25%"><span class="label">Official Email</span><div class="value">{{ e.official_email or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td><span class="label">Joining Date</span><div class="value">{{ e.joining_date }}</div></td>
+            <td><span class="label">Reporting To</span><div class="value">{{ e.reporting_to or '-' }}</div></td>
+            <td><span class="label">Work Location</span><div class="value">{{ e.location or '-' }}</div></td>
+            <td><span class="label">Contractor Name</span><div class="value">{{ e.contractor_name or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td colspan="2"><span class="label">Skills & Expertise</span><div class="value">{{ e.skills or '-' }}</div></td>
+            <td><span class="label">Resignation Date</span><div class="value">{{ e.resignation_date or '-' }}</div></td>
+            <td><span class="label">Entry Date/Time</span><div class="value">{{ e.date }} | {{ e.time }}</div></td>
+        </tr>
+    </table>
+
+    <div class="section-title"><span>3. Salary Structure</span></div>
+    <table class="data-table">
+        <tr>
+            <td width="20%" style="background-color: #f0fdf4;"><span class="label">Gross Salary</span><div class="value">₹ {{ "{:,.2f}".format(e.current_salary) if e.current_salary else '0.00' }}</div></td>
+            <td width="20%"><span class="label">Basic Salary</span><div class="value">₹ {{ "{:,.2f}".format(e.basic_salary) if e.basic_salary else '0.00' }}</div></td>
+            <td width="20%"><span class="label">HRA</span><div class="value">₹ {{ "{:,.2f}".format(e.hra) if e.hra else '0.00' }}</div></td>
+            <td width="20%"><span class="label">Conveyance</span><div class="value">₹ {{ "{:,.2f}".format(e.conveyance_allowance) if e.conveyance_allowance else '0.00' }}</div></td>
+            <td width="20%"><span class="label">TDS (%)</span><div class="value">{{ e.tds or '0' }}%</div></td>
+        </tr>
+    </table>
+
+    <div class="section-title"><span>4. Bank & Statutory Details</span></div>
+    <table class="data-table">
+        <tr>
+            <td width="33%"><span class="label">Bank Name</span><div class="value">{{ e.bank_name or '-' }}</div></td>
+            <td width="33%"><span class="label">Account Number</span><div class="value">{{ e.account_number or '-' }}</div></td>
+            <td width="33%"><span class="label">IFSC Code</span><div class="value">{{ e.ifsc_code or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td><span class="label">Branch Name</span><div class="value">{{ e.branch_name or '-' }}</div></td>
+            <td><span class="label">A/C Holder Name</span><div class="value">{{ e.account_holder_name or '-' }}</div></td>
+            <td><span class="label">UAN Number</span><div class="value">{{ e.uan_number or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td><span class="label">PAN Number</span><div class="value">{{ e.pan_number or '-' }}</div></td>
+            <td colspan="2"><span class="label">Aadhar Number</span><div class="value">{{ e.aadhar_number or '-' }}</div></td>
+        </tr>
+    </table>
+
+    <div class="section-title"><span>5. Emergency Contact & Addresses</span></div>
+    <table class="data-table">
+        <tr>
+            <td width="50%"><span class="label">Emergency Person Name</span><div class="value">{{ e.emergency_name or '-' }}</div></td>
+            <td width="50%"><span class="label">Emergency Mobile No.</span><div class="value">{{ e.emergency_mobile or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td colspan="2"><span class="label">Present Address</span><div class="value">{{ e.present_address or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td colspan="2"><span class="label">Permanent Address</span><div class="value">{{ e.permanent_address or '-' }}</div></td>
+        </tr>
+        <tr>
+            <td colspan="2"><span class="label">About / Remarks</span><div class="value">{{ e.about or '-' }}</div></td>
+        </tr>
+    </table>
+
+    <table class="sig-table">
+        <tr>
+            <td align="left"><div class="sig-box">Employee Signature</div></td>
+            <td align="right"><div class="sig-box">Authorized HR Official</div></td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        This is a system-generated document for <b>{{ company.company_name if company else 'BKNR ERP' }}</b>. 
+        Record ID: {{ e.id }} | Created: {{ e.created_at.strftime('%d-%m-%Y %H:%M') if e.created_at else '-' }}
+    </div>
+</div>
+
+<script>
+    window.onload = function() {
+        setTimeout(function() { window.print(); }, 700);
+    };
+</script>
+
+</body>
+</html>

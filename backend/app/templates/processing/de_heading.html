@@ -1,374 +1,521 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>De-Heading – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>De-Heading & Floor Balance – BKNR ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<style>
-:root{
-  --primary:#143465;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-  --success: #166534;
-}
+    <style>
+        :root {
+            --primary: #143465; --accent: #3b82f6; --border: #d6dde7; --bg: #f4f6f9;
+            --card: #ffffff; --text: #1f2937; --muted: #64748b; --success: #166534;
+        }
 
-*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-body{margin:0;background:var(--bg);color:var(--text)}
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-/* HEADER */
-.header{
-  position:sticky;top:0;z-index:100;
-  background:#fff; padding:16px 25px;
-  border-bottom:1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
-.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+        /* --- DASHBOARD STYLES --- */
+        .header-dash {
+            background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .grand-total {
+            background: var(--primary); color: #fff; padding: 10px 20px;
+            border-radius: 12px; font-size: 15px; font-weight: 800;
+        }
 
-/* FORM CARD */
-.section{
-  margin:18px; background:var(--card); padding:25px;
-  border-radius:16px; border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
+        /* FILTER BAR */
+        .filter-section {
+            background: #fff; padding: 10px 25px; display: flex; align-items: center; gap: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-item { display: flex; align-items: center; gap: 8px; }
+        .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+        
+        .filter-section input {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+            font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
+        }
 
-.section-title {
-    font-size: 13px; font-weight: 800; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 20px; 
-    display: flex; align-items: center; gap: 8px;
-}
+        .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; min-height: 250px; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; width: 65%; }
+        .panel { background: #fff; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .table-container { overflow-y: auto; flex-grow: 1; max-height: 250px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { position: sticky; top: 0; background: #fff; padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
+        td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
 
-/* GRID */
-.form-grid{
-  display:grid; grid-template-columns:repeat(5,1fr); gap:16px;
-}
-@media(max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
-@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+        .company-row { cursor: pointer; background: #f8fafc; font-weight: 800; color: var(--primary); }
+        .location-row { cursor: pointer; background: #fff; font-weight: 700; color: var(--accent); padding-left: 20px !important; }
+        .drill-row { display: none; background: #fff; }
+        
+        .drill-container { padding: 0px 10px 10px 40px; }
+        .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .drill-table th { background: #f8fafc; font-size: 10px; color: var(--muted); padding: 6px; }
+        .drill-table td { background: #fff; border-bottom: 1px solid #eee; padding: 6px; }
 
-.field{display:flex;flex-direction:column; gap: 5px;}
-.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
-.field input,.field select{
-  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
-  font-size:13px; background:#fff; outline: none; transition: 0.2s;
-}
-.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-.field input[readonly]{ background:#f8fafc; font-weight: 600; color: var(--primary); }
+        .subtotal-row { background: #f0f9ff !important; font-weight: 800; color: var(--primary); }
 
-.subtext{font-size:11px; color:var(--muted); margin-top:2px;}
-.subtext b{color:var(--success);}
+        /* --- FORM MODAL --- */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #fff; padding: 25px; border-radius: 16px; width: 85%; max-width: 1000px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+        .field input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; }
+        .field input[readonly] { background: #f8fafc; cursor: not-allowed; font-weight: 600; }
 
-/* ACTIONS */
-.actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{
-  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
-  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
-}
-.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
-
-/* TABLES */
-.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
-
-.table-wrap{
-  margin:12px 18px 20px; background:var(--card); border-radius:16px;
-  border:1px solid var(--border); overflow:hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
-table{ width:100%; border-collapse:collapse; font-size: 12px; }
-thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
-tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-tbody tr:hover{background:#f8fbff; cursor:pointer}
-tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
-tfoot td{ font-weight: 800; background: #f8fafc; padding: 14px 10px; color: var(--primary); border-top: 2px solid var(--border); }
-
-/* 3 DOT MENU */
-#threeDotsMenu{ position:relative; display: none; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:#fff; border:1px solid var(--border); border-radius:10px; width:180px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
-.menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
-.menu-item:hover{background:#f1f5ff; color: var(--accent);}
-
-.summary-title { margin: 30px 18px 10px; font-size: 14px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-</style>
+        .btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+        
+        #dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .menu-item { padding: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .menu-item:hover { background: #fef2f2; color: #ef4444; }
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-  <div class="header-titles">
-      <h2>De-Heading Entry {% if edit_data %}(Edit Mode){% endif %}</h2>
-      <p><i class="fa-solid fa-shrimp"></i> Raw material processing management</p>
-  </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR ERP System</div>
+<div class="header-dash">
+    <div><h2 style="margin:0; font-size:18px; color:var(--primary);">De-Heading & Floor Balance</h2></div>
+    <div class="grand-total" id="gt_display">TOTAL FLOOR: 0.00 KG</div>
 </div>
 
-<form method="POST" action="{% if edit_data %}/processing/de_heading/update/{{edit_data.id}}{% else %}/processing/de_heading{% endif %}">
-
-<div class="section">
-  <div class="section-title">Processing Details</div>
-  <div class="form-grid">
-
-    <div class="field">
-      <label>Species</label>
-      <select name="species" required>
-        <option value="">Select Species</option>
-        {% for s in species %}
-          <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-        {% endfor %}
-      </select>
+<div class="filter-section">
+    <div style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;"><i class="fa-solid fa-filter"></i> Analytics Filters:</div>
+    
+    <div class="filter-item">
+        <label>Company</label>
+        <input list="dash_comp_list" id="dashboard_company_filter" oninput="updateDashboard()" placeholder="Search Company...">
+        <datalist id="dash_comp_list">
+            {% for p in prod_for_list %}<option value="{{p}}">{% endfor %}
+        </datalist>
     </div>
 
-    <div class="field">
-      <label>Batch Number</label>
-      <select name="batch_number" id="batch_dd" required>
-        <option value="">Select Batch</option>
-        {% for b in batches %}
-          <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
-        {% endfor %}
-      </select>
+    <div class="filter-item">
+        <label>Location</label>
+        <input list="dash_loc_list" id="dashboard_location_filter" oninput="updateDashboard()" placeholder="Search Location...">
+        <datalist id="dash_loc_list">
+            {% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}
+        </datalist>
     </div>
 
-    <div class="field">
-      <label>HOSO Count</label>
-      <select name="hoso_count" id="count_dd" required>
-        <option value="">Select Count</option>
-        {% if edit_data %}
-          <option value="{{edit_data.hoso_count}}" selected>{{edit_data.hoso_count}}</option>
-        {% endif %}
-      </select>
-    </div>
-
-    <div class="field">
-      <label>HOSO Qty (In)</label>
-      <input type="number" step="0.01" id="hoso_qty" name="hoso_qty" value="{{edit_data.hoso_qty if edit_data else ''}}" required>
-      <div class="subtext">Available: <b><span id="available_qty">0</span></b></div>
-    </div>
-
-    <div class="field">
-      <label>HLSO Qty (Out)</label>
-      <input type="number" step="0.01" id="hlso_qty" name="hlso_qty" value="{{edit_data.hlso_qty if edit_data else ''}}" required>
-    </div>
-
-    <div class="field">
-      <label>Yield %</label>
-      <input type="text" id="yield_pct" readonly placeholder="0.00%">
-      <input type="hidden" name="yield_percent" id="yield_hidden">
-    </div>
-
-    <div class="field">
-      <label>Contractor</label>
-      <select name="contractor" id="contractor_dd" required>
-        <option value="">Select Contractor</option>
-        {% for c in contractors %}
-          <option value="{{c}}" {% if edit_data and edit_data.contractor==c %}selected{% endif %}>{{c}}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="field">
-      <label>Rate (Per KG)</label>
-      <input type="number" step="0.01" id="rate" name="rate_per_kg" readonly>
-    </div>
-
-    <div class="field">
-      <label>Total Amount</label>
-      <input type="number" step="0.01" id="amount" name="amount" readonly>
-    </div>
-
-  </div>
-
-  <div class="actions">
-    <button type="button" class="btn" onclick="location.href='/processing/de_heading'"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-    <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Entry{% else %}Save Entry{% endif %}</button>
-  </div>
-</div>
-</form>
-
-{% if today_data %}
-<div class="table-header-tool">
-    <h3>Recent De-Heading Entries</h3>
-    <div id="threeDotsMenu">
-      <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-      <div id="dropdownMenu">
-        <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
-        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete</div>
-      </div>
+    <div class="filter-item">
+        <label>Species</label>
+        <input list="dash_species_list" id="dashboard_species_filter" oninput="updateDashboard()" placeholder="Search Species...">
+        <datalist id="dash_species_list">
+            {% for s in species %}<option value="{{ s }}">{% endfor %}
+        </datalist>
     </div>
 </div>
 
-<div class="table-wrap">
-<table id="mainTable">
-<thead>
-<tr>
-  <th>ID</th><th>Batch</th><th>Count</th><th>Species</th>
-  <th>HOSO (In)</th><th>HLSO (Out)</th><th>Yield %</th>
-  <th>Contractor</th><th>Rate</th><th>Amount</th><th>Date</th>
-</tr>
-</thead>
-<tbody>
-{% for r in today_data %}
-<tr data-id="{{r.id}}" data-contractor="{{r.contractor}}">
-  <td>{{r.id}}</td>
-  <td>{{r.batch_number}}</td>
-  <td>{{r.hoso_count}}</td>
-  <td>{{r.species}}</td>
-  <td class="hoso" style="font-weight:700;">{{r.hoso_qty}}</td>
-  <td class="hlso" style="font-weight:700;">{{r.hlso_qty}}</td>
-  <td>{{r.yield_percent}} %</td>
-  <td>{{r.contractor}}</td>
-  <td>{{r.rate_per_kg}}</td>
-  <td class="amount" style="font-weight:700; color:var(--accent);">{{r.amount}}</td>
-  <td>{{r.date}}</td>
-</tr>
-{% endfor %}
-</tbody>
-<tfoot>
-<tr>
-  <td colspan="4">GRAND TOTAL</td>
-  <td id="gt_hoso">0</td>
-  <td id="gt_hlso">0</td>
-  <td></td><td></td><td></td>
-  <td id="gt_amount">0</td><td></td>
-</tr>
-</tfoot>
-</table>
+<div class="main-dashboard">
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-title">HOSO Floor Balance</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th style="padding-left:15px;">Flow (Company > Location > Batch)</th><th style="text-align:right; padding-right:15px;">Qty (Kg)</th></tr>
+                    </thead>
+                    <tbody id="fb_main_body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Live Statistics</div>
+            <div style="padding:30px 20px; text-align:center;">
+                <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Filtered Batches</div>
+                <div style="font-size:36px; font-weight:800; color:var(--primary);" id="stat_batches">0</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+                <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Unique Counts</div>
+                <div style="font-size:36px; font-weight:800; color:var(--accent);" id="stat_counts">0</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="panel" style="width:35%;">
+        <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
+        <div style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding:15px;">
+            <canvas id="countStackedBar"></canvas>
+        </div>
+    </div>
 </div>
 
-<div class="summary-title"><i class="fa-solid fa-chart-pie"></i> Contractor Wise Summary</div>
-<div class="table-wrap" style="max-width: 800px; margin-left: 18px;">
-<table>
-<thead>
-  <tr><th>Contractor</th><th>Total HOSO</th><th>Total HLSO</th><th>Total Amount</th></tr>
-</thead>
-<tbody id="contractorBody"></tbody>
-</table>
+<div class="section-header" style="padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-top: 1px solid var(--border);">
+    <h3 style="font-size:15px; font-weight:800; color:var(--primary); margin:0;"><i class="fa-solid fa-history"></i> Today's De-Heading Entries</h3>
+    <div style="display:flex; gap:10px; position: relative;">
+        <button class="menu-trigger" id="menuBtn" style="background:#fff; border:1px solid var(--border); width:35px; height:35px; border-radius:8px; cursor:pointer; display:none;"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash"></i> Delete Entry</div></div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> New Entry</button>
+    </div>
 </div>
-{% endif %}
+
+<div class="table-wrap" style="margin:15px 25px; background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+    <table id="mainTable">
+        <thead style="background:#f8fafc;">
+            <tr>
+                <th>Location</th><th>Production For</th><th>Batch / Count</th><th>Species</th><th>HOSO (In)</th>
+                <th>HLSO (Out)</th><th>Yield %</th><th>Contractor</th><th style="text-align:right">Amount</th>
+            </tr>
+        </thead>
+        <tbody id="today_entries_body">
+            {% for r in today_data %}
+            <tr data-id="{{r.id}}" data-loc="{{r.peeling_at}}" onclick="selectRow(this)">
+                <td>{{r.peeling_at}}</td>
+                <td style="font-weight: 600; color: var(--primary);">{{ r.production_for }}</td>
+                <td>{{r.batch_number}} / {{r.hoso_count}}</td>
+                <td>{{r.species}}</td>
+                <td class="qty-in" style="font-weight:700;">{{r.hoso_qty}}</td>
+                <td class="qty-out" style="font-weight:700;">{{r.hlso_qty}}</td>
+                <td>{{r.yield_percent}}%</td>
+                <td>{{r.contractor}}</td>
+                <td class="amt" style="text-align:right; color:var(--accent); font-weight:700;">{{ "%.2f"|format(r.amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; border-bottom:1px solid #eee; padding-bottom:15px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">De-Heading Entry Form</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:24px; color:var(--muted);">&times;</button>
+        </div>
+        <form id="deHeadingForm">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Production For</label>
+                    <input list="prod_for_list_data" name="production_for" id="form_production_for" onchange="loadBatches()" placeholder="Search Company..." required autocomplete="off">
+                    <datalist id="prod_for_list_data">
+                        {% for p in prod_for_list %}<option value="{{p}}">{% endfor %}
+                    </datalist>
+                </div>
+                <div class="field">
+                    <label>Location</label>
+                    <input list="loc_list_data" name="deheading_at" id="form_loc" onchange="loadBatches()" placeholder="Search Location..." required autocomplete="off">
+                    <datalist id="loc_list_data">
+                        {% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}
+                    </datalist>
+                </div>
+                <div class="field">
+                    <label>Species</label>
+                    <input list="species_list_data" name="species" id="form_species" onchange="checkFloor()" placeholder="Search Species..." required autocomplete="off">
+                    <datalist id="species_list_data">
+                        {% for s in species %}<option value="{{s}}">{% endfor %}
+                    </datalist>
+                </div>
+                <div class="field">
+                    <label>Batch Number</label>
+                    <input list="batch_list_data" name="batch_number" id="form_batch" onchange="loadCounts()" placeholder="Type/Search Batch" required autocomplete="off">
+                    <datalist id="batch_list_data"></datalist>
+                </div>
+                <div class="field">
+                    <label>HOSO Count</label>
+                    <input list="count_list_data" name="hoso_count" id="form_count" onchange="checkFloor()" placeholder="Search Count..." required autocomplete="off">
+                    <datalist id="count_list_data"></datalist>
+                </div>
+                <div class="field">
+                    <label>HOSO Qty (In)</label>
+                    <input type="number" step="0.01" name="hoso_qty" id="f_hoso" placeholder="0.00" required>
+                    <span style="font-size:10px; color:var(--accent); font-weight:700; margin-top:2px;">Floor Avail: <b id="floor_display">0.00</b></span>
+                </div>
+                <div class="field"><label>HLSO Qty (Out)</label><input type="number" step="0.01" name="hlso_qty" id="f_hlso" placeholder="0.00" required></div>
+                <div class="field"><label>Yield %</label><input type="text" id="f_yield" readonly name="yield_percent"></div>
+                <div class="field">
+                    <label>Contractor</label>
+                    <input list="contractor_list_data" name="contractor" id="f_contractor" onchange="getRate()" placeholder="Search Contractor..." required autocomplete="off">
+                    <datalist id="contractor_list_data">
+                        {% for c in contractors %}<option value="{{c}}">{% endfor %}
+                    </datalist>
+                </div>
+                <div class="field"><label>Rate / Kg</label><input type="number" name="rate_per_kg" id="f_rate" readonly></div>
+                <div class="field"><label>Total Amount</label><input type="number" name="amount" id="f_amount" readonly style="color:var(--accent); font-size:16px;"></div>
+            </div>
+            <div style="margin-top:30px; text-align:right; border-top:1px solid #eee; padding-top:20px;">
+                <button type="button" onclick="closeModal()" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:10px;">Cancel</button>
+                <button type="submit" class="btn-add" id="submitBtn">Save Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  /* ELEMENTS */
-  const batchDD = document.getElementById("batch_dd");
-  const countDD = document.getElementById("count_dd");
-  const contractorDD = document.getElementById("contractor_dd");
-  const hosoQty = document.getElementById("hoso_qty");
-  const hlsoQty = document.getElementById("hlso_qty");
-  const yieldTxt = document.getElementById("yield_pct");
-  const yieldHidden = document.getElementById("yield_hidden");
-  const rateEl = document.getElementById("rate");
-  const amtEl = document.getElementById("amount");
-  const availEl = document.getElementById("available_qty");
-  const menuBtn = document.getElementById("menuBtn");
-  const dropdownMenu = document.getElementById("dropdownMenu");
-  const threeDotsMenu = document.getElementById("threeDotsMenu");
+const rawFloorData = {{ hoso_floor_balance | safe if hoso_floor_balance else '[]' }};
+let chartInstance = null;
 
-  /* CALCULATIONS */
-  function calc() {
-    let h = parseFloat(hosoQty.value) || 0;
-    let l = parseFloat(hlsoQty.value) || 0;
-    let r = parseFloat(rateEl.value) || 0;
-    let y = h ? ((l / h) * 100) : 0;
-    yieldTxt.value = y.toFixed(2) + " %";
-    yieldHidden.value = y.toFixed(2);
-    amtEl.value = (l * r).toFixed(2);
-  }
-  hosoQty.oninput = hlsoQty.oninput = calc;
+const getLocationColor = (loc) => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+    let hash = 0;
+    for (let i = 0; i < loc.length; i++) { hash = loc.charCodeAt(i) + ((hash << 5) - hash); }
+    return colors[Math.abs(hash) % colors.length];
+};
 
-  /* FETCH LOGIC */
-  batchDD.onchange = () => {
-    countDD.innerHTML = "<option value=''>Select Count</option>";
-    fetch(`/processing/get_hoso/${batchDD.value}`).then(r => r.json()).then(d => {
-      d.counts.forEach(c => {
-        let o = document.createElement("option"); o.value = c; o.text = c;
-        countDD.appendChild(o);
-      });
+function updateDashboard() {
+    const spF = document.getElementById('dashboard_species_filter').value.trim().toLowerCase();
+    const cpF = document.getElementById('dashboard_company_filter').value.trim().toLowerCase();
+    const lcF = document.getElementById('dashboard_location_filter').value.trim().toLowerCase();
+    
+    const fbBody = document.getElementById('fb_main_body');
+    fbBody.innerHTML = "";
+
+    let hierarchy = {}; 
+    let grandTotal = 0;
+    let chartDataMap = {}; 
+    let batches = new Set();
+    let counts = new Set();
+
+    rawFloorData.forEach(item => {
+        const comp = item.production_for || "General Stock";
+        const loc = item.peeling_at || "Purchased Stock";
+        const species = item.species || "";
+        const qty = parseFloat(item.available_qty) || 0;
+        const count = item.count || "Unknown";
+
+        if (cpF && comp.toLowerCase() !== cpF) return; 
+        if (spF && species.toLowerCase() !== spF) return;
+        if (lcF && !loc.toLowerCase().includes(lcF)) return;
+
+        if (!hierarchy[comp]) hierarchy[comp] = { total: 0, locations: {} };
+        if (!hierarchy[comp].locations[loc]) hierarchy[comp].locations[loc] = { total: 0, items: [] };
+
+        hierarchy[comp].total += qty;
+        hierarchy[comp].locations[loc].total += qty;
+        hierarchy[comp].locations[loc].items.push(item);
+
+        if (!chartDataMap[count]) chartDataMap[count] = {};
+        chartDataMap[count][loc] = (chartDataMap[count][loc] || 0) + qty;
+
+        grandTotal += qty;
+        batches.add(item.batch);
+        counts.add(item.count);
     });
-  };
 
-  countDD.onchange = () => {
-    fetch(`/processing/get_available_qty/${batchDD.value}/${countDD.value}`)
-      .then(r => r.json()).then(d => availEl.innerText = d.available_qty);
-  };
-
-  contractorDD.onchange = () => {
-    fetch(`/processing/get_rate/${contractorDD.value}`)
-      .then(r => r.json()).then(d => { rateEl.value = d.rate; calc(); });
-  };
-
-  /* EDIT MODE AUTO-LOAD */
-  {% if edit_data %}
-    fetch(`/processing/get_hoso/{{edit_data.batch_number}}`).then(r => r.json()).then(d => {
-      countDD.innerHTML = "<option value=''>Select Count</option>";
-      d.counts.forEach(c => {
-        let o = document.createElement("option"); o.value = c; o.text = c;
-        if (c === "{{edit_data.hoso_count}}") o.selected = true;
-        countDD.appendChild(o);
-      });
+    Object.keys(hierarchy).sort().forEach((comp, cIdx) => {
+        const cId = `comp_${cIdx}`;
+        fbBody.innerHTML += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td style="padding-left:15px;"><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td style="text-align:right; padding-right:15px;">${hierarchy[comp].total.toFixed(2)}</td></tr>`;
+        Object.keys(hierarchy[comp].locations).sort().forEach((loc, lIdx) => {
+            const lId = `${cId}_loc_${lIdx}`;
+            fbBody.innerHTML += `
+                <tr class="location-row child-of-${cId}" style="display:none;" onclick="toggleRows('#drill_${lId}', 'table-row')">
+                    <td><i class="fa-solid fa-location-dot" style="margin-left:25px; margin-right:8px;"></i> ${loc}</td>
+                    <td style="text-align:right; padding-right:15px;">${hierarchy[comp].locations[loc].total.toFixed(2)}</td>
+                </tr>
+                <tr class="drill-row" id="drill_${lId}" style="display:none;">
+                    <td colspan="2">
+                        <div class="drill-container"><table class="drill-table"><thead><tr><th>Species</th><th>Batch / Count</th><th style="text-align:right">Qty (Kg)</th></tr></thead>
+                        <tbody>${hierarchy[comp].locations[loc].items.map(i => `<tr><td>${i.species}</td><td>${i.batch} / ${i.count}</td><td style="text-align:right; font-weight:700;">${parseFloat(i.available_qty).toFixed(2)}</td></tr>`).join('')}</tbody>
+                        </table></div>
+                    </td>
+                </tr>`;
+        });
     });
-    fetch(`/processing/get_available_qty/{{edit_data.batch_number}}/{{edit_data.hoso_count}}`)
-      .then(r => r.json()).then(d => availEl.innerText = d.available_qty);
-    fetch(`/processing/get_rate/{{edit_data.contractor}}`)
-      .then(r => r.json()).then(d => { rateEl.value = d.rate; calc(); });
-  {% endif %}
 
-  /* TABLE INTERACTION */
-  let selectedRow = null;
-  document.querySelectorAll("#mainTable tbody tr").forEach(r => {
-    r.onclick = () => {
-      document.querySelectorAll("#mainTable tr").forEach(x => x.classList.remove("selected"));
-      r.classList.add("selected");
-      selectedRow = r;
-      threeDotsMenu.style.display = "block";
-    };
-  });
+    document.getElementById('gt_display').innerText = `TOTAL FLOOR: ${grandTotal.toFixed(2)} KG`;
+    document.getElementById('stat_batches').innerText = batches.size;
+    document.getElementById('stat_counts').innerText = counts.size;
+    
+    updateTodayTableSubtotals();
+    renderStackedBar(chartDataMap);
+}
 
-  menuBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
-  });
+function renderStackedBar(dataMap) {
+    const ctx = document.getElementById('countStackedBar').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+    const labels = Object.keys(dataMap).sort();
+    const locations = [...new Set(rawFloorData.map(i => i.peeling_at || "Purchased Stock"))];
+    const datasets = locations.map(loc => ({
+        label: loc,
+        data: labels.map(label => dataMap[label][loc] || 0),
+        backgroundColor: getLocationColor(loc),
+        borderRadius: 4
+    })).filter(ds => ds.data.some(v => v > 0));
 
-  window.onclick = () => dropdownMenu.style.display = "none";
+    chartInstance = new Chart(ctx, {
+        type: 'bar', plugins: [ChartDataLabels],
+        data: { labels: labels, datasets: datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { 
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                datalabels: { color: '#fff', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 50 ? v.toFixed(0) : '' }
+            },
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+    });
+}
 
-  window.editSelected = () => { if(selectedRow) location.href = "/processing/de_heading/edit/" + selectedRow.dataset.id; };
-  window.deleteSelected = () => {
-    if(selectedRow && confirm("Delete this entry?")) {
-      fetch(`/processing/de_heading/delete/${selectedRow.dataset.id}`, { method: "POST" }).then(() => location.reload());
+function toggleRows(selector, displayType) {
+    const rows = document.querySelectorAll(selector);
+    rows.forEach(row => {
+        if (displayType === 'none') {
+            if (row.style.display === 'table-row') {
+                row.style.display = 'none';
+                const drillAttr = row.getAttribute('onclick');
+                if(drillAttr) {
+                    const drillId = drillAttr.match(/'([^']+)'/)[1];
+                    const drillElement = document.querySelector(drillId);
+                    if(drillElement) drillElement.style.display = 'none';
+                }
+            } else { row.style.display = 'table-row'; }
+        } else { row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row'; }
+    });
+}
+
+function updateTodayTableSubtotals() {
+    const tbody = document.getElementById('today_entries_body');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.subtotal-row)'));
+    tbody.querySelectorAll('.subtotal-row').forEach(r => r.remove());
+    let locGroup = {};
+    rows.forEach(r => {
+        const loc = r.dataset.loc;
+        if(!locGroup[loc]) locGroup[loc] = { in:0, out:0, amt:0, lastRow: null };
+        locGroup[loc].in += parseFloat(r.querySelector('.qty-in').innerText) || 0;
+        locGroup[loc].out += parseFloat(r.querySelector('.qty-out').innerText) || 0;
+        locGroup[loc].amt += parseFloat(r.querySelector('.amt').innerText) || 0;
+        locGroup[loc].lastRow = r;
+    });
+    Object.keys(locGroup).forEach(loc => {
+        locGroup[loc].lastRow.insertAdjacentHTML('afterend', `<tr class="subtotal-row"><td colspan="4" style="text-align:right;">Sub-Total ${loc}:</td><td>${locGroup[loc].in.toFixed(2)}</td><td>${locGroup[loc].out.toFixed(2)}</td><td></td><td></td><td style="text-align:right;">${locGroup[loc].amt.toFixed(2)}</td></tr>`);
+    });
+}
+
+// =====================================================
+// DYNAMIC FORM LOGIC (COMPANY + LOCATION -> BATCH -> COUNT)
+// =====================================================
+
+async function loadBatches() {
+    const comp = document.getElementById('form_production_for').value;
+    const loc = document.getElementById('form_loc').value;
+    if(!comp || !loc) return;
+
+    fetch(`/processing/get_valid_batches/${comp}/${loc}`)
+    .then(r => r.json())
+    .then(data => {
+        const dl = document.getElementById('batch_list_data');
+        dl.innerHTML = '';
+        if(data.batches) data.batches.forEach(b => dl.innerHTML += `<option value="${b}">`);
+        // Clear dependent fields
+        document.getElementById('form_batch').value = '';
+        document.getElementById('count_list_data').innerHTML = '';
+    });
+}
+
+async function loadCounts() {
+    const comp = document.getElementById('form_production_for').value;
+    const loc = document.getElementById('form_loc').value;
+    const batch = document.getElementById('form_batch').value;
+    if(!comp || !loc || !batch) return;
+
+    fetch(`/processing/get_hoso/${comp}/${loc}/${batch}`)
+    .then(r => r.json())
+    .then(data => {
+        const dl = document.getElementById('count_list_data');
+        dl.innerHTML = '';
+        if(data.counts) data.counts.forEach(c => dl.innerHTML += `<option value="${c}">`);
+        checkFloor(); 
+    });
+}
+
+async function checkFloor() {
+    const loc = document.getElementById('form_loc').value;
+    const b = document.getElementById('form_batch').value;
+    const c = document.getElementById('form_count').value;
+    const s = document.getElementById('form_species').value;
+    if(!loc || !b || !c || !s) { document.getElementById('floor_display').innerText = "0.00"; return; }
+    try {
+        const response = await fetch(`/processing/get_available_qty/${loc}/${b}/${c}/${s}`);
+        const data = await response.json();
+        document.getElementById('floor_display').innerText = data.available_qty || "0.00";
+    } catch(e) { console.error(e); }
+}
+
+function getRate() {
+    const c = document.getElementById('f_contractor').value;
+    if(!c) return;
+    fetch(`/processing/get_rate/${c}`).then(r=>r.json()).then(data => {
+        document.getElementById('f_rate').value = data.rate;
+        calculateForm();
+    });
+}
+
+function calculateForm() {
+    const hoso = parseFloat(document.getElementById('f_hoso').value) || 0;
+    const hlso = parseFloat(document.getElementById('f_hlso').value) || 0;
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    document.getElementById('f_yield').value = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) + "%" : "0%";
+    document.getElementById('f_amount').value = (hlso * rate).toFixed(2);
+}
+
+document.getElementById('deHeadingForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const reqQty = parseFloat(document.getElementById('f_hoso').value) || 0;
+    const availQty = parseFloat(document.getElementById('floor_display').innerText) || 0;
+    if (reqQty > (availQty + 0.1)) { 
+        Swal.fire('Error', `Quantity exceeds floor balance! (Available: ${availQty})`, 'error'); 
+        return; 
     }
-  };
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    try {
+        const resp = await fetch('/processing/de_heading', { method: 'POST', body: new FormData(this) });
+        if (resp.ok) Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false }).then(() => window.location.reload());
+        else {
+            const errData = await resp.json();
+            throw new Error(errData.error || 'Save failed');
+        }
+    } catch (err) { Swal.fire('Error', err.message, 'error'); btn.disabled = false; btn.innerText = 'Save Entry'; }
+};
 
-  /* TOTALS & SUMMARY */
-  function n(v) { return parseFloat(v) || 0; }
-  function totals() {
-    let gh = 0, gl = 0, ga = 0, map = {};
-    document.querySelectorAll("#mainTable tbody tr").forEach(r => {
-      let c = r.dataset.contractor;
-      let h = n(r.querySelector(".hoso").innerText);
-      let l = n(r.querySelector(".hlso").innerText);
-      let a = n(r.querySelector(".amount").innerText);
-      gh += h; gl += l; ga += a;
-      if (!map[c]) map[c] = { h: 0, l: 0, a: 0 };
-      map[c].h += h; map[c].l += l; map[c].a += a;
-    });
-    document.getElementById("gt_hoso").innerText = gh.toFixed(2);
-    document.getElementById("gt_hlso").innerText = gl.toFixed(2);
-    document.getElementById("gt_amount").innerText = ga.toFixed(2);
-    const cb = document.getElementById("contractorBody");
-    cb.innerHTML = "";
-    Object.keys(map).forEach(c => {
-      cb.innerHTML += `<tr><td>${c}</td><td>${map[c].h.toFixed(2)}</td><td>${map[c].l.toFixed(2)}</td><td>${map[c].a.toFixed(2)}</td></tr>`;
-    });
-  }
-  totals();
-});
+function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+document.getElementById('f_hoso').addEventListener('input', calculateForm);
+document.getElementById('f_hlso').addEventListener('input', calculateForm);
+
+let selectedId = null;
+function selectRow(row) {
+    document.querySelectorAll('#mainTable tr').forEach(r => r.classList.remove('selected-row'));
+    row.classList.add('selected-row');
+    selectedId = row.dataset.id;
+    document.getElementById('menuBtn').style.display = 'block';
+}
+
+document.getElementById('menuBtn').onclick = (e) => {
+    e.stopPropagation();
+    const m = document.getElementById('dropdownMenu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+};
+
+async function deleteSelected() {
+    if(!selectedId) return;
+    const result = await Swal.fire({ title: 'Delete?', text: "This action cannot be undone!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
+    if(result.isConfirmed) {
+        try {
+            const resp = await fetch(`/processing/de_heading/delete/${selectedId}`, { method: 'POST' });
+            if(resp.ok) window.location.reload();
+        } catch (err) { Swal.fire('Error', err.message, 'error'); }
+    }
+}
+
+window.onclick = () => { document.getElementById('dropdownMenu').style.display = 'none'; };
+window.onload = updateDashboard;
 </script>
-
 </body>
 </html>

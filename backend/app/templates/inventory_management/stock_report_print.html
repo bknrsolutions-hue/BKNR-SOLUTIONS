@@ -58,7 +58,7 @@ th{
 <h2>STOCK REPORT</h2>
 <div class="company">
   {{ company_name }}<br>
-  Printed on : {{ printed_on.strftime('%d-%m-%Y %H:%M:%S') }}
+ Printed on : {{ printed_on }}
 </div>
 
 {% set totals = namespace(mc=0, loose=0, qty=0) %}

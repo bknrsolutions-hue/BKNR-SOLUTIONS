@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Salary Advance | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#0f172a;--accent:#2563eb;--border:#e5e7eb;
+  --bg:#f1f5f9;--success:#16a34a;--warning:#f59e0b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);
+  font-family:Inter,system-ui,sans-serif;color:#1e293b
+}
+.header{
+  background:#fff;padding:18px 32px;border-bottom:2px solid var(--primary);
+  display:flex;justify-content:space-between;align-items:center
+}
+.btn-add{
+  background:var(--primary);color:#fff;border:none;
+  padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer
+}
+
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000}
+.modal-box{
+  background:#fff;width:95%;max-width:1150px;margin:20px auto;
+  border-radius:14px;max-height:92vh;overflow:auto
+}
+.modal-header{
+  padding:16px 28px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:#f8fafc
+}
+
+/* FORM */
+.form-body{padding:22px 28px}
+.section{
+  margin-bottom:22px;border:1px solid var(--border);
+  padding:16px;border-radius:12px;background:#fff
+}
+.section-title{
+  font-size:12px;font-weight:800;color:var(--accent);
+  margin-bottom:14px;text-transform:uppercase
+}
+.form-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:16px
+}
+@media(max-width:900px){.form-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px}
+label{font-size:11px;font-weight:700;color:#64748b}
+input,select{
+  padding:10px;border:1px solid var(--border);
+  border-radius:8px;font-size:13px
+}
+input[readonly]{background:#f1f5f9}
+
+/* TABLE */
+.container{padding:22px}
+.table-wrap{
+  background:#fff;border-radius:14px;border:1px solid var(--border);overflow:auto
+}
+table{width:100%;border-collapse:collapse}
+th{
+  background:#f8fafc;padding:14px;font-size:11px;font-weight:800;
+  text-transform:uppercase;border-bottom:1px solid var(--border)
+}
+td{
+  padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9
+}
+.badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800}
+.pending{background:#fef3c7;color:#92400e}
+.paid{background:#dcfce7;color:#166534}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h2><i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance</h2>
+  <button class="btn-add" onclick="openModal()">+ ADD ADVANCE</button>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+<div class="modal-box">
+<div class="modal-header">
+  <h3>Salary Advance Entry</h3>
+  <span onclick="closeModal()" style="cursor:pointer;font-size:22px">&times;</span>
+</div>
+
+<form method="post" action="/attendance/salary-advance/save">
+<div class="form-body">
+
+<!-- EMPLOYEE -->
+<div class="section">
+<div class="section-title">Employee Details</div>
+<div class="form-grid">
+
+  <div class="field">
+    <label>Employee ID</label>
+    <select name="employee_id" id="emp_select" required>
+      <option value="">-- Select Employee --</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Employee Name</label>
+    <input name="employee_name" id="emp_name" readonly>
+  </div>
+
+  <div class="field">
+    <label>Department</label>
+    <input name="department" id="emp_dept" readonly>
+  </div>
+
+  <div class="field">
+    <label>Current Salary</label>
+    <input id="emp_salary" readonly>
+  </div>
+
+</div>
+</div>
+
+<!-- ADVANCE -->
+<div class="section">
+<div class="section-title">Advance Configuration</div>
+<div class="form-grid">
+
+  <div class="field">
+    <label>Total Advance</label>
+    <input type="number" name="advance_amount" required>
+  </div>
+
+  <div class="field">
+    <label>Monthly Installment</label>
+    <input type="number" name="monthly_deduction" required>
+  </div>
+
+  <div class="field">
+    <label>Deduct From</label>
+    <input type="month" name="deduct_from">
+  </div>
+
+  <div class="field">
+    <label>Deduct To</label>
+    <input type="month" name="deduct_to">
+  </div>
+
+  <!-- READ ONLY (Salary Sheet updates) -->
+  <div class="field">
+    <label>Paid From Salary</label>
+    <input value="0" readonly>
+  </div>
+
+  <div class="field">
+    <label>Remaining Balance</label>
+    <input value="0" readonly>
+  </div>
+
+</div>
+</div>
+
+<div class="actions">
+  <button type="button" onclick="closeModal()">Cancel</button>
+  <button type="submit" class="btn-save">Save</button>
+</div>
+
+</div>
+</form>
+</div>
+</div>
+
+<!-- TABLE -->
+<div class="container">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th>Emp ID</th>
+  <th>Name</th>
+  <th>Total Advance</th>
+  <th>Monthly</th>
+  <th>Remaining</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+{% for r in records %}
+<tr>
+  <td>{{ r.employee_id }}</td>
+  <td>{{ r.employee_name }}</td>
+  <td>{{ r.advance_amount }}</td>
+  <td>{{ r.monthly_deduction }}</td>
+  <td>{{ r.remaining_balance }}</td>
+  <td>
+    <span class="badge {{ 'paid' if r.remaining_balance == 0 else 'pending' }}">
+      {{ 'PAID' if r.remaining_balance == 0 else 'ACTIVE' }}
+    </span>
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<script>
+let empCache = {};
+
+fetch("/attendance/api/employees")
+.then(r=>r.json())
+.then(data=>{
+  const sel=document.getElementById("emp_select");
+  data.forEach(e=>{
+    empCache[e.employee_id]=e;
+    sel.innerHTML+=`<option value="${e.employee_id}">
+      ${e.employee_id} - ${e.employee_name}
+    </option>`;
+  });
+});
+
+document.getElementById("emp_select").addEventListener("change",function(){
+  const e=empCache[this.value];
+  if(!e)return;
+  emp_name.value=e.employee_name;
+  emp_dept.value=e.department||"";
+  emp_salary.value=e.current_salary||0;
+});
+
+function openModal(){modal.style.display="block"}
+function closeModal(){modal.style.display="none"}
+</script>
+
+</body>
+</html>

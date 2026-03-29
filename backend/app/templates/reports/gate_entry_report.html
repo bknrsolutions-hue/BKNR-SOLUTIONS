@@ -2,376 +2,375 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Gate Entry Report – BKNR ERP</title>
+<title>Gate Entry Ledger | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
-  --primary:#143465;
+  --primary: #143465;
   --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
 }
-*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden;}
+
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ================= HEADER & FILTERS ================= */
-.header-container {
-  background: #fff;
-  padding: 16px 20px;
+.header{
+  background: #fff; padding: 8px 15px;
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 1000;
 }
-.header-main {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
-}
-.header-main h2 { margin:0; font-size:20px; color:var(--primary); font-weight: 800; }
-.header-main p { margin:4px 0 0; font-size:12px; color:var(--muted); }
+.header h2{ margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* FILTERS GRID (Compact) */
 .filters{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.filters div { display: flex; flex-direction: column; gap: 4px; }
-.filters label{ font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filters select, .filters input{
-  width:100%; padding: 6px 8px; font-size: 12px;
+  margin-top: 8px; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 6px; background: #f8fafc; padding: 10px;
   border-radius: 6px; border: 1px solid var(--border);
-  outline: none; transition: 0.2s;
 }
-.filters select:focus, .filters input:focus { border-color: var(--accent); }
+.fbox{ display: flex; flex-direction: column; gap: 2px; }
+.fbox label{ font-size: 8px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
 
-/* ================= ACTION BAR ================= */
-.action-bar {
-  display: flex; justify-content: space-between; align-items: center;
-  margin: 15px 20px 0;
+select, input[type=date], #searchBox{
+  padding: 4px; border-radius: 4px; border: 1px solid var(--border);
+  font-size: 10px; background: #fff; outline: none;
 }
-#rowCount { font-size: 13px; font-weight: 700; color: var(--primary); background: #eef2ff; padding: 4px 12px; border-radius: 20px; border: 1px solid #e0e7ff; }
+#searchBox{ grid-column: span 2; border-left: 3px solid var(--accent); }
 
-/* 3 DOT MENU */
-.menu { position: relative; }
-.menu-btn {
-  background: #fff; border: 1px solid var(--border);
-  width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; font-size: 18px;
+/* ================= ACTIONS ================= */
+.actions{
+  padding: 5px 15px; display: flex;
+  justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border);
 }
-.menu-list {
-  display:none; position:absolute; right:0; top:40px;
-  background:#fff; border:1px solid var(--border);
-  border-radius:10px; min-width:200px; z-index:1100;
-  box-shadow:0 10px 25px rgba(0,0,0,.15); overflow: hidden;
+#rowCount{ font-size: 10px; font-weight: 700; color: var(--accent); }
+
+.menu-box{ position: relative; display: flex; gap: 8px; }
+.dots{
+  width: 26px; height: 26px; border: 1px solid var(--border);
+  background: #fff; border-radius: 4px; display: flex;
+  align-items: center; justify-content: center; cursor: pointer; font-size: 14px;
 }
-.menu-list div {
-  padding:10px 15px; font-size:13px; font-weight: 600; cursor:pointer;
-  display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9;
+
+.menu-list{
+  position: absolute; right: 0; top: 30px;
+  width: 160px; background: #fff; border-radius: 4px;
+  border: 1px solid var(--border); display: none; z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div:hover { background: #f1f5ff; color: var(--accent); }
-.menu-list div:last-child { border-bottom: none; }
+.menu-list div{ padding: 8px 12px; font-size: 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.menu-list div:hover{ background: #f0f7ff; color: var(--accent); }
 
 /* ================= TABLE AREA ================= */
-.section{
-  margin: 15px 20px 30px;
-  background:#fff; border-radius:14px;
-  border:1px solid var(--border);
-  overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-.table-wrap{ overflow:auto; max-height: calc(100vh - 320px); }
-table{ width:100%; border-collapse:collapse; font-size:12px; }
-th, td{
-  padding: 12px 10px; border-bottom:1px solid #edf2f7; text-align:left;
-}
-th{
-  background:#f8fafc; color: #475569; font-weight: 700;
-  text-transform: uppercase; font-size: 11px; position: sticky; top: 0; z-index: 2;
-}
-tr:hover{ background:#f8fbff; cursor:pointer; }
-tr.selected{ background:#eff6ff !important; border-left: 4px solid var(--accent); }
+.section{ flex: 1; overflow: hidden; margin: 5px; background: #fff; border: 1px solid var(--border); display: flex; flex-direction: column; }
+.table-wrap{ overflow-y: auto; overflow-x: hidden; flex: 1; width: 100%; } 
 
-/* FOOTER / TOTALS */
-tfoot td{ background:#f1f5f9; font-weight: 800; color: var(--primary); padding: 15px 10px; border-top: 2px solid var(--border); }
+table{ width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-/* TOAST */
-.toast{
-  position:fixed; top:20px; right:20px;
-  background: var(--primary); color:#fff;
-  padding:12px 20px; border-radius:8px;
-  font-size:13px; font-weight: 600; z-index:9999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+thead th{
+  background: #f1f5f9; color: #334155; padding: 8px 1px;
+  font-size: 8.5px; font-weight: 700; position: sticky;
+  top: 0; text-align: center; border-bottom: 2px solid var(--border);
+  border-right: 1px solid #e2e8f0; z-index: 10;
+  text-transform: uppercase;
+}
+
+tbody td{
+  padding: 6px 1px; font-size: 9px;
+  border-bottom: 1px solid #f1f5f9; text-align: center;
+  border-right: 1px solid #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+tbody tr:hover{ background: #f0f9ff; cursor: pointer; }
+tr.selected{ background: #dbeafe !important; }
+
+/* Column Widths (Adjusted for Fit-to-Screen) */
+.w-sl { width: 3%; }
+.w-dt { width: 6%; }
+.w-tm { width: 4.5%; }
+.w-bt { width: 7.5%; }
+.w-ch { width: 7.5%; }
+.w-gp { width: 7.5%; }
+.w-fc { width: 8.5%; }
+.w-sp { width: 13%; }
+.w-lc { width: 8.5%; }
+.w-vh { width: 7.5%; }
+.w-pf { width: 8.5%; }
+.w-bx { width: 4.5%; }
+.w-em { width: 12.5%; }
+
+.edit-input { width: 95%; padding: 2px; font-size: 9px; border: 1px solid var(--accent); text-align: center; outline: none; }
+
+/* ================= FOOTER ================= */
+tfoot td{
+  position: sticky; bottom: 0; z-index: 10;
+  padding: 8px; font-weight: 800; background: #f8fafc;
+  border-top: 2px solid var(--border); color: var(--primary); font-size: 9px;
+}
+
+/* AUDIT PANEL */
+.audit-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 360px;
+  background: #fff; border-left: 4px solid var(--primary);
+  z-index: 3000; display: none; flex-direction: column; box-shadow: -10px 0 20px rgba(0,0,0,0.15);
+}
+
+/* ================= PRINT STYLES ================= */
+@media print {
+  body { overflow: visible !important; height: auto !important; background: #fff !important; }
+  .header, .filters, .actions, .audit-panel, .menu-list, .dots { display: none !important; }
+  .section { border: none !important; margin: 0 !important; overflow: visible !important; }
+  .table-wrap { overflow: visible !important; }
+  table { width: 100% !important; border: 1px solid #000 !important; table-layout: fixed !important; }
+  thead th { background: #eee !important; color: #000 !important; border: 1px solid #000 !important; position: static !important; }
+  tbody td { border: 1px solid #000 !important; color: #000 !important; font-size: 8pt !important; }
+  tfoot td { background: #eee !important; border: 1px solid #000 !important; position: static !important; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="header-container">
-  <div class="header-main">
-    <div>
-        <h2>Gate Entry Report</h2>
-        <p><i class="fa-solid fa-file-invoice"></i> Inbound material · Factory wise gate entries</p>
-    </div>
-    <div style="font-size: 11px; font-weight: 700; color: var(--muted);">BKNR ERP · 2026</div>
-  </div>
-
+<div class="header">
+  <h2>GATE ENTRY LEDGER</h2>
   <div class="filters">
-    <div><label>Batch Number</label>
-      <select id="f_batch"><option value="">All Batches</option>{% for b in batches %}<option>{{b}}</option>{% endfor %}</select>
+    <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
+    <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
+    
+    <div class="fbox"><label>Production For</label>
+      <select id="f_production">
+        <option value="">All</option>
+        {% for p in production_for_list %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+      </select>
     </div>
-    <div><label>Challan Number</label>
-      <select id="f_challan"><option value="">All Challans</option>{% for c in challans %}<option>{{c}}</option>{% endfor %}</select>
+    
+    <div class="fbox"><label>Supplier</label>
+      <select id="f_supplier">
+        <option value="">All</option>
+        {% for s in suppliers_list %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
     </div>
-    <div><label>Supplier Name</label>
-      <select id="f_supplier"><option value="">All Suppliers</option>{% for s in suppliers %}<option>{{s}}</option>{% endfor %}</select>
+
+    <div class="fbox"><label>Factory</label>
+      <select id="f_factory">
+        <option value="">All</option>
+        {% for f in factories_list %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+      </select>
     </div>
-    <div><label>Factory</label>
-      <select id="f_factory"><option value="">All Factories</option>{% for f in receiving_centers %}<option>{{f}}</option>{% endfor %}</select>
-    </div>
-    <div><label>Gate Pass</label>
-      <select id="f_gate"><option value="">All GP</option>{% for g in gates %}<option>{{g}}</option>{% endfor %}</select>
-    </div>
-    <div><label>From Date</label><input type="date" id="f_from"></div>
-    <div><label>To Date</label><input type="date" id="f_to"></div>
-    <div><label>Quick Search</label><input id="f_search" placeholder="Search rows..."></div>
+
+    <input id="searchBox" placeholder="Quick Search Batch/Challan/Vehicle...">
   </div>
 </div>
 
-<div class="action-bar">
-    <div id="rowCount">0 rows found</div>
-    <div class="menu">
-      <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-      <div class="menu-list" id="menuList">
-        {% if is_admin %}
-          <div onclick="enableEdit()"><i class="fa-solid fa-pen"></i> Edit Mode (Dbl Click)</div>
-          <div onclick="saveEdit()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</div>
-          <div onclick="deleteRow()"><i class="fa-solid fa-trash-can"></i> Delete Selected</div>
-        {% endif %}
-        <div onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</div>
-        <div onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
-        <div onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
-      </div>
+<div class="actions">
+  <div id="rowCount">0 rows</div>
+  <div class="menu-box">
+    <div class="dots" onclick="toggleMenu(event)">⋮</div>
+    <div class="menu-list" id="mainMenu">
+      <div onclick="enableEdit()">✏️ Edit Row</div>
+      <div onclick="saveEdit()">💾 Save Changes</div>
+      <div onclick="toggleAudit()">📜 Full Audit History</div>
+      <hr>
+      <div onclick="confirmAction('print')">🖨 Print Ledger</div>
+      <div onclick="confirmAction('excel')">📊 Export Excel</div>
+      <div onclick="confirmAction('pdf')">📄 Export PDF</div>
+      <hr>
+      <div onclick="deleteRow()" style="color:red">🗑 Delete Row</div>
     </div>
+  </div>
 </div>
 
 <div class="section">
-<div class="table-wrap">
-<table id="mainTable">
-<thead>
-<tr>
-  <th>ID</th>
-  <th>Date</th>
-  <th>Time</th>
-  <th>Batch #</th>
-  <th>Challan #</th>
-  <th>Gate Pass</th>
-  <th>Supplier</th>
-  <th>Center</th>
-  <th>Location</th>
-  <th>Vehicle #</th>
-  <th style="text-align: center;">Material</th>
-  <th style="text-align: center;">Empty</th>
-  <th style="text-align: center;">Ice</th>
-</tr>
-</thead>
-
-<tbody id="tbody">
-{% for r in rows %}
-<tr data-id="{{r.id}}" onclick="selectRow(this)">
-  <td>{{r.id}}</td>
-  <td>{{r.date}}</td>
-  <td style="color: var(--muted);">{{r.time.strftime("%H:%M:%S")}}</td>
-  <td style="font-weight: 700;">{{r.batch_number}}</td>
-  <td>{{r.challan_number}}</td>
-  <td>{{r.gate_pass_number}}</td>
-  <td>{{r.supplier_name}}</td>
-  <td>{{r.receiving_center}}</td>
-  <td>{{r.purchasing_location}}</td>
-  <td>{{r.vehicle_number}}</td>
-  <td style="text-align: center; font-weight: 700;">{{r.no_of_material_boxes}}</td>
-  <td style="text-align: center;">{{r.no_of_empty_boxes}}</td>
-  <td style="text-align: center;">{{r.no_of_ice_boxes}}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-<tfoot>
-<tr>
-  <td colspan="10" style="text-align:right">TOTAL SUM</td>
-  <td id="t_mat" style="text-align: center; color: var(--accent);">0</td>
-  <td id="t_emp" style="text-align: center;">0</td>
-  <td id="t_ice" style="text-align: center;">0</td>
-</tr>
-</tfoot>
-</table>
+  <div class="table-wrap">
+    <table id="gateTable">
+      <thead>
+        <tr>
+          <th class="w-sl">#</th>
+          <th class="w-dt">Date</th>
+          <th class="w-tm">Time</th>
+          <th class="w-bt">Batch</th>
+          <th class="w-ch">Challan</th>
+          <th class="w-gp">G.Pass</th>
+          <th class="w-fc">Factory</th>
+          <th class="w-sp">Supplier</th>
+          <th class="w-lc">Location</th>
+          <th class="w-vh">Vehicle</th>
+          <th class="w-pf">Prod For</th>
+          <th class="w-bx">Mat.</th>
+          <th class="w-bx">Emp.</th>
+          <th class="w-bx">Ice</th>
+          <th class="w-em">Email</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        {% for r in rows %}
+        <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+          <td class="sl_no"></td>
+          <td>{{ r.date }}</td>
+          <td>{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
+          <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
+          <td class="editable" data-field="challan_number">{{ r.challan_number }}</td>
+          <td class="editable" data-field="gate_pass_number">{{ r.gate_pass_number }}</td>
+          <td class="lookup factory" data-field="receiving_center">{{ r.receiving_center }}</td>
+          <td class="lookup supplier" data-field="supplier_name">{{ r.supplier_name }}</td>
+          <td class="lookup location" data-field="purchasing_location">{{ r.purchasing_location }}</td>
+          <td class="lookup vehicle" data-field="vehicle_number">{{ r.vehicle_number }}</td>
+          <td class="lookup production" data-field="production_for">{{ r.production_for }}</td>
+          <td class="editable mat_val" data-field="no_of_material_boxes">{{ r.no_of_material_boxes }}</td>
+          <td class="editable emp_val" data-field="no_of_empty_boxes">{{ r.no_of_empty_boxes }}</td>
+          <td class="editable ice_val" data-field="no_of_ice_boxes">{{ r.no_of_ice_boxes }}</td>
+          <td>{{ r.email }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="11" style="text-align:right">TOTAL:</td>
+          <td id="t_mat">0</td>
+          <td id="t_emp">0</td>
+          <td id="t_ice">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </div>
+
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b>GATE ENTRY AUDIT HISTORY</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f4f7f9;"></div>
 </div>
 
 <script>
-/* Context data from Jinja */
-const IS_ADMIN = {{ is_admin | tojson }};
-const LOOKUP_SUPPLIERS = {{ suppliers | default([]) | tojson }};
-const LOOKUP_FACTORIES = {{ receiving_centers | default([]) | tojson }};
-const LOOKUP_VEHICLES  = {{ vehicles | default([]) | tojson }};
-const LOOKUP_LOCATIONS = {{ purchasing_locations | default([]) | tojson }};
+const lookups = {
+    supplier: {{ suppliers_list|tojson or [] }},
+    factory: {{ factories_list|tojson or [] }},
+    location: {{ locations_list|tojson or [] }},
+    vehicle: {{ vehicles_list|tojson or [] }},
+    production: {{ production_for_list|tojson or [] }}
+};
 
-const rows=[...document.querySelectorAll("#tbody tr")];
-let selected=null;
-let editMode=false;
+const allRows = [...document.querySelectorAll("#tbody tr")];
+let selectedRow = null;
 
-/* MENU TOGGLE */
-function toggleMenu(){
-  const m = document.getElementById("menuList");
-  m.style.display = m.style.display==="block"?"none":"block";
-}
-window.onclick=e=>{ if(!e.target.closest(".menu")) menuList.style.display="none"; };
-
-/* ROW SELECTION */
-function selectRow(tr){
-  rows.forEach(r=>r.classList.remove("selected"));
-  tr.classList.add("selected");
-  selected=tr;
+function selectRow(tr) { 
+    allRows.forEach(r => r.classList.remove("selected")); 
+    tr.classList.add("selected"); 
+    selectedRow = tr; 
 }
 
-/* FILTER LOGIC (Preserved) */
-function applyFilters(){
-  let mat=0,emp=0,ice=0,count=0;
-  const f_batch = document.getElementById("f_batch");
-  const f_challan = document.getElementById("f_challan");
-  const f_supplier = document.getElementById("f_supplier");
-  const f_factory = document.getElementById("f_factory");
-  const f_gate = document.getElementById("f_gate");
-  const f_from = document.getElementById("f_from");
-  const f_to = document.getElementById("f_to");
-  const f_search = document.getElementById("f_search");
+function applyFilters() {
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const fs = f_supplier.value, ff = f_factory.value, fp = f_production.value;
+    const q = searchBox.value.toLowerCase();
+    
+    let mat=0, emp=0, ice=0;
+    let visibleRows = [];
 
-  rows.forEach(r=>{
-    let ok=true;
-    let d=r.children[1].innerText;
-    if(f_from.value && d<f_from.value) ok=false;
-    if(f_to.value && d>f_to.value) ok=false;
-    if(f_batch.value && r.children[3].innerText!==f_batch.value) ok=false;
-    if(f_challan.value && r.children[4].innerText!==f_challan.value) ok=false;
-    if(f_gate.value && r.children[5].innerText!==f_gate.value) ok=false;
-    if(f_supplier.value && r.children[6].innerText!==f_supplier.value) ok=false;
-    if(f_factory.value && r.children[7].innerText!==f_factory.value) ok=false;
-    if(f_search.value && !r.innerText.toLowerCase().includes(f_search.value.toLowerCase())) ok=false;
+    allRows.forEach(r => {
+        const d = r.dataset.date;
+        const s = r.children[7].innerText, f = r.children[6].innerText, p = r.children[10].innerText;
+        const text = r.innerText.toLowerCase();
 
-    r.style.display = ok ? "" : "none";
-    if(ok){
-      count++;
-      mat+=+r.children[10].innerText||0;
-      emp+=+r.children[11].innerText||0;
-      ice+=+r.children[12].innerText||0;
+        let ok = true;
+        if(f1 && d < f1) ok = false; 
+        if(f2 && d > f2) ok = false;
+        if(fs && s !== fs) ok = false; 
+        if(ff && f !== ff) ok = false;
+        if(fp && p !== fp) ok = false;
+        if(q && !text.includes(q)) ok = false;
+
+        if(ok) {
+            r.style.display = "";
+            visibleRows.push(r);
+            mat += parseFloat(r.querySelector(".mat_val").innerText) || 0;
+            emp += parseFloat(r.querySelector(".emp_val").innerText) || 0;
+            ice += parseFloat(r.querySelector(".ice_val").innerText) || 0;
+        } else {
+            r.style.display = "none";
+        }
+    });
+
+    let totalVisible = visibleRows.length;
+    visibleRows.forEach((r, index) => {
+        r.querySelector(".sl_no").innerText = totalVisible - index;
+    });
+
+    document.getElementById("rowCount").innerText = `${totalVisible} rows`;
+    t_mat.innerText = mat.toFixed(0); 
+    t_emp.innerText = emp.toFixed(0); 
+    t_ice.innerText = ice.toFixed(0);
+}
+
+function confirmAction(type) {
+    let msg = type === 'print' ? "Do you want to print the ledger?" : 
+              type === 'excel' ? "Export to Excel?" : "Download PDF?";
+    
+    if(confirm(msg)) {
+        if(type === 'print') window.print();
+        else exportFile(type);
     }
-  });
-  document.getElementById("rowCount").innerText = count+" rows found";
-  document.getElementById("t_mat").innerText = mat;
-  document.getElementById("t_emp").innerText = emp;
-  document.getElementById("t_ice").innerText = ice;
 }
-document.querySelectorAll(".filters select, .filters input").forEach(e=>e.oninput=applyFilters);
+
+function exportFile(type){
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    window.location.href = `/reports/gate_entry/${type === 'pdf' ? 'export_pdf' : 'export_excel'}?from_date=${f1}&to_date=${f2}`;
+}
+
+function enableEdit() {
+    if(!selectedRow) return alert("Select a row!");
+    selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
+        const val = td.innerText.trim();
+        if(td.classList.contains("lookup")){
+            const type = td.classList[1]; const opts = lookups[type] || [];
+            td.innerHTML = `<select class="edit-input" data-original="${val}">${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;
+        } else { td.innerHTML = `<input class="edit-input" data-original="${val}" value="${val}">`; }
+    });
+}
+
+async function saveEdit() {
+    if(!selectedRow) return;
+    const payload = { id: selectedRow.dataset.id };
+    let changed = false;
+    selectedRow.querySelectorAll(".edit-input").forEach(i => {
+        if(i.value !== i.dataset.original) { payload[i.parentElement.dataset.field] = i.value; changed = true; }
+    });
+    if(!changed) return location.reload();
+    const res = await fetch("/reports/gate_entry/update", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    if(res.ok) location.reload(); else alert("Error!");
+}
+
+async function deleteRow() {
+    if(!selectedRow || !confirm("Delete permanently?")) return;
+    const res = await fetch("/reports/gate_entry/delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
+    if(res.ok) location.reload();
+}
+
+function toggleAudit() {
+    const p = document.getElementById("auditPanel"); 
+    p.style.display = p.style.display==="flex"?"none":"flex";
+    if(p.style.display==="flex") {
+        fetch("/reports/gate_entry/audit").then(r=>r.json()).then(data=>{
+            document.getElementById("auditContent").innerHTML = data.map(l=>`
+                <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
+                    <b>REC: ${l.record_id}</b> | ${l.time}<br>
+                    Field: ${l.field}<br>
+                    <span style="color:red;">${l.old}</span> → <span style="color:green;">${l.new}</span>
+                </div>
+            `).join("");
+        });
+    }
+}
+
+function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
+document.onclick = () => document.getElementById("mainMenu").style.display="none";
+
+[f_from, f_to, f_supplier, f_factory, f_production].forEach(el => el.onchange = applyFilters);
+searchBox.oninput = applyFilters;
 applyFilters();
-
-/* INLINE EDIT (Admin Only) */
-function makeSelect(list, value){
-  const s=document.createElement("select");
-  list.forEach(v=>{
-    const o=document.createElement("option");
-    o.value=o.text=v;
-    if(v===value) o.selected=true;
-    s.appendChild(o);
-  });
-  s.className = "filters input"; // use filter styles for sizing
-  return s;
-}
-
-function enableEdit(){
-  if(!IS_ADMIN) return alert("Permission denied");
-  if(!selected) return alert("Please select a row first");
-  editMode=true;
-  showToast("Edit Mode Enabled: Double click any cell");
-
-  selected.querySelectorAll("td").forEach((td,i)=>{
-    if(i<=2) return;
-    td.ondblclick=()=>{
-      if(!editMode || td.querySelector("input,select")) return;
-      let v=td.innerText;
-      let el;
-      if(i===6) el=makeSelect(LOOKUP_SUPPLIERS,v);
-      else if(i===7) el=makeSelect(LOOKUP_FACTORIES,v);
-      else if(i===8) el=makeSelect(LOOKUP_LOCATIONS,v);
-      else if(i===9) el=makeSelect(LOOKUP_VEHICLES,v);
-      else{
-        el=document.createElement("input");
-        el.value=v;
-        el.style.width="100%";
-      }
-      td.innerHTML="";
-      td.appendChild(el);
-      el.focus();
-    };
-  });
-}
-
-function saveEdit(){
-  if(!IS_ADMIN) return;
-  if(!selected) return;
-
-  const t=selected.querySelectorAll("td");
-  const val=i=>t[i].querySelector("input,select")?.value || t[i].innerText;
-
-  const data={
-    batch_number: val(3),
-    challan_number: val(4),
-    gate_pass_number: val(5),
-    supplier_name: val(6),
-    receiving_center: val(7),
-    purchasing_location: val(8),
-    vehicle_number: val(9),
-    no_of_material_boxes: val(10),
-    no_of_empty_boxes: val(11),
-    no_of_ice_boxes: val(12),
-  };
-
-  fetch(`/processing/gate_entry/update/${selected.dataset.id}`,{
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:new URLSearchParams(data)
-  }).then(()=>{
-    showToast("Successfully Updated");
-    setTimeout(()=>location.reload(),800);
-  });
-}
-
-function deleteRow(){
-  if(!IS_ADMIN) return;
-  if(!selected) return;
-  if(!confirm("Delete this entry forever?")) return;
-  fetch(`/processing/gate_entry/delete/${selected.dataset.id}`,{method:"POST"})
-    .then(()=>location.reload());
-}
-
-function exportExcel(){ window.location="/reports/gate_entry/export_xlsx?filtered=1"; }
-function exportPDF(){ window.location="/reports/gate_entry/export_pdf?filtered=1"; }
-
-function showToast(msg){
-  const d=document.createElement("div");
-  d.className="toast";
-  d.innerHTML=`<i class="fa-solid fa-circle-check"></i> ${msg}`;
-  document.body.appendChild(d);
-  setTimeout(()=>d.remove(),2000);
-}
 </script>
-
 </body>
 </html>

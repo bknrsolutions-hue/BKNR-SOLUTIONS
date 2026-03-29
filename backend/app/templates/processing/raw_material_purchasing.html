@@ -5,24 +5,19 @@
 <title>RAW MATERIAL PURCHASING - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 :root{
-  --primary:#143465;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-  --success: #166534;
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
+  --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
+  --muted:#64748b; --success: #166534; --danger: #dc2626;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
 /* HEADER */
 .header{
@@ -34,58 +29,85 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 .header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
+/* SUMMARY SECTION */
+.summary-container { margin: 18px; }
+.summary-card {
+    background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+.summary-title { 
+    font-size: 15px; font-weight: 800; color: var(--primary); 
+    margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
+    text-transform: uppercase; border-bottom: 2px solid var(--bg); padding-bottom: 10px;
+}
+.summary-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.summary-table th { background: #f8fafc; text-align: left; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.summary-table td { padding: 10px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
+
+.clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
+
+/* DRILL DOWN STYLE */
+.drill-row td { background: #fffbeb !important; padding: 0 !important; }
+.drill-container { padding: 10px; border: 1px dashed #fcd34d; margin: 10px; border-radius: 8px; background: #fff; }
+.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.drill-mini-table th { background: #fef3c7; color: #92400e; padding: 6px; border: 1px solid #fde68a; }
+.drill-mini-table td { padding: 6px; border: 1px solid #fde68a; text-align: center; color: var(--primary); }
+
 /* FORM SECTION */
 .section{
   margin:18px; background:var(--card); padding:25px;
   border-radius:16px; border:1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: {% if edit_data %} block {% else %} none {% endif %};
 }
-
 .section-title {
     font-size: 13px; font-weight: 800; color: var(--accent);
     text-transform: uppercase; margin-bottom: 20px; 
     display: flex; align-items: center; gap: 8px;
 }
-
-.form-grid{
-  display:grid; grid-template-columns:repeat(6, 1fr); gap:14px;
-}
-@media(max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
-@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+.form-grid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:14px; }
+@media(max-width:1400px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:768px){ .form-grid{grid-template-columns:1fr;} }
 
 .field{display:flex; flex-direction:column; gap: 5px;}
 .field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
-input, select{
+input, select, textarea{
   padding:10px 12px; border-radius:8px; border:1px solid var(--border);
-  font-size:13px; background:#fff; outline: none; transition: 0.2s;
+  font-size:13px; background:#fff; outline: none; transition: 0.2s; width: 100%;
 }
 input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-input[readonly], input:disabled{ background:#f8fafc; color: var(--primary); font-weight: 700; cursor: not-allowed;}
+input[readonly]{ background:#f8fafc; color: var(--primary); font-weight: 700; cursor: not-allowed;}
 
 /* ACTIONS */
+.top-actions { margin: 0 18px; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+.btn-toggle:hover { background: var(--accent); transform: translateY(-2px); }
+
 .actions{ margin-top:25px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{
-  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
-  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
-}
+.btn{ padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s; }
 .btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
-.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
-/* TABLE */
-.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
+/* ACTIVITY LOG TABLE */
+.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
+.table-header-tool h3 { margin: 0; font-size: 16px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+.table-wrap{ margin:12px 18px; background:var(--card); border-radius:16px; border:1px solid var(--border); overflow-x:auto; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
 
-.table-wrap{
-  margin:12px 18px; background:var(--card); border-radius:16px;
-  border:1px solid var(--border); overflow-x:auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
-table{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1200px; }
-thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
-tbody td{ padding:10px 8px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-tbody tr:hover{background:#f8fbff; cursor:pointer}
+#dataTable{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1300px; table-layout: fixed; }
+#dataTable thead th{ background:#f8fafc; padding:15px 8px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; text-align: center; }
+#dataTable tbody td{ padding:12px 8px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
+
+/* Strict Column Widths */
+.col-id { width: 50px; }
+.col-batch { width: 90px; }
+.col-supplier { width: 160px; text-align: left !important; }
+.col-loc { width: 120px; }
+.col-var { width: 80px; }
+.col-spec { width: 100px; }
+.col-qty { width: 75px; }
+.col-amt { width: 110px; }
+.col-time { width: 90px; }
 
 /* MENU */
 #threeDotsMenu{ position:relative; display: none; }
@@ -103,21 +125,93 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
       <h2>{% if edit_data %}Edit Purchase{% else %}Raw Material Purchasing{% endif %}</h2>
       <p><i class="fa-solid fa-truck-ramp-box"></i> Receiving and grading raw material</p>
   </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR SOLUTIONS</div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 1px;"> </div>
 </div>
 
-<form method="post" action="{% if edit_data %}/processing/raw_material_purchasing/update/{{edit_data.id}}{% else %}/processing/raw_material_purchasing{% endif %}">
-<div class="section">
-  <div class="section-title">Supplier & Variety Details</div>
+<div class="summary-container" id="summarySection" style="display: {% if edit_data %} none {% else %} block {% endif %};">
+    <div class="summary-card">
+        <div class="summary-title">
+            <i class="fa-solid fa-chart-pie"></i> 
+            Pending HOSO Requirement Summary (Live Status)
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="summary-table" id="hosoSummaryTable">
+              <thead>
+                  <tr>
+                      <th>Species | Variety Name</th>
+                      <th>Required HOSO Count</th>
+                      <th style="text-align: right;">Total Req. HOSO (KG)</th>
+                      <th style="text-align: right;">Received Today (KG)</th>
+                      <th style="text-align: right;">Balance to Receive (KG)</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% if hoso_summary %}
+                      {% for item in hoso_summary %}
+                        {% if item.balance > 0 %}
+                        <tr>
+                            <td>{{ item.species }} | {{ item.variety }}</td>
+                            <td>
+                                <span class="clickable-count" onclick="toggleDrillDown(this, '{{ item.species }}', '{{ item.variety }}')">
+                                    {{ item.hoso_count }}
+                                </span>
+                            </td>
+                            <td style="text-align: right; color: var(--danger);">{{ "{:,.2f}".format(item.total_hoso_req) }}</td>
+                            <td style="text-align: right; color: var(--success);">{{ "{:,.2f}".format(item.received_today) }}</td>
+                            <td style="text-align: right;"><span style="background: #f0f7ff; padding: 4px 8px; border-radius: 4px; color: var(--primary); font-weight: 800;">{{ "{:,.2f}".format(item.balance) }}</span></td>
+                        </tr>
+                        <tr class="drill-row" style="display:none;">
+                            <td colspan="5">
+                                <div class="drill-container">
+                                    <table class="drill-mini-table">
+                                        <thead>
+                                            <tr>
+                                                <th>PO Number</th>
+                                                <th>Buyer</th>
+                                                <th>Grade</th>
+                                                <th style="text-align: right;">Ordered Qty</th>
+                                                <th style="text-align: right;">Req HOSO (KG)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="drill-body"></tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                      {% endfor %}
+                  {% else %}
+                      <tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 20px; font-style: italic;">No pending requirements found.</td></tr>
+                  {% endif %}
+              </tbody>
+          </table>
+        </div>
+    </div>
+</div>
+
+<div class="top-actions">
+    <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> ADD NEW ENTRY</button>
+</div>
+
+<form id="purchasingForm" method="post" action="{% if edit_data %}/processing/raw_material_purchasing/update/{{edit_data.id}}{% else %}/processing/raw_material_purchasing{% endif %}">
+<div class="section" id="formSection">
+  <div class="section-title"><i class="fa-solid fa-file-invoice"></i> Supplier & Variety Details</div>
   <div class="form-grid">
     <div class="field">
-      <label>Batch Number</label>
-      <select name="batch_number" id="batch_dd" required>
-        <option disabled selected>Select Batch</option>
-        {% for b in batch_list %}
-        <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
+      <label>Production For</label>
+      <input list="prod_for_list" name="production_for" id="prod_for_dd" required placeholder="Type company name..." value="{{edit_data.production_for if edit_data else ''}}" autocomplete="off">
+      <datalist id="prod_for_list">
+        {% for p in prod_for_list %}
+        <option value="{{p}}">
         {% endfor %}
-      </select>
+      </datalist>
+    </div>
+    
+    <div class="field">
+      <label>Batch Number</label>
+      <input list="batch_list_data" name="batch_number" id="batch_dd" required placeholder="Select Company first..." value="{{edit_data.batch_number if edit_data else ''}}" autocomplete="off">
+      <datalist id="batch_list_data">
+      </datalist>
     </div>
 
     <div class="field">
@@ -126,28 +220,53 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
     </div>
 
     <div class="field">
-      <label>Variety</label>
-      <select name="variety_name" required>
-        <option disabled selected>Select Variety</option>
-        {% for v in variety_list %}
-        <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
+      <label>Receiving At</label>
+      <input list="loc_list_data" name="peeling_at" id="peeling_at" required placeholder="Type or Select Location..." value="{{edit_data.peeling_at if edit_data else ''}}" autocomplete="off">
+      <datalist id="loc_list_data">
+        {% for loc in peeling_locations %}
+        <option value="{{loc}}">
         {% endfor %}
-      </select>
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Purchasing Product</label>
+      <input list="hsn_list_data" id="product_desc" name="product_description" required placeholder="Search product..." value="{{edit_data.product_description if edit_data else ''}}" autocomplete="off">
+      <datalist id="hsn_list_data">
+          {% for desc in hsn_list %}
+          <option value="{{ desc }}">
+          {% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>HSN Code</label>
+      <input name="hsn_code" id="hsn_code" value="{{edit_data.hsn_code if edit_data else ''}}" readonly placeholder="Auto-filled">
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <input list="variety_list_data" name="variety_name" id="variety_name" required placeholder="Select Variety..." value="{{edit_data.variety_name if edit_data else ''}}" autocomplete="off">
+      <datalist id="variety_list_data">
+        {% for v in variety_list %}
+        <option value="{{v}}">
+        {% endfor %}
+      </datalist>
     </div>
 
     <div class="field">
       <label>Species</label>
-      <select name="species">
-        <option disabled selected>Select Species</option>
+      <input list="species_list_data" name="species" id="species" required placeholder="Select Species..." value="{{edit_data.species if edit_data else ''}}" autocomplete="off">
+      <datalist id="species_list_data">
         {% for s in species_list %}
-        <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
+        <option value="{{s}}">
         {% endfor %}
-      </select>
+      </datalist>
     </div>
 
     <div class="field">
-      <label>Count</label>
-      <input name="count" value="{{edit_data.count if edit_data else ''}}" placeholder="e.g. 30/40">
+      <label>Count / Grade</label>
+      <input name="count" value="{{edit_data.count if edit_data else ''}}" placeholder="e.g. 30">
     </div>
 
     <div class="field">
@@ -156,60 +275,45 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
     </div>
   </div>
 
-  <div class="section-title" style="margin-top: 30px;">Quantity & Rate Details</div>
+  <div class="section-title" style="margin-top: 30px;"><i class="fa-solid fa-weight-scale"></i> Quantity & Pricing</div>
   <div class="form-grid">
+    <div class="field"><label>G1 Qty (kg)</label><input type="number" step="0.01" name="g1_qty" id="g1" value="{{edit_data.g1_qty if edit_data else 0}}"></div>
+    <div class="field"><label>G2 Qty (kg)</label><input type="number" step="0.01" name="g2_qty" id="g2" value="{{edit_data.g2_qty if edit_data else 0}}"></div>
+    <div class="field"><label>DC Qty (kg)</label><input type="number" step="0.01" name="dc_qty" id="dc" value="{{edit_data.dc_qty if edit_data else 0}}"></div>
+    
     <div class="field">
-      <label>G1 Qty (kg)</label>
-      <input type="number" step="0.01" name="g1_qty" id="g1" value="{{edit_data.g1_qty if edit_data else 0}}">
+      <label>Total Received</label>
+      <input type="number" step="0.01" id="received_qty" name="received_qty" value="{{edit_data.received_qty if edit_data else 0}}" readonly>
     </div>
 
-    <div class="field">
-      <label>G2 Qty (kg)</label>
-      <input type="number" step="0.01" name="g2_qty" id="g2" value="{{edit_data.g2_qty if edit_data else 0}}">
-    </div>
-
-    <div class="field">
-      <label>DC Qty (kg)</label>
-      <input type="number" step="0.01" name="dc_qty" id="dc" value="{{edit_data.dc_qty if edit_data else 0}}">
-    </div>
-
-    <div class="field">
-      <label>Total Received Qty</label>
-      <input type="number" step="0.01" id="received_qty" value="{{edit_data.received_qty if edit_data else 0}}" disabled>
-    </div>
-
-    <div class="field">
-      <label>Rate / KG (₹)</label>
-      <input type="number" step="0.01" name="rate_per_kg" id="rate" value="{{edit_data.rate_per_kg if edit_data else 0}}">
-    </div>
-
+    <div class="field"><label>Rate / KG (₹)</label><input type="number" step="0.01" name="rate_per_kg" id="rate" value="{{edit_data.rate_per_kg if edit_data else 0}}"></div>
+    
     <div class="field">
       <label>Total Amount (₹)</label>
-      <input type="number" step="0.01" id="amount" value="{{edit_data.amount if edit_data else 0}}" disabled>
+      <input type="number" step="0.01" id="amount" name="amount" value="{{edit_data.amount if edit_data else 0}}" readonly>
     </div>
   </div>
 
-  <div class="field" style="margin-top: 20px;">
-    <label>Remarks</label>
-    <input name="remarks" value="{{edit_data.remarks if edit_data else ''}}" placeholder="Enter any additional notes here...">
+  <div class="field" style="margin-top: 15px;">
+      <label>Remarks</label>
+      <textarea name="remarks" rows="2" placeholder="Any additional notes...">{{edit_data.remarks if edit_data else ''}}</textarea>
   </div>
 
   <div class="actions">
-    <button class="btn" type="button" onclick="window.location='/processing/raw_material_purchasing'"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Record{% else %}Save Purchase{% endif %}</button>
+    <button class="btn" type="button" onclick="toggleForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-circle-check"></i> {% if edit_data %}Update Purchase{% else %}Confirm & Save{% endif %}</button>
   </div>
 </div>
 </form>
 
 {% if today_data %}
 <div class="table-header-tool">
-    <h3>Today's Purchase Logs</h3>
+    <h3><i class="fa-solid fa-clock-rotate-left"></i> Today's Activity Log</h3>
     <div id="threeDotsMenu">
       <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       <div id="dropdownMenu">
         <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
-        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete</div>
-        <div class="menu-item" onclick="printSelected()"><i class="fa-solid fa-print"></i> Print Receipt</div>
+        <div class="menu-item" onclick="deleteSelected()" style="color: var(--danger);"><i class="fa-solid fa-trash-can"></i> Delete</div>
       </div>
     </div>
 </div>
@@ -218,30 +322,41 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
 <table id="dataTable">
 <thead>
 <tr>
-  <th>ID</th><th>Batch</th><th>Supplier</th><th>Variety</th>
-  <th>Species</th><th>Count</th>
-  <th>G1 (kg)</th><th>G2 (kg)</th><th>DC (kg)</th>
-  <th>Received</th><th>Rate</th><th>Amount</th>
-  <th>Boxes</th><th>Date</th>
+  <th class="col-id">ID</th>
+  <th>Production For</th>
+  <th class="col-batch">Batch</th>
+  <th class="col-supplier">Supplier</th>
+  <th class="col-loc">Receiving At</th>
+  <th class="col-var">Variety</th>
+  <th class="col-spec">Species</th>
+  <th class="col-qty">Count</th>
+  <th class="col-qty">G1</th>
+  <th class="col-qty">G2</th>
+  <th class="col-qty">DC</th>
+  <th class="col-qty">Total</th>
+  <th class="col-qty">Rate</th>
+  <th class="col-amt">Amount</th>
+  <th class="col-time">Time</th>
 </tr>
 </thead>
 <tbody>
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
   <td>{{r.id}}</td>
+  <td style="font-weight: 600; color: var(--primary);">{{ r.production_for }}</td>
   <td style="font-weight: 700;">{{r.batch_number}}</td>
-  <td>{{r.supplier_name}}</td>
+  <td style="text-align: left;">{{r.supplier_name}}</td>
+  <td style="color: var(--accent); font-weight: 600;">{{r.peeling_at}}</td>
   <td>{{r.variety_name}}</td>
   <td>{{r.species}}</td>
   <td>{{r.count}}</td>
   <td>{{r.g1_qty}}</td>
   <td>{{r.g2_qty}}</td>
   <td>{{r.dc_qty}}</td>
-  <td style="font-weight: 700; color: var(--accent);">{{r.received_qty}}</td>
+  <td style="font-weight: 800; color: var(--accent);">{{r.received_qty}}</td>
   <td>{{r.rate_per_kg}}</td>
-  <td style="font-weight: 700;">{{r.amount}}</td>
-  <td>{{r.material_boxes}}</td>
-  <td style="font-size: 11px; color: var(--muted);">{{r.date}} {{r.time}}</td>
+  <td style="font-weight: 800;">{{ "{:,.2f}".format(r.amount) }}</td>
+  <td style="font-size: 11px; color: var(--muted);">{{r.time}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -250,33 +365,160 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
 {% endif %}
 
 <script>
-let batchSupplierMap = {{ batch_supplier_map_json | safe }};
+const batchSupplierMap = {{ batch_supplier_map_json | safe }};
+const prodBatchMap = {{ prod_batch_map_json | safe }};
+const hsnMap = {{ hsn_map_json | safe }};
+const drillDownData = {{ drill_down_json | safe }};
+
+// Validation Lists
+const validCompanies = {{ prod_for_list | safe }};
+const validLocations = {{ peeling_locations | safe }};
+const validVarieties = {{ variety_list | safe }};
+const validSpecies = {{ species_list | safe }};
+
 let selectedRow = null;
 
-/* Batch -> Supplier Auto-fill */
-document.getElementById("batch_dd").addEventListener("change",(e)=>{
-  document.getElementById("supplier_name").value = batchSupplierMap[e.target.value] || "";
+// --- EXPANDABLE TABLE LOGIC (DRILL DOWN) ---
+function toggleDrillDown(element, species, variety) {
+    const count = element.innerText.trim();
+    const mainRow = element.closest('tr');
+    const drillRow = mainRow.nextElementSibling;
+    const drillBody = drillRow.querySelector('.drill-body');
+    
+    if (drillRow.style.display === "none") {
+        drillBody.innerHTML = "";
+        const key = `${species}|${variety}|${count}`;
+        const matches = drillDownData[key] || [];
+        
+        if (matches.length > 0) {
+            matches.forEach(m => {
+                drillBody.innerHTML += `
+                    <tr>
+                        <td>${m.po_no}</td>
+                        <td>${m.buyer}</td>
+                        <td>${m.grade}</td>
+                        <td style="text-align:right;">${m.ordered.toLocaleString()}</td>
+                        <td style="text-align:right; font-weight:800; color:var(--danger);">${m.req.toLocaleString()}</td>
+                    </tr>`;
+            });
+            drillRow.style.display = "table-row";
+        } else {
+            Swal.fire("Note", "No detailed POs found.", "info");
+        }
+    } else {
+        drillRow.style.display = "none";
+    }
+}
+
+// --- STRICT SEARCHABLE VALIDATION LOGIC ---
+document.getElementById("prod_for_dd")?.addEventListener("input", function() {
+    const selectedCompany = this.value;
+    const batchDataList = document.getElementById("batch_list_data");
+    const batchInput = document.getElementById("batch_dd");
+    const supplierInput = document.getElementById("supplier_name");
+
+    // Clear previous data every time company changes
+    batchDataList.innerHTML = "";
+    
+    if (prodBatchMap[selectedCompany]) {
+        // Reset batch input and supplier when a valid company is being selected/changed
+        batchInput.value = "";
+        supplierInput.value = "";
+        
+        prodBatchMap[selectedCompany].forEach(batch => {
+            const option = document.createElement('option');
+            option.value = batch;
+            batchDataList.appendChild(option);
+        });
+    } else {
+        // If company is invalid or cleared, make sure batch is also cleared
+        batchInput.value = "";
+        supplierInput.value = "";
+    }
 });
 
-/* FORMULA CALCULATIONS */
+document.getElementById("batch_dd")?.addEventListener("input", function() {
+    const batchVal = this.value;
+    const data = batchSupplierMap[batchVal];
+    const supplierInput = document.getElementById("supplier_name");
+    
+    if(data) {
+        supplierInput.value = data.supplier || "";
+    } else {
+        supplierInput.value = "";
+    }
+});
+
+document.getElementById("product_desc")?.addEventListener("input", function() {
+    document.getElementById("hsn_code").value = hsnMap[this.value] || "";
+});
+
+// FORM SUBMIT VALIDATION
+document.getElementById("purchasingForm").addEventListener("submit", function(e) {
+    const company = document.getElementById("prod_for_dd").value;
+    const batch = document.getElementById("batch_dd").value;
+    const location = document.getElementById("peeling_at").value;
+    const variety = document.getElementById("variety_name").value;
+    const species = document.getElementById("species").value;
+    const product = document.getElementById("product_desc").value;
+
+    if (!validCompanies.includes(company)) {
+        Swal.fire("Invalid Company", "లిస్ట్ లో ఉన్న కంపెనీని మాత్రమే ఎంచుకోండి.", "error");
+        e.preventDefault(); return;
+    }
+
+    const companyBatches = prodBatchMap[company] || [];
+    if (!companyBatches.includes(batch)) {
+        Swal.fire("Invalid Batch", "ఈ కంపెనీకి సంబంధం లేని బ్యాచ్ నంబర్ ఎంటర్ చేశారు.", "error");
+        e.preventDefault(); return;
+    }
+
+    if (!validLocations.includes(location)) {
+        Swal.fire("Invalid Location", "దయచేసి సరైన లొకేషన్ ఎంచుకోండి.", "error");
+        e.preventDefault(); return;
+    }
+
+    if (!validVarieties.includes(variety)) {
+        Swal.fire("Invalid Variety", "సరైన వెరైటీని ఎంచుకోండి.", "error");
+        e.preventDefault(); return;
+    }
+
+    if (!hsnMap.hasOwnProperty(product)) {
+        Swal.fire("Invalid Product", "సరైన ప్రొడక్ట్ ని ఎంచుకోండి.", "error");
+        e.preventDefault(); return;
+    }
+});
+
+// --- HELPER FUNCTIONS ---
+function toggleForm() {
+    const section = document.getElementById("formSection");
+    const summary = document.getElementById("summarySection");
+    if (section.style.display === "none" || section.style.display === "") {
+        section.style.display = "block";
+        summary.style.display = "none";
+    } else {
+        section.style.display = "none";
+        summary.style.display = "block";
+        {% if edit_data %} location.href = "/processing/raw_material_purchasing"; {% endif %}
+    }
+}
+
 function calcFormula(){
   const g1v = parseFloat(document.getElementById("g1").value) || 0;
   const g2v = parseFloat(document.getElementById("g2").value) || 0;
   const dcv = parseFloat(document.getElementById("dc").value) || 0;
   const ratev = parseFloat(document.getElementById("rate").value) || 0;
-
   const recv = g1v + g2v + dcv;
+  const calculatedAmount = (g1v + (g2v / 2)) * ratev;
   document.getElementById("received_qty").value = recv.toFixed(2);
-  document.getElementById("amount").value = (recv * ratev).toFixed(2);
+  document.getElementById("amount").value = calculatedAmount.toFixed(2);
 }
 
-["g1","g2","dc","rate"].forEach(id=>{
-  document.getElementById(id).addEventListener("input",calcFormula);
-});
+["g1","g2","dc","rate"].forEach(id=>{ document.getElementById(id)?.addEventListener("input",calcFormula); });
 
-/* ROW SELECT */
 document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
   r.addEventListener("click",()=>{
+    if(r.classList.contains('drill-row')) return;
     document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
     r.classList.add("selected");
     selectedRow=r;
@@ -284,51 +526,32 @@ document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
   });
 });
 
-/* MENU */
 document.getElementById("dotsBtn")?.addEventListener("click",(e)=>{
   e.stopPropagation();
   const menu = document.getElementById("dropdownMenu");
   menu.style.display = menu.style.display==="block" ? "none" : "block";
 });
 
-document.onclick = () => document.getElementById("dropdownMenu").style.display="none";
-
-function editSelected(){
-  if(selectedRow) location="/processing/raw_material_purchasing/edit/"+selectedRow.dataset.id;
-}
+document.onclick = () => { if(document.getElementById("dropdownMenu")) document.getElementById("dropdownMenu").style.display="none"; }
+function editSelected(){ if(selectedRow) location="/processing/raw_material_purchasing/edit/"+selectedRow.dataset.id; }
 
 function deleteSelected(){
   if(!selectedRow) return;
   Swal.fire({
-    title: 'Delete Record?',
-    text: "This action cannot be undone!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3b82f6',
-    confirmButtonText: 'Yes, delete it!'
+    title: 'Delete Entry?', text: "Are you sure?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Yes'
   }).then(res => {
-    if(res.isConfirmed){
-        fetch("/processing/raw_material_purchasing/delete/"+selectedRow.dataset.id,{method:"POST"})
-        .then(()=>location.reload());
+    if(res.isConfirmed) {
+        const form = document.createElement('form');
+        form.method = 'POST'; form.action = "/processing/raw_material_purchasing/delete/" + selectedRow.dataset.id;
+        document.body.appendChild(form); form.submit();
     }
   });
 }
-
-function printSelected(){
-  if(!selectedRow) return;
-  let w=window.open("","_blank");
-  w.document.write(`
-    <html><head><title>Print Receipt</title>
-    <style>table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:8px; text-align:center; font-family:sans-serif;}</style>
-    </head><body>
-    <h2 style="text-align:center;">RAW MATERIAL PURCHASING RECEIPT</h2>
-    <table><thead>\${document.querySelector("thead").innerHTML}</thead>
-    <tbody><tr>\${selectedRow.innerHTML}</tr></tbody></table>
-    </body></html>
-  `);
-  w.print();
-}
 </script>
+
+{% if message %}
+<script>Swal.fire({ icon: 'success', title: 'Success', text: '{{ message }}', timer: 2000, showConfirmButton: false });</script>
+{% endif %}
 
 </body>
 </html>

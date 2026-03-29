@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VENDORS MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body { font-family: Inter, Segoe UI, sans-serif; }
+  th { font-size: 11px; text-transform: uppercase; }
+  td { font-size: 13px; }
+  tr.selected { background: #e0edff !important; border-left: 4px solid #2563eb; }
+</style>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- ================= HEADER ================= -->
+<div class="bg-white border-b px-6 py-3 flex justify-between items-center">
+  <h1 class="text-lg font-extrabold text-slate-800 tracking-wide">
+    VENDORS MASTER
+  </h1>
+  <span class="text-xs font-mono bg-slate-100 px-3 py-1 rounded">
+    {{ company_id }}
+  </span>
+</div>
+
+<!-- ================= FORM ================= -->
+<form onsubmit="submitVendor(event)">
+<div class="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow border">
+
+  <h2 class="text-sm font-bold text-slate-700 mb-4 uppercase">
+    Vendor Details
+  </h2>
+
+  <!-- BASIC -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Vendor Name</label>
+      <input id="name" required
+        class="w-full px-3 py-2 border rounded text-sm font-semibold uppercase focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Service For</label>
+      <input id="service_for"
+        class="w-full px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-blue-500"
+        placeholder="Transport / Diesel / Packing">
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Email</label>
+      <input id="email" type="email"
+        class="w-full px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-blue-500">
+    </div>
+  </div>
+
+  <!-- GST -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">GST Number</label>
+      <input id="gst_number"
+        class="w-full px-3 py-2 border rounded text-sm uppercase">
+    </div>
+
+    <div class="md:col-span-3">
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Address</label>
+      <input id="address"
+        class="w-full px-3 py-2 border rounded text-sm">
+    </div>
+  </div>
+
+  <!-- BANK -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Bank Name</label>
+      <input id="bank_name"
+        class="w-full px-3 py-2 border rounded text-sm">
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">Account No</label>
+      <input id="account_no"
+        class="w-full px-3 py-2 border rounded text-sm">
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1">IFSC Code</label>
+      <input id="ifsc"
+        class="w-full px-3 py-2 border rounded text-sm uppercase">
+    </div>
+  </div>
+
+  <input type="hidden" id="record_id">
+
+  <!-- ACTIONS -->
+  <div class="mt-6 flex gap-3">
+    <button class="bg-slate-800 text-white px-8 py-2 rounded text-sm font-bold hover:bg-blue-700">
+      SAVE
+    </button>
+    <button type="button" onclick="clearForm()"
+      class="bg-gray-200 text-gray-700 px-6 py-2 rounded text-sm font-bold">
+      CLEAR
+    </button>
+  </div>
+
+</div>
+</form>
+
+<!-- ================= ACTION MENU ================= -->
+<div id="actionPanel"
+  class="max-w-6xl mx-auto mt-4 flex justify-end gap-2 hidden">
+  <button onclick="editSelected()"
+    class="text-xs bg-blue-600 text-white px-4 py-1 rounded font-bold">
+    EDIT
+  </button>
+  <button onclick="deleteSelected()"
+    class="text-xs bg-red-600 text-white px-4 py-1 rounded font-bold">
+    DELETE
+  </button>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="max-w-6xl mx-auto mt-2 bg-white rounded-xl shadow border overflow-hidden">
+
+<table class="w-full table-fixed">
+<thead class="bg-slate-100">
+<tr>
+  <th class="w-[20%] px-3 py-2">Vendor</th>
+  <th class="w-[15%] px-3 py-2">Service</th>
+  <th class="w-[15%] px-3 py-2">GST</th>
+  <th class="w-[30%] px-3 py-2">Bank Details</th>
+  <th class="w-[20%] px-3 py-2">Email</th>
+</tr>
+</thead>
+
+<tbody>
+{% for v in vendors_list %}
+<tr onclick="selectRow(this)"
+    class="hover:bg-blue-50 cursor-pointer"
+    data-id="{{ v.id }}"
+    data-name="{{ v.name }}"
+    data-service="{{ v.service_for }}"
+    data-email="{{ v.email }}"
+    data-gst="{{ v.gst_number }}"
+    data-address="{{ v.address }}"
+    data-bank="{{ v.bank_name }}"
+    data-acc="{{ v.account_no }}"
+    data-ifsc="{{ v.ifsc }}">
+
+  <td class="px-3 py-2 font-bold">{{ v.name }}</td>
+  <td class="px-3 py-2 text-xs">{{ v.service_for }}</td>
+  <td class="px-3 py-2 font-mono text-xs">{{ v.gst_number }}</td>
+  <td class="px-3 py-2 text-xs">
+    <b>{{ v.bank_name }}</b><br>
+    <span class="text-gray-500">{{ v.account_no }} | {{ v.ifsc }}</span>
+  </td>
+  <td class="px-3 py-2 text-xs text-blue-600">{{ v.email }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+let selectedRow = null;
+
+function selectRow(row){
+  document.querySelectorAll("tbody tr").forEach(r=>r.classList.remove("selected"));
+  row.classList.add("selected");
+  selectedRow = row;
+  document.getElementById("actionPanel").classList.remove("hidden");
+}
+
+async function submitVendor(e){
+  e.preventDefault();
+  const fd = new FormData();
+  ["name","email","service_for","gst_number","address",
+   "bank_name","account_no","ifsc"].forEach(id=>{
+     fd.append(id, document.getElementById(id).value);
+   });
+  if(record_id.value) fd.append("id", record_id.value);
+
+  const r = await fetch("/criteria/vendors",{method:"POST",body:fd});
+  if(r.ok) location.reload(); else alert("Save failed");
+}
+
+function editSelected(){
+  if(!selectedRow) return;
+  const d = selectedRow.dataset;
+  record_id.value=d.id;
+  name.value=d.name;
+  service_for.value=d.service;
+  email.value=d.email;
+  gst_number.value=d.gst;
+  address.value=d.address;
+  bank_name.value=d.bank;
+  account_no.value=d.acc;
+  ifsc.value=d.ifsc;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function deleteSelected(){
+  if(!selectedRow || !confirm("Delete vendor?")) return;
+  await fetch(`/criteria/vendors/delete/${selectedRow.dataset.id}`,{method:"POST"});
+  location.reload();
+}
+
+function clearForm(){
+  document.querySelector("form").reset();
+  record_id.value="";
+  selectedRow=null;
+  document.getElementById("actionPanel").classList.add("hidden");
+  document.querySelectorAll("tr").forEach(r=>r.classList.remove("selected"));
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BKNR ERP | Corporate Payroll Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+ --primary:#143465;--accent:#2563eb;--success:#059669;
+ --warning:#d97706;--danger:#dc2626;--border:#d6dde7;
+ --bg:#f4f6f9;--text:#1f2937;--muted:#64748b;
+}
+*{box-sizing:border-box;font-family:Inter,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+.header-container{background:#fff;padding:15px 20px;border-bottom:1px solid var(--border)}
+.header-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.header-main h2{margin:0;font-size:18px;font-weight:800;color:var(--primary)}
+.filters{display:flex;gap:12px;background:#f8fafc;padding:10px;border-radius:10px;border:1px solid var(--border);align-items:center}
+.filters label{font-size:9px;font-weight:800;color:var(--muted);display:block;margin-bottom:2px}
+.filters input,.filters select{padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);font-weight:600}
+
+/* TABLE */
+.section{margin:15px 20px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
+.table-wrap{overflow:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+th{background:#f8fafc;font-size:9px;font-weight:800;text-transform:uppercase;padding:12px;border:1px solid var(--border);position:sticky;top:0;z-index:20}
+td{padding:10px;border:1px solid #edf2f7;text-align:center}
+
+.name-sticky{position:sticky;left:0;background:#fff;font-weight:700;text-align:left;border-right:2px solid var(--primary);min-width:220px;z-index:10}
+.clickable{cursor:pointer; transition: 0.2s;}
+.clickable:hover{background: #f0f7ff !important; outline: 1px solid var(--accent); transform: scale(1.05);}
+
+.payout-col{background:#ecfdf5;color:#065f46;font-weight:900;font-size:13px;text-align:right;padding-right:15px}
+.adjust-input{width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:#fff7ed; color:#c2410c}
+
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;backdrop-filter:blur(2px)}
+.modal-box{background:#fff;width:95%;max-width:750px;margin:5% auto;border-radius:14px;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px}
+.close{cursor:pointer;font-size:22px;color:var(--danger)}
+
+/* ATTENDANCE COLORS */
+.att-2p{background:#dcfce7 !important; color:#15803d !important; font-weight:900}
+.att-p{background:#f0fdf4 !important; color:var(--success) !important; font-weight:700}
+.att-hp{background:#fffbeb !important; color:var(--warning) !important; font-weight:700}
+.att-a{color:var(--danger); font-weight:400; opacity:0.5}
+
+/* TIMELINE CHIPS */
+.chip { font-size: 9px; font-weight: 700; padding: 3px 6px; border-radius: 5px; display: inline-flex; align-items: center; gap: 3px; border: 1px solid transparent; margin: 2px; }
+.c-in { color: var(--success); background: #ecfdf5; border-color: #a7f3d0; }
+.c-out { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
+.c-exit { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
+.badge-blue{background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700}
+</style>
+</head>
+
+<body>
+
+<div class="header-container">
+  <div class="header-main">
+    <div>
+      <h2><i class="fa-solid fa-building-columns"></i> Corporate Payroll & Statutory Ledger</h2>
+      <p id="monthDisplay" style="font-size:11px;color:var(--muted);font-weight:700;margin:4px 0 0 0"></p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button onclick="generateSheet()" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;"><i class="fa-solid fa-sync"></i> Recalculate</button>
+        <button onclick="window.print()" style="background:var(--success); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;"><i class="fa-solid fa-file-excel"></i> Export Ledger</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div>
+      <label>Payroll Month</label>
+      <input type="month" id="monthInput" onchange="generateSheet()">
+    </div>
+    <div>
+        <label>Work Location</label>
+        <select id="locationInput" onchange="generateSheet()"><option value="ALL">ALL LOCATIONS</option></select>
+    </div>
+    <div>
+      <label>Department</label>
+      <select id="deptInput" onchange="generateSheet()">
+        <option value="ALL">ALL DEPARTMENTS</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+<div class="table-wrap">
+<table id="payrollTable">
+<thead id="thead"></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="modal" id="attModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalTitle" style="margin:0; color:var(--primary)">Duty Logs</h3>
+        <p id="modalSubTitle" style="margin:0; font-size:11px; color:var(--muted)"></p>
+      </div>
+      <span class="close" onclick="closeModal()">&times;</span>
+    </div>
+    <div style="margin-top:15px; max-height:450px; overflow-y:auto;">
+        <table style="width:100%">
+          <thead>
+            <tr style="background:#f8fafc">
+                <th style="text-align:left">Date</th>
+                <th style="text-align:left">Timeline (Gate Entry/Exit)</th>
+                <th>Work Hrs</th>
+                <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="modalBody"></tbody>
+        </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = new Intl.NumberFormat('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2});
+
+window.onload = async () => {
+    const now = new Date();
+    document.getElementById("monthInput").value = now.toISOString().slice(0, 7);
+    
+    try {
+        const [locRes, deptRes] = await Promise.all([
+            fetch('/api/salary/get-locations'),
+            fetch('/api/salary/get-departments')
+        ]);
+        const locations = await locRes.json();
+        const depts = await deptRes.json();
+        
+        const locSelect = document.getElementById("locationInput");
+        locations.forEach(loc => { locSelect.innerHTML += `<option value="${loc}">${loc}</option>`; });
+
+        const deptSelect = document.getElementById("deptInput");
+        depts.forEach(d => { deptSelect.innerHTML += `<option value="${d}">${d}</option>`; });
+    } catch(e) { console.log("Filter fetch error"); }
+    
+    generateSheet();
+};
+
+async function generateSheet(){
+ const month=document.getElementById("monthInput").value;
+ const dept=document.getElementById("deptInput").value;
+ const loc=document.getElementById("locationInput").value;
+
+ const res=await fetch(`/api/salary/get-report?month=${month}&dept=${dept}&location=${loc}`);
+ const data=await res.json();
+
+ document.getElementById("monthDisplay").innerText=data.month_name.toUpperCase() + " " + month.split('-')[0] + " - PAYROLL SUMMARY";
+
+ // HEADER
+ let head=`<tr>
+ <th rowspan="2" class="name-sticky">Employee & ID</th>
+ <th colspan="${data.days_in_month}">Daily Attendance</th>
+ <th colspan="5" style="background:#1e293b;color:#fff">Work Summary</th>
+ <th colspan="6" style="background:#143465;color:#fff">Deductions</th>
+ <th rowspan="2" class="payout-col" style="background:#059669; color:#fff">Net Payout</th>
+ </tr><tr>`;
+
+ for(let i=1;i<=data.days_in_month;i++) head+=`<th>${i}</th>`;
+
+ head+=`<th>Gross</th><th>Actual P.</th><th>Bonus</th><th>Adj</th><th>Earned</th><th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th></tr>`;
+ document.getElementById("thead").innerHTML=head;
+
+ // BODY
+ let body="";
+ data.employees.forEach((emp)=>{
+  body+=`<tr>
+  <td class="name-sticky">
+    <div style="font-weight:800; color:var(--primary)">${emp.name}</div>
+    <div style="font-size:9px; color:var(--muted); font-weight:700">${emp.id} | ${emp.dept}</div>
+  </td>`;
+
+  for(let i=1;i<=data.days_in_month;i++){
+    const st = emp.att_map[i] || 'A';
+    let cls = st === '2P' ? 'att-2p' : st === 'P' ? 'att-p' : st === 'HP' ? 'att-hp' : 'att-a';
+    
+    // Logic 1: Passing 'i' as day number for day-wise filter
+    body+=`<td class="${cls} clickable" onclick="showAttendance('${emp.id}','${emp.name}', ${i})">${st}</td>`;
+  }
+
+  body+=`
+  <td style="font-weight:600">₹${fmt.format(emp.base_sal)}</td>
+  
+  <td class="clickable" onclick="showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:800; color:var(--accent); text-decoration:underline">
+    ${emp.actual_duties}
+  </td>
+
+  <td style="font-weight:800; color:var(--success)">+${emp.extra_holidays}</td>
+  <td><input class="adjust-input" type="number" step="0.5" value="${emp.saved_adjustment}" onchange="saveAdjustment('${emp.id}',this.value)"></td>
+  <td style="font-weight:800; background:#f0f9ff">₹${fmt.format(emp.earned_gross)}</td>
+  <td style="color:var(--danger); font-weight:700">₹${fmt.format(emp.salary_advance)}</td>
+  <td>₹${fmt.format(emp.pf)}</td>
+  <td>₹${fmt.format(emp.esi)}</td>
+  <td>₹${emp.pt}</td>
+  <td>₹${emp.lwf}</td>
+  <td>₹${emp.tds}</td>
+  <td class="payout-col">₹${fmt.format(emp.net_pay)}</td>
+  </tr>`;
+ });
+ document.getElementById("tbody").innerHTML=body;
+}
+
+// ATTENDANCE DETAILS POPUP
+async function showAttendance(empId, name, day = null){
+ const month = document.getElementById("monthInput").value;
+ document.getElementById("modalTitle").innerText = name;
+ document.getElementById("modalSubTitle").innerText = (day ? `Day ${day} Log` : `Full Month Logs`) + ` | Employee ID: ${empId}`;
+
+ // Dynamic URL based on whether day is provided
+ let url = `/api/salary/get-attendance-logs?emp_id=${empId}&month=${month}`;
+ if(day) url += `&day=${day}`;
+
+ const res = await fetch(url);
+ const data = await res.json();
+
+ let html = "";
+ data.forEach(d => {
+   let timeline = "";
+   if(d.movements && d.movements.length > 0) {
+      timeline = d.movements.map(m => `<span class="chip c-${m.type.toLowerCase()}">${m.type} ${m.time}</span>`).join('<i class="fa fa-chevron-right" style="font-size:7px;color:#ccc"></i>');
+   } else {
+      timeline = `<span style="color:#94a3b8; font-style:italic">Manual Entry</span>`;
+   }
+
+   html += `<tr>
+     <td style="font-weight:600; padding:10px; border-bottom:1px solid #eee; text-align:left">${d.date}</td>
+     <td style="padding:10px; border-bottom:1px solid #eee; text-align:left">${timeline}</td>
+     <td style="font-weight:800; color:var(--accent); padding:10px; border-bottom:1px solid #eee">${d.hours} hrs</td>
+     <td style="padding:10px; border-bottom:1px solid #eee"><span class="badge-blue">${d.status}</span></td>
+   </tr>`;
+ });
+
+ document.getElementById("modalBody").innerHTML = html || "<tr><td colspan='4' style='padding:20px'>No attendance records found for this selection.</td></tr>";
+ document.getElementById("attModal").style.display = "block";
+}
+
+async function saveAdjustment(empId, val){
+ const month=document.getElementById("monthInput").value;
+ try {
+    await fetch("/api/salary/save-adjustment",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({employee_id:empId, month:month, adjustment:val})
+    });
+    generateSheet(); 
+ } catch(e) { alert("Adjustment Save Failed!"); }
+}
+
+function closeModal(){document.getElementById("attModal").style.display="none";}
+window.onclick = function(event) { if (event.target == document.getElementById("attModal")) closeModal(); }
+</script>
+
+</body>
+</html>

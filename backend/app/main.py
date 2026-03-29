@@ -103,11 +103,20 @@ from app.routers.processing_router import router as processing_router
 from app.routers.reports_router import router as reports_router
 from app.routers.dashboard_router import router as dashboard_router
 
+# 💡 BILLS & UTILITIES CENTRAL ROUTER
+from app.routers.bills import router as bills_router
+
+from app.routers.attendance_router import router as attendance_router
 from app.routers.inventory_management.stock_entry import router as stock_entry_router
 from app.routers.inventory_management.pending_orders import router as pending_orders_router
 from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
+from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 
+
+# =============================================
+# REGISTER ROUTERS
+# =============================================
 routers = [
     auth_router,
     menu_router,
@@ -121,12 +130,17 @@ routers = [
     stock_entry_router,
     pending_orders_router,
     page_loader_router,
-
+    attendance_router,
     summary_processing_router,
+    summary_inventory_costing_router,
 ]
 
+# 👉 NORMAL ROUTERS
 for r in routers:
     app.include_router(r)
+
+# 👉 BILLS ROUTER WITH /api PREFIX (IMPORTANT 🔥)
+app.include_router(bills_router, prefix="/api")
 
 logging.info("✅ ALL ROUTERS REGISTERED")
 

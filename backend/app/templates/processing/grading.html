@@ -11,14 +11,9 @@
 
 <style>
 :root{
-  --primary:#143465;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-  --success: #166534;
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
+  --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
+  --muted:#64748b; --success: #166534; --danger: #dc2626;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
@@ -34,70 +29,69 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 .header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
+/* SUMMARY CARDS */
+.summary-container { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 18px; }
+@media(max-width:900px){ .summary-container { grid-template-columns: 1fr; } }
+
+.summary-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.summary-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+.sum-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sum-table th { background: #f8fafc; text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; }
+.sum-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
+
+.clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
+
+/* DRILL DOWN STYLE */
+.drill-row td { background: #fffbeb !important; padding: 0 !important; }
+.drill-container { padding: 12px; border: 1px dashed #fcd34d; margin: 8px; border-radius: 10px; background: #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.drill-mini-table th { background: #fef3c7; color: #92400e; padding: 8px; border: 1px solid #fde68a; text-align: left; }
+.drill-mini-table td { padding: 8px; border: 1px solid #fde68a; color: #78350f; }
+
 /* FORM SECTION */
 .section{
   margin:18px; background:var(--card); padding:25px;
   border-radius:16px; border:1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none;
 }
-
-.section-title {
-    font-size: 13px; font-weight: 800; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 20px; 
-    display: flex; align-items: center; gap: 8px;
-}
-
-.form-grid{
-  display:grid; grid-template-columns:repeat(6, 1fr); gap:16px;
-}
-@media(max-width:1100px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+.section-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.form-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
+@media(max-width:1100px){ .form-grid{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
 .field{display:flex; flex-direction:column; gap: 5px;}
 .field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
-input, select{
-  padding:10px 12px; border-radius:8px; border:1px solid var(--border);
-  font-size:13px; background:#fff; outline: none; transition: 0.2s;
-}
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+input { padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:13px; outline: none; transition: 0.2s; width: 100%; }
+input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* ACTIONS */
+.top-actions { margin: 0 18px; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{
-  padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700;
-  cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s;
-}
+.btn{ padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:#fff; }
 .btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
-.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
 
 /* TABLE */
-.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; }
+.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
+.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+.table-wrap{ margin:12px 18px; background:var(--card); border-radius:16px; border:1px solid var(--border); overflow-x:auto; }
+#dataTable{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1000px; }
+#dataTable thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
+#dataTable tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+tbody tr.selected{ background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
-.table-wrap{
-  margin:12px 18px; background:var(--card); border-radius:16px;
-  border:1px solid var(--border); overflow:hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
-table{ width:100%; border-collapse:collapse; font-size: 12px; }
-thead th{ background:#f8fafc; font-size:11px; padding:14px 10px; border-bottom: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
-tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-tbody tr:hover{background:#f8fbff; cursor:pointer}
-tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
-
-/* 3 DOT MENU */
-#threeDotsMenu{ position:relative; display: none; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+#threeDotsMenu{ position:relative; display: none; margin-right: 15px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 #dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:#fff; border:1px solid var(--border); border-radius:10px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
 .menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
-.menu-item:hover{background:#f1f5ff; color: var(--accent);}
+.menu-item:hover{background:#f1f5ff; color: var(--danger);}
 
-/* LOOKUP POPUP */
 #lookupModal{ display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); justify-content:center; align-items:center; z-index: 9999; }
-.lookup-box{ background:#fff; width:90%; max-width:1000px; height:85vh; border-radius:16px; position:relative; overflow:hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
-.close-popup{ position:absolute; top:15px; right:20px; font-size:24px; font-weight:bold; cursor:pointer; color:var(--muted); z-index: 10; transition: 0.2s; }
-.close-popup:hover{ color: var(--primary); transform: scale(1.1); }
+.lookup-box{ background:#fff; width:90%; max-width:1000px; height:85vh; border-radius:16px; position:relative; overflow:hidden; }
+.close-popup{ position:absolute; top:15px; right:20px; font-size:24px; font-weight:bold; cursor:pointer; color:var(--muted); z-index: 10; }
 iframe{ width:100%; height:100%; border:none; }
 </style>
 </head>
@@ -107,117 +101,159 @@ iframe{ width:100%; height:100%; border:none; }
 <div class="header">
   <div class="header-titles">
       <h2>Grading Entry</h2>
-      <p><i class="fa-solid fa-filter-list"></i> Product categorization and grade management</p>
+      <p><i class="fa-solid fa-layer-group"></i> Production output and location tracking</p>
   </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR SOLUTIONS</div>
+  <div style="font-size: 12px; color: var(--muted); font-weight: 600;"> </div>
 </div>
 
-<form method="post" action="{% if edit_data %}/processing/grading/update/{{edit_data.id}}{% else %}/processing/grading{% endif %}">
-<div class="section">
-  <div class="section-title">Grading Details</div>
+{% if message %}
+<script>
+    Swal.fire({ icon: 'success', title: 'Success', text: '{{ message }}', timer: 3000, showConfirmButton: false });
+</script>
+{% endif %}
+
+<div class="summary-container" id="summarySection">
+    <div class="summary-card">
+        <div class="summary-title"><i class="fa-solid fa-box-open"></i> HLSO Requirement</div>
+        <table class="sum-table">
+            <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+            <tbody>
+                {% if hlso_summary %}{% for item in hlso_summary %}
+                <tr>
+                    <td>{{ item.species }} | {{ item.variety }}</td>
+                    <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hlso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
+                    <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                </tr>
+                <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
+                {% endfor %}{% else %}
+                <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HLSO requirements pending</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="summary-card">
+        <div class="summary-title"><i class="fa-solid fa-shrimp"></i> HOSO Requirement</div>
+        <table class="sum-table">
+            <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+            <tbody>
+                {% if hoso_summary %}{% for item in hoso_summary %}
+                <tr>
+                    <td>{{ item.species }} | {{ item.variety }}</td>
+                    <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hoso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
+                    <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                </tr>
+                <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
+                {% endfor %}{% else %}
+                <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HOSO requirements pending</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="top-actions">
+    <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> ADD NEW GRADING</button>
+</div>
+
+<form id="gradingForm" method="post" action="/processing/grading" onsubmit="return validateForm()">
+<div class="section" id="formSection">
+  <div class="section-title">New Grading Entry</div>
   <div class="form-grid">
-
+    
     <div class="field">
-      <label>Batch</label>
-      <select id="batch" name="batch_number" required>
-        <option disabled {% if not edit_data %}selected{% endif %}>Select Batch</option>
-        {% for b in batches %}
-        <option value="{{b}}" {% if edit_data and edit_data.batch_number==b %}selected{% endif %}>{{b}}</option>
-        {% endfor %}
-        <option value="__lookup_batch__" style="color:var(--accent); font-weight:bold;">➕ Add New Batch</option>
-      </select>
+      <label>Production For</label>
+      <input list="prod_for_data" name="production_for" id="production_for" onchange="handleCompanyChange()" placeholder="Search Company..." required autocomplete="off">
+      <datalist id="prod_for_data">{% for p in prod_for_list %}<option value="{{p}}">{% endfor %}</datalist>
     </div>
 
     <div class="field">
-      <label>HOSO Count</label>
-      <select id="hoso" name="hoso_count" required>
-        {% if edit_data %}
-        <option value="{{edit_data.hoso_count}}">{{edit_data.hoso_count}}</option>
-        {% else %}
-        <option disabled selected>Select Batch First</option>
-        {% endif %}
-      </select>
+        <label>Grading At (Location)</label>
+        <input list="locations_data" name="peeling_at" id="peeling_at" placeholder="Search Location..." required autocomplete="off">
+        <datalist id="locations_data">{% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}</datalist>
     </div>
 
     <div class="field">
-      <label>Variety</label>
-      <select id="variety" name="variety_name" required>
-        <option disabled selected>Select Variety</option>
-        {% for v in variety_list %}
-        <option value="{{v}}" {% if edit_data and edit_data.variety_name==v %}selected{% endif %}>{{v}}</option>
-        {% endfor %}
-        <option value="__lookup_variety__" style="color:var(--accent); font-weight:bold;">➕ Add Variety</option>
-      </select>
+      <label>Batch Number</label>
+      <input list="batches_data" name="batch_number" id="batch" onchange="handleBatchChange()" placeholder="Select Company First..." required autocomplete="off">
+      <datalist id="batches_data"></datalist>
     </div>
 
     <div class="field">
-      <label>Graded Count</label>
-      <input name="graded_count" value="{{edit_data.graded_count if edit_data else ''}}" placeholder="Enter Grade">
-    </div>
-
-    <div class="field">
-      <label>Quantity (kg)</label>
-      <input type="number" step="0.01" name="quantity" value="{{edit_data.quantity if edit_data else ''}}" placeholder="0.00">
+      <label>HOSO Count (In)</label>
+      <input list="hoso_data" name="hoso_count" id="hoso" placeholder="Select Batch First..." required autocomplete="off">
+      <datalist id="hoso_data"></datalist>
     </div>
 
     <div class="field">
       <label>Species</label>
-      <select id="species" name="species_val" required>
-        <option disabled selected>Select Species</option>
-        {% for s in species_list %}
-        <option value="{{s}}" {% if edit_data and edit_data.species==s %}selected{% endif %}>{{s}}</option>
-        {% endfor %}
-        <option value="__lookup_species__" style="color:var(--accent); font-weight:bold;">➕ Add Species</option>
-      </select>
+      <input list="species_data" name="species_val" id="species" onchange="handleSpeciesChange(this)" placeholder="Search Species..." required autocomplete="off">
+      <datalist id="species_data">
+        {% for s in species_list %}<option value="{{s}}">{% endfor %}
+        <option value="➕ Add New Species">
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <input list="variety_data" name="variety_name" id="variety" onchange="handleVarietyChange(this)" placeholder="Search Variety..." required autocomplete="off">
+      <datalist id="variety_data">
+        {% for v in variety_list %}<option value="{{v}}">{% endfor %}
+        <option value="➕ Add New Variety">
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Graded Count (Out)</label>
+      <input name="graded_count" placeholder="Enter Graded Count" required>
+    </div>
+    
+    <div class="field">
+      <label>Quantity (kg)</label>
+      <input type="number" step="0.01" name="quantity" placeholder="0.00" required>
     </div>
   </div>
-
+  
   <div class="actions">
-    <button type="button" class="btn" onclick="window.location='/processing/grading'"><i class="fa-solid fa-rotate-left"></i> Clear</button>
-    <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %}Update Grading{% else %}Save Grading{% endif %}</button>
+    <button type="button" class="btn" onclick="toggleForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
   </div>
 </div>
 </form>
 
 {% if today_data %}
 <div class="table-header-tool">
-    <h3>Today's Grading Records</h3>
+    <h3>Recent Records (Today)</h3>
     <div id="threeDotsMenu">
       <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       <div id="dropdownMenu">
-        <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit Entry</div>
-        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+        <div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-trash-can"></i> Delete</div>
       </div>
     </div>
 </div>
-
 <div class="table-wrap">
 <table id="dataTable">
 <thead>
-<tr>
-  <th>ID</th>
-  <th>Batch #</th>
-  <th>HOSO Count</th>
-  <th>Variety</th>
-  <th>Graded Count</th>
-  <th>Qty (KG)</th>
-  <th>Species</th>
-  <th>Date</th>
-  <th>Time</th>
-</tr>
+    <tr>
+        <th>Batch #</th>
+        <th>Production For</th>
+        <th>In (HOSO)</th>
+        <th>Out (Graded)</th>
+        <th>Species | Variety</th>
+        <th>Qty (KG)</th>
+        <th>Time</th>
+    </tr>
 </thead>
 <tbody>
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
-  <td>{{r.id}}</td>
   <td style="font-weight:700;">{{r.batch_number}}</td>
+  <td style="font-weight: 600; color: var(--primary);">{{ r.production_for }}</td>
   <td>{{r.hoso_count}}</td>
-  <td>{{r.variety_name}}</td>
-  <td style="color:var(--accent); font-weight:600;">{{r.graded_count}}</td>
-  <td style="font-weight:700;">{{r.quantity}}</td>
-  <td>{{r.species}}</td>
-  <td>{{r.date}}</td>
-  <td>{{r.time}}</td>
+  <td style="color:var(--accent); font-weight:800;">{{r.graded_count}}</td>
+  <td>{{r.species}} | {{r.variety_name}}</td>
+  <td style="font-weight:700;">{{ "{:,.2f}".format(r.quantity) }}</td>
+  <td style="font-size:10px; color:var(--muted);">{{r.time}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -225,92 +261,138 @@ iframe{ width:100%; height:100%; border:none; }
 </div>
 {% endif %}
 
-<div id="lookupModal">
-  <div class="lookup-box">
-    <span class="close-popup" onclick="closeLookup()">×</span>
-    <iframe id="lookupFrame"></iframe>
-  </div>
-</div>
+<div id="lookupModal"><div class="lookup-box"><span class="close-popup" onclick="closeLookup()">×</span><iframe id="lookupFrame"></iframe></div></div>
 
 <script>
-const lookupModal = document.getElementById("lookupModal");
-const lookupFrame = document.getElementById("lookupFrame");
-const batch = document.getElementById("batch");
-const hoso = document.getElementById("hoso");
-const variety = document.getElementById("variety");
-const species = document.getElementById("species");
+const drillDownData = {{ drill_down_json | safe if drill_down_json else '{}' }};
 
-function openLookup(url){
-  lookupFrame.src=url;
-  lookupModal.style.display="flex";
-}
-function closeLookup(){
-  lookupModal.style.display="none";
-  location.reload();
+function toggleForm() {
+    const section = document.getElementById("formSection"), summary = document.getElementById("summarySection");
+    if (section.style.display === "none" || section.style.display === "") {
+        section.style.display = "block"; summary.style.display = "none";
+    } else {
+        section.style.display = "none"; summary.style.display = "grid";
+    }
 }
 
-batch.onchange=()=>{
-  if(batch.value==="__lookup_batch__"){
-    openLookup("/processing/raw_material_purchasing");
-    batch.value="";
-  }else{
-    fetch("/processing/grading/get_hoso/"+batch.value)
-    .then(r=>r.json()).then(d=>{
-      hoso.innerHTML="<option disabled selected>Select Count</option>";
-      d.counts.forEach(c=>{
-        let o=document.createElement("option");
-        o.value=o.text=c;hoso.appendChild(o);
-      });
-    });
-  }
-};
+// DROPDOWN VALIDATION (STRICT)
+function validateForm() {
+    const inputs = [
+        { id: "production_for", list: "prod_for_data", label: "Production For" },
+        { id: "peeling_at", list: "locations_data", label: "Grading At" },
+        { id: "batch", list: "batches_data", label: "Batch Number" },
+        { id: "hoso", list: "hoso_data", label: "HOSO Count" },
+        { id: "species", list: "species_data", label: "Species" },
+        { id: "variety", list: "variety_data", label: "Variety" }
+    ];
 
-variety.onchange=()=>{if(variety.value==="__lookup_variety__"){openLookup("/criteria/varieties");variety.value="";}}
-species.onchange=()=>{if(species.value==="__lookup_species__"){openLookup("/criteria/species");species.value="";}}
+    for (let item of inputs) {
+        const input = document.getElementById(item.id);
+        const list = document.getElementById(item.list);
+        const options = Array.from(list.options).map(opt => opt.value);
 
-/* TABLE SELECTION */
-let selectedRow=null;
-const threeDotsMenu = document.getElementById("threeDotsMenu");
-const dotsBtn = document.getElementById("dotsBtn");
-const dropdownMenu = document.getElementById("dropdownMenu");
+        if (input.value && !options.includes(input.value)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Selection',
+                text: `Please select a valid ${item.label} from the searchable list only.`,
+                confirmButtonColor: '#3b82f6'
+            });
+            input.focus();
+            return false;
+        }
+    }
+    return true;
+}
 
-document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
-  r.onclick=()=>{
-    document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
-    r.classList.add("selected");
-    selectedRow=r;
-    threeDotsMenu.style.display="block";
+// COMPANY & BATCH FILTERING
+function handleCompanyChange() {
+    const company = document.getElementById("production_for").value;
+    const batchList = document.getElementById("batches_data"), batchInput = document.getElementById("batch");
+    batchList.innerHTML = ""; batchInput.value = "";
+    document.getElementById("hoso_data").innerHTML = ""; document.getElementById("hoso").value = "";
+
+    if (!company) return;
+    fetch(`/processing/grading/get_batches/${encodeURIComponent(company)}`)
+        .then(r => r.json()).then(data => {
+            if (data.batches) data.batches.forEach(b => {
+                let opt = document.createElement("option"); opt.value = b; batchList.appendChild(opt);
+            });
+        });
+}
+
+function handleBatchChange() {
+    const company = document.getElementById("production_for").value, batch = document.getElementById("batch").value;
+    const hosoList = document.getElementById("hoso_data"), hosoInput = document.getElementById("hoso");
+    hosoList.innerHTML = ""; hosoInput.value = "";
+
+    if (!company || !batch) return;
+    fetch(`/processing/grading/get_hoso/${encodeURIComponent(company)}/${encodeURIComponent(batch)}`)
+        .then(r => r.json()).then(data => {
+            if(data.counts) data.counts.forEach(c => {
+                let opt = document.createElement("option"); opt.value = c; hosoList.appendChild(opt);
+            });
+        });
+}
+
+// DRILL DOWN
+function toggleSumDrill(element, type, species, variety, count) {
+    const mainRow = element.closest('tr'), drillRow = mainRow.nextElementSibling;
+    const drillBody = drillRow.querySelector('.drill-body');
+
+    if (drillRow.style.display === "none") {
+        drillBody.innerHTML = "";
+        const key = `${species}|${variety}|${count}`;
+        const matches = (drillDownData[type] && drillDownData[type][key]) ? drillDownData[type][key] : [];
+        matches.forEach(m => {
+            drillBody.innerHTML += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td style="text-align:right;">${m.qty.toFixed(2)}</td></tr>`;
+        });
+        drillRow.style.display = "table-row";
+    } else { drillRow.style.display = "none"; }
+}
+
+function openLookup(url){ document.getElementById("lookupFrame").src=url; document.getElementById("lookupModal").style.display="flex"; }
+function closeLookup(){ document.getElementById("lookupModal").style.display="none"; location.reload(); }
+function handleSpeciesChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/species"); i.value=""; } }
+function handleVarietyChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/varieties"); i.value=""; } }
+
+// TABLE ACTIONS
+let selectedRow = null;
+document.querySelectorAll("#dataTable tbody tr").forEach(r => {
+  r.onclick = () => {
+    document.querySelectorAll("#dataTable tr").forEach(x => x.classList.remove("selected"));
+    r.classList.add("selected"); selectedRow = r;
+    document.getElementById("threeDotsMenu").style.display = "block";
   };
 });
 
-dotsBtn.onclick=(e)=>{
-  e.stopPropagation();
-  dropdownMenu.style.display = dropdownMenu.style.display==="block"?"none":"block";
+document.getElementById("dotsBtn").onclick = (e) => {
+    e.stopPropagation();
+    const m = document.getElementById("dropdownMenu");
+    m.style.display = m.style.display === "block" ? "none" : "block";
 }
-document.onclick=()=>dropdownMenu.style.display="none";
 
-function editSelected(){
-  if(!selectedRow)return Swal.fire("Select a row first!");
-  location="/processing/grading/edit/"+selectedRow.dataset.id;
-}
+document.onclick = () => { if(document.getElementById("dropdownMenu")) document.getElementById("dropdownMenu").style.display = "none"; }
+
 function deleteSelected(){
-  if(!selectedRow)return Swal.fire("Select a row first!");
-  Swal.fire({
-    title: 'Are you sure?',
-    text: "You won't be able to revert this!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, delete it!'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      fetch("/processing/grading/delete/"+selectedRow.dataset.id,{method:"POST"})
-      .then(()=>location.reload());
-    }
-  })
+    if(!selectedRow) return;
+    Swal.fire({ 
+        title: 'Delete Record?', 
+        text: "This action cannot be undone!", 
+        icon: 'warning', 
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Delete it!'
+    }).then((res) => {
+        if (res.isConfirmed) {
+            fetch("/processing/grading/delete/" + selectedRow.dataset.id, {method:"POST"})
+            .then(() => {
+                Swal.fire('Deleted!', 'Record removed successfully.', 'success').then(() => location.reload());
+            });
+        }
+    });
 }
 </script>
-
 </body>
 </html>

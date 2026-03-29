@@ -31,6 +31,7 @@ class GateEntry(Base):
     time = Column(Time)
     email = Column(String)
     company_id = Column(String(50))
+    production_for = Column(String(255))
 
     __table_args__ = (
         UniqueConstraint(
@@ -74,7 +75,9 @@ class RawMaterialPurchasing(Base):
 
     date = Column(Date)
     time = Column(Time)
-
+    hsn_code = Column(String(20))
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
 # ---------------------------------------------------------
 # DE-HEADING
 # ---------------------------------------------------------
@@ -99,7 +102,8 @@ class DeHeading(Base):
 
     date = Column(Date)
     time = Column(Time)
-
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
 
 # ---------------------------------------------------------
 # GRADING (Matches PostgreSQL exactly)
@@ -121,6 +125,9 @@ class Grading(Base):
 
     date = Column(Date)
     time = Column(Time)
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
+    
 
 
 # ---------------------------------------------------------
@@ -150,6 +157,8 @@ class Peeling(Base):
     # For multi-company access control
     email = Column(String(200))
     company_id = Column(String(50))
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
 
 
 # ---------------------------------------------------------
@@ -160,6 +169,7 @@ class Soaking(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
+    sintex_number = Column(String(100)) # కొత్తగా యాడ్ చేసిన కాలమ్
     batch_number = Column(String(100))
     variety_name = Column(String(100))
     in_count = Column(String(50))
@@ -172,6 +182,7 @@ class Soaking(Base):
     salt_percent = Column(Float)
     salt_qty = Column(Float)
     rejection_qty = Column(Float, default=0)
+    rejection_for = Column(String(100)) # కొత్తగా యాడ్ చేసిన కాలమ్
 
     species = Column(String(100))
     company_id = Column(String(50))
@@ -179,6 +190,9 @@ class Soaking(Base):
 
     date = Column(Date)
     time = Column(Time)
+    production_at = Column(String(255))
+    production_for = Column(String(255))
+    status = Column(String, default="Pending")
 
 
 # ---------------------------------------------------------
@@ -210,3 +224,25 @@ class Production(Base):
 
     date = Column(Date)
     time = Column(Time)
+    production_at = Column(String(255))
+    production_for = Column(String(255))
+
+from sqlalchemy import Column, Integer, String, Text, DateTime
+from datetime import datetime
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    table_name = Column(String(100))
+    record_id = Column(Integer)
+    company_id = Column(String(50))
+
+    field_name = Column(String(100))
+    old_value = Column(Text)
+    new_value = Column(Text)
+
+    edited_by = Column(String(255))
+    edited_at = Column(DateTime, default=datetime.utcnow)

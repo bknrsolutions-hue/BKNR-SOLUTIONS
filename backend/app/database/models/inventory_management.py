@@ -14,6 +14,7 @@ from app.database.models.criteria import metacolumns
 # --------------------------------------------------------
 # STOCK ENTRY
 # --------------------------------------------------------
+
 class stock_entry(Base, metacolumns):
     __tablename__ = "stock_entry"
 
@@ -41,6 +42,15 @@ class stock_entry(Base, metacolumns):
     production_at = Column(String(255))
     production_for = Column(String(255))
     species = Column(String(100))
+
+    # ======================================
+    # 🔥 INVENTORY COSTING COLUMNS (NEW)
+    # ======================================
+    product_kg_value = Column(Float, default=0.0)          # Cost per KG
+    inventory_value = Column(Float, default=0.0)           # Qty * product_kg_value
+    hlso_count = Column(Float, default=0.0)                # HLSO Count
+    hoso_count = Column(Float, default=0.0)                # HOSO Count
+    sales_reference_rate = Column(Float, default=0.0)      # Sales Benchmark Rate
 
 # --------------------------------------------------------
 # PENDING ORDERS
@@ -95,6 +105,8 @@ class sales_dispatch(Base):
     packing_style = Column(String(255))
     no_of_mc = Column(Integer)
     price = Column(Float)
+    variety = Column(String, nullable=True)
+    grade = Column(String, nullable=True)
     
     status = Column(String(50), default="Unpaid") 
     created_at = Column(Date, default=func.now() if 'func' in globals() else datetime.now().date())

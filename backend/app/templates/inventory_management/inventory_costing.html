@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inventory Costing – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#143465;
+  --accent:#3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --text:#1f2937;
+  --muted:#64748b;
+}
+*{box-sizing:border-box;font-family:'Inter',sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+.header-container{background:#fff;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1000}
+.header-main{display:flex;justify-content:space-between;align-items:center}
+.header-main h2{margin:0;font-size:18px;font-weight:800;color:var(--primary)}
+.filters{margin-top:12px;display:flex;gap:8px;overflow-x:auto;background:#f8fafc;padding:10px;border-radius:10px;border:1px solid var(--border)}
+.filters div{display:flex;flex-direction:column;gap:3px;min-width:100px}
+.filters label{font-size:8px;font-weight:800;color:var(--muted);text-transform:uppercase}
+.filters input,.filters select{padding:5px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border)}
+.action-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px}
+#rowCount{font-size:11px;font-weight:700;color:var(--primary);background:#eef2ff;padding:4px 12px;border-radius:20px;border:1px solid #e0e7ff}
+.section{margin:0 20px 20px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
+.table-wrap{overflow:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:10px;min-width:2200px}
+th,td{padding:9px 6px;border-bottom:1px solid #edf2f7;text-align:center}
+th{background:#f8fafc;color:#475569;font-weight:800;text-transform:uppercase;font-size:8px;position:sticky;top:0}
+.highlight{background:#fff9f9;font-weight:800}
+tfoot td{background:#f1f5f9;font-weight:800;color:var(--primary);border-top:2px solid var(--border);position:sticky;bottom:0}
+</style>
+</head>
+
+<body>
+
+<div class="header-container">
+  <div class="header-main">
+    <div>
+      <h2>Inventory Costing Report</h2>
+      <p style="font-size:11px;color:var(--muted);margin:0">Stock · Cost · Sales Analysis</p>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted)">BKNR ERP</div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <div id="rowCount">0 rows found</div>
+</div>
+
+<div class="section">
+<div class="table-wrap">
+<table id="mainTable">
+
+<thead>
+<tr>
+  <th>ID</th><th>Date</th><th>Batch</th><th>Prod Type</th><th>Move</th>
+  <th>Location</th><th>Brand</th><th>Species</th><th>Variety</th><th>Grade</th>
+  <th>Glaze</th><th>Freezer</th><th>Packing</th><th>PO</th><th>Purpose</th>
+  <th>Prod For</th><th>Prod At</th>
+  <th class="highlight">MC</th>
+  <th class="highlight">Loose</th>
+  <th class="highlight">Qty</th>
+  <th class="highlight">KG Value</th>
+  <th class="highlight">Inventory Value</th>
+  <th>HLSO</th>
+  <th>HOSO</th>
+  <th>Sales Ref Rate</th>
+</tr>
+</thead>
+
+<tbody id="tbody">
+{% for r in rows %}
+<tr>
+<td>{{r.id}}</td>
+<td>{{r.date}}</td>
+<td>{{r.batch_number}}</td>
+<td>{{r.type_of_production}}</td>
+<td>{{r.cargo_movement_type}}</td>
+<td>{{r.location}}</td>
+<td>{{r.brand}}</td>
+<td>{{r.species}}</td>
+<td>{{r.variety}}</td>
+<td>{{r.grade}}</td>
+<td>{{r.glaze}}</td>
+<td>{{r.freezer}}</td>
+<td>{{r.packing_style}}</td>
+<td>{{r.po_number or "-"}}</td>
+<td>{{r.purpose or "-"}}</td>
+<td>{{r.production_for}}</td>
+<td>{{r.production_at}}</td>
+<td class="highlight">{{r.no_of_mc}}</td>
+<td class="highlight">{{r.loose}}</td>
+<td class="highlight">{{r.quantity}}</td>
+<td class="highlight">{{r.product_kg_value}}</td>
+<td class="highlight">{{r.inventory_value}}</td>
+<td>{{r.hlso_count}}</td>
+<td>{{r.hoso_count}}</td>
+<td>{{r.sales_reference_rate}}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr>
+<td colspan="17" style="text-align:right">TOTAL</td>
+<td id="t_mc">0</td>
+<td id="t_lse">0</td>
+<td id="t_qty">0</td>
+<td>-</td>
+<td id="t_inv">0</td>
+<td id="t_hlso">0</td>
+<td id="t_hoso">0</td>
+<td>-</td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+</div>
+
+<script>
+const rows=[...document.querySelectorAll("#tbody tr")];
+function applyFilters(){
+ let mc=0,lse=0,qty=0,inv=0,hlso=0,hoso=0,count=0;
+ rows.forEach(r=>{
+  count++;
+  mc+=+r.children[17].innerText||0;
+  lse+=+r.children[18].innerText||0;
+  qty+=+r.children[19].innerText||0;
+  inv+=+r.children[21].innerText||0;
+  hlso+=+r.children[22].innerText||0;
+  hoso+=+r.children[23].innerText||0;
+ });
+ rowCount.innerText=count+" rows found";
+ t_mc.innerText=mc;
+ t_lse.innerText=lse;
+ t_qty.innerText=qty.toFixed(2);
+ t_inv.innerText=inv.toFixed(2);
+ t_hlso.innerText=hlso;
+ t_hoso.innerText=hoso;
+}
+window.onload=applyFilters;
+</script>
+
+</body>
+</html>

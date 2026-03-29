@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electricity Daily Entry - BKNR ERP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root { --primary: #2563eb; --navy: #0f172a; --slate: #64748b; --border: #cbd5e1; --success: #166534; }
+  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f4f7f9; padding: 15px; color: var(--navy); }
+  
+  .entry-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; margin-bottom: 15px; border-left: 4px solid var(--primary); padding-left: 10px; }
+  
+  .horizontal-fields { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .field-group { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  
+  label { font-size: 10px; font-weight: 700; color: var(--slate); margin-bottom: 5px; text-transform: uppercase; }
+  input, select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; height: 38px; box-sizing: border-box; transition: 0.2s; }
+  input[readonly] { background: #f1f5f9; font-weight: 600; color: #475569; border-style: dashed; }
+  
+  .btn-post { background: var(--navy); color: white; border: none; padding: 0 25px; height: 38px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.3s; }
+  .btn-post:hover { background: var(--primary); }
+
+  .table-section { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+  .table-header { padding: 12px 20px; background: var(--navy); color: white; font-size: 12px; font-weight: 600; text-transform: uppercase; display: flex; justify-content: space-between; }
+  
+  .scroll-container { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+  th { background: #f8fafc; padding: 12px; text-align: left; font-size: 10px; color: var(--slate); border-bottom: 2px solid var(--border); }
+  td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  
+  .badge-units { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 4px; font-weight: 700; }
+  .text-amount { font-family: 'Courier New', monospace; font-weight: 700; color: var(--success); }
+</style>
+</head>
+<body>
+
+<div class="entry-section">
+  <div class="section-title">Electricity Daily Consumption Entry</div>
+  <form id="elecEntryForm">
+    <div class="horizontal-fields">
+      
+      <div class="field-group" style="flex: 1.5;">
+        <label>Production Unit</label>
+        <select name="unit_id" id="unit_id" onchange="fetchMasterData()" required>
+          <option value="">-- SELECT UNIT --</option>
+          {% for u in units %}
+          <option value="{{ u.id }}">{{ u.production_at }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Reading Date</label>
+        <input type="date" name="reading_date" id="reading_date" required>
+      </div>
+
+      <div class="field-group">
+        <label>Meter No</label>
+        <input type="text" id="meter_no" readonly placeholder="Auto-fill">
+      </div>
+
+      <div class="field-group">
+        <label>Opening (kWh)</label>
+        <input type="number" name="opening_kwh" id="opening_kwh" step="0.01" oninput="doCalc()" required>
+      </div>
+
+      <div class="field-group">
+        <label>Closing (kWh)</label>
+        <input type="number" name="closing_kwh" id="closing_kwh" step="0.01" oninput="doCalc()" required>
+      </div>
+
+      <div class="field-group">
+        <label>Net Units</label>
+        <input type="number" id="total_units" readonly>
+      </div>
+
+      <div class="field-group">
+        <label>Rate (₹)</label>
+        <input type="number" name="unit_rate" id="unit_rate" step="0.01" oninput="doCalc()" required>
+      </div>
+
+      <div class="field-group">
+        <label>Total Cost (₹)</label>
+        <input type="text" id="display_cost" readonly class="text-amount">
+      </div>
+
+      <button type="submit" class="btn-post">POST ENTRY</button>
+    </div>
+  </form>
+</div>
+
+<div class="table-section">
+  <div class="table-header">
+    <span>Recent History</span>
+    <span style="opacity: 0.7; font-size: 10px;">Company Filter Active</span>
+  </div>
+  <div class="scroll-container">
+    <table>
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>UNIT ID</th>
+          <th>OPENING</th>
+          <th>CLOSING</th>
+          <th>CONSUMED</th>
+          <th>RATE</th>
+          <th>TOTAL COST</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in history %}
+        <tr>
+          <td>{{ row.reading_date }}</td>
+          <td>{{ row.unit_id }}</td>
+          <td>{{ row.opening_kwh }}</td>
+          <td>{{ row.closing_kwh }}</td>
+          <td><span class="badge-units">{{ row.closing_kwh - row.opening_kwh }}</span></td>
+          <td>{{ row.unit_rate }}</td>
+          <td class="text-amount">₹ {{ row.total_cost }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Today's Date default
+  document.getElementById('reading_date').valueAsDate = new Date();
+
+  // Fetch Master Data (Lookup)
+  async function fetchMasterData() {
+    const unitId = document.getElementById('unit_id').value;
+    if(!unitId) return;
+
+    try {
+      const res = await fetch(`/api/electricity/lookup/${unitId}`);
+      const data = await res.json();
+      
+      if(data) {
+        // Backend key 'last_closing' matches
+        document.getElementById('opening_kwh').value = data.last_closing || 0;
+        document.getElementById('unit_rate').value = data.unit_rate || 0;
+        // Backend key 'meter_number' matches 
+        document.getElementById('meter_no').value = data.meter_number || "N/A";
+        doCalc();
+      }
+    } catch (e) {
+      console.error("Lookup failed", e);
+    }
+  }
+
+  function doCalc() {
+    const op = parseFloat(document.getElementById('opening_kwh').value) || 0;
+    const cl = parseFloat(document.getElementById('closing_kwh').value) || 0;
+    const rt = parseFloat(document.getElementById('unit_rate').value) || 0;
+
+    const units = cl - op;
+    document.getElementById('total_units').value = units > 0 ? units.toFixed(2) : 0;
+    
+    const total = units > 0 ? units * rt : 0;
+    document.getElementById('display_cost').value = "₹ " + total.toFixed(2);
+  }
+
+  // Submit Form
+  document.getElementById('elecEntryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    
+    const res = await fetch('/api/electricity/save', {
+      method: 'POST',
+      body: fd
+    });
+    
+    const result = await res.json();
+    if(result.status === 'success') {
+      alert("Entry Saved!");
+      location.reload();
+    } else {
+      alert("Error: " + result.message);
+    }
+  });
+</script>
+
+</body>
+</html>

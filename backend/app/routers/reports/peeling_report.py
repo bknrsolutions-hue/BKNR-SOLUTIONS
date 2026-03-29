@@ -1,20 +1,19 @@
 # ============================================================
-# PEELING REPORT ROUTER
-# (SAME STRUCTURE AS DE-HEADING REPORT)
+# PEELING REPORT ROUTER (BKNR ERP) - FULLY UPDATED
 # ============================================================
 
-from fastapi import APIRouter, Request, Depends, Query
+from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
+import json
 from io import BytesIO
 from openpyxl import Workbook
-from weasyprint import HTML
 
 from app.database import get_db
-from app.database.models.processing import Peeling
+from app.database.models.processing import Peeling, AuditLog
 
 router = APIRouter(
     prefix="/peeling_report",
@@ -24,30 +23,29 @@ router = APIRouter(
 templates = Jinja2Templates(directory="app/templates")
 
 # ------------------------------------------------------------
-# MAIN REPORT PAGE
-# uses : peeling_report.html
+# 1. MAIN REPORT PAGE
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
-def peeling_report(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def peeling_report(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    email = request.session.get("email")
+    role = request.session.get("role")
 
-    if not comp_code or not email:
+    if not comp_code:
         return RedirectResponse("/", status_code=302)
 
     rows = (
         db.query(Peeling)
         .filter(Peeling.company_id == comp_code)
-        .order_by(Peeling.date.desc())
+        .order_by(Peeling.date.desc(), Peeling.time.desc())
         .all()
     )
 
+    # Unique filter options for dropdowns
     batches = sorted({r.batch_number for r in rows if r.batch_number})
     contractors = sorted({r.contractor_name for r in rows if r.contractor_name})
-    counts = sorted({r.hlso_count for r in rows if r.hlso_count})
+    varieties = sorted({r.variety_name for r in rows if r.variety_name})
+    locations = sorted({r.peeling_at for r in rows if r.peeling_at})
+    production_for_list = sorted({r.production_for for r in rows if r.production_for})
 
     return templates.TemplateResponse(
         "reports/peeling_report.html",
@@ -56,165 +54,178 @@ def peeling_report(
             "rows": rows,
             "batches": batches,
             "contractors": contractors,
-            "counts": counts
+            "varieties": varieties,
+            "locations": locations,
+            "production_for_list": production_for_list,
+            "is_admin": role == "admin"
         }
     )
 
 # ------------------------------------------------------------
-# PRINT REPORT (TABLE)
-# uses : peeling_print.html
+# 2. INLINE UPDATE WITH AUDIT LOGGING
 # ------------------------------------------------------------
-@router.get("/print", response_class=HTMLResponse)
-def peeling_print(
-    request: Request,
-    ids: str = Query(None),
+@router.post("/update")
+async def update_peeling(
+    request: Request, 
+    payload: dict = Body(...), 
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    user_email = request.session.get("email")
+    
+    if request.session.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    record_id = payload.get("id")
+    row = db.query(Peeling).filter(Peeling.id == record_id, Peeling.company_id == comp_code).first()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Record not found")
 
-    if ids and ids.lower() != "all":
-        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
-        if id_list:
-            q = q.filter(Peeling.id.in_(id_list))
+    # Fields to monitor for Audit Logs
+    updatable_fields = [
+        "batch_number", "contractor_name", "variety_name", "hlso_count",
+        "hlso_qty", "peeled_qty", "rate", "peeling_at", "production_for"
+    ]
 
-    rows = q.order_by(Peeling.date.asc()).all()
+    for field in updatable_fields:
+        if field in payload:
+            new_val = str(payload[field]).strip()
+            old_val = str(getattr(row, field) or "").strip()
 
-    return templates.TemplateResponse(
-        "reports/peeling_print.html",
+            if old_val != new_val:
+                # Add Audit Entry
+                audit = AuditLog(
+                    table_name="peeling",
+                    record_id=record_id,
+                    company_id=comp_code,
+                    field_name=field,
+                    old_value=old_val,
+                    new_value=new_val,
+                    edited_by=user_email,
+                    edited_at=datetime.utcnow()
+                )
+                db.add(audit)
+                setattr(row, field, payload[field])
+
+    # Recalculate Logic
+    try:
+        h_qty = float(row.hlso_qty or 0)
+        p_qty = float(row.peeled_qty or 0)
+        rt = float(row.rate or 0)
+
+        row.yield_percent = round((p_qty / h_qty * 100), 2) if h_qty > 0 else 0
+        row.amount = round(p_qty * rt, 2)
+    except Exception as e:
+        print(f"Recalculation Error: {e}")
+
+    db.commit()
+    return {"status": "success", "message": "Record updated & Audit Log saved"}
+
+# ------------------------------------------------------------
+# 3. FETCH FULL AUDIT HISTORY (Company Wise)
+# ------------------------------------------------------------
+@router.get("/audit_all")
+async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    
+    # Prathi row change ni latest nundi fetch chestundi
+    logs = (
+        db.query(AuditLog, Peeling.batch_number)
+        .join(Peeling, AuditLog.record_id == Peeling.id)
+        .filter(AuditLog.table_name == "peeling", AuditLog.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc())
+        .limit(100) # Latest 100 changes chusthunnam
+        .all()
+    )
+    
+    return [
         {
-            "request": request,
-            "rows": rows,
-            "printed_on": datetime.now()
-        }
-    )
+            "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+            "user": log.AuditLog.edited_by.split('@')[0], # Email short form kosam
+            "batch": log.batch_number,
+            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
+            "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
+            "type": "UPDATE"
+        } for log in logs
+    ]
+# ------------------------------------------------------------
+# 4. DELETE RECORD
+# ------------------------------------------------------------
+@router.post("/delete")
+async def delete_peeling(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if request.session.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
+    if row:
+        db.delete(row)
+        db.commit()
+        return {"status": "success"}
+    return {"status": "error", "message": "Record not found"}
 
 # ------------------------------------------------------------
-# EXPORT PDF (FROM PRINT HTML)
-# ------------------------------------------------------------
-@router.get("/export_pdf")
-def peeling_export_pdf(
-    request: Request,
-    ids: str = Query(None),
-    db: Session = Depends(get_db)
-):
-    html = peeling_print(request, ids, db).body.decode()
-    pdf = HTML(string=html).write_pdf()
-
-    return StreamingResponse(
-        BytesIO(pdf),
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition":
-            "attachment; filename=PEELING_REPORT.pdf"
-        }
-    )
-
-# ------------------------------------------------------------
-# EXPORT EXCEL
+# 5. EXPORT EXCEL
 # ------------------------------------------------------------
 @router.get("/export_excel")
-def peeling_export_excel(
-    request: Request,
-    ids: str = Query(None),
-    db: Session = Depends(get_db)
-):
+def peeling_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-
     q = db.query(Peeling).filter(Peeling.company_id == comp_code)
 
-    if ids and ids.lower() != "all":
+    if ids:
         id_list = [int(i) for i in ids.split(",") if i.isdigit()]
-        if id_list:
-            q = q.filter(Peeling.id.in_(id_list))
+        q = q.filter(Peeling.id.in_(id_list))
 
     rows = q.order_by(Peeling.date.asc()).all()
-
+    
     wb = Workbook()
     ws = wb.active
-    ws.title = "PEELING_REPORT"
-
-    ws.append([
-        "Date",
-        "Batch",
-        "Contractor",
-        "HLSO Count",
-        "HLSO Qty",
-        "Peeled Qty",
-        "Yield %",
-        "Rate",
-        "Amount"
-    ])
+    ws.title = "Peeling Report"
+    ws.append(["Date", "Batch", "Contractor", "Variety", "HLSO Qty", "Peeled Qty", "Yield %", "Rate", "Amount", "Location", "Production For"])
 
     for r in rows:
-        ws.append([
-            r.date,
-            r.batch_number,
-            r.contractor_name,
-            r.hlso_count,
-            r.hlso_qty,
-            r.peeled_qty,
-            r.yield_percent,
-            r.rate,
-            r.amount
-        ])
+        ws.append([r.date, r.batch_number, r.contractor_name, r.variety_name, r.hlso_qty, r.peeled_qty, r.yield_percent, r.rate, r.amount, r.peeling_at, r.production_for])
 
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-
-    return StreamingResponse(
-        stream,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition":
-            "attachment; filename=PEELING_REPORT.xlsx"
-        }
-    )
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=PEELING_REPORT.xlsx"})
 
 # ------------------------------------------------------------
-# CONTRACTOR MONTHLY BILL
-# uses : peeling_monthly_bill.html
+# 6. MONTHLY BILLING
 # ------------------------------------------------------------
-@router.get("/contractor_monthly_bill", response_class=HTMLResponse)
+@router.get("/contractor_monthly_bill")
 def peeling_monthly_bill(
-    request: Request,
-    month: str = Query(...),          # 01–12
-    contractor: str = Query(...),
+    request: Request, 
+    month: str, 
+    contractor: str, 
+    ids: str = None, 
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    
+    q = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
+    
+    if ids:
+        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
+        q = q.filter(Peeling.id.in_(id_list))
+    else:
+        q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
 
-    rows = (
-        db.query(Peeling)
-        .filter(Peeling.company_id == comp_code)
-        .filter(Peeling.contractor_name == contractor)
-        .filter(func.to_char(Peeling.date, "MM") == month)
-        .order_by(Peeling.date.asc())
-        .all()
-    )
-
+    rows = q.order_by(Peeling.date.asc()).all()
+    
     total_hlso = sum(r.hlso_qty or 0 for r in rows)
     total_peeled = sum(r.peeled_qty or 0 for r in rows)
     grand_total = sum(r.amount or 0 for r in rows)
-    avg_yield = (total_peeled / total_hlso * 100) if total_hlso else 0
-
-    return templates.TemplateResponse(
-        "reports/peeling_monthly_bill.html",
-        {
-            "request": request,
-            "rows": rows,
-
-            # totals (HTML expects these)
-            "total_hlso": total_hlso,
-            "total_peeled": total_peeled,
-            "grand_total": grand_total,
-            "avg_yield": avg_yield,
-
-            # header info
-            "contractor_name": contractor,
-            "month_year": month,
-            "bill_date": datetime.now()
-        }
-    )
+    
+    return templates.TemplateResponse("reports/peeling_monthly_bill.html", {
+        "request": request, 
+        "rows": rows, 
+        "total_hlso": total_hlso, 
+        "total_peeled": total_peeled, 
+        "grand_total": grand_total,
+        "contractor_name": contractor, 
+        "month_year": month,
+        "bill_date": datetime.now() # Added to fix UndefinedError
+    })

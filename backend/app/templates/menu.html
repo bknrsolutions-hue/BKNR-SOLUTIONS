@@ -5,6 +5,11 @@
 <title>BKNR ERP – Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -53,6 +58,26 @@ body {
 .header .user-info {
   font-size: 14px;
   font-weight: 500;
+}
+
+/* INSTALL BUTTON STYLE */
+#installBtn {
+  display: none;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 15px;
+  transition: 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#installBtn:hover {
+  background: #1d4ed8;
 }
 
 /* TOP NAVIGATION */
@@ -149,6 +174,22 @@ iframe {
   flex: 1;
   padding: 10px;
 }
+
+/* Mobile Responsiveness for Top Menu */
+@media (max-width: 768px) {
+  .left-menu {
+    width: 60px;
+  }
+  .left-menu button span {
+    display: none;
+  }
+  .left-menu h3 {
+    display: none;
+  }
+  .header .company-title {
+    font-size: 14px;
+  }
+}
 </style>
 </head>
 
@@ -157,6 +198,8 @@ iframe {
 <div class="header">
   <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
   <div style="display:flex; align-items:center;">
+    <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL APP</button>
+    
     <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name') }}</div>
     <div class="logout" onclick="logout()">LOGOUT</div>
   </div>
@@ -181,6 +224,39 @@ iframe {
 </div>
 
 <script>
+// PWA Service Worker Registration
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/service-worker.js")
+    .then(() => console.log("Service Worker Registered"))
+    .catch((err) => console.log("Service Worker Failed", err));
+}
+
+// PWA INSTALL LOGIC
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      installBtn.style.display = 'none';
+    }
+    deferredPrompt = null;
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  installBtn.style.display = 'none';
+});
+
+
 const permissions = {{ request.session.get('permissions')|tojson }};
 
 function allow(key){
@@ -196,14 +272,25 @@ function openPage(route){
   document.getElementById("frame").src = route;
 }
 
-/******** DASHBOARD *********/
 function loadDash(){
   let html = `
-      <h3>Dashboards</h3>
-      <button onclick="openPage('/dashboard/processing_dashboard')"><i class="fa-solid fa-chart-line"></i> Processing Dashboard</button>
-      <button onclick="openPage('/dashboard/inventory_dashboard')"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard</button>
-      <button onclick="openPage('/dashboard/general_stock_dashboard')"><i class="fa-solid fa-box-open"></i> General Stock</button>
-      <button onclick="openPage('/dashboard/purchasing_dashboard')"><i class="fa-solid fa-cart-shopping"></i> Purchasing Dashboard</button>
+    <div class="menu-section">
+      <h3><i class="fa-solid fa-gauge-high"></i> Dashboards</h3>
+      <div class="button-grid">
+        <button class="menu-btn" onclick="openPage('/dashboard/processing_dashboard')">
+          <i class="fa-solid fa-chart-line"></i> Processing
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/inventory_dashboard')">
+          <i class="fa-solid fa-warehouse"></i> Inventory
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
+          <i class="fa-solid fa-user-tie"></i> HR Dashboard
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
+          <i class="fa-solid fa-file-invoice-dollar"></i> Costing
+        </button>
+      </div>
+    </div>
   `;
   document.getElementById("sideMenu").innerHTML = html;
 }
@@ -232,7 +319,7 @@ function loadReports(){
   if(allow("de_heading_report")) html += `<button onclick="openPage('/reports/de_heading')"><i class="fa-solid fa-file-medical"></i> De-Heading Report</button>`;
   if(allow("grading_report")) html += `<button onclick="openPage('/reports/grading_report')"><i class="fa-solid fa-file-shield"></i> Grading Report</button>`;
   if(allow("peeling_report")) html += `<button onclick="openPage('/reports/peeling_report')"><i class="fa-solid fa-file-import"></i> Peeling Report</button>`;
-  if(allow("soaking_report")) html += `<button onclick="openPage('/reports/soaking')"><i class="fa-solid fa-file-word"></i> Soaking Report</button>`;
+  if(allow("soaking_report")) html += `<button onclick="openPage('/reports/soaking_report')"><i class="fa-solid fa-file-word"></i> Soaking Report</button>`;
   if(allow("production_report")) html += `<button onclick="openPage('/reports/production_report')"><i class="fa-solid fa-file-export"></i> Production Report</button>`;
   if(allow("floor_balance_report")) html += `<button onclick="openPage('/reports/floor_balance_report')"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report</button>`;
 
@@ -257,7 +344,7 @@ function loadCriteria(){
     ["production_at", "Production At"], ["peeling_at", "Peeling At"], ["production_types", "Production Types"],
     ["purposes", "Purposes"], ["purchasing_locations", "Purchasing Locations"], ["grade_to_hoso", "Grade to HOSO"],
     ["hoso_hlso", "HOSO & HLSO"], ["peeling_rates", "Peeling Rates"], ["contractors", "Contractors"],
-    ["coldstore_locations", "Coldstore locations"], ["production_for", "Production For"], ["brands", "Brands"]
+    ["coldstore_locations", "Coldstore locations"], ["production_for", "Production For"], ["brands", "Brands"],["vendors", "Vendors"],["hsn_codes", "HSN Codes"]
   ];
   forms.forEach(f=>{
     if(allow(f[0])) html += `<button onclick="openPage('/criteria/${f[0]}')"><i class="fa-solid fa-caret-right"></i> ${f[1]}</button>`;
@@ -268,16 +355,98 @@ function loadCriteria(){
 /******** SUMMARIES *********/
 function loadSummaries(){
   let html = `<h3>Summaries</h3>`;
-  if(allow("processing_summary")) html += `<button onclick="openPage('/summary/processing')"><i class="fa-solid fa-rectangle-list"></i> Processing Summary</button>`;
+
+  if(allow("processing_summary")) 
+    html += `<button onclick="openPage('/summary/processing')">
+               <i class="fa-solid fa-rectangle-list"></i> Processing Summary
+             </button>`;
+
+  if(allow("inventory_costing")) 
+    html += `<button onclick="openPage('/summary/inventory_costing')">
+               <i class="fa-solid fa-calculator"></i> Inventory Costing
+             </button>`;
+
   document.getElementById("sideMenu").innerHTML = html;
 }
 
-/******** BILLS *********/
-function loadBills(){
-  let html = `<h3>Bills & Accounts</h3>`;
-  if(allow("vendor_bills")) html += `<button onclick="openPage('/bills/vendor')"><i class="fa-solid fa-file-invoice-dollar"></i> Vendor Bills</button>`;
-  if(allow("customer_bills")) html += `<button onclick="openPage('/bills/customer')"><i class="fa-solid fa-receipt"></i> Customer Bills</button>`;
-  if(allow("contractor_payment")) html += `<button onclick="openPage('/accounts/contractor_settlement')"><i class="fa-solid fa-handshake-angle"></i> Contractor Settlement</button>`;
+/******** BILLS & OPERATIONS *********/
+function loadBills() {
+  let html = `<h3>Utilities & Operations Management</h3>`;
+
+  if (allow("electricity_bills"))
+    html += `<button onclick="openPage('/api/electricity/entry')">
+               <i class="fa-solid fa-bolt"></i> Electricity Utilization
+             </button>`;
+
+  if (allow("diesel_bills"))
+    html += `<button onclick="openPage('/api/diesel/entry')">
+               <i class="fa-solid fa-gas-pump"></i> Diesel Consumption
+             </button>`;
+
+  if (allow("packaging_bills"))
+    html += `<button onclick="openPage('/api/purchase/entry')">
+               <i class="fa-solid fa-file-invoice-dollar"></i> Purchase & Packaging
+             </button>`;
+
+  if (allow("logistics_bills"))
+    html += `<button onclick="openPage('/api/container/entry')">
+               <i class="fa-solid fa-truck-fast"></i> Logistics & Freight
+             </button>`;
+
+  if (allow("qa_testing"))
+    html += `<button onclick="openPage('/api/qa/entry')">
+               <i class="fa-solid fa-microscope"></i> QA Testing Charges
+             </button>`;
+
+  if (allow("other_expenses"))
+    html += `<button onclick="openPage('/api/expenses/entry')">
+               <i class="fa-solid fa-receipt"></i> Other Expenses
+             </button>`;
+
+  document.getElementById("sideMenu").innerHTML = html;
+}
+
+
+/******** ATTENDANCE *********/
+function loadAttendance(){
+  let html = `<h3>Attendance</h3>`;
+
+  // 👤 Employee Registration
+  if(allow("employee_registration"))
+    html += `<button onclick="openPage('/attendance/employee/register')">
+              <i class="fa-solid fa-id-card"></i> Employee Registration
+            </button>`;
+
+  // 💰 Employee Increment
+  if(allow("employee_increment"))
+    html += `<button onclick="openPage('/attendance/employee-increment')">
+              <i class="fa-solid fa-arrow-trend-up"></i> Employee Increment
+            </button>`;
+
+  // 📅 Daily Attendance
+  if(allow("daily_attendance"))
+    html += `<button onclick="openPage('/attendance/daily')">
+              <i class="fa-solid fa-calendar-check"></i> Daily Attendance
+            </button>`;
+
+  // 💵 Monthly Salary Sheet (New Addition)
+  if(allow("salary_report"))
+    html += `<button onclick="openPage('/attendance/salary/monthly-sheet')">
+              <i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet
+            </button>`;
+  // 🧾 Payroll Statutory Master (PF / ESI / PT / LWF)
+ if(allow("tax_master"))
+   html += `<button onclick="openPage('/attendance/tax-master')">
+            <i class="fa-solid fa-file-shield"></i> Payroll Statutory Master
+          </button>`;
+  // 💰 Salary Advance
+ if (allow("salary_advance"))
+  html += `<button onclick="openPage('/attendance/salary-advance')">
+            <i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance
+          </button>`;
+
+
+
   document.getElementById("sideMenu").innerHTML = html;
 }
 

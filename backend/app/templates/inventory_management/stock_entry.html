@@ -4,157 +4,40 @@
 <meta charset="UTF-8">
 <title>Stock Entry – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root{
-  --primary:#143465;
-  --secondary: #1e293b;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-}
-
+:root{ --primary:#143465; --secondary: #1e293b; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9; --card:#ffffff; --text:#1f2937; --muted:#64748b; }
 *{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-}
-
-/* ================= HEADER ================= */
-.header{
-  padding:16px 25px;
-  border-bottom:1px solid var(--border);
-  background:#fff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+body{ margin:0; background:var(--bg); color:var(--text); }
+.header{ padding:16px 25px; border-bottom:1px solid var(--border); background:#fff; display: flex; justify-content: space-between; align-items: center; }
 .header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
-
-/* ================= SECTION CARDS ================= */
-.section{
-  margin:18px;
-  background:var(--card);
-  padding:22px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-.section-title {
-    font-size: 13px; font-weight: 800; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 18px; 
-    display: flex; align-items: center; gap: 8px;
-}
-
-/* FORM GRID */
-.form-grid{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:16px;
-}
+.section{ margin:18px; background:var(--card); padding:22px; border-radius:14px; border:1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.section-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.form-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
 @media(max-width:1200px){.form-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}}
-
 .field{display:flex;flex-direction:column; gap: 5px;}
-.field label{
-  font-size:11px;
-  font-weight:700;
-  color:var(--muted);
-  text-transform: uppercase;
-}
-.field select, .field input{
-  padding:10px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  font-size:13px;
-  background:#fff;
-  outline: none;
-  transition: 0.2s;
-}
-.field select:focus, .field input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-}
-
+.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+.field select, .field input{ padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:13px; background:#fff; outline: none; transition: 0.2s; }
+.field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 .hidden{display:none}
-
-/* BUTTONS */
-.actions{
-  margin-top:20px;
-  display:flex;
-  justify-content:flex-end;
-  gap:12px;
-}
-.btn{
-  padding:10px 24px;
-  border-radius:8px;
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer;
-  border:1px solid var(--border);
-  background:#fff;
-  transition: 0.2s;
-}
-.btn-primary{
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  box-shadow: 0 4px 10px rgba(59,130,246,0.3);
-}
-.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
-
-.btn-search {
-    background: var(--secondary);
-    color: #fff; border: none;
-}
-
-/* --- TABLE STYLING --- */
-.table-container {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 18px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-th, td {
-  padding: 12px 8px;
-  border: 1px solid #edf2f7;
-  text-align: center;
-}
-th {
-  background: #f8fafc;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  font-size: 10px;
-}
+.actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
+.btn{ padding:10px 24px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s; }
+.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
+.btn-search { background: var(--secondary); color: #fff; border: none; }
+.table-container { width: 100%; overflow-x: auto; margin-top: 18px; border-radius: 8px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th, td { padding: 12px 8px; border: 1px solid #edf2f7; text-align: center; }
+th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 10px; }
 .text-green { color: #16a34a; font-weight: 800; }
 .text-red { color: #dc2626; font-weight: 800; }
 tbody tr:hover { background: #f8fbff; }
-
-input[readonly] {
-    background: #f1f5f9;
-    color: var(--primary);
-    font-weight: 700;
-}
+input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; }
 </style>
 </head>
-
 <body>
 
 <div class="header">
@@ -162,7 +45,6 @@ input[readonly] {
       <h2>Stock Entry</h2>
       <p><i class="fa-solid fa-right-left"></i> IN Entry & Report-based OUT</p>
   </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;">BKNR ERP System</div>
 </div>
 
 <div class="section">
@@ -182,83 +64,86 @@ input[readonly] {
 <div class="section hidden" id="inBox">
     <div class="section-title"><i class="fa-solid fa-circle-down"></i> Stock In Details</div>
     <div class="form-grid">
-      <div class="field"><label>Batch</label>
-        <select name="batch_number">
+      <div class="field"><label>Production For</label>
+        <select name="production_for" id="in_prod_for" onchange="filterInBatches()" required>
           <option value="">Select</option>
-          {% for b in batches %}<option>{{b}}</option>{% endfor %}
+          {% for p in production_for_list %}<option value="{{p}}">{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Production At</label>
+        <select name="production_at" id="in_prod_at" onchange="filterInBatches()" required>
+          <option value="">Select</option>
+          {% for p in production_places %}<option value="{{p}}">{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Batch</label>
+        <select name="batch_number" id="in_batch" required>
+          <option value="">Select Company & Location First</option>
         </select>
       </div>
       <div class="field"><label>Type of Production</label>
         <select name="type_of_production">
-          <option>N/A</option>
+          <option value="N/A">N/A</option>
           {% for p in production_types %}<option>{{p}}</option>{% endfor %}
         </select>
       </div>
-      <div class="field"><label>Location</label>
-        <select name="location">
+      <div class="field"><label>Location (Stock)</label>
+        <select name="location" required>
           <option value="">Select</option>
           {% for l in locations %}<option>{{l}}</option>{% endfor %}
         </select>
       </div>
-      <div class="field"><label>Production For</label>
-        <select name="production_for">
-          <option value="">Select</option>
-          {% for p in production_for_list %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
       <div class="field"><label>Brand</label>
-        <select name="brand">
+        <select name="brand" required>
           <option value="">Select</option>
           {% for b in brands %}<option>{{b}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Freezer</label>
-        <select name="freezer">
+        <select name="freezer" required>
           <option value="">Select</option>
           {% for f in freezers %}<option>{{f}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Packing Style</label>
-        <select name="packing_style" id="packer" onchange="calcQty()">
+        <select name="packing_style" id="packer" onchange="calcQty()" required>
           <option value="">Select</option>
           {% for p in packing_styles %}
-          <option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">
-            {{p.packing_style}}
-          </option>
+          <option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">{{p.packing_style}}</option>
           {% endfor %}
         </select>
       </div>
       <div class="field"><label>Glaze</label>
-        <select name="glaze">
+        <select name="glaze" required>
           <option value="">Select</option>
           {% for g in glazes %}<option>{{g}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Species</label>
-        <select name="species">
+        <select name="species" required>
           <option value="">Select</option>
           {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Variety</label>
-        <select name="variety">
+        <select name="variety" required>
           <option value="">Select</option>
           {% for v in varieties %}<option>{{v}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Grade</label>
-        <select name="grade">
+        <select name="grade" required>
           <option value="">Select</option>
           {% for g in grades %}<option>{{g}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>No of MC</label>
-        <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0">
+        <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0" required>
       </div>
       <div class="field"><label>Loose</label>
-        <input id="loose" name="loose" type="number" oninput="calcQty()" placeholder="0">
+        <input id="loose" name="loose" type="number" oninput="calcQty()" placeholder="0" required>
       </div>
-      <div class="field"><label>Total Qty (Calculated)</label>
+      <div class="field"><label>Total Qty</label>
         <input id="qty" name="quantity" readonly placeholder="0.00">
       </div>
       <div class="field"><label>Purpose</label>
@@ -269,18 +154,11 @@ input[readonly] {
       </div>
       <div class="field"><label>PO Number</label>
         <select name="po_number">
-          <option>N/A</option>
+          <option value="N/A">N/A</option>
           {% for p in po_numbers %}<option>{{p}}</option>{% endfor %}
         </select>
       </div>
-      <div class="field"><label>Production At</label>
-        <select name="production_at">
-          <option value="">Select</option>
-          {% for p in production_places %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
     </div>
-    <input type="hidden" name="cargo_movement_type" value="IN">
     <div class="actions">
       <button class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE STOCK IN</button>
     </div>
@@ -291,98 +169,27 @@ input[readonly] {
     <div class="section-title"><i class="fa-solid fa-circle-up"></i> Stock Out Search</div>
     <form id="outForm" method="post" action="/inventory/stock_out_save">
     <div class="form-grid">
-      <div class="field"><label>Production For</label>
-        <select name="production_for">
-          <option value="">Select</option>
-          {% for p in production_for_list %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Brand</label>
-        <select name="brand">
-          <option value="">Select</option>
-          {% for b in brands %}<option>{{b}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Production At</label>
-        <select name="production_at">
-          <option value="">Select</option>
-          {% for p in production_places %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Freezer</label>
-        <select name="freezer">
-          <option value="">Select</option>
-          {% for f in freezers %}<option>{{f}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Packing Style</label>
-        <select name="packing_style">
-          <option value="">Select</option>
-          {% for p in packing_styles %}<option>{{p.packing_style}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Glaze</label>
-        <select name="glaze">
-          <option value="">Select</option>
-          {% for g in glazes %}<option>{{g}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Species</label>
-        <select name="species">
-          <option value="">Select</option>
-          {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Variety</label>
-        <select name="variety">
-          <option value="">Select</option>
-          {% for v in varieties %}<option>{{v}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Grade</label>
-        <select name="grade">
-          <option value="">Select</option>
-          {% for g in grades %}<option>{{g}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>Purpose</label>
-        <select name="purpose">
-          <option value="">Select</option>
-          {% for p in purposes %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field"><label>PO Number</label>
-        <select name="po_number">
-          <option>N/A</option>
-          {% for p in po_numbers %}<option>{{p}}</option>{% endfor %}
-        </select>
-      </div>
+      <div class="field"><label>Production For</label><select name="production_for"><option value="">Select</option>{% for p in production_for_list %}<option>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Production At</label><select name="production_at" required><option value="">Select</option>{% for p in production_places %}<option>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Brand</label><select name="brand" required><option value="">Select</option>{% for b in brands %}<option>{{b}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Freezer</label><select name="freezer" required><option value="">Select</option>{% for f in freezers %}<option>{{f}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Packing Style</label><select name="packing_style" required><option value="">Select</option>{% for p in packing_styles %}<option>{{p.packing_style}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Glaze</label><select name="glaze" required><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Species</label><select name="species" required><option value="">Select</option>{% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Variety</label><select name="variety" required><option value="">Select</option>{% for v in varieties %}<option>{{v}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Grade</label><select name="grade" required><option value="">Select</option>{% for g in grades %}<option>{{g}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Purpose</label><select name="purpose"><option value="">Select</option>{% for p in purposes %}<option>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>PO Number</label><select name="po_number"><option value="N/A">N/A</option>{% for p in po_numbers %}<option>{{p}}</option>{% endfor %}</select></div>
     </div>
-    
-    <div style="margin-top: 20px;">
-        <button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button>
-    </div>
-
+    <div style="margin-top: 20px;"><button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button></div>
     <div class="table-container">
         <table id="reportTable" class="hidden">
-        <thead>
-        <tr>
-          <th>Location</th>
-          <th>Batch Number</th>
-          <th>Available MC</th>
-          <th>Available Loose</th>
-          <th style="background: #fff4f4;">OUT MC</th>
-          <th style="background: #fff4f4;">OUT Loose</th>
-        </tr>
-        </thead>
+        <thead><tr><th>Location</th><th>Batch Number</th><th>Available MC</th><th>Available Loose</th><th style="background: #fff4f4;">OUT MC</th><th style="background: #fff4f4;">OUT Loose</th></tr></thead>
         <tbody id="reportRows"></tbody>
         </table>
     </div>
-    
     <div id="hiddenInputs"></div>
-    <div class="actions hidden" id="outSaveBox">
-      <button class="btn btn-primary"><i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT</button>
-    </div>
+    <div class="actions hidden" id="outSaveBox"><button class="btn btn-primary"><i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT</button></div>
     </form>
 </div>
 
@@ -391,60 +198,10 @@ input[readonly] {
     <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Transactions</div>
     <div class="table-container">
         <table>
-        <thead>
-        <tr>
-          <th>ID</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Type</th>
-          <th>Batch</th>
-          <th>Loc</th>
-          <th>Prod For</th>
-          <th>Prod At</th>
-          <th>Type</th>
-          <th>Purpose</th>
-          <th>PO No</th>
-          <th>Brand</th>
-          <th>Freezer</th>
-          <th>Glaze</th>
-          <th>Packing</th>
-          <th>Species</th>
-          <th>Variety</th>
-          <th>Grade</th>
-          <th>MC</th>
-          <th>Lse</th>
-          <th>Total Qty</th>
-          <th>User</th>
-        </tr>
-        </thead>
+        <thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Batch</th><th>Stock Loc</th><th>Prod For</th><th>Prod At</th><th>Purpose</th><th>PO No</th><th>Brand</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Lse</th><th>Total Qty</th><th>User</th></tr></thead>
         <tbody>
         {% for r in table_data %}
-        <tr>
-          <td>{{r.id}}</td>
-          <td>{{r.date}}</td>
-          <td>{{r.time}}</td>
-          <td class="{% if r.cargo_movement_type == 'IN' %}text-green{% else %}text-red{% endif %}">
-            {{r.cargo_movement_type}}
-          </td>
-          <td>{{r.batch_number}}</td>
-          <td>{{r.location}}</td>
-          <td>{{r.production_for}}</td>
-          <td>{{r.production_at}}</td>
-          <td>{{r.type_of_production}}</td>
-          <td>{{r.purpose or ""}}</td>
-          <td>{{r.po_number or ""}}</td>
-          <td>{{r.brand}}</td>
-          <td>{{r.freezer}}</td>
-          <td>{{r.glaze}}</td>
-          <td>{{r.packing_style}}</td>
-          <td style="font-weight: 700; color: var(--accent);">{{r.species}}</td>
-          <td>{{r.variety}}</td>
-          <td>{{r.grade}}</td>
-          <td>{{r.no_of_mc}}</td>
-          <td>{{r.loose}}</td>
-          <td style="font-weight: 700;">{{r.quantity}}</td>
-          <td style="font-size: 9px; color: var(--muted);">{{r.email}}</td>
-        </tr>
+        <tr><td>{{r.id}}</td><td>{{r.date}}</td><td class="{{ 'text-green' if r.cargo_movement_type == 'IN' else 'text-red' }}">{{r.cargo_movement_type}}</td><td>{{r.batch_number}}</td><td>{{r.location}}</td><td>{{r.production_for or ""}}</td><td>{{r.production_at}}</td><td>{{r.purpose or ""}}</td><td>{{r.po_number or ""}}</td><td>{{r.brand}}</td><td style="font-weight: 700; color: var(--accent);">{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td><td>{{r.no_of_mc}}</td><td>{{r.loose}}</td><td style="font-weight: 700;">{{r.quantity}}</td><td style="font-size: 9px; color: var(--muted);">{{r.email.split('@')[0]}}</td></tr>
         {% endfor %}
         </tbody>
         </table>
@@ -453,57 +210,65 @@ input[readonly] {
 {% endif %}
 
 <script>
-const movement = document.getElementById('movement');
-const inBox = document.getElementById('inBox');
-const outBox = document.getElementById('outBox');
-const packer = document.getElementById('packer');
-const mc = document.getElementById('mc');
-const loose = document.getElementById('loose');
-const qty = document.getElementById('qty');
-const reportTable = document.getElementById('reportTable');
-const outSaveBox = document.getElementById('outSaveBox');
-const reportRows = document.getElementById('reportRows');
-const hiddenInputs = document.getElementById('hiddenInputs');
-const outForm = document.getElementById('outForm');
+// Backend nundi batch mapping data pass cheyali logic kosam
+const batchMap = [
+    {% for b in batch_data_list %}
+    { batch: "{{b.batch_number}}", company: "{{b.production_for}}", location: "{{b.production_at}}" },
+    {% endfor %}
+];
+
+function filterInBatches() {
+    const company = document.getElementById('in_prod_for').value;
+    const location = document.getElementById('in_prod_at').value;
+    const batchDropdown = document.getElementById('in_batch');
+    
+    batchDropdown.innerHTML = '<option value="">-- Select Batch --</option>';
+    
+    if(company && location) {
+        const filtered = batchMap.filter(i => i.company === company && i.location === location);
+        if(filtered.length > 0) {
+            filtered.forEach(item => {
+                batchDropdown.innerHTML += `<option value="${item.batch}">${item.batch}</option>`;
+            });
+        } else {
+            batchDropdown.innerHTML = '<option value="">No Batch Found</option>';
+        }
+    }
+}
 
 function toggleMode(){
-  inBox.classList.toggle("hidden", movement.value!=="IN");
-  outBox.classList.toggle("hidden", movement.value!=="OUT");
+  const movement = document.getElementById('movement').value;
+  document.getElementById('inBox').classList.toggle("hidden", movement!=="IN");
+  document.getElementById('outBox').classList.toggle("hidden", movement!=="OUT");
 }
 
 function calcQty(){
-  let opt = packer.selectedOptions[0];
-  if(!opt || !opt.dataset.mc) return;
-  qty.value = ((+mc.value||0)*(+opt.dataset.mc||0) + (+loose.value||0)*(+opt.dataset.slab||0)).toFixed(2);
+  const opt = document.getElementById('packer').selectedOptions[0];
+  if(!opt) return;
+  const mcW = Number(opt.dataset.mc || 0);
+  const slW = Number(opt.dataset.slab || 0);
+  const mcVal = Number(document.getElementById('mc').value || 0);
+  const looseVal = Number(document.getElementById('loose').value || 0);
+  document.getElementById('qty').value = ((mcVal * mcW) + (looseVal * slW)).toFixed(2);
 }
 
 async function searchStock(){
-  const params = new URLSearchParams(new FormData(outForm));
+  const params = new URLSearchParams(new FormData(document.getElementById('outForm')));
   const res = await fetch("/inventory/stock_out_report?"+params);
   const data = await res.json();
   reportTable.classList.remove("hidden");
   outSaveBox.classList.remove("hidden");
-  reportRows.innerHTML="";
-  hiddenInputs.innerHTML="";
+  reportRows.innerHTML=""; hiddenInputs.innerHTML="";
   data.forEach((r,i)=>{
-    reportRows.innerHTML+=`
-      <tr>
-        <td>${r.location}</td>
-        <td><span class="text-green">${r.batch}</span></td>
-        <td>${r.mc}</td>
-        <td>${r.loose}</td>
-        <td><input type="number" id="mc_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td>
-        <td><input type="number" id="lo_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td>
-      </tr>`;
-    hiddenInputs.innerHTML+=`
-      <input type="hidden" name="out_batch" value="${r.batch}">
-      <input type="hidden" name="out_location" value="${r.location}">
-      <input type="hidden" name="out_mc" id="hmc_${i}">
-      <input type="hidden" name="out_loose" id="hlo_${i}">`;
+    reportRows.innerHTML+=`<tr><td>${r.location}</td><td><span class="text-green">${r.batch}</span></td><td>${r.mc}</td><td>${r.loose}</td>
+      <td><input type="number" id="mc_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td>
+      <td><input type="number" id="lo_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent);"></td></tr>`;
+    hiddenInputs.innerHTML+=`<input type="hidden" name="out_batch" value="${r.batch}"><input type="hidden" name="out_location" value="${r.location}">
+      <input type="hidden" name="out_mc" id="hmc_${i}"><input type="hidden" name="out_loose" id="hlo_${i}">`;
   });
 }
 
-outForm.onsubmit=()=>{
+document.getElementById('outForm').onsubmit=()=>{
   document.querySelectorAll("[id^=hmc_]").forEach((h,i)=>{
     h.value=document.getElementById("mc_"+i).value||0;
     document.getElementById("hlo_"+i).value=document.getElementById("lo_"+i).value||0;
@@ -511,6 +276,5 @@ outForm.onsubmit=()=>{
   return true;
 };
 </script>
-
 </body>
 </html>

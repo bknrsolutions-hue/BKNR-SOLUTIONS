@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HSN CODES MASTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  :root {
+    --primary: #143465;
+    --accent: #3b82f6;
+    --border: #d1d5db;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
+  }
+
+  * { box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+
+  h2 {
+    background: #fff; margin: 0; padding: 15px;
+    text-align: center; color: var(--primary);
+    font-size: 18px; font-weight: 800;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* FORM */
+  .form-container {
+    width: 90%; max-width: 1100px; margin: 25px auto;
+    background: #fff; padding: 30px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+
+  .row { display: flex; flex-wrap: wrap; gap: 20px; }
+  .col { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
+
+  label {
+    font-size: 11px; font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  input {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .btn-clear { background: #f1f5f9; color: var(--muted); }
+
+  /* TABLE */
+  table {
+    width: 90%; max-width: 1100px;
+    margin: 10px auto 40px;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  th {
+    background: #f1f5f9;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #475569;
+    padding: 12px;
+    border-bottom: 2px solid var(--border);
+    text-align: left;
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+  }
+
+  tr:hover { background: #f8fbff; cursor: pointer; }
+  tr.selected {
+    background: #eff6ff !important;
+    border-left: 5px solid var(--accent);
+  }
+
+  .badge {
+    font-family: monospace;
+    background: #ecfeff;
+    color: #0369a1;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  .gst {
+    background: #ecfdf5;
+    color: #047857;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  /* 3 DOT MENU */
+  .menu-item {
+    padding: 12px 15px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+</style>
+</head>
+
+<body>
+
+<h2>HSN CODES MASTER</h2>
+
+<form onsubmit="submitHSN(event)">
+  <div class="form-container">
+
+    <div class="row">
+      <div class="col">
+        <label>HSN Code</label>
+        <input type="text" id="hsn_code" required>
+      </div>
+
+      <div class="col">
+        <label>Description</label>
+        <input type="text" id="description" required>
+      </div>
+
+      <div class="col">
+        <label>GST %</label>
+        <input type="number" step="0.01" id="gst_percent" required>
+      </div>
+
+      <div class="col">
+        <label>Applicable From</label>
+        <input type="date" id="applicable_from" required>
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id">
+
+    <div class="actions">
+      <button class="btn" type="submit">SAVE</button>
+      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+    </div>
+
+  </div>
+</form>
+
+<!-- 3 DOT MENU -->
+<div id="threeDotsMenu"
+     style="display:none;
+            width:90%;
+            max-width:1100px;
+            margin:10px auto;
+            text-align:right;
+            position:relative;">
+
+  <button id="dotsBtn"
+          style="background:#003366;color:white;
+                 border:none;padding:6px 12px;
+                 border-radius:6px;font-size:20px;">
+    ⋮
+  </button>
+
+  <div id="dropdownMenu"
+       style="display:none;
+              position:absolute;
+              right:0;
+              top:40px;
+              background:white;
+              border:1px solid #ccc;
+              border-radius:8px;
+              width:200px;
+              z-index:9999;
+              box-shadow:0 4px 10px rgba(0,0,0,0.15);">
+    <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
+    <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>HSN Code</th>
+      <th>Description</th>
+      <th>GST %</th>
+      <th>Applicable From</th>
+      <th>Company</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for h in today_data %}
+    <tr
+      data-id="{{ h.id }}"
+      data-hsn="{{ h.hsn_code }}"
+      data-desc="{{ h.description }}"
+      data-gst="{{ h.gst_percent }}"
+      data-app="{{ h.applicable_from }}"
+    >
+      <td>{{ h.id }}</td>
+      <td><span class="badge">{{ h.hsn_code }}</span></td>
+      <td>{{ h.description }}</td>
+      <td><span class="gst">{{ h.gst_percent }}%</span></td>
+      <td>{{ h.applicable_from }}</td>
+      <td>{{ h.company_id }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+let selectedRow=null;
+
+/* SAVE / UPDATE */
+async function submitHSN(e){
+  e.preventDefault();
+
+  const fd=new FormData();
+  if(record_id.value) fd.append("id",record_id.value);
+
+  fd.append("hsn_code",hsn_code.value);
+  fd.append("description",description.value);
+  fd.append("gst_percent",gst_percent.value);
+  fd.append("applicable_from",applicable_from.value);
+
+  const res=await fetch("/criteria/hsn_codes",{method:"POST",body:fd});
+  if(res.ok){ alert("Saved Successfully"); location.reload(); }
+  else alert("Save Failed");
+}
+
+/* ROW SELECT */
+document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
+  r.onclick=(e)=>{
+    e.stopPropagation();
+    document.querySelectorAll("tr.selected").forEach(x=>x.classList.remove("selected"));
+    r.classList.add("selected");
+    selectedRow=r;
+    threeDotsMenu.style.display="block";
+  };
+});
+
+/* DOT MENU */
+dotsBtn.onclick=(e)=>{
+  e.stopPropagation();
+  dropdownMenu.style.display =
+    dropdownMenu.style.display==="block" ? "none" : "block";
+};
+
+document.addEventListener("click",()=> dropdownMenu.style.display="none");
+
+/* EDIT */
+function editSelected(){
+  if(!selectedRow) return;
+  record_id.value=selectedRow.dataset.id;
+  hsn_code.value=selectedRow.dataset.hsn;
+  description.value=selectedRow.dataset.desc;
+  gst_percent.value=selectedRow.dataset.gst;
+  applicable_from.value=selectedRow.dataset.app;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* DELETE */
+async function deleteSelected(){
+  if(!selectedRow || !confirm("Delete this HSN Code?")) return;
+  await fetch(`/criteria/hsn_codes/delete/${selectedRow.dataset.id}`,{method:"POST"});
+  location.reload();
+}
+
+/* CLEAR */
+function clearForm(){
+  selectedRow=null;
+  record_id.value="";
+  threeDotsMenu.style.display="none";
+}
+</script>
+
+</body>
+</html>

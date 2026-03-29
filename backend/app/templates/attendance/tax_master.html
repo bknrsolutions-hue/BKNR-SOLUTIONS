@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payroll Statutory Master | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#0f172a;--accent:#2563eb;--border:#e5e7eb;
+  --bg:#f1f5f9;--success:#10b981
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:#1e293b}
+
+/* HEADER */
+.header{
+  background:#fff;padding:18px 32px;border-bottom:2px solid var(--primary);
+  display:flex;justify-content:space-between;align-items:center
+}
+.btn-add{
+  background:var(--primary);color:#fff;border:none;
+  padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer
+}
+
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000}
+.modal-box{
+  background:#fff;width:96%;max-width:1200px;margin:20px auto;
+  border-radius:14px;max-height:92vh;overflow:auto;box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1)
+}
+.modal-header{
+  padding:16px 28px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:#f8fafc
+}
+
+/* FORM STYLE */
+.form-body{padding:22px 28px}
+.section{
+  margin-bottom:22px;border:1px solid var(--border);
+  padding:16px;border-radius:12px;background:#fff
+}
+.section-title{
+  font-size:12px;font-weight:800;color:var(--accent);
+  margin-bottom:14px;text-transform:uppercase;letter-spacing: 0.5px;
+}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.form-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.form-grid{grid-template-columns:1fr}}
+
+.field{display:flex;flex-direction:column;gap:6px}
+label{font-size:11px;font-weight:700;color:#64748b}
+input,select{
+  padding:10px;border:1px solid var(--border);
+  border-radius:8px;font-size:13px;outline: none;transition: border 0.2s;
+}
+input:focus, select:focus{ border-color: var(--accent); }
+input[readonly]{background:#f8fafc; cursor: not-allowed;}
+
+/* ACTIONS */
+.actions{
+  position:sticky;bottom:0;background:#f8fafc;
+  border-top:1px solid var(--border);
+  padding:14px 28px;display:flex;justify-content:flex-end;gap:10px
+}
+.btn-save{
+  background:var(--success);color:#fff;border:none;
+  padding:12px 34px;border-radius:10px;font-weight:800; cursor: pointer;
+}
+.btn-cancel{
+  background:#e2e8f0; color:#475569; border:none;
+  padding:12px 24px; border-radius:10px; font-weight:700; cursor: pointer;
+}
+
+/* TABLE */
+.container{padding:22px}
+.table-wrap{
+  background:#fff;border-radius:14px;
+  border:1px solid var(--border);overflow:auto; height: 75vh;
+}
+table{width:100%;border-collapse:collapse; min-width: 1000px;}
+thead th{
+  position:sticky;top:0;background:#f8fafc;z-index:2;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+th{
+  padding:14px;font-size:11px;font-weight:800;
+  text-transform:uppercase;border-bottom:1px solid var(--border); text-align: left;
+}
+td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
+.badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800; display: inline-block;}
+.yes{background:#dcfce7;color:#166534}
+.no{background:#fee2e2;color:#991b1b}
+.edit-btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:8px 12px;border-radius:8px;font-size:12px;text-decoration: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2><i class="fa-solid fa-building-columns"></i> Statutory Master</h2>
+  <button class="btn-add" onclick="openNew()">+ CONFIGURE</button>
+</div>
+
+<div id="modal">
+<div class="modal-box">
+<div class="modal-header">
+  <h3 id="modalTitle">{{ 'Edit Statutory Configuration' if edit_data else 'Employee Statutory Setup' }}</h3>
+  <span onclick="closeModal()" style="cursor:pointer;font-size:24px; color: #94a3b8">&times;</span>
+</div>
+
+<form id="statutoryForm" method="post"
+ action="{% if edit_data %}/attendance/payroll/statutory/update/{{ edit_data.id }}{% else %}/attendance/payroll/statutory/save{% endif %}">
+<div class="form-body">
+
+<div class="section">
+<div class="section-title">Employee Information</div>
+<div class="form-grid">
+  <div class="field">
+    <label>Employee ID</label>
+    <select name="employee_id" id="emp_select" required onchange="handleEmployeeChange()">
+      <option value="">-- Loading... --</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Name</label>
+    <input name="employee_name" id="emp_name"
+     value="{{ edit_data.employee_name if edit_data else '' }}" readonly required>
+  </div>
+
+  <div class="field">
+    <label>Department</label>
+    <input name="department" id="emp_dept"
+     value="{{ edit_data.department if edit_data else '' }}" readonly>
+  </div>
+
+  <div class="field">
+    <label>Applicable From</label>
+    <input type="month" name="applicable_from" required
+     value="{{ edit_data.applicable_from.strftime('%Y-%m') if edit_data else '' }}">
+  </div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">PF Configuration</div>
+<div class="form-grid">
+  <div class="field">
+    <label>PF Applicable</label>
+    <select name="pf_applicable">
+        <option value="YES" {% if edit_data and edit_data.pf_applicable %}selected{% endif %}>YES</option>
+        <option value="NO"  {% if edit_data and not edit_data.pf_applicable %}selected{% endif %}>NO</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>UAN Number</label>
+    <input name="uan_number" id="uan_number" value="{{ edit_data.uan_number if edit_data else '' }}">
+  </div>
+  <div class="field">
+    <label>Employee PF %</label>
+    <input name="pf_employee_percent" type="number" step="0.01" value="{{ edit_data.pf_employee_percent if edit_data else 12.0 }}">
+  </div>
+  <div class="field">
+    <label>Employer PF %</label>
+    <input name="pf_employer_percent" type="number" step="0.01" value="{{ edit_data.pf_employer_percent if edit_data else 12.0 }}">
+  </div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">ESI Configuration</div>
+<div class="form-grid">
+  <div class="field">
+    <label>ESI Applicable</label>
+    <select name="esi_applicable">
+        <option value="YES" {% if edit_data and edit_data.esi_applicable %}selected{% endif %}>YES</option>
+        <option value="NO"  {% if edit_data and not edit_data.esi_applicable %}selected{% endif %}>NO</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>ESI Number</label>
+    <input name="esi_number" id="esi_number" value="{{ edit_data.esi_number if edit_data else '' }}">
+  </div>
+  <div class="field">
+    <label>Employee ESI %</label>
+    <input name="esi_employee_percent" type="number" step="0.01" value="{{ edit_data.esi_employee_percent if edit_data else 0.75 }}">
+  </div>
+  <div class="field">
+    <label>Employer ESI %</label>
+    <input name="esi_employer_percent" type="number" step="0.01" value="{{ edit_data.esi_employer_percent if edit_data else 3.25 }}">
+  </div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">PT / LWF</div>
+<div class="form-grid">
+  <div class="field">
+    <label>PT Applicable</label>
+    <select name="pt_applicable">
+        <option value="YES" {% if edit_data and edit_data.pt_applicable %}selected{% endif %}>YES</option>
+        <option value="NO"  {% if edit_data and not edit_data.pt_applicable %}selected{% endif %}>NO</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>PT Amount (Monthly)</label>
+    <input name="pt_amount" type="number" value="{{ edit_data.pt_amount if edit_data else 0 }}">
+  </div>
+  <div class="field">
+    <label>LWF Applicable</label>
+    <select name="lwf_applicable">
+        <option value="YES" {% if edit_data and edit_data.lwf_applicable %}selected{% endif %}>YES</option>
+        <option value="NO"  {% if edit_data and not edit_data.lwf_applicable %}selected{% endif %}>NO</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>LWF Employee Amount</label>
+    <input name="lwf_amount" type="number" value="{{ edit_data.lwf_employee_amount if edit_data else 0 }}">
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="actions">
+  <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+  <button type="submit" class="btn-save">{{ 'Update' if edit_data else 'Save Configuration' }}</button>
+</div>
+</form>
+</div>
+</div>
+
+<div class="container">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Emp ID</th><th>Name</th><th>Dept</th><th>From</th>
+<th>PF</th><th>UAN</th><th>ESI</th><th>PT</th><th>LWF</th><th>Action</th>
+</tr>
+</thead>
+<tbody>
+{% if records %}
+    {% for r in records %}
+    <tr>
+    <td>{{ r.employee_id }}</td>
+    <td>{{ r.employee_name }}</td>
+    <td>{{ r.department or '-' }}</td>
+    <td>{{ r.applicable_from.strftime('%b-%Y') if r.applicable_from else '-' }}</td>
+    <td><span class="badge {{ 'yes' if r.pf_applicable else 'no' }}">{{ 'YES' if r.pf_applicable else 'NO' }}</span></td>
+    <td>{{ r.uan_number or '-' }}</td>
+    <td><span class="badge {{ 'yes' if r.esi_applicable else 'no' }}">{{ 'YES' if r.esi_applicable else 'NO' }}</span></td>
+    <td>{{ r.pt_amount }}</td>
+    <td>{{ r.lwf_employee_amount }}</td>
+    <td>
+    <a href="/attendance/tax-master/edit/{{ r.id }}" class="edit-btn"><i class="fa-solid fa-pen-to-square"></i></a>
+    </td>
+    </tr>
+    {% endfor %}
+{% else %}
+    <tr><td colspan="10" style="text-align: center; padding: 40px; color: #94a3b8;">No statutory configurations found.</td></tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+</div>
+
+<script>
+let globalEmployees = [];
+
+// 1. Initial Load
+document.addEventListener('DOMContentLoaded', function() {
+    fetchEmployees();
+    {% if edit_data %}
+    document.getElementById("modal").style.display="block";
+    {% endif %}
+});
+
+// 2. Fetch Employees (Using Absolute path to avoid 404 in edit mode)
+async function fetchEmployees() {
+    try {
+        // Absolute path fix: always points to /attendance/api/employees
+        const response = await fetch('/attendance/api/employees'); 
+        
+        if (!response.ok) throw new Error(`Status: ${response.status}`);
+
+        globalEmployees = await response.json();
+        const select = document.getElementById('emp_select');
+        const selectedId = "{{ edit_data.employee_id if edit_data else '' }}";
+
+        select.innerHTML = '<option value="">-- Select Employee --</option>';
+
+        globalEmployees.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.employee_id;
+            opt.text = `${emp.employee_id} - ${emp.employee_name}`;
+            if(emp.employee_id == selectedId) opt.selected = true;
+            select.appendChild(opt);
+        });
+        
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        document.getElementById('emp_select').innerHTML = '<option value="">Error Loading Data</option>';
+    }
+}
+
+// 3. Auto-fill fields
+function handleEmployeeChange() {
+    const empId = document.getElementById('emp_select').value;
+    const emp = globalEmployees.find(e => e.employee_id == empId);
+    
+    if (emp) {
+        document.getElementById('emp_name').value = emp.employee_name;
+        document.getElementById('emp_dept').value = emp.department || 'GENERAL';
+        document.getElementById('uan_number').value = emp.uan_number || '';
+    } else {
+        document.getElementById('emp_name').value = '';
+        document.getElementById('emp_dept').value = '';
+        document.getElementById('uan_number').value = '';
+    }
+}
+
+function openNew() {
+    document.getElementById("modal").style.display = "block";
+    document.getElementById("statutoryForm").reset();
+    document.getElementById("modalTitle").innerText = "Employee Statutory Setup";
+    document.getElementById("statutoryForm").action = "/attendance/payroll/statutory/save";
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+    // Fix for 404: always go back to base list page
+    window.location.href = "/attendance/tax-master";
+}
+</script>
+
+</body>
+</html>

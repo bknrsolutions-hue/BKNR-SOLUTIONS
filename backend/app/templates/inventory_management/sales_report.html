@@ -1,134 +1,373 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Realization Report | BKNR ERP</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0f172a; --accent: #2563eb; --success: #059669; --border: #e2e8f0;
-        }
-        body { background: #f8fafc; color: var(--primary); font-family: 'Inter', sans-serif; margin: 0; padding: 25px; }
-        .container { max-width: 1600px; margin: 0 auto; }
-        
-        /* Header & Filter */
-        .header-box { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        .header-box h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; }
-        
-        /* Summary Cards (Top) */
-        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
-        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--accent); }
-        .card span { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        .card h2 { margin: 8px 0 0; font-size: 22px; color: var(--primary); }
+<meta charset="UTF-8">
+<title>Sales Realization Detailed Report – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-        /* Table Area */
-        .table-card { background: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border); }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .data-table thead { background: var(--primary); color: #fff; }
-        .data-table th { padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; border-right: 1px solid rgba(255,255,255,0.1); }
-        .data-table td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
-        
-        .merge-bg { background: #f9fafb; font-weight: 600; border-right: 1px solid var(--border); }
-        .text-success { color: var(--success); font-weight: 700; }
-        .grand-total-row { background: #f1f5f9; font-weight: 800; font-size: 14px; }
-    </style>
+<style>
+:root{
+  --primary:#0f172a; --border:#e2e8f0; --bg:#f8fafc; --accent: #2563eb; --card:#ffffff;
+  --success: #059669; --danger: #dc2626; --warning: #f59e0b;
+}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color: #1e293b; font-size: 9px;}
+
+/* HEADER SECTION */
+.header{
+  position:sticky; top:0; z-index: 1000;
+  background:#fff; padding:15px 25px;
+  border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.header h2{margin:0; color:var(--primary); font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: -0.5px;}
+
+/* FILTER CONTROL PANEL */
+.section-filter{
+  margin:20px; background:#fff; padding:18px;
+  border-radius:12px; border:1px solid var(--border);
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.field{display:flex; flex-direction:column; gap: 5px;}
+.field label{font-size:8px; font-weight:700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;}
+.field input, .field select{
+  padding:8px; border-radius:6px; border:1px solid var(--border); font-size: 10px; outline: none; background: #f9fafb; width: 100%;
+}
+
+/* EXECUTIVE SUMMARY (KPIs) */
+.summary-container {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 0 20px 20px;
+}
+.kpi-card {
+    background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--accent);
+}
+.kpi-card span { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+.kpi-card h2 { margin: 8px 0 0; font-size: 22px; color: var(--primary); font-weight: 800; }
+
+/* DATA TABLE PRESENTATION */
+.table-wrap{
+  margin:0 20px 40px; background:#fff; border-radius:12px; border:1px solid var(--border);
+  overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+thead th {
+    background: #f1f5f9; color: #475569; padding: 12px 5px;
+    font-size: 8px; font-weight: 700; border-bottom: 2px solid var(--border);
+    text-transform: uppercase; text-align: center;
+}
+
+tbody td {
+    padding: 10px 5px; border-bottom: 1px solid var(--border);
+    text-align: center; vertical-align: middle; font-size: 9.5px;
+}
+
+.rowspan-cell { background: #ffffff !important; font-weight: 700; color: var(--primary); border-right: 1px solid var(--border); position: relative; }
+.sl-col { width: 40px; }
+.inv-col { width: 110px; }
+.calc-col { background: #f0fdf4; color: #15803d; font-weight: 700; }
+.currency-col { background: #fffbeb; color: #b45309; font-weight: 700; }
+
+/* CONTEXT MENU (3-DOT) */
+.menu-container { position: absolute; top: 10px; right: 5px; }
+.menu-btn { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 5px; }
+.menu-btn:hover { color: var(--accent); }
+.menu-content { 
+    display: none; position: absolute; right: 0; background: white; 
+    min-width: 120px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+    border-radius: 8px; z-index: 10; border: 1px solid var(--border);
+}
+.menu-content button {
+    display: block; width: 100%; text-align: left; padding: 8px 12px;
+    font-size: 9px; font-weight: 600; color: var(--primary); 
+    border: none; background: none; cursor: pointer;
+}
+.menu-content button:hover { background: #f8fafc; color: var(--accent); }
+.menu-content .del-opt { color: var(--danger); }
+.menu-content .del-opt:hover { background: #fef2f2; }
+
+.subtotal-row td { background: #f8fafc; font-weight: 800; color: var(--primary); border-top: 1px solid var(--border); font-size: 10px; }
+.grand-total { background: var(--primary) !important; color: white !important; font-weight: 800; }
+
+@media print { .header, .section-filter, .menu-container, .print-btn { display: none !important; } body { padding: 0; } }
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="header-box">
-        <h1><i class="fa-solid fa-file-invoice"></i> Sales Realization Report</h1>
-        <form action="/inventory/sales_report" method="get">
-            <select name="company" onchange="this.form.submit()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600;">
-                <option value="all">All Entities</option>
-                <option value="BKNR" {% if selected_company == 'BKNR' %}selected{% endif %}>BKNR EXPORTS</option>
-            </select>
-        </form>
+<div class="header">
+  <h2><i class="fa-solid fa-file-invoice-dollar"></i> Sales Realization Analysis</h2>
+  <div style="display: flex; gap: 12px;">
+    <button onclick="window.print()" class="print-btn" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">
+        <i class="fa fa-print"></i> EXPORT TO PRINT
+    </button>
+  </div>
+</div>
+
+<div class="section-filter">
+    <div class="field">
+        <label>Start Date</label>
+        <input type="date" id="f_start_date" onchange="applyFilters()">
     </div>
-
-    {# --- Global Calculations --- #}
-    {% set ns = namespace(mc=0, usd=0, inr=0) %}
-    {% for item in sales_data %}
-        {% set packing = item.packing_style | string %}
-        {% set unit_wt = packing.split('x')[0] | float if 'x' in packing else 1.0 %}
-        {% set row_usd = (unit_wt * (item.no_of_mc | float) * (item.price | float)) %}
-        {% set ns.mc = ns.mc + (item.no_of_mc | float) %}
-        {% set ns.usd = ns.usd + row_usd %}
-        {% set ns.inr = ns.inr + (row_usd * (item.exchange_rate | float if item.exchange_rate else 83.0)) %}
-    {% endfor %}
-
-    <div class="summary-grid">
-        <div class="card">
-            <span>Total Dispatches</span>
-            <h2>{{ (sales_data | groupby('invoice_no') | list | length) }} Invoices</h2>
-        </div>
-        <div class="card">
-            <span>Total Volume</span>
-            <h2>{{ ns.mc | int }} MC</h2>
-        </div>
-        <div class="card">
-            <span>Revenue (USD)</span>
-            <h2>$ {{ "{:,.2f}".format(ns.usd) }}</h2>
-        </div>
-        <div class="card" style="border-top-color: var(--success);">
-            <span>Revenue (INR)</span>
-            <h2 class="text-success">₹ {{ "{:,.2f}".format(ns.inr) }}</h2>
-        </div>
+    <div class="field">
+        <label>End Date</label>
+        <input type="date" id="f_end_date" onchange="applyFilters()">
     </div>
-
-    <div class="table-card">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Invoice / Date</th>
-                    <th>Buyer / Country</th>
-                    <th>SB & Container</th>
-                    <th>Brand</th>
-                    <th>Packing Style</th>
-                    <th>Qty (MC)</th>
-                    <th>Unit Wt</th>
-                    <th>Price ($)</th>
-                    <th>Exch. Rate</th>
-                    <th>Final Amount (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for invoice_no, items in sales_data | groupby('invoice_no') %}
-                    {% for item in items %}
-                        {% set p = item.packing_style | string %}
-                        {% set wt = p.split('x')[0] | float if 'x' in p else 1.0 %}
-                        {% set ex = item.exchange_rate | float if item.exchange_rate else 83.0 %}
-                        {% set row_val = (wt * (item.no_of_mc | float) * (item.price | float) * ex) %}
-                    <tr>
-                        {% if loop.first %}
-                        <td rowspan="{{ items|length }}" class="merge-bg">{{ invoice_no }}<br><small>{{ item.invoice_date }}</small></td>
-                        <td rowspan="{{ items|length }}" class="merge-bg">{{ item.buyer_name }}<br><small>{{ item.country }}</small></td>
-                        <td rowspan="{{ items|length }}" class="merge-bg">SB: {{ item.shipping_bill or '-' }}<br>CT: {{ item.container_no or '-' }}</td>
-                        {% endif %}
-                        <td>{{ item.brand }}</td>
-                        <td>{{ item.packing_style }}</td>
-                        <td>{{ item.no_of_mc }}</td>
-                        <td>{{ wt }} Kg</td>
-                        <td>$ {{ "{:,.2f}".format(item.price) }}</td>
-                        <td>₹ {{ ex }}</td>
-                        <td class="text-success">₹ {{ "{:,.2f}".format(row_val) }}</td>
-                    </tr>
-                    {% endfor %}
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="grand-total-row">
-                    <td colspan="5" style="text-align: right; padding-right: 20px;">GRAND TOTAL:</td>
-                    <td>{{ ns.mc | int }}</td>
-                    <td colspan="3"></td>
-                    <td class="text-success">₹ {{ "{:,.2f}".format(ns.inr) }}</td>
-                </tr>
-            </tfoot>
-        </table>
+    <div class="field">
+        <label>Consignee / Buyer</label>
+        <select id="sel_buyer" onchange="applyFilters()">
+            <option value="">All Consignees</option>
+        </select>
+    </div>
+    <div class="field">
+        <label>Private Label / Brand</label>
+        <select id="sel_brand" onchange="applyFilters()">
+            <option value="">All Brands</option>
+        </select>
+    </div>
+    <div class="field">
+        <label>Product Variety</label>
+        <select id="sel_variety" onchange="applyFilters()">
+            <option value="">All Varieties</option>
+        </select>
+    </div>
+    <div class="field" style="grid-column: span 1;">
+        <label>Global Search</label>
+        <input type="text" id="f_search" placeholder="Invoice #..." oninput="applyFilters()">
     </div>
 </div>
 
+{# --- Server-side KPI Aggregate --- #}
+{% set ns = namespace(mc=0, usd=0, inr=0) %}
+{% for item in sales_data %}
+    {% set ns.mc = ns.mc + (item.obj.no_of_mc | float) %}
+    {% set ns.usd = ns.usd + (item.total_usd | float) %}
+    {% set ns.inr = ns.inr + (item.total_inr | float) %}
+{% endfor %}
+
+<div class="summary-container">
+    <div class="kpi-card"><span>Total Export Volume</span><h2 id="kpi_mc">{{ "{:,}".format(ns.mc | int) }} MC</h2></div>
+    <div class="kpi-card"><span>Gross Value (USD)</span><h2 id="kpi_usd">$ {{ "{:,.2f}".format(ns.usd) }}</h2></div>
+    <div class="kpi-card" style="border-top-color: var(--success);"><span>Realized Revenue (INR)</span><h2 id="kpi_inr" style="color:var(--success)">₹ {{ "{:,.2f}".format(ns.inr) }}</h2></div>
+    <div class="kpi-card"><span>Active Shipments</span><h2 id="rowCount">0 Shipments</h2></div>
+</div>
+
+<div class="table-wrap">
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th class="sl-col">SL</th>
+                <th class="inv-col">Shipment Info</th>
+                <th style="width:150px;">Consignee Details</th>
+                <th>Brand</th>
+                <th>Variety</th>
+                <th>Grade</th>
+                <th>Packing</th>
+                <th>MC Qty</th>
+                <th class="calc-col">Net Weight (KG)</th>
+                <th class="currency-col">Unit Price ($)</th>
+                <th class="currency-col">Total (USD)</th>
+                <th class="currency-col" style="background:#f0f9ff; color:#0369a1;">Realization (INR)</th>
+            </tr>
+        </thead>
+        <tbody id="tbody">
+            {% if sales_data %}
+            {% for inv_no, group in sales_data | groupby('obj.invoice_no') %}
+                {% for item in group %}
+                <tr class="data-row" 
+                    data-invoice="{{ inv_no | lower }}" 
+                    data-date="{{ item.obj.invoice_date }}"
+                    data-buyer="{{ item.obj.buyer_name }}" 
+                    data-brand="{{ item.obj.brand }}"
+                    data-variety="{{ item.obj.variety }}"
+                    data-grade="{{ item.obj.grade }}">
+                    
+                    {% if loop.first %}
+                    <td rowspan="{{ group|length }}" class="rowspan-cell">{{ item.sl_no }}</td>
+                    <td rowspan="{{ group|length }}" class="rowspan-cell">
+                        <div class="menu-container">
+                            <button class="menu-btn" onclick="toggleMenu('m_{{ inv_no }}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                            <div id="m_{{ inv_no }}" class="menu-content">
+                                <button onclick="window.print()"><i class="fa fa-print"></i> Print Invoice</button>
+                                <button onclick="exportToPDF('{{ inv_no }}')"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                                <hr style="margin:4px 0; border:0; border-top:1px solid #f1f5f9;">
+                                <form action="/inventory/delete_sales_invoice/{{ inv_no }}" method="post" onsubmit="return confirm('Execute permanent deletion for Invoice {{ inv_no }}?')">
+                                    <button type="submit" class="del-opt"><i class="fa-solid fa-trash-can"></i> Void Invoice</button>
+                                </form>
+                            </div>
+                        </div>
+                        <span style="color:var(--accent); font-weight:800;">#{{ inv_no }}</span><br>
+                        <small style="color:#64748b;">{{ item.obj.invoice_date }}</small>
+                    </td>
+                    <td rowspan="{{ group|length }}" class="rowspan-cell" style="text-align:left; padding-left:10px;">
+                        <div style="font-weight:700;">{{ item.obj.buyer_name }}</div>
+                        <span style="font-size:8px; color:#64748b;">{{ item.obj.country }}</span>
+                    </td>
+                    {% endif %}
+                    
+                    <td>{{ item.obj.brand }}</td>
+                    <td class="v-variety" style="font-weight:700;">{{ item.obj.variety }}</td>
+                    <td class="v-grade" style="color:var(--accent); font-weight:800;">{{ item.obj.grade }}</td>
+                    <td>{{ item.obj.packing_style }}</td>
+                    <td class="v-mc" style="font-weight:700;">{{ item.obj.no_of_mc }}</td>
+                    <td class="v-kg calc-col">{{ "{:,.2f}".format(item.total_qty_kg) }}</td>
+                    <td class="v-price currency-col">$ {{ item.obj.price }}</td>
+                    <td class="v-usd currency-col">$ {{ "{:,.2f}".format(item.total_usd) }}</td>
+                    <td class="v-inr currency-col" style="background:#f0f9ff; color:#0369a1;">₹ {{ "{:,.2f}".format(item.total_inr) }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="subtotal-row" data-inv-sub="{{ inv_no }}">
+                    <td colspan="7" style="text-align:right; padding-right:15px;">SUB-TOTAL (#{{ inv_no }}):</td>
+                    <td class="s-mc">0</td>
+                    <td class="s-kg">0</td>
+                    <td></td>
+                    <td class="s-usd">0</td>
+                    <td class="s-inr">0</td>
+                </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+        <tfoot>
+            <tr class="grand-total">
+                <td colspan="7" style="text-align:right; padding-right:15px;">CONSOLIDATED TOTAL:</td>
+                <td id="gt_mc">0</td>
+                <td id="gt_kg">0</td>
+                <td></td>
+                <td id="gt_usd">0</td>
+                <td id="gt_inr">0</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<script>
+function toggleMenu(id) {
+    document.querySelectorAll('.menu-content').forEach(m => { if(m.id !== id) m.style.display = 'none'; });
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+}
+
+window.onclick = function(event) {
+    if (!event.target.matches('.menu-btn') && !event.target.matches('.fa-ellipsis-vertical')) {
+        document.querySelectorAll('.menu-content').forEach(m => m.style.display = 'none');
+    }
+}
+
+function populateDropdowns() {
+    const filters = { buyer: new Set(), brand: new Set(), variety: new Set() };
+    document.querySelectorAll(".data-row").forEach(row => {
+        if(row.dataset.buyer) filters.buyer.add(row.dataset.buyer);
+        if(row.dataset.brand) filters.brand.add(row.dataset.brand);
+        if(row.dataset.variety) filters.variety.add(row.dataset.variety);
+    });
+
+    const fillSelect = (id, set) => {
+        const sel = document.getElementById(id);
+        Array.from(set).sort().forEach(val => {
+            if(val && val !== 'None') {
+                const opt = document.createElement("option");
+                opt.value = val; opt.textContent = val;
+                sel.appendChild(opt);
+            }
+        });
+    };
+    fillSelect("sel_buyer", filters.buyer);
+    fillSelect("sel_brand", filters.brand);
+    fillSelect("sel_variety", filters.variety);
+}
+
+function applyFilters() {
+    const f = {
+        start: document.getElementById("f_start_date").value,
+        end: document.getElementById("f_end_date").value,
+        buyer: document.getElementById("sel_buyer").value,
+        brand: document.getElementById("sel_brand").value,
+        variety: document.getElementById("sel_variety").value,
+        search: document.getElementById("f_search").value.toLowerCase()
+    };
+
+    document.querySelectorAll(".data-row").forEach(row => {
+        const rowDate = row.dataset.date; // Expects YYYY-MM-DD
+        
+        let dateMatch = true;
+        if (f.start && rowDate < f.start) dateMatch = false;
+        if (f.end && rowDate > f.end) dateMatch = false;
+
+        const matches = dateMatch &&
+                        (!f.buyer || row.dataset.buyer === f.buyer) &&
+                        (!f.brand || row.dataset.brand === f.brand) &&
+                        (!f.variety || row.dataset.variety === f.variety) &&
+                        (!f.search || row.innerText.toLowerCase().includes(f.search));
+        
+        row.style.display = matches ? "" : "none";
+    });
+    updateTotals();
+}
+
+function updateTotals() {
+    const rows = document.querySelectorAll(".data-row");
+    let g = { mc:0, kg:0, usd:0, inr:0 };
+    let subTotals = {};
+    let visibleInvoices = new Set();
+
+    rows.forEach(row => {
+        if (row.style.display === "none") return;
+        const inv = row.getAttribute("data-invoice");
+        visibleInvoices.add(inv);
+        
+        if (!subTotals[inv]) subTotals[inv] = { mc:0, kg:0, usd:0, inr:0 };
+
+        const mc = parseFloat(row.querySelector(".v-mc").innerText) || 0;
+        const kg = parseFloat(row.querySelector(".v-kg").innerText.replace(/,/g, '')) || 0;
+        const usd = parseFloat(row.querySelector(".v-usd").innerText.replace(/[^0-9.-]/g, '')) || 0;
+        const inr = parseFloat(row.querySelector(".v-inr").innerText.replace(/[^0-9.-]/g, '')) || 0;
+
+        subTotals[inv].mc += mc; subTotals[inv].kg += kg;
+        subTotals[inv].usd += usd; subTotals[inv].inr += inr;
+        g.mc += mc; g.kg += kg; g.usd += usd; g.inr += inr;
+    });
+
+    document.querySelectorAll(".subtotal-row").forEach(sr => {
+        const inv = sr.getAttribute("data-inv-sub").toLowerCase();
+        const d = subTotals[inv];
+        if (d && visibleInvoices.has(inv)) {
+            sr.style.display = "";
+            sr.querySelector(".s-mc").innerText = d.mc;
+            sr.querySelector(".s-kg").innerText = d.kg.toLocaleString(undefined, {minimumFractionDigits: 2});
+            sr.querySelector(".s-usd").innerText = "$ " + d.usd.toLocaleString(undefined, {minimumFractionDigits: 2});
+            sr.querySelector(".s-inr").innerText = "₹ " + d.inr.toLocaleString(undefined, {minimumFractionDigits: 2});
+        } else { sr.style.display = "none"; }
+    });
+
+    const setUI = (id, val, prefix="") => {
+        const el = document.getElementById(id);
+        if(el) el.innerText = prefix + val.toLocaleString(undefined, {minimumFractionDigits: (prefix ? 2 : 0)});
+    };
+
+    setUI("gt_mc", g.mc);
+    setUI("gt_kg", g.kg);
+    setUI("gt_usd", g.usd, "$ ");
+    setUI("gt_inr", g.inr, "₹ ");
+    
+    setUI("kpi_mc", g.mc, "");
+    document.getElementById("kpi_mc").innerText += " MC";
+    setUI("kpi_usd", g.usd, "$ ");
+    setUI("kpi_inr", g.inr, "₹ ");
+    
+    document.getElementById("rowCount").innerText = visibleInvoices.size + " Shipments";
+}
+
+function exportToPDF(inv) { alert("Generating Analytical PDF Export: " + inv); }
+
+window.onload = () => {
+    populateDropdowns();
+    updateTotals();
+};
+</script>
 </body>
 </html>

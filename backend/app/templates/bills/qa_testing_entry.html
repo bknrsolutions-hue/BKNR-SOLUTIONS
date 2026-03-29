@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QA Testing Charges - BKNR ERP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root { --primary: #0d9488; --navy: #0f172a; --slate: #64748b; --border: #cbd5e1; }
+  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 10px; }
+  
+  .entry-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid var(--border); }
+  .section-title { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--primary); padding-left: 10px; }
+  
+  .horizontal-fields { display: flex; gap: 8px; align-items: flex-end; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; }
+  .field-group { display: flex; flex-direction: column; min-width: 110px; }
+  
+  label { font-size: 9px; font-weight: 700; color: var(--slate); margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; }
+  input, select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; color: var(--navy); height: 34px; box-sizing: border-box; }
+  input[readonly] { background: #f8fafc; font-weight: 600; }
+
+  .btn-post { background: var(--primary); color: white; border: none; padding: 0 20px; height: 34px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 11px; white-space: nowrap; }
+  
+  .table-section { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+  .table-header { padding: 10px 15px; background: var(--navy); color: white; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  
+  .scroll-container { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 1400px; }
+  th { background: #f8fafc; padding: 10px; text-align: left; font-size: 9px; color: var(--slate); border-bottom: 2px solid var(--border); text-transform: uppercase; }
+  td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .status-pass { color: #059669; font-weight: 700; }
+  .report-link { color: #0d9488; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="entry-section">
+  <div class="section-title">Laboratory & QA Testing Charges Entry</div>
+  <form id="qaForm" method="POST" action="/api/qa/save">
+    <div class="horizontal-fields">
+      
+      <div class="field-group" style="min-width: 130px;">
+        <label>Testing Date</label>
+        <input type="date" name="test_date" id="test_date" required>
+      </div>
+
+      <div class="field-group" style="min-width: 150px;">
+        <label>Sample / Product Name</label>
+        <select name="product_id" required>
+          <option value="">-- SELECT --</option>
+          {% for p in products %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Batch Number</label>
+        <input type="text" name="batch_no" placeholder="B-2026/001" required>
+      </div>
+
+      <div class="field-group" style="min-width: 150px;">
+        <label>External Lab Name</label>
+        <select name="lab_id" required>
+          <option value="">-- SELECT LAB --</option>
+          {% for lab in labs %}
+          <option value="{{ lab.id }}">{{ lab.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Report/Ref No</label>
+        <input type="text" name="report_ref" placeholder="REP-992" required>
+      </div>
+
+      <div class="field-group">
+        <label>Test Charge (Base)</label>
+        <input type="number" name="test_cost" id="test_cost" oninput="calcQA()" step="0.01" required>
+      </div>
+
+      <div class="field-group" style="min-width: 80px;">
+        <label>GST %</label>
+        <select id="gst_per" onchange="calcQA()">
+          <option value="0">0%</option>
+          <option value="5">5%</option>
+          <option value="12">12%</option>
+          <option value="18" selected>18%</option>
+        </select>
+      </div>
+
+      <div class="field-group" style="min-width: 130px;">
+        <label>Total Test Cost</label>
+        <input type="text" id="display_total" readonly style="color: var(--primary); background: #f0fdfa; font-weight:bold;">
+        <input type="hidden" name="grand_total" id="hidden_total">
+      </div>
+
+      <button type="submit" class="btn-post">POST QA CHARGES</button>
+    </div>
+  </form>
+</div>
+
+<div class="table-section">
+  <div class="table-header">QA Lab Test Register</div>
+  <div class="scroll-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Batch No</th>
+          <th>Product Name</th>
+          <th>Testing Lab</th>
+          <th>Report Ref</th>
+          <th>Base Cost</th>
+          <th>GST</th>
+          <th>Total Paid</th>
+          <th>Result</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in qa_history %}
+        <tr>
+          <td>{{ log.date }}</td>
+          <td><span class="text-bold">{{ log.batch_no }}</span></td>
+          <td>{{ log.product }}</td>
+          <td>{{ log.lab_name }}</td>
+          <td><a href="#" class="report-link">{{ log.report_ref }}</a></td>
+          <td>{{ log.base_cost }}</td>
+          <td>{{ log.gst_amt }}</td>
+          <td class="text-bold">₹ {{ log.total }}</td>
+          <td><span class="status-pass">COMPLIANT</span></td>
+          <td><i class="fa-solid fa-file-arrow-down" title="Download Report"></i></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.getElementById('test_date').valueAsDate = new Date();
+
+  function calcQA() {
+    const cost = parseFloat(document.getElementById('test_cost').value) || 0;
+    const gst = parseFloat(document.getElementById('gst_per').value) || 0;
+
+    const tax = (cost * gst) / 100;
+    const grand = cost + tax;
+
+    document.getElementById('display_total').value = "₹ " + grand.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    document.getElementById('hidden_total').value = grand.toFixed(2);
+  }
+</script>
+</body>
+</html>

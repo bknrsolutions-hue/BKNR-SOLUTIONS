@@ -2,110 +2,110 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DE-HEADING REPORT – BKNR ERP</title>
+<title>DE-HEADING REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --primary: #143465;
-  --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
+ --primary:#0f172a;
+ --accent:#2563eb;
+ --border:#e2e8f0;
+ --bg:#f1f5f9;
+ --header:#ffffff;
+ --text:#1e293b;
+ --danger: #ef4444;
+ --success: #22c55e;
 }
-*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+body{
+ margin:0; background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+}
 
 /* ================= HEADER & FILTERS ================= */
-.header{
-  position: sticky; top: 0; z-index: 100;
-  background: #fff; padding: 12px 18px;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.header h2{ margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-.header p{ margin: 2px 0; font-size: 11px; color: var(--muted); }
+.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
+.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
-  margin-top: 10px; display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px; background: #f9fafb; padding: 12px;
-  border-radius: 8px; border: 1px solid var(--border);
+ margin-top:8px; display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+ gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
 }
-.filters div{ display: flex; flex-direction: column; gap: 3px; }
-.filters label{ font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select, input{
-  padding: 6px; border-radius: 5px; border: 1px solid var(--border);
-  font-size: 11px; background: #fff; outline: none; transition: 0.2s;
-}
-select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
-#searchBox{ grid-column: span 1; border-left: 3px solid var(--accent); }
+select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
 /* ================= ACTIONS ================= */
-.actions{
-  margin-top: 8px; display: flex;
-  justify-content: space-between; align-items: center;
-}
-#rowCount{ font-size: 12px; font-weight: 700; color: var(--accent); }
+.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+#rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
-.menu{ position: relative; }
-.menu-btn{
-  width: 32px; height: 32px; border: 1px solid var(--border);
-  background: #fff; border-radius: 6px; display: flex;
-  align-items: center; justify-content: center;
-  font-size: 18px; cursor: pointer; transition: 0.2s;
-}
-.menu-btn:hover { background: #f3f4f6; }
+.menu-box{position:relative;}
+.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
 
 .menu-list{
-  position: absolute; right: 0; top: 38px;
-  width: 180px; background: #fff; border-radius: 8px;
-  border: 1px solid var(--border); display: none; z-index: 999;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;
+ position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
+ border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div{
-  padding: 8px 12px; font-size: 11px; font-weight: 500;
-  border-bottom: 1px solid #f1f5f9; cursor: pointer;
-}
-.menu-list div:hover{ background: #f0f7ff; color: var(--accent); }
+.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
+.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list hr{ border:0; border-top:1px solid var(--border); margin:0; }
 
 /* ================= TABLE AREA ================= */
-.section{
-  margin: 12px 18px; background: #fff; padding: 8px;
-  border-radius: 10px; border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-.table-wrap{ overflow: auto; max-height: 520px; border-radius: 6px; }
+.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width: 100%; border-collapse: collapse; table-layout: fixed; }
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1850px; } 
 
 thead th{
-  background: #f1f5f9; color: #475569; padding: 10px 4px;
-  font-size: 10px; font-weight: 700; position: sticky;
-  top: 0; text-align: center; border-bottom: 2px solid var(--border);
-  text-transform: uppercase;
+ background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
+ text-transform:uppercase; border-bottom:2px solid var(--border);
+ border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
 }
 
 tbody td{
-  padding: 8px 4px; font-size: 10.5px;
-  border-bottom: 1px solid #f1f5f9; white-space: nowrap; text-align: center;
-  overflow: hidden; text-overflow: ellipsis;
+ padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ border-right:1px solid #f8fafc; text-align:center;
+ white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-tbody tr:hover{ background: #f8fbff; cursor: pointer; }
 
-/* Column Widths to prevent scrolling */
-th:nth-child(1) { width: 80px; } /* Date */
-th:nth-child(2) { width: 60px; } /* Batch */
-th:nth-child(3) { width: 120px; } /* Contractor */
-th:nth-child(7) { font-weight: bold; color: var(--accent); } /* Yield % */
+tbody tr:hover{background:#f0f9ff; cursor:pointer;}
+tr.selected{background:#dbeafe !important;}
+
+.w-sl { width: 45px; } .w-dt { width: 90px; } .w-bt { width: 100px; } .w-con { width: 150px; }
+.w-sp { width: 120px; } .w-ct { width: 70px; } .w-qt { width: 85px; } .w-rt { width: 80px; }
+.w-am { width: 110px; } .w-loc { width: 130px; } .w-for { width: 130px; } .w-em { width: 160px; }
+.w-diff { width: 140px; }
+
+.yield-cell { font-weight: 800; color: var(--accent); }
+.diff-cell { font-size: 9px; font-weight: 600; }
+.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
 /* ================= FOOTER ================= */
-tfoot td{
-  padding: 10px; font-weight: 800; background: #f8fafc;
-  border-top: 2px solid var(--border); color: var(--primary);
-  font-size: 11px;
+tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+
+/* ================= MODAL & AUDIT ================= */
+#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
+.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
+.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+
+.audit-panel{ 
+    position:fixed; right:0; top:0; bottom:0; width:400px; background:#fff; 
+    border-left:3px solid var(--primary); display:none; flex-direction:column; 
+    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
+}
+.audit-item{ padding:10px; border-bottom:1px solid #e2e8f0; font-size:11px; }
+
+@media print {
+    .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
+    body { overflow: visible !important; }
+    .section { border: none !important; margin: 0 !important; }
+    .table-wrap { overflow: visible !important; }
+    table { min-width: 100% !important; table-layout: auto !important; }
 }
 </style>
 </head>
@@ -113,214 +113,355 @@ tfoot td{
 <body>
 
 <div class="header">
-  <h2>De-Heading Report</h2>
-  <p>Batch · Contractor · Yield analysis</p>
+    <h2>DE-HEADING REPORT</h2>
+    <div class="filters">
+        <div class="fbox"><label>Month View</label><input type="month" id="f_month"></div>
+        <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
+        <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
+        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All Batches</option></select></div>
+        <div class="fbox"><label>Contractor</label><select id="f_contractor"><option value="">All Contractors</option></select></div>
+        <div class="fbox"><label>Peeling At</label><select id="f_peeling"><option value="">All Locations</option></select></div>
+        <div class="fbox"><label>Species</label><select id="f_species"><option value="">All Species</option></select></div>
+        <div class="fbox"><label>Prod For</label><select id="f_production"><option value="">All Production</option></select></div>
+        <input id="searchBox" placeholder="Quick Search Batch, Contractor, User...">
+    </div>
+</div>
 
-  <!-- FILTERS (UNCHANGED LOGIC) -->
-  <div class="filters">
-    <div>
-      <label>From Date</label>
-      <input type="date" id="f_from">
+<div class="actions">
+    <div id="rowCount">0 rows found</div>
+    <div class="menu-box">
+        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+        <div class="menu-list" id="mainMenu">
+            {% if is_admin %}
+            <div onclick="enableEdit()">✏️ Edit Selected Row</div>
+            <div onclick="saveEdit()">💾 Save Changes</div>
+            {% endif %}
+            <div onclick="toggleAudit()">📜 View Audit History</div>
+            <hr>
+            <b>📋 Table Options</b>
+            <div onclick="window.print()">🖨 Print Table (Browser)</div>
+            <div onclick="askConfirm('pdf_table')">📄 Export Table PDF</div>
+            <hr>
+            <b>🧾 Monthly Bill</b>
+            <div onclick="askConfirm('print_bill')">🖨 Print Monthly Bill</div>
+            <div onclick="askConfirm('pdf_bill')">📩 Export Monthly Bill (PDF)</div>
+            <hr>
+            <div onclick="askConfirm('excel_table')">📊 Export Excel Filtered Table</div>
+            <hr>
+            {% if is_admin %}
+            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Selected Row</div>
+            {% endif %}
+        </div>
     </div>
-    <div>
-      <label>To Date</label>
-      <input type="date" id="f_to">
-    </div>
-    <div>
-      <label>Month</label>
-      <select id="f_month"><option value="">All</option></select>
-    </div>
-    <div>
-      <label>Batch</label>
-      <select id="f_batch">
-        <option value="">All</option>
-        {% for b in batches %}<option value="{{b}}">{{b}}</option>{% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label>Contractor</label>
-      <select id="f_contractor">
-        <option value="">All</option>
-        {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>HOSO Count</label>
-      <select id="f_count">
-        <option value="">All</option>
-        {% for c in counts %}<option value="{{c}}">{{c}}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Search</label>
-      <input id="searchBox" placeholder="Batch / Contractor">
-    </div>
-  </div>
-
-  <div class="actions">
-    <div id="rowCount">0 rows</div>
-    <div class="menu">
-      <button class="menu-btn" onclick="toggleMenu()">⋮</button>
-      <div class="menu-list" id="menu">
-        <div onclick="printReport()">🖨 Print Report</div>
-        <div onclick="printBill()">🧾 Contractor Bill</div>
-        <div onclick="pdfReport()">📄 Export PDF</div>
-        <div onclick="excelReport()">📊 Export Excel</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="section">
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-  <th>Date</th>
-  <th>Batch</th>
-  <th>Contractor</th>
-  <th>HOSO Count</th>
-  <th>HOSO Qty</th>
-  <th>HLSO Qty</th>
-  <th>Yield %</th>
-  <th>Target Yield %</th>
-  <th>Difference</th>
-  <th>Rate (₹)</th>
-  <th>Amount (₹)</th>
-</tr>
-</thead>
-
-<tbody id="tbody">
-{% for r in rows %}
-<tr>
-  <td class="date">{{r.date}}</td>
-  <td>{{r.batch_number}}</td>
-  <td class="contractor">{{r.contractor}}</td>
-  <td>{{r.hoso_count}}</td>
-  <td class="hoso">{{r.hoso_qty}}</td>
-  <td class="hlso">{{r.hlso_qty}}</td>
-  <td>{{r.yield_percent}}%</td>
-  <td class="target">{{r.target_yield}}</td>
-  <td class="diff"></td>
-  <td>₹ {{r.rate_per_kg}}</td>
-  <td class="amount" data-val="{{r.amount}}">₹ {{r.amount}}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-<tfoot>
-<tr>
-  <td colspan="4">GRAND TOTAL</td>
-  <td id="gt_hoso">0</td>
-  <td id="gt_hlso">0</td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td></td>
-  <td>₹ <span id="gt_amount">0</span></td>
-</tr>
-</tfoot>
-</table>
+    <div class="table-wrap">
+        <table id="deheadTable">
+            <thead>
+                <tr>
+                    <th class="w-sl">#</th>
+                    <th class="w-dt">Date</th>
+                    <th class="w-bt">Batch No</th>
+                    <th class="w-con">Contractor</th>
+                    <th class="w-sp">Species</th>
+                    <th class="w-ct">Hoso-Cnt</th>
+                    <th class="w-qt">HOSO Kg</th>
+                    <th class="w-qt">HLSO Kg</th>
+                    <th class="w-rt">Yield%</th>
+                    <th class="w-rt">Target%</th>
+                    <th class="w-diff">Difference</th>
+                    <th class="w-rt">Rate</th>
+                    <th class="w-am">Amount</th>
+                    <th class="w-loc">Peeling At</th>
+                    <th class="w-for">Prod For</th>
+                    <th class="w-em">System User</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                {% for r in rows %}
+                <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                    <td class="slno"></td>
+                    <td>{{ r.date }}</td>
+                    <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
+                    <td class="lookup contractor" data-field="contractor">{{ r.contractor }}</td>
+                    <td class="lookup species" data-field="species">{{ r.species }}</td>
+                    <td class="editable" data-field="hoso_count">{{ r.hoso_count or 0 }}</td>
+                    <td class="editable hoso" data-field="hoso_qty">{{ r.hoso_qty or 0 }}</td>
+                    <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty or 0 }}</td>
+                    <td class="yield-cell">{{ r.yield_percent or 0 }}%</td>
+                    <td class="editable target" data-field="target_yield">{{ r.target_yield or 0 }}</td>
+                    <td class="diff-cell">--</td>
+                    <td class="editable rate" data-field="rate_per_kg">{{ r.rate_per_kg or 0 }}</td>
+                    <td class="amt-cell" data-val="{{ r.amount or 0 }}">₹{{ r.amount or 0 }}</td>
+                    <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
+                    <td class="lookup production" data-field="production_for">{{ r.production_for }}</td>
+                    <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6" style="text-align:right">PAGE TOTALS:</td>
+                    <td id="tot_hoso">0.00</td>
+                    <td id="tot_hlso">0.00</td>
+                    <td id="avg_yield" style="color:var(--accent)">0%</td>
+                    <td colspan="2"></td>
+                    <td id="tot_amt">₹0.00</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
+
+<div id="confirmModal">
+    <div class="modal-content">
+        <h4 id="confirmMsg" style="margin-top:0;"></h4>
+        <div style="display:flex; justify-content:center; gap:10px;">
+            <button class="btn-y" id="btnYes">Proceed</button>
+            <button class="btn-n" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:13px;">📜 EDIT HISTORY LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
-const rows=[...document.querySelectorAll("#tbody tr")];
-const num=v=>parseFloat(v)||0;
+const lookups = {
+    contractor: {{ contractors|tojson or [] }},
+    species: {{ species_list|tojson or [] }},
+    peeling: {{ peeling_locations|tojson or [] }},
+    production: {{ production_for_list|tojson or [] }}
+};
 
-/* MENU */
-function toggleMenu(){
- const m=document.getElementById("menu");
- m.style.display=m.style.display==="block"?"none":"block";
-}
-document.addEventListener("click",e=>{
- if(!e.target.closest(".menu")){
-  document.getElementById("menu").style.display="none";
- }
-});
+const baseUrl = window.location.pathname.replace(/\/$/, ""); 
+let selectedRow = null, currentAction = null;
+const allRows = [...document.querySelectorAll("#tbody tr")];
 
-/* MONTH DROPDOWN – NOV 2025 */
-const monthMap={};
-rows.forEach(r=>{
- const d=r.querySelector(".date").innerText;
- if(!d) return;
- const [y,m]=d.split("-");
- const key=`${y}-${m}`;
- if(!monthMap[key]){
-  monthMap[key]=new Date(y,m-1).toLocaleString("en",{month:"short",year:"numeric"});
- }
-});
-Object.keys(monthMap).sort().reverse().forEach(k=>{
- f_month.innerHTML+=`<option value="${k.split("-")[1]}">${monthMap[k].toUpperCase()}</option>`;
-});
-
-/* FILTERS */
-function applyFilters(){
- let visible=[];
- rows.forEach(r=>{
-  let ok=true;
-  const d=r.querySelector(".date").innerText;
-  const m=d?d.split("-")[1]:"";
-  if(f_from.value && d<f_from.value) ok=false;
-  if(f_to.value && d>f_to.value) ok=false;
-  if(f_month.value && m!==f_month.value) ok=false;
-  if(f_batch.value && r.children[1].innerText!==f_batch.value) ok=false;
-  if(f_contractor.value && r.children[2].innerText!==f_contractor.value) ok=false;
-  if(f_count.value && r.children[3].innerText!==f_count.value) ok=false;
-  if(searchBox.value && !r.innerText.toLowerCase().includes(searchBox.value.toLowerCase())) ok=false;
-  r.style.display=ok?"":"none";
-  if(ok) visible.push(r);
- });
- rowCount.innerText=visible.length+" rows";
- totals(visible);
- calcDiff();
+function selectRow(tr) { 
+    allRows.forEach(r => r.classList.remove("selected")); 
+    tr.classList.add("selected"); 
+    selectedRow = tr; 
 }
 
-/* TOTALS */
-function totals(v){
- let h=0,l=0,a=0;
- v.forEach(r=>{
-  h+=num(r.querySelector(".hoso").innerText);
-  l+=num(r.querySelector(".hlso").innerText);
-  a+=num(r.querySelector(".amount").dataset.val);
- });
- gt_hoso.innerText=h.toFixed(2);
- gt_hlso.innerText=l.toFixed(2);
- gt_amount.innerText=a.toFixed(2);
+function calcDiff() {
+    allRows.forEach(r => {
+        if(r.style.display === "none") return;
+        const hoso = parseFloat(r.querySelector(".hoso").innerText) || 0;
+        const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
+        const target = parseFloat(r.querySelector('[data-field="target_yield"]').innerText) || 0;
+        
+        if(hoso > 0 && target > 0) {
+            const baseNeeded = hlso / (target / 100);
+            const diff = baseNeeded - hoso;
+            const pct = (diff / hoso) * 100;
+            const color = diff < 0 ? 'var(--danger)' : 'var(--success)';
+            r.querySelector(".diff-cell").innerHTML = `<span style="color:${color}">${diff.toFixed(2)} (${Math.abs(pct).toFixed(2)}%)</span>`;
+        }
+    });
 }
 
-/* DIFFERENCE */
-function calcDiff(){
- rows.forEach(r=>{
-  if(r.style.display==="none") return;
-  const h=num(r.querySelector(".hoso").innerText);
-  const l=num(r.querySelector(".hlso").innerText);
-  const t=num(r.querySelector(".target").innerText);
-  if(!h||!l||!t){r.querySelector(".diff").innerText="";return;}
-  const base=l/(t/100);
-  const diff=base-h;
-  const pct=(diff/h)*100;
-  r.querySelector(".diff").innerText=`${diff.toFixed(2)} (${Math.abs(pct).toFixed(2)}%)`;
- });
+function applyFilters() {
+    const fm = document.getElementById("f_month").value;
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const fb = document.getElementById("f_batch").value.toLowerCase();
+    const fc = document.getElementById("f_contractor").value.toLowerCase();
+    const fl = document.getElementById("f_peeling").value.toLowerCase();
+    const fs = document.getElementById("f_species").value.toLowerCase();
+    const fpr = document.getElementById("f_production").value.toLowerCase();
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    
+    let hT=0, lT=0, aT=0;
+    let visibleRows = [];
+
+    allRows.forEach(r => {
+        const d = r.dataset.date;
+        const b = r.querySelector('[data-field="batch_number"]').innerText.toLowerCase();
+        const c = r.querySelector('[data-field="contractor"]').innerText.toLowerCase();
+        const l = r.querySelector('[data-field="peeling_at"]').innerText.toLowerCase();
+        const s = r.querySelector('[data-field="species"]').innerText.toLowerCase();
+        const prod = r.querySelector('[data-field="production_for"]').innerText.toLowerCase();
+        const text = r.innerText.toLowerCase();
+        
+        let ok = true;
+        if(fm && !d.startsWith(fm)) ok = false;
+        if(f1 && d < f1) ok = false; if(f2 && d > f2) ok = false;
+        if(fb && b !== fb) ok = false; if(fc && c !== fc) ok = false;
+        if(fl && l !== fl) ok = false; if(fs && s !== fs) ok = false;
+        if(fpr && prod !== fpr) ok = false;
+        if(q && !text.includes(q)) ok = false;
+
+        if(ok) {
+            r.style.display = ""; visibleRows.push(r);
+            hT += parseFloat(r.querySelector(".hoso").innerText) || 0;
+            lT += parseFloat(r.querySelector(".hlso").innerText) || 0;
+            aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
+        } else { r.style.display = "none"; }
+    });
+
+    const totalVisible = visibleRows.length;
+    visibleRows.forEach((r, idx) => { r.querySelector(".slno").innerText = totalVisible - idx; });
+
+    document.getElementById("rowCount").innerText = `${totalVisible} rows found`;
+    document.getElementById("tot_hoso").innerText = hT.toFixed(2);
+    document.getElementById("tot_hlso").innerText = lT.toFixed(2);
+    document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
+    document.getElementById("avg_yield").innerText = hT > 0 ? ((lT/hT)*100).toFixed(2) + "%" : "0%";
+    calcDiff();
 }
 
-/* ACTIONS */
-function printReport(){window.open(`/reports/de_heading/print?ids=all`);}
-function pdfReport(){location=`/reports/de_heading/export_pdf?ids=all`;}
-function excelReport(){location=`/reports/de_heading/export_excel?ids=all`;}
-function printBill(){
- if(!f_month.value||!f_contractor.value){
-  alert("Select Month and Contractor");
-  return;
- }
- window.open(`/reports/de_heading/contractor_monthly_bill?month=${f_month.value}&contractor=${encodeURIComponent(f_contractor.value)}`);
+function askConfirm(action) { 
+    currentAction = action; 
+    document.getElementById("confirmMsg").innerText = `Proceed with ${action.replace(/_/g,' ').toUpperCase()}?`; 
+    document.getElementById("confirmModal").style.display = "flex"; 
 }
 
-[f_from,f_to,f_batch,f_contractor,f_count,f_month].forEach(e=>e.onchange=applyFilters);
-searchBox.oninput=applyFilters;
+function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
+
+document.getElementById("btnYes").onclick = async () => {
+    closeModal();
+    const visibleIds = allRows.filter(r => r.style.display !== "none").map(r => r.dataset.id).join(",");
+    const fc = document.getElementById("f_contractor").value;
+    const fm = document.getElementById("f_month").value;
+
+    if (currentAction === 'pdf_table') {
+        window.location.href = `${baseUrl}/export_pdf?ids=${visibleIds}`;
+    } else if (currentAction === 'print_bill') {
+        if(!fc || !fm) return alert("Select Month and Contractor first!");
+        window.open(`${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}`, '_blank');
+    } else if (currentAction === 'pdf_bill') {
+        if(!fc || !fm) return alert("Select Month and Contractor first!");
+        window.location.href = `${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}&download=true`;
+    } else if (currentAction === 'excel_table') {
+        window.location.href = `${baseUrl}/export_excel?ids=${visibleIds}`;
+    } else if (currentAction === 'delete_row') {
+        if(!selectedRow) return;
+        const res = await fetch(`${baseUrl}/delete`, { 
+            method:"POST", 
+            headers:{"Content-Type":"application/json"}, 
+            body:JSON.stringify({id: selectedRow.dataset.id}) 
+        });
+        if(res.ok) location.reload();
+    }
+};
+
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    const content = document.getElementById("auditContent");
+
+    if (panel.style.display === "flex") {
+        panel.style.display = "none";
+        return;
+    }
+
+    panel.style.display = "flex";
+    content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">Fetching Global Logs...</p>`;
+
+    try {
+        // Ikkada audit_all endpoint ki call chestunnam
+        const res = await fetch(`${baseUrl}/audit_all`); 
+        const logs = await res.json();
+
+        if(!logs.length) {
+            content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`;
+            return;
+        }
+
+        content.innerHTML = logs.map(l => `
+            <div class="audit-item" style="border-left: 3px solid var(--accent); margin-bottom: 5px; background: #fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
+                    <span style="font-size:9px; font-weight:bold; color:var(--primary);">Batch: ${l.batch}</span>
+                </div>
+                <div style="font-size:10px; font-weight:700; margin:3px 0;">${l.action}</div>
+                <div style="font-size:10px; color:#64748b;">${l.details}</div>
+                <div style="font-size:9px; color:#94a3b8; margin-top:2px; text-align:right;">Modified by: ${l.user}</div>
+            </div>
+        `).join('');
+    } catch(e) {
+        content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading global logs.</p>`;
+    }
+}
+
+function enableEdit() {
+    if(!selectedRow) return alert("Select a row first!");
+    selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
+        const val = td.innerText.replace('₹','').replace('%','').trim();
+        if(td.classList.contains("lookup")){
+            const type = td.classList[1]; const opts = lookups[type] || [];
+            td.innerHTML = `<select class="edit-input" data-field="${td.dataset.field}">
+                ${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}
+            </select>`;
+        } else { 
+            td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${val}" oninput="recalcRow(this)">`; 
+        }
+    });
+}
+
+function recalcRow(input) {
+    const tr = input.closest('tr');
+    const hoso = parseFloat(tr.querySelector('[data-field="hoso_qty"] input')?.value || tr.querySelector('.hoso').innerText) || 0;
+    const hlso = parseFloat(tr.querySelector('[data-field="hlso_qty"] input')?.value || tr.querySelector('.hlso').innerText) || 0;
+    const rate = parseFloat(tr.querySelector('[data-field="rate_per_kg"] input')?.value || tr.querySelector('.rate').innerText) || 0;
+    
+    const yieldVal = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) : 0;
+    const amt = (hlso * rate).toFixed(2);
+    
+    tr.querySelector('.yield-cell').innerText = yieldVal + '%';
+    tr.querySelector('.amt-cell').innerText = '₹' + amt;
+    tr.querySelector('.amt-cell').setAttribute('data-val', amt);
+}
+
+async function saveEdit() {
+    if(!selectedRow) return;
+    const inputs = selectedRow.querySelectorAll(".edit-input");
+    if(!inputs.length) return alert("Enable edit mode first!");
+    
+    const payload = { id: selectedRow.dataset.id };
+    inputs.forEach(i => payload[i.dataset.field] = i.value);
+    
+    const res = await fetch(`${baseUrl}/update`, { 
+        method:"POST", 
+        headers:{"Content-Type":"application/json"}, 
+        body:JSON.stringify(payload) 
+    });
+    if(res.ok) location.reload();
+}
+
+function toggleMenu(e) { 
+    e.stopPropagation(); 
+    const m = document.getElementById("mainMenu"); 
+    m.style.display = m.style.display==="block"?"none":"block"; 
+}
+
+document.onclick = () => document.getElementById("mainMenu").style.display="none";
+
+function fillFilters() {
+    const sets = { batch: new Set(), contractor: new Set(), species: new Set(), production: new Set(), peeling: new Set() };
+    allRows.forEach(r => {
+        sets.batch.add(r.querySelector('[data-field="batch_number"]').innerText);
+        sets.contractor.add(r.querySelector('[data-field="contractor"]').innerText);
+        sets.species.add(r.querySelector('[data-field="species"]').innerText);
+        sets.production.add(r.querySelector('[data-field="production_for"]').innerText);
+        sets.peeling.add(r.querySelector('[data-field="peeling_at"]').innerText);
+    });
+    Object.keys(sets).forEach(k => {
+        const sel = document.getElementById(`f_${k}`);
+        if(sel) [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
+    });
+}
+
+fillFilters();
+[f_month, f_from, f_to, f_batch, f_contractor, f_peeling, f_species, f_production].forEach(el => { if(el) el.onchange = applyFilters; });
+if(document.getElementById("searchBox")) searchBox.oninput = applyFilters;
 applyFilters();
 </script>
-
 </body>
 </html>

@@ -1,23 +1,16 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Query
-from fastapi.responses import RedirectResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
 from collections import defaultdict
 from pydantic import BaseModel
-import io
+from typing import List, Optional
 import re
 
-# PDF & EXCEL libraries
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from openpyxl import Workbook
-
+# Database and Models
 from app.database import get_db
-# sales_dispatch model ni import chesukondi
 from app.database.models.inventory_management import pending_orders, sales_dispatch 
 from app.database.models.criteria import (
     buyers, buyer_agents, brands, countries,
@@ -43,7 +36,7 @@ def calculate_pieces(grade_str, manual_pcs):
     return 0
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE (Existing)
+# 1️⃣ PENDING ORDERS PAGE
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
@@ -56,26 +49,112 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     po_groups = defaultdict(list)
     for r in rows: po_groups[r.po_number].append(r)
 
-    # Next SL calculation
+    edit_rows = []
+    if edit:
+        edit_rows = db.query(pending_orders).filter(
+            pending_orders.company_id == company_code, 
+            pending_orders.po_number == edit
+        ).all()
+
     max_sl = db.query(func.max(pending_orders.sl_no)).filter(pending_orders.company_id == company_code).scalar()
     next_sl = (max_sl or 0) + 1
+    if edit_rows:
+        next_sl = edit_rows[0].sl_no
 
-    return templates.TemplateResponse("inventory_management/pending_orders.html", {
-        "request": request, "po_groups": po_groups, "next_sl": next_sl,
-        "buyers": [x.buyer_name for x in db.query(buyers).filter(buyers.company_id == company_code)],
-        "brands": [x.brand_name for x in db.query(brands).filter(brands.company_id == company_code)],
-        "countries": [x.country_name for x in db.query(countries).filter(countries.company_id == company_code)],
-        "species": [x.species_name for x in db.query(species).filter(species.company_id == company_code)],
-        "varieties": [x.variety_name for x in db.query(varieties).filter(varieties.company_id == company_code)],
-        "grades": [x.grade_name for x in db.query(grades).filter(grades.company_id == company_code)],
-        "glazes": [x.glaze_name for x in db.query(glazes).filter(glazes.company_id == company_code)],
+    def get_lookup(model, field_name):
+        return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
+
+    context_data = {
+        "request": request, 
+        "po_groups": po_groups, 
+        "edit_rows": edit_rows,
+        "next_sl": next_sl,
+        "buyers": get_lookup(buyers, "buyer_name"),
+        "agents": get_lookup(buyer_agents, "agent_name"),
+        "brands": get_lookup(brands, "brand_name"),
+        "countries": get_lookup(countries, "country_name"),
+        "species": get_lookup(species, "species_name"),
+        "varieties": get_lookup(varieties, "variety_name"),
+        "grades": get_lookup(grades, "grade_name"),
+        "glazes": get_lookup(glazes, "glaze_name"),
+        "freezers": get_lookup(freezers, "freezer_name"),
         "packing": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
-        "freezers": [x.freezer_name for x in db.query(freezers).filter(freezers.company_id == company_code)],
         "message": request.session.pop("message", None)
-    })
+    }
+    return templates.TemplateResponse("inventory_management/pending_orders.html", context_data)
 
 # -------------------------------------------------------------------------
-# 2️⃣ MOVE TO SALES (The Logic to avoid 404)
+# 2️⃣ SAVE PENDING ORDERS
+# -------------------------------------------------------------------------
+@router.post("/pending_orders")
+def save_pending_orders(
+    request: Request, 
+    sl_no: int = Form(...), 
+    company_name: str = Form(...),
+    po_number: str = Form(...), 
+    buyer: str = Form(...), 
+    agent: str = Form(...),
+    country: str = Form(...), 
+    shipment_date: str = Form(...), 
+    brand: List[str] = Form(...), 
+    packing_style: List[str] = Form(...), 
+    freezer: List[str] = Form(...), 
+    count_glaze: List[str] = Form(...), 
+    weight_glaze: List[str] = Form(...),
+    species: List[str] = Form(...), 
+    variety: List[str] = Form(...), 
+    grade: List[str] = Form(...), 
+    no_of_pieces: List[str] = Form(...), 
+    no_of_mc: List[int] = Form(...), 
+    selling_price: List[float] = Form(...),
+    exchange_rate: List[float] = Form(...), 
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    
+    existing_status = db.query(pending_orders.progress_steps).filter(
+        pending_orders.company_id == company_code, 
+        pending_orders.po_number == po_number
+    ).first()
+    status = existing_status[0] if existing_status else "pending"
+
+    db.query(pending_orders).filter(pending_orders.company_id == company_code, pending_orders.po_number == po_number).delete()
+    
+    for i in range(len(brand)):
+        new_row = pending_orders(
+            sl_no=sl_no, 
+            company_name=company_name, 
+            po_number=po_number, 
+            buyer=buyer, 
+            agent_name=agent, 
+            country=country, 
+            shipment_date=shipment_date,
+            brand=brand[i], 
+            packing_style=packing_style[i], 
+            freezer=freezer[i], 
+            count_glaze=count_glaze[i], 
+            weight_glaze=weight_glaze[i], 
+            species=species[i], 
+            variety=variety[i], 
+            grade=grade[i], 
+            no_of_pieces=calculate_pieces(grade[i], no_of_pieces[i]), 
+            no_of_mc=no_of_mc[i], 
+            selling_price=selling_price[i], 
+            exchange_rate=exchange_rate[i],
+            company_id=company_code, 
+            email=email, 
+            date=datetime.now().strftime("%Y-%m-%d"),
+            progress_steps=status
+        )
+        db.add(new_row)
+    
+    db.commit()
+    request.session["message"] = f"PO {po_number} Updated Successfully!"
+    return RedirectResponse("/inventory/pending_orders", status_code=303)
+
+# -------------------------------------------------------------------------
+# 3️⃣ MOVE TO SALES (FIXED VARIETY & GRADE)
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -88,19 +167,13 @@ def move_to_sales(
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
-    
-    # Pending data ni fetch cheyadam
-    items = db.query(pending_orders).filter(
-        pending_orders.company_id == company_code, 
-        pending_orders.po_number == po_number
-    ).all()
+    items = db.query(pending_orders).filter(pending_orders.company_id == company_code, pending_orders.po_number == po_number).all()
 
     if not items:
         raise HTTPException(status_code=404, detail="PO Not Found")
 
     try:
         for item in items:
-            # Sales Table ki move chesthunnam (12 Columns)
             new_sale = sales_dispatch(
                 company_id=company_code,
                 invoice_no=invoice_no,
@@ -114,14 +187,15 @@ def move_to_sales(
                 weight_glaze=item.weight_glaze,
                 packing_style=item.packing_style,
                 no_of_mc=item.no_of_mc,
-                price=item.selling_price
+                price=item.selling_price,
+                variety=item.variety,  # Kachithanga transfer avvali
+                grade=item.grade      # Kachithanga transfer avvali
             )
             db.add(new_sale)
         
-        # Pending nundi delete chestunnam
-        db.query(pending_orders).filter(pending_orders.po_number == po_number).delete()
+        db.query(pending_orders).filter(pending_orders.company_id == company_code, pending_orders.po_number == po_number).delete()
         db.commit()
-        request.session["message"] = f"PO {po_number} moved to Sales Report Successfully!"
+        request.session["message"] = f"PO {po_number} moved to Sales Report!"
     except Exception as e:
         db.rollback()
         request.session["message"] = f"Error: {str(e)}"
@@ -129,76 +203,125 @@ def move_to_sales(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 3️⃣ SALES REPORT PAGE (Company Filter logic)
+# 4️⃣ UPDATED SALES REPORT (With Data Consistency)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
-def sales_report_page(
-    request: Request, 
-    company: str = Query("all"), 
-    db: Session = Depends(get_db)
-):
+def sales_report_page(request: Request, company: str = Query("all"), db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # Base query
     query = db.query(sales_dispatch)
-
-    # Company Filter (Mee saved info requirement)
+    
+    # Company wise filter logic
     if company != "all":
         query = query.filter(sales_dispatch.company_id == company)
     else:
         query = query.filter(sales_dispatch.company_id == company_code)
 
-    sales_data = query.order_by(sales_dispatch.invoice_date.desc()).all()
+    sales_raw = query.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
+
+    # Packing weights table lo calculations kosam
+    packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+    weight_map = {p.packing_style: float(p.mc_weight or 1.0) for p in packing_data}
+
+    processed_sales = []
+    current_inv = None
+    sl_counter = 0
+
+    for s in sales_raw:
+        if s.invoice_no != current_inv:
+            sl_counter += 1
+            current_inv = s.invoice_no
+        
+        # Variety and Grade database lo "None" unte empty string chupisthundi
+        var_name = s.variety if s.variety else ""
+        grd_name = s.grade if s.grade else ""
+
+        mc_w = weight_map.get(s.packing_style, 1.0)
+        q_kg = float(s.no_of_mc or 0) * mc_w
+        t_usd = q_kg * float(s.price or 0)
+        ex_r = 83.5 # Fixed Exchange Rate
+        
+        processed_sales.append({
+            "sl_no": sl_counter,
+            "obj": s,
+            "variety": var_name,
+            "grade": grd_name,
+            "mc_weight": mc_w,
+            "total_qty_kg": q_kg,
+            "total_usd": t_usd,
+            "total_inr": t_usd * ex_r
+        })
 
     return templates.TemplateResponse("inventory_management/sales_report.html", {
         "request": request,
-        "sales_data": sales_data,
-        "selected_company": company
+        "sales_data": processed_sales,
+        "selected_company": company,
+        "message": request.session.pop("message", None)
     })
 
 # -------------------------------------------------------------------------
-# Existing Helper Routes (Update Status, Save PO, Delete, Export)
+# 🆕 DELETE SALES INVOICE
 # -------------------------------------------------------------------------
+@router.post("/delete_sales_invoice/{invoice_no}")
+def delete_sales_invoice(invoice_no: str, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    db.query(sales_dispatch).filter(
+        sales_dispatch.company_id == company_code, 
+        sales_dispatch.invoice_no == invoice_no
+    ).delete()
+    db.commit()
+    request.session["message"] = f"Invoice {invoice_no} Deleted Successfully"
+    return RedirectResponse("/inventory/sales_report", status_code=303)
+
+# -------------------------------------------------------------------------
+# 5️⃣ REVERT TO PENDING
+# -------------------------------------------------------------------------
+@router.post("/revert_to_pending/{id}")
+def revert_to_pending(id: int, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    
+    sale = db.query(sales_dispatch).filter(sales_dispatch.id == id, sales_dispatch.company_id == company_code).first()
+    if not sale:
+        return RedirectResponse("/inventory/sales_report", status_code=303)
+
+    new_pending = pending_orders(
+        sl_no=1,
+        company_name=sale.buyer_name,
+        po_number=f"REV-{sale.invoice_no}",
+        buyer=sale.buyer_name,
+        brand=sale.brand,
+        country=sale.country,
+        variety=sale.variety,
+        grade=sale.grade,
+        packing_style=sale.packing_style,
+        no_of_mc=sale.no_of_mc,
+        selling_price=sale.price,
+        company_id=company_code,
+        email=email,
+        date=datetime.now().strftime("%Y-%m-%d"),
+        progress_steps="pending"
+    )
+    db.add(new_pending)
+    db.delete(sale)
+    db.commit()
+    return RedirectResponse("/inventory/sales_report", status_code=303)
+
+# -------------------------------------------------------------------------
+# 6️⃣ HELPERS
+# -------------------------------------------------------------------------
+@router.post("/pending_orders/delete_po/{po}")
+def delete_po(po: str, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    db.query(pending_orders).filter(pending_orders.company_id == company_code, pending_orders.po_number == po).delete()
+    db.commit()
+    return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 @router.post("/update_po_status")
 async def update_po_status(data: StatusUpdate, request: Request, db: Session = Depends(get_db)):
-    db.query(pending_orders).filter(pending_orders.po_number == data.po_number).update({"progress_steps": data.status})
+    company_code = request.session.get("company_code")
+    db.query(pending_orders).filter(pending_orders.company_id == company_code, pending_orders.po_number == data.po_number).update({"progress_steps": data.status})
     db.commit()
     return {"success": True}
-
-@router.post("/pending_orders")
-def save_pending_orders(
-    request: Request, sl_no: int = Form(...), company_name: str = Form(...),
-    po_number: str = Form(...), buyer: str = Form(...), agent: str = Form(...),
-    country: str = Form(...), shipment_date: str = Form(...), brand: list[str] = Form(...), 
-    packing_style: list[str] = Form(...), freezer: list[str] = Form(...), 
-    count_glaze: list[str] = Form(...), weight_glaze: list[str] = Form(...),
-    species: list[str] = Form(...), variety: list[str] = Form(...), 
-    grade: list[str] = Form(...), no_of_pieces: list[str] = Form(...), 
-    no_of_mc: list[int] = Form(...), selling_price: list[float] = Form(...),
-    exchange_rate: list[float] = Form(...), db: Session = Depends(get_db)
-):
-    company_code = request.session.get("company_code")
-    email = request.session.get("email")
-    db.query(pending_orders).filter(pending_orders.po_number == po_number).delete()
-    
-    for i in range(len(brand)):
-        db.add(pending_orders(
-            sl_no=sl_no, company_name=company_name, po_number=po_number, buyer=buyer, 
-            agent_name=agent, country=country, shipment_date=shipment_date,
-            brand=brand[i], packing_style=packing_style[i], freezer=freezer[i], 
-            count_glaze=count_glaze[i], weight_glaze=weight_glaze[i], species=species[i], 
-            variety=variety[i], grade=grade[i], no_of_pieces=calculate_pieces(grade[i], no_of_pieces[i]), 
-            no_of_mc=no_of_mc[i], selling_price=selling_price[i], exchange_rate=exchange_rate[i],
-            company_id=company_code, email=email, date=datetime.now().strftime("%Y-%m-%d")
-        ))
-    db.commit()
-    return RedirectResponse("/inventory/pending_orders", status_code=303)
-
-@router.post("/pending_orders/delete_po/{po}")
-def delete_po(po: str, request: Request, db: Session = Depends(get_db)):
-    db.query(pending_orders).filter(pending_orders.po_number == po).delete()
-    db.commit()
-    return RedirectResponse("/inventory/pending_orders", status_code=303)

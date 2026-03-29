@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Production Report – BKNR ERP</title>
+
+<style>
+@page{
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+body{
+  font-family: Arial, sans-serif;
+  font-size: 9px;
+  color:#000;
+}
+
+h2{
+  text-align:center;
+  margin:0;
+  font-size:14px;
+}
+.company{
+  text-align:center;
+  font-size:10px;
+  margin-bottom:8px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  border:1px solid #444;
+  padding:4px;
+  text-align:center;
+  white-space:nowrap;
+}
+th{
+  background:#eaeaea;
+  font-weight:700;
+}
+
+.total-row td{
+  font-weight:700;
+  background:#f0f4ff;
+}
+.qty{text-align:right}
+</style>
+</head>
+
+<body>
+
+<h2>PRODUCTION REPORT</h2>
+<div class="company">
+  {{ company_name }}<br>
+  {{ company_address }}<br>
+  Printed on : {{ printed_on }}
+</div>
+
+{% set totals = namespace(mc=0, loose=0, qty=0) %}
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Date</th>
+<th>Batch No</th>
+<th>Brand</th>
+<th>Species</th>
+<th>Variety</th>
+<th>Grade</th>
+<th>Freezer</th>
+<th>Packing Style</th>
+<th>MC</th>
+<th>Loose</th>
+<th>Prod Qty</th>
+<th>Prod Type</th>
+<th>Prod At</th>
+<th>Prod For</th>
+<th>User</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in rows %}
+
+{% set mc = r.no_of_mc or 0 %}
+{% set loose = r.loose or 0 %}
+{% set qty = r.production_qty or 0 %}
+
+{% set totals.mc = totals.mc + mc %}
+{% set totals.loose = totals.loose + loose %}
+{% set totals.qty = totals.qty + qty %}
+
+<tr>
+<td>{{ loop.index }}</td>
+<td>{{ r.date }}</td>
+<td>{{ r.batch_number }}</td>
+<td>{{ r.brand }}</td>
+<td>{{ r.species }}</td>
+<td>{{ r.variety_name }}</td>
+<td>{{ r.grade }}</td>
+<td>{{ r.freezer }}</td>
+<td>{{ r.packing_style }}</td>
+<td>{{ mc }}</td>
+<td>{{ loose }}</td>
+<td class="qty">{{ "%.2f"|format(qty) }}</td>
+<td>{{ r.production_type }}</td>
+<td>{{ r.production_at }}</td>
+<td>{{ r.production_for }}</td>
+<td style="font-size: 7px;">{{ r.email.split('@')[0] if r.email else '' }}</td>
+</tr>
+
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr class="total-row">
+<td colspan="9" style="text-align:right">TOTAL</td>
+<td>{{ totals.mc }}</td>
+<td>{{ totals.loose }}</td>
+<td class="qty">{{ "%.2f"|format(totals.qty) }}</td>
+<td colspan="4"></td>
+</tr>
+</tfoot>
+</table>
+
+</body>
+</html>

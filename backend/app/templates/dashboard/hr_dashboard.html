@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Coming Soon | BKNR ERP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center; 
+            background: #ffffff; 
+            padding: 60px 40px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05);
+            max-width: 550px; 
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Accent Bar */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        }
+
+        .icon-circle {
+            width: 90px;
+            height: 90px;
+            background: #eff6ff;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            border-radius: 50%;
+            margin: 0 auto 25px;
+        }
+
+        .badge {
+            display: inline-block; 
+            padding: 6px 14px; 
+            background: #dbeafe; 
+            color: #1e40af; 
+            border-radius: 99px; 
+            font-size: 11px; 
+            font-weight: 800; 
+            margin-bottom: 20px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 { 
+            font-size: 32px; 
+            margin: 0 0 15px 0; 
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        p { 
+            color: var(--text-muted); 
+            font-size: 17px; 
+            line-height: 1.6; 
+            margin-bottom: 35px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .feature-item i {
+            color: #10b981;
+            font-size: 14px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px; 
+            background: var(--primary); 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn:hover { 
+            background: #000; 
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: var(--primary);
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        /* Animation */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .icon-circle i {
+            animation: pulse 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="icon-circle">
+            <i class="fa-solid fa-user-gear"></i>
+        </div>
+        
+        <div class="badge">Development in Progress</div>
+        
+        <h1>HR & Attendance</h1>
+        
+        <p>This module is getting a major upgrade. We are building a robust system for employee tracking, payroll, and real-time attendance management.</p>
+
+        <div class="features-grid">
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Biometric Sync</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Leave Management</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Payroll Reports</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Shift Scheduling</div>
+        </div>
+
+        <div class="btn-group">
+            <a href="/dashboard/processing_dashboard" class="btn">
+                <i class="fa-solid fa-arrow-left"></i> Dashboard
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                Go Back
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

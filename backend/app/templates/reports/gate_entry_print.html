@@ -16,7 +16,7 @@
     .header-box {
         width: 100%;
         margin-bottom: 8px;
-        text-align: center; /* ✔ CENTER COMPANY HEADER */
+        text-align: center;
     }
 
     .company-name {
@@ -32,7 +32,7 @@
     }
 
     .report-title {
-        text-align: left;  /* ✔ REPORT NAME LEFT */
+        text-align: left;
         font-size: 16px;
         font-weight: bold;
         color: #003366;
@@ -56,8 +56,6 @@
         color: white;
         padding: 5px;
         border: 1px solid #333;
-
-        /* WRAP */
         white-space: normal;
         word-wrap: break-word;
         font-size: 11px;
@@ -67,8 +65,6 @@
     table td {
         padding: 4px;
         border: 1px solid #333;
-
-        /* WRAP */
         white-space: normal;
         word-wrap: break-word;
         font-size: 11px;
@@ -83,33 +79,33 @@
 
 <body>
 
-<!-- COMPANY HEADER (CENTER) -->
+<!-- COMPANY HEADER -->
 <div class="header-box">
     <div class="company-name">{{ company_name }}</div>
     <div class="company-address">{{ company_address }}</div>
 </div>
 
-<!-- REPORT TITLE (LEFT SIDE) -->
 <div class="report-title">Gate Entry Report</div>
 
-<!-- PRINTED TIMESTAMP -->
 <div class="printed-on">
     Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M:%S") }}
 </div>
 
-<!-- TABLE -->
 <table>
 <thead>
 <tr>
-    <th>ID</th>
+    <th>SL No</th>
     <th>Date</th>
     <th>Time</th>
     <th>Batch Number</th>
     <th>Challan Number</th>
     <th>Gate Pass Number</th>
+    <th>Receiving Center</th>
     <th>Supplier Name</th>
     <th>Purchasing Location</th>
     <th>Vehicle Number</th>
+    <th>Production For</th>
+    <th>Species</th>
     <th>Material Boxes</th>
     <th>Empty Boxes</th>
     <th>Ice Boxes</th>
@@ -121,15 +117,18 @@
 <tbody>
 {% for r in rows %}
 <tr>
-    <td>{{ r.id }}</td>
+    <td>{{ loop.index }}</td>
     <td>{{ r.date }}</td>
-    <td>{{ r.time.strftime("%H:%M:%S") }}</td>
+    <td>{{ r.time.strftime("%H:%M:%S") if r.time else '' }}</td>
     <td>{{ r.batch_number }}</td>
     <td>{{ r.challan_number }}</td>
     <td>{{ r.gate_pass_number }}</td>
+    <td>{{ r.receiving_center }}</td>
     <td>{{ r.supplier_name }}</td>
     <td>{{ r.purchasing_location }}</td>
     <td>{{ r.vehicle_number }}</td>
+    <td>{{ r.production_for }}</td>
+    <td>{{ r.species }}</td>
     <td>{{ r.no_of_material_boxes }}</td>
     <td>{{ r.no_of_empty_boxes }}</td>
     <td>{{ r.no_of_ice_boxes }}</td>

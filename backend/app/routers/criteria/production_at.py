@@ -12,7 +12,9 @@ from app.database.models.criteria import production_at as ProductionAt
 router = APIRouter(tags=["PRODUCTION AT MASTER"])
 templates = Jinja2Templates(directory="app/templates")
 
-
+# ---------------------------------------------------------
+# PAGE LOAD
+# ---------------------------------------------------------
 @router.get("/production_at")
 def production_at_page(request: Request, db: Session = Depends(get_db)):
 
@@ -39,12 +41,16 @@ def production_at_page(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-
+# ---------------------------------------------------------
+# SAVE / UPDATE
+# ---------------------------------------------------------
 @router.post("/production_at")
 def save_production_at(
     request: Request,
 
     production_at_name: str = Form(...),   # MUST MATCH HTML NAME
+    meter_number: str = Form(...),         # ✅ New Meter Number
+    unit_rate: float = Form(...),          # ✅ New Unit Rate Field Added
     id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
@@ -66,7 +72,7 @@ def save_production_at(
     if not time:
         time = now.strftime("%H:%M:%S")
 
-    # DUPLICATE
+    # DUPLICATE CHECK
     dup = (
         db.query(ProductionAt)
         .filter(
@@ -80,6 +86,7 @@ def save_production_at(
     if dup:
         return JSONResponse({"error": "Already Exists!"}, status_code=400)
 
+    # UPDATE LOGIC
     if record_id:
         row = (
             db.query(ProductionAt)
@@ -93,13 +100,18 @@ def save_production_at(
             return JSONResponse({"error": "Not Found"}, status_code=404)
 
         row.production_at = production_at_name
+        row.meter_number = meter_number    
+        row.unit_rate = unit_rate          # ✅ Updating Unit Rate
         row.date = date
         row.time = time
         row.email = email
 
+    # INSERT LOGIC
     else:
         new_row = ProductionAt(
             production_at=production_at_name,
+            meter_number=meter_number,     
+            unit_rate=unit_rate,           # ✅ Inserting Unit Rate
             date=date,
             time=time,
             email=email,
@@ -110,7 +122,9 @@ def save_production_at(
     db.commit()
     return JSONResponse({"success": True})
 
-
+# ---------------------------------------------------------
+# DELETE LOGIC
+# ---------------------------------------------------------
 @router.post("/production_at/delete/{id}")
 def delete(id: int, request: Request, db: Session = Depends(get_db)):
 

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Diesel Inventory Control - BKNR ERP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#0f172a;
+  --in:#059669;
+  --out:#e11d48;
+  --border:#cbd5e1;
+  --bg:#f8fafc;
+}
+body{
+  font-family:Inter,Segoe UI,sans-serif;
+  background:var(--bg);
+  margin:0;
+  padding:20px;
+  color:var(--primary);
+}
+h2{
+  margin-bottom:20px;
+  font-size:20px;
+  font-weight:800;
+}
+.card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-bottom:15px;
+  overflow:hidden;
+  box-shadow:0 4px 6px -1px rgba(0,0,0,.1);
+}
+.card-header{
+  padding:15px 20px;
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:800;
+  text-transform:uppercase;
+  font-size:13px;
+}
+.header-in{background:#ecfdf5;color:var(--in);}
+.header-out{background:#fff1f2;color:var(--out);}
+.card-body{padding:25px;display:none;}
+.card-body.active{display:block;}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:15px;
+}
+.field-group{display:flex;flex-direction:column;}
+label{
+  font-size:11px;
+  font-weight:700;
+  color:#64748b;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+input,select{
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:14px;
+}
+input[readonly]{
+  background:#f1f5f9;
+  font-weight:700;
+}
+.btn{
+  padding:12px 30px;
+  border:none;
+  border-radius:8px;
+  font-weight:800;
+  cursor:pointer;
+  text-transform:uppercase;
+  font-size:12px;
+  color:#fff;
+  margin-top:20px;
+  float:right;
+}
+.btn-in{background:var(--in);}
+.btn-out{background:var(--out);}
+
+.table-section{
+  background:#fff;
+  border-radius:12px;
+  border:1px solid var(--border);
+  margin-top:25px;
+  overflow:hidden;
+}
+.table-header{
+  padding:15px;
+  background:var(--primary);
+  color:#fff;
+  font-weight:700;
+  font-size:12px;
+  text-transform:uppercase;
+}
+.scroll-container{overflow-x:auto;}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1400px;
+}
+th{
+  background:#f8fafc;
+  padding:12px;
+  font-size:11px;
+  text-transform:uppercase;
+  border-bottom:2px solid var(--border);
+}
+td{
+  padding:12px;
+  border-bottom:1px solid #f1f5f9;
+  font-size:13px;
+}
+.badge{
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+.badge-in{background:#dcfce7;color:#166534;}
+.badge-out{background:#fee2e2;color:#991b1b;}
+</style>
+</head>
+
+<body>
+
+<h2><i class="fas fa-gas-pump"></i> Diesel Inventory & GRN System</h2>
+
+<!-- ================= STOCK IN ================= -->
+<div class="card">
+  <div class="card-header header-in" onclick="toggleCard('inBody')">
+    <span>Stock In / Purchase (GRN)</span>
+    <i class="fas fa-chevron-down"></i>
+  </div>
+
+  <div id="inBody" class="card-body">
+    <form id="grnForm">
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Entry Date</label>
+          <input type="date" name="entry_date" id="in_date" required>
+        </div>
+
+        <div class="field-group">
+          <label>Production At</label>
+          <select name="in_unit_id" id="in_unit" onchange="fetchStock('in')" required>
+            <option value="">-- Select Unit --</option>
+            {% for loc in locations %}
+            <option value="{{ loc.id }}">{{ loc.production_at }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label>Bill Date</label>
+          <input type="date" name="bill_date" required>
+        </div>
+
+        <div class="field-group">
+          <label>GRN No</label>
+          <input type="text" name="grn_no" required>
+        </div>
+
+        <div class="field-group">
+          <label>Invoice No</label>
+          <input type="text" name="bill_no" required>
+        </div>
+
+        <div class="field-group">
+          <label>Vendor</label>
+          <input type="text" name="vendor" required>
+        </div>
+
+        <div class="field-group">
+          <label>Available Stock</label>
+          <input type="number" id="in_avail" readonly value="0">
+        </div>
+
+        <div class="field-group">
+          <label>Received Qty</label>
+          <input type="number" name="received_qty" id="in_qty" oninput="calcIn()" step="0.01" required>
+        </div>
+
+        <div class="field-group">
+          <label>Rate</label>
+          <input type="number" name="rate" id="in_rate" oninput="calcIn()" step="0.01" required>
+        </div>
+
+        <div class="field-group">
+          <label>Tax %</label>
+          <input type="number" name="tax_per" id="in_tax" value="18" oninput="calcIn()">
+        </div>
+
+        <div class="field-group">
+          <label>Net Amount</label>
+          <input type="number" name="net_amount" id="in_net" readonly>
+        </div>
+
+        <div class="field-group">
+          <label>Closing Stock</label>
+          <input type="number" name="closing_stock" id="in_close" readonly>
+        </div>
+      </div>
+
+      <button class="btn btn-in" type="submit">POST GRN</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= STOCK OUT ================= -->
+<div class="card">
+  <div class="card-header header-out" onclick="toggleCard('outBody')">
+    <span>Stock Out / Consumption</span>
+    <i class="fas fa-chevron-down"></i>
+  </div>
+
+  <div id="outBody" class="card-body">
+    <form id="outForm">
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Date</label>
+          <input type="date" name="out_date" id="out_date" required>
+        </div>
+
+        <div class="field-group">
+          <label>Production At</label>
+          <select name="unit_id" id="out_unit" onchange="fetchStock('out')" required>
+            <option value="">-- Select Unit --</option>
+            {% for loc in locations %}
+            <option value="{{ loc.id }}">{{ loc.production_at }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label>Available Stock</label>
+          <input type="number" id="out_avail" readonly>
+        </div>
+
+        <div class="field-group">
+          <label>Consumed Qty</label>
+          <input type="number" name="out_qty" id="out_qty" oninput="calcOut()" step="0.01" required>
+        </div>
+
+        <div class="field-group">
+          <label>Closing Stock</label>
+          <input type="number" name="out_closing" id="out_close" readonly>
+        </div>
+      </div>
+
+      <button class="btn btn-out" type="submit">POST CONSUMPTION</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= LEDGER ================= -->
+<div class="table-section">
+  <div class="table-header">Diesel Ledger</div>
+  <div class="scroll-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Production At</th>
+          <th>GRN / Bill</th>
+          <th>Vendor</th>
+          <th>Rate</th>
+          <th>Tax</th>
+          <th>IN</th>
+          <th>OUT</th>
+          <th>Net Value</th>
+          <th>Closing</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in diesel_history %}
+        <tr>
+          <td>{{ r.log_date }}</td>
+          <td><span class="badge {{ 'badge-in' if r.type=='IN' else 'badge-out' }}">{{ r.type }}</span></td>
+          <td><b>{{ r.production_at_name }}</b></td>
+          <td>{{ r.grn_no or '-' }}<br><small>{{ r.bill_no or '-' }}</small></td>
+          <td>{{ r.vendor or '-' }}</td>
+          <td>{{ r.avg_price }}</td>
+          <td>{{ r.tax_per }}%</td>
+          <td style="color:green;font-weight:700;">{{ r.purchase_qty or '' }}</td>
+          <td style="color:red;font-weight:700;">{{ r.consumption or '' }}</td>
+          <td>₹{{ r.net_val }}</td>
+          <td style="font-weight:800;">{{ r.closing_stock }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.getElementById("in_date").valueAsDate = new Date();
+document.getElementById("out_date").valueAsDate = new Date();
+
+function toggleCard(id){
+  document.getElementById(id).classList.toggle("active");
+}
+
+async function fetchStock(type){
+  const uid = document.getElementById(type==="in"?"in_unit":"out_unit").value;
+  if(!uid) return;
+  const r = await fetch(`/api/diesel/lookup/${uid}`);
+  const d = await r.json();
+  document.getElementById(type+"_avail").value = d.last_closing;
+  type==="in" ? calcIn() : calcOut();
+}
+
+function calcIn(){
+  const a=+in_avail.value||0,q=+in_qty.value||0,r=+in_rate.value||0,t=+in_tax.value||0;
+  const basic=q*r;
+  in_net.value=(basic+(basic*t/100)).toFixed(2);
+  in_close.value=(a+q).toFixed(2);
+}
+
+function calcOut(){
+  const a=+out_avail.value||0,q=+out_qty.value||0;
+  out_close.value=(a-q).toFixed(2);
+}
+
+grnForm.onsubmit=async e=>{
+  e.preventDefault();
+  const r=await fetch("/api/diesel/save_in",{method:"POST",body:new FormData(e.target)});
+  const d=await r.json();
+  if(d.status==="success")location.reload();else alert(d.message);
+};
+
+outForm.onsubmit=async e=>{
+  e.preventDefault();
+  const r=await fetch("/api/diesel/save_out",{method:"POST",body:new FormData(e.target)});
+  const d=await r.json();
+  if(d.status==="success")location.reload();else alert(d.message);
+};
+</script>
+
+</body>
+</html>

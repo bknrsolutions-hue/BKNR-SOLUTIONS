@@ -23,8 +23,11 @@ from app.routers.criteria.production_at import router as production_at_router
 from app.routers.criteria.peeling_at import router as peeling_at_router
 from app.routers.criteria.purposes import router as purposes_router
 from app.routers.criteria.production_for import router as production_for_router
-# ⭐ NEW IMPORT – THIS WAS MISSING
 from app.routers.criteria.hoso_hlso import router as hoso_hlso_router
+
+# ✅ NEW – HSN CODES ROUTER
+from app.routers.criteria.hsn_codes import router as hsn_codes_router
+from app.routers.criteria.vendors import router as vendors_router
 
 
 router = APIRouter(prefix="/criteria", tags=["Criteria"])
@@ -52,5 +55,8 @@ router.include_router(production_at_router)
 router.include_router(peeling_at_router)
 router.include_router(purposes_router)
 router.include_router(production_for_router)
-# ⭐ ADD THIS — FIXES YOUR 404 PROBLEM
 router.include_router(hoso_hlso_router)
+
+# ✅ IMPORTANT – HSN ROUTES ENABLED
+router.include_router(hsn_codes_router)
+router.include_router(vendors_router)
