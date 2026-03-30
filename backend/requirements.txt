@@ -6,3 +6,5 @@ jinja2
 pytz
 itsdangerous
 python-dotenv
+requests
+
