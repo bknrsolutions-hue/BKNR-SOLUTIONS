@@ -134,25 +134,25 @@ from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 
 routers = [
-auth_router,
-menu_router,
-criteria_router,
-inventory_router,
-general_stock_router,
-admin_router,
-processing_router,
-reports_router,
-dashboard_router,
-stock_entry_router,
-pending_orders_router,
-page_loader_router,
-attendance_router,
-summary_processing_router,
-summary_inventory_costing_router,
+    auth_router,
+    menu_router,
+    criteria_router,
+    inventory_router,
+    general_stock_router,
+    admin_router,
+    processing_router,
+    reports_router,
+    dashboard_router,
+    stock_entry_router,
+    pending_orders_router,
+    page_loader_router,
+    attendance_router,
+    summary_processing_router,
+    summary_inventory_costing_router,
 ]
 
 for r in routers:
-app.include_router(r)
+    app.include_router(r)
 
 app.include_router(bills_router, prefix="/api")
 
