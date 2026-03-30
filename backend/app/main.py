@@ -167,8 +167,9 @@ logging.info("✅ ALL ROUTERS REGISTERED")
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse(
-        name="login.html",
-        context={"request": request}
+        request,
+        "login.html",
+        {"request": request}
     )
 
 @app.get("/home", response_class=HTMLResponse)
@@ -177,8 +178,9 @@ def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
-        name="menu.html",
-        context={"request": request}
+        request,
+        "menu.html",
+        {"request": request}
     )
 
 @app.get("/logout")
