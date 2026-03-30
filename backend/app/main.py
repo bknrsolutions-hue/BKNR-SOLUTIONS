@@ -68,14 +68,14 @@ app.add_middleware(AuthMiddleware)
 # =============================================
 app.mount(
     "/static",
-    StaticFiles(directory="app/static"),
+    StaticFiles(directory="backend/app/static"),
     name="static"
 )
 
 # =============================================
 # TEMPLATES
 # =============================================
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="backend/app/templates")
 templates.env.cache = {}
 app.state.templates = templates
 
