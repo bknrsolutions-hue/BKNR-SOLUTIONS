@@ -1,6 +1,6 @@
 # =============================================
 
-# 🔥 BKNR ERP - MAIN APPLICATION FILE (FINAL)
+# 🔥 BKNR ERP - MAIN APPLICATION FILE (FINAL FIXED)
 
 # =============================================
 
@@ -56,23 +56,25 @@ max_age=60 * 60 * 8,
 # =============================================
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
+async def dispatch(self, request: Request, call_next):
+path = request.url.path
 
-        open_paths = (
-            "/",
-            "/auth/",
-            "/static/",
-            "/health",
-            "/docs",
-            "/openapi.json",
-        )
+```
+    open_paths = (
+        "/",
+        "/auth/",
+        "/static/",
+        "/health",
+        "/docs",
+        "/openapi.json",
+    )
 
-        if not path.startswith(open_paths):
-            if not request.session.get("email"):
-                return RedirectResponse("/", status_code=303)
+    if not path.startswith(open_paths):
+        if not request.session.get("email"):
+            return RedirectResponse("/", status_code=303)
 
-        return await call_next(request)
+    return await call_next(request)
+```
 
 app.add_middleware(AuthMiddleware)
 
@@ -90,7 +92,7 @@ name="static"
 
 # =============================================
 
-# TEMPLATES (FINAL FIXED)
+# TEMPLATES
 
 # =============================================
 
@@ -104,11 +106,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.on_event("startup")
 def on_startup():
-    try:
-        Base.metadata.create_all(bind=engine)
-        logging.info("✅ DATABASE TABLES READY")
-    except Exception as e:
-        logging.error(f"❌ DB ERROR: {e}")
+try:
+Base.metadata.create_all(bind=engine)
+logging.info("✅ DATABASE TABLES READY")
+except Exception as e:
+logging.error(f"❌ DB ERROR: {e}")
 
 # =============================================
 
@@ -152,7 +154,7 @@ summary_inventory_costing_router,
 ]
 
 for r in routers:
-    app.include_router(r)
+app.include_router(r)
 
 app.include_router(bills_router, prefix="/api")
 
@@ -160,7 +162,7 @@ logging.info("✅ ALL ROUTERS REGISTERED")
 
 # =============================================
 
-# PAGES (FINAL FIXED)
+# PAGES
 
 # =============================================
 
