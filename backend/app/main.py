@@ -167,8 +167,8 @@ logging.info("✅ ALL ROUTERS REGISTERED")
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
 return templates.TemplateResponse(
-"login.html",
-context={"request": request}
+    "login.html",
+    context={"request": request}
 )
 
 @app.get("/home", response_class=HTMLResponse)
