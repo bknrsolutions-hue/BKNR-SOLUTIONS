@@ -8,3 +8,4 @@ itsdangerous
 python-dotenv
 requests
 passlib[bcrypt]
+python-multipart
