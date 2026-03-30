@@ -164,29 +164,31 @@ logging.info("✅ ALL ROUTERS REGISTERED")
 
 # =============================================
 
+# =============================================
+# PAGES
+# =============================================
+
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
-return templates.TemplateResponse(
-    "login.html",
-    context={"request": request}
-)
+    return templates.TemplateResponse(
+        "login.html",
+        context={"request": request}
+    )
 
 @app.get("/home", response_class=HTMLResponse)
 def home_page(request: Request):
-if not request.session.get("email"):
-return RedirectResponse("/", status_code=303)
+    if not request.session.get("email"):
+        return RedirectResponse("/", status_code=303)
 
-```
-return templates.TemplateResponse(
-    "menu.html",
-    context={"request": request}
-)
-```
+    return templates.TemplateResponse(
+        "menu.html",
+        context={"request": request}
+    )
 
 @app.get("/logout")
 def logout(request: Request):
-request.session.clear()
-return RedirectResponse("/", status_code=303)
+    request.session.clear()
+    return RedirectResponse("/", status_code=303)
 
 # =============================================
 
