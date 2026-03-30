@@ -76,7 +76,6 @@ app.mount(
 # TEMPLATES
 # =============================================
 templates = Jinja2Templates(directory="app/templates")
-templates.env.cache = {}
 app.state.templates = templates
 
 # =============================================
