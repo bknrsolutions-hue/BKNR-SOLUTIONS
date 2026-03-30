@@ -152,7 +152,7 @@ summary_inventory_costing_router,
 ]
 
 for r in routers:
-app.include_router(r)
+    app.include_router(r)
 
 app.include_router(bills_router, prefix="/api")
 
