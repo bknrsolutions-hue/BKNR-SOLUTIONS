@@ -7,4 +7,4 @@ pytz
 itsdangerous
 python-dotenv
 requests
-
+passlib[bcrypt]
