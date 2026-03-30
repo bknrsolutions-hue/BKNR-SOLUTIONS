@@ -12,3 +12,4 @@ python-multipart
 openpyxl
 weasyprint
 pandas
+xhtml2pdf
