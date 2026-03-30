@@ -104,11 +104,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.on_event("startup")
 def on_startup():
-try:
-Base.metadata.create_all(bind=engine)
-logging.info("✅ DATABASE TABLES READY")
-except Exception as e:
-logging.error(f"❌ DB ERROR: {e}")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logging.info("✅ DATABASE TABLES READY")
+    except Exception as e:
+        logging.error(f"❌ DB ERROR: {e}")
 
 # =============================================
 
