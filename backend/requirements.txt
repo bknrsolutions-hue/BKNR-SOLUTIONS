@@ -11,4 +11,4 @@ passlib[bcrypt]
 python-multipart
 openpyxl
 weasyprint
-
+pandas
