@@ -158,11 +158,7 @@ app.include_router(bills_router, prefix="/api")
 
 logging.info("✅ ALL ROUTERS REGISTERED")
 
-# =============================================
 
-# PAGES
-
-# =============================================
 
 # =============================================
 # PAGES
@@ -191,17 +187,15 @@ def logout(request: Request):
     return RedirectResponse("/", status_code=303)
 
 # =============================================
-
 # HEALTH CHECK
-
 # =============================================
 
 @app.get("/health")
 def health():
-return {
-"status": "OK",
-"service": "BKNR ERP",
-"session": "ACTIVE",
-"database": "CONNECTED",
-"deployment": "RENDER"
-}
+    return {
+        "status": "OK",
+        "service": "BKNR ERP",
+        "session": "ACTIVE",
+        "database": "CONNECTED",
+        "deployment": "RENDER"
+    }
