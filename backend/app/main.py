@@ -56,25 +56,23 @@ max_age=60 * 60 * 8,
 # =============================================
 
 class AuthMiddleware(BaseHTTPMiddleware):
-async def dispatch(self, request: Request, call_next):
-path = request.url.path
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
 
-```
-    open_paths = (
-        "/",
-        "/auth/",
-        "/static/",
-        "/health",
-        "/docs",
-        "/openapi.json",
-    )
+        open_paths = (
+            "/",
+            "/auth/",
+            "/static/",
+            "/health",
+            "/docs",
+            "/openapi.json",
+        )
 
-    if not path.startswith(open_paths):
-        if not request.session.get("email"):
-            return RedirectResponse("/", status_code=303)
+        if not path.startswith(open_paths):
+            if not request.session.get("email"):
+                return RedirectResponse("/", status_code=303)
 
-    return await call_next(request)
-```
+        return await call_next(request)
 
 app.add_middleware(AuthMiddleware)
 
