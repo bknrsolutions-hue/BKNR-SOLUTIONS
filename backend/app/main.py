@@ -105,13 +105,13 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        # 🔥 VERY IMPORTANT LINE
-        from app.database.models.users import User  
+        from app.database import models   # 🔥 THIS LINE MUST
 
         Base.metadata.create_all(bind=engine)
-        logging.info("✅ DATABASE TABLES READY")
+
+        print("✅ ALL TABLES CREATED IN RENDER")
     except Exception as e:
-        logging.error(f"❌ DB ERROR: {e}")
+        print("❌ DB ERROR:", e)
 
 # =============================================
 
