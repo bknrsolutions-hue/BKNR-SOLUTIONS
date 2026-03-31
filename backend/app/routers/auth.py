@@ -256,6 +256,7 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
         return HTMLResponse("<h3>Link expired</h3>")
 
+    # FIXED: context ni proper dictionary format lo pampali
     return templates.TemplateResponse(
         "reset_password.html",
         {"request": request, "token": token}
@@ -278,6 +279,9 @@ def reset_password(token: str = Form(...), password: str = Form(...),
         raise HTTPException(400, "Invalid link")
 
     user = db.query(User).filter(User.email == rec.email).first()
+    if not user:
+         raise HTTPException(404, "User not found")
+         
     user.password = hash_password(password)
     rec.is_used = True
 
