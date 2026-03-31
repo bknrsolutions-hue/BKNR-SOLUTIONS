@@ -113,6 +113,18 @@ def on_startup():
     except Exception as e:
         print("❌ DB ERROR:", e)
 
+        
+@app.get("/create-tables")
+def create_tables():
+    try:
+        from app.database import Base, engine
+        from app.database import models
+
+        Base.metadata.create_all(bind=engine)
+
+        return {"status": "Tables Created Successfully"}
+    except Exception as e:
+        return {"error": str(e)}
 # =============================================
 
 # ROUTERS
