@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from app.database.models.users import User
 
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
