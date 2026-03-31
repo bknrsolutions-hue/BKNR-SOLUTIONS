@@ -28,31 +28,29 @@ OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
 
 # ================= EMAIL =================
-
 def send_email(to_email: str, subject: str, html: str):
-if not BREVO_API_KEY:
-raise Exception("Email service not configured")
+    if not BREVO_API_KEY:
+        raise Exception("Email service not configured")
 
-```
-payload = {
-    "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
-    "to": [{"email": to_email}],
-    "subject": subject,
-    "htmlContent": html
-}
+    payload = {
+        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html
+    }
 
-headers = {
-    "api-key": BREVO_API_KEY,
-    "content-type": "application/json"
-}
+    headers = {
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
 
-res = requests.post(BREVO_URL, json=payload, headers=headers)
+    res = requests.post(BREVO_URL, json=payload, headers=headers)
 
-if res.status_code >= 400:
-    raise Exception("Email sending failed")
+    if res.status_code >= 400:
+        raise Exception("Email sending failed")
 
-print("✅ Email sent:", to_email)
-```
+    print("✅ Email sent:", to_email)
+
 
 # ================= REQUEST MODELS =================
 
