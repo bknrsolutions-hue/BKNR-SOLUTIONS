@@ -105,13 +105,13 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        from app.database import models   # 🔥 THIS LINE MUST
+        from app.database import models  # 🔥 MUST
 
         Base.metadata.create_all(bind=engine)
 
-        print("✅ ALL TABLES CREATED IN RENDER")
+        print("✅ DATABASE READY (tables checked/created)")
     except Exception as e:
-        print("❌ DB ERROR:", e)
+        print("⚠️ IGNORING DB ERROR:", e)
 
 
 @app.get("/create-tables")
@@ -121,8 +121,8 @@ def create_tables():
 
     try:
         Base.metadata.create_all(bind=engine)
-    except:
-        pass
+    except Exception as e:
+        return {"status": "already exists", "detail": str(e)}
 
     return {"status": "Tables ready"}
 # =============================================
