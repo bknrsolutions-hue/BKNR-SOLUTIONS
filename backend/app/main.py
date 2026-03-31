@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from app.database.models.users import Company, User
+from app.database.models.users import Company, User, OTPTable
 
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -106,17 +106,16 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        # 🔥 FIRST create companies
+        # 🔥 ORDER FIX
         Company.__table__.create(bind=engine, checkfirst=True)
-
-        # 🔥 THEN users
         User.__table__.create(bind=engine, checkfirst=True)
+        OTPTable.__table__.create(bind=engine, checkfirst=True)
 
-        # 🔥 THEN all others
+        # 🔥 remaining tables
         from app.database import models
         Base.metadata.create_all(bind=engine)
 
-        print("✅ DB READY")
+        print("✅ ALL TABLES READY")
 
     except Exception as e:
         print("⚠️ DB ERROR:", e)
