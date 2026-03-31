@@ -91,36 +91,38 @@ email: str
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
 
-```
-if db.query(User).filter(User.email == data.email).first():  
-    raise HTTPException(400, "Email already registered")  
+    # Check existing user
+    if db.query(User).filter(User.email == data.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-otp = str(random.randint(1000, 9999))  
+    # Generate OTP
+    otp = str(random.randint(1000, 9999))
 
-db.query(OTPTable).filter(OTPTable.email == data.email).delete()  
+    # Delete old OTP
+    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-db.add(OTPTable(  
-    email=data.email,  
-    otp=otp,  
-    extra=json.dumps(data.dict()),  
-    is_used=False,  
-    created_at=datetime.now()  
-))  
-db.commit()  
+    # Save new OTP
+    db.add(OTPTable(
+        email=data.email,
+        otp=otp,
+        extra=json.dumps(data.dict()),
+        is_used=False,
+        created_at=datetime.now()
+    ))
+    db.commit()
 
-# 🔥 SAFE EMAIL (NO CRASH)  
-try:  
-    send_email(  
-        data.email,  
-        "BKNR ERP – OTP Verification",  
-        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"  
-    )  
-except Exception as e:  
-    print("⚠️ EMAIL FAILED:", e)  
-    print("🔥 OTP:", otp)  
+    # Send email (safe)
+    try:
+        send_email(
+            data.email,
+            "BKNR ERP – OTP Verification",
+            f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
+        )
+    except Exception as e:
+        print("⚠️ EMAIL FAILED:", e)
+        print("🔥 OTP:", otp)
 
-return {"message": "OTP sent"}  
-```
+    return {"message": "OTP sent"}
 
 # =====================================================
 
