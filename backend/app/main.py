@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.database.models.users import User
+from app.database.models.companies import Company
 
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -106,13 +107,20 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        from app.database import models  # 🔥 MUST
+        # 🔥 FIRST create companies
+        Company.__table__.create(bind=engine, checkfirst=True)
 
+        # 🔥 THEN users
+        User.__table__.create(bind=engine, checkfirst=True)
+
+        # 🔥 THEN all others
+        from app.database import models
         Base.metadata.create_all(bind=engine)
 
-        print("✅ DATABASE READY (tables checked/created)")
+        print("✅ DB READY")
+
     except Exception as e:
-        print("⚠️ IGNORING DB ERROR:", e)
+        print("⚠️ DB ERROR:", e)
 
 
 @app.get("/create-tables")
