@@ -120,12 +120,19 @@ def create_tables():
     from app.database import Base, engine
     from app.database import models
 
-    try:
-        Base.metadata.create_all(bind=engine)
-    except Exception as e:
-        return {"status": "already exists", "detail": str(e)}
+    # 🔥 force import
+    from app.database.models.users import User
 
-    return {"status": "Tables ready"}
+    try:
+        # create ONLY users table first
+        User.__table__.create(bind=engine, checkfirst=True)
+
+        # then create remaining
+        Base.metadata.create_all(bind=engine)
+
+        return {"status": "Users + Tables created"}
+    except Exception as e:
+        return {"error": str(e)}
 # =============================================
 
 # ROUTERS
