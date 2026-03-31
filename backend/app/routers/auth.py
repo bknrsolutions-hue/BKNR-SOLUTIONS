@@ -256,33 +256,38 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
         return HTMLResponse("<h3>Link expired</h3>")
 
-    # FIXED: context ni proper dictionary format lo pampali
+    # FIXED FOR NEW FASTAPI/STARLETTE VERSION
     return templates.TemplateResponse(
-        "reset_password.html",
-        {"request": request, "token": token}
+        request=request,
+        name="reset_password.html",
+        context={"token": token}
     )
 
 
 # =====================================================
-# RESET PASSWORD PAGE
+# RESET PASSWORD SAVE (POST)
 # =====================================================
-@router.get("/reset-password", response_class=HTMLResponse)
-def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
+@router.post("/reset-password")
+def reset_password(token: str = Form(...), password: str = Form(...),
+                   db: Session = Depends(get_db)):
 
     rec = db.query(OTPTable).filter(
         OTPTable.otp == token,
         OTPTable.is_used.is_(False)
     ).first()
 
-    if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
-        return HTMLResponse("<h3>Link expired</h3>")
+    if not rec:
+        raise HTTPException(400, "Invalid link")
 
-    # ఇక్కడ మార్పు గమనించు: request ని విడిగా పంపాలి
-    return templates.TemplateResponse(
-        request=request, 
-        name="reset_password.html", 
-        context={"token": token}
-    )
+    user = db.query(User).filter(User.email == rec.email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    user.password = hash_password(password)
+    rec.is_used = True
+
+    db.commit()
+    return RedirectResponse("/", status_code=303)
 
 
 # =====================================================
