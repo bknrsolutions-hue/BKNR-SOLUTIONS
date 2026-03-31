@@ -13,14 +13,10 @@ from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
 from app.security.password_handler import hash_password, verify_password
 
-# =====================================================
-
 router = APIRouter(prefix="/auth", tags=["AUTH"])
 templates = Jinja2Templates(directory="app/templates")
 
-# =====================================================
-
-# ================= BREVO CONFIG =================
+# ================= CONFIG =================
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
@@ -31,29 +27,31 @@ SENDER_NAME = "BKNR ERP"
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
 
+# ================= EMAIL =================
+
 def send_email(to_email: str, subject: str, html: str):
 if not BREVO_API_KEY:
 raise Exception("Email service not configured")
 
 ```
-payload = {  
-    "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},  
-    "to": [{"email": to_email}],  
-    "subject": subject,  
-    "htmlContent": html  
-}  
+payload = {
+    "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+    "to": [{"email": to_email}],
+    "subject": subject,
+    "htmlContent": html
+}
 
-headers = {  
-    "api-key": BREVO_API_KEY,  
-    "content-type": "application/json"  
-}  
+headers = {
+    "api-key": BREVO_API_KEY,
+    "content-type": "application/json"
+}
 
-res = requests.post(BREVO_URL, json=payload, headers=headers)  
+res = requests.post(BREVO_URL, json=payload, headers=headers)
 
-if res.status_code >= 400:  
-    raise Exception("Email sending failed")  
+if res.status_code >= 400:
+    raise Exception("Email sending failed")
 
-print("✅ Email sent:", to_email)  
+print("✅ Email sent:", to_email)
 ```
 
 # ================= REQUEST MODELS =================
@@ -82,263 +80,227 @@ password: str
 class ForgotReq(BaseModel):
 email: str
 
-# =====================================================
-
-# REGISTER → SEND OTP
-
-# =====================================================
+# ================= REGISTER =================
 
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
 
-    # Check existing user
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+```
+if db.query(User).filter(User.email == data.email).first():
+    raise HTTPException(400, "Email already registered")
 
-    # Generate OTP
-    otp = str(random.randint(1000, 9999))
+otp = str(random.randint(1000, 9999))
 
-    # Delete old OTP
-    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
+db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-    # Save new OTP
-    db.add(OTPTable(
-        email=data.email,
-        otp=otp,
-        extra=json.dumps(data.dict()),
-        is_used=False,
-        created_at=datetime.now()
-    ))
-    db.commit()
+db.add(OTPTable(
+    email=data.email,
+    otp=otp,
+    extra=json.dumps(data.dict()),
+    is_used=False,
+    created_at=datetime.now()
+))
+db.commit()
 
-    # Send email (safe)
-    try:
-        send_email(
-            data.email,
-            "BKNR ERP – OTP Verification",
-            f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
-        )
-    except Exception as e:
-        print("⚠️ EMAIL FAILED:", e)
-        print("🔥 OTP:", otp)
+try:
+    send_email(
+        data.email,
+        "BKNR ERP – OTP Verification",
+        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
+    )
+except Exception as e:
+    print("⚠️ EMAIL FAILED:", e)
+    print("🔥 OTP:", otp)
 
-    return {"message": "OTP sent"}
+return {"message": "OTP sent"}
+```
 
-# =====================================================
-
-# VERIFY OTP
-
-# =====================================================
+# ================= VERIFY OTP =================
 
 @router.post("/verify-otp")
 def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
 ```
-rec = db.query(OTPTable).filter(  
-    OTPTable.email == data.email,  
-    OTPTable.otp == data.otp,  
-    OTPTable.is_used.is_(False)  
-).first()  
+rec = db.query(OTPTable).filter(
+    OTPTable.email == data.email,
+    OTPTable.otp == data.otp,
+    OTPTable.is_used.is_(False)
+).first()
 
-if not rec or datetime.now() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):  
-    raise HTTPException(400, "OTP expired or invalid")  
+if not rec or datetime.now() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
+    raise HTTPException(400, "OTP expired or invalid")
 
-rec.is_used = True  
-db.commit()  
+rec.is_used = True
+db.commit()
 
-return {"message": "OTP verified"}  
+return {"message": "OTP verified"}
 ```
 
-# =====================================================
-
-# SET PASSWORD
-
-# =====================================================
+# ================= SET PASSWORD =================
 
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
 ```
-rec = db.query(OTPTable).filter(  
-    OTPTable.email == data.email,  
-    OTPTable.is_used.is_(True)  
-).first()  
+rec = db.query(OTPTable).filter(
+    OTPTable.email == data.email,
+    OTPTable.is_used.is_(True)
+).first()
 
-if not rec:  
-    raise HTTPException(400, "OTP not verified")  
+if not rec:
+    raise HTTPException(400, "OTP not verified")
 
-extra = json.loads(rec.extra)  
+extra = json.loads(rec.extra)
 
-company = db.query(Company).filter(Company.email == extra["email"]).first()  
+company = db.query(Company).filter(Company.email == extra["email"]).first()
 
-if not company:  
-    company = Company(  
-        company_name=extra["company_name"],  
-        address=extra["address"],  
-        email=extra["email"],  
-        company_code=extra["company_name"][:4].upper() + str(random.randint(1000, 9999)),  
-        is_active=True  
-    )  
-    db.add(company)  
-    db.commit()  
-    db.refresh(company)  
+if not company:
+    company = Company(
+        company_name=extra["company_name"],
+        address=extra["address"],
+        email=extra["email"],
+        company_code=extra["company_name"][:4].upper() + str(random.randint(1000, 9999)),
+        is_active=True
+    )
+    db.add(company)
+    db.commit()
+    db.refresh(company)
 
-user = User(  
-    company_id=company.id,  
-    name=extra["user_name"],  
-    designation=extra["designation"],  
-    email=extra["email"],  
-    mobile=extra["mobile"],  
-    password=hash_password(data.password),  
-    role="admin",  
-    permissions="ALL",  
-    is_verified=True  
-)  
+user = User(
+    company_id=company.id,
+    name=extra["user_name"],
+    designation=extra["designation"],
+    email=extra["email"],
+    mobile=extra["mobile"],
+    password=hash_password(data.password),
+    role="admin",
+    permissions="ALL",
+    is_verified=True
+)
 
-db.add(user)  
-db.commit()  
+db.add(user)
+db.commit()
 
-return {"company_id": company.company_code}  
+return {"company_id": company.company_code}
 ```
 
-# =====================================================
-
-# LOGIN
-
-# =====================================================
+# ================= LOGIN =================
 
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
 ```
-company = db.query(Company).filter(  
-    Company.company_code == data.company_id  
-).first()  
+company = db.query(Company).filter(
+    Company.company_code == data.company_id
+).first()
 
-if not company:  
-    raise HTTPException(400, "Invalid Company ID")  
+if not company:
+    raise HTTPException(400, "Invalid Company ID")
 
-user = db.query(User).filter(  
-    User.email == data.email,  
-    User.company_id == company.id  
-).first()  
+user = db.query(User).filter(
+    User.email == data.email,
+    User.company_id == company.id
+).first()
 
-if not user or not verify_password(data.password, user.password):  
-    raise HTTPException(400, "Invalid credentials")  
+if not user or not verify_password(data.password, user.password):
+    raise HTTPException(400, "Invalid credentials")
 
-request.session.update({  
-    "email": user.email,  
-    "company_id": company.id,  
-    "company_code": company.company_code,  
-    "name": user.name,  
-    "role": user.role,  
-    "permissions": user.permissions  
-})  
+request.session.update({
+    "email": user.email,
+    "company_id": company.id,
+    "company_code": company.company_code,
+    "name": user.name,
+    "role": user.role,
+    "permissions": user.permissions
+})
 
-return {"message": "Login success"}  
+return {"message": "Login success"}
 ```
 
-# =====================================================
-
-# FORGOT PASSWORD
-
-# =====================================================
+# ================= FORGOT PASSWORD =================
 
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
 
 ```
-user = db.query(User).filter(User.email == data.email).first()  
+user = db.query(User).filter(User.email == data.email).first()
 
-if not user:  
-    raise HTTPException(404, "Email not registered")  
+if not user:
+    raise HTTPException(404, "Email not registered")
 
-token = secrets.token_urlsafe(32)  
+token = secrets.token_urlsafe(32)
 
-db.query(OTPTable).filter(OTPTable.email == data.email).delete()  
+db.query(OTPTable).filter(OTPTable.email == data.email).delete()
 
-db.add(OTPTable(  
-    email=data.email,  
-    otp=token,  
-    is_used=False,  
-    created_at=datetime.now()  
-))  
-db.commit()  
+db.add(OTPTable(
+    email=data.email,
+    otp=token,
+    is_used=False,
+    created_at=datetime.now()
+))
+db.commit()
 
-reset_link = f"{request.base_url}auth/reset-password?token={token}"  
+reset_link = f"{request.base_url}auth/reset-password?token={token}"
 
-# 🔥 SAFE EMAIL  
-try:  
-    send_email(  
-        data.email,  
-        "BKNR ERP – Reset Password",  
-        f"<a href='{reset_link}'>Reset Password</a>"  
-    )  
-except Exception as e:  
-    print("⚠️ RESET EMAIL FAILED:", e)  
-    print("🔥 RESET LINK:", reset_link)  
+try:
+    send_email(
+        data.email,
+        "BKNR ERP – Reset Password",
+        f"<a href='{reset_link}'>Reset Password</a>"
+    )
+except Exception as e:
+    print("⚠️ RESET EMAIL FAILED:", e)
+    print("🔥 RESET LINK:", reset_link)
 
-return {"message": "Reset link sent"}  
+return {"message": "Reset link sent"}
 ```
 
-# =====================================================
-
-# RESET PASSWORD PAGE
-
-# =====================================================
+# ================= RESET PAGE =================
 
 @router.get("/reset-password", response_class=HTMLResponse)
 def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
 
 ```
-rec = db.query(OTPTable).filter(  
-    OTPTable.otp == token,  
-    OTPTable.is_used.is_(False)  
-).first()  
+rec = db.query(OTPTable).filter(
+    OTPTable.otp == token,
+    OTPTable.is_used.is_(False)
+).first()
 
-if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):  
-    return HTMLResponse("<h3>Link expired</h3>")  
+if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
+    return HTMLResponse("<h3>Link expired</h3>")
 
-return templates.TemplateResponse(  
-    request,  
-    "reset_password.html",  
-    {"request": request, "token": token}  
-)  
+return templates.TemplateResponse(
+    request,
+    "reset_password.html",
+    {"request": request, "token": token}
+)
 ```
 
-# =====================================================
-
-# RESET PASSWORD SAVE
-
-# =====================================================
+# ================= RESET SAVE =================
 
 @router.post("/reset-password")
 def reset_password(token: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
 
 ```
-rec = db.query(OTPTable).filter(  
-    OTPTable.otp == token,  
-    OTPTable.is_used.is_(False)  
-).first()  
+rec = db.query(OTPTable).filter(
+    OTPTable.otp == token,
+    OTPTable.is_used.is_(False)
+).first()
 
-if not rec:  
-    raise HTTPException(400, "Invalid link")  
+if not rec:
+    raise HTTPException(400, "Invalid link")
 
-user = db.query(User).filter(User.email == rec.email).first()  
+user = db.query(User).filter(User.email == rec.email).first()
 
-user.password = hash_password(password)  
-rec.is_used = True  
+user.password = hash_password(password)
+rec.is_used = True
 
-db.commit()  
+db.commit()
 
-return RedirectResponse("/", status_code=303)  
+return RedirectResponse("/", status_code=303)
 ```
 
-# =====================================================
-
-# LOGOUT
-
-# =====================================================
+# ================= LOGOUT =================
 
 @router.get("/logout")
 def logout(request: Request):
