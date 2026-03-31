@@ -17,10 +17,18 @@ class Company(Base):
     # Example: BKNR9837
     company_code = Column(String, unique=True, nullable=False)
 
+    # 🔥 NEW FIELDS (SAFE ADD - NO BREAK)
+    company_type = Column(String, default="main")  # main / merchant
+    parent_company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # relationships
     users = relationship("User", back_populates="company")
+
+    # self reference (optional use)
+    sub_companies = relationship("Company")
 
 
 # =================== USER MODEL ===================
@@ -34,7 +42,7 @@ class User(Base):
     name = Column(String, nullable=False)
     designation = Column(String, nullable=False)
 
-    email = Column(String, nullable=False)      # ❌ removed unique
+    email = Column(String, nullable=False)  # keeping as is (no break)
     mobile = Column(String, unique=True, nullable=False)
 
     password = Column(String, nullable=True)
@@ -46,13 +54,18 @@ class User(Base):
 
     company = relationship("Company", back_populates="users")
 
-#OTP MODEL
+
+# =================== OTP MODEL ===================
 class OTPTable(Base):
     __tablename__ = "otp_table"
 
     id = Column(Integer, primary_key=True)
+
     email = Column(String, unique=True)
     otp = Column(String)
-    extra = Column(String)          # ✅ MUST
+
+    extra = Column(String)  # ✅ required field
     is_used = Column(Boolean, default=False)
+
     created_at = Column(DateTime, default=datetime.utcnow)
+
