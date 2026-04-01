@@ -1,65 +1,57 @@
-# =============================================
-
+# =====================================================
 # 🔥 BKNR ERP - MAIN APPLICATION FILE (FINAL FIXED)
-
-# =============================================
+# =====================================================
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from app.database.models.users import Company, User, OTPTable
-
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-
 import logging
 
-# =============================================
-
-# DATABASE
-
-# =============================================
-
+# DATABASE IMPORTS
 from app.database import engine, Base
-from app.database.models.users import *  # noqa
+import app.database.models # అన్ని మోడల్స్ రిజిస్టర్ అవ్వడానికి ఇది ముఖ్యం
 
+# మ్యాన్యువల్ గా మోడల్స్ ని ఇంపోర్ట్ చేస్తున్నాము (Table Creation కోసం)
+from app.database.models.users import Company, User, OTPTable
+from app.database.models.general_stock import GeneralStock
+from app.database.models.criteria import *
+from app.database.models.processing import *
+from app.database.models.attendance import *
+from app.database.models.inventory_management import *
+
+# LOGGING CONFIG
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("BKNR_ERP")
 
-# =============================================
-
+# =====================================================
 # INIT FASTAPI
-
-# =============================================
-
+# =====================================================
 app = FastAPI(
-title="BKNR ERP",
-version="1.0.0"
+    title="BKNR ERP",
+    version="1.0.0"
 )
 
-# =============================================
-
+# =====================================================
 # SESSION MIDDLEWARE
-
-# =============================================
-
+# =====================================================
 app.add_middleware(
-SessionMiddleware,
-secret_key="bknr_secret_key_2025",
-session_cookie="bknr_session",
-max_age=60 * 60 * 8,
+    SessionMiddleware,
+    secret_key="bknr_secret_key_2025",
+    session_cookie="bknr_session",
+    max_age=60 * 60 * 8, # 8 Hours
 )
 
-# =============================================
-
+# =====================================================
 # AUTH MIDDLEWARE
-
-# =============================================
-
+# =====================================================
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-
+        
+        # ఏయే పాత్ లకి లాగిన్ అవసరం లేదో ఇక్కడ ఉన్నాయి
         open_paths = (
             "/",
             "/auth/",
@@ -67,9 +59,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/health",
             "/docs",
             "/openapi.json",
+            "/favicon.ico",
+            "/manifest.json",
+            "/service-worker.js"
         )
 
-        if not path.startswith(open_paths):
+        if not any(path.startswith(p) for p in open_paths):
             if not request.session.get("email"):
                 return RedirectResponse("/", status_code=303)
 
@@ -77,74 +72,35 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(AuthMiddleware)
 
-# =============================================
-
-# STATIC FILES
-
-# =============================================
-
-app.mount(
-"/static",
-StaticFiles(directory="app/static"),
-name="static"
-)
-
-# =============================================
-
-# TEMPLATES
-
-# =============================================
-
+# =====================================================
+# STATIC FILES & TEMPLATES
+# =====================================================
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
-# =============================================
-
-# CREATE TABLES
-
-# =============================================
-
+# =====================================================
+# CREATE TABLES (STARTUP EVENT)
+# =====================================================
 @app.on_event("startup")
 def on_startup():
     try:
-        # 🔥 ORDER FIX
-        Company.__table__.create(bind=engine, checkfirst=True)
-        User.__table__.create(bind=engine, checkfirst=True)
-        OTPTable.__table__.create(bind=engine, checkfirst=True)
-
-        # 🔥 remaining tables
-        from app.database import models
+        # 🔥 ORDER FIX: మొదట మెయిన్ టేబుల్స్, తర్వాత మిగిలినవి
         Base.metadata.create_all(bind=engine)
-
-        print("✅ ALL TABLES READY")
-
+        logger.info("✅ ALL TABLES SYNCED WITH DATABASE")
     except Exception as e:
-        print("⚠️ DB ERROR:", e)
-
+        logger.error(f"⚠️ DB STARTUP ERROR: {e}")
 
 @app.get("/create-tables")
-def create_tables():
-    from app.database import Base, engine
-    from app.database import models
-
-    # 🔥 force import
-    from app.database.models.users import User
-
+def manual_create_tables():
     try:
-        # create ONLY users table first
-        User.__table__.create(bind=engine, checkfirst=True)
-
-        # then create remaining
         Base.metadata.create_all(bind=engine)
-
-        return {"status": "Users + Tables created"}
+        return {"status": "Success", "message": "All tables created/verified"}
     except Exception as e:
-        return {"error": str(e)}
-# =============================================
+        return {"status": "Error", "message": str(e)}
 
-# ROUTERS
-
-# =============================================
-
+# =====================================================
+# ROUTERS REGISTRATION
+# =====================================================
 from app.routers.auth import router as auth_router
 from app.routers.menu import router as menu_router
 from app.routers.criteria_router import router as criteria_router
@@ -162,7 +118,8 @@ from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 
-routers = [
+# రూటర్ల జాబితా
+routers_list = [
     auth_router,
     menu_router,
     criteria_router,
@@ -180,25 +137,24 @@ routers = [
     summary_inventory_costing_router,
 ]
 
-for r in routers:
+# అన్ని రూటర్లను లూప్ ద్వారా యాడ్ చేస్తున్నాము
+for r in routers_list:
     app.include_router(r)
 
+# Bills Router కి స్పెషల్ ప్రిఫిక్స్
 app.include_router(bills_router, prefix="/api")
 
-logging.info("✅ ALL ROUTERS REGISTERED")
+logger.info("🚀 ALL ROUTERS REGISTERED SUCCESSFULLY")
 
-
-
-# =============================================
-# PAGES
-# =============================================
+# =====================================================
+# BASIC PAGES
+# =====================================================
 
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse(
-        request,
-        "login.html",
-        {"request": request}
+        name="login.html",
+        context={"request": request}
     )
 
 @app.get("/home", response_class=HTMLResponse)
@@ -207,9 +163,8 @@ def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
-        request,
-        "menu.html",
-        {"request": request}
+        name="menu.html",
+        context={"request": request}
     )
 
 @app.get("/logout")
@@ -217,16 +172,15 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
 
-# =============================================
+# =====================================================
 # HEALTH CHECK
-# =============================================
+# =====================================================
 
 @app.get("/health")
-def health():
+def health_check():
     return {
         "status": "OK",
         "service": "BKNR ERP",
-        "session": "ACTIVE",
         "database": "CONNECTED",
         "deployment": "RENDER"
     }
