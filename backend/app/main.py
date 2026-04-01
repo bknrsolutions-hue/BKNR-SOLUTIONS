@@ -16,7 +16,6 @@ from app.database.models.criteria import contractors, varieties, production_for,
 from app.database.models.general_stock import GeneralStock
 from app.database.models.processing import Peeling, Soaking, DeHeading, AuditLog
 from app.database.models.inventory_management import stock_entry, pending_orders
-from app.database.models.attendance import Attendance
 
 # LOGGING SETUP
 logging.basicConfig(level=logging.INFO)
