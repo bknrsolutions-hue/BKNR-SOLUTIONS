@@ -14,7 +14,7 @@ import app.database.models
 from app.database.models.users import Company, User, OTPTable
 from app.database.models.criteria import contractors, varieties, production_for, production_at
 from app.database.models.general_stock import GeneralStock
-from app.database.models.processing import Peeling, Soaking, DeHeading, ProcessingAuditLog
+from app.database.models.processing import Peeling, Soaking, DeHeading, AuditLog
 from app.database.models.inventory_management import stock_entry, pending_orders
 from app.database.models.attendance import Attendance
 
