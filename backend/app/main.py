@@ -1,186 +1,298 @@
-# =====================================================
-# 🔥 BKNR ERP - MAIN APPLICATION FILE (FINAL FIXED)
-# =====================================================
-
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-import logging
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from datetime import datetime, timedelta
+import random, json, os, requests, secrets
 
-# DATABASE IMPORTS
-from app.database import engine, Base
-import app.database.models # అన్ని మోడల్స్ రిజిస్టర్ అవ్వడానికి ఇది ముఖ్యం
+from dotenv import load_dotenv
+load_dotenv()
 
-# మ్యాన్యువల్ గా మోడల్స్ ని ఇంపోర్ట్ చేస్తున్నాము (Table Creation కోసం)
+from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
-from app.database.models.general_stock import GeneralStock
-from app.database.models.criteria import *
-from app.database.models.processing import *
-from app.database.models.attendance import *
-from app.database.models.inventory_management import *
-
-# LOGGING CONFIG
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("BKNR_ERP")
+from app.security.password_handler import hash_password, verify_password
 
 # =====================================================
-# INIT FASTAPI
-# =====================================================
-app = FastAPI(
-    title="BKNR ERP",
-    version="1.0.0"
-)
-
-# =====================================================
-# SESSION MIDDLEWARE
-# =====================================================
-app.add_middleware(
-    SessionMiddleware,
-    secret_key="bknr_secret_key_2025",
-    session_cookie="bknr_session",
-    max_age=60 * 60 * 8, # 8 Hours
-)
-
-# =====================================================
-# AUTH MIDDLEWARE
-# =====================================================
-class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        
-        # ఏయే పాత్ లకి లాగిన్ అవసరం లేదో ఇక్కడ ఉన్నాయి
-        open_paths = (
-            "/",
-            "/auth/",
-            "/static/",
-            "/health",
-            "/docs",
-            "/openapi.json",
-            "/favicon.ico",
-            "/manifest.json",
-            "/service-worker.js"
-        )
-
-        if not any(path.startswith(p) for p in open_paths):
-            if not request.session.get("email"):
-                return RedirectResponse("/", status_code=303)
-
-        return await call_next(request)
-
-app.add_middleware(AuthMiddleware)
-
-# =====================================================
-# STATIC FILES & TEMPLATES
-# =====================================================
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+router = APIRouter(prefix="/auth", tags=["AUTH"])
 templates = Jinja2Templates(directory="app/templates")
+# =====================================================
 
-# =====================================================
-# CREATE TABLES (STARTUP EVENT)
-# =====================================================
-@app.on_event("startup")
-def on_startup():
+# ================= BREVO CONFIG =================
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+
+SENDER_EMAIL = "bknr.solutions@gmail.com"
+SENDER_NAME = "BKNR ERP"
+
+OTP_EXPIRY_MIN = 10
+RESET_EXPIRY_MIN = 30
+
+
+def send_email(to_email: str, subject: str, html: str):
+    if not BREVO_API_KEY:
+        raise HTTPException(500, "Email service not configured")
+
+    payload = {
+        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html
+    }
+
+    headers = {
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+
     try:
-        # 🔥 ORDER FIX: మొదట మెయిన్ టేబుల్స్, తర్వాత మిగిలినవి
-        Base.metadata.create_all(bind=engine)
-        logger.info("✅ ALL TABLES SYNCED WITH DATABASE")
+        res = requests.post(BREVO_URL, json=payload, headers=headers)
+        if res.status_code >= 400:
+            print(f"❌ Brevo Error: {res.text}")
+            raise HTTPException(500, "Email sending failed")
+        print("✅ Email sent successfully to:", to_email)
     except Exception as e:
-        logger.error(f"⚠️ DB STARTUP ERROR: {e}")
+        print(f"❌ Request Error: {e}")
+        raise HTTPException(500, "Email service communication error")
 
-@app.get("/create-tables")
-def manual_create_tables():
-    try:
-        Base.metadata.create_all(bind=engine)
-        return {"status": "Success", "message": "All tables created/verified"}
-    except Exception as e:
-        return {"status": "Error", "message": str(e)}
 
-# =====================================================
-# ROUTERS REGISTRATION
-# =====================================================
-from app.routers.auth import router as auth_router
-from app.routers.menu import router as menu_router
-from app.routers.criteria_router import router as criteria_router
-from app.routers.inventory import router as inventory_router
-from app.routers.general_stock import router as general_stock_router
-from app.routers.admin import router as admin_router
-from app.routers.processing_router import router as processing_router
-from app.routers.reports_router import router as reports_router
-from app.routers.dashboard_router import router as dashboard_router
-from app.routers.bills import router as bills_router
-from app.routers.attendance_router import router as attendance_router
-from app.routers.inventory_management.stock_entry import router as stock_entry_router
-from app.routers.inventory_management.pending_orders import router as pending_orders_router
-from app.routers.page_loader import router as page_loader_router
-from app.routers.summary.processing import router as summary_processing_router
-from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
+# ================= REQUEST MODELS =================
+class RegisterReq(BaseModel):
+    company_name: str
+    user_name: str
+    designation: str
+    address: str
+    mobile: str
+    email: str
 
-# రూటర్ల జాబితా
-routers_list = [
-    auth_router,
-    menu_router,
-    criteria_router,
-    inventory_router,
-    general_stock_router,
-    admin_router,
-    processing_router,
-    reports_router,
-    dashboard_router,
-    stock_entry_router,
-    pending_orders_router,
-    page_loader_router,
-    attendance_router,
-    summary_processing_router,
-    summary_inventory_costing_router,
-]
+class OTPReq(BaseModel):
+    email: str
+    otp: str
 
-# అన్ని రూటర్లను లూప్ ద్వారా యాడ్ చేస్తున్నాము
-for r in routers_list:
-    app.include_router(r)
+class PasswordReq(BaseModel):
+    email: str
+    password: str
 
-# Bills Router కి స్పెషల్ ప్రిఫిక్స్
-app.include_router(bills_router, prefix="/api")
+class LoginReq(BaseModel):
+    company_id: str
+    email: str
+    password: str
 
-logger.info("🚀 ALL ROUTERS REGISTERED SUCCESSFULLY")
+class ForgotReq(BaseModel):
+    email: str
+
 
 # =====================================================
-# BASIC PAGES
+# REGISTER → SEND OTP
 # =====================================================
+@router.post("/register")
+def register(data: RegisterReq, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == data.email).first():
+        raise HTTPException(400, "Email already registered")
 
-@app.get("/", response_class=HTMLResponse)
-def login_page(request: Request):
-    return templates.TemplateResponse(
-        "login.html",              # 1st argument: name
-        {"request": request}       # 2nd argument: context
+    otp = str(random.randint(1000, 9999))
+
+    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
+    db.add(OTPTable(
+        email=data.email,
+        otp=otp,
+        extra=json.dumps(data.dict()),
+        is_used=False,
+        created_at=datetime.now()
+    ))
+    db.commit()
+
+    send_email(
+        data.email,
+        "BKNR ERP – OTP Verification",
+        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
     )
 
-@app.get("/home", response_class=HTMLResponse)
-def home_page(request: Request):
-    if not request.session.get("email"):
-        return RedirectResponse("/", status_code=303)
+    return {"message": "OTP sent"}
 
-    return templates.TemplateResponse(
-        "menu.html",              # 1st argument: name
-        {"request": request}       # 2nd argument: context
+
+# =====================================================
+# VERIFY OTP
+# =====================================================
+@router.post("/verify-otp")
+def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
+    rec = db.query(OTPTable).filter(
+        OTPTable.email == data.email,
+        OTPTable.otp == data.otp,
+        OTPTable.is_used.is_(False)
+    ).first()
+
+    if not rec or datetime.now() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
+        raise HTTPException(400, "OTP expired or invalid")
+
+    rec.is_used = True
+    db.commit()
+    return {"message": "OTP verified"}
+
+
+# =====================================================
+# SET PASSWORD
+# =====================================================
+@router.post("/set-password")
+def set_password(data: PasswordReq, db: Session = Depends(get_db)):
+    rec = db.query(OTPTable).filter(
+        OTPTable.email == data.email,
+        OTPTable.is_used.is_(True)
+    ).first()
+
+    if not rec:
+        raise HTTPException(400, "OTP not verified")
+
+    extra = json.loads(rec.extra)
+
+    # కంపెనీ లేకపోతే క్రియేట్ చేయడం
+    company = db.query(Company).filter(Company.email == extra["email"]).first()
+    if not company:
+        company = Company(
+            company_name=extra["company_name"],
+            address=extra["address"],
+            email=extra["email"],
+            company_code=extra["company_name"][:4].upper() + str(random.randint(1000, 9999)),
+            is_active=True
+        )
+        db.add(company)
+        db.commit()
+        db.refresh(company)
+
+    # యూజర్ క్రియేషన్
+    user = User(
+        company_id=company.id,
+        name=extra["user_name"],
+        designation=extra["designation"],
+        email=extra["email"],
+        mobile=extra["mobile"],
+        password=hash_password(data.password),
+        role="admin",
+        permissions="ALL",
+        is_verified=True
+    )
+    db.add(user)
+    db.commit()
+
+    return {"company_id": company.company_code}
+
+
+# =====================================================
+# LOGIN
+# =====================================================
+@router.post("/login")
+def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
+    company = db.query(Company).filter(
+        Company.company_code == data.company_id
+    ).first()
+    
+    if not company:
+        raise HTTPException(400, "Invalid Company ID")
+
+    user = db.query(User).filter(
+        User.email == data.email,
+        User.company_id == company.id
+    ).first()
+
+    if not user or not verify_password(data.password, user.password):
+        raise HTTPException(400, "Invalid credentials")
+
+    request.session.update({
+        "email": user.email,
+        "company_id": company.id,
+        "company_code": company.company_code,
+        "name": user.name,
+        "role": user.role,
+        "permissions": user.permissions
+    })
+
+    return {"message": "Login success"}
+
+
+# =====================================================
+# FORGOT PASSWORD
+# =====================================================
+@router.post("/forgot-password")
+def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(404, "Email not registered")
+
+    token = secrets.token_urlsafe(32)
+
+    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
+    db.add(OTPTable(
+        email=data.email,
+        otp=token,
+        is_used=False,
+        created_at=datetime.now()
+    ))
+    db.commit()
+
+    # Base URL ని ఉపయోగించి లింక్ తయారు చేయడం
+    reset_link = f"{request.base_url}auth/reset-password?token={token}"
+
+    send_email(
+        data.email,
+        "BKNR ERP – Reset Password",
+        f"<p>To reset your password, click the link below:</p><br><a href='{reset_link}'>Reset Password</a>"
     )
 
-@app.get("/logout")
+    return {"message": "Reset link sent"}
+
+
+# =====================================================
+# RESET PASSWORD PAGE (FIXED FOR STARLETTE 0.28+)
+# =====================================================
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
+    rec = db.query(OTPTable).filter(
+        OTPTable.otp == token,
+        OTPTable.is_used.is_(False)
+    ).first()
+
+    if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
+        return HTMLResponse("<h3>Link expired or invalid</h3>")
+
+    # 🔥 FIX: ఆర్డర్ (request, name, context) ఉండాలి
+    return templates.TemplateResponse(
+        request,
+        "reset_password.html",
+        {"request": request, "token": token}
+    )
+
+
+# =====================================================
+# RESET PASSWORD SAVE
+# =====================================================
+@router.post("/reset-password")
+def reset_password(token: str = Form(...), password: str = Form(...),
+                   db: Session = Depends(get_db)):
+
+    rec = db.query(OTPTable).filter(
+        OTPTable.otp == token,
+        OTPTable.is_used.is_(False)
+    ).first()
+
+    if not rec:
+        raise HTTPException(400, "Invalid or used link")
+
+    user = db.query(User).filter(User.email == rec.email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    user.password = hash_password(password)
+    rec.is_used = True
+
+    db.commit()
+    # పాస్‌వర్డ్ మారిన తర్వాత మెయిన్ లాగిన్ పేజీకి పంపడం
+    return RedirectResponse("/", status_code=303)
+
+
+# =====================================================
+# LOGOUT
+# =====================================================
+@router.get("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
-
-# =====================================================
-# HEALTH CHECK
-# =====================================================
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "OK",
-        "service": "BKNR ERP",
-        "database": "CONNECTED",
-        "deployment": "RENDER"
-    }
