@@ -62,19 +62,12 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        # 🔥 VERY IMPORTANT — ALL MODELS IMPORT
+        # 🔥 THIS LINE IS THE KEY
         import app.database.models
-        from app.database.models import users
-        from app.database.models import criteria
-        from app.database.models import general_stock
-        from app.database.models import processing
-        from app.database.models import inventory_management
-        from app.database.models import attendance
 
-        # 🔥 CREATE TABLES
         Base.metadata.create_all(bind=engine)
 
-        print("✅ ALL TABLES CREATED IN RENDER")
+        print("✅ ALL TABLES CREATED")
 
     except Exception as e:
         print("❌ DB ERROR:", e)
@@ -160,3 +153,9 @@ def health_check():
         "database": "CONNECTED",
         "deployment": "RENDER"
     }
+
+    @app.get("/create-all")
+def create_all():
+    import app.database.models
+    Base.metadata.create_all(bind=engine)
+    return {"status": "tables created"}
