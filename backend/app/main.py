@@ -10,12 +10,17 @@ import logging
 from app.database import engine, Base
 import app.database.models 
 
+# మోడల్స్ ని ఇక్కడ ఇంపోర్ట్ చేయడం వల్ల టేబుల్స్ ఆటోమేటిక్ గా క్రియేట్ అవుతాయి
+from app.database.models.users import Company, User, OTPTable
+from app.database.models.criteria import Contractor
+from app.database.models.general_stock import GeneralStock
+
 # LOGGING SETUP
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
 
 # =====================================================
-# 🚀 1. FASTAPI APP INIT (దీని పేరే 'app' అని ఉండాలి)
+# 🚀 1. FASTAPI APP INIT
 # =====================================================
 app = FastAPI(title="BKNR ERP", version="1.0.0")
 
@@ -33,7 +38,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         # లాగిన్ అవసరం లేని పాత్ లు
-        open_paths = ("/", "/auth/", "/static/", "/health", "/docs")
+        open_paths = ("/", "/auth/", "/static/", "/health", "/docs", "/openapi.json")
         
         if not any(path.startswith(p) for p in open_paths):
             if not request.session.get("email"):
@@ -50,14 +55,13 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
-# 🔄 4. DATABASE STARTUP (Table Creation)
+# 🔄 4. DATABASE STARTUP
 # =====================================================
 @app.on_event("startup")
 def on_startup():
     try:
-        # అన్ని మోడల్స్ ని ఒకేసారి క్రియేట్ చేస్తుంది
         Base.metadata.create_all(bind=engine)
-        logger.info("✅ ALL DATABASE TABLES SYNCED")
+        logger.info("✅ ALL DATABASE TABLES SYNCED SUCCESSFULLY")
     except Exception as e:
         logger.error(f"⚠️ DATABASE ERROR: {e}")
 
@@ -81,7 +85,7 @@ from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 
-# ఒక్కొక్కటిగా ఇంక్లూడ్ చేయడం
+# రూటర్లను యాడ్ చేయడం
 app.include_router(auth_router)
 app.include_router(menu_router)
 app.include_router(criteria_router)
@@ -98,11 +102,13 @@ app.include_router(attendance_router)
 app.include_router(summary_processing_router)
 app.include_router(summary_inventory_costing_router)
 
-# Bills Router కి స్పెషల్ ప్రిఫిక్స్
+# Bills Router కి /api ప్రిఫిక్స్
 app.include_router(bills_router, prefix="/api")
 
+logger.info("🚀 ALL ROUTERS REGISTERED")
+
 # =====================================================
-# 📄 6. BASIC PAGES (FIXED FOR STARLETTE 0.28+)
+# 📄 6. BASIC PAGES (STARLETTE 0.28+ COMPATIBLE)
 # =====================================================
 
 @app.get("/", response_class=HTMLResponse)
@@ -124,6 +130,19 @@ def home_page(request: Request):
         {"request": request}
     )
 
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/", status_code=303)
+
+# =====================================================
+# 🏥 7. HEALTH CHECK
+# =====================================================
 @app.get("/health")
 def health_check():
-    return {"status": "OK", "app": "BKNR ERP"}
+    return {
+        "status": "OK",
+        "service": "BKNR ERP",
+        "database": "CONNECTED",
+        "deployment": "RENDER"
+    }
