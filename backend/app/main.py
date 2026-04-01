@@ -62,16 +62,22 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     try:
-        # టేబుల్స్ ని క్రియేట్ చేస్తుంది, ఒకవేళ ఇప్పటికే ఉంటే స్కిప్ చేస్తుంది
-        # కానీ ఇండెక్స్ ల విషయంలో psycopg2 కొన్నిసార్లు స్ట్రిక్ట్ గా ఉంటుంది
+        # 🔥 VERY IMPORTANT — ALL MODELS IMPORT
+        import app.database.models
+        from app.database.models import users
+        from app.database.models import criteria
+        from app.database.models import general_stock
+        from app.database.models import processing
+        from app.database.models import inventory_management
+        from app.database.models import attendance
+
+        # 🔥 CREATE TABLES
         Base.metadata.create_all(bind=engine)
-        logger.info("✅ DATABASE TABLES CHECKED/SYNCED")
+
+        print("✅ ALL TABLES CREATED IN RENDER")
+
     except Exception as e:
-        # ఇండెక్స్ ఆల్రెడీ ఉందనే ఎర్రర్ వస్తే దాన్ని ఇగ్నోర్ చేయవచ్చు
-        if "already exists" in str(e):
-            logger.info("ℹ️ Database objects already exist, skipping creation.")
-        else:
-            logger.error(f"⚠️ DATABASE STARTUP ERROR: {e}")
+        print("❌ DB ERROR:", e)
 
 # =====================================================
 # 🛤️ 5. ROUTERS REGISTRATION
