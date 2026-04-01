@@ -12,8 +12,11 @@ import app.database.models
 
 # మోడల్స్ ని ఇక్కడ ఇంపోర్ట్ చేయడం వల్ల టేబుల్స్ ఆటోమేటిక్ గా క్రియేట్ అవుతాయి
 from app.database.models.users import Company, User, OTPTable
-from app.database.models.criteria import Contractor
+from app.database.models.criteria import contractors, variety, production_for, production_at
 from app.database.models.general_stock import GeneralStock
+from app.database.models.processing import Peeling, Soaking, DeHeading, ProcessingAuditLog
+from app.database.models.inventory_management import stock_entry, pending_orders
+from app.database.models.attendance import Attendance
 
 # LOGGING SETUP
 logging.basicConfig(level=logging.INFO)
