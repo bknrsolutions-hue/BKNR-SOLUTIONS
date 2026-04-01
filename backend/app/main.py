@@ -64,9 +64,13 @@ def on_startup():
     try:
         # 🔥 THIS LINE IS THE KEY
         import app.database.models
+        from app.database.models.users import Company, User, OTPTable
+        from app.database.models.general_stock import GeneralStock
+        from app.database.models.criteria import contractors, varieties, production_for, production_at
+        from app.database.models.processing import Peeling, Soaking, DeHeading, AuditLog
+        from app.database.models.inventory_management import stock_entry, pending_orders
 
         Base.metadata.create_all(bind=engine)
-
         print("✅ ALL TABLES CREATED")
 
     except Exception as e:
@@ -152,12 +156,12 @@ def health_check():
         "service": "BKNR ERP"
     }
 
-
 # =====================================================
-# 🔥 CREATE TABLES (ADD THIS BELOW)
+# 🔥 8. FORCE CREATE TABLES ENDPOINT
 # =====================================================
 @app.get("/create-all")
 def create_all():
     import app.database.models
+    from app.database import Base, engine
     Base.metadata.create_all(bind=engine)
     return {"status": "tables created"}
