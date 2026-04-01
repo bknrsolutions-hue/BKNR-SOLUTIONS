@@ -149,12 +149,14 @@ def logout(request: Request):
 def health_check():
     return {
         "status": "OK",
-        "service": "BKNR ERP",
-        "database": "CONNECTED",
-        "deployment": "RENDER"
+        "service": "BKNR ERP"
     }
 
-    @app.get("/create-all")
+
+# =====================================================
+# 🔥 CREATE TABLES (ADD THIS BELOW)
+# =====================================================
+@app.get("/create-all")
 def create_all():
     import app.database.models
     Base.metadata.create_all(bind=engine)
