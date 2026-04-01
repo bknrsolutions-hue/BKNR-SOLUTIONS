@@ -5,11 +5,6 @@
 <title>BKNR ERP – Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#2563eb">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -58,26 +53,6 @@ body {
 .header .user-info {
   font-size: 14px;
   font-weight: 500;
-}
-
-/* INSTALL BUTTON STYLE */
-#installBtn {
-  display: none;
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-right: 15px;
-  transition: 0.3s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-#installBtn:hover {
-  background: #1d4ed8;
 }
 
 /* TOP NAVIGATION */
@@ -174,22 +149,6 @@ iframe {
   flex: 1;
   padding: 10px;
 }
-
-/* Mobile Responsiveness for Top Menu */
-@media (max-width: 768px) {
-  .left-menu {
-    width: 60px;
-  }
-  .left-menu button span {
-    display: none;
-  }
-  .left-menu h3 {
-    display: none;
-  }
-  .header .company-title {
-    font-size: 14px;
-  }
-}
 </style>
 </head>
 
@@ -198,8 +157,6 @@ iframe {
 <div class="header">
   <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
   <div style="display:flex; align-items:center;">
-    <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL APP</button>
-    
     <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name') }}</div>
     <div class="logout" onclick="logout()">LOGOUT</div>
   </div>
@@ -224,39 +181,6 @@ iframe {
 </div>
 
 <script>
-// PWA Service Worker Registration
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/service-worker.js")
-    .then(() => console.log("Service Worker Registered"))
-    .catch((err) => console.log("Service Worker Failed", err));
-}
-
-// PWA INSTALL LOGIC
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-
-installBtn.addEventListener('click', async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      installBtn.style.display = 'none';
-    }
-    deferredPrompt = null;
-  }
-});
-
-window.addEventListener('appinstalled', () => {
-  installBtn.style.display = 'none';
-});
-
-
 const permissions = {{ request.session.get('permissions')|tojson }};
 
 function allow(key){
@@ -272,25 +196,16 @@ function openPage(route){
   document.getElementById("frame").src = route;
 }
 
+/******** DASHBOARD *********/
 function loadDash(){
   let html = `
-    <div class="menu-section">
-      <h3><i class="fa-solid fa-gauge-high"></i> Dashboards</h3>
-      <div class="button-grid">
-        <button class="menu-btn" onclick="openPage('/dashboard/processing_dashboard')">
-          <i class="fa-solid fa-chart-line"></i> Processing
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/inventory_dashboard')">
-          <i class="fa-solid fa-warehouse"></i> Inventory
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
-          <i class="fa-solid fa-user-tie"></i> HR Dashboard
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Costing
-        </button>
-      </div>
-    </div>
+      <h3>Dashboards</h3>
+  <button onclick="openPage('/dashboard/processing_dashboard')"><i class="fa-solid fa-chart-line"></i> Processing Dashboard</button>
+  <button onclick="openPage('/dashboard/inventory_dashboard')"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard</button>
+  <button onclick="openPage('/attendance/dashboard/hr_dashboard')">
+    <i class="fa-solid fa-user-tie"></i> HR Dashboard
+  </button>
+  <button onclick="openPage('/dashboard/costing_dashboard')"><i class="fa-solid fa-cart-shopping"></i> Costing Dashboard</button>
   `;
   document.getElementById("sideMenu").innerHTML = html;
 }
