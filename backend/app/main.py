@@ -47,6 +47,7 @@ def send_email(to_email: str, subject: str, html: str):
 
     res = requests.post(BREVO_URL, json=payload, headers=headers)
     if res.status_code >= 400:
+        print(f"❌ Brevo Error: {res.text}")
         raise HTTPException(500, "Email sending failed")
 
     print("✅ Email sent:", to_email)
@@ -236,7 +237,7 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     send_email(
         data.email,
         "BKNR ERP – Reset Password",
-        f"<a href='{reset_link}'>Reset Password</a>"
+        f"<p>Reset your password by clicking here:</p><br><a href='{reset_link}'>Reset Password</a>"
     )
 
     return {"message": "Reset link sent"}
@@ -254,13 +255,13 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
     ).first()
 
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
-        return HTMLResponse("<h3>Link expired</h3>")
+        return HTMLResponse("<h3>Link expired or invalid</h3>")
 
-    # FIXED FOR NEW FASTAPI/STARLETTE VERSION
+    # FIXED FOR STARLETTE 0.28+ VERSION
     return templates.TemplateResponse(
         request=request,
         name="reset_password.html",
-        context={"token": token}
+        context={"request": request, "token": token}
     )
 
 
