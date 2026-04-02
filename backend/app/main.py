@@ -4,78 +4,59 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.routes.auth import router as auth_router
+from app.routers import router as main_router
 
-# ==========================================================
-# 🚀 APP INIT
-# ==========================================================
 app = FastAPI()
 
-# ==========================================================
-# 🔐 SESSION MIDDLEWARE
-# ==========================================================
+# ================= SESSION =================
 app.add_middleware(
     SessionMiddleware,
     secret_key="bknr-super-secure-erp-key-2026"
 )
 
-# ==========================================================
-# 📁 STATIC FILES
-# ==========================================================
+# ================= STATIC =================
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# ==========================================================
-# 📄 TEMPLATES
-# ==========================================================
+# ================= TEMPLATES =================
 templates = Jinja2Templates(directory="app/templates")
 
-# ==========================================================
-# 🔗 ROUTERS
-# ==========================================================
-app.include_router(auth_router)
+# ================= ROUTERS =================
+app.include_router(main_router)
 
-# ==========================================================
-# 🏠 ROOT PAGE (LOGIN PAGE)
-# ==========================================================
+# ================= ROOT (MENU PAGE) =================
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("menu.html", {"request": request})
 
-# ==========================================================
-# 🏠 HOME PAGE (AFTER LOGIN)
-# ==========================================================
+# ================= HOME =================
 @app.get("/home", response_class=HTMLResponse)
 def home(request: Request):
     if not request.session.get("email"):
         return templates.TemplateResponse(
-            "index.html",
+            "menu.html",
             {"request": request, "msg": "Please login first"}
         )
 
     return templates.TemplateResponse(
-        "home.html",
+        "menu.html",
         {
             "request": request,
             "email": request.session.get("email"),
             "name": request.session.get("name"),
             "company_code": request.session.get("company_code"),
-            "role": request.session.get("role")
+            "permissions": request.session.get("permissions")
         }
     )
 
-# ==========================================================
-# 🧪 HEALTH CHECK (FOR RENDER)
-# ==========================================================
+# ================= HEALTH =================
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-# ==========================================================
-# 🚫 404 HANDLER (OPTIONAL CLEAN UI)
-# ==========================================================
+# ================= 404 =================
 @app.exception_handler(404)
 def not_found(request: Request, exc):
     return templates.TemplateResponse(
-        "index.html",
+        "menu.html",
         {"request": request, "msg": "Page not found"}
     )
