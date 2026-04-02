@@ -6,16 +6,23 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 
-# 1. APP INIT (దీన్ని అందరికంటే పైన ఉంచాలి)
+# =====================================================
+# 🚀 1. APP INIT
+# =====================================================
 app = FastAPI(title="BKNR ERP", version="1.0.0")
 
-# LOGGING SETUP
+# =====================================================
+# 📊 LOGGING
+# =====================================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
 
-# 2. DATABASE & MODELS IMPORT
+# =====================================================
+# 🗄️ 2. DATABASE IMPORT
+# =====================================================
 from app.database import engine, Base
 
+# 🔥 VERY IMPORTANT: LOAD ALL MODELS (MANDATORY)
 import app.database.models.users
 import app.database.models.criteria
 import app.database.models.processing
@@ -25,46 +32,54 @@ import app.database.models.bills
 import app.database.models.attendance
 
 # =====================================================
-# 🛠️ 3. MIDDLEWARES
+# 🔐 3. SESSION MIDDLEWARE
 # =====================================================
 app.add_middleware(
     SessionMiddleware,
     secret_key="bknr_secret_key_2026",
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8, # 8 Hours
+    max_age=60 * 60 * 8  # 8 hours
 )
 
+# =====================================================
+# 🔐 AUTH MIDDLEWARE
+# =====================================================
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        open_paths = ("/", "/auth/", "/static/", "/health", "/docs", "/openapi.json")
+
+        open_paths = (
+            "/", "/auth/", "/static/",
+            "/health", "/docs", "/openapi.json"
+        )
+
         if not any(path.startswith(p) for p in open_paths):
             if not request.session.get("email"):
                 return RedirectResponse("/", status_code=303)
+
         return await call_next(request)
 
 app.add_middleware(AuthMiddleware)
 
 # =====================================================
-# 📂 4. STATIC & TEMPLATES
+# 📂 4. STATIC + TEMPLATES
 # =====================================================
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
-# 🔄 5. DATABASE STARTUP
+# 🔄 5. DATABASE STARTUP (CREATE TABLES)
 # =====================================================
 @app.on_event("startup")
 def on_startup():
     try:
-        # టేబుల్స్ క్రియేట్ చేయడం
         Base.metadata.create_all(bind=engine)
         logger.info("✅ ALL ERP TABLES CREATED SUCCESSFULLY")
     except Exception as e:
         logger.error(f"❌ DB ERROR: {e}")
 
 # =====================================================
-# 🛤️ 6. ROUTERS REGISTRATION
+# 🛤️ 6. ROUTERS
 # =====================================================
 from app.routers.auth import router as auth_router
 from app.routers.menu import router as menu_router
@@ -99,7 +114,7 @@ app.include_router(attendance_router)
 app.include_router(summary_processing_router)
 app.include_router(summary_inventory_costing_router)
 
-# Bills Router with Prefix
+# Bills with prefix
 app.include_router(bills_router, prefix="/api")
 
 # =====================================================
@@ -126,3 +141,7 @@ def home_page(request: Request):
 def create_all():
     Base.metadata.create_all(bind=engine)
     return {"status": "Tables Sync Success"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "BKNR ERP"}
