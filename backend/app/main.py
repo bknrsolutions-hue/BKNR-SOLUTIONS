@@ -16,27 +16,13 @@ logger = logging.getLogger("BKNR_ERP")
 # 2. DATABASE & MODELS IMPORT
 from app.database import engine, Base
 
-# ఇక్కడ అన్ని మోడల్స్ ని ఇంపోర్ట్ చేస్తున్నాం - టేబుల్స్ క్రియేట్ అవ్వడానికి
-from app.database.models.users import Company, User, OTPTable
-from app.database.models.criteria import (
-    contractors, varieties, production_for, production_at, 
-    brands, purposes, glazes, grades, species, suppliers, 
-    vendors, hsn_codes, vehicle_numbers, purchasing_locations
-)
-from app.database.models.processing import (
-    GateEntry, RawMaterialPurchasing, DeHeading, 
-    Grading, Peeling, Soaking, Production, AuditLog
-)
-from app.database.models.inventory_management import stock_entry, pending_orders, sales_dispatch
-from app.database.models.general_stock import GeneralStock, GeneralStoreItems
-from app.database.models.bills import (
-    ElectricityLog, DieselLog, PurchaseInvoice, 
-    ContainerLog, QATestingLog, OtherExpense
-)
-from app.database.models.attendance import (
-    EmployeeRegistration, DailyAttendance, EmployeeIncrement, 
-    EmployeeStatutoryMaster, EmployeeSalaryAdvance
-)
+import app.database.models.users
+import app.database.models.criteria
+import app.database.models.processing
+import app.database.models.inventory_management
+import app.database.models.general_stock
+import app.database.models.bills
+import app.database.models.attendance
 
 # =====================================================
 # 🛠️ 3. MIDDLEWARES
@@ -121,17 +107,20 @@ app.include_router(bills_router, prefix="/api")
 # =====================================================
 @app.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse(request, "login.html", {"request": request})
+    return templates.TemplateResponse(
+        name="login.html",
+        context={"request": request}
+    )
 
 @app.get("/home", response_class=HTMLResponse)
 def home_page(request: Request):
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse(request, "menu.html", {"request": request})
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "service": "BKNR ERP"}
+    return templates.TemplateResponse(
+        name="menu.html",
+        context={"request": request}
+    )
 
 @app.get("/create-all")
 def create_all():

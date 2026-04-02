@@ -13,36 +13,6 @@ class ElectricityLog(Base):
     unit_rate = Column(Float)
     total_cost = Column(Float)
 
-# 2. Diesel Table
-class DieselLog(Base):
-    __tablename__ = "diesel_logs"
-    __table_args__ = {"extend_existing": True}
-
-    id = Column(Integer, primary_key=True, index=True)
-    unit_id = Column(Integer, ForeignKey("production_at.id"), index=True) # Linked to Unit Master
-    
-    # --- 📅 Date Columns ---
-    log_date = Column(Date, default=datetime.utcnow, index=True) # Entry Date
-    bill_date = Column(Date, nullable=True) # Invoice Date (for Stock In)
-    
-    # --- 🏷️ Type & Reference ---
-    type = Column(String(10), index=True) # "IN" (GRN) or "OUT" (Consumption)
-    grn_no = Column(String(50), nullable=True)
-    bill_no = Column(String(50), nullable=True)
-    vendor = Column(String(100), nullable=True)
-    
-    # --- ⛽ Stock Columns ---
-    opening_stock = Column(Float, default=0.0)
-    purchase_qty = Column(Float, default=0.0) # Received Qty (Stock In)
-    consumption = Column(Float, default=0.0)  # Consumed Qty (Stock Out)
-    closing_stock = Column(Float, default=0.0)
-    
-    # --- 💰 Financial Columns ---
-    avg_price = Column(Float, default=0.0) # Rate per Liter
-    tax_per = Column(Float, default=0.0)   # GST/VAT %
-    net_val = Column(Float, default=0.0)    # Total Amount (Including Tax)
-
-    email = Column(String(150), index=True)
 
 
 # 3. Purchase & Packaging
