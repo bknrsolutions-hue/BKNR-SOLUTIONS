@@ -45,11 +45,15 @@ def send_email(to_email: str, subject: str, html: str):
         "content-type": "application/json"
     }
 
-    res = requests.post(BREVO_URL, json=payload, headers=headers)
-    if res.status_code >= 400:
-        raise HTTPException(500, "Email sending failed")
-
-    print("✅ Email sent:", to_email)
+    try:
+        res = requests.post(BREVO_URL, json=payload, headers=headers)
+        if res.status_code >= 400:
+            print(f"❌ Brevo Error: {res.text}")
+            raise HTTPException(500, "Email sending failed")
+        print("✅ Email sent successfully to:", to_email)
+    except Exception as e:
+        print(f"❌ Request Error: {e}")
+        raise HTTPException(500, "Email service communication error")
 
 
 # ================= REQUEST MODELS =================
@@ -61,22 +65,18 @@ class RegisterReq(BaseModel):
     mobile: str
     email: str
 
-
 class OTPReq(BaseModel):
     email: str
     otp: str
-
 
 class PasswordReq(BaseModel):
     email: str
     password: str
 
-
 class LoginReq(BaseModel):
     company_id: str
     email: str
     password: str
-
 
 class ForgotReq(BaseModel):
     email: str
@@ -87,7 +87,6 @@ class ForgotReq(BaseModel):
 # =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
-
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "Email already registered")
 
@@ -117,7 +116,6 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 # =====================================================
 @router.post("/verify-otp")
 def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
-
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.otp == data.otp,
@@ -137,7 +135,6 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 # =====================================================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
-
     rec = db.query(OTPTable).filter(
         OTPTable.email == data.email,
         OTPTable.is_used.is_(True)
@@ -148,6 +145,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     extra = json.loads(rec.extra)
 
+    # కంపెనీ లేకపోతే క్రియేట్ చేయడం
     company = db.query(Company).filter(Company.email == extra["email"]).first()
     if not company:
         company = Company(
@@ -161,6 +159,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(company)
 
+    # యూజర్ క్రియేషన్
     user = User(
         company_id=company.id,
         name=extra["user_name"],
@@ -183,10 +182,10 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 # =====================================================
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
-
     company = db.query(Company).filter(
         Company.company_code == data.company_id
     ).first()
+    
     if not company:
         raise HTTPException(400, "Invalid Company ID")
 
@@ -215,7 +214,6 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 # =====================================================
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
-
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
         raise HTTPException(404, "Email not registered")
@@ -231,32 +229,34 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     ))
     db.commit()
 
+    # Base URL ని ఉపయోగించి లింక్ తయారు చేయడం
     reset_link = f"{request.base_url}auth/reset-password?token={token}"
 
     send_email(
         data.email,
         "BKNR ERP – Reset Password",
-        f"<a href='{reset_link}'>Reset Password</a>"
+        f"<p>To reset your password, click the link below:</p><br><a href='{reset_link}'>Reset Password</a>"
     )
 
     return {"message": "Reset link sent"}
 
 
 # =====================================================
-# RESET PASSWORD PAGE
+# RESET PASSWORD PAGE (FIXED FOR STARLETTE 0.28+)
 # =====================================================
 @router.get("/reset-password", response_class=HTMLResponse)
 def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
-
     rec = db.query(OTPTable).filter(
         OTPTable.otp == token,
         OTPTable.is_used.is_(False)
     ).first()
 
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
-        return HTMLResponse("<h3>Link expired</h3>")
+        return HTMLResponse("<h3>Link expired or invalid</h3>")
 
+    # 🔥 FIX: ఆర్డర్ (request, name, context) ఉండాలి
     return templates.TemplateResponse(
+        request,
         "reset_password.html",
         {"request": request, "token": token}
     )
@@ -275,13 +275,17 @@ def reset_password(token: str = Form(...), password: str = Form(...),
     ).first()
 
     if not rec:
-        raise HTTPException(400, "Invalid link")
+        raise HTTPException(400, "Invalid or used link")
 
     user = db.query(User).filter(User.email == rec.email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
     user.password = hash_password(password)
     rec.is_used = True
 
     db.commit()
+    # పాస్‌వర్డ్ మారిన తర్వాత మెయిన్ లాగిన్ పేజీకి పంపడం
     return RedirectResponse("/", status_code=303)
 
 
