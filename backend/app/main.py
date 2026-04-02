@@ -73,7 +73,15 @@ templates = Jinja2Templates(directory="app/templates")
 @application.on_event("startup")
 def on_startup():
     try:
-        Base.metadata.create_all(bind=engine)
+from sqlalchemy import inspect
+
+def safe_create_tables():
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+
+    for table in Base.metadata.tables.values():
+        if table.name not in existing_tables:
+            table.create(bind=engine)
         logger.info("✅ ALL ERP TABLES CREATED SUCCESSFULLY")
     except Exception as e:
         logger.error(f"❌ DB ERROR: {e}")
