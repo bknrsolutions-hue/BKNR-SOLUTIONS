@@ -7,9 +7,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 
 # =====================================================
-# 🚀 1. APP INIT
+# 🚀 1. APP INIT (IMPORTANT CHANGE)
 # =====================================================
-app = FastAPI(title="BKNR ERP", version="1.0.0")
+application = FastAPI(title="BKNR ERP", version="1.0.0")
 
 # =====================================================
 # 📊 LOGGING
@@ -22,7 +22,7 @@ logger = logging.getLogger("BKNR_ERP")
 # =====================================================
 from app.database import engine, Base
 
-# 🔥 VERY IMPORTANT: LOAD ALL MODELS (MANDATORY)
+# 🔥 FORCE LOAD ALL MODELS (VERY IMPORTANT)
 import app.database.models.users
 import app.database.models.criteria
 import app.database.models.processing
@@ -34,11 +34,11 @@ import app.database.models.attendance
 # =====================================================
 # 🔐 3. SESSION MIDDLEWARE
 # =====================================================
-app.add_middleware(
+application.add_middleware(
     SessionMiddleware,
     secret_key="bknr_secret_key_2026",
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8  # 8 hours
+    max_age=60 * 60 * 8
 )
 
 # =====================================================
@@ -59,18 +59,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-app.add_middleware(AuthMiddleware)
+application.add_middleware(AuthMiddleware)
 
 # =====================================================
 # 📂 4. STATIC + TEMPLATES
 # =====================================================
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+application.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
-# 🔄 5. DATABASE STARTUP (CREATE TABLES)
+# 🔄 5. DATABASE STARTUP
 # =====================================================
-@app.on_event("startup")
+@application.on_event("startup")
 def on_startup():
     try:
         Base.metadata.create_all(bind=engine)
@@ -98,36 +98,36 @@ from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 
-app.include_router(auth_router)
-app.include_router(menu_router)
-app.include_router(criteria_router)
-app.include_router(inventory_router)
-app.include_router(general_stock_router)
-app.include_router(admin_router)
-app.include_router(processing_router)
-app.include_router(reports_router)
-app.include_router(dashboard_router)
-app.include_router(stock_entry_router)
-app.include_router(pending_orders_router)
-app.include_router(page_loader_router)
-app.include_router(attendance_router)
-app.include_router(summary_processing_router)
-app.include_router(summary_inventory_costing_router)
+application.include_router(auth_router)
+application.include_router(menu_router)
+application.include_router(criteria_router)
+application.include_router(inventory_router)
+application.include_router(general_stock_router)
+application.include_router(admin_router)
+application.include_router(processing_router)
+application.include_router(reports_router)
+application.include_router(dashboard_router)
+application.include_router(stock_entry_router)
+application.include_router(pending_orders_router)
+application.include_router(page_loader_router)
+application.include_router(attendance_router)
+application.include_router(summary_processing_router)
+application.include_router(summary_inventory_costing_router)
 
-# Bills with prefix
-app.include_router(bills_router, prefix="/api")
+# Bills prefix
+application.include_router(bills_router, prefix="/api")
 
 # =====================================================
 # 📄 7. BASIC ROUTES
 # =====================================================
-@app.get("/", response_class=HTMLResponse)
+@application.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse(
         name="login.html",
         context={"request": request}
     )
 
-@app.get("/home", response_class=HTMLResponse)
+@application.get("/home", response_class=HTMLResponse)
 def home_page(request: Request):
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=303)
@@ -137,11 +137,11 @@ def home_page(request: Request):
         context={"request": request}
     )
 
-@app.get("/create-all")
+@application.get("/create-all")
 def create_all():
     Base.metadata.create_all(bind=engine)
     return {"status": "Tables Sync Success"}
 
-@app.get("/health")
+@application.get("/health")
 def health():
     return {"status": "ok", "service": "BKNR ERP"}
