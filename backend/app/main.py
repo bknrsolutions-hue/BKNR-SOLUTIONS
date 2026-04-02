@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+# app/routers/auth.py
+
+from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -7,223 +9,256 @@ import random
 import json
 import os
 import requests
-import secrets
 
 from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password, verify_password
 
-# ==========================================================
-# 🛤️ ROUTER & TEMPLATES SETUP
-# ==========================================================
 router = APIRouter(prefix="/auth", tags=["Auth"])
 templates = Jinja2Templates(directory="app/templates")
 
 # ==========================================================
-# 🔐 BREVO EMAIL CONFIG
+
+# 🔐 EMAIL CONFIG
+
 # ==========================================================
+
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
-SENDER_EMAIL = "bknr.solutions@gmail.com"
+SENDER_EMAIL = "[bknr.solutions@gmail.com](mailto:bknr.solutions@gmail.com)"
 SENDER_NAME = "BKNR ERP"
 OTP_EXPIRY_MIN = 10
 
 # ==========================================================
-# 📧 SEND EMAIL FUNCTION
+
+# 📧 SEND EMAIL
+
 # ==========================================================
+
 def send_email(to_email: str, subject: str, html: str):
-    if not BREVO_API_KEY:
-        print("⚠️ BREVO KEY NOT FOUND")
-        return
+if not BREVO_API_KEY:
+print("⚠️ EMAIL DISABLED - NO API KEY")
+return
 
-    payload = {
-        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html
-    }
+```
+payload = {
+    "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+    "to": [{"email": to_email}],
+    "subject": subject,
+    "htmlContent": html
+}
 
-    headers = {
-        "api-key": BREVO_API_KEY,
-        "content-type": "application/json"
-    }
+headers = {
+    "api-key": BREVO_API_KEY,
+    "content-type": "application/json"
+}
 
-    try:
-        res = requests.post(BREVO_URL, json=payload, headers=headers)
-        if res.status_code >= 400:
-            print("❌ EMAIL FAILED:", res.text)
-        else:
-            print("✅ EMAIL SENT:", to_email)
-    except Exception as e:
-        print("❌ EMAIL ERROR:", e)
+try:
+    res = requests.post(BREVO_URL, json=payload, headers=headers)
+    if res.status_code >= 400:
+        print("❌ EMAIL FAILED:", res.text)
+    else:
+        print("✅ EMAIL SENT:", to_email)
+except Exception as e:
+    print("❌ EMAIL ERROR:", e)
+```
 
 # ==========================================================
+
 # 📄 REGISTER PAGE
+
 # ==========================================================
+
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
-    return templates.TemplateResponse("auth/register.html", {"request": request})
+return templates.TemplateResponse("auth/register.html", {"request": request})
 
 # ==========================================================
-# 🚀 REGISTER (SEND OTP)
+
+# 🚀 REGISTER → SEND OTP
+
 # ==========================================================
+
 @router.post("/register")
 def register(
-    request: Request,
-    company_name: str = Form(...),
-    address: str = Form(...),
-    email: str = Form(...),
-    mobile: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
+request: Request,
+company_name: str = Form(...),
+address: str = Form(...),
+email: str = Form(...),
+mobile: str = Form(...),
+password: str = Form(...),
+db: Session = Depends(get_db)
 ):
-    # Check existing user
-    existing_user = db.query(User).filter(User.email == email).first()
-    if existing_user:
-        return RedirectResponse("/auth/register?msg=Email Already Registered", status_code=302)
 
-    # Generate OTP
-    otp = str(random.randint(1000, 9999))
+```
+# 🔒 Check existing user
+existing_user = db.query(User).filter(User.email == email).first()
+if existing_user:
+    return RedirectResponse("/auth/register?msg=Email Already Registered", status_code=302)
 
-    # Delete old OTP records for this email
-    db.query(OTPTable).filter(OTPTable.email == email).delete()
+# 🔢 Generate OTP
+otp = str(random.randint(1000, 9999))
 
-    # Save OTP + raw data into 'extra' field
-    extra_data = {
-        "company_name": company_name,
-        "address": address,
-        "email": email,
-        "mobile": mobile,
-        "password": password
-    }
+# 🧹 Delete old OTP
+db.query(OTPTable).filter(OTPTable.email == email).delete(synchronize_session=False)
 
-    db.add(OTPTable(
-        email=email,
-        otp=otp,
-        extra=json.dumps(extra_data),
-        is_used=False,
-        created_at=datetime.utcnow()
-    ))
+# 📦 Save registration data
+extra_data = {
+    "company_name": company_name,
+    "address": address,
+    "email": email,
+    "mobile": mobile,
+    "password": password
+}
 
-    db.commit()
+db.add(OTPTable(
+    email=email,
+    otp=otp,
+    extra=json.dumps(extra_data),
+    is_used=False,
+    created_at=datetime.utcnow()
+))
 
-    # Send OTP via Email
-    send_email(
-        email,
-        "BKNR ERP – OTP Verification",
-        f"<h2>{otp}</h2><p>Your OTP for BKNR ERP registration. Valid for {OTP_EXPIRY_MIN} minutes.</p>"
-    )
+db.commit()
 
-    return RedirectResponse(f"/auth/verify?email={email}", status_code=302)
+# 📧 Send OTP
+send_email(
+    email,
+    "BKNR ERP – OTP Verification",
+    f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
+)
+
+return RedirectResponse(f"/auth/verify?email={email}", status_code=302)
+```
 
 # ==========================================================
+
 # 🔐 VERIFY PAGE
+
 # ==========================================================
+
 @router.get("/verify", response_class=HTMLResponse)
 def verify_page(request: Request, email: str):
-    return templates.TemplateResponse("auth/verify.html", {"request": request, "email": email})
+return templates.TemplateResponse("auth/verify.html", {"request": request, "email": email})
 
 # ==========================================================
-# ✅ VERIFY OTP + CREATE COMPANY + USER
+
+# ✅ VERIFY OTP → CREATE COMPANY + USER
+
 # ==========================================================
+
 @router.post("/verify")
 def verify_otp(
-    request: Request,
-    email: str = Form(...),
-    otp: str = Form(...),
-    db: Session = Depends(get_db)
+request: Request,
+email: str = Form(...),
+otp: str = Form(...),
+db: Session = Depends(get_db)
 ):
-    record = db.query(OTPTable).filter(
-        OTPTable.email == email, 
-        OTPTable.is_used == False
-    ).first()
 
-    if not record:
-        return RedirectResponse("/auth/register?msg=OTP Expired or Not Found", status_code=302)
+```
+record = db.query(OTPTable).filter(
+    OTPTable.email == email,
+    OTPTable.is_used == False
+).first()
 
-    # Check expiry (10 mins)
-    if datetime.utcnow() > record.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
-        return RedirectResponse("/auth/register?msg=OTP Expired", status_code=302)
+if not record:
+    return RedirectResponse("/auth/register?msg=OTP Not Found", status_code=302)
 
-    if record.otp != otp:
-        return RedirectResponse(f"/auth/verify?email={email}&msg=Invalid OTP", status_code=302)
+# ⏳ Expiry check
+if datetime.utcnow() > record.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
+    return RedirectResponse("/auth/register?msg=OTP Expired", status_code=302)
 
-    # Extract data from extra field
-    data = json.loads(record.extra)
+# ❌ Wrong OTP
+if record.otp != otp:
+    return RedirectResponse(f"/auth/verify?email={email}&msg=Invalid OTP", status_code=302)
 
-    # Create company (Processing, Criteria, Inventory కోసం ఇది ముఖ్యం)
-    company_code = data["company_name"][:4].upper() + str(random.randint(1000, 9999))
+# 📦 Extract saved data
+data = json.loads(record.extra)
 
-    company = Company(
-        company_name=data["company_name"],
-        address=data["address"],
-        email=data["email"],
-        company_code=company_code,
-        company_type="main",
-        is_active=True
-    )
+# 🏢 Create Company
+company_code = data["company_name"][:4].upper() + str(random.randint(1000, 9999))
 
-    db.add(company)
-    db.commit()
-    db.refresh(company)
+company = Company(
+    company_name=data["company_name"],
+    address=data["address"],
+    email=data["email"],
+    company_code=company_code,
+    company_type="main",
+    is_active=True,
+    created_at=datetime.utcnow()
+)
 
-    # Create main admin user
-    user = User(
-        company_id=company.id,
-        name=data["company_name"], # Default as company name
-        designation="Admin",
-        email=data["email"],
-        mobile=data["mobile"],
-        password=hash_password(data["password"]),
-        role="admin",
-        permissions="ALL",
-        is_verified=True,
-        created_at=datetime.utcnow()
-    )
+db.add(company)
+db.commit()
+db.refresh(company)
 
-    db.add(user)
-    
-    # Mark OTP as used
-    record.is_used = True
-    db.commit()
+# 👤 Create Admin User
+user = User(
+    company_id=company.id,
+    name=data["company_name"],
+    designation="Admin",
+    email=data["email"],
+    mobile=data["mobile"],
+    password=hash_password(data["password"]),
+    role="admin",
+    permissions="ALL",
+    is_verified=True,
+    created_at=datetime.utcnow()
+)
 
-    return RedirectResponse("/?msg=Registration Success! Please Login", status_code=302)
+db.add(user)
+
+# 🔒 Mark OTP used
+record.is_used = True
+
+db.commit()
+
+return RedirectResponse("/?msg=Registration Success", status_code=302)
+```
 
 # ==========================================================
-# 🔑 LOGIN (Session Management for all Tables)
+
+# 🔑 LOGIN
+
 # ==========================================================
+
 @router.post("/login")
 def login(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
+request: Request,
+email: str = Form(...),
+password: str = Form(...),
+db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == email).first()
 
-    if not user:
-        return RedirectResponse("/?msg=Invalid Email", status_code=302)
+```
+user = db.query(User).filter(User.email == email).first()
 
-    if not verify_password(password, user.password):
-        return RedirectResponse("/?msg=Invalid Password", status_code=302)
+if not user:
+    return RedirectResponse("/?msg=Invalid Email", status_code=302)
 
-    # Get associated company
-    company = db.query(Company).filter(Company.id == user.company_id).first()
+if not verify_password(password, user.password):
+    return RedirectResponse("/?msg=Invalid Password", status_code=302)
 
-    # 🔥 SAVE SESSIONS (Processing, Bills, Attendance లో వాడటానికి)
-    request.session["email"] = user.email
-    request.session["user_id"] = user.id
-    request.session["name"] = user.name
-    request.session["role"] = user.role
-    request.session["company_id"] = company.id
-    request.session["company_code"] = company.company_code
+company = db.query(Company).filter(Company.id == user.company_id).first()
 
-    return RedirectResponse("/home", status_code=302)
+# 🧠 SESSION
+request.session["email"] = user.email
+request.session["user_id"] = user.id
+request.session["name"] = user.name
+request.session["role"] = user.role
+request.session["company_id"] = company.id
+request.session["company_code"] = company.company_code
+
+return RedirectResponse("/home", status_code=302)
+```
 
 # ==========================================================
+
 # 🚪 LOGOUT
+
 # ==========================================================
+
 @router.get("/logout")
 def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse("/", status_code=302)
+request.session.clear()
+return RedirectResponse("/", status_code=302)
