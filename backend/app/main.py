@@ -1,182 +1,252 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+# app/routers/auth.py
+
+from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-import logging
+from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
+import random
+import json
+import os
+import requests
 
-# DATABASE & BASE
-from app.database import engine, Base
+from app.database import get_db
+from app.database.models.users import User, Company, OTPTable
+from app.security.password_handler import hash_password, verify_password
 
-# =====================================================
-# 📦 ALL MODELS IMPORT (For Auto-Table Creation)
-# =====================================================
-
-# 1. Auth & Users
-from app.database.models.users import Company, User, OTPTable
-
-# 2. Criteria / Masters (Using your exact naming)
-from app.database.models.criteria import (
-    contractors, varieties, production_for, production_at, 
-    brands, purposes, glazes, grades, species, suppliers, 
-    vendors, hsn_codes, vehicle_numbers, purchasing_locations
-)
-
-# 3. Processing
-from app.database.models.processing import (
-    GateEntry, RawMaterialPurchasing, DeHeading, 
-    Grading, Peeling, Soaking, Production, AuditLog
-)
-
-# 4. Inventory & Sales
-from app.database.models.inventory_management import stock_entry, pending_orders, sales_dispatch
-
-# 5. General Stock
-from app.database.models.general_stock import GeneralStock, GeneralStoreItems
-
-# 6. Bills & Utilities
-from app.database.models.bills import (
-    ElectricityLog, DieselLog, PurchaseInvoice, 
-    ContainerLog, QATestingLog, OtherExpense
-)
-
-# 7. HR & Attendance
-from app.database.models.attendance import (
-    EmployeeRegistration, DailyAttendance, EmployeeIncrement, 
-    EmployeeStatutoryMaster, EmployeeSalaryAdvance
-)
-
-# LOGGING SETUP
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("BKNR_ERP")
-
-# =====================================================
-# 🚀 1. FASTAPI APP INIT
-# =====================================================
-app = FastAPI(title="BKNR ERP", version="1.0.0")
-
-# =====================================================
-# 🛠️ 2. MIDDLEWARES
-# =====================================================
-app.add_middleware(
-    SessionMiddleware,
-    secret_key="bknr_secret_key_2026",
-    session_cookie="bknr_session",
-    max_age=60 * 60 * 8, # 8 Hours
-)
-
-class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        # లాగిన్ అవసరం లేని పాత్ లు
-        open_paths = ("/", "/auth/", "/static/", "/health", "/docs", "/openapi.json")
-        
-        if not any(path.startswith(p) for p in open_paths):
-            if not request.session.get("email"):
-                return RedirectResponse("/", status_code=303)
-        
-        return await call_next(request)
-
-app.add_middleware(AuthMiddleware)
-
-# =====================================================
-# 📂 3. STATIC FILES & TEMPLATES
-# =====================================================
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+router = APIRouter(prefix="/auth", tags=["Auth"])
 templates = Jinja2Templates(directory="app/templates")
 
-# =====================================================
-# 🔄 4. DATABASE STARTUP (Table Sync)
-# =====================================================
-@app.on_event("startup")
-def on_startup():
-    try:
-        # పైన ఉన్న ఇంపోర్ట్స్ వల్ల Base.metadata కి అన్ని టేబుల్స్ రిజిస్టర్ అవుతాయి
-        Base.metadata.create_all(bind=engine)
-        print("✅ SUCCESS: BKNR ERP Database Tables Synchronized!")
-    except Exception as e:
-        print("❌ DB ERROR:", e)
+# ==========================================================
 
-# =====================================================
-# 🛤️ 5. ROUTERS REGISTRATION
-# =====================================================
-from app.routers.auth import router as auth_router
-from app.routers.menu import router as menu_router
-from app.routers.criteria_router import router as criteria_router
-from app.routers.inventory import router as inventory_router
-from app.routers.general_stock import router as general_stock_router
-from app.routers.admin import router as admin_router
-from app.routers.processing_router import router as processing_router
-from app.routers.reports_router import router as reports_router
-from app.routers.dashboard_router import router as dashboard_router
-from app.routers.bills import router as bills_router
-from app.routers.attendance_router import router as attendance_router
-from app.routers.inventory_management.stock_entry import router as stock_entry_router
-from app.routers.inventory_management.pending_orders import router as pending_orders_router
-from app.routers.page_loader import router as page_loader_router
-from app.routers.summary.processing import router as summary_processing_router
-from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
+# 🔐 BREVO EMAIL CONFIG
 
-# రూటర్లను యాడ్ చేయడం
-app.include_router(auth_router)
-app.include_router(menu_router)
-app.include_router(criteria_router)
-app.include_router(inventory_router)
-app.include_router(general_stock_router)
-app.include_router(admin_router)
-app.include_router(processing_router)
-app.include_router(reports_router)
-app.include_router(dashboard_router)
-app.include_router(stock_entry_router)
-app.include_router(pending_orders_router)
-app.include_router(page_loader_router)
-app.include_router(attendance_router)
-app.include_router(summary_processing_router)
-app.include_router(summary_inventory_costing_router)
+# ==========================================================
 
-# Bills Router కి /api ప్రిఫిక్స్ (As per your requirement)
-app.include_router(bills_router, prefix="/api")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+SENDER_EMAIL = "[bknr.solutions@gmail.com](mailto:bknr.solutions@gmail.com)"
+SENDER_NAME = "BKNR ERP"
+OTP_EXPIRY_MIN = 10
 
-logger.info("🚀 ALL ERP MODULES LOADED SUCCESSFULLY")
+# ==========================================================
 
-# =====================================================
-# 📄 6. BASIC PAGES
-# =====================================================
+# 📧 SEND EMAIL FUNCTION
 
-@app.get("/", response_class=HTMLResponse)
-def login_page(request: Request):
-    return templates.TemplateResponse(
-        request, 
-        "login.html", 
-        {"request": request}
-    )
+# ==========================================================
 
-@app.get("/home", response_class=HTMLResponse)
-def home_page(request: Request):
-    if not request.session.get("email"):
-        return RedirectResponse("/", status_code=303)
-    
-    return templates.TemplateResponse(
-        request, 
-        "menu.html", 
-        {"request": request}
-    )
+def send_email(to_email: str, subject: str, html: str):
 
-@app.get("/logout")
+```
+if not BREVO_API_KEY:
+    print("⚠️ BREVO KEY NOT FOUND")
+    return
+
+payload = {
+    "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+    "to": [{"email": to_email}],
+    "subject": subject,
+    "htmlContent": html
+}
+
+headers = {
+    "api-key": BREVO_API_KEY,
+    "content-type": "application/json"
+}
+
+try:
+    res = requests.post(BREVO_URL, json=payload, headers=headers)
+
+    if res.status_code >= 400:
+        print("❌ EMAIL FAILED:", res.text)
+    else:
+        print("✅ EMAIL SENT:", to_email)
+
+except Exception as e:
+    print("❌ EMAIL ERROR:", e)
+```
+
+# ==========================================================
+
+# 📄 REGISTER PAGE
+
+# ==========================================================
+
+@router.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+return templates.TemplateResponse("auth/register.html", {"request": request})
+
+# ==========================================================
+
+# 🚀 REGISTER (SEND OTP)
+
+# ==========================================================
+
+@router.post("/register")
+def register(
+request: Request,
+company_name: str = Form(...),
+address: str = Form(...),
+email: str = Form(...),
+mobile: str = Form(...),
+password: str = Form(...),
+db: Session = Depends(get_db)
+):
+
+```
+# Check existing user
+existing_user = db.query(User).filter(User.email == email).first()
+if existing_user:
+    return RedirectResponse("/auth/register?msg=Email Already Registered", status_code=302)
+
+# Generate OTP
+otp = str(random.randint(1000, 9999))
+
+# Delete old OTP
+db.query(OTPTable).filter(OTPTable.email == email).delete()
+
+# Save OTP + data
+extra_data = {
+    "company_name": company_name,
+    "address": address,
+    "email": email,
+    "mobile": mobile,
+    "password": password
+}
+
+db.add(OTPTable(
+    email=email,
+    otp=otp,
+    extra=json.dumps(extra_data),
+    is_used=False,
+    created_at=datetime.utcnow()
+))
+
+db.commit()
+
+# Send email
+send_email(
+    email,
+    "BKNR ERP – OTP Verification",
+    f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
+)
+
+return RedirectResponse(f"/auth/verify?email={email}", status_code=302)
+```
+
+# ==========================================================
+
+# 🔐 VERIFY PAGE
+
+# ==========================================================
+
+@router.get("/verify", response_class=HTMLResponse)
+def verify_page(request: Request, email: str):
+return templates.TemplateResponse("auth/verify.html", {"request": request, "email": email})
+
+# ==========================================================
+
+# ✅ VERIFY OTP + CREATE COMPANY + USER
+
+# ==========================================================
+
+@router.post("/verify")
+def verify_otp(
+request: Request,
+email: str = Form(...),
+otp: str = Form(...),
+db: Session = Depends(get_db)
+):
+
+```
+record = db.query(OTPTable).filter(OTPTable.email == email).first()
+
+if not record:
+    return RedirectResponse("/auth/register?msg=OTP Expired", status_code=302)
+
+if record.otp != otp:
+    return RedirectResponse(f"/auth/verify?email={email}&msg=Invalid OTP", status_code=302)
+
+# Extract data
+data = json.loads(record.extra)
+
+# Create company
+company_code = "BKNR" + str(random.randint(1000, 9999))
+
+company = Company(
+    company_name=data["company_name"],
+    address=data["address"],
+    email=data["email"],
+    company_code=company_code
+)
+
+db.add(company)
+db.commit()
+db.refresh(company)
+
+# Create user
+user = User(
+    company_id=company.id,
+    name=data["company_name"],
+    designation="Admin",
+    email=data["email"],
+    mobile=data["mobile"],
+    password=hash_password(data["password"]),
+    role="admin",
+    is_verified=True,
+    created_at=datetime.utcnow()
+)
+
+db.add(user)
+
+# Mark OTP used
+record.is_used = True
+
+db.commit()
+
+return RedirectResponse("/?msg=Registration Success", status_code=302)
+```
+
+# ==========================================================
+
+# 🔑 LOGIN
+
+# ==========================================================
+
+@router.post("/login")
+def login(
+request: Request,
+email: str = Form(...),
+password: str = Form(...),
+db: Session = Depends(get_db)
+):
+
+```
+user = db.query(User).filter(User.email == email).first()
+
+if not user:
+    return RedirectResponse("/?msg=Invalid Email", status_code=302)
+
+if not verify_password(password, user.password):
+    return RedirectResponse("/?msg=Invalid Password", status_code=302)
+
+# Get company
+company = db.query(Company).filter(Company.id == user.company_id).first()
+
+# Save session
+request.session["email"] = user.email
+request.session["company_code"] = company.company_code
+
+return RedirectResponse("/dashboard", status_code=302)
+```
+
+# ==========================================================
+
+# 🚪 LOGOUT
+
+# ==========================================================
+
+@router.get("/logout")
 def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse("/", status_code=303)
-
-# =====================================================
-# 🏥 7. HEALTH CHECK & FORCE SYNC
-# =====================================================
-@app.get("/health")
-def health_check():
-    return {"status": "OK", "service": "BKNR ERP"}
-
-@app.get("/create-all")
-def force_create_all():
-    # ఒకవేళ startup లో టేబుల్స్ రాకపోతే ఈ URL ని హిట్ చేయవచ్చు
-    Base.metadata.create_all(bind=engine)
-    return {"status": "All ERP tables synchronized manually"}
+request.session.clear()
+return RedirectResponse("/", status_code=302)
