@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -7,20 +7,24 @@ import random
 import json
 import os
 import requests
-import secrets
 
 from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password, verify_password
 
 # ==========================================================
-# 🛤️ ROUTER & TEMPLATES SETUP
+# 🚀 APP INIT
+# ==========================================================
+app = FastAPI()
+
+# ==========================================================
+# 🛤️ ROUTER & TEMPLATES
 # ==========================================================
 router = APIRouter(prefix="/auth", tags=["Auth"])
 templates = Jinja2Templates(directory="app/templates")
 
 # ==========================================================
-# 🔐 BREVO EMAIL CONFIG
+# 🔐 EMAIL CONFIG
 # ==========================================================
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
@@ -29,7 +33,7 @@ SENDER_NAME = "BKNR ERP"
 OTP_EXPIRY_MIN = 10
 
 # ==========================================================
-# 📧 SEND EMAIL FUNCTION
+# 📧 SEND EMAIL
 # ==========================================================
 def send_email(to_email: str, subject: str, html: str):
     if not BREVO_API_KEY:
@@ -65,7 +69,7 @@ def register_page(request: Request):
     return templates.TemplateResponse("auth/register.html", {"request": request})
 
 # ==========================================================
-# 🚀 REGISTER (SEND OTP)
+# 🚀 REGISTER
 # ==========================================================
 @router.post("/register")
 def register(
@@ -77,18 +81,14 @@ def register(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Check existing user
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
         return RedirectResponse("/auth/register?msg=Email Already Registered", status_code=302)
 
-    # Generate OTP
     otp = str(random.randint(1000, 9999))
 
-    # Delete old OTP records for this email
     db.query(OTPTable).filter(OTPTable.email == email).delete()
 
-    # Save OTP + raw data into 'extra' field
     extra_data = {
         "company_name": company_name,
         "address": address,
@@ -107,11 +107,10 @@ def register(
 
     db.commit()
 
-    # Send OTP via Email
     send_email(
         email,
         "BKNR ERP – OTP Verification",
-        f"<h2>{otp}</h2><p>Your OTP for BKNR ERP registration. Valid for {OTP_EXPIRY_MIN} minutes.</p>"
+        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes.</p>"
     )
 
     return RedirectResponse(f"/auth/verify?email={email}", status_code=302)
@@ -124,7 +123,7 @@ def verify_page(request: Request, email: str):
     return templates.TemplateResponse("auth/verify.html", {"request": request, "email": email})
 
 # ==========================================================
-# ✅ VERIFY OTP + CREATE COMPANY + USER
+# ✅ VERIFY OTP
 # ==========================================================
 @router.post("/verify")
 def verify_otp(
@@ -134,31 +133,26 @@ def verify_otp(
     db: Session = Depends(get_db)
 ):
     record = db.query(OTPTable).filter(
-        OTPTable.email == email, 
+        OTPTable.email == email,
         OTPTable.is_used == False
     ).first()
 
     if not record:
-        return RedirectResponse("/auth/register?msg=OTP Expired or Not Found", status_code=302)
+        return RedirectResponse("/auth/register?msg=OTP Expired", status_code=302)
 
-    # Check expiry (10 mins)
     if datetime.utcnow() > record.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
         return RedirectResponse("/auth/register?msg=OTP Expired", status_code=302)
 
     if record.otp != otp:
         return RedirectResponse(f"/auth/verify?email={email}&msg=Invalid OTP", status_code=302)
 
-    # Extract data from extra field
     data = json.loads(record.extra)
-
-    # Create company (Processing, Criteria, Inventory కోసం ఇది ముఖ్యం)
-    company_code = data["company_name"][:4].upper() + str(random.randint(1000, 9999))
 
     company = Company(
         company_name=data["company_name"],
         address=data["address"],
         email=data["email"],
-        company_code=company_code,
+        company_code="CMP" + str(random.randint(1000, 9999)),
         company_type="main",
         is_active=True
     )
@@ -167,10 +161,9 @@ def verify_otp(
     db.commit()
     db.refresh(company)
 
-    # Create main admin user
     user = User(
         company_id=company.id,
-        name=data["company_name"], # Default as company name
+        name=data["company_name"],
         designation="Admin",
         email=data["email"],
         mobile=data["mobile"],
@@ -182,15 +175,13 @@ def verify_otp(
     )
 
     db.add(user)
-    
-    # Mark OTP as used
     record.is_used = True
     db.commit()
 
-    return RedirectResponse("/?msg=Registration Success! Please Login", status_code=302)
+    return RedirectResponse("/", status_code=302)
 
 # ==========================================================
-# 🔑 LOGIN (Session Management for all Tables)
+# 🔑 LOGIN
 # ==========================================================
 @router.post("/login")
 def login(
@@ -207,17 +198,7 @@ def login(
     if not verify_password(password, user.password):
         return RedirectResponse("/?msg=Invalid Password", status_code=302)
 
-    # Get associated company
-    company = db.query(Company).filter(Company.id == user.company_id).first()
-
-    # 🔥 SAVE SESSIONS (Processing, Bills, Attendance లో వాడటానికి)
-    request.session["email"] = user.email
-    request.session["user_id"] = user.id
-    request.session["name"] = user.name
-    request.session["role"] = user.role
-    request.session["company_id"] = company.id
-    request.session["company_code"] = company.company_code
-
+    request.session["user"] = user.email
     return RedirectResponse("/home", status_code=302)
 
 # ==========================================================
@@ -227,3 +208,15 @@ def login(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=302)
+
+# ==========================================================
+# 🏠 ROOT ROUTE
+# ==========================================================
+@app.get("/")
+def home():
+    return {"message": "BKNR ERP Running Successfully 🚀"}
+
+# ==========================================================
+# 🔗 CONNECT ROUTER
+# ==========================================================
+app.include_router(router)
