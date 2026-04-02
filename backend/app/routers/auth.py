@@ -29,6 +29,7 @@ OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
 
 
+# ================= EMAIL FUNCTION =================
 def send_email(to_email: str, subject: str, html: str):
     if not BREVO_API_KEY:
         raise HTTPException(500, "Email service not configured")
@@ -129,6 +130,7 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
     rec.is_used = True
     db.commit()
+
     return {"message": "OTP verified"}
 
 
@@ -172,6 +174,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         permissions="ALL",
         is_verified=True
     )
+
     db.add(user)
     db.commit()
 
@@ -207,7 +210,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "permissions": user.permissions
     })
 
-    return {"message": "Login success"}
+    return RedirectResponse("/home", status_code=303)
 
 
 # =====================================================
@@ -256,7 +259,6 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
         return HTMLResponse("<h3>Link expired</h3>")
 
-    # FIXED FOR NEW FASTAPI/STARLETTE VERSION
     return templates.TemplateResponse(
         request=request,
         name="reset_password.html",
@@ -265,11 +267,14 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
 
 
 # =====================================================
-# RESET PASSWORD SAVE (POST)
+# RESET PASSWORD SAVE
 # =====================================================
 @router.post("/reset-password")
-def reset_password(token: str = Form(...), password: str = Form(...),
-                   db: Session = Depends(get_db)):
+def reset_password(
+    token: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
 
     rec = db.query(OTPTable).filter(
         OTPTable.otp == token,
@@ -287,6 +292,7 @@ def reset_password(token: str = Form(...), password: str = Form(...),
     rec.is_used = True
 
     db.commit()
+
     return RedirectResponse("/", status_code=303)
 
 
