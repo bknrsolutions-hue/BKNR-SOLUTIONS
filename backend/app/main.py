@@ -37,8 +37,7 @@ OTP_EXPIRY_MIN = 10
 
 def send_email(to_email: str, subject: str, html: str):
     if not BREVO_API_KEY:
-        print("⚠️ EMAIL DISABLED - NO API KEY")
-        return
+        raise HTTPException(500, "Email service not configured")
 
     payload = {
         "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
@@ -54,14 +53,13 @@ def send_email(to_email: str, subject: str, html: str):
 
     try:
         res = requests.post(BREVO_URL, json=payload, headers=headers)
-
         if res.status_code >= 400:
-            print("❌ EMAIL FAILED:", res.text)
-        else:
-            print("✅ EMAIL SENT:", to_email)
-
+            print(f"❌ Brevo Error: {res.text}")
+            raise HTTPException(500, "Email sending failed")
+        print("✅ Email sent successfully to:", to_email)
     except Exception as e:
-        print("❌ EMAIL ERROR:", e)
+        print(f"❌ Request Error: {e}")
+        raise HTTPException(500, "Email service communication error")
 # ==========================================================
 
 # 📄 REGISTER PAGE
