@@ -123,6 +123,7 @@ application.include_router(bills_router, prefix="/api")
 @application.get("/", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse(
+        request,
         "login.html",
         {"request": request}
     )
@@ -133,10 +134,11 @@ def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
+        request,
         "menu.html",
         {"request": request}
     )
-    
+
 @application.get("/create-all")
 def create_all():
     Base.metadata.create_all(bind=engine)
