@@ -136,7 +136,7 @@ def home_page(request: Request):
         "menu.html",
         {"request": request}
     )
-
+    
 @application.get("/create-all")
 def create_all():
     Base.metadata.create_all(bind=engine)
