@@ -6,16 +6,46 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 
-# DATABASE & MODELS
+# DATABASE & BASE
 from app.database import engine, Base
-import app.database.models 
 
-# మోడల్స్ ని ఇక్కడ ఇంపోర్ట్ చేయడం వల్ల టేబుల్స్ ఆటోమేటిక్ గా క్రియేట్ అవుతాయి
+# =====================================================
+# 📦 ALL MODELS IMPORT (For Auto-Table Creation)
+# =====================================================
+
+# 1. Auth & Users
 from app.database.models.users import Company, User, OTPTable
-from app.database.models.criteria import contractors, varieties, production_for, production_at
-from app.database.models.general_stock import GeneralStock
-from app.database.models.processing import Peeling, Soaking, DeHeading, AuditLog
-from app.database.models.inventory_management import stock_entry, pending_orders
+
+# 2. Criteria / Masters (Using your exact naming)
+from app.database.models.criteria import (
+    contractors, varieties, production_for, production_at, 
+    brands, purposes, glazes, grades, species, suppliers, 
+    vendors, hsn_codes, vehicle_numbers, purchasing_locations
+)
+
+# 3. Processing
+from app.database.models.processing import (
+    GateEntry, RawMaterialPurchasing, DeHeading, 
+    Grading, Peeling, Soaking, Production, AuditLog
+)
+
+# 4. Inventory & Sales
+from app.database.models.inventory_management import stock_entry, pending_orders, sales_dispatch
+
+# 5. General Stock
+from app.database.models.general_stock import GeneralStock, GeneralStoreItems
+
+# 6. Bills & Utilities
+from app.database.models.bills import (
+    ElectricityLog, DieselLog, PurchaseInvoice, 
+    ContainerLog, QATestingLog, OtherExpense
+)
+
+# 7. HR & Attendance
+from app.database.models.attendance import (
+    EmployeeRegistration, DailyAttendance, EmployeeIncrement, 
+    EmployeeStatutoryMaster, EmployeeSalaryAdvance
+)
 
 # LOGGING SETUP
 logging.basicConfig(level=logging.INFO)
@@ -57,22 +87,14 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
-# 🔄 4. DATABASE STARTUP
+# 🔄 4. DATABASE STARTUP (Table Sync)
 # =====================================================
 @app.on_event("startup")
 def on_startup():
     try:
-        # 🔥 THIS LINE IS THE KEY
-        import app.database.models
-        from app.database.models.users import Company, User, OTPTable
-        from app.database.models.general_stock import GeneralStock
-        from app.database.models.criteria import contractors, varieties, production_for, production_at
-        from app.database.models.processing import Peeling, Soaking, DeHeading, AuditLog
-        from app.database.models.inventory_management import stock_entry, pending_orders
-
+        # పైన ఉన్న ఇంపోర్ట్స్ వల్ల Base.metadata కి అన్ని టేబుల్స్ రిజిస్టర్ అవుతాయి
         Base.metadata.create_all(bind=engine)
-        print("✅ ALL TABLES CREATED")
-
+        print("✅ SUCCESS: BKNR ERP Database Tables Synchronized!")
     except Exception as e:
         print("❌ DB ERROR:", e)
 
@@ -113,13 +135,13 @@ app.include_router(attendance_router)
 app.include_router(summary_processing_router)
 app.include_router(summary_inventory_costing_router)
 
-# Bills Router కి /api ప్రిఫిక్స్
+# Bills Router కి /api ప్రిఫిక్స్ (As per your requirement)
 app.include_router(bills_router, prefix="/api")
 
-logger.info("🚀 ALL ROUTERS REGISTERED")
+logger.info("🚀 ALL ERP MODULES LOADED SUCCESSFULLY")
 
 # =====================================================
-# 📄 6. BASIC PAGES (STARLETTE 0.28+ COMPATIBLE)
+# 📄 6. BASIC PAGES
 # =====================================================
 
 @app.get("/", response_class=HTMLResponse)
@@ -147,21 +169,14 @@ def logout(request: Request):
     return RedirectResponse("/", status_code=303)
 
 # =====================================================
-# 🏥 7. HEALTH CHECK
+# 🏥 7. HEALTH CHECK & FORCE SYNC
 # =====================================================
 @app.get("/health")
 def health_check():
-    return {
-        "status": "OK",
-        "service": "BKNR ERP"
-    }
+    return {"status": "OK", "service": "BKNR ERP"}
 
-# =====================================================
-# 🔥 8. FORCE CREATE TABLES ENDPOINT
-# =====================================================
 @app.get("/create-all")
-def create_all():
-    import app.database.models
-    from app.database import Base, engine
+def force_create_all():
+    # ఒకవేళ startup లో టేబుల్స్ రాకపోతే ఈ URL ని హిట్ చేయవచ్చు
     Base.metadata.create_all(bind=engine)
-    return {"status": "tables created"}
+    return {"status": "All ERP tables synchronized manually"}
