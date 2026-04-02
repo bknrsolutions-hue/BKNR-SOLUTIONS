@@ -70,22 +70,18 @@ templates = Jinja2Templates(directory="app/templates")
 # =====================================================
 # 🔄 5. DATABASE STARTUP
 # =====================================================
-from sqlalchemy import inspect
-
 @application.on_event("startup")
 def on_startup():
-    try:
-        inspector = inspect(engine)
-        existing_tables = inspector.get_table_names()
+    from sqlalchemy import inspect
 
-        for table in Base.metadata.tables.values():
-            if table.name not in existing_tables:
-                table.create(bind=engine)
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
 
-        logger.info("✅ ALL ERP TABLES CREATED SUCCESSFULLY")
+    for table in Base.metadata.sorted_tables:
+        if table.name not in existing_tables:
+            table.create(bind=engine)
 
-    except Exception as e:
-        logger.error(f"❌ DB ERROR: {e}")
+    logger.info("✅ ALL ERP TABLES CREATED SUCCESSFULLY")
 # =====================================================
 # 🛤️ 6. ROUTERS
 # =====================================================
@@ -154,7 +150,7 @@ def create_all():
     inspector = inspect(engine)
     existing_tables = inspector.get_table_names()
 
-    for table in Base.metadata.tables.values():
+    for table in Base.metadata.sorted_tables:
         if table.name not in existing_tables:
             table.create(bind=engine)
 
