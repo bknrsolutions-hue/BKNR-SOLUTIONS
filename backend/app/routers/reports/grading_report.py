@@ -306,11 +306,12 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
             r.graded_count
         ])
 
-    output = BytesIO()
+output = BytesIO()
     wb.save(output)
     output.seek(0)
     
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition":
+        headers={"Content-Disposition": "attachment; filename=Grading_Detailed_Report.xlsx"}
+    ) # <--- ఇక్కడ బ్రాకెట్ కరెక్ట్ గా క్లోజ్ అవ్వాలి
