@@ -11,14 +11,14 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, update
+from sqlalchemy import desc
 from collections import defaultdict
 from io import BytesIO
 import json
 from datetime import datetime
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.styles import Font, Alignment
 
 from app.database import get_db
 from app.database.models.processing import Grading, DeHeading, AuditLog
@@ -52,7 +52,7 @@ def grading_report(
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. Yield Map Preparation (HOSO to HLSO Conversion Factors)
+    # 1. Yield Map Preparation
     yield_map = {
         (r.species, str(r.hoso_count)): float(r.hlso_yield_pct or 0) / 100
         for r in db.query(HOSO_HLSO_Yields)
@@ -79,12 +79,11 @@ def grading_report(
     # 4. Calculation Logic
     for (batch, species, hoso_count, variety), items in grouped.items():
         graded_qty_sum = sum(float(i.quantity or 0) for i in items)
-        # Weighted Count Base
         base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
         
         yield_factor = yield_map.get((species, hoso_count), 0)
 
-        # Actual HOSO Logic - Determining the Input Weight
+        # Actual HOSO Logic
         if variety == "HOSO":
             actual_hoso_qty = graded_qty_sum
         elif variety == "HLSO":
@@ -94,15 +93,11 @@ def grading_report(
 
         # Workout & Yield Calculations
         workout = (base / graded_qty_sum) if graded_qty_sum > 0 else 0
-        
-        # If HLSO, adjust workout count (Standard factor 2.2 * yield)
         if variety == "HLSO":
             workout = workout * 2.2 * yield_factor
 
         yield_pct = (graded_qty_sum / actual_hoso_qty * 100) if actual_hoso_qty > 0 else 0
-        
-        # Calculating how much HOSO was used for this Grading output
-        grading_hoso_qty = (graded_qty_sum / yield_factor) if (variety == "HLSO" and yield_factor > 0) else graded_qty_sum
+        grading_hoso_qty = (graded_qty_sum / yield_factor) if variety == "HLSO" and yield_factor > 0 else graded_qty_sum
         
         diff_kg = grading_hoso_qty - actual_hoso_qty if variety == "HLSO" else 0
         diff_pct = (diff_kg / actual_hoso_qty * 100) if actual_hoso_qty > 0 else 0
@@ -121,7 +116,7 @@ def grading_report(
             "weight_diff_pct": round(diff_pct, 2)
         })
 
-    # 5. Final Rows with Subtotals per Batch/Species
+    # 5. Final Rows with Subtotals
     for (batch, species), items in summary_group.items():
         sh = sg = sw = sgh = sdiff = 0
         for r in items:
@@ -134,20 +129,11 @@ def grading_report(
             sgh += r["grading_hoso_qty"]
             sdiff += r["weight_diff_kg"]
 
-        # Adding Sub Total Row
         rows.append({
-            "id": "", 
-            "batch": batch, 
-            "species": species, 
-            "hoso_count": "", 
-            "variety": "SUB TOTAL",
-            "hoso_qty": round(sh, 2), 
-            "graded_qty": round(sg, 2), 
-            "workout_count": round(sw, 2),
+            "id": "", "batch": batch, "species": species, "hoso_count": "", "variety": "SUB TOTAL",
+            "hoso_qty": round(sh, 2), "graded_qty": round(sg, 2), "workout_count": round(sw, 2),
             "yield_pct": round((sg / sh * 100), 2) if sh > 0 else 0,
-            "grading_hoso_qty": round(sgh, 2), 
-            "weight_diff_kg": round(sdiff, 2), 
-            "weight_diff_pct": 0,
+            "grading_hoso_qty": round(sgh, 2), "weight_diff_kg": round(sdiff, 2), "weight_diff_pct": 0,
             "is_subtotal": True
         })
 
@@ -173,23 +159,17 @@ def grading_details(
         data = db.query(Grading).filter(Grading.company_id == company_id).order_by(desc(Grading.date), desc(Grading.time)).all()
     elif source == "hoso":
         data = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id, 
-            DeHeading.batch_number == batch,
-            DeHeading.species == species, 
-            DeHeading.hoso_count == hoso_count
+            DeHeading.company_id == company_id, DeHeading.batch_number == batch,
+            DeHeading.species == species, DeHeading.hoso_count == hoso_count
         ).all()
     else:
         data = db.query(Grading).filter(
-            Grading.company_id == company_id, 
-            Grading.batch_number == batch,
-            Grading.species == species, 
-            Grading.hoso_count == hoso_count, 
-            Grading.variety_name == variety
+            Grading.company_id == company_id, Grading.batch_number == batch,
+            Grading.species == species, Grading.hoso_count == hoso_count, Grading.variety_name == variety
         ).all()
 
     result = []
     for r in data:
-        # Converting SQLAlchemy object to dict safely
         d = {k: v for k, v in r.__dict__.items() if not k.startswith('_')}
         if 'date' in d and d['date']: d['date'] = str(d['date'])
         if 'time' in d and d['time']: d['time'] = str(d['time'])
@@ -219,7 +199,7 @@ async def update_grading(request: Request, db: Session = Depends(get_db)):
         old_val = getattr(original, field, None)
         
         if str(old_val) != str(new_val):
-            # Create Audit Log entry
+            # Create Audit Log
             log = AuditLog(
                 table_name="grading",
                 record_id=record_id,
@@ -244,9 +224,6 @@ async def delete_grading(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     data = await request.json()
     record_id = data.get("id")
-
-    if not record_id:
-        return JSONResponse({"status": "error", "message": "ID required"}, status_code=400)
 
     db.query(Grading).filter(Grading.id == record_id, Grading.company_id == company_id).delete()
     db.commit()
@@ -284,16 +261,9 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     ws = wb.active
     ws.title = "Detailed Grading Report"
 
-    # Header Row
     headers = ["Date", "Time", "Batch", "Species", "Variety", "Count", "Quantity", "Graded Count"]
     ws.append(headers)
     
-    # Styling headers
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-        cell.alignment = Alignment(horizontal="center")
-
-    # Data Rows
     for r in rows:
         ws.append([
             str(r.date), 
@@ -306,7 +276,7 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
             r.graded_count
         ])
 
-output = BytesIO()
+    output = BytesIO()
     wb.save(output)
     output.seek(0)
     
@@ -314,4 +284,4 @@ output = BytesIO()
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
         headers={"Content-Disposition": "attachment; filename=Grading_Detailed_Report.xlsx"}
-    ) # <--- ఇక్కడ బ్రాకెట్ కరెక్ట్ గా క్లోజ్ అవ్వాలి
+    )
