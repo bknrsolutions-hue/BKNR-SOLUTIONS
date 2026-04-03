@@ -56,7 +56,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         # Central balance (Fresh + Rejection Recovery)
         qty = get_floor_balance(db=db, company_id=company_id, location=loc, batch=batch, count=count, species=species_val, variety=variety)
         
-        # HOSO/HLSO Rejection mathrame detailed data ga ravali kabatti:
+        # HOSO/HLSO Rejection detailed data
         rej_qty = 0.0
         if variety in ["HOSO", "HLSO"]:
             rej_qty = db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)).filter(
@@ -75,11 +75,11 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
                 "species": species_val or "N/A", 
                 "production_for": prod_for or "N/A",
                 "location": loc, 
-                "rejection_qty": round(rej_qty, 2), # Details lo rejection data
-                "available_qty": round(qty, 2),    # Total available (Fresh + Rej)
+                "rejection_qty": round(rej_qty, 2), 
+                "available_qty": round(qty, 2),    
             })
 
-    # [2026-01-03] Sorting Data Company-Wise & Location Wise
+    # Sorting Data Company-Wise & Location Wise
     rows_batch = sorted(rows_batch, key=lambda x: (x["production_for"], x["location"], x["batch"]))
 
     return request.app.state.templates.TemplateResponse("processing/soaking.html", {
@@ -87,6 +87,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         "production_locations": prod_locs, "prod_for_list": prod_for_list, "today_data": today_data,
         "rows_batch": rows_batch
     })
+
 
 # =====================================================
 # API ENDPOINTS: DYNAMIC DATA FETCHING
