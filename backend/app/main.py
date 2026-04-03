@@ -135,24 +135,6 @@ async def home_page(request: Request):
         context={"request": request}
     )
 
-@application.get("/create-all")
-def create_all():
-    try:
-        # Base.metadata.create_all అనేది చాలా తెలివైనది. 
-        # ఇది టేబుల్స్, ఇండెక్స్ లు, రిలేషన్స్ అన్నీ చెక్ చేస్తుంది. 
-        # ఏవైనా లేకపోతేనే క్రియేట్ చేస్తుంది, ఉన్నవాటిని వదిలేస్తుంది (Safe approach).
-        
-        Base.metadata.create_all(bind=engine)
-        
-        logger.info("Database synchronization completed successfully.")
-        return {
-            "status": "Success", 
-            "message": "All missing tables and indexes created successfully."
-        }
-    except Exception as e:
-        logger.error(f"Error during database sync: {str(e)}")
-        # ఒకవేళ ఇండెక్స్ ఎర్రర్ వస్తే, దాన్ని క్లియర్ గా చూడటానికి మెసేజ్ రిటర్న్ చేస్తున్నాం
-        return {"status": "Error", "message": str(e)}
 
 @application.get("/health")
 def health():
