@@ -37,12 +37,12 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-
-return templates.TemplateResponse(
-    request=request, 
-    name="admin/add_user.html", 
-    context={"existing_users": users, "company_code": company_code}
-)
+    # 🚩 ఇక్కడ గమనించు: ఈ return కచ్చితంగా 4 spaces లోపలికి ఉండాలి
+    return templates.TemplateResponse(
+        request=request, 
+        name="admin/add_user.html", 
+        context={"existing_users": users, "company_code": company_code}
+    )
 
 # ==========================================================
 # SAVE USER (CREATE)
