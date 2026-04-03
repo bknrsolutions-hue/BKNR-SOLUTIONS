@@ -14,7 +14,6 @@ from app.database.models.inventory_management import stock_entry as Inventory
 from app.database.models.criteria import production_for as ProductionFor
 
 router = APIRouter(
-    prefix="/reports",
     tags=["STORAGE COST REPORT"]
 )
 

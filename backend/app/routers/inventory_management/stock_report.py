@@ -1,35 +1,64 @@
-# app/routers/inventory/stock_report.py
+# ============================================================
+# STOCK REPORT ROUTER – FINAL (FULL FILTERS & EXPORTS)
+# ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, desc
+from sqlalchemy import func, case
 from datetime import datetime, date
 import pytz
+import openpyxl 
 from io import BytesIO
+from weasyprint import HTML
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
-# from weasyprint import HTML  # Ensure weasyprint is installed for PDF
 
 from app.database import get_db
-from app.database.models.inventory_management import stock_entry
+from app.database.models.inventory_management import stock_entry, pending_orders
 from app.database.models.users import Company
 from app.database.models.processing import AuditLog 
 from app.database.models.criteria import (
     production_for, production_at, freezers, packing_styles,
-    glazes, varieties, grades, brands, species as species_model
+    glazes, varieties, grades, production_types, purposes,
+    brands, species as species_model
 )
 
 router = APIRouter(prefix="/stock_report", tags=["STOCK REPORT"])
-templates = Jinja2Templates(directory="app/templates")
 
 # Indian Timezone setup
 IST = pytz.timezone('Asia/Kolkata')
 
-# -------------------------------------------------------------------------
-# 1️⃣ PAGE LOAD (With Multi-Tenant Security)
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------
+# HELPER: GET COMPANY INFO
+# ------------------------------------------------------------
+def get_company_info(db: Session, comp_code: str):
+    c = db.query(Company).filter(Company.company_code == comp_code).first()
+    return (c.company_name or "", c.address or "") if c else ("", "")
+
+# ------------------------------------------------------------
+# HELPER: CHECK STOCK AVAILABILITY
+# ------------------------------------------------------------
+def check_stock_availability(db: Session, comp_code: str, batch: str, location: str, grade: str, packing: str, exclude_id: int = None):
+    q = db.query(
+        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)).label("bal_mc"),
+        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)).label("bal_ls")
+    ).filter(
+        stock_entry.company_id == comp_code,
+        stock_entry.batch_number == batch,
+        stock_entry.location == location,
+        stock_entry.grade == grade,
+        stock_entry.packing_style == packing
+    )
+    if exclude_id:
+        q = q.filter(stock_entry.id != exclude_id)
+    res = q.first()
+    return int(res.bal_mc or 0), int(res.bal_ls or 0)
+
+# ------------------------------------------------------------
+# STOCK REPORT PAGE (GET)
+# ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def stock_report_page(
     request: Request,
@@ -44,106 +73,189 @@ async def stock_report_page(
     if not email or not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # Base Query with strict company filter
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
-    
     if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
 
-    rows = q.order_by(desc(stock_entry.date), desc(stock_entry.time)).all()
+    rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
-    # Helper for dropdowns
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
-    # Fetching Company Branding
-    company = db.query(Company).filter(Company.company_code == comp_code).first()
+    context = {
+        "request": request, "rows": rows, "from_date": from_date, "to_date": to_date,
+        "species_list": get_list(species_model, "species_name"),
+        "brands_list": get_list(brands, "brand_name"),
+        "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
+        "production_at_list": get_list(production_at, "production_at"),
+        "freezers_list": get_list(freezers, "freezer_name"),
+        "packing_styles_list": get_list(packing_styles, "packing_style"),
+        "glazes_list": get_list(glazes, "glaze_name"),
+        "varieties_list": get_list(varieties, "variety_name"),
+        "grades_list": get_list(grades, "grade_name"),
+        "is_admin": role == "admin"
+    }
+    
+    company_name, company_address = get_company_info(db, comp_code)
+    context.update({"company_name": company_name, "company_address": company_address})
 
-    return templates.TemplateResponse(
-        request=request,
-        name="inventory_management/stock_report.html",
-        context={
-            "rows": rows, "from_date": from_date, "to_date": to_date,
-            "species_list": get_list(species_model, "species_name"),
-            "brands_list": get_list(brands, "brand_name"),
-            "production_at_list": get_list(production_at, "production_at"),
-            "grades_list": get_list(grades, "grade_name"),
-            "is_admin": role == "admin",
-            "company_name": company.company_name if company else "BKNR ERP",
-            "email": email
-        }
-    )
+    return request.app.state.templates.TemplateResponse("inventory_management/stock_report.html", context)
 
-# -------------------------------------------------------------------------
-# 2️⃣ SECURE EXCEL EXPORT (Professional Formatting)
-# -------------------------------------------------------------------------
-@router.get("/export_xlsx")
-def export_xlsx(request: Request, db: Session = Depends(get_db), from_date: str = "", to_date: str = ""):
+# ------------------------------------------------------------
+# UPDATE STOCK (WITH VALIDATION & AUDIT)
+# ------------------------------------------------------------
+@router.post("/update")
+async def update_stock(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    if not comp_code: return RedirectResponse("/auth/login")
+    user_email = request.session.get("email")
+    if request.session.get("role") != "admin": raise HTTPException(status_code=403)
 
+    row = db.query(stock_entry).filter(stock_entry.id == payload.get("id"), stock_entry.company_id == comp_code).first()
+    if not row: raise HTTPException(status_code=404)
+
+    new_mc = int(payload.get("no_of_mc", row.no_of_mc))
+    new_ls = int(payload.get("loose", row.loose))
+    new_batch = payload.get("batch_number", row.batch_number)
+    new_loc = payload.get("location", row.location)
+    new_grade = payload.get("grade", row.grade)
+    new_pack_name = payload.get("packing_style", row.packing_style)
+
+    if row.cargo_movement_type == "OUT":
+        bal_mc, bal_ls = check_stock_availability(db, comp_code, new_batch, new_loc, new_grade, new_pack_name, exclude_id=row.id)
+        if new_mc > bal_mc or new_ls > bal_ls:
+            raise HTTPException(status_code=400, detail=f"Insufficient Stock! Available: {bal_mc} MC, {bal_ls} Lse")
+
+    fields = ["batch_number", "location", "brand", "freezer", "glaze", "species", "packing_style", "variety", "grade", "no_of_mc", "loose", "product_kg_value", "sales_reference_rate", "hlso_count", "hoso_count"]
+    for f in fields:
+        if f in payload:
+            old_v, new_v = str(getattr(row, f) or "").strip(), str(payload[f] or "").strip()
+            if old_v != new_v:
+                db.add(AuditLog(
+                    table_name="stock_entry", record_id=row.id, company_id=comp_code,
+                    field_name=f, old_value=old_v, new_value=new_v,
+                    edited_by=user_email, edited_at=datetime.utcnow()
+                ))
+                setattr(row, f, payload[f])
+
+    pack = db.query(packing_styles).filter(packing_styles.company_id == comp_code, packing_styles.packing_style == row.packing_style).first()
+    if pack:
+        row.quantity = (float(row.no_of_mc or 0) * float(pack.mc_weight or 0)) + (float(row.loose or 0) * float(pack.slab_weight or 0))
+        row.inventory_value = round(row.quantity * float(row.product_kg_value or 0), 2)
+
+    db.commit()
+    return {"status": "success"}
+
+# ------------------------------------------------------------
+# EXPORT EXCEL (WITH FULL FILTERS)
+# ------------------------------------------------------------
+@router.get("/export_xlsx")
+def export_xlsx(
+    request: Request, db: Session = Depends(get_db), 
+    from_date: str = "", to_date: str = "", type: str = "",
+    batch: str = "", brand: str = "", species: str = "",
+    variety: str = "", location: str = ""
+):
+    comp_code = request.session.get("company_code")
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+
     if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
+    if type: q = q.filter(stock_entry.cargo_movement_type == type)
+    if batch: q = q.filter(stock_entry.batch_number == batch)
+    if brand: q = q.filter(stock_entry.brand == brand)
+    if species: q = q.filter(stock_entry.species == species)
+    if variety: q = q.filter(stock_entry.variety == variety)
+    if location: q = q.filter(stock_entry.location == location)
     
-    rows = q.order_by(stock_entry.date.asc()).all()
+    rows = q.order_by(stock_entry.date.asc(), stock_entry.time.asc()).all()
     
     wb = Workbook()
     ws = wb.active
     ws.title = "Stock Ledger"
     
-    headers = ["Date", "Batch #", "Type", "Brand", "Species", "Variety", "Grade", "Location", "MC", "Lse", "Qty (Kg)", "Value"]
+    headers = ["Date", "Batch #", "Type", "Brand", "Species", "Variety", "Grade", "Glaze", "Freezer", "Pack Style", "Location", "PO #", "Prod For", "Prod At", "HLSO", "HOSO", "MC", "Lse", "Qty", "Cost", "Value", "Sales Rate", "User"]
     ws.append(headers)
     
-    # Corporate Styling
-    header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+    header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center")
 
     for r in rows:
-        sign = -1 if r.cargo_movement_type == "OUT" else 1
+        s = -1 if r.cargo_movement_type == "OUT" else 1
         ws.append([
-            str(r.date), r.batch_number, r.cargo_movement_type, r.brand, r.species, 
-            r.variety, r.grade, r.location, sign * (r.no_of_mc or 0), sign * (r.loose or 0),
-            sign * (r.quantity or 0), (r.inventory_value or 0)
+            str(r.date), r.batch_number, r.cargo_movement_type, r.brand, r.species, r.variety, r.grade, r.glaze, r.freezer, r.packing_style, r.location, r.po_number or "", r.production_for or "", r.production_at or "", r.hlso_count or 0, r.hoso_count or 0,
+            s * int(r.no_of_mc or 0), s * int(r.loose or 0), s * float(r.quantity or 0), float(r.product_kg_value or 0), float(r.inventory_value or 0), float(r.sales_reference_rate or 0), r.email.split('@')[0] if r.email else ""
         ])
 
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename=Stock_Ledger.xlsx"})
+
+# ------------------------------------------------------------
+# EXPORT PDF (WITH FULL FILTERS & PRINT LOGIC)
+# ------------------------------------------------------------
+@router.get("/export_pdf")
+def export_pdf(
+    request: Request, db: Session = Depends(get_db), 
+    from_date: str = "", to_date: str = "", type: str = "",
+    batch: str = "", brand: str = "", species: str = "",
+    variety: str = "", location: str = "",
+    download: bool = Query(False) 
+):
+    comp_code = request.session.get("company_code")
+    q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+
+    if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
+    if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
+    if type: q = q.filter(stock_entry.cargo_movement_type == type)
+    if batch: q = q.filter(stock_entry.batch_number == batch)
+    if brand: q = q.filter(stock_entry.brand == brand)
+    if species: q = q.filter(stock_entry.species == species)
+    if variety: q = q.filter(stock_entry.variety == variety)
+    if location: q = q.filter(stock_entry.location == location)
     
-    filename = f"Stock_Ledger_{date.today()}.xlsx"
+    rows = q.order_by(stock_entry.date.asc(), stock_entry.time.asc()).all()
+    company_name, company_address = get_company_info(db, comp_code)
+    
+    html = request.app.state.templates.get_template("inventory_management/stock_report_print.html").render({
+        "request": request, "rows": rows, "company_name": company_name, 
+        "company_address": company_address, "printed_on": datetime.now(IST).strftime("%d-%m-%Y %H:%M:%S")
+    })
+    
+    pdf_file = HTML(string=html).write_pdf()
+    
+    disposition = "attachment" if download else "inline"
+    
     return StreamingResponse(
-        stream, 
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        BytesIO(pdf_file), 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f"{disposition}; filename=Stock_Report.pdf"}
     )
 
-# -------------------------------------------------------------------------
-# 3️⃣ AUDIT LOGS (AJAX Fetch)
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------
+# AUDIT LOGS FETCH
+# ------------------------------------------------------------
 @router.get("/audit_all")
 async def get_stock_audits(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    
-    # Joining with stock_entry to show Batch Number in logs
-    logs = (db.query(AuditLog, stock_entry.batch_number)
-            .join(stock_entry, AuditLog.record_id == stock_entry.id)
+    logs = (db.query(AuditLog, stock_entry.batch_number).join(stock_entry, AuditLog.record_id == stock_entry.id)
             .filter(AuditLog.table_name == "stock_entry", AuditLog.company_id == comp_code)
-            .order_by(desc(AuditLog.edited_at)).limit(50).all())
+            .order_by(AuditLog.edited_at.desc()).limit(100).all())
+    return JSONResponse([{"timestamp": l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"), "user": l.AuditLog.edited_by.split('@')[0], "batch": l.batch_number, "field": l.AuditLog.field_name.replace('_', ' ').title(), "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"} for l in logs])
 
-    audit_data = []
-    for l in logs:
-        # Convert UTC to IST for display
-        local_time = l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST)
-        audit_data.append({
-            "timestamp": local_time.strftime("%d-%m-%Y %I:%M %p"),
-            "user": l.AuditLog.edited_by.split('@')[0],
-            "batch": l.batch_number,
-            "field": l.AuditLog.field_name.replace('_', ' ').title(),
-            "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
-        })
-    
-    return JSONResponse(audit_data)
+# ------------------------------------------------------------
+# DELETE RECORD
+# ------------------------------------------------------------
+@router.post("/delete")
+async def delete_stock(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if request.session.get("role") != "admin": raise HTTPException(status_code=403)
+    row = db.query(stock_entry).filter(stock_entry.id == payload["id"], stock_entry.company_id == comp_code).first()
+    if row:
+        db.add(AuditLog(table_name="stock_entry", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Exist", new_value="Deleted", edited_by=request.session.get("email"), edited_at=datetime.utcnow()))
+        db.delete(row)
+        db.commit()
+    return {"status": "success"}
