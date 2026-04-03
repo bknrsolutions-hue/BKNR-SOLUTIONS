@@ -257,16 +257,12 @@ window.addEventListener('appinstalled', () => {
 });
 
 
-const permissions = ({{ request.session.get('permissions')|tojson }} || "ALL").toString();
+const permissions = {{ request.session.get('permissions')|tojson }};
 
 function allow(key){
-  try {
-    return permissions.includes("ALL") || permissions.includes(key);
-  } catch(e){
-    console.log("Permission error:", e);
-    return true;
-  }
+  return permissions.includes("ALL") || permissions.includes(key);
 }
+
 function setActive(btn){
   document.querySelectorAll(".top-menu button").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");
@@ -433,23 +429,23 @@ function loadAttendance(){
               <i class="fa-solid fa-calendar-check"></i> Daily Attendance
             </button>`;
 
-  // 💵 Monthly Salary Sheet
+  // 💵 Monthly Salary Sheet (New Addition)
   if(allow("salary_report"))
     html += `<button onclick="openPage('/attendance/salary/monthly-sheet')">
               <i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet
             </button>`;
-
-  // 🧾 Payroll Statutory Master
-  if(allow("tax_master"))
+  // 🧾 Payroll Statutory Master (PF / ESI / PT / LWF)
+ if(allow("tax_master"))
    html += `<button onclick="openPage('/attendance/tax-master')">
             <i class="fa-solid fa-file-shield"></i> Payroll Statutory Master
           </button>`;
-
   // 💰 Salary Advance
-  if (allow("salary_advance"))
+ if (allow("salary_advance"))
   html += `<button onclick="openPage('/attendance/salary-advance')">
             <i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance
           </button>`;
+
+
 
   document.getElementById("sideMenu").innerHTML = html;
 }
