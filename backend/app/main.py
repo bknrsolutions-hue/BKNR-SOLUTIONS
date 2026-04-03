@@ -127,9 +127,14 @@ def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
-        request,
         "menu.html",
-        {"request": request}
+        {
+            "request": request,
+            "email": request.session.get("email"),
+            "name": request.session.get("name"),
+            "company_code": request.session.get("company_code"),
+            "permissions": request.session.get("permissions"),
+        }
     )
 
 @application.get("/create-all")
