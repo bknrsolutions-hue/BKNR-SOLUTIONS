@@ -272,7 +272,7 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     wb.save(output)
     output.seek(0)
     
-    # FIX: Syntax error – dictionary and function call properly closed
+    # FIXED: Proper dictionary closing and StreamingResponse headers
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
