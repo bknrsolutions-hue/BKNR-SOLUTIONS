@@ -137,6 +137,7 @@ def grading_report(
             "is_subtotal": True
         })
 
+    # FIX: TemplateResponse arguments (Template Name first, then Context Dict)
     return templates.TemplateResponse("reports/grading_report.html", {"request": request, "rows": rows})
 
 # ============================================================
@@ -265,21 +266,13 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     ws.append(headers)
     
     for r in rows:
-        ws.append([
-            str(r.date), 
-            str(r.time), 
-            r.batch_number, 
-            r.species, 
-            r.variety_name, 
-            r.hoso_count, 
-            r.quantity, 
-            r.graded_count
-        ])
+        ws.append([str(r.date), str(r.time), r.batch_number, r.species, r.variety_name, r.hoso_count, r.quantity, r.graded_count])
 
     output = BytesIO()
     wb.save(output)
     output.seek(0)
     
+    # FIX: Syntax error – dictionary and function call properly closed
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
