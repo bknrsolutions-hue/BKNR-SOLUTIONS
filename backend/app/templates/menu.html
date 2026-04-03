@@ -260,6 +260,7 @@ window.addEventListener('appinstalled', () => {
 const permissions = {{ request.session.get('permissions')|tojson }};
 
 function allow(key){
+  if (!permissions) return true;
   return permissions.includes("ALL") || permissions.includes(key);
 }
 
