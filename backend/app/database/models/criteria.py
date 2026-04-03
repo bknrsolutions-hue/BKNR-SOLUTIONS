@@ -14,33 +14,7 @@ class metacolumns:
     email = Column(String(255))
     company_id = Column(String(50), index=True)  # Example: BKNR9879
 
-# =========================================================
-# ⛽ DIESEL LOG MODEL (Integrated with all columns)
-# =========================================================
-class DieselLog(Base, metacolumns):
-    __tablename__ = "diesel_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    unit_id = Column(Integer, ForeignKey("production_at.id"), index=True)
-    
-    log_date = Column(Date, default=datetime.utcnow, index=True)
-    bill_date = Column(Date, nullable=True)
-    
-    type = Column(String(10), index=True) # "IN" or "OUT"
-    grn_no = Column(String(50), nullable=True)
-    bill_no = Column(String(50), nullable=True)
-    vendor = Column(String(100), nullable=True)
-    
-    opening_stock = Column(Float, default=0.0)
-    purchase_qty = Column(Float, default=0.0)
-    consumption = Column(Float, default=0.0)
-    closing_stock = Column(Float, default=0.0)
-    
-    avg_price = Column(Float, default=0.0)
-    tax_per = Column(Float, default=0.0)
-    net_val = Column(Float, default=0.0)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
 
 # --------------------------------------------------------
 # MASTERS
