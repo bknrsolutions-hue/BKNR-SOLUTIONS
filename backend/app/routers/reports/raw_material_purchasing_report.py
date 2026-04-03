@@ -142,15 +142,10 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
                 ))
                 setattr(row, field, new_val)
 
-    # Automated Calculation Logic
-    g1 = float(row.g1_qty or 0)
-    g2 = float(row.g2_qty or 0)
-    dc = float(row.dc_qty or 0)
-    rate = float(row.rate_per_kg or 0)
-
-    row.received_qty = g1 + g2 + dc
-    # Formula: (G1 + G2/2) * Rate (Standard purchasing logic)
-    row.amount = (g1 + (g2 / 2)) * rate
+    # Recalculating Totals
+    row.received_qty = float(row.g1_qty or 0) + float(row.g2_qty or 0) + float(row.dc_qty or 0)
+    # logic based on G1 + 50% of G2 (Adjust as per your specific business rule)
+    row.amount = (float(row.g1_qty or 0) + float(row.g2_qty or 0) / 2) * float(row.rate_per_kg or 0)
     
     db.commit()
     return {"status": "updated", "received_qty": row.received_qty, "amount": row.amount}
@@ -162,7 +157,11 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
 def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     edited_by = request.session.get("email")
-    row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
+    row = db.query(RawMaterialPurchasing).filter(
+        RawMaterialPurchasing.id == payload.get("id"), 
+        RawMaterialPurchasing.company_id == comp_code
+    ).first()
+    
     if not row: raise HTTPException(status_code=404)
     
     db.add(AuditLog(
@@ -170,7 +169,6 @@ def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
         field_name="DELETE", old_value=f"ID {row.id}", new_value="DELETED", 
         edited_by=edited_by, edited_at=datetime.now()
     ))
-    
     db.delete(row)
     db.commit()
     return {"status": "deleted"}
@@ -192,7 +190,11 @@ def export_rmp_excel(request: Request, ids: str = Query(None), db: Session = Dep
     ws.append(["Sl.No", "Date", "Batch", "Supplier", "Variety", "Species", "Count", "G1", "G2", "DC", "Total Rec", "Rate", "Amount", "Boxes", "HSN", "Peeling", "Prod For", "Remarks"])
     
     for idx, r in enumerate(rows, 1):
-        ws.append([idx, str(r.date), r.batch_number, r.supplier_name, r.variety_name, r.species, r.count, r.g1_qty, r.g2_qty, r.dc_qty, r.received_qty, r.rate_per_kg, r.amount, r.material_boxes, r.hsn_code, r.peeling_at, r.production_for, r.remarks])
+        ws.append([
+            idx, str(r.date), r.batch_number, r.supplier_name, r.variety_name, r.species, 
+            r.count, r.g1_qty, r.g2_qty, r.dc_qty, r.received_qty, r.rate_per_kg, 
+            r.amount, r.material_boxes, r.hsn_code, r.peeling_at, r.production_for, r.remarks
+        ])
     
     out = BytesIO()
     wb.save(out)
@@ -207,7 +209,7 @@ def export_rmp_excel(request: Request, ids: str = Query(None), db: Session = Dep
 # PRINT VIEWS (HTML)
 # -----------------------------------------------------------
 @router.get("/print_table", response_class=HTMLResponse)
-def print_table_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+async def print_table_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == comp_code)
     if ids:
@@ -216,10 +218,20 @@ def print_table_view(request: Request, ids: str = Query(None), db: Session = Dep
     
     rows = q.order_by(RawMaterialPurchasing.date.asc()).all()
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse("reports/raw_material_purchasing_print_table.html", {"request": request, "rows": rows, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    
+    return templates.TemplateResponse(
+        "reports/raw_material_purchasing_print_table.html", 
+        {
+            "request": request, 
+            "rows": rows, 
+            "company_name": comp["name"], 
+            "company_address": comp["address"], 
+            "printed_on": datetime.now()
+        }
+    )
 
 @router.get("/print_summary", response_class=HTMLResponse)
-def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+async def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == comp_code)
     if ids:
@@ -248,20 +260,30 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
         })
     
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse("reports/raw_material_purchasing_print_summary.html", {"request": request, "batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    return templates.TemplateResponse(
+        "reports/raw_material_purchasing_print_summary.html", 
+        {
+            "request": request, 
+            "batches": final_batches, 
+            "company_name": comp["name"], 
+            "company_address": comp["address"], 
+            "printed_on": datetime.now()
+        }
+    )
 
 # -----------------------------------------------------------
 # EXPORT PDF (WEASYPRINT - DIRECT DOWNLOAD)
 # -----------------------------------------------------------
 @router.get("/export_pdf")
-def export_rmp_pdf(request: Request, ids: str = Query(None), type: str = Query("table"), db: Session = Depends(get_db)):
+async def export_rmp_pdf(request: Request, ids: str = Query(None), type: str = Query("table"), db: Session = Depends(get_db)):
     if type == "summary":
-        html_resp = print_summary_view(request, ids, db)
+        resp = await print_summary_view(request, ids, db)
     else:
-        html_resp = print_table_view(request, ids, db)
+        resp = await print_table_view(request, ids, db)
     
-    html_content = html_resp.body.decode()
+    html_content = resp.body.decode()
     pdf = HTML(string=html_content).write_pdf()
+    
     return StreamingResponse(
         BytesIO(pdf), 
         media_type="application/pdf", 
