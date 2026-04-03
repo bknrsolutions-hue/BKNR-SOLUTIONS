@@ -121,6 +121,7 @@ def login_page(request: Request):
         {"request": request}
     )
 
+
 @application.get("/home", response_class=HTMLResponse)
 def home_page(request: Request):
     if not request.session.get("email"):
@@ -129,14 +130,9 @@ def home_page(request: Request):
     return templates.TemplateResponse(
         request,
         "menu.html",
-        {
-            "request": request,
-            "email": request.session.get("email"),
-            "name": request.session.get("name"),
-            "company_code": request.session.get("company_code"),
-            "permissions": request.session.get("permissions"),
-        }
+        {"request": request}
     )
+
 
 @application.get("/create-all")
 def create_all():
@@ -150,6 +146,7 @@ def create_all():
             table.create(bind=engine)
 
     return {"status": "Tables Created Successfully"}
+
 
 @application.get("/health")
 def health():
