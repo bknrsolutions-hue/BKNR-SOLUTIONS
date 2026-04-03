@@ -33,10 +33,11 @@ def freezers_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for Python 3.13 / FastAPI latest
     return templates.TemplateResponse(
-        "criteria/freezers.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/freezers.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,

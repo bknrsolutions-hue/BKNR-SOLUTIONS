@@ -33,10 +33,11 @@ def grades_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/grades.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/grades.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,

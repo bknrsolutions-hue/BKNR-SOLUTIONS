@@ -1,3 +1,6 @@
+# app/routers/criteria/grade_to_hoso.py
+
+from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -6,7 +9,6 @@ from sqlalchemy import func
 import math
 
 from app.database import get_db
-# HOSO_HLSO_Yields ని ఇంపోర్ట్ చేయడం మర్చిపోవద్దు
 from app.database.models.criteria import (
     varieties,
     grade_to_hoso,
@@ -41,7 +43,13 @@ def grade_to_hoso_report(request: Request, db: Session = Depends(get_db)):
         )
         .all()
     )
-    return templates.TemplateResponse("criteria/grade_to_hoso.html", {"request": request, "rows": rows})
+    
+    # ✅ FIX: TemplateResponse arguments updated for Python 3.13 / FastAPI latest
+    return templates.TemplateResponse(
+        request=request, 
+        name="criteria/grade_to_hoso.html", 
+        context={"rows": rows}
+    )
 
 @router.post("/grade_to_hoso")
 def save_grade_to_hoso(
@@ -70,7 +78,11 @@ def save_grade_to_hoso(
         nw_grade = g_val
     else:
         # 1️⃣ HLSO CALCULATION (Based on Grade High Count)
-        high = int(g_val.split("/")[-1])
+        try:
+            high = int(g_val.split("/")[-1])
+        except (ValueError, IndexError):
+            high = 0
+
         glaze_factor = (
             1 if gl_val == "NWNC"
             else (100 - float(gl_val.replace("%", ""))) / 100
@@ -86,8 +98,7 @@ def save_grade_to_hoso(
 
         hlso = math.floor(high / glaze_factor / peel / soak)
 
-        # 2️⃣ HOSO LOOKUP (Instead of Formula)
-        # ఇక్కడ మనం కాలిక్యులేట్ చేసిన HLSO ని మాస్టర్ టేబుల్ లో వెతుకుతున్నాం
+        # 2️⃣ HOSO LOOKUP
         yield_row = (
             db.query(HOSO_HLSO_Yields)
             .filter(
@@ -99,7 +110,6 @@ def save_grade_to_hoso(
             .first()
         )
 
-        # ఒకవేళ మాస్టర్ లో దొరికితే ఆ HOSO తీసుకుంటుంది, లేదంటే 0 చూపిస్తుంది
         hoso = yield_row.hoso_count if yield_row else 0
 
         # 3️⃣ NW GRADE
@@ -123,6 +133,7 @@ def save_grade_to_hoso(
         row.hlso_count = hlso
         row.hoso_count = hoso
         row.nw_grade = nw_grade
+        row.email = email
     else:
         db.add(grade_to_hoso(
             species=s_val, grade_name=g_val, variety_name=v_val, glaze_name=gl_val,

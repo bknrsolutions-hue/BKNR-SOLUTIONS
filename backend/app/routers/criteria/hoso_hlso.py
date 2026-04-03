@@ -1,3 +1,5 @@
+# app/routers/criteria/hoso_hlso.py
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -39,10 +41,11 @@ def hoso_hlso_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
-        "criteria/hoso_hlso.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/hoso_hlso.html",
+        context={
             "today_data": rows,
             "species_list": species_list,
             "email": email,
@@ -57,7 +60,7 @@ def hoso_hlso_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/hoso_hlso")
 def save_hoso_hlso(
     request: Request,
-    species: str = Form(...),
+    species_val: str = Form(..., alias="species"), # model name conflict avoid cheyyadaniki species_val
     hoso_count: str = Form(...),          # "10" or "10 to 20"
     hlso_yield_pct: float = Form(...),
     db: Session = Depends(get_db)
@@ -73,15 +76,21 @@ def save_hoso_hlso(
     # PARSE RANGE
     # -----------------------------
     counts = []
-    hoso_count = hoso_count.strip().lower()
+    hoso_count_str = hoso_count.strip().lower()
 
-    if "to" in hoso_count:
-        start, end = hoso_count.split("to")
-        start = int(start.strip())
-        end = int(end.strip())
-        counts = list(range(start, end + 1))
+    if "to" in hoso_count_str:
+        try:
+            parts = hoso_count_str.split("to")
+            start = int(parts[0].strip())
+            end = int(parts[1].strip())
+            counts = list(range(start, end + 1))
+        except ValueError:
+            return JSONResponse({"error": "Invalid range format (ex: 10 to 20)"}, status_code=400)
     else:
-        counts = [int(hoso_count)]
+        try:
+            counts = [int(hoso_count_str)]
+        except ValueError:
+            return JSONResponse({"error": "Invalid count format"}, status_code=400)
 
     now = datetime.now()
 
@@ -92,7 +101,7 @@ def save_hoso_hlso(
 
         # 🔥 HLSO COUNT CALCULATION (ROUND DOWN)
         # hlso_count = hoso_count / 2.2 / (hlso_yield_pct / 100)
-        hlso_count = math.floor(
+        hlso_count_val = math.floor(
             c / 2.2 / (hlso_yield_pct / 100)
         )
 
@@ -100,7 +109,7 @@ def save_hoso_hlso(
             db.query(HOSO_HLSO_Yields)
             .filter(
                 HOSO_HLSO_Yields.company_id == company_id,
-                HOSO_HLSO_Yields.species == species,
+                HOSO_HLSO_Yields.species == species_val,
                 HOSO_HLSO_Yields.hoso_count == c
             )
             .first()
@@ -109,7 +118,7 @@ def save_hoso_hlso(
         # UPDATE IF EXISTS
         if row:
             row.hlso_yield_pct = hlso_yield_pct
-            row.hlso_count = hlso_count
+            row.hlso_count = hlso_count_val
             row.date = now.date()
             row.time = now.time()
             row.email = email
@@ -118,10 +127,10 @@ def save_hoso_hlso(
         else:
             db.add(
                 HOSO_HLSO_Yields(
-                    species=species,
+                    species=species_val,
                     hoso_count=c,
                     hlso_yield_pct=hlso_yield_pct,
-                    hlso_count=hlso_count,
+                    hlso_count=hlso_count_val,
                     date=now.date(),
                     time=now.time(),
                     email=email,

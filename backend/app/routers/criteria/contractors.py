@@ -32,10 +32,11 @@ def contractors_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for Python 3.13 / FastAPI latest
     return templates.TemplateResponse(
-        "criteria/contractors.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/contractors.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,
@@ -81,7 +82,10 @@ def save_contractor(
     # ---------------- DATE PARSE ----------------
     gst_date = None
     if gst_applicable_from:
-        gst_date = datetime.strptime(gst_applicable_from, "%Y-%m-%d").date()
+        try:
+            gst_date = datetime.strptime(gst_applicable_from, "%Y-%m-%d").date()
+        except ValueError:
+            gst_date = None
 
     # ---------------- UPDATE ----------------
     if record_id:

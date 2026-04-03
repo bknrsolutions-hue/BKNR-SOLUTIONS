@@ -53,10 +53,11 @@ def production_types_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/production_types.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/production_types.html",
+        context={
             "lookup": lookup,
             "today_data": rows,
             "email": email,
@@ -100,11 +101,11 @@ def save_production_types(
     if not time:
         time = now.strftime("%H:%M:%S")
 
-    # SAFE FLOAT
+    # SAFE FLOAT Conversion
     try:
-        charge_value = float(production_charge_per_kg) if production_charge_per_kg else 0
-    except:
-        charge_value = 0
+        charge_value = float(production_charge_per_kg) if production_charge_per_kg.strip() else 0.0
+    except ValueError:
+        charge_value = 0.0
 
     # DUPLICATE CHECK
     duplicate = (

@@ -32,9 +32,9 @@ def chemicals_page(request: Request, db: Session = Depends(get_db)):
     )
 
     return templates.TemplateResponse(
-        "criteria/chemicals.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/chemicals.html",
+        context={
             "today_data": today_data,
             "email": email,
             "company_id": company_code,
@@ -75,9 +75,9 @@ def save_chemical(
         ).order_by(chemicals.id.desc()).all()
 
         return templates.TemplateResponse(
-            "criteria/chemicals.html",
-            {
-                "request": request,
+            request=request,
+            name="criteria/chemicals.html",
+            context={
                 "today_data": data,
                 "email": email,
                 "company_id": company_code,
@@ -118,9 +118,9 @@ def save_chemical(
     ).order_by(chemicals.id.desc()).all()
 
     return templates.TemplateResponse(
-        "criteria/chemicals.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/chemicals.html",
+        context={
             "today_data": updated,
             "email": email,
             "company_id": company_code,

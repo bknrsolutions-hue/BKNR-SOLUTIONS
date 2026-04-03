@@ -19,8 +19,8 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/purposes")
 def purposes_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("email")             # ✔ correct
-    company_code = request.session.get("company_code")  # ✔ correct
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
@@ -32,10 +32,11 @@ def purposes_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/purposes.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/purposes.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,
@@ -55,18 +56,18 @@ def save_purpose(
     db: Session = Depends(get_db)
 ):
 
-    email = request.session.get("email")            # ✔ correct
-    company_code = request.session.get("company_code")  # ✔ correct
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return JSONResponse({"error": "Session Expired"}, status_code=401)
 
-    # Safe ID
+    # Safe ID conversion
     record_id = int(id) if id and id.isdigit() else None
 
     now = datetime.now()
-    date = now.strftime("%Y-%m-%d")
-    time = now.strftime("%H:%M:%S")
+    date_val = now.strftime("%Y-%m-%d")
+    time_val = now.strftime("%H:%M:%S")
 
     # Duplicate check – company wise
     duplicate = (
@@ -100,16 +101,16 @@ def save_purpose(
             return JSONResponse({"error": "Record not found"}, status_code=404)
 
         row.purpose_name = purpose_name
-        row.date = date
-        row.time = time
+        row.date = date_val
+        row.time = time_val
         row.email = email
 
     # INSERT
     else:
         new_row = Purposes(
             purpose_name=purpose_name,
-            date=date,
-            time=time,
+            date=date_val,
+            time=time_val,
             email=email,
             company_id=company_code
         )

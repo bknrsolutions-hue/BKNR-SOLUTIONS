@@ -31,10 +31,11 @@ def countries_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
-        "criteria/countries.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/countries.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,

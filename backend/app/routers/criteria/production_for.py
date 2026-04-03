@@ -1,3 +1,5 @@
+# app/routers/criteria/production_for.py
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -38,11 +40,14 @@ def production_for_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/production_for.html",
-        {
-            "request": request,
-            "today_data": rows
+        request=request,
+        name="criteria/production_for.html",
+        context={
+            "today_data": rows,
+            "email": email,
+            "company_id": company_code
         }
     )
 
@@ -55,13 +60,13 @@ async def save_production_for(
     free_days: int = Form(0),
 
     freezer_name: str = Form(None),
-    repacking_cost_per_kg: float = Form(0),
-    rate_per_mc_day: float = Form(0),
+    repacking_cost_per_kg: float = Form(0.0),
+    rate_per_mc_day: float = Form(0.0),
 
-    ice_rate_per_kg: float = Form(0),
-    grading_rate_per_kg: float = Form(0),
-    peeling_rate_per_kg: float = Form(0),
-    deheading_rate_per_kg: float = Form(0),
+    ice_rate_per_kg: float = Form(0.0),
+    grading_rate_per_kg: float = Form(0.0),
+    peeling_rate_per_kg: float = Form(0.0),
+    deheading_rate_per_kg: float = Form(0.0),
 
     status: str = Form("Active"),
 
@@ -73,9 +78,8 @@ async def save_production_for(
     if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # 🔥 IMPORTANT FIX
+    # 🔥 Get raw form data for dynamic glaze costs
     form = await request.form()
-
     now = datetime.now()
 
     GLAZES = [
@@ -96,10 +100,11 @@ async def save_production_for(
     for key, label in GLAZES:
         prod_cost = form.get(f"prod_cost_{key}")
 
+        # Skip if cost is missing or zero
         if not prod_cost or float(prod_cost) == 0:
             continue
 
-        row = ProductionFor(
+        new_row = ProductionFor(
             company_id=company_code,
             production_for=production_for,
             apply_from=apply_from,
@@ -123,7 +128,7 @@ async def save_production_for(
             email=email
         )
 
-        db.add(row)
+        db.add(new_row)
         rows_created += 1
 
     db.commit()
@@ -144,6 +149,9 @@ def delete_production_for(
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
+
+    if not company_code:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(ProductionFor).filter(
         ProductionFor.id == id,

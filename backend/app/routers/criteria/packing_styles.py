@@ -31,10 +31,11 @@ def packing_styles_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/packing_styles.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/packing_styles.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,

@@ -36,10 +36,11 @@ def hsn_codes_page(
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/hsn_codes.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/hsn_codes.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,

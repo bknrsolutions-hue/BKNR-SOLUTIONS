@@ -1,3 +1,5 @@
+# app/routers/criteria/varieties.py
+
 from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
@@ -31,10 +33,11 @@ def varieties_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/varieties.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/varieties.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code
@@ -67,8 +70,8 @@ def save_variety(
     record_id = int(id) if id and id.isdigit() else None
 
     now = datetime.now()
-    date = date or now.strftime("%Y-%m-%d")
-    time = time or now.strftime("%H:%M:%S")
+    date_val = date or now.strftime("%Y-%m-%d")
+    time_val = time or now.strftime("%H:%M:%S")
 
     # DUPLICATE CHECK
     duplicate = (
@@ -102,22 +105,23 @@ def save_variety(
         row.peeling_yield = peeling_yield
         row.soaking_yield = soaking_yield
         row.hoso_to_finished_yield = hoso_to_finished_yield
-        row.date = date
-        row.time = time
+        row.date = date_val
+        row.time = time_val
         row.email = email
 
     # INSERT
     else:
-        db.add(varieties(
+        new_variety = varieties(
             variety_name=variety_name,
             peeling_yield=peeling_yield,
             soaking_yield=soaking_yield,
             hoso_to_finished_yield=hoso_to_finished_yield,
-            date=date,
-            time=time,
+            date=date_val,
+            time=time_val,
             email=email,
             company_id=company_code
-        ))
+        )
+        db.add(new_variety)
 
     db.commit()
 

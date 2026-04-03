@@ -1,3 +1,5 @@
+# app/routers/criteria/species.py
+
 from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 
 from fastapi import APIRouter, Request, Form, Depends
@@ -32,10 +34,11 @@ def species_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
-        "criteria/species.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/species.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code,
@@ -66,8 +69,8 @@ def save_species(
     record_id = int(id) if id and id.isdigit() else None
 
     now = datetime.now()
-    date = date or now.strftime("%Y-%m-%d")
-    time = time or now.strftime("%H:%M:%S")
+    date_val = date or now.strftime("%Y-%m-%d")
+    time_val = time or now.strftime("%H:%M:%S")
 
     # DUPLICATE CHECK
     duplicate = (
@@ -86,9 +89,9 @@ def save_species(
         ).order_by(species.id.desc()).all()
 
         return templates.TemplateResponse(
-            "criteria/species.html",
-            {
-                "request": request,
+            request=request,
+            name="criteria/species.html",
+            context={
                 "today_data": rows,
                 "email": email,
                 "company_id": company_code,
@@ -107,16 +110,16 @@ def save_species(
             return RedirectResponse("/criteria/species", status_code=302)
 
         row.species_name = species_name
-        row.date = date
-        row.time = time
+        row.date = date_val
+        row.time = time_val
         row.email = email
 
     # INSERT
     else:
         new_row = species(
             species_name=species_name,
-            date=date,
-            time=time,
+            date=date_val,
+            time=time_val,
             email=email,
             company_id=company_code
         )
@@ -127,7 +130,7 @@ def save_species(
     # 🔥 AUTO GENERATE / SYNC GRADE → HOSO COMBINATIONS
     sync_grade_to_hoso(db, company_code, email)
 
-    return RedirectResponse("/criteria/species", status_code=302)
+    return RedirectResponse("/criteria/species", status_code=303)
 
 
 # ---------------------------------------------------------
@@ -137,6 +140,7 @@ def save_species(
 def delete_species(id: int, request: Request, db: Session = Depends(get_db)):
 
     company_code = request.session.get("company_code")
+    email = request.session.get("email")
 
     if not company_code:
         return RedirectResponse("/", status_code=302)
@@ -149,7 +153,6 @@ def delete_species(id: int, request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     # 🔥 RE-SYNC AFTER DELETE ALSO
-    email = request.session.get("email")
     sync_grade_to_hoso(db, company_code, email)
 
-    return RedirectResponse("/criteria/species", status_code=302)
+    return RedirectResponse("/criteria/species", status_code=303)

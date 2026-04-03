@@ -1,3 +1,5 @@
+# app/routers/criteria/suppliers.py
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -17,8 +19,8 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/suppliers")
 def suppliers_page(request: Request, db: Session = Depends(get_db)):
 
-    email = request.session.get("email")              # FIXED
-    company_code = request.session.get("company_code")  # FIXED
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
@@ -30,10 +32,11 @@ def suppliers_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/suppliers.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/suppliers.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code
@@ -60,8 +63,8 @@ async def save_supplier(
     db: Session = Depends(get_db)
 ):
 
-    email = request.session.get("email")               # FIXED
-    company_code = request.session.get("company_code")  # FIXED
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
@@ -71,10 +74,8 @@ async def save_supplier(
 
     # AUTO DATE TIME
     now = datetime.now()
-    if not date:
-        date = now.strftime("%Y-%m-%d")
-    if not time:
-        time = now.strftime("%H:%M:%S")
+    date_val = date or now.strftime("%Y-%m-%d")
+    time_val = time or now.strftime("%H:%M:%S")
 
     # DUPLICATE CHECK
     dup = (
@@ -108,8 +109,8 @@ async def save_supplier(
         row.supplier_email = supplier_email
         row.phone = phone
         row.address = address
-        row.date = date
-        row.time = time
+        row.date = date_val
+        row.time = time_val
         row.email = email
 
     # INSERT MODE
@@ -119,8 +120,8 @@ async def save_supplier(
             supplier_email=supplier_email,
             phone=phone,
             address=address,
-            date=date,
-            time=time,
+            date=date_val,
+            time=time_val,
             email=email,
             company_id=company_code
         )
@@ -136,7 +137,7 @@ async def save_supplier(
 @router.post("/suppliers/delete/{id}")
 def delete_supplier(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_code = request.session.get("company_code")  # FIXED
+    company_code = request.session.get("company_code")
 
     if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)

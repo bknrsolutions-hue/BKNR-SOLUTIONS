@@ -1,3 +1,5 @@
+# app/routers/criteria/peeling_rates.py
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -40,10 +42,11 @@ def peeling_rates_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
-        "criteria/peeling_rates.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/peeling_rates.html",
+        context={
             "lookup_data": lookup_data,
             "today_data": rows,
             "email": email,
@@ -58,7 +61,7 @@ def peeling_rates_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/peeling_rates")
 def save_peeling_rate(
     request: Request,
-    species: str = Form(...),
+    species_val: str = Form(..., alias="species"), # conflict avoid cheyyadaniki alias
     variety_name: str = Form(...),
     contractor_name: str = Form(...),
     hlso_count: str = Form(...),     # 10 / 10 to 20
@@ -80,11 +83,19 @@ def save_peeling_rate(
 
     # ---------- RANGE PARSE ----------
     counts = []
-    if "to" in hlso_count.lower():
-        a, b = hlso_count.lower().replace(" ", "").split("to")
-        counts = range(int(a), int(b) + 1)
+    hlso_str = hlso_count.lower().strip()
+    
+    if "to" in hlso_str:
+        try:
+            a, b = hlso_str.replace(" ", "").split("to")
+            counts = range(int(a), int(b) + 1)
+        except ValueError:
+            counts = []
     else:
-        counts = [int(hlso_count)]
+        try:
+            counts = [int(hlso_str)]
+        except ValueError:
+            counts = []
 
     # ---------- EDIT MODE DELETE ----------
     if id and id.isdigit():
@@ -106,7 +117,7 @@ def save_peeling_rate(
     for c in counts:
         exists = db.query(peeling_rates).filter(
             peeling_rates.company_id == company_id,
-            peeling_rates.species == species,
+            peeling_rates.species == species_val,
             peeling_rates.variety_name == variety_name,
             peeling_rates.contractor_name == contractor_name,
             peeling_rates.hlso_count == str(c),
@@ -117,7 +128,7 @@ def save_peeling_rate(
             continue
 
         db.add(peeling_rates(
-            species=species,
+            species=species_val,
             variety_name=variety_name,
             contractor_name=contractor_name,
             hlso_count=str(c),
@@ -131,7 +142,7 @@ def save_peeling_rate(
 
     db.commit()
 
-    # ✅ IMPORTANT – REDIRECT AFTER SAVE
+    # ✅ REDIRECT AFTER SAVE
     return RedirectResponse(
         url="/criteria/peeling_rates",
         status_code=HTTP_303_SEE_OTHER

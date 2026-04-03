@@ -31,10 +31,11 @@ def production_at_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "criteria/production_at.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/production_at.html",
+        context={
             "today_data": rows,
             "email": email,
             "company_id": company_code
@@ -49,8 +50,8 @@ def save_production_at(
     request: Request,
 
     production_at_name: str = Form(...),   # MUST MATCH HTML NAME
-    meter_number: str = Form(...),         # ✅ New Meter Number
-    unit_rate: float = Form(...),          # ✅ New Unit Rate Field Added
+    meter_number: str = Form(...),         # ✅ Meter Number
+    unit_rate: float = Form(...),          # ✅ Unit Rate
     id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
@@ -64,7 +65,7 @@ def save_production_at(
     if not email or not company_code:
         return JSONResponse({"error": "Session expired!"}, status_code=401)
 
-    record_id = int(id) if id.isdigit() else None
+    record_id = int(id) if id and id.isdigit() else None
 
     now = datetime.now()
     if not date:
@@ -129,6 +130,9 @@ def save_production_at(
 def delete(id: int, request: Request, db: Session = Depends(get_db)):
 
     company_code = request.session.get("company_code")
+
+    if not company_code:
+        return JSONResponse({"error": "Session expired!"}, status_code=401)
 
     db.query(ProductionAt).filter(
         ProductionAt.id == id,
