@@ -32,9 +32,9 @@ def buyers_page(request: Request, db: Session = Depends(get_db)):
     )
 
     return templates.TemplateResponse(
-        "criteria/buyers.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/buyers.html",
+        context={
             "today_data": today_data,
             "email": email,
             "company_id": company_code,
@@ -75,9 +75,9 @@ def save_buyer(
         ).order_by(buyers.id.desc()).all()
 
         return templates.TemplateResponse(
-            "criteria/buyers.html",
-            {
-                "request": request,
+            request=request,
+            name="criteria/buyers.html",
+            context={
                 "today_data": data,
                 "email": email,
                 "company_id": company_code,
@@ -119,9 +119,9 @@ def save_buyer(
     ).order_by(buyers.id.desc()).all()
 
     return templates.TemplateResponse(
-        "criteria/buyers.html",
-        {
-            "request": request,
+        request=request,
+        name="criteria/buyers.html",
+        context={
             "today_data": data,
             "email": email,
             "company_id": company_code,

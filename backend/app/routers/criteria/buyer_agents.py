@@ -38,7 +38,7 @@ def buyer_agents_page(request: Request, db: Session = Depends(get_db)):
             "today_data": data,
             "email": session_email,
             "company_id": company_code,
-            "message": f"✔️ Brand '{brand_name}' saved successfully!"
+            "message": ""
         }
     )
 
@@ -73,13 +73,16 @@ def save_buyer_agent(
             buyer_agents.company_id == company_code
         ).order_by(buyer_agents.id.desc()).all()
 
-        return templates.TemplateResponse("criteria/buyer_agents.html", {
-            "request": request,
-            "today_data": data,
-            "email": session_email,
-            "company_id": company_code,
-            "message": f"❌ Agent '{agent_name}' already exists!"
-        })
+        return templates.TemplateResponse(
+            request=request,
+            name="criteria/buyer_agents.html",
+            context={
+                "today_data": data,
+                "email": session_email,
+                "company_id": company_code,
+                "message": f"❌ Agent '{agent_name}' already exists!"
+            }
+        )
 
     # UPDATE
     if id:
@@ -103,7 +106,7 @@ def save_buyer_agent(
             date=date,
             time=time,
             email=session_email,
-            company_id=company_code   # store string company_code (consistent with your models)
+            company_id=company_code   # store string company_code
         )
         db.add(new_row)
 
@@ -113,13 +116,16 @@ def save_buyer_agent(
         buyer_agents.company_id == company_code
     ).order_by(buyer_agents.id.desc()).all()
 
-    return templates.TemplateResponse("criteria/buyer_agents.html", {
-        "request": request,
-        "today_data": data,
-        "email": session_email,
-        "company_id": company_code,
-        "message": f"✔️ Agent '{agent_name}' saved successfully!"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="criteria/buyer_agents.html",
+        context={
+            "today_data": data,
+            "email": session_email,
+            "company_id": company_code,
+            "message": f"✔️ Agent '{agent_name}' saved successfully!"
+        }
+    )
 
 
 # ---------------------------------------------------------
@@ -140,5 +146,4 @@ def delete_agent(id: int, request: Request, db: Session = Depends(get_db)):
 
     db.commit()
 
-    # Redirect back to page with message (you can handle the msg query in template if needed)
     return RedirectResponse("/buyer_agents?msg=Deleted", status_code=302)
