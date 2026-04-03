@@ -137,7 +137,7 @@ def grading_report(
             "is_subtotal": True
         })
 
-    # FIX: TemplateResponse arguments (Template Name first, then Context Dict)
+    # FIXED: TemplateResponse arguments (Template Name first, then Context Dict)
     return templates.TemplateResponse("reports/grading_report.html", {"request": request, "rows": rows})
 
 # ============================================================
@@ -272,7 +272,7 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     wb.save(output)
     output.seek(0)
     
-    # FIXED: Proper dictionary closing and StreamingResponse headers
+    # FIXED: StreamingResponse properly closed with headers
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
