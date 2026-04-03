@@ -37,11 +37,12 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    return templates.TemplateResponse(
-        "admin/add_user.html",
-        {"request": request, "existing_users": users, "company_code": company_code}
-    )
 
+return templates.TemplateResponse(
+    request=request, 
+    name="admin/add_user.html", 
+    context={"existing_users": users, "company_code": company_code}
+)
 
 # ==========================================================
 # SAVE USER (CREATE)
