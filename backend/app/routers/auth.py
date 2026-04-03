@@ -201,6 +201,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
+
     request.session.update({
         "email": user.email,
         "company_id": company.id,
@@ -210,7 +211,8 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "permissions": user.permissions
     })
 
-    return RedirectResponse("/home", status_code=303)
+    # Redirect బదులు ఇది రాయి:
+    return {"status": "success", "message": "Login Successful"}
 
 
 # =====================================================

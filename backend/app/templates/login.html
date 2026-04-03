@@ -194,35 +194,37 @@ function showBox(id){
 /* DEFAULT SCREEN */
 showBox("loginBox");
 
-/* ================= REGISTER ================= */
+
 /* ================= LOGIN ================= */
 async function doLogin(){
-  loginErr.style.display="none";
+  // పాత ఎర్రర్ మెసేజ్‌లను దాచిపెట్టు
+  loginErr.style.display = "none";
 
-  const res = await fetch(`${BASE}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      company_id: login_company_id.value.trim(),
-      email: login_email.value.trim().toLowerCase(),
-      password: login_pwd.value.substring(0,20)
-    })
-  });
+  try {
+    let res = await fetch(`${BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_id: login_company_id.value.trim(),
+        email: login_email.value.trim().toLowerCase(),
+        password: login_pwd.value.substring(0,20)
+      })
+    });
 
-  // 🚩 అతి ముఖ్యమైన మార్పు ఇక్కడ ఉంది:
-  if (res.redirected) {
-    // ఒకవేళ సర్వర్ నేరుగా /home కి రిడైరెక్ట్ పంపితే, ఆ URL కి వెళ్లు
-    window.location.href = res.url;
-    return;
-  }
+    let data = await res.json();
 
-  if (res.ok) {
-    // ఒకవేళ రిడైరెక్ట్ కాకపోయినా సక్సెస్ అయితే మాన్యువల్ గా వెళ్లు
-    window.location.href = "/home";
-  } else {
-    // Error వస్తే చూపించు
-    const data = await res.json();
-    loginErr.innerHTML = data.detail || "Login Failed";
+    if (res.ok) {
+      // ✅ బ్యాకెండ్ నుండి సక్సెస్ రాగానే ఇక్కడ హోమ్ కి రిడైరెక్ట్ చేస్తున్నాం
+      console.log("Login Success:", data.message);
+      window.location.href = "/home"; 
+    } else {
+      // ❌ ఏదైనా తప్పు జరిగితే ఎర్రర్ మెసేజ్ చూపిస్తాం
+      loginErr.innerHTML = data.detail || "Invalid Credentials";
+      loginErr.style.display = "block";
+    }
+  } catch (error) {
+    console.error("Login Error:", error);
+    loginErr.innerHTML = "Server connection failed. Please try again.";
     loginErr.style.display = "block";
   }
 }
