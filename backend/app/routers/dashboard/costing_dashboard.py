@@ -1,42 +1,28 @@
+# app/routers/dashboards/costing.py
+
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date
+import logging
 
 from app.database import get_db
 
-# ✅ INVENTORY MODELS
-from app.database.models.inventory_management import (
-    stock_entry,
-    pending_orders
-)
-
-# ✅ PROCESSING MODELS
-from app.database.models.processing import (
-    RawMaterialPurchasing,
-    DeHeading,
-    Peeling,
-    Grading,
-    Soaking,
-    Production
-)
-
-# ✅ BILLS / ACCOUNTS MODELS
+# ✅ MODELS IMPORT
+from app.database.models.inventory_management import stock_entry, pending_orders
+from app.database.models.processing import RawMaterialPurchasing, DeHeading, Peeling
 from app.database.models.bills import (
-    ElectricityLog,
-    DieselLog,
-    PurchaseInvoice,
-    ContainerLog,
-    QATestingLog,
-    OtherExpense
+    ElectricityLog, DieselLog, PurchaseInvoice, 
+    ContainerLog, QATestingLog, OtherExpense
 )
-
-# ✅ HR
 from app.database.models.attendance import EmployeeRegistration
+from app.database.models.criteria import production_at
 
 router = APIRouter(tags=["COSTING DASHBOARD"])
-
+templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # 💰 COSTING DASHBOARD (ALL EXPENSES)
@@ -60,126 +46,82 @@ def costing_dashboard(
     # ---------------------------------------------------------
     # 2. DATE FILTER HELPERS
     # ---------------------------------------------------------
-    def date_filter(q, model):
+    def apply_filters(query, model):
+        # Always filter by company_id first for security
+        query = query.filter(model.company_id == comp_code)
+        
         if from_date:
-            q = q.filter(model.date >= date.fromisoformat(from_date))
+            try:
+                query = query.filter(model.date >= date.fromisoformat(from_date))
+            except: pass
         if to_date:
-            q = q.filter(model.date <= date.fromisoformat(to_date))
-        return q
+            try:
+                query = query.filter(model.date <= date.fromisoformat(to_date))
+            except: pass
+        return query
 
     # ---------------------------------------------------------
-    # 3. RAW MATERIAL COST
+    # 3. CALCULATIONS (Applying Company Filter to all)
     # ---------------------------------------------------------
-    rmp_cost = date_filter(
-        db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0))
-        .filter(RawMaterialPurchasing.company_id == comp_code),
-        RawMaterialPurchasing
-    ).scalar() or 0
+    try:
+        # Raw Material & Processing
+        rmp_cost = apply_filters(db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0)), RawMaterialPurchasing).scalar() or 0
+        deheading_cost = apply_filters(db.query(func.coalesce(func.sum(DeHeading.amount), 0)), DeHeading).scalar() or 0
+        peeling_cost = apply_filters(db.query(func.coalesce(func.sum(Peeling.amount), 0)), Peeling).scalar() or 0
+
+        # Utilities (Joined with production_at for company filtering)
+        electricity_cost = db.query(func.coalesce(func.sum(ElectricityLog.total_cost), 0)).join(
+            production_at, ElectricityLog.unit_id == production_at.id
+        ).filter(production_at.company_id == comp_code).scalar() or 0
+
+        diesel_cost = db.query(func.coalesce(func.sum(DieselLog.net_val), 0)).join(
+            production_at, DieselLog.unit_id == production_at.id
+        ).filter(production_at.company_id == comp_code).scalar() or 0
+
+        # Logistics & Packaging
+        packaging_cost = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0)).filter(PurchaseInvoice.company_id == comp_code).scalar() or 0
+        logistics_cost = db.query(func.coalesce(func.sum(ContainerLog.lended_total), 0)).filter(ContainerLog.company_id == comp_code).scalar() or 0
+
+        # QA & Other Expenses (Join needed if no company_id in table)
+        qa_cost = db.query(func.coalesce(func.sum(QATestingLog.test_cost), 0)).join(
+            production_at, QATestingLog.unit_id == production_at.id
+        ).filter(production_at.company_id == comp_code).scalar() or 0
+
+        other_cost = db.query(func.coalesce(func.sum(OtherExpense.amount), 0)).join(
+            production_at, OtherExpense.unit_id == production_at.id
+        ).filter(production_at.company_id == comp_code).scalar() or 0
+
+        # Payroll (Monthly Static Projection)
+        payroll_cost = db.query(func.coalesce(func.sum(EmployeeRegistration.current_salary), 0)).filter(
+            EmployeeRegistration.company_id == comp_code,
+            EmployeeRegistration.status == "ACTIVE"
+        ).scalar() or 0
+
+        # Inventory & Pending Orders
+        inventory_value = db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0)).filter(stock_entry.company_id == comp_code).scalar() or 0
+        
+        pending_sales = db.query(
+            func.coalesce(func.sum(pending_orders.no_of_mc * pending_orders.selling_price * pending_orders.exchange_rate), 0)
+        ).filter(pending_orders.company_id == comp_code).scalar() or 0
+
+        # Final Summary
+        total_expense = (rmp_cost + deheading_cost + peeling_cost + electricity_cost + diesel_cost + 
+                         packaging_cost + logistics_cost + qa_cost + payroll_cost + other_cost)
+
+    except Exception as e:
+        logger.error(f"Costing Dashboard Error: {str(e)}")
+        total_expense = 0
+        # Initialize other variables to 0 if they fail
 
     # ---------------------------------------------------------
-    # 4. PROCESSING COST
+    # 4. RESPONSE
     # ---------------------------------------------------------
-    deheading_cost = date_filter(
-        db.query(func.coalesce(func.sum(DeHeading.amount), 0))
-        .filter(DeHeading.company_id == comp_code),
-        DeHeading
-    ).scalar() or 0
-
-    peeling_cost = date_filter(
-        db.query(func.coalesce(func.sum(Peeling.amount), 0))
-        .filter(Peeling.company_id == comp_code),
-        Peeling
-    ).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 5. UTILITIES
-    # ---------------------------------------------------------
-    electricity_cost = db.query(
-        func.coalesce(func.sum(ElectricityLog.total_cost), 0)
-    ).scalar() or 0
-
-    diesel_cost = db.query(
-        func.coalesce(func.sum(DieselLog.net_val), 0)
-    ).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 6. PACKAGING & LOGISTICS
-    # ---------------------------------------------------------
-    packaging_cost = db.query(
-        func.coalesce(func.sum(PurchaseInvoice.grand_total), 0)
-    ).filter(PurchaseInvoice.company_id == comp_code).scalar() or 0
-
-    logistics_cost = db.query(
-        func.coalesce(func.sum(ContainerLog.lended_total), 0)
-    ).filter(ContainerLog.company_id == comp_code).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 7. QA + OTHER EXPENSES
-    # ---------------------------------------------------------
-    qa_cost = db.query(
-        func.coalesce(func.sum(QATestingLog.test_cost), 0)
-    ).scalar() or 0
-
-    other_cost = db.query(
-        func.coalesce(func.sum(OtherExpense.amount), 0)
-    ).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 8. PAYROLL
-    # ---------------------------------------------------------
-    payroll_cost = db.query(
-        func.coalesce(func.sum(EmployeeRegistration.current_salary), 0)
-    ).filter(
-        EmployeeRegistration.company_id == comp_code,
-        EmployeeRegistration.status == "ACTIVE"
-    ).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 9. INVENTORY VALUE
-    # ---------------------------------------------------------
-    inventory_value = db.query(
-        func.coalesce(func.sum(stock_entry.inventory_value), 0)
-    ).filter(stock_entry.company_id == comp_code).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 10. PENDING SALES
-    # ---------------------------------------------------------
-    pending_sales = db.query(
-        func.coalesce(
-            func.sum(
-                pending_orders.no_of_mc *
-                pending_orders.selling_price *
-                pending_orders.exchange_rate
-            ), 0
-        )
-    ).filter(pending_orders.company_id == comp_code).scalar() or 0
-
-    # ---------------------------------------------------------
-    # 11. TOTAL EXPENSE
-    # ---------------------------------------------------------
-    total_expense = (
-        rmp_cost +
-        deheading_cost +
-        peeling_cost +
-        electricity_cost +
-        diesel_cost +
-        packaging_cost +
-        logistics_cost +
-        qa_cost +
-        payroll_cost +
-        other_cost
-    )
-
-    # ---------------------------------------------------------
-    # 12. RESPONSE
-    # ---------------------------------------------------------
-    return request.app.state.templates.TemplateResponse(
-        "dashboard/costing_dashboard.html",
-        {
-            "request": request,
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/costing_dashboard.html",
+        context={
             "company_code": comp_code,
-
-            # COSTS
+            "email": email,
             "rmp_cost": round(rmp_cost, 2),
             "deheading_cost": round(deheading_cost, 2),
             "peeling_cost": round(peeling_cost, 2),
@@ -190,13 +132,9 @@ def costing_dashboard(
             "qa_cost": round(qa_cost, 2),
             "payroll_cost": round(payroll_cost, 2),
             "other_cost": round(other_cost, 2),
-
-            # KPIs
             "inventory_value": round(inventory_value, 2),
             "pending_sales": round(pending_sales, 2),
             "total_expense": round(total_expense, 2),
-
-            # FILTERS
             "from_date": from_date,
             "to_date": to_date,
         }

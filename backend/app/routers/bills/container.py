@@ -1,42 +1,67 @@
+# app/routers/bills/container_logistics.py
+
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.database.models.bills import ContainerLog
 from app.database.models.criteria import vendors
-from app.main import templates
 
 router = APIRouter(
     prefix="/container",
     tags=["Container Logistics"]
 )
 
-# 🚢 GET: ENTRY PAGE
+templates = Jinja2Templates(directory="app/templates")
+
+# ==================================================
+# 🚢 1. GET: ENTRY PAGE (LIST + FORM)
+# ==================================================
 @router.get("/entry", response_class=HTMLResponse)
 def container_entry_page(request: Request, db: Session = Depends(get_db)):
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
-    if not email: return RedirectResponse("/", status_code=303)
 
+    if not email or not comp_code:
+        return RedirectResponse("/", status_code=302)
+
+    # Fetching Vendors for the dropdown
     vendor_list = db.query(vendors).filter(vendors.company_id == comp_code).all()
     
+    # Fetching Container History with Vendor Name Join
     try:
-        # v_name display kosam join
-        history = db.query(ContainerLog, vendors.name.label("v_name")).join(
-            vendors, ContainerLog.vendor_id == vendors.id
-        ).filter(ContainerLog.company_id == comp_code).order_by(ContainerLog.id.desc()).limit(50).all()
-    except:
+        history = db.query(
+            ContainerLog, 
+            vendors.name.label("v_name")
+        ).join(
+            vendors, 
+            ContainerLog.vendor_id == vendors.id
+        ).filter(
+            ContainerLog.company_id == comp_code
+        ).order_by(ContainerLog.id.desc()).limit(50).all()
+    except Exception as e:
+        print(f"FETCH ERROR: {e}")
         history = []
 
-    return templates.TemplateResponse("bills/container_entry.html", {
-        "request": request, "shipping_vendors": vendor_list, "container_history": history, "comp_code": comp_code
-    })
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request,
+        name="bills/container_entry.html",
+        context={
+            "shipping_vendors": vendor_list,
+            "container_history": history,
+            "comp_code": comp_code,
+            "email": email
+        }
+    )
 
-# 💾 POST: SAVE RECORD (FIXED EMAIL ISSUE)
+# ==================================================
+# 💾 2. POST: SAVE RECORD
+# ==================================================
 @router.post("/save")
-def save_container_log(
+async def save_container_log(
     request: Request,
-    db: Session = Depends(get_db),
     po_number: str = Form(...),
     container_no: str = Form(...),
     container_size: str = Form(...),
@@ -45,30 +70,56 @@ def save_container_log(
     local_transport: float = Form(0),
     handling_charges: float = Form(0),
     detention_charges: float = Form(0),
-    grand_total: float = Form(...)
+    grand_total: float = Form(...),
+    db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"error": "Session Expired"}, status_code=401)
 
     try:
-        # model attributes only (Removing email since it's missing in your Point 4 model)
+        # Creating new log entry
         new_entry = ContainerLog(
             company_id=comp_code,
             unit_id=request.session.get("unit_id", 0),
-            po_number=po_number.upper(),
-            container_no=container_no.upper(),
+            po_number=po_number.upper().strip(),
+            container_no=container_no.upper().strip(),
             size=container_size,
             vendor_id=shipping_line_id,
             ocean_cost=ocean_freight,
             local_cost=local_transport,
             handling=handling_charges,
             detention=detention_charges,
-            lended_total=grand_total, # matches your lended_total column
-            vessel_name=""
+            lended_total=grand_total,
+            vessel_name="" # Default empty if not provided
         )
+        
         db.add(new_entry)
         db.commit()
-        return RedirectResponse(url="/api/container/entry", status_code=303)
+        
+        # Redirect back to the entry page with success
+        return RedirectResponse(url="/container/entry", status_code=303)
+
     except Exception as e:
         db.rollback()
         print(f"SAVE ERROR: {e}")
-        return JSONResponse({"error": str(e)})
+        return JSONResponse({"error": f"Database Error: {str(e)}"}, status_code=500)
+
+# ==================================================
+# 🗑️ 3. DELETE RECORD (Optional API for UI)
+# ==================================================
+@router.post("/delete/{log_id}")
+def delete_container_log(log_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    
+    log_entry = db.query(ContainerLog).filter(
+        ContainerLog.id == log_id,
+        ContainerLog.company_id == comp_code
+    ).first()
+    
+    if log_entry:
+        db.delete(log_entry)
+        db.commit()
+        return {"status": "success"}
+    
+    return JSONResponse({"error": "Record not found"}, status_code=404)

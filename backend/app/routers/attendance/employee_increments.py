@@ -1,5 +1,8 @@
+# app/routers/attendance/employee_increment.py
+
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -13,17 +16,27 @@ router = APIRouter(
     tags=["EMPLOYEE INCREMENT"]
 )
 
+templates = Jinja2Templates(directory="app/templates")
+
 # ==================================================
 # 📄 INCREMENT PAGE
 # ==================================================
 @router.get("", response_class=HTMLResponse)
 def increment_page(request: Request):
-    if not request.session.get("email"):
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+
+    if not email or not company_code:
         return RedirectResponse("/", status_code=303)
 
-    return request.app.state.templates.TemplateResponse(
-        "attendance/employee_increments.html",
-        {"request": request}
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/employee_increments.html",
+        context={
+            "email": email,
+            "company_id": company_code
+        }
     )
 
 
@@ -33,17 +46,19 @@ def increment_page(request: Request):
 @router.post("")
 def save_increment(
     request: Request,
-    db: Session = Depends(get_db),
-
     employee_id: str = Form(...),
     increment_type: str = Form(...),   # FIXED / PERCENTAGE
     increment_value: float = Form(...),
-    effective_from: date = Form(...)
+    effective_from: date = Form(...),
+    db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
     approved_by = request.session.get("email")
 
-    # 🔐 Safety check
+    if not company_id or not approved_by:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+
+    # 🔐 Safety check: Find Active Employee in the same company
     emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.employee_id == employee_id,
         EmployeeRegistration.company_id == company_id,
@@ -56,7 +71,7 @@ def save_increment(
             status_code=303
         )
 
-    old_salary = emp.current_salary or 0
+    old_salary = float(emp.current_salary or 0)
 
     # 🧮 Salary calculation
     if increment_type == "FIXED":
@@ -65,7 +80,7 @@ def save_increment(
         new_salary = old_salary + (old_salary * increment_value / 100)
 
     # 📝 Save increment history
-    inc = EmployeeIncrement(
+    new_inc_record = EmployeeIncrement(
         employee_id=employee_id,
         old_salary=old_salary,
         increment_type=increment_type,
@@ -76,9 +91,9 @@ def save_increment(
         status="ACTIVE",
         company_id=company_id
     )
-    db.add(inc)
+    db.add(new_inc_record)
 
-    # 🔥 Apply salary immediately ONLY if effective date <= today
+    # 🔥 Apply salary immediately ONLY if effective date is today or past
     if effective_from <= date.today():
         emp.current_salary = new_salary
 

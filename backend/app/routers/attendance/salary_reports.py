@@ -1,5 +1,8 @@
+# app/routers/attendance/salary_reports.py
+
 from fastapi import APIRouter, Request, Depends, Body
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, and_
 import calendar
@@ -15,15 +18,27 @@ from app.database.models.attendance import (
 )
 
 router = APIRouter(tags=["SALARY_REPORTS"])
+templates = Jinja2Templates(directory="app/templates")
 
 # ==================================================
 # 1️⃣ PAGE RENDER
 # ==================================================
 @router.get("/attendance/salary/monthly-sheet", response_class=HTMLResponse)
 def salary_sheet_page(request: Request):
-    return request.app.state.templates.TemplateResponse(
-        "attendance/salary_sheet.html",
-        {"request": request}
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/salary_sheet.html",
+        context={
+            "email": email,
+            "company_id": company_code
+        }
     )
 
 # ==================================================
@@ -109,6 +124,7 @@ def get_salary_report(
         for d in range(1, days_in_month + 1):
             total_wh = daily_hours_sum.get(d, 0)
 
+            # ✅ Attendance Slabs
             if total_wh >= 14: label, val = "2P", 2.0  
             elif total_wh >= 6: label, val = "P", 1.0
             elif total_wh >= 4: label, val = "HP", 0.5
@@ -118,36 +134,43 @@ def get_salary_report(
             actual_present_count += val
             if val > 0: worked_days_count += 1
 
-        # Bonus Slabs
-        extra_holidays = 4 if worked_days_count >= 25 else 3 if worked_days_count > 13 else 2 if worked_days_count == 13 else 1 if worked_days_count >= 7 else 0
+        # ✅ Bonus Holiday Slabs Logic
+        extra_holidays = 0
+        if worked_days_count >= 25: extra_holidays = 4
+        elif worked_days_count > 13: extra_holidays = 3
+        elif worked_days_count == 13: extra_holidays = 2
+        elif worked_days_count >= 7: extra_holidays = 1
 
-        # Earnings Calculation
+        # Earnings Calculation (Standard 26 days month)
         total_payable_days = actual_present_count + extra_holidays + adjustment
-        base_gross = emp.current_salary or 0
+        base_gross = float(emp.current_salary or 0)
         per_day_rate = base_gross / 26
         earned_gross = total_payable_days * per_day_rate
 
-        # TDS Calculation (As Percentage of Earned Gross)
+        # TDS Calculation (Percentage based)
         tds_percent = float(emp.tds or 0)
         tds_amount = (earned_gross * tds_percent / 100)
 
-        # Statutory Deductions
+        # Statutory Deductions (PF, ESI, PT, LWF)
         stat = db.query(EmployeeStatutoryMaster).filter(
             EmployeeStatutoryMaster.employee_id == emp.employee_id,
+            EmployeeStatutoryMaster.company_id == company_id,
             EmployeeStatutoryMaster.status == "ACTIVE"
         ).first()
 
         pf = esi = pt = lwf = 0.0
         if stat:
             if stat.pf_applicable:
-                pf = min(stat.pf_wage_limit, emp.basic_salary or 0) * (stat.pf_employee_percent / 100)
+                pf_wage = min(stat.pf_wage_limit, float(emp.basic_salary or 0))
+                pf = pf_wage * (stat.pf_employee_percent / 100)
             if stat.esi_applicable and earned_gross <= stat.esi_wage_limit:
                 esi = earned_gross * (stat.esi_employee_percent / 100)
             pt, lwf = (stat.pt_amount or 0), (stat.lwf_employee_amount or 0)
 
-        # Advance Deductions
+        # Salary Advance Deductions
         adv_rec = db.query(EmployeeSalaryAdvance).filter(
             EmployeeSalaryAdvance.employee_id == emp.employee_id,
+            EmployeeSalaryAdvance.company_id == company_id,
             EmployeeSalaryAdvance.status == "APPROVED",
             EmployeeSalaryAdvance.remaining_balance > 0,
             EmployeeSalaryAdvance.deduct_from <= month
@@ -171,13 +194,17 @@ def get_salary_report(
             "esi": round(esi, 2), 
             "pt": pt, 
             "lwf": lwf, 
-            "tds": round(tds_amount, 2), # TDS in Amount
+            "tds": round(tds_amount, 2),
             "salary_advance": round(salary_advance, 2),
             "net_pay": round(net_pay, 2),
             "att_map": att_map
         })
 
-    return {"days_in_month": days_in_month, "month_name": calendar.month_name[month_no], "employees": result}
+    return {
+        "days_in_month": days_in_month, 
+        "month_name": calendar.month_name[month_no], 
+        "employees": result
+    }
 
 # ==================================================
 # 4️⃣ ATTENDANCE DETAILS POPUP
@@ -198,16 +225,13 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         query = query.filter(extract("day", DailyAttendance.duty_date) == day)
 
     records = query.order_by(DailyAttendance.duty_date.asc()).all()
-
     grouped_data = defaultdict(lambda: {"hours": 0.0, "movements": []})
     
     for r in records:
         d_str = r.duty_date.strftime("%d-%m-%Y")
         grouped_data[d_str]["hours"] += float(r.working_hours or 0)
-        
-        m_list = getattr(r, 'movements', [])
-        if m_list:
-            grouped_data[d_str]["movements"].extend(m_list)
+        m_list = list(r.movements) if r.movements else []
+        grouped_data[d_str]["movements"].extend(m_list)
 
     data = []
     for dte, vals in grouped_data.items():
@@ -225,12 +249,17 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
 # 5️⃣ SAVE ADJUSTMENT
 # ==================================================
 @router.post("/api/salary/save-adjustment")
-def save_adjustment(payload: dict = Body(...), db: Session = Depends(get_db)):
-    emp_id, month, value = payload["employee_id"], payload["month"], float(payload.get("adjustment", 0))
+def save_adjustment(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    company_id = request.session.get("company_code")
+    emp_id = payload.get("employee_id")
+    month = payload.get("month")
+    value = float(payload.get("adjustment", 0))
+    
     year, month_no = map(int, month.split("-"))
 
     db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == emp_id,
+        DailyAttendance.company_id == company_id,
         extract("year", DailyAttendance.duty_date) == year,
         extract("month", DailyAttendance.duty_date) == month_no
     ).update({"salary_adjustment": value})

@@ -1,37 +1,59 @@
+# app/routers/attendance/daily_attendance.py
+
 from fastapi import APIRouter, Request, Depends, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from sqlalchemy.orm.attributes import flag_modified
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 
 from app.database import get_db
 from app.database.models.attendance import DailyAttendance, EmployeeRegistration
 
 router = APIRouter(tags=["ATTENDANCE"])
+templates = Jinja2Templates(directory="app/templates")
 
+# ---------------------------------------------------------
+# PAGE LOAD
+# ---------------------------------------------------------
 @router.get("/daily", response_class=HTMLResponse)
-def daily_page(request: Request):
-    return request.app.state.templates.TemplateResponse(
-        "attendance/daily_attendance.html", {"request": request}
+def daily_attendance_page(request: Request):
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/daily_attendance.html",
+        context={
+            "email": email,
+            "company_id": company_code
+        }
     )
 
+# ---------------------------------------------------------
+# ATTENDANCE ENTRY (IN / OUT / EXIT)
+# ---------------------------------------------------------
 @router.post("/entry")
 async def attendance_entry(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     input_id = str(payload.get("employee_id", "")).strip()
-    action = payload.get("action") # IN, OUT, EXIT
+    action = payload.get("action")  # IN, OUT, EXIT
     
-    # 🔥 1. Company Wise Data Filter
     company_id = request.session.get("company_code")
+    email = request.session.get("email")
     
     if not input_id or not action or not company_id:
-        return JSONResponse({"error": "INVALID_INPUT_OR_SESSION"}, status_code=400)
+        return JSONResponse({"error": "INVALID_INPUT_OR_SESSION"}, status_code=401)
 
     now = datetime.now()
     time_str = now.strftime("%H:%M")
 
-    # 🔥 2. DYNAMIC ID SEARCH: Short codes logic (Example: '1' searches '%00001')
+    # DYNAMIC ID SEARCH (e.g., '1' -> '%00001')
     search_pattern = f"%{input_id.zfill(5)}"
 
     emp = db.query(EmployeeRegistration).filter(
@@ -45,14 +67,14 @@ async def attendance_entry(request: Request, db: Session = Depends(get_db)):
 
     full_employee_id = emp.employee_id
 
-    # Active duty check (OPEN or AWAY status unnavi - Night shifts cover avtayi ikkada)
+    # Active duty check (OPEN or AWAY)
     duty = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
         DailyAttendance.status != "CLOSED"
     ).first()
 
-    # CLOSED duty count for the day (Daily limit check)
+    # CLOSED duty count for the day
     duty_count = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
@@ -66,16 +88,17 @@ async def attendance_entry(request: Request, db: Session = Depends(get_db)):
         if duty and duty.status == "OPEN":
             return JSONResponse({"error": "ALREADY_INSIDE"}, status_code=400)
         
-        # Max 2 duties per day allowed
         if duty_count >= 2 and not duty:
             return JSONResponse({"error": "DAILY_DUTY_LIMIT_REACHED"}, status_code=403)
 
         if duty: # Re-entry from Break (AWAY -> OPEN)
-            duty.movements.append({"type": "IN", "time": time_str})
+            movements = list(duty.movements) if duty.movements else []
+            movements.append({"type": "IN", "time": time_str})
+            duty.movements = movements
             duty.status = "OPEN"
             flag_modified(duty, "movements")
-        else: # Fresh Entry for the day
-            duty = DailyAttendance(
+        else: # Fresh Entry
+            new_duty = DailyAttendance(
                 company_id=company_id,
                 employee_id=full_employee_id,
                 employee_name=emp.employee_name,
@@ -86,24 +109,31 @@ async def attendance_entry(request: Request, db: Session = Depends(get_db)):
                 movements=[{"type": "IN", "time": time_str}],
                 status="OPEN"
             )
-            db.add(duty)
+            db.add(new_duty)
 
-    elif action == "OUT": # BREAK / LUNCH
-        if not duty: return JSONResponse({"error": "NO_ACTIVE_DUTY"}, status_code=400)
-        if duty.status == "AWAY": return JSONResponse({"error": "ALREADY_ON_BREAK"}, status_code=400)
+    elif action == "OUT": # BREAK
+        if not duty: 
+            return JSONResponse({"error": "NO_ACTIVE_DUTY"}, status_code=400)
+        if duty.status == "AWAY": 
+            return JSONResponse({"error": "ALREADY_ON_BREAK"}, status_code=400)
         
-        duty.movements.append({"type": "OUT", "time": time_str})
+        movements = list(duty.movements) if duty.movements else []
+        movements.append({"type": "OUT", "time": time_str})
+        duty.movements = movements
         duty.status = "AWAY"
         flag_modified(duty, "movements")
 
-    elif action == "EXIT": # FINAL SHIFT END
-        if not duty: return JSONResponse({"error": "NO_ACTIVE_DUTY"}, status_code=400)
+    elif action == "EXIT": # FINAL EXIT
+        if not duty: 
+            return JSONResponse({"error": "NO_ACTIVE_DUTY"}, status_code=400)
         
-        duty.movements.append({"type": "EXIT", "time": time_str})
+        movements = list(duty.movements) if duty.movements else []
+        movements.append({"type": "EXIT", "time": time_str})
+        duty.movements = movements
         duty.exit_time = now
         duty.status = "CLOSED"
         
-        # Working Hours Calculation (Auto-handles across midnight)
+        # Working Hours Calculation
         diff = now - duty.first_in
         wh = round(diff.total_seconds() / 3600, 2)
         duty.working_hours = wh
@@ -113,13 +143,16 @@ async def attendance_entry(request: Request, db: Session = Depends(get_db)):
     return {"success": True, "employee_name": emp.employee_name}
 
 
+# ---------------------------------------------------------
+# FETCH TODAY'S ATTENDANCE DATA
+# ---------------------------------------------------------
 @router.get("/today_all")
-def today_attendance(request: Request, db: Session = Depends(get_db)):
+def today_attendance_list(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    if not company_id: return []
+    if not company_id: 
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    # 🔥 FIX: Get Today's records OR anyone who is still ON-DUTY (Night Shift)
-    # Status CLOSED kani records anni display avtayi, date edaina sare.
+    # Join with EmployeeRegistration to get latest Department/Designation
     rows = db.query(
         DailyAttendance, 
         EmployeeRegistration.department,
@@ -133,8 +166,8 @@ def today_attendance(request: Request, db: Session = Depends(get_db)):
     ).filter(
         DailyAttendance.company_id == company_id,
         or_(
-            DailyAttendance.duty_date == date.today(), # Today's full data
-            DailyAttendance.status != "CLOSED"         # Anyone still inside (Night shifts)
+            DailyAttendance.duty_date == date.today(),
+            DailyAttendance.status != "CLOSED"
         )
     ).order_by(DailyAttendance.first_in.desc()).all()
 
@@ -142,7 +175,7 @@ def today_attendance(request: Request, db: Session = Depends(get_db)):
     for da, dept, desg in rows:
         wh = float(da.working_hours or 0)
         
-        # 🔥 PAYROLL COUNTING LOGIC
+        # PAYROLL LOGIC (Based on Working Hours)
         if da.status != "CLOSED":
             duty_type = "ON-DUTY"
         else:

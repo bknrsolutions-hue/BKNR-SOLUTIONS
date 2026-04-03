@@ -1,5 +1,8 @@
+# app/routers/attendance/tax_master.py
+
 from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
 import logging
@@ -13,8 +16,8 @@ from app.database.models.attendance import (
 # Logger setup
 logger = logging.getLogger(__name__)
 
-# Prefix unna lekapoyina relative paths tho handle chestundi
 router = APIRouter(tags=["PAYROLL STATUTORY"])
+templates = Jinja2Templates(directory="app/templates")
 
 # ==================================================
 # 📡 1. EMPLOYEE DROPDOWN LOOKUP API
@@ -50,23 +53,28 @@ def employee_dropdown(request: Request, db: Session = Depends(get_db)):
 # ==================================================
 @router.get("/tax-master", response_class=HTMLResponse)
 def tax_master_page(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("email")
     company_code = request.session.get("company_code")
-    if not company_code:
-        return RedirectResponse(url="/login")
+
+    if not email or not company_code:
+        return RedirectResponse(url="/auth/login", status_code=302)
 
     records = (
         db.query(EmployeeStatutoryMaster)
         .filter(EmployeeStatutoryMaster.company_id == str(company_code))
-        .order_by(EmployeeStatutoryMaster.applicable_from.desc())
+        .order_by(EmployeeStatutoryMaster.id.desc())
         .all()
     )
 
-    return request.app.state.templates.TemplateResponse(
-        "attendance/tax_master.html",
-        {
-            "request": request,
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/tax_master.html",
+        context={
             "records": records,
-            "edit_data": None
+            "edit_data": None,
+            "email": email,
+            "company_id": company_code
         }
     )
 
@@ -95,11 +103,16 @@ def save_tax_master(
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
 
     try:
-        y, m = applicable_from.split("-")
-        app_date = date(int(y), int(m), 1)
-    except:
+        if applicable_from:
+            y, m = applicable_from.split("-")
+            app_date = date(int(y), int(m), 1)
+        else:
+            app_date = date.today().replace(day=1)
+    except Exception:
         app_date = date.today().replace(day=1)
 
     new_record = EmployeeStatutoryMaster(
@@ -130,8 +143,8 @@ def save_tax_master(
     except Exception as e:
         db.rollback()
         logger.error(f"Save Error: {str(e)}")
+        return JSONResponse({"error": "Internal Server Error"}, status_code=500)
 
-    # Pop-up nundi direct list ki vellali
     return RedirectResponse(url="/attendance/tax-master", status_code=303)
 
 # ==================================================
@@ -139,7 +152,11 @@ def save_tax_master(
 # ==================================================
 @router.get("/tax-master/edit/{record_id}", response_class=HTMLResponse)
 def edit_tax_master(record_id: int, request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("email")
     company_code = request.session.get("company_code")
+
+    if not email or not company_code:
+        return RedirectResponse(url="/auth/login", status_code=302)
 
     edit_data = db.query(EmployeeStatutoryMaster).filter(
         EmployeeStatutoryMaster.id == record_id,
@@ -148,14 +165,16 @@ def edit_tax_master(record_id: int, request: Request, db: Session = Depends(get_
 
     records = db.query(EmployeeStatutoryMaster).filter(
         EmployeeStatutoryMaster.company_id == str(company_code)
-    ).order_by(EmployeeStatutoryMaster.applicable_from.desc()).all()
+    ).order_by(EmployeeStatutoryMaster.id.desc()).all()
 
-    return request.app.state.templates.TemplateResponse(
-        "attendance/tax_master.html",
-        {
-            "request": request,
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/tax_master.html",
+        context={
             "records": records,
-            "edit_data": edit_data
+            "edit_data": edit_data,
+            "email": email,
+            "company_id": company_code
         }
     )
 
@@ -181,6 +200,8 @@ def update_tax_master(
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
 
     record = db.query(EmployeeStatutoryMaster).filter(
         EmployeeStatutoryMaster.id == record_id,

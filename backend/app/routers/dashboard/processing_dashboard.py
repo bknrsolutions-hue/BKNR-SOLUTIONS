@@ -1,24 +1,24 @@
+# app/routers/dashboards/processing.py
+
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from datetime import date, timedelta
+import logging
 
 from app.database import get_db
 from app.database.models.processing import (
-    GateEntry,
-    RawMaterialPurchasing,
-    DeHeading,
-    Grading,
-    Peeling,
-    Soaking,
-    Production
+    GateEntry, RawMaterialPurchasing, DeHeading, 
+    Grading, Peeling, Soaking, Production
 )
-
 from app.services.floor_balance import get_floor_balance
 
-# ❌ IMPORTANT: Prefix empty ga unchali, master router handle chestundi kabatti
+# ✅ Master router handle chestundi kabatti prefix empty
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
+templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 @router.get("/processing_dashboard", response_class=HTMLResponse)
 def processing_dashboard(
@@ -28,9 +28,7 @@ def processing_dashboard(
     to_date: date | None = Query(None),
     hour_date: date | None = Query(None),
 ):
-    # -------------------------------------------------
-    # SESSION CHECK
-    # -------------------------------------------------
+    # 1. SESSION SECURITY
     company_id = request.session.get("company_code")
     email = request.session.get("email")
 
@@ -39,25 +37,23 @@ def processing_dashboard(
 
     today = date.today()
 
-    # -------------------------------------------------
-    # DEFAULT DATE FILTERS
-    # -------------------------------------------------
-    if not to_date:
-        to_date = today
-    if not from_date:
-        from_date = to_date - timedelta(days=6)
-    if not hour_date:
-        hour_date = today
+    # 2. DEFAULT DATE FILTERS
+    if not to_date: to_date = today
+    if not from_date: from_date = to_date - timedelta(days=6)
+    if not hour_date: hour_date = today
 
-    # -------------------------------------------------
-    # SUMMARY CARDS LOGIC
-    # -------------------------------------------------
+    # 3. SUMMARY CARDS LOGIC (Helper Function)
     def get_summary(model, column, filter_today=False):
-        query = db.query(func.coalesce(func.sum(column), 0)).filter(model.company_id == company_id)
-        if filter_today:
-            query = query.filter(model.date == today)
-        return query.scalar() or 0
+        try:
+            query = db.query(func.coalesce(func.sum(column), 0)).filter(model.company_id == company_id)
+            if filter_today:
+                query = query.filter(model.date == today)
+            return query.scalar() or 0
+        except Exception as e:
+            logger.error(f"Summary Fetch Error ({model.__tablename__}): {e}")
+            return 0
 
+    # Counts and Sums
     gate_total = db.query(func.count(GateEntry.id)).filter(GateEntry.company_id == company_id).scalar() or 0
     gate_today = db.query(func.count(GateEntry.id)).filter(GateEntry.company_id == company_id, GateEntry.date == today).scalar() or 0
 
@@ -79,14 +75,12 @@ def processing_dashboard(
     production_total = get_summary(Production, Production.production_qty)
     production_today = get_summary(Production, Production.production_qty, True)
 
-    # -------------------------------------------------
-    # DAY WISE FLOW (FOR LINE CHART)
-    # -------------------------------------------------
+    # 4. DAY WISE FLOW (For Line Chart)
     days = []
-    cur = from_date
-    while cur <= to_date:
-        days.append(cur)
-        cur += timedelta(days=1)
+    curr = from_date
+    while curr <= to_date:
+        days.append(curr)
+        curr += timedelta(days=1)
 
     flow_dates = [d.strftime("%Y-%m-%d") for d in days]
 
@@ -103,57 +97,50 @@ def processing_dashboard(
         "production": [sum_for_date(Production, Production.production_qty, d) for d in days],
     }
 
-    # -------------------------------------------------
-    # HOURLY FLOW (FOR BAR CHART)
-    # -------------------------------------------------
-    hours = [f"{h}:00" for h in range(24)]
-
+    # 5. HOURLY FLOW (For Bar Chart)
     def hourly_sum(model, column):
         return [
             float(db.query(func.coalesce(func.sum(column), 0))
-            .filter(model.company_id == company_id, model.date == hour_date, func.extract("hour", model.time) == h)
+            .filter(model.company_id == company_id, model.date == hour_date, extract("hour", model.time) == h)
             .scalar() or 0)
             for h in range(24)
         ]
 
     hourly_data = {
-        "hours": hours,
+        "hours": [f"{h}:00" for h in range(24)],
         "production": hourly_sum(Production, Production.production_qty),
         "peeling": hourly_sum(Peeling, Peeling.peeled_qty),
         "grading": hourly_sum(Grading, Grading.quantity),
-        "gate": [db.query(func.count(GateEntry.id)).filter(GateEntry.company_id == company_id, GateEntry.date == hour_date, func.extract("hour", GateEntry.time) == h).scalar() or 0 for h in range(24)],
+        "gate": [db.query(func.count(GateEntry.id)).filter(GateEntry.company_id == company_id, GateEntry.date == hour_date, extract("hour", GateEntry.time) == h).scalar() or 0 for h in range(24)],
     }
 
-    # -------------------------------------------------
-    # FLOOR BALANCE TOTAL
-    # -------------------------------------------------
-    combos = set()
-    # Combining batches across all stages
-    stages = [
-        (RawMaterialPurchasing, RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.peeling_at),
-        (Grading, Grading.batch_number, Grading.graded_count, Grading.peeling_at),
-        (Peeling, Peeling.batch_number, Peeling.hlso_count, Peeling.peeling_at),
-        (Soaking, Soaking.batch_number, Soaking.in_count, Soaking.production_at)
-    ]
-
-    for model, batch_col, count_col, loc_col in stages:
-        res = db.query(batch_col, count_col, model.species, model.variety_name, loc_col).filter(model.company_id == company_id).all()
-        for r in res:
-            if r[0]: combos.add(r)
-
+    # 6. FLOOR BALANCE TOTAL (Safe Estimation)
     floor_total = 0.0
-    for batch, count, species, variety, location in combos:
-        qty = get_floor_balance(db=db, company_id=company_id, batch=batch, count=count, species=species, variety=variety, location=location)
-        if qty and qty > 0:
-            floor_total += qty
+    try:
+        combos = set()
+        stages = [
+            (RawMaterialPurchasing, RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.peeling_at),
+            (Grading, Grading.batch_number, Grading.graded_count, Grading.peeling_at),
+            (Peeling, Peeling.batch_number, Peeling.hlso_count, Peeling.peeling_at),
+            (Soaking, Soaking.batch_number, Soaking.in_count, Soaking.production_at)
+        ]
 
-    # -------------------------------------------------
-    # FINAL RESPONSE
-    # -------------------------------------------------
-    return request.app.state.templates.TemplateResponse(
-        "dashboard/processing_dashboard.html",
-        {
-            "request": request,
+        for model, batch_col, count_col, loc_col in stages:
+            res = db.query(batch_col, count_col, model.species, model.variety_name, loc_col).filter(model.company_id == company_id).all()
+            for r in res:
+                if r[0]: combos.add(r)
+
+        for batch, count, species, variety, location in combos:
+            qty = get_floor_balance(db=db, company_id=company_id, batch=batch, count=count, species=species, variety=variety, location=location)
+            if qty and qty > 0: floor_total += qty
+    except Exception as e:
+        logger.error(f"Floor Balance Calculation Error: {e}")
+
+    # 7. RESPONSE
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/processing_dashboard.html",
+        context={
             "gate_total": gate_total, "gate_today": gate_today,
             "rmp_total": round(rmp_total, 2), "rmp_today": round(rmp_today, 2),
             "dh_total": round(dh_total, 2), "dh_today": round(dh_today, 2),
@@ -164,5 +151,6 @@ def processing_dashboard(
             "selected_from": from_date, "selected_to": to_date, "selected_hour_date": hour_date,
             "flow_dates": flow_dates, "flow_data": flow_data, "hourly_data": hourly_data,
             "floor_total": round(floor_total, 2),
+            "email": email, "company_id": company_id
         }
     )

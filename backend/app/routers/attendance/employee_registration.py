@@ -1,3 +1,5 @@
+# app/routers/attendance/employees.py
+
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Response
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -25,7 +27,7 @@ def get_session_context(request: Request, db: Session):
     if not comp_code:
         return None
     
-    # Company Code base cheskuni Company Name details techukuntunnam
+    # Company Code base cheskuni Company details techుకుంటున్నాం
     company_info = db.query(Company).filter(Company.company_code == comp_code).first()
     return {
         "comp_code": comp_code,
@@ -49,12 +51,12 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, db: Ses
     contractor_list = db.query(contractors).filter(contractors.company_id == comp).all()
     site_list = db.query(production_at).filter(production_at.company_id == comp).all()
     
-    # Filter Employees by Company (As per your saved instruction)
+    # Filter Employees by Company
     all_employees = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.company_id == comp
     ).order_by(EmployeeRegistration.id.desc()).all()
 
-    # Next ID Generation
+    # Next ID Generation logic
     last_emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.company_id == comp
     ).order_by(EmployeeRegistration.id.desc()).first()
@@ -68,16 +70,18 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, db: Ses
             EmployeeRegistration.employee_id == emp_id
         ).first()
 
+    # ✅ FIX: TemplateResponse arguments updated for FastAPI latest
     return templates.TemplateResponse(
-        "attendance/employees.html", 
-        {
-            "request": request,
-            "company": ctx["company_info"], # Ikkada Company Name access cheskovacchu
+        request=request,
+        name="attendance/employees.html", 
+        context={
+            "company": ctx["company_info"], 
             "contractors": contractor_list,
             "sites": site_list,
             "next_employee_id": next_employee_id,
             "employees": all_employees,
             "edit_data": edit_row,
+            "email": ctx["email"],
             "message": request.session.pop("message", None)
         }
     )
@@ -90,7 +94,6 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, db: Ses
 async def save_or_update_employee(
     request: Request,
     db_id: Optional[int] = None,
-    db: Session = Depends(get_db),
     employee_id: str = Form(...),
     employee_name: str = Form(...),
     designation: Optional[str] = Form(None),
@@ -128,13 +131,17 @@ async def save_or_update_employee(
     present_address: Optional[str] = Form(None),
     permanent_address: Optional[str] = Form(None),
     reporting_to: Optional[str] = Form(None),
-    location: Optional[str] = Form(None)
+    location: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     ctx = get_session_context(request, db)
-    if not ctx: return RedirectResponse("/auth/login", status_code=302)
+    if not ctx: 
+        return RedirectResponse("/auth/login", status_code=302)
+    
     comp = ctx["comp_code"]
 
-    def parse_dt(d): return date.fromisoformat(d) if d and d.strip() else None
+    def parse_dt(d): 
+        return date.fromisoformat(d) if d and d.strip() else None
 
     if db_id:
         row = db.query(EmployeeRegistration).filter(
@@ -143,9 +150,14 @@ async def save_or_update_employee(
         ).first()
         msg = "Updated"
     else:
+        # Fresh Registration
         row = EmployeeRegistration(company_id=comp, employee_id=employee_id)
         db.add(row)
         msg = "Saved"
+
+    if not row:
+        request.session["message"] = "❌ Record not found!"
+        return RedirectResponse("/attendance/employee/register", status_code=303)
 
     try:
         row.employee_name = employee_name
@@ -203,15 +215,19 @@ async def save_or_update_employee(
 @router.post("/employee/delete/{db_id}")
 def delete_employee(db_id: int, request: Request, db: Session = Depends(get_db)):
     comp = request.session.get("company_code")
+    if not comp:
+        return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
+
     row = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.id == db_id, 
         EmployeeRegistration.company_id == comp
     ).first()
+    
     if row:
         db.delete(row)
         db.commit()
         return JSONResponse({"status": "ok"})
-    return JSONResponse({"status": "error"}, status_code=404)
+    return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
 
 # =========================================================
 # 4. PRINT VIEW & PDF EXPORT
@@ -220,23 +236,25 @@ def delete_employee(db_id: int, request: Request, db: Session = Depends(get_db))
 @router.get("/employee/export/pdf/{emp_id}")
 def export_employee_details(emp_id: str, request: Request, db: Session = Depends(get_db)):
     ctx = get_session_context(request, db)
-    if not ctx: return "Session Expired"
+    if not ctx: 
+        return HTMLResponse(content="Session Expired", status_code=401)
     
     emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.employee_id == emp_id, 
         EmployeeRegistration.company_id == ctx["comp_code"]
     ).first()
     
-    if not emp: return "Employee Not Found"
+    if not emp: 
+        return HTMLResponse(content="Employee Not Found", status_code=404)
     
     context = {
         "request": request, 
         "e": emp, 
-        "company": ctx["company_info"], # Pass Full Company Object (Name, Address etc)
+        "company": ctx["company_info"],
         "printed_on": datetime.now().strftime("%d-%m-%Y %H:%M")
     }
     
-    # If path contains 'pdf', return PDF, else return HTML for print
+    # PDF vs HTML Print logic
     if "pdf" in request.url.path:
         html_content = templates.get_template("attendance/print_employee.html").render(context)
         pdf_output = io.BytesIO()
@@ -247,7 +265,11 @@ def export_employee_details(emp_id: str, request: Request, db: Session = Depends
             headers={"Content-Disposition": f"attachment; filename={emp_id}_Profile.pdf"}
         )
 
-    return templates.TemplateResponse("attendance/print_employee.html", context)
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/print_employee.html", 
+        context=context
+    )
 
 # =========================================================
 # 5. EXCEL EXPORT
@@ -255,18 +277,30 @@ def export_employee_details(emp_id: str, request: Request, db: Session = Depends
 @router.get("/employee/export/excel")
 def export_employees_excel(request: Request, db: Session = Depends(get_db)):
     comp = request.session.get("company_code")
+    if not comp:
+        return RedirectResponse("/auth/login")
+
     data = db.query(EmployeeRegistration).filter(EmployeeRegistration.company_id == comp).all()
     
-    df = pd.DataFrame([{
-        "Emp ID": e.employee_id, "Name": e.employee_name, "Designation": e.designation,
-        "Mobile": e.mobile, "UAN": e.uan_number, "Gross Salary": e.current_salary,
-        "Bank": e.bank_name, "A/C No": e.account_number, "Branch": e.branch_name,
-        "Status": e.status
-    } for e in data])
+    df_data = []
+    for e in data:
+        df_data.append({
+            "Emp ID": e.employee_id, 
+            "Name": e.employee_name, 
+            "Designation": e.designation,
+            "Department": e.department,
+            "Mobile": e.mobile, 
+            "Gross Salary": e.current_salary,
+            "Bank": e.bank_name, 
+            "A/C No": e.account_number, 
+            "Status": e.status
+        })
     
+    df = pd.DataFrame(df_data)
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='EmployeeMaster')
+    
     output.seek(0)
     return StreamingResponse(
         output, 
