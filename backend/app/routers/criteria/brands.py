@@ -9,7 +9,6 @@ from app.database.models.criteria import brands
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-
 # ---------------------------------------------------------
 # BRAND PAGE
 # ---------------------------------------------------------
@@ -17,25 +16,29 @@ templates = Jinja2Templates(directory="app/templates")
 def brand_form(request: Request, db: Session = Depends(get_db)):
 
     session_email = request.session.get("email")
-    company_code = request.session.get("company_code")   # ✔ USE STRING (BKNR9876)
+    company_code = request.session.get("company_code")
 
     if not session_email or not company_code:
         return RedirectResponse("/", status_code=302)
 
     data = (
         db.query(brands)
-        .filter(brands.company_id == company_code)   # ✔ MATCH STRING
+        .filter(brands.company_id == company_code)
         .order_by(brands.id.desc())
         .all()
     )
 
-    return templates.TemplateResponse("criteria/brands.html", {
-        "request": request,
-        "today_data": data,
-        "email": session_email,
-        "company_id": company_code,
-        "message": ""
-    })
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request, 
+        name="criteria/brands.html", 
+        context={
+            "today_data": data,
+            "email": session_email,
+            "company_id": company_code,
+            "message": ""
+        }
+    )
 
 
 # ---------------------------------------------------------
@@ -52,9 +55,9 @@ def save_brand(
 ):
 
     session_email = request.session.get("email")
-    company_code = request.session.get("company_code")   # ✔ FIX
+    company_code = request.session.get("company_code")
 
-    # Duplicate
+    # Duplicate check
     exists = db.query(brands).filter(
         brands.brand_name == brand_name,
         brands.company_id == company_code,
@@ -66,13 +69,17 @@ def save_brand(
             brands.company_id == company_code
         ).order_by(brands.id.desc()).all()
 
-        return templates.TemplateResponse("criteria/brands.html", {
-            "request": request,
-            "today_data": data,
-            "email": session_email,
-            "company_id": company_code,
-            "message": f"❌ Brand '{brand_name}' already exists!"
-        })
+        # ✅ FIX: TemplateResponse arguments updated
+        return templates.TemplateResponse(
+            request=request, 
+            name="criteria/brands.html", 
+            context={
+                "today_data": data,
+                "email": session_email,
+                "company_id": company_code,
+                "message": f"❌ Brand '{brand_name}' already exists!"
+            }
+        )
 
     if id:
         row = db.query(brands).filter(
@@ -86,14 +93,13 @@ def save_brand(
         row.date = date
         row.time = time
         row.email = session_email
-
     else:
         new_row = brands(
             brand_name=brand_name,
             date=date,
             time=time,
             email=session_email,
-            company_id=company_code    # ✔ STRING SAVED
+            company_id=company_code
         )
         db.add(new_row)
 
@@ -103,13 +109,17 @@ def save_brand(
         brands.company_id == company_code
     ).order_by(brands.id.desc()).all()
 
-    return templates.TemplateResponse("criteria/brands.html", {
-        "request": request,
-        "today_data": data,
-        "email": session_email,
-        "company_id": company_code,
-        "message": f"✔️ Brand '{brand_name}' saved successfully!"
-    })
+    # ✅ FIX: TemplateResponse arguments updated
+    return templates.TemplateResponse(
+        request=request, 
+        name="criteria/brands.html", 
+        context={
+            "today_data": data,
+            "email": session_email,
+            "company_id": company_code,
+            "message": f"✔️ Brand '{brand_name}' saved successfully!"
+        }
+    )
 
 
 # ---------------------------------------------------------
@@ -118,7 +128,7 @@ def save_brand(
 @router.post("/brands/delete/{id}")
 def delete_brand(id: int, request: Request, db: Session = Depends(get_db)):
 
-    company_code = request.session.get("company_code")  # ✔ FIX
+    company_code = request.session.get("company_code")
 
     db.query(brands).filter(
         brands.id == id,
