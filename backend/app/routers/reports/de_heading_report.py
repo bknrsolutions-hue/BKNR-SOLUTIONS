@@ -1,13 +1,14 @@
 # ============================================================
-# DE-HEADING REPORT ROUTER – FINAL (COMPLETE + AUDIT + FETCH)
+# DE-HEADING REPORT ROUTER – UPDATED (AUDIT + SEARCH READY)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date
+import json
 from io import BytesIO
 
 from openpyxl import Workbook
@@ -35,17 +36,17 @@ async def de_heading_report(
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
-        return RedirectResponse("/", status_code=302)
+        return RedirectResponse("/auth/login", status_code=302)
 
-    # ---------------- TARGET YIELD LOOKUP ----------------
+    # TARGET YIELD LOOKUP - Map style for quick access
     target_yield_map = {
-        str(r.hoso_count): round(float(r.hlso_yield_pct), 2)
+        str(r.hoso_count): round(float(r.hlso_yield_pct or 0), 2)
         for r in db.query(HOSO_HLSO_Yields)
         .filter(HOSO_HLSO_Yields.company_id == company_id)
         .all()
     }
 
-    # ---------------- DE-HEADING DATA ----------------
+    # DE-HEADING DATA
     rows = (
         db.query(DeHeading)
         .filter(DeHeading.company_id == company_id)
@@ -53,33 +54,32 @@ async def de_heading_report(
         .all()
     )
 
-    # Inject Target Yield into each row object
+    # Inject Target Yield into rows for UI comparison
     for r in rows:
         r.target_yield = target_yield_map.get(str(r.hoso_count), 0)
 
-    # Unique values for searchable dropdown filters
-    batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
-    contractors = sorted(list({r.contractor for r in rows if r.contractor}))
-    species_list = sorted(list({r.species for r in rows if r.species}))
-    peeling_locations = sorted(list({r.peeling_at for r in rows if r.peeling_at}))
-    production_for_list = sorted(list({r.production_for for r in rows if r.production_for}))
+    # Data for searchable dropdown filters in the report table
+    filters = {
+        "batches": sorted(list({r.batch_number for r in rows if r.batch_number})),
+        "contractors": sorted(list({r.contractor for r in rows if r.contractor})),
+        "species_list": sorted(list({r.species for r in rows if r.species})),
+        "peeling_locations": sorted(list({r.peeling_at for r in rows if r.peeling_at})),
+        "production_for_list": sorted(list({r.production_for for r in rows if r.production_for}))
+    }
 
+    # FIXED: TemplateResponse structure to avoid 'context' errors
     return templates.TemplateResponse(
+        request,
         "reports/de_heading_report.html",
         {
-            "request": request,
             "rows": rows,
-            "batches": batches,
-            "contractors": contractors,
-            "species_list": species_list,
-            "peeling_locations": peeling_locations,
-            "production_for_list": production_for_list,
+            **filters,
             "is_admin": role == "admin"
         }
     )
 
 # ============================================================
-# 2. INLINE UPDATE LOGIC (WITH GATE-ENTRY STYLE AUDIT)
+# 2. INLINE UPDATE LOGIC (WITH AUDIT)
 # ============================================================
 @router.post("/update")
 async def update_deheading_row(
@@ -92,7 +92,7 @@ async def update_deheading_row(
     edited_by = request.session.get("email")
 
     if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin only")
+        return JSONResponse({"status": "error", "message": "Admin Access Required"}, status_code=403)
 
     row = db.query(DeHeading).filter(
         DeHeading.id == payload.get("id"), 
@@ -100,7 +100,7 @@ async def update_deheading_row(
     ).first()
     
     if not row:
-        raise HTTPException(status_code=404, detail="Record not found")
+        return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
 
     update_fields = [
         "batch_number", "contractor", "species", "hoso_count", 
@@ -109,64 +109,64 @@ async def update_deheading_row(
 
     for field in update_fields:
         if field in payload and payload[field] is not None:
-            old_value = getattr(row, field)
-            new_value = payload[field]
+            old_val = getattr(row, field)
+            new_val = payload[field]
 
-            # Float conversion for numeric fields
+            # Type conversion for numbers
             if field in ["hoso_qty", "hlso_qty", "rate_per_kg"]:
-                new_value = float(new_value or 0)
+                new_val = float(new_val or 0)
 
-            if str(old_value) != str(new_value):
-                # Save to AuditLog (Reference Style)
+            if str(old_val) != str(new_val):
+                # Save Change to AuditLog
                 db.add(AuditLog(
                     table_name="de_heading",
                     record_id=row.id,
                     company_id=company_id,
                     field_name=field,
-                    old_value=str(old_value),
-                    new_value=str(new_value),
+                    old_value=str(old_val),
+                    new_value=str(new_val),
                     edited_by=edited_by,
                     edited_at=datetime.utcnow()
                 ))
-                setattr(row, field, new_value)
+                setattr(row, field, new_val)
 
-    # Auto Calculations
-    if row.hoso_qty > 0:
+    # Recalculate Yield and Amount
+    if row.hoso_qty and row.hoso_qty > 0:
         row.yield_percent = round((row.hlso_qty / row.hoso_qty) * 100, 2)
     else:
         row.yield_percent = 0
-    row.amount = round(row.hlso_qty * row.rate_per_kg, 2)
+    row.amount = round((row.hlso_qty or 0) * (row.rate_per_kg or 0), 2)
 
     db.commit()
-    return {"status": "success", "message": "Record updated"}
+    return {"status": "success", "message": "Record updated successfully"}
 
 # ------------------------------------------------------------
-# 3. FETCH FULL AUDIT HISTORY (Company Wise)
+# 3. FETCH FULL AUDIT HISTORY (AJAX Fetch)
 # ------------------------------------------------------------
 @router.get("/audit_all")
 async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     
-    # Prathi row change ni latest nundi fetch chestundi
     logs = (
         db.query(AuditLog, DeHeading.batch_number)
         .join(DeHeading, AuditLog.record_id == DeHeading.id)
         .filter(AuditLog.table_name == "de_heading", AuditLog.company_id == comp_code)
         .order_by(AuditLog.edited_at.desc())
-        .limit(100) # Latest 100 changes chusthunnam
+        .limit(100)
         .all()
     )
     
     return [
         {
-            "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-            "user": log.AuditLog.edited_by.split('@')[0], # Email short form kosam
+            "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M"),
+            "user": log.AuditLog.edited_by.split('@')[0], 
             "batch": log.batch_number,
-            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
+            "action": f"Updated {log.AuditLog.field_name.replace('_', ' ').capitalize()}",
             "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
             "type": "UPDATE"
         } for log in logs
     ]
+
 # ============================================================
 # 4. CONTRACTOR MONTHLY BILL (PDF/HTML)
 # ============================================================
