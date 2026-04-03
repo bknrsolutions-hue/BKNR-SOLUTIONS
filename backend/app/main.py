@@ -127,6 +127,7 @@ def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
+        request,
         "menu.html",
         {
             "request": request,
