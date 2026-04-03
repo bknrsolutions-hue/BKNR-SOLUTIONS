@@ -260,10 +260,13 @@ window.addEventListener('appinstalled', () => {
 const permissions = ({{ request.session.get('permissions')|tojson }} || "ALL").toString();
 
 function allow(key){
-  if (!permissions) return true;
-  return permissions.includes("ALL") || permissions.includes(key);
+  try {
+    return permissions.includes("ALL") || permissions.includes(key);
+  } catch(e){
+    console.log("Permission error:", e);
+    return true;
+  }
 }
-
 function setActive(btn){
   document.querySelectorAll(".top-menu button").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");
