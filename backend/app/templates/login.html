@@ -195,37 +195,35 @@ function showBox(id){
 showBox("loginBox");
 
 /* ================= REGISTER ================= */
-async function sendOTP(){
-  regErr.style.display="none";
+/* ================= LOGIN ================= */
+async function doLogin(){
+  loginErr.style.display="none";
 
-  let obj={
-    company_name:company_name.value.trim(),
-    user_name:user_name.value.trim(),
-    designation:designation.value.trim(),
-    address:address.value.trim(),
-    mobile:mobile.value.trim(),
-    email:email.value.trim().toLowerCase()
-  };
+  const res = await fetch(`${BASE}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      company_id: login_company_id.value.trim(),
+      email: login_email.value.trim().toLowerCase(),
+      password: login_pwd.value.substring(0,20)
+    })
+  });
 
-  if(Object.values(obj).includes("")){
-    regErr.innerHTML="All fields required";
-    regErr.style.display="block";
+  // 🚩 అతి ముఖ్యమైన మార్పు ఇక్కడ ఉంది:
+  if (res.redirected) {
+    // ఒకవేళ సర్వర్ నేరుగా /home కి రిడైరెక్ట్ పంపితే, ఆ URL కి వెళ్లు
+    window.location.href = res.url;
     return;
   }
 
-  let res=await fetch(`${BASE}/register`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify(obj)
-  });
-
-  let data=await res.json();
-  if(res.ok){
-    regEmail=obj.email;
-    showBox("otpBox");
-  }else{
-    regErr.innerHTML=data.detail;
-    regErr.style.display="block";
+  if (res.ok) {
+    // ఒకవేళ రిడైరెక్ట్ కాకపోయినా సక్సెస్ అయితే మాన్యువల్ గా వెళ్లు
+    window.location.href = "/home";
+  } else {
+    // Error వస్తే చూపించు
+    const data = await res.json();
+    loginErr.innerHTML = data.detail || "Login Failed";
+    loginErr.style.display = "block";
   }
 }
 
