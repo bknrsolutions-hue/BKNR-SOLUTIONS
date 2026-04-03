@@ -58,15 +58,16 @@ def production_report_page(
 
     rows = q.order_by(desc(Production.date), desc(Production.id)).all()
 
+    # Master Data fetching for Searchable Dropdowns
     def get_list(model, attr):
-        return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
+        return sorted(list({getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all() if getattr(x, attr)}))
 
     company_name, company_address = get_company_info(db, comp_code)
 
     return request.app.state.templates.TemplateResponse(
+        request,
         "reports/production_report.html",
         {
-            "request": request,
             "rows": rows,
             "from_date": from_date,
             "to_date": to_date,
@@ -87,7 +88,7 @@ def production_report_page(
     )
 
 # ------------------------------------------------------------
-# UPDATE WITH AUDIT LOG
+# UPDATE WITH AUDIT LOG & QTY RE-CALCULATION
 # ------------------------------------------------------------
 @router.post("/update")
 def update_production(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -114,7 +115,7 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
             new_val = str(payload[f])
             
             if old_val != new_val:
-                audit = AuditLog(
+                db.add(AuditLog(
                     table_name="production",
                     record_id=row.id,
                     company_id=comp_code,
@@ -123,27 +124,23 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                     new_value=new_val,
                     edited_by=user_email,
                     edited_at=datetime.utcnow()
-                )
-                db.add(audit)
+                ))
                 setattr(row, f, payload[f])
                 has_changes = True
 
     if has_changes:
+        # Re-calculating production quantity based on Packing Style Master
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
             packing_styles.packing_style == row.packing_style
         ).first()
         
         if pack:
-            row.production_qty = (float(row.no_of_mc or 0) * float(pack.mc_weight or 0)) + \
-                                 (float(row.loose or 0) * float(pack.slab_weight or 0))
+            row.production_qty = round((float(row.no_of_mc or 0) * float(pack.mc_weight or 1)) + \
+                                 (float(row.loose or 0) * float(pack.slab_weight or 1)), 2)
 
-        try:
-            db.commit()
-            return {"status": "success", "new_qty": row.production_qty}
-        except Exception as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+        db.commit()
+        return {"status": "success", "new_qty": row.production_qty}
 
     return {"status": "no_changes"}
 
@@ -159,7 +156,7 @@ def delete_production(request: Request, payload: dict = Body(...), db: Session =
     return {"deleted": True}
 
 # ------------------------------------------------------------
-# VIEW AUDIT HISTORY
+# VIEW AUDIT HISTORY (JOINED WITH BATCH INFO)
 # ------------------------------------------------------------
 @router.get("/audit_all")
 def get_production_audit(request: Request, db: Session = Depends(get_db)):
@@ -180,7 +177,7 @@ def get_production_audit(request: Request, db: Session = Depends(get_db)):
     ])
 
 # ------------------------------------------------------------
-# EXCEL EXPORT
+# EXPORTS (EXCEL & PDF)
 # ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids: str = Query(None), from_date: str = "", to_date: str = ""):
@@ -199,6 +196,7 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     ws = wb.active
     ws.title = "Production"
     ws.append(["Date", "Batch #", "Brand", "Variety", "Species", "Grade", "Glaze", "Freezer", "MC", "Loose", "Qty", "Type", "At", "For", "User"])
+    
     for r in rows:
         ws.append([str(r.date), r.batch_number, r.brand, r.variety_name, r.species, r.grade, r.glaze, r.freezer, r.no_of_mc, r.loose, r.production_qty, r.production_type, r.production_at, r.production_for, r.email])
     
@@ -207,16 +205,8 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     stream.seek(0)
     return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=Production_Report.xlsx"})
 
-# ------------------------------------------------------------
-# PDF EXPORT (FOR PRINT & DOWNLOAD)
-# ------------------------------------------------------------
 @router.get("/export_pdf")
-def export_production_pdf(
-    request: Request, 
-    db: Session = Depends(get_db), 
-    ids: str = Query(None), 
-    download: bool = Query(False)
-):
+def export_production_pdf(request: Request, db: Session = Depends(get_db), ids: str = Query(None), download: bool = Query(False)):
     comp_code = str(request.session.get("company_code"))
     q = db.query(Production).filter(Production.company_id == comp_code)
     
@@ -227,7 +217,6 @@ def export_production_pdf(
     rows = q.order_by(Production.date.asc()).all()
     company_name, company_address = get_company_info(db, comp_code)
     
-    # Ikada templates directory lo 'reports/production_report_print.html' undali
     html = request.app.state.templates.get_template("reports/production_report_print.html").render({
         "request": request,
         "rows": rows,

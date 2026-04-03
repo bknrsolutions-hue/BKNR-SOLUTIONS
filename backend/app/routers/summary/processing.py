@@ -1,10 +1,13 @@
-# app/routers/summary/processing.py
+# ============================================================
+# PROCESSING SUMMARY ROUTER - THE CONTROL TOWER
+# ============================================================
 
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from typing import Optional
 
 from app.database import get_db
 from app.database.models.processing import (
@@ -20,21 +23,22 @@ from app.database.models.processing import (
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 templates = Jinja2Templates(directory="app/templates")
 
-
 @router.get("/processing")
-def processing_summary(request: Request, db: Session = Depends(get_db)):
-
+def processing_summary(
+    request: Request, 
+    batch: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    # 🔐 SESSION & SECURITY CHECK
     company_id = request.session.get("company_code")
     if not company_id:
-        return RedirectResponse("/", status_code=302)
+        return RedirectResponse("/auth/login", status_code=302)
 
-    # ------------------ FILTERS ------------------
-    batch = request.query_params.get("batch")
-    from_date = request.query_params.get("from_date")
-    to_date = request.query_params.get("to_date")
-
-    def apply_filters(q, model):
-        q = q.filter(model.company_id == company_id)
+    # ------------------ HELPER: DYNAMIC FILTERS ------------------
+    def apply_filters(model):
+        q = db.query(model).filter(model.company_id == company_id)
         if batch:
             q = q.filter(model.batch_number == batch)
         if from_date:
@@ -43,18 +47,22 @@ def processing_summary(request: Request, db: Session = Depends(get_db)):
             q = q.filter(model.date <= to_date)
         return q
 
-    # ------------------ DATA ------------------
-    gate_rows = apply_filters(db.query(GateEntry), GateEntry).order_by(GateEntry.date).all()
-    rmp_rows = apply_filters(db.query(RawMaterialPurchasing), RawMaterialPurchasing).order_by(RawMaterialPurchasing.date).all()
-    de_rows = apply_filters(db.query(DeHeading), DeHeading).order_by(DeHeading.date).all()
-    peeling_rows = apply_filters(db.query(Peeling), Peeling).order_by(Peeling.date).all()
-    soaking_rows = apply_filters(db.query(Soaking), Soaking).order_by(Soaking.date).all()
-    grading_rows = apply_filters(db.query(Grading), Grading).order_by(Grading.date).all()
-    production_rows = apply_filters(db.query(Production), Production).order_by(Production.date).all()
+    # ------------------ DATA FETCHING (ORDERED BY DATE) ------------------
+    gate_rows = apply_filters(GateEntry).order_by(GateEntry.date).all()
+    rmp_rows = apply_filters(RawMaterialPurchasing).order_by(RawMaterialPurchasing.date).all()
+    de_rows = apply_filters(DeHeading).order_by(DeHeading.date).all()
+    peeling_rows = apply_filters(Peeling).order_by(Peeling.date).all()
+    soaking_rows = apply_filters(Soaking).order_by(Soaking.date).all()
+    grading_rows = apply_filters(Grading).order_by(Grading.date).all()
+    production_rows = apply_filters(Production).order_by(Production.date).all()
 
-    # ------------------ KPI ------------------
-    total_batches = db.query(func.count(func.distinct(GateEntry.batch_number)))\
-        .filter(GateEntry.company_id == company_id).scalar() or 0
+    # ------------------ KPI CALCULATIONS ------------------
+    # Total distinct batches in the system for dropdown
+    all_batches = [
+        b[0] for b in db.query(GateEntry.batch_number)
+        .filter(GateEntry.company_id == company_id)
+        .distinct().order_by(GateEntry.batch_number).all() if b[0]
+    ]
 
     total_gate_boxes = sum(r.no_of_material_boxes or 0 for r in gate_rows)
     total_rmp_qty = sum(r.received_qty or 0 for r in rmp_rows)
@@ -64,33 +72,27 @@ def processing_summary(request: Request, db: Session = Depends(get_db)):
     total_grading_qty = sum(r.quantity or 0 for r in grading_rows)
     total_production_qty = sum(r.production_qty or 0 for r in production_rows)
 
+    # Calculate Overall Process Yield (%)
     overall_yield = round((total_production_qty / total_rmp_qty) * 100, 2) if total_rmp_qty else 0
 
-    batches = [
-        b[0] for b in
-        db.query(GateEntry.batch_number)
-        .filter(GateEntry.company_id == company_id)
-        .distinct().order_by(GateEntry.batch_number).all()
-        if b[0]
-    ]
-
+    # ------------------ RENDER RESPONSE ------------------
     return templates.TemplateResponse(
+        request,
         "summary/processing_summary.html",
         {
-            "request": request,
-            "batches": batches,
+            "batches": all_batches,
             "selected_batch": batch or "",
             "from_date": from_date or "",
             "to_date": to_date or "",
 
-            "total_batches": total_batches,
+            "total_batches": len(all_batches),
             "total_gate_boxes": total_gate_boxes,
-            "total_rmp_qty": total_rmp_qty,
-            "total_de_hoso": total_de_hoso,
-            "total_peeling_qty": total_peeling_qty,
-            "total_soaking_qty": total_soaking_qty,
-            "total_grading_qty": total_grading_qty,
-            "total_production_qty": total_production_qty,
+            "total_rmp_qty": round(total_rmp_qty, 2),
+            "total_de_hoso": round(total_de_hoso, 2),
+            "total_peeling_qty": round(total_peeling_qty, 2),
+            "total_soaking_qty": round(total_soaking_qty, 2),
+            "total_grading_qty": round(total_grading_qty, 2),
+            "total_production_qty": round(total_production_qty, 2),
             "overall_yield": overall_yield,
 
             "gate_rows": gate_rows,

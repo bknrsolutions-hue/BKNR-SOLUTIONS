@@ -1,3 +1,7 @@
+# ============================================================
+# SOAKING REPORT ROUTER (BKNR ERP) - FULLY UPDATED
+# ============================================================
+
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -5,12 +9,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
 from io import BytesIO
-
 from openpyxl import Workbook
-# Weasyprint removed if not used to keep it clean, but you can keep it if needed for PDF
 
 from app.database import get_db
-# Models ni mee project structure batti import cheskondi
 from app.database.models.processing import Soaking, AuditLog 
 
 router = APIRouter(
@@ -31,7 +32,7 @@ async def soaking_main_report(
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
-        return RedirectResponse("/", status_code=302)
+        return RedirectResponse("/auth/login", status_code=302)
 
     # Fetching only company specific data
     rows = (
@@ -44,14 +45,16 @@ async def soaking_main_report(
     # Searchable dropdowns list build cheyali
     varieties = sorted(list({r.variety_name for r in rows if r.variety_name}))
     locations = sorted(list({r.production_at for r in rows if r.production_at}))
+    batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
 
     return templates.TemplateResponse(
+        request,
         "reports/soaking_report.html",
         {
-            "request": request,
             "rows": rows,
             "varieties": varieties,
             "locations": locations,
+            "batches": batches,
             "is_admin": role == "admin"
         }
     )
@@ -86,43 +89,44 @@ async def update_soaking_row(
         "production_at", "status", "production_for"
     ]
 
+    has_changes = False
     for field in update_fields:
         if field in payload:
-            old_val = getattr(row, field)
-            new_val = payload[field]
+            old_val = str(getattr(row, field) or "").strip()
+            new_val = str(payload[field]).strip()
 
-            # Numeric handling for calculations
-            if field in ["in_qty", "chemical_percent", "salt_percent"]:
-                try:
-                    new_val = float(new_val or 0)
-                except ValueError:
-                    new_val = 0.0
-
-            if str(old_val) != str(new_val):
-                # Save Audit Log - FIXED TABLE NAME TO 'soaking'
+            if old_val != new_val:
+                # Save Audit Log
                 db.add(AuditLog(
                     table_name="soaking",
                     record_id=row.id,
                     company_id=company_id,
                     field_name=field,
-                    old_value=str(old_val),
-                    new_value=str(new_val),
+                    old_value=old_val,
+                    new_value=new_val,
                     edited_by=edited_by,
                     edited_at=datetime.utcnow()
                 ))
-                setattr(row, field, new_val)
+                setattr(row, field, payload[field])
+                has_changes = True
 
-    # Automated Chemical & Salt Kg Calculations
-    # Formula: (In Qty * Percent) / 100
-    qty = float(row.in_qty or 0)
-    c_per = float(row.chemical_percent or 0)
-    s_per = float(row.salt_percent or 0)
-    
-    row.chemical_qty = round((qty * c_per) / 100, 2)
-    row.salt_qty = round((qty * s_per) / 100, 2)
+    if has_changes:
+        # Automated Chemical & Salt Kg Calculations
+        # Formula: (In Qty * Percent) / 100
+        try:
+            qty = float(row.in_qty or 0)
+            c_per = float(row.chemical_percent or 0)
+            s_per = float(row.salt_percent or 0)
+            
+            row.chemical_qty = round((qty * c_per) / 100, 2)
+            row.salt_qty = round((qty * s_per) / 100, 2)
+        except Exception as e:
+            print(f"Calculation Error: {e}")
 
-    db.commit()
-    return {"status": "success", "message": "Soaking record updated"}
+        db.commit()
+        return {"status": "success", "message": "Soaking record updated & quantities recalculated"}
+
+    return {"status": "no_changes"}
 
 # ============================================================
 # 3. FETCH FULL AUDIT HISTORY (Company Wise)
@@ -136,7 +140,7 @@ async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db))
         db.query(AuditLog, Soaking.batch_number)
         .join(Soaking, AuditLog.record_id == Soaking.id)
         .filter(
-            AuditLog.table_name == "soaking", # Matches the update logic name
+            AuditLog.table_name == "soaking",
             AuditLog.company_id == comp_code
         )
         .order_by(AuditLog.edited_at.desc())
@@ -164,7 +168,7 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     query = db.query(Soaking).filter(Soaking.company_id == company_id)
     
     if ids and ids.strip():
-        id_list = [int(x) for x in ids.split(",") if x.strip()]
+        id_list = [int(x) for x in ids.split(",") if x.strip() and x.isdigit()]
         query = query.filter(Soaking.id.in_(id_list))
     
     rows = query.order_by(Soaking.date.asc()).all()
@@ -206,4 +210,4 @@ async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Se
         db.delete(row)
         db.commit()
         return {"status": "success"}
-    return {"status": "error", "message": "Not found"}
+    return {"status": "error", "message": "Record not found"}

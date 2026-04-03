@@ -1,5 +1,5 @@
 # ============================================================
-# RAW MATERIAL PURCHASING REPORT ROUTER (FINAL – FULL WORKING)
+# RAW MATERIAL PURCHASING REPORT ROUTER (UPDATED & SEARCH READY)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Query, Body, HTTPException
@@ -43,19 +43,10 @@ def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
         SupplierTable.supplier_name == supplier_name
     ).first()
     if not s:
-        return {
-            "id": supplier_name,
-            "name": supplier_name,
-            "email": "",
-            "phone": "",
-            "address": ""
-        }
+        return {"id": supplier_name, "name": supplier_name, "email": "", "phone": "", "address": ""}
     return {
-        "id": s.id,
-        "name": s.supplier_name,
-        "email": s.supplier_email,
-        "phone": s.phone,
-        "address": s.address
+        "id": s.id, "name": s.supplier_name, "email": s.supplier_email,
+        "phone": s.phone, "address": s.address
     }
 
 # -----------------------------------------------------------
@@ -65,54 +56,54 @@ def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
 def report_page(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
+    role = request.session.get("role")
 
     if not comp_code or not user_email:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # STRICT COMPANY FILTERING
+    # Fetching Data
     rows = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == comp_code
     ).order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()
 
-    # GENERATING LOOKUP LISTS FOR SEARCHABLE DROPDOWNS
+    # Generating Lists for Searchable Dropdowns
     def get_dist(attr):
-        return sorted({getattr(r, attr) for r in rows if getattr(r, attr)})
+        return sorted(list({getattr(r, attr) for r in rows if getattr(r, attr)}))
 
-    batches = get_dist("batch_number")
-    suppliers = get_dist("supplier_name")
-    varieties = get_dist("variety_name")
-    species_list = get_dist("species")
-    production_for_list = get_dist("production_for")
-    peeling_locations = get_dist("peeling_at")
-    hsn_list = get_dist("hsn_code")
+    filters = {
+        "batches": get_dist("batch_number"),
+        "suppliers": get_dist("supplier_name"),
+        "varieties": get_dist("variety_name"),
+        "species_list": get_dist("species"),
+        "production_for_list": get_dist("production_for"),
+        "peeling_locations": get_dist("peeling_at"),
+        "hsn_list": get_dist("hsn_code")
+    }
 
     comp = get_company_info(db, comp_code)
 
     return templates.TemplateResponse(
+        request,
         "reports/raw_material_purchasing_report.html",
         {
-            "request": request,
             "rows": rows,
-            "batches": batches,
-            "suppliers": suppliers,
-            "varieties": varieties,
-            "species": species_list,
-            "production_for_list": production_for_list,
-            "peeling_locations": peeling_locations,
-            "hsn_list": hsn_list,
+            **filters,
             "company_name": comp["name"],
-            "company_address": comp["address"]
+            "company_address": comp["address"],
+            "is_admin": role == "admin"
         }
     )
 
 # -----------------------------------------------------------
-# UPDATE ENTRY
+# UPDATE ENTRY WITH AUTO-CALCULATION
 # -----------------------------------------------------------
 @router.post("/update")
 def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     edited_by = request.session.get("email")
-    if not comp_code: raise HTTPException(status_code=401)
+    
+    if request.session.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
     row = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.id == payload.get("id"),
@@ -129,23 +120,52 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
 
     for field in update_fields:
         if field in payload:
-            old_val = getattr(row, field)
-            new_val = payload[field]
-            if field in ["g1_qty", "g2_qty", "dc_qty", "rate_per_kg", "material_boxes"]:
-                new_val = float(new_val or 0)
+            old_val = str(getattr(row, field) or "")
+            new_val = str(payload[field])
 
-            if str(old_val) != str(new_val):
+            if old_val != new_val:
                 db.add(AuditLog(
                     table_name="rmp", record_id=row.id, company_id=comp_code,
-                    field_name=field, old_value=str(old_val), new_value=str(new_val),
+                    field_name=field, old_value=old_val, new_value=new_val,
                     edited_by=edited_by, edited_at=datetime.now()
                 ))
-                setattr(row, field, new_val)
+                setattr(row, field, payload[field])
 
-    row.received_qty = float(row.g1_qty or 0) + float(row.g2_qty or 0) + float(row.dc_qty or 0)
-    row.amount = (float(row.g1_qty or 0) + float(row.g2_qty or 0) / 2) * float(row.rate_per_kg or 0)
+    # Recalculating totals
+    g1 = float(row.g1_qty or 0)
+    g2 = float(row.g2_qty or 0)
+    dc = float(row.dc_qty or 0)
+    rate = float(row.rate_per_kg or 0)
+
+    row.received_qty = round(g1 + g2 + dc, 2)
+    # Standard formula: (G1 + G2/2) * Rate
+    row.amount = round((g1 + (g2 / 2)) * rate, 2)
+    
     db.commit()
-    return {"status": "updated", "received_qty": row.received_qty, "amount": row.amount}
+    return {"status": "success", "received_qty": row.received_qty, "amount": row.amount}
+
+# -----------------------------------------------------------
+# AUDIT LOGS (WITH IST FORMATTING)
+# -----------------------------------------------------------
+@router.get("/audit")
+def fetch_rmp_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    logs = db.query(AuditLog).filter(
+        AuditLog.table_name == "rmp", 
+        AuditLog.company_id == comp_code
+    ).order_by(AuditLog.edited_at.desc()).limit(100).all()
+    
+    return [
+        {
+            "record_id": l.record_id, 
+            "field": l.field_name.replace('_', ' ').title(), 
+            "old": l.old_value, 
+            "new": l.new_value, 
+            "user": l.edited_by.split('@')[0] if l.edited_by else "System", 
+            "time": l.edited_at.strftime("%d-%m-%Y %H:%M")
+        } for l in logs
+    ]
+
 
 # -----------------------------------------------------------
 # DELETE ENTRY
@@ -235,11 +255,3 @@ def export_rmp_pdf(request: Request, ids: str = Query(None), type: str = Query("
     pdf = HTML(string=html_content).write_pdf()
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=RMP_{type}_{date.today()}.pdf"})
 
-# -----------------------------------------------------------
-# FETCH AUDIT LOGS
-# -----------------------------------------------------------
-@router.get("/audit")
-def fetch_rmp_audit(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code")
-    logs = db.query(AuditLog).filter(AuditLog.table_name == "rmp", AuditLog.company_id == comp_code).order_by(AuditLog.edited_at.desc()).all()
-    return [{"record_id": l.record_id, "field": l.field_name, "old": l.old_value, "new": l.new_value, "user": l.edited_by, "time": l.edited_at.strftime("%d-%m-%Y %H:%M")} for l in logs]

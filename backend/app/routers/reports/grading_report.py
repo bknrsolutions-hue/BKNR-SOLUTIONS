@@ -1,4 +1,167 @@
 # ============================================================
+# GRADING SUMMARY REPORT – FULL ROUTER (UPDATED & SEARCH READY)
+# ============================================================
+
+from fastapi import APIRouter, Request, Depends, Query, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from collections import defaultdict
+from io import BytesIO
+import json
+from datetime import datetime
+
+from openpyxl import Workbook
+
+from app.database import get_db
+from app.database.models.processing import Grading, DeHeading, AuditLog
+from app.database.models.criteria import HOSO_HLSO_Yields
+
+router = APIRouter(
+    prefix="/grading_report",
+    tags=["GRADING SUMMARY REPORT"]
+)
+
+templates = Jinja2Templates(directory="app/templates")
+
+# ============================================================
+# MAIN REPORT VIEW
+# ============================================================
+@router.get("", response_class=HTMLResponse)
+def grading_report(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    company_id = request.session.get("company_code")
+    role = request.session.get("role")
+    if not company_id:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    # 1. Yield Map Preparation
+    yield_map = {
+        (r.species, str(r.hoso_count)): float(r.hlso_yield_pct or 0) / 100
+        for r in db.query(HOSO_HLSO_Yields)
+        .filter(HOSO_HLSO_Yields.company_id == company_id)
+        .all()
+    }
+
+    # 2. De-Heading Data (Actual HOSO Source)
+    deheading_hoso_map = defaultdict(float)
+    for r in db.query(DeHeading).filter(DeHeading.company_id == company_id).all():
+        deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
+
+    # 3. Grading Raw Data Grouping
+    grading_rows = db.query(Grading).filter(Grading.company_id == company_id).all()
+    grouped = defaultdict(list)
+
+    # Dropdown Filter Data
+    batches_list = sorted(list({r.batch_number for r in grading_rows if r.batch_number}))
+    species_list = sorted(list({r.species for r in grading_rows if r.species}))
+
+    for r in grading_rows:
+        grouped[(r.batch_number, r.species, str(r.hoso_count), r.variety_name)].append(r)
+
+    rows = []
+    idx = 1
+    summary_group = defaultdict(list)
+
+    # 4. Calculation Logic
+    for (batch, species, hoso_count, variety), items in grouped.items():
+        graded_qty_sum = sum(float(i.quantity or 0) for i in items)
+        base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
+        
+        yield_factor = yield_map.get((species, hoso_count), 0)
+
+        # Actual HOSO Logic
+        if variety == "HOSO":
+            actual_hoso_qty = graded_qty_sum
+        elif variety == "HLSO":
+            actual_hoso_qty = deheading_hoso_map.get((batch, species, hoso_count), 0)
+        else:
+            actual_hoso_qty = 0
+
+        # Workout & Yield Calculations
+        workout = (base / graded_qty_sum) if graded_qty_sum > 0 else 0
+        if variety == "HLSO":
+            workout = workout * 2.2 * yield_factor
+
+        yield_pct = (graded_qty_sum / actual_hoso_qty * 100) if actual_hoso_qty > 0 else 0
+        grading_hoso_qty = (graded_qty_sum / yield_factor) if variety == "HLSO" and yield_factor > 0 else graded_qty_sum
+        
+        diff_kg = grading_hoso_qty - actual_hoso_qty if variety == "HLSO" else 0
+        diff_pct = (diff_kg / actual_hoso_qty * 100) if actual_hoso_qty > 0 else 0
+
+        summary_group[(batch, species)].append({
+            "batch": batch, "species": species, "hoso_count": hoso_count, "variety": variety,
+            "hoso_qty": round(actual_hoso_qty, 2), "graded_qty": round(graded_qty_sum, 2),
+            "workout_count": round(workout, 2), "yield_pct": round(yield_pct, 2),
+            "grading_hoso_qty": round(grading_hoso_qty, 2), "weight_diff_kg": round(diff_kg, 2),
+            "weight_diff_pct": round(diff_pct, 2)
+        })
+
+    # 5. Final Rows with Subtotals
+    for (batch, species), items in summary_group.items():
+        sh = sg = sw = sgh = sdiff = 0
+        for r in items:
+            r["id"] = idx
+            rows.append(r)
+            idx += 1
+            sh += r["hoso_qty"]
+            sg += r["graded_qty"]
+            sw += r["workout_count"]
+            sgh += r["grading_hoso_qty"]
+            sdiff += r["weight_diff_kg"]
+
+        rows.append({
+            "id": "", "batch": batch, "species": species, "hoso_count": "", "variety": "SUB TOTAL",
+            "hoso_qty": round(sh, 2), "graded_qty": round(sg, 2), "workout_count": round(sw, 2),
+            "yield_pct": round((sg / sh * 100), 2) if sh > 0 else 0,
+            "grading_hoso_qty": round(sgh, 2), "weight_diff_kg": round(sdiff, 2), "weight_diff_pct": 0,
+            "is_subtotal": True
+        })
+
+    # FIXED: Using request as first argument for TemplateResponse
+    return templates.TemplateResponse(
+        request, 
+        "reports/grading_report.html", 
+        {
+            "rows": rows, 
+            "batches_list": batches_list, 
+            "species_list": species_list,
+            "is_admin": role == "admin"
+        }
+    )
+
+
+# ------------------------------------------------------------
+# 3. FETCH FULL AUDIT HISTORY (Company Wise)
+# ------------------------------------------------------------
+@router.get("/audit_all")
+async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    
+    # Prathi row change ni latest nundi fetch chestundi
+    logs = (
+        db.query(AuditLog, DeHeading.batch_number)
+        .join(DeHeading, AuditLog.record_id == DeHeading.id)
+        .filter(AuditLog.table_name == "de_heading", AuditLog.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc())
+        .limit(100) # Latest 100 changes chusthunnam
+        .all()
+    )
+    
+    return [
+        {
+            "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+            "user": log.AuditLog.edited_by.split('@')[0], # Email short form kosam
+            "batch": log.batch_number,
+            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
+            "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
+            "type": "UPDATE"
+        } for log in logs
+    ]
+# ============================================================
 # GRADING SUMMARY REPORT – FULL ROUTER (LOCKED & UPDATED)
 # ============================================================
 

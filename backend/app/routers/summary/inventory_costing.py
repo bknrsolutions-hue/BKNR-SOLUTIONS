@@ -1,9 +1,12 @@
+# ============================================================
+# INVENTORY COSTING & YIELD NORMALIZATION ROUTER
+# ============================================================
+
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date
-import re
 
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry
@@ -20,18 +23,23 @@ def inventory_costing_page(
     from_date: str = "",
     to_date: str = ""
 ):
-    # 🔹 1. SESSION NUNDI COMPANY CODE TEESUKUNTUNNAM
+    # 🔐 SESSION SECURITY CHECK
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # 🔹 2. STOCK DATA (STRICTLY FILTERED BY COMPANY)
+    # 🔹 1. FETCH STOCK DATA (STRICTLY FOR THIS COMPANY)
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
-    if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
-    if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
+    if from_date: 
+        try: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
+        except: pass
+    if to_date: 
+        try: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
+        except: pass
+        
     rows = q.order_by(stock_entry.date.desc()).all()
 
-    # 🔹 3. RM TOTAL AMOUNT (ONLY FOR THIS COMPANY)
+    # 🔹 2. RM TOTAL AMOUNT CALCULATION (BATCH & SPECIES WISE)
     rm_totals = db.query(
         RawMaterialPurchasing.batch_number,
         RawMaterialPurchasing.species,
@@ -45,7 +53,7 @@ def inventory_costing_page(
         for r in rm_totals
     }
 
-    # 🔹 4. STOCK IN TOTAL QTY (ONLY FOR THIS COMPANY)
+    # 🔹 3. STOCK IN QTY AGGREGATION
     stock_sums = db.query(
         stock_entry.batch_number,
         stock_entry.species,
@@ -62,33 +70,43 @@ def inventory_costing_page(
         for s in stock_sums
     }
 
-    # Yields for costing logic
-    yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == comp_code).all()
-    v_records = db.query(varieties).filter(varieties.company_id == comp_code).all()
+    # Yields & Varieties Master Lookup
+    v_records = {str(v.variety_name).strip().lower(): v for v in db.query(varieties).filter(varieties.company_id == comp_code).all()}
 
-    # 🔹 5. COSTING CALCULATIONS
+    # 🔹 4. CORE COSTING & YIELD LOGIC
     for r in rows:
-        b_key, s_key = str(r.batch_number).strip(), str(r.species or "").strip().lower()
+        b_key = str(r.batch_number).strip()
+        s_key = str(r.species or "").strip().lower()
         lookup = (b_key, s_key)
 
-        # Formula: Total RM Amount / Total Stock In Qty
+        # 💡 COSTING FORMULA: (Total RM Purchase Amount / Total Stock Received Qty)
         total_amt = rm_amt_map.get(lookup, 0)
         total_qty = stock_qty_map.get(lookup, 0)
 
+        # If RM data not found, fallback to sales reference rate
         r.product_kg_value = round(total_amt / total_qty, 2) if total_qty > 0 else (r.sales_reference_rate or 0)
-        r.inventory_value = round((r.quantity or 0) * r.product_kg_value, 2)
+        r.inventory_value = round((float(r.quantity or 0)) * r.product_kg_value, 2)
 
-        # Yield normalization (Shortened for brevity)
+        # 💡 YIELD NORMALIZATION (HOSO EQUIVALENT)
         p_var = str(r.variety or "").strip().lower()
-        v_data = next((v for v in v_records if str(v.variety_name).strip().lower() == p_var), None)
-        peeling_y = float(v_data.peeling_yield or 100) / 100 if v_data else 1.0
-        soaking_y = float(v_data.soaking_yield or 100) / 100 if v_data else 1.0
+        v_master = v_records.get(p_var)
         
-        try: net_count_calc = (float(r.quantity or 0) / (peeling_y * soaking_y))
-        except: net_count_calc = 0
-        r.hoso_count = round(net_count_calc, 2) # Simplify for now
+        # Taking yields from Master, defaulting to 100% (1.0)
+        peeling_y = float(v_master.peeling_yield or 100) / 100 if v_master else 1.0
+        soaking_y = float(v_master.soaking_yield or 100) / 100 if v_master else 1.0
+        
+        # Recalculating weight to HOSO level (Raw Material level weight)
+        try:
+            r.hoso_equivalent_weight = round(float(r.quantity or 0) / (peeling_y * soaking_y), 2)
+        except ZeroDivisionError:
+            r.hoso_equivalent_weight = r.quantity
 
     return request.app.state.templates.TemplateResponse(
         "inventory_management/inventory_costing.html",
-        {"request": request, "rows": rows, "comp_code": comp_code}
+        {
+            "request": request, 
+            "rows": rows, 
+            "from_date": from_date,
+            "to_date": to_date
+        }
     )
