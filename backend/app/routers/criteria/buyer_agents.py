@@ -32,16 +32,15 @@ def buyer_agents_page(request: Request, db: Session = Depends(get_db)):
     )
 
     return templates.TemplateResponse(
-        "criteria/buyer_agents.html",
-        {
-            "request": request,
+        request=request, 
+        name="criteria/buyer_agents.html", 
+        context={
             "today_data": data,
             "email": session_email,
             "company_id": company_code,
-            "message": ""
+            "message": f"✔️ Brand '{brand_name}' saved successfully!"
         }
     )
-
 
 # ---------------------------------------------------------
 # SAVE (ADD / UPDATE)
