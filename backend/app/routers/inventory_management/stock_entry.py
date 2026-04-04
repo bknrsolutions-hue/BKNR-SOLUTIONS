@@ -24,6 +24,10 @@ from app.database.models.criteria import (
 
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
 
+
+# ==================================================
+# LOAD STOCK ENTRY PAGE (TODAY DATA ONLY)
+# ==================================================
 @router.get("/stock_entry", response_class=HTMLResponse)
 def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
@@ -43,6 +47,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # 1. BATCH DATA LIST FOR DYNAMIC FILTERING (UPDATED WITH receiving_center)
     batches_raw = (
         db.query(
             GateEntry.batch_number,
@@ -62,6 +67,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         } for b in batches_raw if b.batch_number
     ]
 
+    # Production For - Unique Names Only
     production_for_unique = sorted({
         p.production_for for p in
         db.query(production_for.production_for)
@@ -78,13 +84,11 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    # ఇక్కడ మార్పు చేశాను: 
-    # 1. టెంప్లేట్ పేరు
-    # 2. డేటా డిక్షనరీ (ఇందులో request లేదు)
-    # 3. request=request విడిగా పంపించాను
+    # UPDATE: Putting 'request' back inside the context dictionary to fix 'multiple values' error
     return request.app.state.templates.TemplateResponse(
         "inventory_management/stock_entry.html",
         {
+            "request": request,  # 👈 Keep it here
             "table_data": table_data,
             "batch_data_list": batch_data_list,
             "species": species_list,
@@ -100,10 +104,13 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
             "locations": [l.coldstore_location for l in db.query(coldstore_locations).filter(coldstore_locations.company_id == company_code)],
             "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
             "po_numbers": [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number)],
-        },
-        request=request
+        }
     )
 
+
+# ==================================================
+# SAVE STOCK IN
+# ==================================================
 @router.post("/stock_entry")
 def save_stock_in(
     request: Request,
@@ -168,6 +175,10 @@ def save_stock_in(
     db.commit()
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 
+
+# ==================================================
+# AVAILABLE STOCK REPORT (AJAX)
+# ==================================================
 @router.get("/stock_out_report")
 def stock_out_report(
     request: Request,
@@ -211,6 +222,10 @@ def stock_out_report(
         for r in rows
     ])
 
+
+# ==================================================
+# SAVE STOCK OUT (WITH QUANTITY CALCULATION)
+# ==================================================
 @router.post("/stock_out_save")
 def stock_out_save(
     request: Request,
