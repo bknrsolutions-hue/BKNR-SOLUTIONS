@@ -163,8 +163,8 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     hoso_floor_balance_list.sort(key=lambda x: (x['production_for'], x['peeling_at']))
 
-    # FIXED: Added 'request' as first positional argument to avoid TypeError
-    return templates.TemplateResponse(request, "processing/de_heading.html", {
+    return templates.TemplateResponse("processing/de_heading.html", {
+        "request": request,
         "contractors": contractor_list,
         "species": species_list,
         "peeling_locations": peeling_locs,

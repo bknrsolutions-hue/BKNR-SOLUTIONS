@@ -1,5 +1,5 @@
 # ============================================================
-# PEELING REPORT ROUTER (BKNR ERP) - UPDATED & SEARCH READY
+# PEELING REPORT ROUTER (BKNR ERP) - FULLY UPDATED
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
@@ -31,7 +31,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     role = request.session.get("role")
 
     if not comp_code:
-        return RedirectResponse("/auth/login", status_code=302)
+        return RedirectResponse("/", status_code=302)
 
     rows = (
         db.query(Peeling)
@@ -40,22 +40,23 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Searchable Columns Data
-    filters = {
-        "batches": sorted(list({r.batch_number for r in rows if r.batch_number})),
-        "contractors": sorted(list({r.contractor_name for r in rows if r.contractor_name})),
-        "varieties": sorted(list({r.variety_name for r in rows if r.variety_name})),
-        "locations": sorted(list({r.peeling_at for r in rows if r.peeling_at})),
-        "production_for_list": sorted(list({r.production_for for r in rows if r.production_for}))
-    }
+    # Unique filter options for dropdowns
+    batches = sorted({r.batch_number for r in rows if r.batch_number})
+    contractors = sorted({r.contractor_name for r in rows if r.contractor_name})
+    varieties = sorted({r.variety_name for r in rows if r.variety_name})
+    locations = sorted({r.peeling_at for r in rows if r.peeling_at})
+    production_for_list = sorted({r.production_for for r in rows if r.production_for})
 
-    # Fixed: Passing request as the first argument in TemplateResponse
     return templates.TemplateResponse(
-        request,
         "reports/peeling_report.html",
         {
+            "request": request,
             "rows": rows,
-            **filters,
+            "batches": batches,
+            "contractors": contractors,
+            "varieties": varieties,
+            "locations": locations,
+            "production_for_list": production_for_list,
             "is_admin": role == "admin"
         }
     )
@@ -71,10 +72,9 @@ async def update_peeling(
 ):
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
-    role = request.session.get("role")
     
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorized: Admin Access Required")
+    if request.session.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
     record_id = payload.get("id")
     row = db.query(Peeling).filter(Peeling.id == record_id, Peeling.company_id == comp_code).first()
@@ -82,6 +82,7 @@ async def update_peeling(
     if not row:
         raise HTTPException(status_code=404, detail="Record not found")
 
+    # Fields to monitor for Audit Logs
     updatable_fields = [
         "batch_number", "contractor_name", "variety_name", "hlso_count",
         "hlso_qty", "peeled_qty", "rate", "peeling_at", "production_for"
@@ -94,7 +95,7 @@ async def update_peeling(
 
             if old_val != new_val:
                 # Add Audit Entry
-                db.add(AuditLog(
+                audit = AuditLog(
                     table_name="peeling",
                     record_id=record_id,
                     company_id=comp_code,
@@ -103,10 +104,11 @@ async def update_peeling(
                     new_value=new_val,
                     edited_by=user_email,
                     edited_at=datetime.utcnow()
-                ))
+                )
+                db.add(audit)
                 setattr(row, field, payload[field])
 
-    # Recalculate Logic with Safety Check
+    # Recalculate Logic
     try:
         h_qty = float(row.hlso_qty or 0)
         p_qty = float(row.peeled_qty or 0)
@@ -119,7 +121,6 @@ async def update_peeling(
 
     db.commit()
     return {"status": "success", "message": "Record updated & Audit Log saved"}
-
 
 # ------------------------------------------------------------
 # 3. FETCH FULL AUDIT HISTORY (Company Wise)

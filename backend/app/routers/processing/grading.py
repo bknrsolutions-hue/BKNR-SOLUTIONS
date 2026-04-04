@@ -135,8 +135,8 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
-    # FIXED: request as first argument to avoid TypeError
-    return templates.TemplateResponse(request, "processing/grading.html", {
+    return templates.TemplateResponse("processing/grading.html", {
+        "request": request,
         "species_list": species_list,
         "variety_list": variety_list,
         "peeling_locations": peeling_locations,

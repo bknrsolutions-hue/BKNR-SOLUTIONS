@@ -68,28 +68,26 @@ def gate_entry_report(
         GateEntry.time.desc()
     ).all()
 
-    # Searchable Columns Data
-    suppliers_list = sorted(list({r.supplier_name for r in rows if r.supplier_name}))
-    factories_list = sorted(list({r.receiving_center for r in rows if r.receiving_center}))
-    locations_list = sorted(list({r.purchasing_location for r in rows if r.purchasing_location}))
-    vehicles_list = sorted(list({r.vehicle_number for r in rows if r.vehicle_number}))
-    production_for_list = sorted(list({r.production_for for r in rows if r.production_for}))
+    suppliers_list = sorted({r.supplier_name for r in rows if r.supplier_name})
+    factories_list = sorted({r.receiving_center for r in rows if r.receiving_center})
+    locations_list = sorted({r.purchasing_location for r in rows if r.purchasing_location})
+    vehicles_list = sorted({r.vehicle_number for r in rows if r.vehicle_number})
+    production_for_list = sorted({r.production_for for r in rows if r.production_for})
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    # Fixed: Using TemplateResponse with request as first argument for stability
     return request.app.state.templates.TemplateResponse(
-        request,
         "reports/gate_entry_report.html",
         {
+            "request": request,
             "rows": rows,
             "from_date": from_date,
             "to_date": to_date,
-            "suppliers_list": suppliers_list,
-            "factories_list": factories_list,
-            "locations_list": locations_list,
-            "vehicles_list": vehicles_list,
-            "production_for_list": production_for_list,
+            "suppliers_list": suppliers_list or [],
+            "factories_list": factories_list or [],
+            "locations_list": locations_list or [],
+            "vehicles_list": vehicles_list or [],
+            "production_for_list": production_for_list or [],
             "company_name": company_name,
             "company_address": company_address,
             "is_admin": role == "admin"

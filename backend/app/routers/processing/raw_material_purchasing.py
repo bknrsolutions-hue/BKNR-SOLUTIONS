@@ -24,7 +24,9 @@ templates = Jinja2Templates(directory="app/templates")
 # -----------------------------------------------------
 def get_today_range():
     now = datetime.now()
+    # Today 9:00 AM
     start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    # If current time is before 9 AM, the shift started yesterday at 9 AM
     if now < start:
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
@@ -132,11 +134,12 @@ def get_hoso_summary_data(db: Session, company_code: str):
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
     hoso_summary, drill_down = get_hoso_summary_data(db, company_code)
     
-    # Gate Entry data for Batch Filtering
+    # Gate Entry నుండి డేటా తీసుకుని కంపెనీ వైజ్ బ్యాచ్‌లను గ్రూప్ చేయడం
     gate_entries = db.query(GateEntry).filter(GateEntry.company_id == company_code).order_by(GateEntry.id.desc()).all()
     
     prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
     
+    # ఈ మ్యాప్ ని ఉపయోగించి JS లో డ్రాప్‌డౌన్ ఫిల్టర్ చేయవచ్చు
     prod_batch_map = {}
     for g in gate_entries:
         if g.production_for:
@@ -151,6 +154,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
     hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
     peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
 
+    # 🟢 TODAY RANGE FILTER APPLIED HERE FOR TABLE DATA
     start, end = get_today_range()
     today_data = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == company_code,
@@ -160,23 +164,18 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         )
     ).order_by(RawMaterialPurchasing.id.desc()).all()
 
-    # FIXED: First argument for TemplateResponse must be 'request'
-    return templates.TemplateResponse(
-        request, 
-        "processing/raw_material_purchasing.html", 
-        {
-            "today_data": today_data, "edit_data": edit_data,
-            "batch_list": [g.batch_number for g in gate_entries if g.batch_number],
-            "supplier_list": supplier_list, "variety_list": variety_list, "species_list": species_list,
-            "peeling_locations": peeling_locs, "prod_for_list": prod_for_list,
-            "hsn_list": [h.description for h in hsn_records],
-            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
-            "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
-            "prod_batch_map_json": json.dumps(prod_batch_map), 
-            "batch_supplier_map_json": json.dumps({g.batch_number: {"supplier": g.supplier_name, "prod_for": g.production_for} for g in gate_entries}),
-            "message": request.session.pop("message", None)
-        }
-    )
+    return templates.TemplateResponse("processing/raw_material_purchasing.html", {
+        "request": request, "today_data": today_data, "edit_data": edit_data,
+        "batch_list": [g.batch_number for g in gate_entries if g.batch_number],
+        "supplier_list": supplier_list, "variety_list": variety_list, "species_list": species_list,
+        "peeling_locations": peeling_locs, "prod_for_list": prod_for_list,
+        "hsn_list": [h.description for h in hsn_records],
+        "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
+        "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
+        "prod_batch_map_json": json.dumps(prod_batch_map), 
+        "batch_supplier_map_json": json.dumps({g.batch_number: {"supplier": g.supplier_name, "prod_for": g.production_for} for g in gate_entries}),
+        "message": request.session.pop("message", None)
+    })
 
 # -----------------------------------------------------
 # ROUTES
@@ -200,26 +199,26 @@ def edit_rmp(id: int, request: Request, db: Session = Depends(get_db)):
 @router.post("/raw_material_purchasing")
 def save_rmp(
     request: Request, batch_number: str = Form(...), supplier_name: str = Form(""),
-    production_for: str = Form(""), peeling_at: str = Form(""), variety_name: str = Form(""), 
-    species: str = Form(""), hsn_code: str = Form(""), count: str = Form(""), 
-    g1_qty: float = Form(0.0), g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), 
-    rate_per_kg: float = Form(0.0), material_boxes: float = Form(0.0), 
-    remarks: str = Form(""), db: Session = Depends(get_db)
+    production_for: str = Form(""), 
+    peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
+    hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
+    g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
     now = datetime.now()
     received = g1_qty + g2_qty + dc_qty
-    # Billing logic: G1 + half of G2
     total_billable_qty = g1_qty + (g2_qty / 2)
     amount = round(total_billable_qty * rate_per_kg, 2)
 
     entry = RawMaterialPurchasing(
-        batch_number=batch_number, supplier_name=supplier_name, production_for=production_for, 
-        peeling_at=peeling_at, variety_name=variety_name, species=species, hsn_code=hsn_code, 
-        count=count, g1_qty=g1_qty, g2_qty=g2_qty, dc_qty=dc_qty, received_qty=received, 
-        rate_per_kg=rate_per_kg, amount=amount, material_boxes=material_boxes, 
-        remarks=remarks, email=request.session.get("email"), date=now.date(), 
-        time=now.time(), company_id=comp_code
+        batch_number=batch_number, supplier_name=supplier_name, 
+        production_for=production_for, 
+        peeling_at=peeling_at, variety_name=variety_name,
+        species=species, hsn_code=hsn_code, count=count, g1_qty=g1_qty, g2_qty=g2_qty,
+        dc_qty=dc_qty, received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
+        material_boxes=material_boxes, remarks=remarks, email=request.session.get("email"),
+        date=now.date(), time=now.time(), company_id=comp_code
     )
     db.add(entry)
     db.commit()
@@ -229,11 +228,11 @@ def save_rmp(
 @router.post("/raw_material_purchasing/update/{id}")
 def update_rmp(
     id: int, request: Request, batch_number: str = Form(...), supplier_name: str = Form(""),
-    production_for: str = Form(""), peeling_at: str = Form(""), variety_name: str = Form(""), 
-    species: str = Form(""), hsn_code: str = Form(""), count: str = Form(""), 
-    g1_qty: float = Form(0.0), g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), 
-    rate_per_kg: float = Form(0.0), material_boxes: float = Form(0.0), 
-    remarks: str = Form(""), db: Session = Depends(get_db)
+    production_for: str = Form(""), 
+    peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
+    hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
+    g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
@@ -242,11 +241,13 @@ def update_rmp(
     total_billable_qty = g1_qty + (g2_qty / 2)
     
     entry.batch_number, entry.supplier_name = batch_number, supplier_name
-    entry.production_for, entry.peeling_at = production_for, peeling_at
+    entry.production_for = production_for 
+    entry.peeling_at = peeling_at
     entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
     entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
     entry.received_qty = g1_qty + g2_qty + dc_qty
-    entry.amount, entry.rate_per_kg = round(total_billable_qty * rate_per_kg, 2), rate_per_kg
+    entry.amount = round(total_billable_qty * rate_per_kg, 2)
+    entry.rate_per_kg = rate_per_kg
     entry.material_boxes, entry.remarks = material_boxes, remarks
     
     db.commit()

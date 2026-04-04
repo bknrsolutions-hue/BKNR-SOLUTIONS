@@ -4,7 +4,6 @@
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime, date
@@ -203,7 +202,7 @@ def export_pdf(
     from_date: str = "", to_date: str = "", type: str = "",
     batch: str = "", brand: str = "", species: str = "",
     variety: str = "", location: str = "",
-    download: bool = Query(False) 
+    download: bool = Query(False) # Add this to toggle between Print and Download
 ):
     comp_code = request.session.get("company_code")
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
@@ -227,6 +226,7 @@ def export_pdf(
     
     pdf_file = HTML(string=html).write_pdf()
     
+    # Logic: If download=True then 'attachment' (saves file), else 'inline' (opens print dialog)
     disposition = "attachment" if download else "inline"
     
     return StreamingResponse(

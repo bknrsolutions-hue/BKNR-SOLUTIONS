@@ -114,11 +114,10 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # FIXED: request as first argument to avoid Render TypeError
     return templates.TemplateResponse(
-        request,
         "processing/gate_entry.html",
         {
+            "request": request,
             "suppliers": suppliers_dd,
             "locations": locations_dd,
             "vehicles": vehicles_dd,
@@ -143,7 +142,6 @@ def send_gate_notification(db: Session, comp: str, row_id: int):
         
         emails = get_gate_entry_report_emails(db, comp)
         if emails:
-            # Note: Background task environment load correction
             html = templates.get_template("emails/gate_entry_notification.html").render(
                 batch_number=row.batch_number, challan_number=row.challan_number,
                 gate_pass_number=row.gate_pass_number, receiving_center=row.receiving_center,

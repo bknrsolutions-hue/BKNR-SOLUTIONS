@@ -3,19 +3,14 @@
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Query, Body, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 import json
 from io import BytesIO
 from openpyxl import Workbook
-
-# WeasyPrint check for PDF generation
-try:
-    from weasyprint import HTML
-except ImportError:
-    HTML = None
+from weasyprint import HTML
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry, AuditLog
@@ -93,7 +88,6 @@ def report_page(request: Request, db: Session = Depends(get_db)):
 
     comp = get_company_info(db, comp_code)
 
-    # FIXED: Template Name (String) must be the first argument
     return templates.TemplateResponse(
         "reports/raw_material_purchasing_report.html",
         {
@@ -115,7 +109,7 @@ def report_page(request: Request, db: Session = Depends(get_db)):
 # UPDATE ENTRY
 # -----------------------------------------------------------
 @router.post("/update")
-async def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     edited_by = request.session.get("email")
     if not comp_code: raise HTTPException(status_code=401)
@@ -149,7 +143,7 @@ async def update_rmp_entry(request: Request, payload: dict = Body(...), db: Sess
                 setattr(row, field, new_val)
 
     row.received_qty = float(row.g1_qty or 0) + float(row.g2_qty or 0) + float(row.dc_qty or 0)
-    row.amount = (float(row.g1_qty or 0) + (float(row.g2_qty or 0) / 2)) * float(row.rate_per_kg or 0)
+    row.amount = (float(row.g1_qty or 0) + float(row.g2_qty or 0) / 2) * float(row.rate_per_kg or 0)
     db.commit()
     return {"status": "updated", "received_qty": row.received_qty, "amount": row.amount}
 
@@ -157,7 +151,7 @@ async def update_rmp_entry(request: Request, payload: dict = Body(...), db: Sess
 # DELETE ENTRY
 # -----------------------------------------------------------
 @router.post("/delete")
-async def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     edited_by = request.session.get("email")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
@@ -236,9 +230,6 @@ def export_rmp_pdf(request: Request, ids: str = Query(None), type: str = Query("
         html_resp = print_summary_view(request, ids, db)
     else:
         html_resp = print_table_view(request, ids, db)
-    
-    if not HTML:
-        return JSONResponse({"status": "error", "message": "WeasyPrint is not installed for PDF generation"}, status_code=500)
     
     html_content = html_resp.body.decode()
     pdf = HTML(string=html_content).write_pdf()

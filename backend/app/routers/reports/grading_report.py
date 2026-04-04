@@ -11,14 +11,14 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, update
 from collections import defaultdict
 from io import BytesIO
 import json
 from datetime import datetime
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, PatternFill
 
 from app.database import get_db
 from app.database.models.processing import Grading, DeHeading, AuditLog
@@ -137,7 +137,6 @@ def grading_report(
             "is_subtotal": True
         })
 
-    # FIXED: TemplateResponse arguments (Template Name first, then Context Dict)
     return templates.TemplateResponse("reports/grading_report.html", {"request": request, "rows": rows})
 
 # ============================================================
@@ -271,8 +270,6 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     output = BytesIO()
     wb.save(output)
     output.seek(0)
-    
-    # FIXED: StreamingResponse properly closed with headers
     return StreamingResponse(
         output, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
