@@ -143,10 +143,16 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     today_data = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == date.today()).order_by(Peeling.id.desc()).all()
 
+    # Flash Message logic
+    success_msg = request.session.pop("success_msg", None)
+
+    # ✅ FIXED: TemplateResponse for new FastAPI version
     return templates.TemplateResponse(
-        "processing/peeling.html",
-        {
-            "request": request, "varieties": variety_list, "contractors": contractor_list,
+        request=request,
+        name="processing/peeling.html",
+        context={
+            "success_msg": success_msg,
+            "varieties": variety_list, "contractors": contractor_list,
             "species": species_list, "peeling_locations": peeling_at_list,
             "prod_for_list": prod_for_list, "today_data": today_data,
             "hlso_floor_balance": hlso_floor_balance, "hlso_summary": list(hlso_summary.values()), 
@@ -162,8 +168,6 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 def get_batches_by_company(production_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     
-    # 1. Fetch only HLSO varieties for this company/production_for
-    # Table 1 logic ni ikkada reflect chesthunnam
     batches = db.query(Grading.batch_number).\
         filter(
             Grading.company_id == company_id, 
@@ -174,8 +178,6 @@ def get_batches_by_company(production_for: str, request: Request, db: Session = 
     valid_batches = []
     for (b_no,) in batches:
         if not b_no: continue
-        # 2. Check total floor balance (all locations) for this batch
-        # Filter is set to 'HLSO' context implicitly by the query above
         total_bal = get_floor_balance(db, company_id, None, b_no, None, None, None)
         if total_bal > 0.05:
             valid_batches.append(b_no)
@@ -205,7 +207,6 @@ def get_available_qty(
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
-    # Always check against HLSO related varieties
     qty = get_floor_balance(db, company_id, location, batch, hlso_count, species_name, "HLSO")
     return {"available_qty": round(max(qty, 0), 2)}
 
@@ -236,7 +237,6 @@ def save_peeling(
     company_id = request.session.get("company_code")
     if not email or not company_id: return RedirectResponse("/auth/login", status_code=303)
 
-    # Validation: Pass all relevant fields to service
     avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, variety_name)
     if hlso_qty > (avail + 0.05):
          return JSONResponse({"error": f"Stock limited! Only {avail} KG available at {peeling_at}"}, status_code=400)
@@ -250,7 +250,11 @@ def save_peeling(
     )
     db.add(obj)
     db.commit()
-    # FIXED REDIRECT PATH
+
+    # Success Message ని సెషన్ లో యాడ్ చేస్తున్నాను
+    request.session["success_msg"] = f"Peeling Entry for Batch {batch_number} Saved Successfully!"
+
+    # Redirect చేయడం వల్ల ఫామ్ కాలమ్స్ అన్నీ ఆటోమేటిక్ గా ఖాళీ అవుతాయి
     return RedirectResponse("/processing/peeling", status_code=303)
 
 @router.post("/peeling/delete/{id}")
