@@ -47,7 +47,6 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 1. BATCH DATA LIST FOR DYNAMIC FILTERING (UPDATED WITH receiving_center)
     batches_raw = (
         db.query(
             GateEntry.batch_number,
@@ -67,7 +66,6 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         } for b in batches_raw if b.batch_number
     ]
 
-    # Production For - Unique Names Only
     production_for_unique = sorted({
         p.production_for for p in
         db.query(production_for.production_for)
@@ -84,27 +82,29 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    # UPDATE: Putting 'request' back inside the context dictionary to fix 'multiple values' error
+    # ✅ FIXED: context dict నుంచి request తీసేసి, విడిగా ఆర్గ్యుమెంట్ గా పంపాను.
+    context = {
+        "table_data": table_data,
+        "batch_data_list": batch_data_list,
+        "species": species_list,
+        "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code)],
+        "production_for_list": production_for_unique,
+        "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code)],
+        "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code)],
+        "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code)],
+        "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == company_code)],
+        "production_types": [p.production_type for p in db.query(production_types).filter(production_types.company_id == company_code)],
+        "purposes": [p.purpose_name for p in db.query(purposes).filter(purposes.company_id == company_code)],
+        "production_places": [p.production_at for p in db.query(production_at).filter(production_at.company_id == company_code)],
+        "locations": [l.coldstore_location for l in db.query(coldstore_locations).filter(coldstore_locations.company_id == company_code)],
+        "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
+        "po_numbers": [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number)],
+    }
+
     return request.app.state.templates.TemplateResponse(
-        "inventory_management/stock_entry.html",
-        {
-            "request": request,  # 👈 Keep it here
-            "table_data": table_data,
-            "batch_data_list": batch_data_list,
-            "species": species_list,
-            "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code)],
-            "production_for_list": production_for_unique,
-            "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code)],
-            "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code)],
-            "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code)],
-            "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == company_code)],
-            "production_types": [p.production_type for p in db.query(production_types).filter(production_types.company_id == company_code)],
-            "purposes": [p.purpose_name for p in db.query(purposes).filter(purposes.company_id == company_code)],
-            "production_places": [p.production_at for p in db.query(production_at).filter(production_at.company_id == company_code)],
-            "locations": [l.coldstore_location for l in db.query(coldstore_locations).filter(coldstore_locations.company_id == company_code)],
-            "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
-            "po_numbers": [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number)],
-        }
+        request=request, 
+        name="inventory_management/stock_entry.html", 
+        context=context
     )
 
 
