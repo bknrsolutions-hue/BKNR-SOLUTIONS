@@ -82,8 +82,11 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    # ✅ FIXED: context dict నుంచి request తీసేసి, విడిగా ఆర్గ్యుమెంట్ గా పంపాను.
+    # Success message ని సెషన్ నుంచి తీసుకుంటున్నాము
+    success_msg = request.session.pop("success_msg", None)
+
     context = {
+        "success_msg": success_msg,
         "table_data": table_data,
         "batch_data_list": batch_data_list,
         "species": species_list,
@@ -173,6 +176,10 @@ def save_stock_in(
     )
     db.add(entry)
     db.commit()
+
+    # సక్సెస్ మెసేజ్ ని సెషన్‌లో యాడ్ చేస్తున్నాను
+    request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
+    
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 
 
@@ -296,4 +303,8 @@ def stock_out_save(
         db.add(entry)
 
     db.commit()
+
+    # సక్సెస్ మెసేజ్ ని సెషన్‌లో యాడ్ చేస్తున్నాను
+    request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
+    
     return RedirectResponse("/inventory/stock_entry", status_code=303)
