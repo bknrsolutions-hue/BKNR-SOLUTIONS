@@ -84,7 +84,6 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    # FIXED: Template Name first, then Context Dictionary
     return request.app.state.templates.TemplateResponse(
         "inventory_management/stock_entry.html",
         {
