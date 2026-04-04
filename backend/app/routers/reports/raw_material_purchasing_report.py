@@ -88,10 +88,11 @@ def report_page(request: Request, db: Session = Depends(get_db)):
 
     comp = get_company_info(db, comp_code)
 
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
     return templates.TemplateResponse(
-        "reports/raw_material_purchasing_report.html",
-        {
-            "request": request,
+        request=request,
+        name="reports/raw_material_purchasing_report.html",
+        context={
             "rows": rows,
             "batches": batches,
             "suppliers": suppliers,
@@ -194,7 +195,13 @@ def print_table_view(request: Request, ids: str = Query(None), db: Session = Dep
         q = q.filter(RawMaterialPurchasing.id.in_(id_list))
     rows = q.order_by(RawMaterialPurchasing.date.asc()).all()
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse("reports/raw_material_purchasing_print_table.html", {"request": request, "rows": rows, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/raw_material_purchasing_print_table.html",
+        context={"rows": rows, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()}
+    )
 
 @router.get("/print_summary", response_class=HTMLResponse)
 def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
@@ -219,7 +226,13 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
             "total_amount": sum(x.amount or 0 for x in b_rows)
         })
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse("reports/raw_material_purchasing_print_summary.html", {"request": request, "batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/raw_material_purchasing_print_summary.html",
+        context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()}
+    )
 
 # -----------------------------------------------------------
 # EXPORT PDF (WEASYPRINT - DIRECT DOWNLOAD)
