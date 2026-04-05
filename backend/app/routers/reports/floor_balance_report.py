@@ -6,31 +6,30 @@ from app.database import get_db
 from app.database.models.processing import (
     RawMaterialPurchasing,
     Grading,
-    DeHeading,  # ✅ Added DeHeading
+    DeHeading,
     Peeling,
     Soaking
 )
-# Nee Centralized Service Function
+# నీ సెంట్రలైజ్డ్ సర్వీస్ ఫంక్షన్
 from app.services.floor_balance import get_floor_balance
 
 router = APIRouter(
     tags=["FLOOR BALANCE REPORT"]
 )
 
-# templates directory definition
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/floor_balance_report", response_class=HTMLResponse)
 def floor_balance_report(request: Request, db: Session = Depends(get_db)):
-    # 1. SESSION CHECK (Current Company Only)
+    # 1. SESSION CHECK
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 2. COMBINATION BUILDING (Collect all possible batch-count-loc combos)
+    # 2. COMBINATION BUILDING
     combos = set()
 
-    # RMP (HOSO Start)
+    # RMP (Purchase - HOSO/HLSO/Others)
     rmp_q = db.query(
         RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count,
         RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name,
@@ -50,15 +49,8 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         if r.batch_number:
             combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at))
 
-    # 🆕 DeHeading (Adding HLSO variety generated from DeHeading)
-    dehead_q = db.query(
-        DeHeading.batch_number, DeHeading.hoso_count,
-        DeHeading.species, DeHeading.production_for, DeHeading.peeling_at
-    ).filter(DeHeading.company_id == company_id).all()
-    for r in dehead_q:
-        if r.batch_number:
-            # HLSO variety add chestunnam
-            combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at))
+    # ✅ గమనిక: ఇక్కడ DeHeading నుండి HLSO కాంబినేషన్ ని యాడ్ చేయడం లేదు.
+    # ఎందుకంటే నువ్వు చెప్పినట్లు HLSO క్వాంటిటీ రిపోర్ట్ లో పెరగకూడదు.
 
     # Peeling (PD, PDTO, PUD Start)
     peel_q = db.query(
@@ -70,13 +62,14 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         if r.batch_number:
             combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at))
 
-    # 3. LIVE CALCULATION & FILTERING (Using Central Service)
+    # 3. LIVE CALCULATION & FILTERING
     rows_batch = []
 
     for batch, count, species_val, variety, prod_for, location in combos:
         loc = location if location else "Floor"
         
-        # Central service call (Indulo DeHeading logic undali)
+        # సెంట్రల్ సర్వీస్ కాల్
+        # ఒకవేళ ఇది HOSO అయితే, సర్వీస్ లోపల DeHeading లో వాడిన 'hoso_qty' ఆటోమేటిక్ గా మైనస్ అవుతుంది.
         qty = get_floor_balance(
             db=db, 
             company_id=company_id, 
@@ -87,7 +80,6 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
             variety=variety
         )
         
-        # 0.01 kante ekkuva unna data ni matrame list ki pampali
         if qty and qty > 0.01:
             rows_batch.append({
                 "batch": batch or "N/A",
@@ -100,10 +92,10 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
                 "is_rejection": False 
             })
 
-    # 4. FINAL SORTING (Loc -> Prod For -> Batch)
+    # 4. FINAL SORTING
     rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
 
-    # ✅ FIXED TemplateResponse
+    # 5. RENDER
     return templates.TemplateResponse(
         request=request,
         name="reports/floor_balance_report.html",
