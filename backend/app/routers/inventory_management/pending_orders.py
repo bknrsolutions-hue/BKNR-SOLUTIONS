@@ -8,6 +8,7 @@ from collections import defaultdict
 from pydantic import BaseModel
 from typing import List, Optional
 import re
+import json
 
 # Database and Models
 from app.database import get_db
@@ -64,24 +65,27 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     def get_lookup(model, field_name):
         return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
 
-    context_data = {
-        "request": request, 
-        "po_groups": po_groups, 
-        "edit_rows": edit_rows,
-        "next_sl": next_sl,
-        "buyers": get_lookup(buyers, "buyer_name"),
-        "agents": get_lookup(buyer_agents, "agent_name"),
-        "brands": get_lookup(brands, "brand_name"),
-        "countries": get_lookup(countries, "country_name"),
-        "species": get_lookup(species, "species_name"),
-        "varieties": get_lookup(varieties, "variety_name"),
-        "grades": get_lookup(grades, "grade_name"),
-        "glazes": get_lookup(glazes, "glaze_name"),
-        "freezers": get_lookup(freezers, "freezer_name"),
-        "packing": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
-        "message": request.session.pop("message", None)
-    }
-    return templates.TemplateResponse("inventory_management/pending_orders.html", context_data)
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="inventory_management/pending_orders.html",
+        context={
+            "po_groups": po_groups, 
+            "edit_rows": edit_rows,
+            "next_sl": next_sl,
+            "buyers": get_lookup(buyers, "buyer_name"),
+            "agents": get_lookup(buyer_agents, "agent_name"),
+            "brands": get_lookup(brands, "brand_name"),
+            "countries": get_lookup(countries, "country_name"),
+            "species": get_lookup(species, "species_name"),
+            "varieties": get_lookup(varieties, "variety_name"),
+            "grades": get_lookup(grades, "grade_name"),
+            "glazes": get_lookup(glazes, "glaze_name"),
+            "freezers": get_lookup(freezers, "freezer_name"),
+            "packing": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
+            "message": request.session.pop("message", None)
+        }
+    )
 
 # -------------------------------------------------------------------------
 # 2️⃣ SAVE PENDING ORDERS
@@ -154,7 +158,7 @@ def save_pending_orders(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES (FIXED VARIETY & GRADE)
+# 3️⃣ MOVE TO SALES
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -188,8 +192,8 @@ def move_to_sales(
                 packing_style=item.packing_style,
                 no_of_mc=item.no_of_mc,
                 price=item.selling_price,
-                variety=item.variety,  # Kachithanga transfer avvali
-                grade=item.grade      # Kachithanga transfer avvali
+                variety=item.variety,  
+                grade=item.grade      
             )
             db.add(new_sale)
         
@@ -203,7 +207,7 @@ def move_to_sales(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 4️⃣ UPDATED SALES REPORT (With Data Consistency)
+# 4️⃣ SALES REPORT (With Company Filter & Calculations)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report_page(request: Request, company: str = Query("all"), db: Session = Depends(get_db)):
@@ -213,7 +217,7 @@ def sales_report_page(request: Request, company: str = Query("all"), db: Session
 
     query = db.query(sales_dispatch)
     
-    # Company wise filter logic
+    # [2026-01-03] Company wise data filter logic
     if company != "all":
         query = query.filter(sales_dispatch.company_id == company)
     else:
@@ -221,7 +225,6 @@ def sales_report_page(request: Request, company: str = Query("all"), db: Session
 
     sales_raw = query.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
 
-    # Packing weights table lo calculations kosam
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {p.packing_style: float(p.mc_weight or 1.0) for p in packing_data}
 
@@ -234,35 +237,34 @@ def sales_report_page(request: Request, company: str = Query("all"), db: Session
             sl_counter += 1
             current_inv = s.invoice_no
         
-        # Variety and Grade database lo "None" unte empty string chupisthundi
-        var_name = s.variety if s.variety else ""
-        grd_name = s.grade if s.grade else ""
-
         mc_w = weight_map.get(s.packing_style, 1.0)
         q_kg = float(s.no_of_mc or 0) * mc_w
         t_usd = q_kg * float(s.price or 0)
-        ex_r = 83.5 # Fixed Exchange Rate
+        ex_r = 83.5 
         
         processed_sales.append({
             "sl_no": sl_counter,
             "obj": s,
-            "variety": var_name,
-            "grade": grd_name,
+            "variety": s.variety if s.variety else "",
+            "grade": s.grade if s.grade else "",
             "mc_weight": mc_w,
             "total_qty_kg": q_kg,
             "total_usd": t_usd,
             "total_inr": t_usd * ex_r
         })
 
-    return templates.TemplateResponse("inventory_management/sales_report.html", {
-        "request": request,
-        "sales_data": processed_sales,
-        "selected_company": company,
-        "message": request.session.pop("message", None)
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="inventory_management/sales_report.html",
+        context={
+            "sales_data": processed_sales,
+            "selected_company": company,
+            "message": request.session.pop("message", None)
+        }
+    )
 
 # -------------------------------------------------------------------------
-# 🆕 DELETE SALES INVOICE
+# 5️⃣ REVERT & DELETE HELPERS
 # -------------------------------------------------------------------------
 @router.post("/delete_sales_invoice/{invoice_no}")
 def delete_sales_invoice(invoice_no: str, request: Request, db: Session = Depends(get_db)):
@@ -275,9 +277,6 @@ def delete_sales_invoice(invoice_no: str, request: Request, db: Session = Depend
     request.session["message"] = f"Invoice {invoice_no} Deleted Successfully"
     return RedirectResponse("/inventory/sales_report", status_code=303)
 
-# -------------------------------------------------------------------------
-# 5️⃣ REVERT TO PENDING
-# -------------------------------------------------------------------------
 @router.post("/revert_to_pending/{id}")
 def revert_to_pending(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
@@ -309,9 +308,6 @@ def revert_to_pending(id: int, request: Request, db: Session = Depends(get_db)):
     db.commit()
     return RedirectResponse("/inventory/sales_report", status_code=303)
 
-# -------------------------------------------------------------------------
-# 6️⃣ HELPERS
-# -------------------------------------------------------------------------
 @router.post("/pending_orders/delete_po/{po}")
 def delete_po(po: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
