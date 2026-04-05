@@ -53,10 +53,11 @@ def get_floor_balance(
 
     available = 0.0
 
-    # ================================================
-    # 🔵 HOSO (RMP + Grading In + Rejection - Grading Out - Soaking In)
+# ================================================
+    # 🔵 HOSO (RMP + Grading In + Soaking Rejection - Grading Out - Soaking In - Deheading In)
     # ================================================
     if variety_upper == "HOSO":
+        # 1. బయట నుండి కొన్న HOSO (Stock Increase)
         rmp_qty = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)).filter(
             RawMaterialPurchasing.company_id == company_id,
             RawMaterialPurchasing.peeling_at == location,
@@ -66,20 +67,33 @@ def get_floor_balance(
             RawMaterialPurchasing.variety_name == "HOSO"
         ).scalar()
 
+        # 2. గ్రేడింగ్‌లో ఈ కౌంట్‌లోకి వచ్చిన క్వాంటిటీ (Stock Increase)
         grading_plus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
             Grading.company_id == company_id, Grading.peeling_at == location,
             Grading.batch_number == batch, Grading.graded_count == count,
             Grading.species == species, Grading.variety_name == "HOSO"
         ).scalar()
 
+        # 3. గ్రేడింగ్‌లో ఈ కౌంట్ నుండి బయటకు వెళ్ళిన క్వాంటిటీ (Stock Decrease)
         grading_minus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
             Grading.company_id == company_id, Grading.peeling_at == location,
             Grading.batch_number == batch, Grading.hoso_count == count,
             Grading.species == species, Grading.variety_name == "HOSO"
         ).scalar()
 
-        available = (rmp_qty + grading_plus + soaking_rejection - grading_minus - soaking_in)
+        # 4. 🆕 DEHEADING కి ఇన్-ఫీడ్ (In-feed) గా వెళ్ళిన HOSO (Stock Decrease)
+        # HOSO ని కట్ చేయడానికి పంపితే ఫ్లోర్ మీద HOSO స్టాక్ తగ్గుతుంది.
+        deheading_in = db.query(func.coalesce(func.sum(Deheading.hoso_qty), 0)).filter(
+            Deheading.company_id == company_id,
+            Deheading.peeling_at == location,
+            Deheading.batch_number == batch,
+            Deheading.hoso_count == count,
+            Deheading.species == species
+        ).scalar()
 
+        # FINAL HOSO CALCULATION
+        # Formula: (కొన్నది + గ్రేడింగ్ ఇన్ + సోకింగ్ రిజెక్షన్) - (గ్రేడింగ్ అవుట్ + సోకింగ్ ఇన్ + డీహెడ్డింగ్ ఇన్)
+        available = (rmp_qty + grading_plus + soaking_rejection - grading_minus - soaking_in - deheading_in)
     # ================================================
     # 🟢 HLSO (Grading + HLSO_Receiving + Rejection - Peeling_Used - Soaking_In)
     # ================================================
