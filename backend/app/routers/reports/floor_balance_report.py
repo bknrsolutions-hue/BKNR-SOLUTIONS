@@ -52,13 +52,13 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
 
     # 🆕 DeHeading (Adding HLSO variety generated from DeHeading)
     dehead_q = db.query(
-        DeHeading.batch_number, DeHeading.hlso_count,
+        DeHeading.batch_number, DeHeading.hoso_count,
         DeHeading.species, DeHeading.production_for, DeHeading.peeling_at
     ).filter(DeHeading.company_id == company_id).all()
     for r in dehead_q:
         if r.batch_number:
             # HLSO variety add chestunnam
-            combos.add((r.batch_number, r.hlso_count, r.species, "HLSO", r.production_for, r.peeling_at))
+            combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at))
 
     # Peeling (PD, PDTO, PUD Start)
     peel_q = db.query(
