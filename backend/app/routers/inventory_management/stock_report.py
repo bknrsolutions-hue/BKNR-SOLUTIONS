@@ -4,6 +4,7 @@
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime, date
@@ -82,7 +83,10 @@ async def stock_report_page(
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
     context = {
-        "request": request, "rows": rows, "from_date": from_date, "to_date": to_date,
+        "request": request, 
+        "rows": rows, 
+        "from_date": from_date, 
+        "to_date": to_date,
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
@@ -98,7 +102,12 @@ async def stock_report_page(
     company_name, company_address = get_company_info(db, comp_code)
     context.update({"company_name": company_name, "company_address": company_address})
 
-    return request.app.state.templates.TemplateResponse("inventory_management/stock_report.html", context)
+    # ✅ FIXED TEMPLATE RESPONSE: Added request as explicit argument
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="inventory_management/stock_report.html",
+        context=context
+    )
 
 # ------------------------------------------------------------
 # UPDATE STOCK (WITH VALIDATION & AUDIT)
@@ -202,7 +211,7 @@ def export_pdf(
     from_date: str = "", to_date: str = "", type: str = "",
     batch: str = "", brand: str = "", species: str = "",
     variety: str = "", location: str = "",
-    download: bool = Query(False) # Add this to toggle between Print and Download
+    download: bool = Query(False)
 ):
     comp_code = request.session.get("company_code")
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
@@ -225,8 +234,6 @@ def export_pdf(
     })
     
     pdf_file = HTML(string=html).write_pdf()
-    
-    # Logic: If download=True then 'attachment' (saves file), else 'inline' (opens print dialog)
     disposition = "attachment" if download else "inline"
     
     return StreamingResponse(

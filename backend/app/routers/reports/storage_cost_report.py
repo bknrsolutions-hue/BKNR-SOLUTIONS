@@ -167,12 +167,12 @@ def storage_cost_report(
     ]
 
     # -------------------------------------------------
-    # ✅ FIXED TEMPLATE RESPONSE
+    # ✅ FIX: Added 'request' as the first positional argument
     # -------------------------------------------------
     return templates.TemplateResponse(
+        request=request,  # ఇక్కడ 'request' ని యాడ్ చేశాను
         name="reports/storage_report.html",
         context={
-            "request": request,
             "report_data": report_data,
             "total_payable_sum": round(total_payable_sum, 2),
             "total_holding_sum": round(total_holding_sum, 2),
