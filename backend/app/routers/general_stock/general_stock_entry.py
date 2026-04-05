@@ -6,18 +6,13 @@ from datetime import datetime
 from app.database import get_db
 from app.database.models.general_stock import GeneralStock
 
-# రౌటర్ డెఫినిషన్
 router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
 
-# ============================================================
-# GENERAL STOCK ENTRY – FULL ROUTER (FIXED)
-# ============================================================
-
-# 1. PAGE LOAD (GET)
+# ========================= PAGE LOAD ========================= #
 @router.get("/entry", response_class=HTMLResponse)
 def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
     
-    # 🔐 Session & Security Check
+    # 🔐 Session Check
     user_email = request.session.get("email")
     comp_code = request.session.get("company_code")
 
@@ -36,12 +31,12 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
         GeneralStock.company_id == comp_code
     ).all()
 
-    # ✅ FIXED TEMPLATE RESPONSE
+    # ✅ FIXED TEMPLATE RESPONSE: Added request=request
     return request.app.state.templates.TemplateResponse(
-        request=request, 
+        request=request,
         name="general_stock/general_stock_entry.html",
         context={
-            "request": request,  # టెంప్లేట్ లోపల వాడటానికి
+            "request": request,
             "grn_list": grn_list,
             "items": items,
             "units": units,
@@ -49,22 +44,20 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-
-# 2. SAVE ENTRY (POST)
+# ========================= SAVE ========================= #
 @router.post("/entry")
 def save_stock_entry(
     request: Request,
     grn_number: str = Form(...),
     item_name: str = Form(...),
     unit_name: str = Form(...),
-    movement_type: str = Form(...),     # IN / OUT
+    movement_type: str = Form(...),
     quantity: float = Form(...),
     opening_stock: float = Form(...),
     available_stock: float = Form(...),
     minimum_level: float = Form(None),
     db: Session = Depends(get_db)
 ):
-    # 🔐 Get Session Data
     user_email = request.session.get("email")
     comp_code = request.session.get("company_code")
 
@@ -91,13 +84,11 @@ def save_stock_entry(
 
     return RedirectResponse("/general_stock/entry", status_code=303)
 
-
-# 3. DELETE ENTRY (POST)
+# ========================= DELETE ========================= #
 @router.post("/entry/delete/{id}")
 def delete_stock(request: Request, id: int, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     
-    # కేవలం తన కంపెనీ రికార్డ్ మాత్రమే డిలీట్ చేసేలా సెక్యూరిటీ
     row = db.query(GeneralStock).filter(
         GeneralStock.id == id, 
         GeneralStock.company_id == comp_code
