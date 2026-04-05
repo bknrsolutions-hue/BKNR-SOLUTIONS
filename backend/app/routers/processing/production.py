@@ -61,7 +61,7 @@ def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, fre
         str(grade or "").strip().lower(),
         str(packing_style or "").strip().lower(),
         str(int(extract_number(glaze, 0))),
-        str(freezer or "N/A").strip().lower()
+        str( freezer or "N/A").strip().lower()
     ])
 
 
@@ -405,27 +405,58 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
 
 
 # -----------------------------------------------------
-# API: MARK REJECTION AS COMPLETED
+# API: COMPLETE REJECTION & AUTO-ADD SOAKING OFFSET (WITH PRODUCTION_FOR)
 # -----------------------------------------------------
 @router.post("/production/complete_rejection/{soaking_id}")
 def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(get_db)):
     try:
         company_code = request.session.get("company_code")
+        email = request.session.get("email")
         
         if not company_code:
             return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
         
-        entry = db.query(Soaking).filter(
+        # 1. Soaking table lo unna original rejection row ni find cheyyi
+        old_entry = db.query(Soaking).filter(
             Soaking.id == soaking_id, 
             Soaking.company_id == company_code
         ).first()
 
-        if entry:
-            entry.status = "Completed"
-            db.commit()
-            return JSONResponse({"status": "ok", "message": "Marked as completed"})
+        if not old_entry:
+            return JSONResponse({"status": "error", "message": "Entry not found"}, status_code=404)
+
+        # 2. Patha record status ni 'Completed' ga marchu
+        old_entry.status = "Completed"
+
+        # 3. AUTOMATIC GA SOAKING LO KOTHA RECORD ADD CHEYYI
+        # rejection quantity ni positive chesi counter-entry vesthunnam
+        offset_qty = abs(old_entry.rejection_qty)
         
-        return JSONResponse({"status": "error", "message": "Entry not found"}, status_code=404)
+        new_soaking_record = Soaking(
+            date=datetime.now().date(),
+            time=datetime.now().time(),
+            batch_number=old_entry.batch_number,
+            production_at=old_entry.production_at,
+            # ఇక్కడ production_for వాల్యూ యాడ్ అయింది
+            production_for=getattr(old_entry, 'production_for', None), 
+            variety_name=old_entry.variety_name,
+            species=old_entry.species,
+            in_count=old_entry.in_count,
+            sintex_number=f"AUTO-CLR-{old_entry.sintex_number}", # Auto cleared ani identify cheyadaniki
+            rejection_qty=offset_qty, 
+            in_qty=0, # Stock disturb avvakunda
+            status="Completed", # Idi kuda ventane complete aypovali
+            company_id=company_code,
+            email=email
+        )
+
+        db.add(new_soaking_record)
+        db.commit()
+
+        return JSONResponse({
+            "status": "ok", 
+            "message": f"Successfully completed and offset entry added in Soaking."
+        })
     
     except Exception as e:
         db.rollback()
