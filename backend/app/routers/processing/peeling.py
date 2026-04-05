@@ -35,9 +35,9 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. HLSO FLOOR BALANCE CALCULATION
+    # 1. FLOOR BALANCE CALCULATION (SPLIT INTO HLSO & OTHERS)
     combos = set()
-    # Grading (In) records - Only Non-HOSO (HLSO)
+    # Grading records
     grading_data = db.query(
         Grading.batch_number, Grading.graded_count, Grading.species, 
         Grading.variety_name, Grading.production_for, Grading.peeling_at
@@ -46,7 +46,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     for g in grading_data:
         combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at))
 
-    # Peeling (Out) records
+    # Peeling records
     peeling_data = db.query(
         Peeling.batch_number, Peeling.hlso_count, Peeling.species, 
         Peeling.variety_name, Peeling.production_for, Peeling.peeling_at
@@ -56,13 +56,15 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, p.production_for, p.peeling_at))
 
     hlso_floor_balance = []
+    other_floor_balance = []
+
     for batch, count, spc, variety, prod_for, location in combos:
         if not location: continue
         
         qty = get_floor_balance(db, company_id, location, batch, count, spc, variety)
         
         if qty and qty > 0.01:
-            hlso_floor_balance.append({
+            row_data = {
                 "batch": batch or "N/A", 
                 "variety": variety or "N/A", 
                 "count": count or "N/A",
@@ -70,9 +72,18 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 "production_for": prod_for or "N/A", 
                 "location": location or "N/A",
                 "available_qty": round(qty, 2)
-            })
+            }
+            
+            # ✅ VARIETY BASED SPLITTING LOGIC
+            v_upper = str(variety).strip().upper()
+            if v_upper == "HLSO":
+                hlso_floor_balance.append(row_data)
+            elif v_upper != "HOSO":
+                # PD, PUD, PTO etc.
+                other_floor_balance.append(row_data)
     
     hlso_floor_balance = sorted(hlso_floor_balance, key=lambda x: (x["production_for"], x["location"], x["batch"]))
+    other_floor_balance = sorted(other_floor_balance, key=lambda x: (x["production_for"], x["location"], x["batch"]))
 
     # 2. REQUIRED HLSO (DRILL DOWN LOGIC)
     p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_id).all()
@@ -134,7 +145,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 hlso_summary[summary_key]["total_kg"] += req_hlso_qty
                 drill_down_data["hlso"][summary_key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hlso_qty})
 
-    # 3. SEARCHABLE MASTER LISTS [2026-01-24]
+    # 3. MASTER LISTS
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
     contractor_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
     species_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
@@ -143,10 +154,8 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     today_data = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == date.today()).order_by(Peeling.id.desc()).all()
 
-    # Flash Message logic
     success_msg = request.session.pop("success_msg", None)
 
-    # ✅ FIXED: TemplateResponse for new FastAPI version
     return templates.TemplateResponse(
         request=request,
         name="processing/peeling.html",
@@ -155,7 +164,9 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
             "varieties": variety_list, "contractors": contractor_list,
             "species": species_list, "peeling_locations": peeling_at_list,
             "prod_for_list": prod_for_list, "today_data": today_data,
-            "hlso_floor_balance": hlso_floor_balance, "hlso_summary": list(hlso_summary.values()), 
+            "hlso_floor_balance": hlso_floor_balance, 
+            "other_floor_balance": other_floor_balance, # ✅ NEW TABLE DATA
+            "hlso_summary": list(hlso_summary.values()), 
             "drill_down_json": json.dumps(drill_down_data)
         }
     )
@@ -207,7 +218,6 @@ def get_available_qty(
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
-    # ✅ Always checking HLSO for peeling input
     qty = get_floor_balance(db, company_id, location, batch, hlso_count, species_name, "HLSO")
     return {"available_qty": round(max(qty, 0), 2)}
 
@@ -238,7 +248,6 @@ def save_peeling(
     company_id = request.session.get("company_code")
     if not email or not company_id: return RedirectResponse("/auth/login", status_code=303)
 
-    # ✅ MODIFIED: Checking HLSO variety instead of variety_name for available quantity
     avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, "HLSO")
     if hlso_qty > (avail + 0.05):
          return JSONResponse({"error": f"Stock limited! Only {avail} KG available at {peeling_at}"}, status_code=400)
@@ -253,9 +262,7 @@ def save_peeling(
     db.add(obj)
     db.commit()
 
-    # Success Message
     request.session["success_msg"] = f"Peeling Entry for Batch {batch_number} Saved Successfully!"
-
     return RedirectResponse("/processing/peeling", status_code=303)
 
 @router.post("/peeling/delete/{id}")
