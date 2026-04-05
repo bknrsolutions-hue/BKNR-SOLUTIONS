@@ -1,5 +1,5 @@
 # ============================================================
-# 🔥 PRODUCTION ROUTER - CORRECTED VERSION
+# 🔥 PRODUCTION ROUTER - CORRECTED VERSION (TemplateResponse Fixed)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Form
@@ -353,13 +353,13 @@ def production_page(
             Production.company_id == company_code
         ).first()
 
-    # ========== 10. BUILD RESPONSE ==========
+    # ========== 10. BUILD RESPONSE (Fixed TemplateResponse) ==========
     common_data = get_common_data(db, company_code)
     
     return templates.TemplateResponse(
-        "processing/production.html",
-        {
-            "request": request,
+        request=request,
+        name="processing/production.html",
+        context={
             "batches_with_company": batches_with_company,
             **common_data,
             "today_data": today_data,
