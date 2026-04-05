@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import datetime as dt
 from datetime import datetime
 import json
 from io import BytesIO
@@ -47,10 +48,11 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     locations = sorted({r.peeling_at for r in rows if r.peeling_at})
     production_for_list = sorted({r.production_for for r in rows if r.production_for})
 
+    # ✅ FIXED TemplateResponse: Latest FastAPI format
     return templates.TemplateResponse(
-        "reports/peeling_report.html",
-        {
-            "request": request,
+        request=request,
+        name="reports/peeling_report.html",
+        context={
             "rows": rows,
             "batches": batches,
             "contractors": contractors,
@@ -103,7 +105,7 @@ async def update_peeling(
                     old_value=old_val,
                     new_value=new_val,
                     edited_by=user_email,
-                    edited_at=datetime.utcnow()
+                    edited_at=dt.datetime.utcnow() # Using dt for clarity
                 )
                 db.add(audit)
                 setattr(row, field, payload[field])
@@ -117,7 +119,7 @@ async def update_peeling(
         row.yield_percent = round((p_qty / h_qty * 100), 2) if h_qty > 0 else 0
         row.amount = round(p_qty * rt, 2)
     except Exception as e:
-        print(f"Recalculation Error: {e}")
+        print(f"Recalculation Error: {row.batch_number}: {e}")
 
     db.commit()
     return {"status": "success", "message": "Record updated & Audit Log saved"}
@@ -129,37 +131,45 @@ async def update_peeling(
 async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     
-    # Prathi row change ni latest nundi fetch chestundi
     logs = (
         db.query(AuditLog, Peeling.batch_number)
         .join(Peeling, AuditLog.record_id == Peeling.id)
         .filter(AuditLog.table_name == "peeling", AuditLog.company_id == comp_code)
         .order_by(AuditLog.edited_at.desc())
-        .limit(100) # Latest 100 changes chusthunnam
+        .limit(100) 
         .all()
     )
     
     return [
         {
             "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-            "user": log.AuditLog.edited_by.split('@')[0], # Email short form kosam
+            "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
             "batch": log.batch_number,
             "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
             "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
             "type": "UPDATE"
         } for log in logs
     ]
+
 # ------------------------------------------------------------
 # 4. DELETE RECORD
 # ------------------------------------------------------------
 @router.post("/delete")
 async def delete_peeling(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
+    user_email = request.session.get("email")
+    
     if request.session.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
     if row:
+        # Audit Delete Action
+        db.add(AuditLog(
+            table_name="peeling", record_id=row.id, company_id=comp_code,
+            field_name="DELETE", old_value="Record", new_value="Deleted",
+            edited_by=user_email, edited_at=dt.datetime.utcnow()
+        ))
         db.delete(row)
         db.commit()
         return {"status": "success"}
@@ -185,12 +195,16 @@ def peeling_export_excel(request: Request, ids: str = Query(None), db: Session =
     ws.append(["Date", "Batch", "Contractor", "Variety", "HLSO Qty", "Peeled Qty", "Yield %", "Rate", "Amount", "Location", "Production For"])
 
     for r in rows:
-        ws.append([r.date, r.batch_number, r.contractor_name, r.variety_name, r.hlso_qty, r.peeled_qty, r.yield_percent, r.rate, r.amount, r.peeling_at, r.production_for])
+        ws.append([str(r.date), r.batch_number, r.contractor_name, r.variety_name, r.hlso_qty, r.peeled_qty, r.yield_percent, r.rate, r.amount, r.peeling_at, r.production_for])
 
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=PEELING_REPORT.xlsx"})
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=PEELING_REPORT.xlsx"}
+    )
 
 # ------------------------------------------------------------
 # 6. MONTHLY BILLING
@@ -211,6 +225,7 @@ def peeling_monthly_bill(
         id_list = [int(i) for i in ids.split(",") if i.isdigit()]
         q = q.filter(Peeling.id.in_(id_list))
     else:
+        # month is YYYY-MM
         q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
 
     rows = q.order_by(Peeling.date.asc()).all()
@@ -219,13 +234,16 @@ def peeling_monthly_bill(
     total_peeled = sum(r.peeled_qty or 0 for r in rows)
     grand_total = sum(r.amount or 0 for r in rows)
     
-    return templates.TemplateResponse("reports/peeling_monthly_bill.html", {
-        "request": request, 
-        "rows": rows, 
-        "total_hlso": total_hlso, 
-        "total_peeled": total_peeled, 
-        "grand_total": grand_total,
-        "contractor_name": contractor, 
-        "month_year": month,
-        "bill_date": datetime.now() # Added to fix UndefinedError
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/peeling_monthly_bill.html",
+        context={
+            "rows": rows, 
+            "total_hlso": round(total_hlso, 2), 
+            "total_peeled": round(total_peeled, 2), 
+            "grand_total": round(grand_total, 2),
+            "contractor_name": contractor, 
+            "month_year": month,
+            "bill_date": datetime.now() 
+        }
+    )

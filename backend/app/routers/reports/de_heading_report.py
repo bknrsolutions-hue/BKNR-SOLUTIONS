@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date
+import datetime as dt
 from io import BytesIO
 
 from openpyxl import Workbook
@@ -22,6 +23,7 @@ router = APIRouter(
     tags=["DE-HEADING REPORT"]
 )
 
+# Template configuration
 templates = Jinja2Templates(directory="app/templates")
 
 # ============================================================
@@ -65,9 +67,9 @@ async def de_heading_report(
     production_for_list = sorted(list({r.production_for for r in rows if r.production_for}))
 
     return templates.TemplateResponse(
-        "reports/de_heading_report.html",
-        {
-            "request": request,
+        request=request,
+        name="reports/de_heading_report.html",
+        context={
             "rows": rows,
             "batches": batches,
             "contractors": contractors,
@@ -114,7 +116,10 @@ async def update_deheading_row(
 
             # Float conversion for numeric fields
             if field in ["hoso_qty", "hlso_qty", "rate_per_kg"]:
-                new_value = float(new_value or 0)
+                try:
+                    new_value = float(new_value or 0)
+                except ValueError:
+                    new_value = 0.0
 
             if str(old_value) != str(new_value):
                 # Save to AuditLog (Reference Style)
@@ -126,7 +131,7 @@ async def update_deheading_row(
                     old_value=str(old_value),
                     new_value=str(new_value),
                     edited_by=edited_by,
-                    edited_at=datetime.utcnow()
+                    edited_at=dt.datetime.utcnow()
                 ))
                 setattr(row, field, new_value)
 
@@ -144,29 +149,29 @@ async def update_deheading_row(
 # 3. FETCH FULL AUDIT HISTORY (Company Wise)
 # ------------------------------------------------------------
 @router.get("/audit_all")
-async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
+async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     
-    # Prathi row change ni latest nundi fetch chestundi
     logs = (
         db.query(AuditLog, DeHeading.batch_number)
         .join(DeHeading, AuditLog.record_id == DeHeading.id)
         .filter(AuditLog.table_name == "de_heading", AuditLog.company_id == comp_code)
         .order_by(AuditLog.edited_at.desc())
-        .limit(100) # Latest 100 changes chusthunnam
+        .limit(100)
         .all()
     )
     
     return [
         {
             "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-            "user": log.AuditLog.edited_by.split('@')[0], # Email short form kosam
+            "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
             "batch": log.batch_number,
             "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
             "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
             "type": "UPDATE"
         } for log in logs
     ]
+
 # ============================================================
 # 4. CONTRACTOR MONTHLY BILL (PDF/HTML)
 # ============================================================
@@ -189,6 +194,7 @@ def de_heading_monthly_bill(
         id_list = [int(x) for x in ids.split(",") if x.strip()]
         query = query.filter(DeHeading.id.in_(id_list))
     else:
+        # month is 'YYYY-MM'
         query = query.filter(func.to_char(DeHeading.date, 'YYYY-MM') == month)
 
     rows = query.order_by(DeHeading.date.asc()).all()
@@ -199,10 +205,15 @@ def de_heading_monthly_bill(
     avg_yield = round((total_hlso / total_hoso * 100) if total_hoso > 0 else 0, 2)
 
     data = {
-        "request": request, "rows": rows, "contractor_name": contractor,
-        "month_year": month, "total_hoso": round(total_hoso, 2),
-        "total_hlso": round(total_hlso, 2), "grand_total": round(total_amount, 2),
-        "avg_yield": avg_yield, "bill_date": datetime.now()
+        "request": request,
+        "rows": rows,
+        "contractor_name": contractor,
+        "month_year": month,
+        "total_hoso": round(total_hoso, 2),
+        "total_hlso": round(total_hlso, 2),
+        "grand_total": round(total_amount, 2),
+        "avg_yield": avg_yield,
+        "bill_date": datetime.now()
     }
 
     if download:
@@ -213,7 +224,11 @@ def de_heading_monthly_bill(
             headers={"Content-Disposition": f"attachment; filename=Bill_{contractor}.pdf"}
         )
 
-    return templates.TemplateResponse("reports/de_heading_monthly_bill.html", data)
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/de_heading_monthly_bill.html",
+        context=data
+    )
 
 # ============================================================
 # 5. EXPORT PDF & EXCEL
@@ -226,9 +241,18 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
         id_list = [int(x) for x in ids.split(",") if x.strip()]
         query = query.filter(DeHeading.id.in_(id_list))
     rows = query.order_by(DeHeading.date.asc()).all()
-    html = templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": rows, "printed_on": datetime.now()})
+    
+    html = templates.get_template("reports/de_heading_print.html").render({
+        "request": request, 
+        "rows": rows, 
+        "printed_on": datetime.now()
+    })
     pdf = HTML(string=html).write_pdf()
-    return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"})
+    return StreamingResponse(
+        BytesIO(pdf), 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"}
+    )
 
 @router.get("/export_excel")
 def de_heading_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
@@ -238,15 +262,26 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
         id_list = [int(x) for x in ids.split(",") if x.strip()]
         query = query.filter(DeHeading.id.in_(id_list))
     rows = query.order_by(DeHeading.date.asc()).all()
+    
     wb = Workbook()
     ws = wb.active
     ws.append(["Date", "Batch No", "Contractor", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount", "Peeling At", "Production For"])
+    
     for r in rows:
-        ws.append([str(r.date), r.batch_number, r.contractor, r.species, r.hoso_count, r.hoso_qty, r.hlso_qty, r.yield_percent, r.rate_per_kg, r.amount, r.peeling_at, r.production_for])
+        ws.append([
+            str(r.date), r.batch_number, r.contractor, r.species, r.hoso_count, 
+            r.hoso_qty, r.hlso_qty, r.yield_percent, r.rate_per_kg, r.amount, 
+            r.peeling_at, r.production_for
+        ])
+    
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=DE_HEADING.xlsx"})
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=DE_HEADING.xlsx"}
+    )
 
 # ============================================================
 # 6. DELETE ROW ACTION
@@ -262,7 +297,7 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
         db.add(AuditLog(
             table_name="de_heading", record_id=row.id, company_id=company_id,
             field_name="DELETE", old_value="Record", new_value="Deleted",
-            edited_by=edited_by, edited_at=datetime.utcnow()
+            edited_by=edited_by, edited_at=dt.datetime.utcnow()
         ))
         db.delete(row)
         db.commit()

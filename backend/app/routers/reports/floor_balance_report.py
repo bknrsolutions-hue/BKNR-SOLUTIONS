@@ -14,7 +14,6 @@ from app.database.models.processing import (
 from app.services.floor_balance import get_floor_balance
 
 router = APIRouter(
-    prefix="/reports", 
     tags=["FLOOR BALANCE REPORT"]
 )
 

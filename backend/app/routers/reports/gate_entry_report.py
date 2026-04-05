@@ -4,8 +4,10 @@
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+import datetime as dt
 from io import BytesIO
 from openpyxl import Workbook
 from weasyprint import HTML
@@ -18,6 +20,9 @@ router = APIRouter(
     prefix="/gate_entry",
     tags=["GATE ENTRY REPORT"]
 )
+
+# Template configuration
+templates = Jinja2Templates(directory="app/templates")
 
 # ============================================================
 # COMPANY INFO
@@ -76,10 +81,11 @@ def gate_entry_report(
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    return request.app.state.templates.TemplateResponse(
-        "reports/gate_entry_report.html",
-        {
-            "request": request,
+    # ✅ FIXED TemplateResponse: Latest FastAPI format
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/gate_entry_report.html",
+        context={
             "rows": rows,
             "from_date": from_date,
             "to_date": to_date,
@@ -146,7 +152,10 @@ def update_gate_entry(
                 "no_of_empty_boxes",
                 "no_of_ice_boxes"
             ]:
-                new_value = float(new_value or 0)
+                try:
+                    new_value = float(new_value or 0)
+                except ValueError:
+                    new_value = 0.0
 
             if str(old_value) != str(new_value):
 
@@ -159,7 +168,7 @@ def update_gate_entry(
                         old_value=str(old_value),
                         new_value=str(new_value),
                         edited_by=edited_by,
-                        edited_at=datetime.utcnow()
+                        edited_at=dt.datetime.utcnow()
                     )
                 )
 
@@ -205,7 +214,7 @@ def delete_gate_entry(
             old_value="Record Deleted",
             new_value="Deleted",
             edited_by=edited_by,
-            edited_at=datetime.utcnow()
+            edited_at=dt.datetime.utcnow()
         )
     )
 
@@ -278,9 +287,10 @@ def export_pdf(
     total_emp = sum(r.no_of_empty_boxes or 0 for r in rows)
     total_ice = sum(r.no_of_ice_boxes or 0 for r in rows)
 
-    html = request.app.state.templates.get_template(
+    html = templates.get_template(
         "reports/gate_entry_print.html"
     ).render({
+        "request": request, # Context lo request undali
         "rows": rows,
         "printed_on": datetime.now(),
         "total_mat": total_mat,

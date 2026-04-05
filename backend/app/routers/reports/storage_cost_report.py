@@ -110,7 +110,7 @@ def storage_cost_report(
         entry_date = r.date
         total_days = (today - entry_date).days
 
-        free_days = int(costing.free_days) if costing else 0
+        free_days = int(costing.free_days) if costing and costing.free_days else 0
         chargeable_days = max(0, total_days - free_days)
 
         cost_per_mc_day = float(costing.rate_per_mc_day) if costing else 0.0
@@ -159,7 +159,7 @@ def storage_cost_report(
         .distinct().all()
     ]
 
-    freezers = [
+    freezers_list = [
         x[0] for x in
         db.query(Inventory.freezer)
         .filter(Inventory.company_id == company_code)
@@ -179,7 +179,7 @@ def storage_cost_report(
             "total_qty_sum": round(total_qty_sum, 2),
             "production_for_list": production_for_list,
             "production_at_list": production_at_list,
-            "freezers": freezers,
+            "freezers": freezers_list,
             "selected_from": from_date,
             "selected_to": to_date
         }

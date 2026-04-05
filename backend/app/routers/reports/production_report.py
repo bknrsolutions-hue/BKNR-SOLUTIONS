@@ -1,11 +1,17 @@
+# ============================================================
+# PRODUCTION REPORT ROUTER (BKNR ERP - FULLY UPDATED)
+# ============================================================
+
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import datetime, date
 import pytz
 from io import BytesIO
 from openpyxl import Workbook
+from openpyxl.styles import Font
 from weasyprint import HTML
 
 from app.database import get_db
@@ -19,6 +25,7 @@ from app.database.models.criteria import (
 
 router = APIRouter(prefix="/production_report", tags=["PRODUCTION REPORT"])
 
+templates = Jinja2Templates(directory="app/templates")
 IST = pytz.timezone('Asia/Kolkata')
 
 # ------------------------------------------------------------
@@ -39,11 +46,10 @@ def production_report_page(
     from_date: str = "",
     to_date: str = ""
 ):
-    email = request.session.get("email")
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
 
-    if not email or not comp_code:
+    if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
     comp_code = str(comp_code)
@@ -63,10 +69,11 @@ def production_report_page(
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    return request.app.state.templates.TemplateResponse(
-        "reports/production_report.html",
-        {
-            "request": request,
+    # ✅ FIXED: TemplateResponse with explicit request and context
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/production_report.html",
+        context={
             "rows": rows,
             "from_date": from_date,
             "to_date": to_date,
@@ -129,14 +136,16 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                 has_changes = True
 
     if has_changes:
+        # ✅ Auto-Recalculate Production Quantity on update
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
             packing_styles.packing_style == row.packing_style
         ).first()
         
         if pack:
-            row.production_qty = (float(row.no_of_mc or 0) * float(pack.mc_weight or 0)) + \
-                                 (float(row.loose or 0) * float(pack.slab_weight or 0))
+            mc_w = float(pack.mc_weight or 0)
+            sl_w = float(pack.slab_weight or 0)
+            row.production_qty = round((float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w), 2)
 
         try:
             db.commit()
@@ -153,10 +162,21 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
 @router.post("/delete")
 def delete_production(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = str(request.session.get("company_code"))
+    user_email = request.session.get("email")
     if request.session.get("role") != "admin": raise HTTPException(status_code=403)
-    db.query(Production).filter(Production.id == payload.get("id"), Production.company_id == comp_code).delete()
-    db.commit()
-    return {"deleted": True}
+    
+    row = db.query(Production).filter(Production.id == payload.get("id"), Production.company_id == comp_code).first()
+    if row:
+        # Add deletion log
+        db.add(AuditLog(
+            table_name="production", record_id=row.id, company_id=comp_code,
+            field_name="DELETE", old_value="Record", new_value="Deleted",
+            edited_by=user_email, edited_at=datetime.utcnow()
+        ))
+        db.delete(row)
+        db.commit()
+        return {"status": "success"}
+    return {"status": "error", "message": "Record not found"}
 
 # ------------------------------------------------------------
 # VIEW AUDIT HISTORY
@@ -188,7 +208,7 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     q = db.query(Production).filter(Production.company_id == comp_code)
     
     if ids:
-        id_list = [int(i) for i in ids.split(",") if i]
+        id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         q = q.filter(Production.id.in_(id_list))
     else:
         if from_date: q = q.filter(Production.date >= date.fromisoformat(from_date))
@@ -197,15 +217,23 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     rows = q.order_by(desc(Production.date)).all()
     wb = Workbook()
     ws = wb.active
-    ws.title = "Production"
-    ws.append(["Date", "Batch #", "Brand", "Variety", "Species", "Grade", "Glaze", "Freezer", "MC", "Loose", "Qty", "Type", "At", "For", "User"])
+    ws.title = "Production Report"
+    
+    headers = ["Date", "Batch #", "Brand", "Variety", "Species", "Grade", "Glaze", "Freezer", "MC", "Loose", "Qty (Kg)", "Type", "At", "For", "User"]
+    ws.append(headers)
+    for cell in ws[1]: cell.font = Font(bold=True)
+    
     for r in rows:
         ws.append([str(r.date), r.batch_number, r.brand, r.variety_name, r.species, r.grade, r.glaze, r.freezer, r.no_of_mc, r.loose, r.production_qty, r.production_type, r.production_at, r.production_for, r.email])
     
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=Production_Report.xlsx"})
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=Production_Report.xlsx"}
+    )
 
 # ------------------------------------------------------------
 # PDF EXPORT (FOR PRINT & DOWNLOAD)
@@ -221,14 +249,14 @@ def export_production_pdf(
     q = db.query(Production).filter(Production.company_id == comp_code)
     
     if ids:
-        id_list = [int(i) for i in ids.split(",") if i]
+        id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         q = q.filter(Production.id.in_(id_list))
     
     rows = q.order_by(Production.date.asc()).all()
     company_name, company_address = get_company_info(db, comp_code)
     
     # Ikada templates directory lo 'reports/production_report_print.html' undali
-    html = request.app.state.templates.get_template("reports/production_report_print.html").render({
+    html_content = templates.get_template("reports/production_report_print.html").render({
         "request": request,
         "rows": rows,
         "company_name": company_name,
@@ -236,7 +264,7 @@ def export_production_pdf(
         "printed_on": datetime.now(IST).strftime("%d-%m-%Y %H:%M:%S")
     })
     
-    pdf_file = HTML(string=html).write_pdf()
+    pdf_file = HTML(string=html_content).write_pdf()
     disposition = "attachment" if download else "inline"
     
     return StreamingResponse(

@@ -1,16 +1,19 @@
+# ============================================================
+# SOAKING REPORT ROUTER (BKNR ERP - UPDATED)
+# ============================================================
+
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import desc
 from datetime import datetime
+import pytz
 from io import BytesIO
-
 from openpyxl import Workbook
-# Weasyprint removed if not used to keep it clean, but you can keep it if needed for PDF
+from openpyxl.styles import Font
 
 from app.database import get_db
-# Models ni mee project structure batti import cheskondi
 from app.database.models.processing import Soaking, AuditLog 
 
 router = APIRouter(
@@ -19,10 +22,11 @@ router = APIRouter(
 )
 
 templates = Jinja2Templates(directory="app/templates")
+IST = pytz.timezone('Asia/Kolkata')
 
-# ============================================================
+# ------------------------------------------------------------
 # 1. MAIN REPORT VIEW
-# ============================================================
+# ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def soaking_main_report(
     request: Request,
@@ -31,41 +35,42 @@ async def soaking_main_report(
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
-        return RedirectResponse("/", status_code=302)
+        return RedirectResponse("/auth/login", status_code=302)
 
-    # Fetching only company specific data
     rows = (
         db.query(Soaking)
         .filter(Soaking.company_id == company_id)
-        .order_by(Soaking.date.desc())
+        .order_by(desc(Soaking.date), desc(Soaking.id))
         .all()
     )
 
-    # Searchable dropdowns list build cheyali
+    # Searchable dropdowns logic
     varieties = sorted(list({r.variety_name for r in rows if r.variety_name}))
     locations = sorted(list({r.production_at for r in rows if r.production_at}))
+    batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
 
     return templates.TemplateResponse(
-        "reports/soaking_report.html",
-        {
-            "request": request,
+        request=request,
+        name="reports/soaking_report.html",
+        context={
             "rows": rows,
             "varieties": varieties,
             "locations": locations,
+            "batches": batches,
             "is_admin": role == "admin"
         }
     )
 
-# ============================================================
-# 2. UPDATE LOGIC (WITH AUTOMATED CALCS & AUDIT)
-# ============================================================
+# ------------------------------------------------------------
+# 2. UPDATE LOGIC (WITH AUTO-CALCS & AUDIT)
+# ------------------------------------------------------------
 @router.post("/update")
 async def update_soaking_row(
     request: Request, 
     payload: dict = Body(...), 
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code"))
     role = request.session.get("role")
     edited_by = request.session.get("email")
 
@@ -86,85 +91,83 @@ async def update_soaking_row(
         "production_at", "status", "production_for"
     ]
 
+    has_changes = False
     for field in update_fields:
         if field in payload:
-            old_val = getattr(row, field)
-            new_val = payload[field]
+            old_val = str(getattr(row, field) or "")
+            new_val = str(payload[field])
 
-            # Numeric handling for calculations
-            if field in ["in_qty", "chemical_percent", "salt_percent"]:
-                try:
-                    new_val = float(new_val or 0)
-                except ValueError:
-                    new_val = 0.0
-
-            if str(old_val) != str(new_val):
-                # Save Audit Log - FIXED TABLE NAME TO 'soaking'
+            if old_val != new_val:
                 db.add(AuditLog(
                     table_name="soaking",
                     record_id=row.id,
                     company_id=company_id,
                     field_name=field,
-                    old_value=str(old_val),
-                    new_value=str(new_val),
+                    old_value=old_val,
+                    new_value=new_val,
                     edited_by=edited_by,
                     edited_at=datetime.utcnow()
                 ))
-                setattr(row, field, new_val)
+                # Update numeric fields correctly
+                if field in ["in_qty", "chemical_percent", "salt_percent", "rejection_qty"]:
+                    setattr(row, field, float(payload[field] or 0))
+                else:
+                    setattr(row, field, payload[field])
+                has_changes = True
 
-    # Automated Chemical & Salt Kg Calculations
-    # Formula: (In Qty * Percent) / 100
-    qty = float(row.in_qty or 0)
-    c_per = float(row.chemical_percent or 0)
-    s_per = float(row.salt_percent or 0)
-    
-    row.chemical_qty = round((qty * c_per) / 100, 2)
-    row.salt_qty = round((qty * s_per) / 100, 2)
+    if has_changes:
+        # ✅ Auto-Recalculate Chemical & Salt Kg
+        qty = float(row.in_qty or 0)
+        c_per = float(row.chemical_percent or 0)
+        s_per = float(row.salt_percent or 0)
+        
+        row.chemical_qty = round((qty * c_per) / 100, 2)
+        row.salt_qty = round((qty * s_per) / 100, 2)
 
-    db.commit()
-    return {"status": "success", "message": "Soaking record updated"}
+        try:
+            db.commit()
+            return {"status": "success", "chemical_qty": row.chemical_qty, "salt_qty": row.salt_qty}
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
-# ============================================================
-# 3. FETCH FULL AUDIT HISTORY (Company Wise)
-# ============================================================
+    return {"status": "no_changes"}
+
+# ------------------------------------------------------------
+# 3. FETCH AUDIT HISTORY
+# ------------------------------------------------------------
 @router.get("/audit_all")
 async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code")
+    comp_code = str(request.session.get("company_code"))
     
-    # Joining with Soaking table to get the batch number for the log
     logs = (
         db.query(AuditLog, Soaking.batch_number)
         .join(Soaking, AuditLog.record_id == Soaking.id)
-        .filter(
-            AuditLog.table_name == "soaking", # Matches the update logic name
-            AuditLog.company_id == comp_code
-        )
+        .filter(AuditLog.table_name == "soaking", AuditLog.company_id == comp_code)
         .order_by(AuditLog.edited_at.desc())
-        .limit(100)
-        .all()
+        .limit(100).all()
     )
     
     return [
         {
-            "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+            "timestamp": log.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"),
             "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
             "batch": log.batch_number,
-            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
-            "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
-            "type": "UPDATE"
+            "field": log.AuditLog.field_name.replace('_', ' ').title(),
+            "details": f"'{log.AuditLog.old_value}' → '{log.AuditLog.new_value}'"
         } for log in logs
     ]
 
-# ============================================================
-# 4. EXPORT EXCEL (Filtered Data)
-# ============================================================
+# ------------------------------------------------------------
+# 4. EXPORT EXCEL
+# ------------------------------------------------------------
 @router.get("/export_excel")
 def soaking_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     query = db.query(Soaking).filter(Soaking.company_id == company_id)
     
     if ids and ids.strip():
-        id_list = [int(x) for x in ids.split(",") if x.strip()]
+        id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
         query = query.filter(Soaking.id.in_(id_list))
     
     rows = query.order_by(Soaking.date.asc()).all()
@@ -172,12 +175,15 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     wb = Workbook()
     ws = wb.active
     ws.title = "Soaking Report"
-    ws.append(["Date", "Sintex No", "Batch", "Variety", "In Qty", "Rejection Qty", "Rejection For", "Chem Name", "Chem Kg", "Salt Kg", "Status", "At"])
+    
+    headers = ["Date", "Sintex No", "Batch", "Variety", "In Qty", "Rej Qty", "Chem Name", "Chem Kg", "Salt Kg", "Status", "At"]
+    ws.append(headers)
+    for cell in ws[1]: cell.font = Font(bold=True)
     
     for r in rows:
         ws.append([
             str(r.date), r.sintex_number, r.batch_number, r.variety_name, 
-            r.in_qty, r.rejection_qty, r.rejection_for, r.chemical_name, r.chemical_qty, r.salt_qty, r.status, r.production_at
+            r.in_qty, r.rejection_qty, r.chemical_name, r.chemical_qty, r.salt_qty, r.status, r.production_at
         ])
     
     stream = BytesIO()
@@ -186,24 +192,19 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     return StreamingResponse(
         stream, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": "attachment; filename=Soaking_Report.xlsx"}
+        headers={"Content-Disposition": f"attachment; filename=Soaking_Report_{datetime.now().date()}.xlsx"}
     )
 
-# ============================================================
+# ------------------------------------------------------------
 # 5. DELETE ACTION
-# ============================================================
+# ------------------------------------------------------------
 @router.post("/delete")
 async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    row_id = payload.get("id")
-    
-    row = db.query(Soaking).filter(
-        Soaking.id == row_id, 
-        Soaking.company_id == company_id
-    ).first()
+    row = db.query(Soaking).filter(Soaking.id == payload.get("id"), Soaking.company_id == company_id).first()
     
     if row:
         db.delete(row)
         db.commit()
         return {"status": "success"}
-    return {"status": "error", "message": "Not found"}
+    return {"status": "error", "message": "Record not found"}

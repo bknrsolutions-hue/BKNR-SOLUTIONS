@@ -15,6 +15,7 @@ from sqlalchemy import desc, update
 from collections import defaultdict
 from io import BytesIO
 import json
+import datetime as dt
 from datetime import datetime
 
 from openpyxl import Workbook
@@ -137,7 +138,12 @@ def grading_report(
             "is_subtotal": True
         })
 
-    return templates.TemplateResponse("reports/grading_report.html", {"request": request, "rows": rows})
+    # ✅ FIXED TemplateResponse: Latest FastAPI format
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/grading_report.html",
+        context={"rows": rows}
+    )
 
 # ============================================================
 # DETAILED VIEW API – (ALL COLUMNS INCLUDED)
@@ -207,7 +213,7 @@ async def update_grading(request: Request, db: Session = Depends(get_db)):
                 old_value=str(old_val),
                 new_value=str(new_val),
                 edited_by=user_email,
-                edited_at=datetime.now(),
+                edited_at=dt.datetime.utcnow(),
                 company_id=company_id
             )
             db.add(log)
@@ -222,12 +228,23 @@ async def update_grading(request: Request, db: Session = Depends(get_db)):
 @router.post("/delete")
 async def delete_grading(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
+    user_email = request.session.get("email")
     data = await request.json()
     record_id = data.get("id")
 
-    db.query(Grading).filter(Grading.id == record_id, Grading.company_id == company_id).delete()
-    db.commit()
-    return {"status": "success"}
+    row = db.query(Grading).filter(Grading.id == record_id, Grading.company_id == company_id).first()
+    if row:
+        # Audit Delete Action
+        db.add(AuditLog(
+            table_name="grading", record_id=row.id, company_id=company_id,
+            field_name="DELETE", old_value="Record", new_value="Deleted",
+            edited_by=user_email, edited_at=dt.datetime.utcnow()
+        ))
+        db.delete(row)
+        db.commit()
+        return {"status": "success"}
+    
+    return {"status": "error", "message": "Not found"}
 
 # ============================================================
 # AUDIT LOGS (FETCH)
@@ -246,7 +263,7 @@ def get_grading_audits(request: Request, db: Session = Depends(get_db)):
         "old_value": l.old_value,
         "new_value": l.new_value,
         "edited_by": l.edited_by,
-        "edited_at": l.edited_at.strftime("%Y-%m-%d %H:%M")
+        "edited_at": l.edited_at.strftime("%d-%m-%Y %H:%M")
     } for l in logs]
 
 # ============================================================
@@ -262,8 +279,11 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     ws.title = "Detailed Grading Report"
 
     headers = ["Date", "Time", "Batch", "Species", "Variety", "Count", "Quantity", "Graded Count"]
-    ws.append(headers)
-    
+    for col, text in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=text)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center")
+
     for r in rows:
         ws.append([str(r.date), str(r.time), r.batch_number, r.species, r.variety_name, r.hoso_count, r.quantity, r.graded_count])
 
