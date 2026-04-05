@@ -207,6 +207,7 @@ def get_available_qty(
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
+    # ✅ Always checking HLSO for peeling input
     qty = get_floor_balance(db, company_id, location, batch, hlso_count, species_name, "HLSO")
     return {"available_qty": round(max(qty, 0), 2)}
 
@@ -237,7 +238,8 @@ def save_peeling(
     company_id = request.session.get("company_code")
     if not email or not company_id: return RedirectResponse("/auth/login", status_code=303)
 
-    avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, variety_name)
+    # ✅ MODIFIED: Checking HLSO variety instead of variety_name for available quantity
+    avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, "HLSO")
     if hlso_qty > (avail + 0.05):
          return JSONResponse({"error": f"Stock limited! Only {avail} KG available at {peeling_at}"}, status_code=400)
 
@@ -251,10 +253,9 @@ def save_peeling(
     db.add(obj)
     db.commit()
 
-    # Success Message ని సెషన్ లో యాడ్ చేస్తున్నాను
+    # Success Message
     request.session["success_msg"] = f"Peeling Entry for Batch {batch_number} Saved Successfully!"
 
-    # Redirect చేయడం వల్ల ఫామ్ కాలమ్స్ అన్నీ ఆటోమేటిక్ గా ఖాళీ అవుతాయి
     return RedirectResponse("/processing/peeling", status_code=303)
 
 @router.post("/peeling/delete/{id}")
