@@ -3,11 +3,30 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
+# Path ని నీ ప్రాజెక్ట్ స్ట్రక్చర్ ప్రకారం సరిచూసుకో (e.g., "backend/app/templates")
 templates = Jinja2Templates(directory="app/templates")
 
 
-def render_page(request: Request, page):
-    return templates.TemplateResponse(page, {"request": request})
+# ============================================================
+# FIXED RENDER FUNCTION (The Core Fix)
+# ============================================================
+def render_page(request: Request, page: str, context: dict = None):
+    """
+    TypeError: unhashable type: 'dict' ఎర్రర్ రాకుండా ఉండటానికి 
+    request ని మొదటి ఆర్గ్యుమెంట్ గా పంపిస్తున్నాను.
+    """
+    if context is None:
+        context = {}
+    
+    # Context లో కచ్చితంగా request ఉండాలి
+    context["request"] = request
+
+    # ✅ FIXED SYNTAX: (request, name, context)
+    return templates.TemplateResponse(
+        request=request, 
+        name=page, 
+        context=context
+    )
 
 
 # ------------------- Dashboard Screens -------------------
@@ -82,6 +101,4 @@ def user_list(request: Request):
 
 @router.get("/admin/role_permissions")
 def role_permissions(request: Request):
-    return render_page(request, "admin/add_user.html")
-
-
+    return render_page(request, "admin/role_permissions.html")
