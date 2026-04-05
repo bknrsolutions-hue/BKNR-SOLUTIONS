@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -7,24 +7,34 @@ from app.database import get_db
 from app.database.models.general_stock import GeneralStock
 
 
-router = APIRouter( tags=["GENERAL STOCK"])   # 🔥 FIXED
+router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
 
 
 # ========================= PAGE LOAD ========================= #
 @router.get("/entry", response_class=HTMLResponse)
 def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
+    
+    # 🔐 Session Check
+    if not request.session.get("email"):
+        return RedirectResponse("/", status_code=302)
 
-    grn_list = [x[0] for x in db.query(GeneralStock.grn_number).distinct().all() if x[0]]
-    items    = [x[0] for x in db.query(GeneralStock.item_name).distinct().all() if x[0]]
-    units    = [x[0] for x in db.query(GeneralStock.unit_name).distinct().all() if x[0]]
+    comp_code = request.session.get("company_code")
+
+    grn_list = [x[0] for x in db.query(GeneralStock.grn_number).filter(GeneralStock.company_id == comp_code).distinct().all() if x[0]]
+    items    = [x[0] for x in db.query(GeneralStock.item_name).filter(GeneralStock.company_id == comp_code).distinct().all() if x[0]]
+    units    = [x[0] for x in db.query(GeneralStock.unit_name).filter(GeneralStock.company_id == comp_code).distinct().all() if x[0]]
 
     today    = datetime.now().date()
-    today_data = db.query(GeneralStock).filter(GeneralStock.date == today).all()
+    today_data = db.query(GeneralStock).filter(
+        GeneralStock.date == today, 
+        GeneralStock.company_id == comp_code
+    ).all()
 
+    # ✅ FIXED TEMPLATE RESPONSE
     return request.app.state.templates.TemplateResponse(
-        "general_stock/general_stock_entry.html",
-        {
-            "request": request,
+        request=request,
+        name="general_stock/general_stock_entry.html",
+        context={
             "grn_list": grn_list,
             "items": items,
             "units": units,
@@ -47,6 +57,12 @@ def save_stock_entry(
     minimum_level: float = Form(None),
     db: Session = Depends(get_db)
 ):
+    # 🔐 Get Session Data
+    user_email = request.session.get("email")
+    comp_code = request.session.get("company_code")
+
+    if not user_email:
+        return RedirectResponse("/", status_code=302)
 
     new_row = GeneralStock(
         grn_number=grn_number,
@@ -59,8 +75,8 @@ def save_stock_entry(
         minimum_level=minimum_level,
         date=datetime.now().date(),
         time=datetime.now().time(),
-        email="admin@bknr.com",     # later → request.session["email"]
-        company_id=1                # later → session-based
+        email=user_email,
+        company_id=comp_code
     )
 
     db.add(new_row)
@@ -71,8 +87,14 @@ def save_stock_entry(
 
 # ========================= DELETE ========================= #
 @router.post("/entry/delete/{id}")
-def delete_stock(id: int, db: Session = Depends(get_db)):
-    row = db.query(GeneralStock).filter(GeneralStock.id == id).first()
+def delete_stock(request: Request, id: int, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    
+    row = db.query(GeneralStock).filter(
+        GeneralStock.id == id, 
+        GeneralStock.company_id == comp_code
+    ).first()
+    
     if row:
         db.delete(row)
         db.commit()
