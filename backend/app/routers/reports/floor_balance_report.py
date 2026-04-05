@@ -17,7 +17,7 @@ router = APIRouter(
     tags=["FLOOR BALANCE REPORT"]
 )
 
-# templates directory definition (Main.py lo unna logic ni batti idi check chesko)
+# templates directory definition
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/floor_balance_report", response_class=HTMLResponse)
@@ -103,7 +103,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     # 4. FINAL SORTING (Loc -> Prod For -> Batch)
     rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
 
-    # ✅ FIXED TemplateResponse: Latest FastAPI format
+    # ✅ FIXED TemplateResponse
     return templates.TemplateResponse(
         request=request,
         name="reports/floor_balance_report.html",
