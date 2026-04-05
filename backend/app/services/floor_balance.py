@@ -3,7 +3,6 @@ from sqlalchemy import func
 from app.database.models.processing import (
     RawMaterialPurchasing,
     Grading,
-    DeHeading,
     Peeling,
     Soaking
 )
@@ -18,16 +17,17 @@ def get_floor_balance(
     variety: str
 ) -> float:
     """
-    CENTRAL FLOOR BALANCE CALCULATOR (Strict Location Match)
-    - Soaking In-Qty: Floor nundi minus (-) avthundi.
-    - Soaking Rejection: Variety HOSO/HLSO ayithe tirigi floor ki add (+) avthundi.
+    CENTRAL FLOOR BALANCE CALCULATOR (Updated as per User Request)
+    - Value Added Logic: Peeling_Out + Other_Receiving + Other_Soaking_Rejection - Soaking_In
+    - HLSO Logic: Grading + HLSO_Receiving + HLSO_Soaking_Rejection - Peeling_Used - Soaking_In
     """
 
     variety_upper = variety.strip().upper() if variety else ""
 
     # ================================================
-    # 🔴 SOAKING IMPACT (In-Qty & Rejection)
+    # 🔴 SOAKING IMPACT (Deduction & Rejection)
     # ================================================
+    # Soaking lo vellina quantity (Deduction)
     soaking_in = db.query(
         func.coalesce(func.sum(Soaking.in_qty), 0)
     ).filter(
@@ -39,28 +39,25 @@ def get_floor_balance(
         Soaking.variety_name == variety_upper
     ).scalar()
 
-    soaking_rejection = 0.0
-    if variety_upper in ["HOSO", "HLSO"]:
-        soaking_rejection = db.query(
-            func.coalesce(func.sum(Soaking.rejection_qty), 0)
-        ).filter(
-            Soaking.company_id == company_id,
-            Soaking.production_at == location,
-            Soaking.batch_number == batch,
-            Soaking.in_count == count,
-            Soaking.species == species,
-            Soaking.variety_name == variety_upper
-        ).scalar()
+    # Soaking nundi vachina rejection (Recovery)
+    soaking_rejection = db.query(
+        func.coalesce(func.sum(Soaking.rejection_qty), 0)
+    ).filter(
+        Soaking.company_id == company_id,
+        Soaking.production_at == location,
+        Soaking.batch_number == batch,
+        Soaking.in_count == count,
+        Soaking.species == species,
+        Soaking.variety_name == variety_upper
+    ).scalar()
 
     available = 0.0
 
     # ================================================
-    # 🔵 HOSO (RMP + Grading In + Rejection - Grading Out - DeHeading - Soaking In)
+    # 🔵 HOSO (RMP + Grading In + Rejection - Grading Out - Soaking In)
     # ================================================
     if variety_upper == "HOSO":
-        rmp_qty = db.query(
-            func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)
-        ).filter(
+        rmp_qty = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)).filter(
             RawMaterialPurchasing.company_id == company_id,
             RawMaterialPurchasing.peeling_at == location,
             RawMaterialPurchasing.batch_number == batch,
@@ -69,80 +66,73 @@ def get_floor_balance(
             RawMaterialPurchasing.variety_name == "HOSO"
         ).scalar()
 
-        grading_plus = db.query(
-            func.coalesce(func.sum(Grading.quantity), 0)
-        ).filter(
-            Grading.company_id == company_id,
-            Grading.peeling_at == location,
-            Grading.batch_number == batch,
-            Grading.graded_count == count,
-            Grading.species == species,
-            Grading.variety_name == "HOSO"
+        grading_plus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
+            Grading.company_id == company_id, Grading.peeling_at == location,
+            Grading.batch_number == batch, Grading.graded_count == count,
+            Grading.species == species, Grading.variety_name == "HOSO"
         ).scalar()
 
-        grading_minus = db.query(
-            func.coalesce(func.sum(Grading.quantity), 0)
-        ).filter(
-            Grading.company_id == company_id,
-            Grading.peeling_at == location,
-            Grading.batch_number == batch,
-            Grading.hoso_count == count,
-            Grading.species == species,
-            Grading.variety_name == "HOSO"
+        grading_minus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
+            Grading.company_id == company_id, Grading.peeling_at == location,
+            Grading.batch_number == batch, Grading.hoso_count == count,
+            Grading.species == species, Grading.variety_name == "HOSO"
         ).scalar()
 
-        deheading_used = db.query(
-            func.coalesce(func.sum(DeHeading.hoso_qty), 0)
-        ).filter(
-            DeHeading.company_id == company_id,
-            DeHeading.peeling_at == location,
-            DeHeading.batch_number == batch,
-            DeHeading.hoso_count == count,
-            DeHeading.species == species
-        ).scalar()
-
-        available = (rmp_qty + grading_plus + soaking_rejection - grading_minus - deheading_used - soaking_in)
+        available = (rmp_qty + grading_plus + soaking_rejection - grading_minus - soaking_in)
 
     # ================================================
-    # 🟢 HLSO / PD / PDTO / PUD (Peeling Input Logic)
+    # 🟢 HLSO (Grading + HLSO_Receiving + Rejection - Peeling_Used - Soaking_In)
     # ================================================
-    # Note: If variety is NOT HOSO, it checks balance against HLSO stock sources
+    elif variety_upper == "HLSO":
+        grading_qty = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
+            Grading.company_id == company_id, Grading.peeling_at == location,
+            Grading.batch_number == batch, Grading.graded_count == count,
+            Grading.species == species, Grading.variety_name == "HLSO"
+        ).scalar()
+
+        # Receiving HLSO (Raw Material Purchasing)
+        receiving_hlso = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)).filter(
+            RawMaterialPurchasing.company_id == company_id,
+            RawMaterialPurchasing.peeling_at == location,
+            RawMaterialPurchasing.batch_number == batch,
+            RawMaterialPurchasing.count == count,
+            RawMaterialPurchasing.species == species,
+            RawMaterialPurchasing.variety_name == "HLSO"
+        ).scalar()
+
+        peeling_used = db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)).filter(
+            Peeling.company_id == company_id, Peeling.peeling_at == location,
+            Peeling.batch_number == batch, Peeling.hlso_count == count,
+            Peeling.species == species
+        ).scalar()
+
+        available = (grading_qty + receiving_hlso + soaking_rejection - peeling_used - soaking_in)
+
+    # ================================================
+    # 🟡 VALUE ADDED (Peeling_Out + Other_Receiving + Rejection - Soaking_In)
+    # ================================================
     else:
-        # Grading nundi vachina HLSO
-        grading_qty = db.query(
-            func.coalesce(func.sum(Grading.quantity), 0)
-        ).filter(
-            Grading.company_id == company_id,
-            Grading.peeling_at == location,
-            Grading.batch_number == batch,
-            Grading.graded_count == count,
-            Grading.species == species,
-            Grading.variety_name == "HLSO"
-        ).scalar()
-
-        # De-Heading nundi vachina HLSO
-        deheading_out = db.query(
-            func.coalesce(func.sum(DeHeading.hlso_qty), 0)
-        ).filter(
-            DeHeading.company_id == company_id,
-            DeHeading.peeling_at == location,
-            DeHeading.batch_number == batch,
-            DeHeading.hoso_count == count,
-            DeHeading.species == species
-        ).scalar()
-
-        # Peeling lo vellina Input (HLSO Qty)
-        peeling_used = db.query(
-            func.coalesce(func.sum(Peeling.hlso_qty), 0)
-        ).filter(
+        # 1. Peeling Out (Peeled Qty)
+        peeled_out = db.query(func.coalesce(func.sum(Peeling.peeled_qty), 0)).filter(
             Peeling.company_id == company_id,
             Peeling.peeling_at == location,
             Peeling.batch_number == batch,
             Peeling.hlso_count == count,
-            Peeling.species == species
+            Peeling.species == species,
+            Peeling.variety_name == variety_upper
         ).scalar()
 
-        # FORMULA REMAINS SAME AS PER YOUR REQUIREMENT
-        available = (grading_qty + deheading_out + soaking_rejection - peeling_used - soaking_in)
+        # 2. Receiving other than HOSO, HLSO
+        receiving_others = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)).filter(
+            RawMaterialPurchasing.company_id == company_id,
+            RawMaterialPurchasing.peeling_at == location,
+            RawMaterialPurchasing.batch_number == batch,
+            RawMaterialPurchasing.count == count,
+            RawMaterialPurchasing.species == species,
+            RawMaterialPurchasing.variety_name == variety_upper,
+            ~RawMaterialPurchasing.variety_name.in_(["HOSO", "HLSO"])
+        ).scalar()
+
+        available = (peeled_out + receiving_others + soaking_rejection - soaking_in)
 
     return round(max(available, 0), 2)
