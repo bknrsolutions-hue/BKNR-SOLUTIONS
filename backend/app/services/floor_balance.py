@@ -4,7 +4,8 @@ from app.database.models.processing import (
     RawMaterialPurchasing,
     Grading,
     Peeling,
-    Soaking
+    Soaking,
+    Deheading
 )
 
 def get_floor_balance(
