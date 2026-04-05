@@ -167,11 +167,11 @@ def storage_cost_report(
     ]
 
     # -------------------------------------------------
-    # RENDER
+    # ✅ FIXED TEMPLATE RESPONSE
     # -------------------------------------------------
     return templates.TemplateResponse(
-        "reports/storage_report.html",
-        {
+        name="reports/storage_report.html",
+        context={
             "request": request,
             "report_data": report_data,
             "total_payable_sum": round(total_payable_sum, 2),

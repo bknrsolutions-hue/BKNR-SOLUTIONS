@@ -39,18 +39,22 @@ def get_sales_report(
     avg_price = (total_revenue / total_mc) if total_mc > 0 else 0
     active_invoices = len([s for s in sales_data if s.status != 'Paid'])
 
-    return templates.TemplateResponse("reports/sales_report.html", {
-        "request": request,
-        "sales_data": sales_data,
-        "summary": {
-            "total_revenue": f"{total_revenue:,.2f}",
-            "total_mc": f"{total_mc:,}",
-            "avg_price": f"{avg_price:,.2f}",
-            "active_invoices": active_invoices
-        },
-        "filters": {
-            "company": company,
-            "from_date": from_date,
-            "to_date": to_date
+    # ✅ TemplateResponse Corrected: Removed extra dot and formatted context
+    return templates.TemplateResponse(
+        name="reports/sales_report.html", 
+        context={
+            "request": request,
+            "sales_data": sales_data,
+            "summary": {
+                "total_revenue": f"{total_revenue:,.2f}",
+                "total_mc": f"{total_mc:,}",
+                "avg_price": f"{avg_price:,.2f}",
+                "active_invoices": active_invoices
+            },
+            "filters": {
+                "company": company,
+                "from_date": from_date,
+                "to_date": to_date
+            }
         }
-    })
+    )
