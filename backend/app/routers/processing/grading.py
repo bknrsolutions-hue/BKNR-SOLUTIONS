@@ -44,7 +44,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. Master Data for Dropdowns
+    # 1. Master Data for Dropdowns (Searchable Columns [2026-01-24])
     species_list = [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
     peeling_locations = [l.peeling_at for l in db.query(PeelingAtMaster).filter(PeelingAtMaster.company_id == company_code).all()]
@@ -135,19 +135,23 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
-    return templates.TemplateResponse("processing/grading.html", {
-        "request": request,
-        "species_list": species_list,
-        "variety_list": variety_list,
-        "peeling_locations": peeling_locations,
-        "prod_for_list": prod_for_list,
-        "today_data": today_data,
-        "hlso_summary": list(hlso_summary.values()),
-        "hoso_summary": list(hoso_summary.values()),
-        "drill_down_json": json.dumps(drill_down_data),
-        "edit_data": None,
-        "message": request.session.pop("message", None)
-    })
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="processing/grading.html",
+        context={
+            "species_list": species_list,
+            "variety_list": variety_list,
+            "peeling_locations": peeling_locations,
+            "prod_for_list": prod_for_list,
+            "today_data": today_data,
+            "hlso_summary": list(hlso_summary.values()),
+            "hoso_summary": list(hoso_summary.values()),
+            "drill_down_json": json.dumps(drill_down_data),
+            "edit_data": None,
+            "message": request.session.pop("message", None)
+        }
+    )
 
 # -----------------------------------------------------
 # API: GET BATCHES (FILTERED BY SELECTED COMPANY)

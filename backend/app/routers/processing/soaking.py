@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
 from datetime import date, datetime
@@ -15,6 +16,7 @@ from app.database.models.criteria import (
 from app.services.floor_balance import get_floor_balance 
 
 router = APIRouter(tags=["SOAKING"])
+templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
 # SHOW PAGE: FETCHING DATA & MASTER DATA
@@ -27,7 +29,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # [2026-01-24] Searchable Dropdowns Data
+    # [2026-01-24] Searchable Dropdowns Data - Fetching for Template
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
     species_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).all() if s[0]]
     chemical_list = [c[0] for c in db.query(chemicals.chemical_name).filter(chemicals.company_id == company_id).all() if c[0]]
@@ -37,7 +39,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     # 1. Today's Entries
     today_data = db.query(Soaking).filter(Soaking.company_id == company_id, Soaking.date == date.today()).order_by(Soaking.id.desc()).all()
 
-    # 2. Main Floor Balance Logic with Integrated Rejection Details
+    # 2. Main Floor Balance Logic
     combos = set()
     # RMP
     rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_id).all()
@@ -56,7 +58,6 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         # Central balance (Fresh + Rejection Recovery)
         qty = get_floor_balance(db=db, company_id=company_id, location=loc, batch=batch, count=count, species=species_val, variety=variety)
         
-        # HOSO/HLSO Rejection mathrame detailed data ga ravali kabatti:
         rej_qty = 0.0
         if variety in ["HOSO", "HLSO"]:
             rej_qty = db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)).filter(
@@ -75,18 +76,23 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
                 "species": species_val or "N/A", 
                 "production_for": prod_for or "N/A",
                 "location": loc, 
-                "rejection_qty": round(rej_qty, 2), # Details lo rejection data
-                "available_qty": round(qty, 2),    # Total available (Fresh + Rej)
+                "rejection_qty": round(rej_qty, 2),
+                "available_qty": round(qty, 2),
             })
 
-    # [2026-01-03] Sorting Data Company-Wise & Location Wise
+    # [2026-01-03] Sorting Data
     rows_batch = sorted(rows_batch, key=lambda x: (x["production_for"], x["location"], x["batch"]))
 
-    return request.app.state.templates.TemplateResponse("processing/soaking.html", {
-        "request": request, "varieties": variety_list, "species": species_list, "chemicals": chemical_list,
-        "production_locations": prod_locs, "prod_for_list": prod_for_list, "today_data": today_data,
-        "rows_batch": rows_batch
-    })
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="processing/soaking.html",
+        context={
+            "varieties": variety_list, "species": species_list, "chemicals": chemical_list,
+            "production_locations": prod_locs, "prod_for_list": prod_for_list, "today_data": today_data,
+            "rows_batch": rows_batch
+        }
+    )
 
 # =====================================================
 # API ENDPOINTS: DYNAMIC DATA FETCHING

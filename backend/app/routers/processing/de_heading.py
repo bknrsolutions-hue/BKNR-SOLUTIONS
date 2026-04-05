@@ -70,7 +70,6 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
     if not company_code:
         return {"counts": []}
 
-    # Specific Batch, Location mariyu Company combination check
     rmp_c = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species)\
         .filter(
             RawMaterialPurchasing.batch_number == batch,
@@ -163,15 +162,19 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     hoso_floor_balance_list.sort(key=lambda x: (x['production_for'], x['peeling_at']))
 
-    return templates.TemplateResponse("processing/de_heading.html", {
-        "request": request,
-        "contractors": contractor_list,
-        "species": species_list,
-        "peeling_locations": peeling_locs,
-        "prod_for_list": prod_for_list,
-        "today_data": today_data,
-        "hoso_floor_balance": hoso_floor_balance_list
-    })
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="processing/de_heading.html",
+        context={
+            "contractors": contractor_list,
+            "species": species_list,
+            "peeling_locations": peeling_locs,
+            "prod_for_list": prod_for_list,
+            "today_data": today_data,
+            "hoso_floor_balance": hoso_floor_balance_list
+        }
+    )
 
 # =====================================================
 # ACTION: SAVE DE-HEADING ENTRY

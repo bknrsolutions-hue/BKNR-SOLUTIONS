@@ -24,9 +24,7 @@ templates = Jinja2Templates(directory="app/templates")
 # -----------------------------------------------------
 def get_today_range():
     now = datetime.now()
-    # Today 9:00 AM
     start = now.replace(hour=9, minute=0, second=0, microsecond=0)
-    # If current time is before 9 AM, the shift started yesterday at 9 AM
     if now < start:
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
@@ -134,12 +132,9 @@ def get_hoso_summary_data(db: Session, company_code: str):
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
     hoso_summary, drill_down = get_hoso_summary_data(db, company_code)
     
-    # Gate Entry నుండి డేటా తీసుకుని కంపెనీ వైజ్ బ్యాచ్‌లను గ్రూప్ చేయడం
     gate_entries = db.query(GateEntry).filter(GateEntry.company_id == company_code).order_by(GateEntry.id.desc()).all()
-    
     prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
     
-    # ఈ మ్యాప్ ని ఉపయోగించి JS లో డ్రాప్‌డౌన్ ఫిల్టర్ చేయవచ్చు
     prod_batch_map = {}
     for g in gate_entries:
         if g.production_for:
@@ -148,13 +143,13 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
             if g.batch_number not in prod_batch_map[g.production_for]:
                 prod_batch_map[g.production_for].append(g.batch_number)
 
+    # Master data for Searchable Columns [2026-01-24]
     supplier_list = [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
     species_list = [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()]
     hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
     peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
 
-    # 🟢 TODAY RANGE FILTER APPLIED HERE FOR TABLE DATA
     start, end = get_today_range()
     today_data = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == company_code,
@@ -164,18 +159,23 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         )
     ).order_by(RawMaterialPurchasing.id.desc()).all()
 
-    return templates.TemplateResponse("processing/raw_material_purchasing.html", {
-        "request": request, "today_data": today_data, "edit_data": edit_data,
-        "batch_list": [g.batch_number for g in gate_entries if g.batch_number],
-        "supplier_list": supplier_list, "variety_list": variety_list, "species_list": species_list,
-        "peeling_locations": peeling_locs, "prod_for_list": prod_for_list,
-        "hsn_list": [h.description for h in hsn_records],
-        "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
-        "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
-        "prod_batch_map_json": json.dumps(prod_batch_map), 
-        "batch_supplier_map_json": json.dumps({g.batch_number: {"supplier": g.supplier_name, "prod_for": g.production_for} for g in gate_entries}),
-        "message": request.session.pop("message", None)
-    })
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    return templates.TemplateResponse(
+        request=request,
+        name="processing/raw_material_purchasing.html",
+        context={
+            "today_data": today_data, "edit_data": edit_data,
+            "batch_list": [g.batch_number for g in gate_entries if g.batch_number],
+            "supplier_list": supplier_list, "variety_list": variety_list, "species_list": species_list,
+            "peeling_locations": peeling_locs, "prod_for_list": prod_for_list,
+            "hsn_list": [h.description for h in hsn_records],
+            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
+            "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
+            "prod_batch_map_json": json.dumps(prod_batch_map), 
+            "batch_supplier_map_json": json.dumps({g.batch_number: {"supplier": g.supplier_name, "prod_for": g.production_for} for g in gate_entries}),
+            "message": request.session.pop("message", None)
+        }
+    )
 
 # -----------------------------------------------------
 # ROUTES
