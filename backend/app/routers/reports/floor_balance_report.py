@@ -2,185 +2,112 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import date
-
 from app.database import get_db
-from app.database.models.inventory_management import stock_entry as Inventory
-from app.database.models.criteria import production_for as ProductionFor
+from app.database.models.processing import (
+    RawMaterialPurchasing,
+    Grading,
+    DeHeading,  # ✅ Added DeHeading
+    Peeling,
+    Soaking
+)
+# Nee Centralized Service Function
+from app.services.floor_balance import get_floor_balance
 
-router = APIRouter()
+router = APIRouter(
+    tags=["FLOOR BALANCE REPORT"]
+)
+
+# templates directory definition (Main.py lo unna logic ni batti idi check chesko)
 templates = Jinja2Templates(directory="app/templates")
 
+@router.get("/floor_balance_report", response_class=HTMLResponse)
+def floor_balance_report(request: Request, db: Session = Depends(get_db)):
+    # 1. SESSION CHECK (Current Company Only)
+    company_id = request.session.get("company_code")
+    if not company_id:
+        return RedirectResponse("/auth/login", status_code=303)
 
-@router.get("/storage_cost_report", response_class=HTMLResponse)
-def storage_cost_report(
-    request: Request,
-    production_for: str = "",
-    production_at: str = "",
-    freezer: str = "",
-    from_date: str = "",
-    to_date: str = "",
-    db: Session = Depends(get_db)
-):
-    # -------------------------------------------------
-    # 🔐 SESSION CHECK
-    # -------------------------------------------------
-    if not request.session.get("email"):
-        return RedirectResponse("/", status_code=302)
+    # 2. COMBINATION BUILDING (Collect all possible batch-count-loc combos)
+    combos = set()
 
-    company_code = request.session.get("company_code")
+    # RMP (HOSO Start)
+    rmp_q = db.query(
+        RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count,
+        RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name,
+        RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at
+    ).filter(RawMaterialPurchasing.company_id == company_id).all()
+    for r in rmp_q:
+        if r.batch_number:
+            combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at))
 
-    # -------------------------------------------------
-    # BASE QUERY (STOCK ENTRY)
-    # -------------------------------------------------
-    q = (
-        db.query(Inventory)
-        .filter(
-            Inventory.cargo_movement_type == "IN",
-            Inventory.company_id == company_code
+    # Grading (HOSO & HLSO Start)
+    grad_q = db.query(
+        Grading.batch_number, Grading.graded_count,
+        Grading.species, Grading.variety_name,
+        Grading.production_for, Grading.peeling_at
+    ).filter(Grading.company_id == company_id).all()
+    for r in grad_q:
+        if r.batch_number:
+            combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at))
+
+    # 🆕 DeHeading (Adding HLSO variety generated from DeHeading)
+    dehead_q = db.query(
+        DeHeading.batch_number, DeHeading.hlso_count,
+        DeHeading.species, DeHeading.production_for, DeHeading.peeling_at
+    ).filter(DeHeading.company_id == company_id).all()
+    for r in dehead_q:
+        if r.batch_number:
+            # HLSO variety add chestunnam
+            combos.add((r.batch_number, r.hlso_count, r.species, "HLSO", r.production_for, r.peeling_at))
+
+    # Peeling (PD, PDTO, PUD Start)
+    peel_q = db.query(
+        Peeling.batch_number, Peeling.hlso_count,
+        Peeling.species, Peeling.variety_name,
+        Peeling.production_for, Peeling.peeling_at
+    ).filter(Peeling.company_id == company_id).all()
+    for r in peel_q:
+        if r.batch_number:
+            combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at))
+
+    # 3. LIVE CALCULATION & FILTERING (Using Central Service)
+    rows_batch = []
+
+    for batch, count, species_val, variety, prod_for, location in combos:
+        loc = location if location else "Floor"
+        
+        # Central service call (Indulo DeHeading logic undali)
+        qty = get_floor_balance(
+            db=db, 
+            company_id=company_id, 
+            location=loc, 
+            batch=batch, 
+            count=count, 
+            species=species_val, 
+            variety=variety
         )
-    )
+        
+        # 0.01 kante ekkuva unna data ni matrame list ki pampali
+        if qty and qty > 0.01:
+            rows_batch.append({
+                "batch": batch or "N/A",
+                "variety": variety or "N/A",
+                "count": count or "N/A",
+                "species": species_val or "N/A",
+                "production_for": prod_for or "General Stock",
+                "location": loc,
+                "available_qty": round(qty, 2),
+                "is_rejection": False 
+            })
 
-    if production_for:
-        q = q.filter(Inventory.production_for == production_for)
+    # 4. FINAL SORTING (Loc -> Prod For -> Batch)
+    rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
 
-    if production_at:
-        q = q.filter(Inventory.production_at == production_at)
-
-    if freezer:
-        q = q.filter(Inventory.freezer == freezer)
-
-    if from_date and to_date:
-        q = q.filter(Inventory.date.between(from_date, to_date))
-
-    q = q.order_by(
-        Inventory.production_for,
-        Inventory.production_at,
-        Inventory.date.desc()
-    )
-
-    rows = q.all()
-
-    # -------------------------------------------------
-    # REPORT CALCULATION
-    # -------------------------------------------------
-    report_data = []
-    total_payable_sum = 0.0
-    total_holding_sum = 0.0
-    total_qty_sum = 0.0
-
-    today = date.today()
-
-    for r in rows:
-
-        qty = float(r.quantity or 0)
-        total_qty_sum += qty
-
-        stock_date = r.date
-
-        # -------------------------------------------------
-        # 🔍 LOOKUP COST FROM PRODUCTION_FOR MASTER
-        # -------------------------------------------------
-        costing = (
-            db.query(ProductionFor)
-            .filter(
-                ProductionFor.company_id == company_code,
-                ProductionFor.production_for == r.production_for,
-                ProductionFor.freezer_name == r.freezer,
-                ProductionFor.glaze_percent == r.glaze,
-                ProductionFor.apply_from <= stock_date
-            )
-            .order_by(ProductionFor.apply_from.desc())
-            .first()
-        )
-
-        # -------------------------------------------------
-        # ✅ PRODUCTION COST = ONLY GLAZE COST
-        # -------------------------------------------------
-        production_cost_per_kg = (
-            float(costing.production_cost_per_kg) if costing else 0.0
-        )
-
-        payable_amount = qty * production_cost_per_kg
-        total_payable_sum += payable_amount
-
-        # -------------------------------------------------
-        # 🧊 HOLDING COST CALCULATION
-        # -------------------------------------------------
-        entry_date = r.date
-        total_days = (today - entry_date).days
-
-        free_days = int(costing.free_days) if costing and costing.free_days else 0
-        chargeable_days = max(0, total_days - free_days)
-
-        cost_per_mc_day = float(costing.rate_per_mc_day) if costing else 0.0
-        no_of_mc = float(r.no_of_mc or 0)
-
-        holding_cost = chargeable_days * cost_per_mc_day * no_of_mc
-        total_holding_sum += holding_cost
-
-        # -------------------------------------------------
-        # PUSH ROW
-        # -------------------------------------------------
-        report_data.append({
-            "date": r.date,
-            "batch_number": r.batch_number,
-            "production_for": r.production_for,
-            "production_at": r.production_at,
-            "freezer": r.freezer,
-            "glaze": r.glaze,
-            "variety": r.variety,
-            "quantity": round(qty, 2),
-
-            # ✅ PRODUCTION COST (GLAZE ONLY)
-            "production_cost_per_kg": round(production_cost_per_kg, 2),
-            "payable_amount": round(payable_amount, 2),
-
-            # 🧊 HOLDING COST
-            "holding_free_days": free_days,
-            "holding_cost_per_mc_day": round(cost_per_mc_day, 2),
-            "holding_cost": round(holding_cost, 2)
-        })
-
-    # -------------------------------------------------
-    # FILTER LOOKUPS
-    # -------------------------------------------------
-    production_for_list = [
-        x[0] for x in
-        db.query(Inventory.production_for)
-        .filter(Inventory.company_id == company_code)
-        .distinct().all()
-    ]
-
-    production_at_list = [
-        x[0] for x in
-        db.query(Inventory.production_at)
-        .filter(Inventory.company_id == company_code)
-        .distinct().all()
-    ]
-
-    freezers_list = [
-        x[0] for x in
-        db.query(Inventory.freezer)
-        .filter(Inventory.company_id == company_code)
-        .distinct().all()
-    ]
-
-    # -------------------------------------------------
-    # RENDER
-    # -------------------------------------------------
+    # ✅ FIXED TemplateResponse: Latest FastAPI format
     return templates.TemplateResponse(
-        "reports/storage_report.html",
-        {
-            "request": request,
-            "report_data": report_data,
-            "total_payable_sum": round(total_payable_sum, 2),
-            "total_holding_sum": round(total_holding_sum, 2),
-            "total_qty_sum": round(total_qty_sum, 2),
-            "production_for_list": production_for_list,
-            "production_at_list": production_at_list,
-            "freezers": freezers_list,
-            "selected_from": from_date,
-            "selected_to": to_date
+        request=request,
+        name="reports/floor_balance_report.html",
+        context={
+            "rows_batch": rows_batch,
         }
     )
