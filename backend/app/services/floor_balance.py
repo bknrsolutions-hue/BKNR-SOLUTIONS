@@ -21,7 +21,7 @@ def get_floor_balance(
     CENTRAL FLOOR BALANCE CALCULATOR
     - RMP: Direct purchase for any variety (+)
     - Soaking In: Deduction from floor (-)
-    - Soaking Rejection: Recovery to floor (+)
+    - Soaking Rejection: Recovery to floor (+) ONLY if status is NOT 'Completed'
     """
 
     variety_upper = variety.strip().upper()
@@ -50,14 +50,16 @@ def get_floor_balance(
         Soaking.variety_name == variety_upper
     ).scalar()
 
-    # 3. Soaking Rejection (Recovery)
+    # 3. Soaking Rejection (Recovery) - FIXED LOGIC
+    # status 'Completed' అయితే ఆ సరుకు వాడేసినట్లు లెక్క, కాబట్టి అది ఫ్లోర్ మీద ఉండదు.
     soaking_rejection = db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)).filter(
         Soaking.company_id == company_id,
         Soaking.production_at == location,
         Soaking.batch_number == batch,
         Soaking.in_count == count,
         Soaking.species == species,
-        Soaking.variety_name == variety_upper
+        Soaking.variety_name == variety_upper,
+        Soaking.status != "Completed"  # <-- ఈ లైన్ వల్ల క్లోజర్ లాజిక్ పనిచేస్తుంది
     ).scalar()
 
     available = 0.0
