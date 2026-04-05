@@ -30,6 +30,7 @@ def inventory_costing_page(
 
     # 🔹 1. FETCH STOCK DATA (STRICTLY FOR THIS COMPANY)
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+    
     if from_date: 
         try: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
         except: pass
@@ -83,7 +84,7 @@ def inventory_costing_page(
         total_amt = rm_amt_map.get(lookup, 0)
         total_qty = stock_qty_map.get(lookup, 0)
 
-        # If RM data not found, fallback to sales reference rate
+        # Cost per KG calculation
         r.product_kg_value = round(total_amt / total_qty, 2) if total_qty > 0 else (r.sales_reference_rate or 0)
         r.inventory_value = round((float(r.quantity or 0)) * r.product_kg_value, 2)
 
@@ -95,16 +96,18 @@ def inventory_costing_page(
         peeling_y = float(v_master.peeling_yield or 100) / 100 if v_master else 1.0
         soaking_y = float(v_master.soaking_yield or 100) / 100 if v_master else 1.0
         
-        # Recalculating weight to HOSO level (Raw Material level weight)
+        # Recalculating weight back to raw material level (HOSO)
         try:
+            # Formula: Current Qty / (Peeling Yield % * Soaking Yield %)
             r.hoso_equivalent_weight = round(float(r.quantity or 0) / (peeling_y * soaking_y), 2)
         except ZeroDivisionError:
             r.hoso_equivalent_weight = r.quantity
 
+    # ✅ FIXED TEMPLATE RESPONSE: Added request=request to avoid TypeError
     return request.app.state.templates.TemplateResponse(
-        "inventory_management/inventory_costing.html",
-        {
-            "request": request, 
+        request=request,
+        name="inventory_management/inventory_costing.html",
+        context={
             "rows": rows, 
             "from_date": from_date,
             "to_date": to_date
