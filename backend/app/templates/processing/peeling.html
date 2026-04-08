@@ -284,6 +284,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 </div>
 
 <script>
+// RAW DATA FROM BACKEND
 const RAW_FLOOR = {{ hlso_floor_balance | safe if hlso_floor_balance else '[]' }};
 const DRILL_DATA = {{ drill_down_json | safe if drill_down_json else '{}' }};
 
@@ -336,8 +337,10 @@ function buildFloorTable(type, bodyId) {
     });
 
     if(type === 'HLSO') {
-        document.getElementById('gt_display').innerText = `TOTAL FLOOR: ${total.toFixed(2)} KG`;
-        document.getElementById('hlso_stat').innerText = `${Object.keys(tree).length} Companies`;
+        const gtEl = document.getElementById('gt_display');
+        const statEl = document.getElementById('hlso_stat');
+        if(gtEl) gtEl.innerText = `TOTAL FLOOR: ${total.toFixed(2)} KG`;
+        if(statEl) statEl.innerText = `${Object.keys(tree).length} Companies`;
     }
 
     Object.keys(tree).forEach((co, ci) => {
@@ -362,7 +365,8 @@ function buildFloorTable(type, bodyId) {
 }
 
 function buildTodaySummary() {
-    const body = document.getElementById('todaySummaryBody'); body.innerHTML = "";
+    const body = document.getElementById('todaySummaryBody'); if(!body) return;
+    body.innerHTML = "";
     let tree = {};
     document.querySelectorAll('#mainTableBody tr').forEach(tr => {
         if (tr.style.display === "none") return;
@@ -394,7 +398,8 @@ function buildTodaySummary() {
 }
 
 function buildContractorSummary() {
-    const body = document.getElementById('contractorSummaryBody'); body.innerHTML = "";
+    const body = document.getElementById('contractorSummaryBody'); if(!body) return;
+    body.innerHTML = "";
     let tree = {};
     document.querySelectorAll('#mainTableBody tr').forEach(tr => {
         if (tr.style.display === "none") return;
@@ -485,14 +490,15 @@ async function loadAvailableQty(){
     const batch = document.getElementById("f_batch").value;
     const count = document.getElementById("f_count").value;
     const spec = document.getElementById("f_species").value;
+    const variety = document.getElementById("f_variety").value;
 
-    if(!loc || !batch || !count || !spec) {
+    if(!loc || !batch || !count || !spec || !variety) {
         document.getElementById("floor_display").innerText = "0.00";
         return;
     }
 
     try {
-        const url = `/processing/peeling/get_available_qty?location=${encodeURIComponent(loc)}&batch=${encodeURIComponent(batch)}&hlso_count=${encodeURIComponent(count)}&species_name=${encodeURIComponent(spec)}`;
+        const url = `/processing/peeling/get_available_qty?location=${encodeURIComponent(loc)}&batch=${encodeURIComponent(batch)}&count=${encodeURIComponent(count)}&species_name=${encodeURIComponent(spec)}&variety_name=${encodeURIComponent(variety)}`;
         let r = await fetch(url);
         let d = await r.json();
         document.getElementById("floor_display").innerText = d.available_qty || "0.00";
@@ -515,6 +521,43 @@ function calc(){
     let r = parseFloat(document.getElementById("f_rate").value)||0;
     document.getElementById("f_yield").value = i ? ((o/i)*100).toFixed(2) : "0.00";
     document.getElementById("f_amount").value = (o * r).toFixed(2);
+}
+
+// Validation Logic for Insufficient Quantity
+async function submitPeelingForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            if (result.error) {
+                // అలర్ట్ బాక్స్ ద్వారా Insufficient Qty ఎర్రర్ చూపించడం
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Stock Limited!',
+                    text: result.error
+                });
+                return;
+            }
+        }
+
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            location.reload();
+        }
+
+    } catch (error) {
+        console.error("Save Error:", error);
+        alert("An error occurred while saving the entry.");
+    }
 }
 
 document.getElementById("f_qty_in").oninput = calc;
