@@ -1,3 +1,4 @@
+import pytz
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -32,6 +33,10 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
     company_code = request.session.get("company_code")
     if not company_code:
         return {"batches": []}
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
     # Floor balance list nundi batches extract cheyali
     rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species)\

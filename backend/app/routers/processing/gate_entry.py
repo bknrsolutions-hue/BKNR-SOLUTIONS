@@ -1,3 +1,4 @@
+import pytz
 import json
 from fastapi import APIRouter, Request, Depends, Form, BackgroundTasks
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
@@ -56,6 +57,10 @@ def load_dropdowns(db: Session, comp: str):
     ).distinct().all()
     
     prod_for_list = [p[0] for p in prod_for_data]
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
     # --- AUTO-INCREMENT LOGIC (For Suggestions only) ---
     last_batch_map = {}

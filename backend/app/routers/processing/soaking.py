@@ -1,3 +1,4 @@
+import pytz
 from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -28,6 +29,11 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
+    # ✅ INDIAN TIME (IST) LOGIC
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
     # [2026-01-24] Searchable Dropdowns Data - Fetching for Template
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]

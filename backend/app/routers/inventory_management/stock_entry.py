@@ -1,3 +1,4 @@
+import pytz
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
@@ -36,6 +37,10 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
     table_data = (
         db.query(stock_entry)

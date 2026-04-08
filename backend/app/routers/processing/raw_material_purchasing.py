@@ -1,3 +1,4 @@
+import pytz
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -29,6 +30,10 @@ def get_today_range():
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
     return start, end
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
 # -----------------------------------------------------
 # HOSO SUMMARY CALCULATION

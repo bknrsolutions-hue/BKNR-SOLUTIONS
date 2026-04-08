@@ -1,3 +1,4 @@
+import pytz
 import json
 import re
 from fastapi import APIRouter, Request, Depends, Form, Query
@@ -35,6 +36,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
+    IST = pytz.timezone('Asia/Kolkata')
+    ist_now = datetime.now(IST)
+    current_date = ist_now.date()
+    current_time = ist_now.time()
 
     # 1. FLOOR BALANCE CALCULATION (USING SERVICE CODE LOGIC)
     combos = set()
