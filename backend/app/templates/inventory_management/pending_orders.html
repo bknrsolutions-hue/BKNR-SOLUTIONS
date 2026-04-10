@@ -253,7 +253,7 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 <div class="section">
   <div class="form-grid">
     <div class="field"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
-    <div class="field"><label>Company Name</label><input name="company_name" id="company_name" value="{{ current_user_company if current_user_company else 'BKNR EXPORTS' }}" readonly required></div>
+    <div class="field"><label>Company Name</label><input name="company_name" id="company_name" value="{{ request.session.get('company_name') }}" readonly required></div>
     <div class="field"><label>PO Number</label><input name="po_number" required placeholder="Ex: PO-2024-001" value="{{ edit_rows[0].po_number if edit_rows else '' }}"></div>
     <div class="field">
       <label>Buyer</label>

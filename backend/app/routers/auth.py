@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import random, json, os, requests, secrets
-
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -184,6 +184,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 # =====================================================
 # LOGIN
 # =====================================================
+
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
@@ -201,7 +202,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
-
+    # ✅ SESSION SET
     request.session.update({
         "email": user.email,
         "company_id": company.id,
@@ -211,9 +212,19 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "permissions": user.permissions
     })
 
-    # Redirect బదులు ఇది రాయి:
-    return {"status": "success", "message": "Login Successful"}
+    # ✅ COOKIE RESPONSE (VERY IMPORTANT 🔥)
+    response = JSONResponse({
+        "status": "success",
+        "message": "Login Successful"
+    })
 
+    response.set_cookie(
+        key="session",
+        value="active",
+        httponly=True
+    )
+
+    return response
 
 # =====================================================
 # FORGOT PASSWORD

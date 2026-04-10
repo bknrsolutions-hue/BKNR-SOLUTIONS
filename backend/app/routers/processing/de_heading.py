@@ -214,7 +214,9 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
     )
     db.add(new_entry)
     db.commit()
-    return RedirectResponse("/processing/de_heading", status_code=303)
+
+    
+    return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
 # =====================================================
 # ACTION: DELETE ENTRY
@@ -228,3 +230,84 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
     db.query(DeHeading).filter(DeHeading.id == id, DeHeading.company_id == company_code).delete()
     db.commit()
     return JSONResponse({"status": "ok"})
+
+# =====================================================
+# API: MASTER DATA FOR REACT (DROPDOWNS + TODAY DATA)
+# =====================================================
+@router.get("/de_heading_data")
+def get_deheading_data(request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+
+    # 👉 session lekapothe empty return
+    if not company_code:
+        return {
+            "companies": [],
+            "locations": [],
+            "species": [],
+            "contractors": [],
+            "today_data": []
+        }
+
+    # ✅ contractor list
+    contractor_list = [
+        c.contractor_name
+        for c in db.query(contractors)
+        .filter(contractors.company_id == company_code)
+        .order_by(contractors.contractor_name)
+        .all()
+    ]
+
+    # ✅ species list
+    species_list = [
+        s.species_name
+        for s in db.query(SpeciesMaster)
+        .filter(SpeciesMaster.company_id == company_code)
+        .order_by(SpeciesMaster.species_name)
+        .all()
+    ]
+
+    # ✅ locations
+    location_list = [
+        p.peeling_at
+        for p in db.query(peeling_at)
+        .filter(peeling_at.company_id == company_code)
+        .all()
+    ]
+
+    # ✅ companies (production_for)
+    company_list = [
+        p[0]
+        for p in db.query(distinct(ProductionForMaster.production_for))
+        .filter(ProductionForMaster.company_id == company_code)
+        .all()
+        if p[0]
+    ]
+
+    # ✅ today entries
+    today = db.query(DeHeading).filter(
+        DeHeading.company_id == company_code,
+        DeHeading.date == date.today()
+    ).order_by(DeHeading.id.desc()).all()
+
+    return {
+        "companies": company_list,
+        "locations": location_list,
+        "species": species_list,
+        "contractors": contractor_list,
+        "today_data": [
+            {
+                "id": r.id,
+                "location": r.peeling_at,
+                "production_for": r.production_for,
+                "batch": r.batch_number,
+                "count": r.hoso_count,
+                "species": r.species,
+                "hoso": r.hoso_qty,
+                "hlso": r.hlso_qty,
+                "yield": r.yield_percent,
+                "contractor": r.contractor,
+                "amount": r.amount
+            }
+            for r in today
+        ]
+    }

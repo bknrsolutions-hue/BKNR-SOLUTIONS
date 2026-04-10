@@ -4,13 +4,25 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 # =====================================================
 # 🚀 1. APP INIT
 # =====================================================
 application = FastAPI(title="BKNR ERP", version="1.0.0")
+from fastapi.middleware.cors import CORSMiddleware
 
+application.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8081",
+        "http://10.215.174.77:8081"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # =====================================================
 # 📊 LOGGING
 # =====================================================
@@ -51,7 +63,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # బహిరంగంగా అందుబాటులో ఉండాల్సిన పాత్‌లు
         open_paths = (
             "/", "/auth/", "/static/",
-            "/health", "/docs", "/openapi.json", "/create-all"
+            "/health", "/docs", "/openapi.json", "/create-all" ,"/processing/"
         )
 
         if not any(path.startswith(p) for p in open_paths):
