@@ -104,7 +104,7 @@ from app.routers.inventory_management.pending_orders import router as pending_or
 from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
-
+from app.routers.summary.floor_balance_value import router as summary_floor_balance_value_router
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
 application.include_router(menu_router)
@@ -121,7 +121,7 @@ application.include_router(page_loader_router)
 application.include_router(attendance_router)
 application.include_router(summary_processing_router)
 application.include_router(summary_inventory_costing_router)
-
+application.include_router(summary_floor_balance_value_router)
 # Bills prefix
 application.include_router(bills_router, prefix="/api")
 

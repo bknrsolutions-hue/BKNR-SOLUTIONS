@@ -74,18 +74,23 @@ tr.selected{background:#dbeafe !important;}
 /* Precise Column Widths */
 .w-sl { width: 35px; }
 .w-dt { width: 75px; }
-.w-bt { width: 75px; }
+.w-bt { width: 85px; }
 .w-sp { width: 130px; }
-.w-vr { width: 90px; }
-.w-ct { width: 55px; }
-.w-qt { width: 55px; }
-.w-rt { width: 65px; }
-.w-am { width: 85px; }
-.w-bx { width: 55px; }
+.w-vr { width: 100px; }
+.w-bx { width: 60px; }
 .w-hs { width: 70px; }
+.w-ct { width: 60px; }
+.w-qt { width: 65px; }
+.w-rt { width: 65px; }
+.w-am { width: 90px; }
 .w-rm { width: 120px; }
+.w-em { width: 120px; }
 
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+
+/* Sub-total Row Style */
+.row-batch-total { background: #f1f5f9 !important; color: var(--primary) !important; font-weight: 800; text-align: left !important; }
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 5px; }
 
 /* ================= FOOTER ================= */
 tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:8px; color:var(--primary); }
@@ -149,10 +154,10 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-bt">Batch number</th>
                     <th class="w-sp">Supplier name</th>
                     <th class="w-vr">Variety</th>
-                    <th class="w-bx">material Boxes</th>
-                    <th class="w-hs">HSN code</th>
-                    <th class="w-vr"><Ri:d></Ri:d>Receiving center</th>
-                    <th class="w-vr">Production For</th>
+                    <th class="w-bx">Boxes</th>
+                    <th class="w-hs">HSN</th>
+                    <th class="w-vr">Center</th>
+                    <th class="w-vr">Production</th>
                     <th class="w-vr">Species</th>
                     <th class="w-ct">Count</th>
                     <th class="w-qt">G1</th>
@@ -165,41 +170,17 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-em">Email</th>
                 </tr>
             </thead>
-            <tbody id="tbody">
-                {% for r in rows %}
-                <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
-                    <td class="slno"></td>
-                    <td>{{ r.date }}</td>
-                    <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
-                    <td class="lookup supplier" data-field="supplier_name">{{ r.supplier_name }}</td>
-                    <td class="lookup variety" data-field="variety_name">{{ r.variety_name }}</td>
-                    <td class="editable" data-field="material_boxes">{{ r.material_boxes or 0 }}</td>
-                    <td class="editable" data-field="hsn_code">{{ r.hsn_code or "" }}</td>
-                    <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at or "" }}</td>
-                    <td class="lookup production" data-field="production_for">{{ r.production_for or "" }}</td>
-                    <td class="lookup species" data-field="species">{{ r.species }}</td>
-                    <td class="editable" data-field="count">{{ r.count }}</td>
-                    <td class="editable g1" data-field="g1_qty">{{ r.g1_qty or 0 }}</td>
-                    <td class="editable g2" data-field="g2_qty">{{ r.g2_qty or 0 }}</td>
-                    <td class="editable dc" data-field="dc_qty">{{ r.dc_qty or 0 }}</td>
-                    <td class="rec">{{ r.received_qty or 0 }}</td>
-                    <td class="editable rate" data-field="rate_per_kg">{{ r.rate_per_kg or 0 }}</td>
-                    <td class="amt">{{ r.amount or 0 }}</td>
-                    <td class="editable" data-field="remarks">{{ r.remarks or "" }}</td>
-                    <td>{{ r.email }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tbody id="tbody"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="7" style="text-align:right">TOTAL:</td>
+                    <td colspan="11" style="text-align:right">NET TOTAL:</td>
                     <td id="tot_g1">0</td>
                     <td id="tot_g2">0</td>
                     <td id="tot_dc">0</td>
                     <td id="tot_rec">0</td>
-                    <td></td>
+                    <td id="avg_net_rate" style="color:blue;">0</td>
                     <td id="tot_amt">0</td>
-                    <td colspan="5"></td>
+                    <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
@@ -223,6 +204,33 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 </div>
 
 <script>
+// Backend Data
+const rawData = [
+    {% for r in rows %}
+    {
+        id: "{{ r.id }}",
+        date: "{{ r.date }}",
+        batch_number: "{{ r.batch_number }}",
+        supplier_name: "{{ r.supplier_name }}",
+        variety_name: "{{ r.variety_name }}",
+        material_boxes: {{ r.material_boxes or 0 }},
+        hsn_code: "{{ r.hsn_code or '' }}",
+        peeling_at: "{{ r.peeling_at or '' }}",
+        production_for: "{{ r.production_for or '' }}",
+        species: "{{ r.species }}",
+        count: "{{ r.count }}",
+        g1_qty: {{ r.g1_qty or 0 }},
+        g2_qty: {{ r.g2_qty or 0 }},
+        dc_qty: {{ r.dc_qty or 0 }},
+        received_qty: {{ r.received_qty or 0 }},
+        rate_per_kg: {{ r.rate_per_kg or 0 }},
+        amount: {{ r.amount or 0 }},
+        remarks: "{{ r.remarks or '' }}",
+        email: "{{ r.email or '' }}"
+    },
+    {% endfor %}
+];
+
 const lookups = {
     supplier: {{ suppliers|tojson or [] }},
     variety: {{ varieties|tojson or [] }},
@@ -233,9 +241,13 @@ const lookups = {
 
 const baseUrl = "/reports/raw_material_purchasing";
 let selectedRow = null, currentAction = null;
-const allRows = [...document.querySelectorAll("#tbody tr")];
 
-function selectRow(tr) { allRows.forEach(r => r.classList.remove("selected")); tr.classList.add("selected"); selectedRow = tr; }
+function selectRow(tr) { 
+    if(tr.classList.contains("row-batch-total")) return;
+    document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected")); 
+    tr.classList.add("selected"); 
+    selectedRow = tr; 
+}
 
 function applyFilters() {
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
@@ -243,80 +255,91 @@ function applyFilters() {
     const fp = f_peeling.value.toLowerCase(), fh = f_hsn.value.toLowerCase(), fprod = f_production.value.toLowerCase();
     const q = searchBox.value.toLowerCase();
     
-    let g1=0, g2=0, dc=0, rec=0, amt=0;
-    let visibleRows = [];
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
 
-    allRows.forEach(r => {
-        const d = r.dataset.date, b = r.children[2].innerText.toLowerCase(), s = r.children[3].innerText.toLowerCase();
-        const v = r.children[4].innerText.toLowerCase(), p = r.children[15].innerText.toLowerCase();
-        const hsn = r.children[14].innerText.toLowerCase(), pfor = r.children[16].innerText.toLowerCase();
-        const text = r.innerText.toLowerCase();
-
+    let filtered = rawData.filter(d => {
         let ok = true;
-        if(f1 && d < f1) ok = false; if(f2 && d > f2) ok = false;
-        if(fb && b !== fb) ok = false; if(fs && s !== fs) ok = false;
-        if(fv && v !== fv) ok = false; if(fp && p !== fp) ok = false;
-        if(fh && hsn !== fh) ok = false; if(fprod && pfor !== fprod) ok = false;
-        if(q && !text.includes(q)) ok = false;
-
-        if(ok) {
-            r.style.display = ""; visibleRows.push(r);
-            g1 += parseFloat(r.querySelector(".g1").innerText)||0;
-            g2 += parseFloat(r.querySelector(".g2").innerText)||0;
-            dc += parseFloat(r.querySelector(".dc").innerText)||0;
-            rec += parseFloat(r.querySelector(".rec").innerText)||0;
-            amt += parseFloat(r.querySelector(".amt").innerText)||0;
-        } else { r.style.display = "none"; }
+        if(f1 && d.date < f1) ok = false;
+        if(f2 && d.date > f2) ok = false;
+        if(fb && d.batch_number.toLowerCase() !== fb) ok = false;
+        if(fs && d.supplier_name.toLowerCase() !== fs) ok = false;
+        if(fv && d.variety_name.toLowerCase() !== fv) ok = false;
+        if(fp && d.peeling_at.toLowerCase() !== fp) ok = false;
+        if(fh && d.hsn_code.toLowerCase() !== fh) ok = false;
+        if(fprod && d.production_for.toLowerCase() !== fprod) ok = false;
+        if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) ok = false;
+        return ok;
     });
 
-    let total = visibleRows.length;
-    visibleRows.forEach((r, idx) => { r.querySelector(".slno").innerText = total - idx; });
+    const groups = {};
+    let netG1=0, netG2=0, netDC=0, netRec=0, netAmt=0;
 
-    document.getElementById("rowCount").innerText = `${total} rows`;
-    tot_g1.innerText = g1.toFixed(2); tot_g2.innerText = g2.toFixed(2); tot_dc.innerText = dc.toFixed(2);
-    tot_rec.innerText = rec.toFixed(2); tot_amt.innerText = amt.toFixed(2);
-}
+    filtered.forEach(d => {
+        if(!groups[d.batch_number]) groups[d.batch_number] = { g1:0, g2:0, dc:0, rec:0, amt:0, items:[] };
+        groups[d.batch_number].g1 += d.g1_qty;
+        groups[d.batch_number].g2 += d.g2_qty;
+        groups[d.batch_number].dc += d.dc_qty;
+        groups[d.batch_number].rec += d.received_qty;
+        groups[d.batch_number].amt += d.amount;
+        groups[d.batch_number].items.push(d);
+        netG1 += d.g1_qty; netG2 += d.g2_qty; netDC += d.dc_qty; netRec += d.received_qty; netAmt += d.amount;
+    });
 
-function askConfirm(action) { 
-    currentAction = action; 
-    document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ')}?`; 
-    document.getElementById("confirmModal").style.display = "flex"; 
-}
+    let sl = 1;
+    for(let b in groups) {
+        const g = groups[b];
+        const trSub = document.createElement("tr");
+        trSub.className = "row-batch-total";
+        trSub.innerHTML = `<td colspan="11">BATCH: ${b} TOTAL</td><td class="qty-bold">${g.g1.toFixed(2)}</td><td class="qty-bold">${g.g2.toFixed(2)}</td><td class="qty-bold">${g.dc.toFixed(2)}</td><td class="qty-bold">${g.rec.toFixed(2)}</td><td class="qty-bold" style="color:var(--accent)">${g.rec>0?(g.amt/g.rec).toFixed(2):"0.00"}</td><td class="qty-bold">${g.amt.toLocaleString('en-IN',{minimumFractionDigits:2})}</td><td colspan="2"></td>`;
+        tbody.appendChild(trSub);
 
-function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
-
-document.getElementById("btnYes").onclick = () => {
-    closeModal();
-    const ids = allRows.filter(r => r.style.display !== "none").map(r => r.dataset.id).join(",");
-    if(!ids && currentAction !== 'delete_row') return alert("No rows visible for export!");
-
-    // Handle Actions
-    if (currentAction === 'print_table') {
-        window.print();
-    } else if (currentAction === 'print_summary') {
-        window.open(`${baseUrl}/print_summary?ids=${ids}`, '_blank');
-    } else if (currentAction === 'excel_table') {
-        window.location.href = `${baseUrl}/export_excel?type=table&ids=${ids}`;
-    } else if (currentAction === 'excel_summary') {
-        window.location.href = `${baseUrl}/export_excel?type=summary&ids=${ids}`;
-    } else if (currentAction === 'pdf_table') {
-        // Correct PDF hit for download instead of browser print
-        window.open(`${baseUrl}/export_pdf?type=table&ids=${ids}`, '_blank');
-    } else if (currentAction === 'pdf_summary') {
-        window.open(`${baseUrl}/export_pdf?type=summary&ids=${ids}`, '_blank');
-    } else if (currentAction === 'delete_row') {
-        deleteRowAction();
+        g.items.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.dataset.id = r.id;
+            tr.onclick = () => selectRow(tr);
+            tr.innerHTML = `
+                <td>${sl++}</td>
+                <td>${r.date}</td>
+                <td class="editable" data-field="batch_number">${r.batch_number}</td>
+                <td class="lookup supplier" data-field="supplier_name">${r.supplier_name}</td>
+                <td class="lookup variety" data-field="variety_name">${r.variety_name}</td>
+                <td class="editable" data-field="material_boxes">${r.material_boxes}</td>
+                <td class="editable" data-field="hsn_code">${r.hsn_code}</td>
+                <td class="lookup peeling" data-field="peeling_at">${r.peeling_at}</td>
+                <td class="lookup production" data-field="production_for">${r.production_for}</td>
+                <td class="lookup species" data-field="species">${r.species}</td>
+                <td class="editable" data-field="count">${r.count}</td>
+                <td class="g1">${r.g1_qty.toFixed(2)}</td>
+                <td class="g2">${r.g2_qty.toFixed(2)}</td>
+                <td class="dc">${r.dc_qty.toFixed(2)}</td>
+                <td class="rec">${r.received_qty.toFixed(2)}</td>
+                <td class="editable rate" data-field="rate_per_kg">${r.rate_per_kg.toFixed(2)}</td>
+                <td class="amt">${r.amount.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+                <td class="editable" data-field="remarks">${r.remarks}</td>
+                <td>${r.email}</td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
-};
+    document.getElementById("rowCount").innerText = `${filtered.length} rows`;
+    tot_g1.innerText = netG1.toFixed(2); tot_g2.innerText = netG2.toFixed(2); tot_dc.innerText = netDC.toFixed(2);
+    tot_rec.innerText = netRec.toFixed(2); tot_amt.innerText = netAmt.toLocaleString('en-IN',{minimumFractionDigits:2});
+    avg_net_rate.innerText = netRec > 0 ? (netAmt/netRec).toFixed(2) : "0.00";
+}
 
+// ================= EDIT FUNCTIONS FIXED =================
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.trim();
+        const field = td.dataset.field;
         if(td.classList.contains("lookup")){
             const type = td.classList[1]; const opts = lookups[type] || [];
-            td.innerHTML = `<select class="edit-input">${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;
-        } else { td.innerHTML = `<input class="edit-input" value="${val}">`; }
+            td.innerHTML = `<select class="edit-input" data-field="${field}">${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;
+        } else { 
+            td.innerHTML = `<input class="edit-input" data-field="${field}" value="${val}">`; 
+        }
     });
 }
 
@@ -325,9 +348,17 @@ async function saveEdit() {
     const payload = { id: selectedRow.dataset.id };
     const inputs = selectedRow.querySelectorAll(".edit-input");
     if(!inputs.length) return alert("Enable Edit mode first!");
-    inputs.forEach(i => payload[i.parentElement.dataset.field] = i.value);
-    const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) location.reload(); else alert("Error updating row.");
+    
+    inputs.forEach(i => { payload[i.dataset.field] = i.value; });
+
+    const res = await fetch(`${baseUrl}/update`, { 
+        method:"POST", 
+        headers:{"Content-Type":"application/json"}, 
+        body:JSON.stringify(payload) 
+    });
+    
+    if(res.ok) location.reload(); 
+    else alert("Error updating row.");
 }
 
 async function deleteRowAction() {
@@ -336,25 +367,44 @@ async function deleteRowAction() {
     if(res.ok) location.reload();
 }
 
+function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
+function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
+function askConfirm(action) { currentAction = action; document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ')}?`; document.getElementById("confirmModal").style.display = "flex"; }
+
+document.getElementById("btnYes").onclick = () => {
+    closeModal();
+    const visibleIds = [...document.querySelectorAll("#tbody tr[data-id]")].map(tr => tr.dataset.id).join(",");
+    if (currentAction === 'print_table') window.print();
+    else if (currentAction === 'delete_row') deleteRowAction();
+    else if (currentAction.startsWith('excel') || currentAction.startsWith('pdf') || currentAction === 'print_summary') {
+        const actionMap = {
+            'print_summary': `${baseUrl}/print_summary?ids=${visibleIds}`,
+            'excel_table': `${baseUrl}/export_excel?type=table&ids=${visibleIds}`,
+            'excel_summary': `${baseUrl}/export_excel?type=summary&ids=${visibleIds}`,
+            'pdf_table': `${baseUrl}/export_pdf?type=table&ids=${visibleIds}`,
+            'pdf_summary': `${baseUrl}/export_pdf?type=summary&ids=${visibleIds}`
+        };
+        window.open(actionMap[currentAction], '_blank');
+    }
+};
+
 function toggleAudit() {
-    const p = document.getElementById("auditPanel");
-    p.style.display = p.style.display === "flex" ? "none" : "flex";
-    if(p.style.display === "flex") {
-        fetch(`${baseUrl}/audit`).then(r=>r.json()).then(data=>{
+    const p = document.getElementById("auditPanel"); 
+    p.style.display = p.style.display==="flex"?"none":"flex";
+    if(p.style.display==="flex") {
+        fetch("/reports/raw_material_purchasing/audit").then(r=>r.json()).then(data=>{
             document.getElementById("auditContent").innerHTML = data.map(l=>`
                 <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
                     <b>REC: ${l.record_id}</b> | ${l.time}<br>
-                    Field: ${l.field} | By: ${l.user}<br>
-                    <span style="color:red; text-decoration:line-through;">${l.old}</span> → <span style="color:green; font-weight:bold;">${l.new}</span>
+                    Field: ${l.field}<br>
+                    <span style="color:red;">${l.old}</span> → <span style="color:green;">${l.new}</span>
                 </div>
             `).join("");
         });
     }
 }
 
-function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
-document.onclick = () => document.getElementById("mainMenu").style.display="none";
-
+document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 [f_from, f_to, f_batch, f_supplier, f_variety, f_peeling, f_hsn, f_production].forEach(el => el.onchange = applyFilters);
 searchBox.oninput = applyFilters;
 applyFilters();

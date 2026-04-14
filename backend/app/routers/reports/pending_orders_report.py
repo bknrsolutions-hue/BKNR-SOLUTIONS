@@ -83,7 +83,7 @@ def pending_orders_report_page(
 
     # 5. Processing Loop
     for r in rows:
-        current_row_comp = str(r.company_name or "").strip().upper() 
+        current_row_comp = str(r.buyer or "").strip().upper() 
         p_spec = str(r.species or "").strip().lower()
         p_var = str(r.variety or "").strip().lower()
         p_grad = str(r.grade or "").strip().lower()

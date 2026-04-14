@@ -66,6 +66,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     def get_lookup(model, field_name):
         return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
 
+    # ✅ FIXED: TemplateResponse for new FastAPI versions
     return templates.TemplateResponse(
         request=request,
         name="inventory_management/pending_orders.html",
@@ -114,16 +115,9 @@ def save_pending_orders(
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
+    company_name = request.session.get("company_name")
     email = request.session.get("email")
     
-    # ✅ FIX: Fetch Company Name from session or DB to avoid None
-    company_name = request.session.get("company_name")
-    if not company_name:
-        comp_obj = db.query(Company).filter(Company.company_code == company_code).first()
-        company_name = comp_obj.company_name if comp_obj else "Unknown"
-        # భవిష్యత్తు కోసం సెషన్‌లో అప్‌డేట్ చేస్తున్నాం
-        request.session["company_name"] = company_name
-
     existing_status = db.query(pending_orders.progress_steps).filter(
         pending_orders.company_id == company_code, 
         pending_orders.po_number == po_number
@@ -224,6 +218,7 @@ def sales_report_page(request: Request, company: str = Query("all"), db: Session
 
     query = db.query(sales_dispatch)
     
+    # [2026-01-03] Company wise data filter logic
     if company != "all":
         query = query.filter(sales_dispatch.company_id == company)
     else:

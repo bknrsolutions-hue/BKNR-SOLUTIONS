@@ -366,9 +366,14 @@ function loadSummaries(){
                <i class="fa-solid fa-calculator"></i> Inventory Costing
              </button>`;
 
+  // ఇక్కడ "/summary/floor_balance" ని "/summary/floor_balance_value" గా మార్చు
+  if(allow("floor_balance_value")) 
+    html += `<button onclick="openPage('/summary/floor_balance_value')">
+               <i class="fa-solid fa-rectangle-list"></i> Floor Balance Value
+             </button>`;
+             
   document.getElementById("sideMenu").innerHTML = html;
 }
-
 /******** BILLS & OPERATIONS *********/
 function loadBills() {
   let html = `<h3>Utilities & Operations Management</h3>`;

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FLOOR BALANCE VALUE | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+ --primary:#0f172a;
+ --accent:#2563eb;
+ --border:#e2e8f0;
+ --bg:#f1f5f9;
+ --header:#ffffff;
+ --text:#1e293b;
+ --success:#10b981;
+}
+
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+
+/* ================= HEADER & FILTERS (RMP STYLE) ================= */
+.header{ background:var(--header); padding:10px 20px; border-bottom:1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.header h2{ margin:0; font-size:16px; font-weight:800; color:var(--primary); letter-spacing:0.5px; }
+
+.filters{
+ display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+ gap:8px; background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border);
+}
+.fbox{display:flex;flex-direction:column;gap:3px;}
+.fbox label{ font-size:9px; font-weight:800; color:#64748b; text-transform:uppercase; }
+
+select, #searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; transition: 0.2s; }
+select:focus, #searchBox:focus{ border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+
+/* ================= ACTIONS ================= */
+.actions{ background:#fff; padding:8px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+#rowCount{ font-size:11px; font-weight:700; color:var(--accent); background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
+.btn-print{ font-size:11px; cursor:pointer; color:#fff; background:var(--primary); padding:6px 15px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; }
+.btn-print:hover{ background:var(--accent); }
+
+/* ================= TABLE AREA (RMP STYLE) ================= */
+.section{ flex:1; margin:10px; background:#fff; border:1px solid var(--border); border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100px; } 
+
+thead th{
+ background:#f8fafc; padding:10px 5px; font-size:10px; font-weight:800;
+ text-transform:uppercase; border-bottom:2px solid var(--border);
+ border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:20; color:#475569;
+}
+
+tbody td{
+ padding:8px 5px; font-size:11px; border-bottom:1px solid #f1f5f9;
+ border-right:1px solid #f8fafc; text-align:center;
+ white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* Grouping Styles */
+.row-loc { background: #1e293b !important; color: #ffffff !important; font-weight: 800; text-align: left !important; }
+.row-comp { background: #f0f9ff !important; color: var(--accent) !important; font-weight: 700; text-align: left !important; }
+.row-var { background: #f8fafc !important; color: var(--primary) !important; font-weight: 700; text-align: left !important; }
+
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 12px !important; }
+.val-column { background: #fffbeb; color: #92400e; font-weight: 700; }
+
+/* Precise Column Widths */
+.w-sl { width: 45px; }
+.w-loc { width: 120px; }
+.w-prod { width: 150px; }
+.w-bt { width: 100px; }
+.w-sp { width: 120px; }
+.w-vr { width: 140px; }
+.w-ct { width: 80px; }
+.w-qt { width: 100px; }
+.w-vl { width: 120px; } 
+
+tfoot td{ background:#f8fafc; font-weight:800; font-size:12px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+
+@media print {
+    .filters, .actions, .header-top button { display: none !important; }
+    .section { border: none; margin: 0; }
+    body { background: #fff; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="header-top">
+        <h2>Floor Balance Value Summary</h2>
+        <button class="btn-print" onclick="window.print()">🖨 Print Report</button>
+    </div>
+    <div class="filters">
+        <div class="fbox"><label>Location</label><select id="f_location"><option value="">All Locations</option>{% for l in rows_batch|map(attribute='location')|unique %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Production For</label><select id="f_production"><option value="">All Production</option>{% for p in rows_batch|map(attribute='production_for')|unique %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option>{% for v in rows_batch|map(attribute='variety')|unique %}<option value="{{ v }}">{{ v }}</option>{% endfor %}</select></div>
+        <div class="fbox" style="grid-column: span 2;"><label>Search</label><input id="searchBox" placeholder="Search by Batch, Species..."></div>
+    </div>
+</div>
+
+<div class="actions">
+    <div id="rowCount">0 Records Found</div>
+    <div style="font-size: 10px; color: #64748b;">* Value calculated based on Yields and RMP Avg Rates</div>
+</div>
+
+<div class="section">
+    <div class="table-wrap">
+        <table id="rmpTable">
+            <thead>
+                <tr>
+                    <th class="w-sl">#</th>
+                    <th class="w-loc">Location</th>
+                    <th class="w-prod">Production For</th>
+                    <th class="w-bt">Batch No</th>
+                    <th class="w-sp">Species</th>
+                    <th class="w-vr">Variety</th>
+                    <th class="w-ct">Count</th>
+                    <th class="w-qt">Qty (Kg)</th>
+                    <th class="w-vl">Value (₹)</th> 
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7" style="text-align:right">GRAND TOTAL:</td>
+                    <td id="net_qty" class="qty-bold">0.00</td>
+                    <td id="net_value" class="qty-bold" style="color:var(--success);">0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<script>
+// Backend నుండి వచ్చే డేటాను ఇక్కడ స్టోర్ చేస్తున్నాం
+const rawData = [
+    {% for r in rows_batch %}
+    {
+        location: "{{ r.location or 'Floor' }}",
+        production_for: "{{ r.production_for or 'General' }}",
+        batch: "{{ r.batch }}",
+        species: "{{ r.species }}",
+        variety: "{{ r.variety }}",
+        count: "{{ r.count }}",
+        qty: {{ r.available_qty or 0 }},
+        // రూటర్ లో మనం క్యాలిక్యులేట్ చేసిన వాల్యూ ఇక్కడకు వస్తుంది
+        value: {{ r.value or 0 }} 
+    },
+    {% endfor %}
+];
+
+function applyFilters() {
+    const fLoc = document.getElementById("f_location").value;
+    const fProd = document.getElementById("f_production").value;
+    const fVar = document.getElementById("f_variety").value;
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    let filtered = rawData.filter(d => {
+        let ok = true;
+        if(fLoc && d.location !== fLoc) ok = false;
+        if(fProd && d.production_for !== fProd) ok = false;
+        if(fVar && d.variety !== fVar) ok = false;
+        if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) ok = false;
+        return ok;
+    });
+
+    // Sorting by Location and Production For
+    filtered.sort((a, b) => a.location.localeCompare(b.location) || a.production_for.localeCompare(b.production_for));
+
+    const tree = {};
+    let grandQty = 0;
+    let grandValue = 0;
+
+    // Tree Building for Grouping
+    filtered.forEach(d => {
+        if(!tree[d.location]) tree[d.location] = { qty: 0, val: 0, comps: {} };
+        if(!tree[d.location].comps[d.production_for]) tree[d.location].comps[d.production_for] = { qty: 0, val: 0, vars: {} };
+        if(!tree[d.location].comps[d.production_for].vars[d.variety]) tree[d.location].comps[d.production_for].vars[d.variety] = { qty: 0, val: 0, items: [] };
+        
+        tree[d.location].qty += d.qty;
+        tree[d.location].val += d.value;
+        tree[d.location].comps[d.production_for].qty += d.qty;
+        tree[d.location].comps[d.production_for].val += d.value;
+        tree[d.location].comps[d.production_for].vars[d.variety].qty += d.qty;
+        tree[d.location].comps[d.production_for].vars[d.variety].val += d.value;
+        tree[d.location].comps[d.production_for].vars[d.variety].items.push(d);
+        
+        grandQty += d.qty;
+        grandValue += d.value;
+    });
+
+    let sl = 1;
+    for(let l in tree){
+        insertSubRow(`${l} TOTAL`, tree[l].qty, tree[l].val, "row-loc");
+        for(let c in tree[l].comps){
+            insertSubRow(`-- ${c} TOTAL`, tree[l].comps[c].qty, tree[l].comps[c].val, "row-comp");
+            for(let v in tree[l].comps[c].vars){
+                insertSubRow(`---- ${v} TOTAL`, tree[l].comps[c].vars[v].qty, tree[l].comps[c].vars[v].val, "row-var");
+                tree[l].comps[c].vars[v].items.forEach(item => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${sl++}</td>
+                        <td>${item.location}</td>
+                        <td>${item.production_for}</td>
+                        <td><b>${item.batch}</b></td>
+                        <td>${item.species}</td>
+                        <td>${item.variety}</td>
+                        <td>${item.count}</td>
+                        <td class="qty-bold">${item.qty.toFixed(2)}</td>
+                        <td class="qty-bold val-column">${item.value.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+    }
+    
+    document.getElementById("rowCount").innerText = `${filtered.length} Records Found`;
+    document.getElementById("net_qty").innerText = grandQty.toFixed(2);
+    document.getElementById("net_value").innerText = grandValue.toLocaleString('en-IN',{minimumFractionDigits:2});
+}
+
+function insertSubRow(label, qty, val, cls) {
+    const tr = document.createElement("tr");
+    tr.className = cls;
+    tr.innerHTML = `
+        <td colspan="7" style="padding-left:15px; text-align:left;">${label}</td>
+        <td class="qty-bold">${qty.toFixed(2)}</td>
+        <td class="qty-bold">${val.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+    `;
+    document.getElementById("tbody").appendChild(tr);
+}
+
+// Event Listeners
+[f_location, f_production, f_variety].forEach(el => el.onchange = applyFilters);
+searchBox.oninput = applyFilters;
+
+// Initialize
+applyFilters();
+</script>
+</body>
+</html>

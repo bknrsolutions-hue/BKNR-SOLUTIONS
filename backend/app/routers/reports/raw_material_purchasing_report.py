@@ -84,6 +84,34 @@ def report_page(request: Request, db: Session = Depends(get_db)):
         }
     )
 
+# ============================================================
+# FETCH ALL AUDIT LOGS (FIXED FOR RMP)
+# ============================================================
+
+@router.get("/audit")
+def fetch_all_audit_logs(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    comp_code = request.session.get("company_code")
+
+    # ఇక్కడ table_name ని "rmp" కి మార్చాను, ఎందుకంటే RMP అప్డేట్స్ "rmp" పేరుతో సేవ్ అవుతాయి.
+    logs = db.query(AuditLog).filter(
+        AuditLog.table_name == "rmp",
+        AuditLog.company_id == comp_code
+    ).order_by(AuditLog.edited_at.desc()).all()
+
+    return [
+        {
+            "record_id": log.record_id,
+            "field": log.field_name, # ఏ కాలమ్ మారిందో అది ఇక్కడ వస్తుంది
+            "old": log.old_value,
+            "new": log.new_value,
+            "user": log.edited_by,
+            "time": log.edited_at.strftime("%d-%m-%Y %H:%M:%S")
+        }
+        for log in logs
+    ]
 # -----------------------------------------------------------
 # UPDATE ENTRY
 # -----------------------------------------------------------
@@ -125,8 +153,6 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     rate = float(row.rate_per_kg or 0)
     
     row.received_qty = round(g1 + g2 + dc, 2)
-    # Note: G2 quantity normally halved only if industry specific rule applies, 
-    # but standard is (G1+G2+DC) * Rate. Adjust if needed.
     row.amount = round(row.received_qty * rate, 2)
     
     db.commit()
