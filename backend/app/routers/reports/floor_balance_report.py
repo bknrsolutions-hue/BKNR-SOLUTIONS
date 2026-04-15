@@ -117,9 +117,8 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     ))
 
     return templates.TemplateResponse(
-        "reports/floor_balance_report.html",
-        {
-            "request": request, 
-            "rows_batch": rows_batch
-        }
-    )
+    request,
+    "reports/floor_balance_report.html",
+    {"request": request, "data": data}
+)
+    
