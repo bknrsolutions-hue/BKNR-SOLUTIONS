@@ -11,7 +11,7 @@ from app.routers.reports.soaking_report import router as soaking_router
 from app.routers.reports.production_report import router as production_router
 from app.routers.reports.floor_balance_report import router as floor_balance_router
 from app.routers.reports.storage_cost_report import router as storage_cost_router
-
+from app.routers.reports.reprocess_report import router as reprocess_router
 # 🔥 PENDING ORDERS REPORT
 from app.routers.reports.pending_orders_report import router as pending_orders_router
 
@@ -32,6 +32,7 @@ router.include_router(soaking_router)
 router.include_router(production_router)
 router.include_router(floor_balance_router)
 router.include_router(storage_cost_router)
+router.include_router(reprocess_router)
 
 # 🔥 MOST IMPORTANT
 router.include_router(pending_orders_router)

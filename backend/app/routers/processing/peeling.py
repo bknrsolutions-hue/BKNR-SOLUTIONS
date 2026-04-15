@@ -10,6 +10,7 @@ from sqlalchemy import func, distinct
 
 from app.database import get_db
 from app.database.models.processing import Grading, Peeling, RawMaterialPurchasing
+from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     varieties, 
     contractors, 
@@ -36,17 +37,21 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
+    
     IST = pytz.timezone('Asia/Kolkata')
     ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
-
-    # 1. FLOOR BALANCE CALCULATION (USING SERVICE CODE LOGIC)
+    
+    # 1. FLOOR BALANCE CALCULATION (INCLUDING REPROCESS)
     combos = set()
     
     # RMP records
-    rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_id).all()
-    for r in rmp_q: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at))
+    rmp_q = db.query(
+        RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, 
+        RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, 
+        RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at
+    ).filter(RawMaterialPurchasing.company_id == company_id).all()
+    for r in rmp_q: 
+        if r.batch_number: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
 
     # Grading (In) records - Excluding HOSO
     grading_data = db.query(
@@ -54,7 +59,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         Grading.variety_name, Grading.production_for, Grading.peeling_at
     ).filter(Grading.company_id == company_id, ~Grading.variety_name.ilike("%HOSO%")).all()
     for g in grading_data:
-        combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at))
+        if g.batch_number: combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at or "Floor", "RMP"))
 
     # Peeling (Out) records
     peeling_data = db.query(
@@ -62,14 +67,31 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         Peeling.variety_name, Peeling.production_for, Peeling.peeling_at
     ).filter(Peeling.company_id == company_id, ~Peeling.variety_name.ilike("%HOSO%")).all()
     for p in peeling_data:
-        combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, p.production_for, p.peeling_at))
+        if p.batch_number: combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, p.production_for, p.peeling_at or "Floor", "RMP"))
+
+    # Reprocess records
+    repro_data = db.query(
+        Reprocess.new_batch_id, Reprocess.grade, Reprocess.species, 
+        Reprocess.variety, Reprocess.production_for, Reprocess.production_at
+    ).filter(Reprocess.company_id == company_id, Reprocess.reprocess_type != 'SALES', ~Reprocess.variety.ilike("%HOSO%")).all()
+    for r in repro_data:
+        if r.new_batch_id: combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS"))
 
     hlso_floor_balance = []
-    for batch, count, spc, variety, prod_for, location in combos:
+    for batch, count, spc, variety, prod_for, location, s_type in combos:
         loc = location if location else "Floor"
         
-        # ✅ Fetching available quantity from service
-        qty = get_floor_balance(db, company_id, loc, batch, count, spc, variety)
+        qty = get_floor_balance(
+            db=db, 
+            company_id=company_id, 
+            location=loc, 
+            batch=batch, 
+            count=count if count != "N/A" else None, 
+            species=spc if spc != "N/A" else None, 
+            variety=variety if variety != "N/A" else None,
+            production_for=prod_for if prod_for != "N/A" else None,
+            source_type=s_type
+        )
         
         if qty and qty > 0.01:
             hlso_floor_balance.append({
@@ -77,14 +99,14 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 "variety": variety or "N/A", 
                 "count": count or "N/A",
                 "species": spc or "N/A", 
-                "production_for": prod_for or "N/A", 
+                "production_for": prod_for or "General Stock", 
                 "location": loc,
                 "available_qty": round(qty, 2)
             })
     
-    hlso_floor_balance = sorted(hlso_floor_balance, key=lambda x: (x["production_for"], x["location"], x["batch"]))
+    hlso_floor_balance = sorted(hlso_floor_balance, key=lambda x: (str(x["production_for"]), str(x["location"]), str(x["batch"])))
 
-    # 2. REQUIRED HLSO (DRILL DOWN LOGIC - REMAINING AS IS)
+    # 2. REQUIRED HLSO (DRILL DOWN LOGIC)
     p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_id).all()
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_id).all()
     v_records = db.query(varieties).filter(varieties.company_id == company_id).all()
@@ -144,7 +166,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 hlso_summary[summary_key]["total_kg"] += req_hlso_qty
                 drill_down_data["hlso"][summary_key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hlso_qty})
 
-    # 3. SEARCHABLE MASTER LISTS [2026-01-24]
+    # 3. MASTER LISTS
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
     contractor_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
     species_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
@@ -176,15 +198,17 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
     
-    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for, RawMaterialPurchasing.variety_name.ilike("%HLSO%")).all()
-    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for, Grading.variety_name.ilike("%HLSO%")).all()
-    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for, Peeling.variety_name.ilike("%HLSO%")).all()
-    all_batches = set([b[0] for b in r1 if b[0]]) | set([b[0] for b in r2 if b[0]]) | set([b[0] for b in r3 if b[0]])
+    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for, ~RawMaterialPurchasing.variety_name.ilike("%HOSO%")).all()
+    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for, ~Grading.variety_name.ilike("%HOSO%")).all()
+    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for, ~Peeling.variety_name.ilike("%HOSO%")).all()
+    r4 = db.query(distinct(Reprocess.new_batch_id)).filter(Reprocess.company_id == company_id, Reprocess.production_for == prod_for, ~Reprocess.variety.ilike("%HOSO%")).all()
+    
+    all_batches = set([b[0] for b in r1 if b[0]]) | set([b[0] for b in r2 if b[0]]) | set([b[0] for b in r3 if b[0]]) | set([b[0] for b in r4 if b[0]])
     
     valid_batches = []
     for b_no in all_batches:
         total_bal = get_floor_balance(db, company_id, None, b_no, None, None, None)
-        if total_bal > 0.05:
+        if total_bal > 0.01:
             valid_batches.append(b_no)
     return {"batches": sorted(valid_batches)}
 
@@ -192,24 +216,51 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
 def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     
-    c1 = db.query(Grading.graded_count, Grading.species, Grading.variety_name, Grading.peeling_at).filter(Grading.company_id == company_id, Grading.batch_number == batch, Grading.variety_name.ilike("%HLSO%")).all()
-    c2 = db.query(Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.peeling_at).filter(Peeling.company_id == company_id, Peeling.batch_number == batch, Peeling.variety_name.ilike("%HLSO%")).all()
-    c3 = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.variety_name.ilike("%HLSO%")).all()
+    # 1. Sources నుంచి డేటా కలెక్ట్ చేయడం
+    # Grading Source
+    c1 = db.query(Grading.graded_count, Grading.species, Grading.variety_name, Grading.peeling_at).filter(
+        Grading.company_id == company_id, Grading.batch_number == batch, ~Grading.variety_name.ilike("%HOSO%")
+    ).all()
     
-    combos = set(c1) | set(c2) | set(c3)
+    # Peeling Source (In case of partial peeling)
+    c2 = db.query(Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.peeling_at).filter(
+        Peeling.company_id == company_id, Peeling.batch_number == batch, ~Peeling.variety_name.ilike("%HOSO%")
+    ).all()
+    
+    # RMP Source
+    c3 = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.peeling_at).filter(
+        RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch, ~RawMaterialPurchasing.variety_name.ilike("%HOSO%")
+    ).all()
+    
+    # Reprocess Source - ఇక్కడ 'grade' ని తీసుకుంటున్నాం
+    c4 = db.query(Reprocess.grade, Reprocess.species, Reprocess.variety, Reprocess.production_at).filter(
+        Reprocess.company_id == company_id, Reprocess.new_batch_id == batch, ~Reprocess.variety.ilike("%HOSO%")
+    ).all()
+    
+    # అన్నింటినీ ఒకే సెట్ లోకి చేర్చడం (De-duplication)
+    combos = set()
+    for row in c1: combos.add((row[0], row[1], row[2], row[3]))
+    for row in c2: combos.add((row[0], row[1], row[2], row[3]))
+    for row in c3: combos.add((row[0], row[1], row[2], row[3]))
+    for row in c4: combos.add((row[0], row[1], row[2], row[3]))
+    
     valid_counts = set()
     species_map = {}
     variety_map = {}
 
     for count, spc, var, loc in combos:
-        if not count: continue
+        if not count or str(count).strip() == "" or str(count).upper() == "N/A":
+            continue
+        
         location = loc if loc else "Floor"
+        # Floor Balance చెక్ చేయడం
         qty = get_floor_balance(db, company_id, location, batch, count, spc, var)
         
         if qty > 0.01:
-            valid_counts.add(count)
-            species_map[str(count)] = spc
-            variety_map[str(count)] = var
+            count_str = str(count).strip()
+            valid_counts.add(count_str)
+            species_map[count_str] = spc if spc else "N/A"
+            variety_map[count_str] = var if var else "N/A"
 
     return {
         "counts": sorted(list(valid_counts)),
@@ -218,14 +269,26 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
     }
 
 @router.get("/peeling/get_available_qty")
-def get_available_qty(request: Request, location: str = Query(...), batch: str = Query(...), 
-                        count: str = Query(...), species_name: str = Query(...), variety_name: str = Query(...), db: Session = Depends(get_db)):
+def get_available_qty(
+    request: Request,
+    location: str = Query(...), 
+    batch: str = Query(...), 
+    count: str = Query(...), 
+    species_name: str = Query(...), 
+    variety_name: str = Query(...), 
+    db: Session = Depends(get_db)
+):
     company_id = request.session.get("company_code")
     qty = get_floor_balance(db, company_id, location, batch, count, species_name, variety_name)
     return {"available_qty": round(max(qty, 0), 2)}
 
 @router.get("/peeling/get_rate")
-def get_rate(contractor: str, variety: str, request: Request, db: Session = Depends(get_db)):
+def get_rate(
+    request: Request,
+    contractor: str = Query(...), 
+    variety: str = Query(...), 
+    db: Session = Depends(get_db)
+):
     company_id = request.session.get("company_code")
     row = db.query(peeling_rates.rate).filter(
         peeling_rates.company_id == company_id, 
@@ -251,18 +314,14 @@ def save_peeling(
     company_id = request.session.get("company_code")
     if not email or not company_id: return RedirectResponse("/auth/login", status_code=303)
 
-    # ✅ Crucial Validation: Fetch fresh balance before saving
     avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, variety_name)
     
-    # 0.05 tolerance for rounding
     if hlso_qty > (avail + 0.05):
-         # ఇక్కడ JSONResponse పంపిస్తున్నాము కాబట్టి కోడ్ కిందకి వెళ్ళదు
          return JSONResponse(
              status_code=400,
              content={"error": f"Stock limited! Only {round(avail, 2)} KG available at {peeling_at}"}
          )
 
-    # పైన కండిషన్ ఫెయిల్ అయితేనే ఇక్కడికి వచ్చి సేవ్ అవుతుంది
     obj = Peeling(
         batch_number=batch_number, hlso_count=hlso_count, hlso_qty=hlso_qty,
         variety_name=variety_name, peeled_qty=peeled_qty, contractor_name=contractor_name,

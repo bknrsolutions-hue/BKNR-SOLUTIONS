@@ -2,104 +2,124 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from datetime import datetime
 from app.database import get_db
-from app.database.models.processing import (
-    RawMaterialPurchasing,
-    Grading,
-    DeHeading,
-    Peeling,
-    Soaking
-)
-# నీ సెంట్రలైజ్డ్ సర్వీస్ ఫంక్షన్
+from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
+from app.database.models.reprocess import Reprocess
 from app.services.floor_balance import get_floor_balance
 
-router = APIRouter(
-    tags=["FLOOR BALANCE REPORT"]
-)
-
+router = APIRouter(tags=["FLOOR BALANCE REPORT"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/floor_balance_report", response_class=HTMLResponse)
 def floor_balance_report(request: Request, db: Session = Depends(get_db)):
-    # 1. SESSION CHECK
+    # 1. సెషన్ నుండి కంపెనీ ఐడి తీసుకోవడం (Security Check)
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 2. COMBINATION BUILDING
-    combos = set()
+    all_combos = set()
+    report_date = datetime.now().date()
 
-    # RMP (Purchase - HOSO/HLSO/Others)
-    rmp_q = db.query(
-        RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count,
-        RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name,
-        RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at
-    ).filter(RawMaterialPurchasing.company_id == company_id).all()
-    for r in rmp_q:
+    # --- 1. RMP & PROCESSING SOURCES (Strictly Session Company) ---
+    # RMP నుండి మెటీరియల్ డేటా
+    rmp_data = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_id).all()
+    for r in rmp_data:
         if r.batch_number:
-            combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at))
+            all_combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
 
-    # Grading (HOSO & HLSO Start)
-    grad_q = db.query(
-        Grading.batch_number, Grading.graded_count,
-        Grading.species, Grading.variety_name,
-        Grading.production_for, Grading.peeling_at
-    ).filter(Grading.company_id == company_id).all()
-    for r in grad_q:
-        if r.batch_number:
-            combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at))
+    # Grading నుండి గ్రేడ్ అయిన డేటా
+    grad_data = db.query(Grading).filter(Grading.company_id == company_id).all()
+    for g in grad_data:
+        if g.batch_number:
+            all_combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at or "Floor", "RMP"))
 
-    # ✅ గమనిక: ఇక్కడ DeHeading నుండి HLSO కాంబినేషన్ ని యాడ్ చేయడం లేదు.
-    # ఎందుకంటే నువ్వు చెప్పినట్లు HLSO క్వాంటిటీ రిపోర్ట్ లో పెరగకూడదు.
+    # Peeling నుండి తొక్క తీసిన మెటీరియల్ డేటా
+    peel_data = db.query(Peeling).filter(Peeling.company_id == company_id).all()
+    for p in peel_data:
+        if p.batch_number:
+            all_combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, p.production_for, p.peeling_at or "Floor", "RMP"))
 
-    # Peeling (PD, PDTO, PUD Start)
-    peel_q = db.query(
-        Peeling.batch_number, Peeling.hlso_count,
-        Peeling.species, Peeling.variety_name,
-        Peeling.production_for, Peeling.peeling_at
-    ).filter(Peeling.company_id == company_id).all()
-    for r in peel_q:
-        if r.batch_number:
-            combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at))
+    # --- 2. REPROCESS SOURCES (With Auto-Discovery for Production For) ---
+    repro_data = db.query(Reprocess).filter(
+        Reprocess.company_id == company_id, 
+        Reprocess.reprocess_type != 'SALES'
+    ).all()
+    
+    for r in repro_data:
+        if r.new_batch_id:
+            # మొదట Reprocess లో production_for ఉందో లేదో చూస్తుంది
+            p_for = r.production_for
+            
+            # అక్కడ N/A లేదా ఖాళీగా ఉంటే, Original Batch నుండి కంపెనీని వెతుకుతుంది
+            if not p_for or str(p_for).strip().upper() == "N/A":
+                orig = db.query(RawMaterialPurchasing.production_for).filter(
+                    RawMaterialPurchasing.batch_number == r.original_batch,
+                    RawMaterialPurchasing.company_id == company_id
+                ).first()
+                if orig:
+                    p_for = orig[0]
+            
+            p_for_final = str(p_for).strip() if p_for else "N/A"
+            loc = str(r.production_at).strip() if r.production_at else "Floor"
+            
+            all_combos.add((
+                str(r.new_batch_id).strip(), 
+                str(r.grade).strip() if r.grade else "N/A", 
+                str(r.species).strip() if r.species else "N/A", 
+                str(r.variety).strip() if r.variety else "N/A", 
+                p_for_final, 
+                loc, 
+                "REPROCESS"
+            ))
 
-    # 3. LIVE CALCULATION & FILTERING
+    # --- 3. LIVE STOCK CALCULATION ---
     rows_batch = []
-
-    for batch, count, species_val, variety, prod_for, location in combos:
-        loc = location if location else "Floor"
+    for batch, count, species_val, variety, prod_for, location, s_type in all_combos:
+        # క్వెరీ కోసం N/A ని None గా మార్చడం
+        pass_prod_for = None if prod_for == "N/A" else prod_for
         
-        # సెంట్రల్ సర్వీస్ కాల్
-        # ఒకవేళ ఇది HOSO అయితే, సర్వీస్ లోపల DeHeading లో వాడిన 'hoso_qty' ఆటోమేటిక్ గా మైనస్ అవుతుంది.
+        # Service ద్వారా బ్యాలెన్స్ లెక్కించడం
         qty = get_floor_balance(
             db=db, 
             company_id=company_id, 
-            location=loc, 
+            location=location, 
             batch=batch, 
-            count=count, 
-            species=species_val, 
-            variety=variety
+            count=count if count != "N/A" else None, 
+            species=species_val if species_val != "N/A" else None, 
+            variety=variety if variety != "N/A" else None,
+            production_for=pass_prod_for, 
+            source_type=s_type
         )
         
+        # కేవలం స్టాక్ ఉన్నవి (qty > 0) మాత్రమే రిపోర్ట్ లో చూపిస్తాం
         if qty and qty > 0.01:
             rows_batch.append({
-                "batch": batch or "N/A",
-                "variety": variety or "N/A",
-                "count": count or "N/A",
-                "species": species_val or "N/A",
-                "production_for": prod_for or "General Stock",
-                "location": loc,
+                "batch": batch,
+                "variety": variety,
+                "count": count,
+                "species": species_val,
+                "production_for": prod_for,
+                "location": location,
                 "available_qty": round(qty, 2),
-                "is_rejection": False 
+                "source": s_type,
+                "date": report_date
             })
 
-    # 4. FINAL SORTING
-    rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
+    # --- 4. MULTI-LEVEL SORTING (For Grouping in UI) ---
+    # ఆర్డర్: Location > Production For > Species > Variety > Count
+    rows_batch.sort(key=lambda x: (
+        str(x["location"]), 
+        str(x["production_for"]), 
+        str(x["species"]), 
+        str(x["variety"]), 
+        str(x["count"])
+    ))
 
-    # 5. RENDER
     return templates.TemplateResponse(
-        request=request,
-        name="reports/floor_balance_report.html",
-        context={
-            "rows_batch": rows_batch,
+        "reports/floor_balance_report.html",
+        {
+            "request": request, 
+            "rows_batch": rows_batch
         }
     )

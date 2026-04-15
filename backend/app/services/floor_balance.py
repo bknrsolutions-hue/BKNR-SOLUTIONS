@@ -1,12 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, cast, String # cast, String ఇంపోర్ట్ చేసుకోవాలి
 from app.database.models.processing import (
-    RawMaterialPurchasing,
-    Grading,
-    DeHeading,
-    Peeling,
-    Soaking
+    RawMaterialPurchasing, Grading, DeHeading, Peeling, Soaking
 )
+from app.database.models.reprocess import Reprocess 
 
 def get_floor_balance(
     db: Session,
@@ -15,115 +12,93 @@ def get_floor_balance(
     batch: str,
     count: str,
     species: str,
-    variety: str
+    variety: str,
+    production_for: str = None,
+    source_type: str = "RMP"
 ) -> float:
-    """
-    CENTRAL FLOOR BALANCE CALCULATOR
-    - RMP: Direct purchase for any variety (+)
-    - Soaking In: Deduction from floor (-)
-    - Soaking Rejection: Recovery to floor (+)
-    """
-
-    variety_upper = variety.strip().upper()
-
-    # ================================================
-    # 🔴 COMMON IMPACTS (RMP, SOAKING IN, REJECTION)
-    # ================================================
     
-    # 1. Direct Purchase (RMP) - ఏ వెరైటీ అయినా సరే ఫ్లోర్ మీదకు వస్తుంది
-    rmp_qty = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)).filter(
-        RawMaterialPurchasing.company_id == company_id,
-        RawMaterialPurchasing.peeling_at == location,
-        RawMaterialPurchasing.batch_number == batch,
-        RawMaterialPurchasing.count == count,
-        RawMaterialPurchasing.species == species,
-        RawMaterialPurchasing.variety_name == variety_upper
-    ).scalar()
+    variety_upper = variety.strip().upper() if variety else ""
+    # కౌంట్ ని క్లీన్ చేస్తున్నాం
+    clean_count = str(count).strip() if count else ""
 
-    # 2. Soaking In (Deduction)
-    soaking_in = db.query(func.coalesce(func.sum(Soaking.in_qty), 0)).filter(
-        Soaking.company_id == company_id,
-        Soaking.production_at == location,
-        Soaking.batch_number == batch,
-        Soaking.in_count == count,
-        Soaking.species == species,
-        Soaking.variety_name == variety_upper
-    ).scalar()
+    # --- SAFE FILTER HELPER ---
+    def apply_filters(query_obj, model_obj, is_repro=False):
+        q = query_obj.filter(model_obj.company_id == company_id)
+        
+        if is_repro:
+            q = q.filter(
+                model_obj.production_at == location,
+                model_obj.new_batch_id == batch,
+                # కౌంట్ మ్యాచ్ కోసం క్లీన్ వెర్షన్
+                func.trim(cast(model_obj.grade, String)) == clean_count,
+                model_obj.species == species,
+                model_obj.variety == variety
+            )
+        else:
+            if hasattr(model_obj, 'peeling_at'):
+                q = q.filter(model_obj.peeling_at == location)
+            elif hasattr(model_obj, 'production_at'):
+                q = q.filter(model_obj.production_at == location)
 
-    # 3. Soaking Rejection (Recovery)
-    soaking_rejection = db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)).filter(
-        Soaking.company_id == company_id,
-        Soaking.production_at == location,
-        Soaking.batch_number == batch,
-        Soaking.in_count == count,
-        Soaking.species == species,
-        Soaking.variety_name == variety_upper
-    ).scalar()
+            q = q.filter(model_obj.batch_number == batch)
+            q = q.filter(model_obj.species == species)
 
+            if hasattr(model_obj, 'variety_name'):
+                q = q.filter(model_obj.variety_name == variety_upper)
+            elif hasattr(model_obj, 'variety'):
+                q = q.filter(model_obj.variety == variety_upper)
+
+        if hasattr(model_obj, 'production_for'):
+            if production_for and production_for != "N/A":
+                q = q.filter(model_obj.production_for == production_for)
+            elif production_for == "N/A":
+                q = q.filter((model_obj.production_for == None) | (model_obj.production_for == ""))
+        
+        return q
+
+    # ================================================
+    # STEP 1: MAIN INWARD
+    # ================================================
+    main_inward_qty = 0.0
+    if source_type == "REPROCESS":
+        in_q = apply_filters(db.query(func.coalesce(func.sum(Reprocess.in_qty), 0)), Reprocess, True)
+        repro_in = in_q.filter(~Reprocess.reprocess_type.in_(['SALES', 'STORING'])).scalar() or 0
+        main_inward_qty = float(repro_in)
+    else:
+        rmp_q = apply_filters(db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)), RawMaterialPurchasing)
+        # ఇక్కడ కౌంట్ ఫిల్టర్ ని స్ట్రింగ్ కాస్ట్ తో అప్‌డేట్ చేశాను
+        main_inward_qty = rmp_q.filter(func.trim(cast(RawMaterialPurchasing.count, String)) == clean_count).scalar() or 0
+
+    # ================================================
+    # STEP 2: COMMON IMPACTS (SOAKING)
+    # ================================================
+    # Soaking లో కూడా కౌంట్ కాలమ్ ని స్ట్రింగ్ గా మార్చి పోల్చాలి
+    s_in = apply_filters(db.query(func.coalesce(func.sum(Soaking.in_qty), 0)), Soaking)
+    soaking_in = s_in.filter(func.trim(cast(Soaking.in_count, String)) == clean_count).scalar() or 0
+
+    s_rej = apply_filters(db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)), Soaking)
+    soaking_rejection = s_rej.filter(func.trim(cast(Soaking.in_count, String)) == clean_count).scalar() or 0
+
+    base_stock = float(main_inward_qty) + float(soaking_rejection) - float(soaking_in)
     available = 0.0
 
     # ================================================
-    # 🔵 HOSO LOGIC
+    # STEP 3: VARIETY SPECIFIC LOGIC
     # ================================================
     if variety_upper == "HOSO":
-        grading_plus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
-            Grading.company_id == company_id, Grading.peeling_at == location,
-            Grading.batch_number == batch, Grading.graded_count == count,
-            Grading.species == species, Grading.variety_name == "HOSO"
-        ).scalar()
+        g_p = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, String)) == clean_count).scalar() or 0
+        g_m = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.hoso_count, String)) == clean_count).scalar() or 0
+        dh_u = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hoso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, String)) == clean_count).scalar() or 0
+        available = base_stock + float(g_p) - float(g_m) - float(dh_u)
 
-        grading_minus = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
-            Grading.company_id == company_id, Grading.peeling_at == location,
-            Grading.batch_number == batch, Grading.hoso_count == count,
-            Grading.species == species, Grading.variety_name == "HOSO"
-        ).scalar()
-
-        deheading_used = db.query(func.coalesce(func.sum(DeHeading.hoso_qty), 0)).filter(
-            DeHeading.company_id == company_id, DeHeading.peeling_at == location,
-            DeHeading.batch_number == batch, DeHeading.hoso_count == count,
-            DeHeading.species == species
-        ).scalar()
-
-        # Calculation: (RMP + Grading In + Rejection) - (Grading Out + DeHeading + Soaking In)
-        available = (rmp_qty + grading_plus + soaking_rejection - grading_minus - deheading_used - soaking_in)
-
-    # ================================================
-    # 🟢 HLSO LOGIC
-    # ================================================
     elif variety_upper == "HLSO":
-        grading_hlso = db.query(func.coalesce(func.sum(Grading.quantity), 0)).filter(
-            Grading.company_id == company_id, Grading.peeling_at == location,
-            Grading.batch_number == batch, Grading.graded_count == count,
-            Grading.species == species, Grading.variety_name == "HLSO"
-        ).scalar()
+        g_h = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, String)) == clean_count).scalar() or 0
+        dh_o = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hlso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, String)) == clean_count).scalar() or 0
+        p_u = apply_filters(db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)), Peeling).filter(func.trim(cast(Peeling.hlso_count, String)) == clean_count).scalar() or 0
+        available = base_stock + float(g_h) + float(dh_o) - float(p_u)
 
-        # HLSO produced from DeHeading
-        deheading_out = db.query(func.coalesce(func.sum(DeHeading.hlso_qty), 0)).filter(
-            DeHeading.company_id == company_id, DeHeading.peeling_at == location,
-            DeHeading.batch_number == batch, DeHeading.hoso_count == count, # Matching source count
-            DeHeading.species == species
-        ).scalar()
-
-        peeling_used = db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)).filter(
-            Peeling.company_id == company_id, Peeling.peeling_at == location,
-            Peeling.batch_number == batch, Peeling.hlso_count == count,
-            Peeling.species == species
-        ).scalar()
-
-        # Calculation: (RMP + Grading HLSO + DeHeading Out + Rejection) - (Peeling + Soaking In)
-        available = (rmp_qty + grading_hlso + deheading_out + soaking_rejection - peeling_used - soaking_in)
-
-    # ================================================
-    # 🟡 PD / PDTO / PUD / OTHERS
-    # ================================================
     else:
-        peeled_qty = db.query(func.coalesce(func.sum(Peeling.peeled_qty), 0)).filter(
-            Peeling.company_id == company_id, Peeling.peeling_at == location,
-            Peeling.batch_number == batch, Peeling.hlso_count == count,
-            Peeling.species == species, Peeling.variety_name == variety_upper
-        ).scalar()
+        p_q = apply_filters(db.query(func.coalesce(func.sum(Peeling.peeled_qty), 0)), Peeling).filter(func.trim(cast(Peeling.hlso_count, String)) == clean_count).scalar() or 0
+        available = base_stock + float(p_q)
 
-        # Calculation: (RMP + Peeled Qty + Rejection) - (Soaking In)
-        available = (rmp_qty + peeled_qty + soaking_rejection - soaking_in)
-
-    return round(max(available, 0), 2)
+    return round(max(available, 0.0), 2)

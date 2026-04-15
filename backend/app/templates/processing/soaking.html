@@ -555,9 +555,9 @@ async function loadCounts() {
     } catch (e) { console.error(e); }
 }
 
-// FIXED: Now passing 'location' to fetch correct available qty
+// FIXED: Using encodeURIComponent for batch and count to handle special characters like 8/12
 async function loadAvailableQty() {
-    const loc = document.getElementById("f_loc").value; // 'production_at' field
+    const loc = document.getElementById("f_loc").value; 
     const b = document.getElementById("f_batch").value;
     const c = document.getElementById("f_count").value;
     const s = document.getElementById("f_species").value;
@@ -565,15 +565,26 @@ async function loadAvailableQty() {
     
     if(!loc || !b || !c || !v) {
         document.getElementById("avl_display").innerText = "Available: 0.00 KG";
+        availableQtyGlobal = 0;
         return;
     }
     
     try {
-        let url = `/processing/soaking/get_available_qty?location=${encodeURIComponent(loc)}&batch=${encodeURIComponent(b)}&count=${encodeURIComponent(c)}&species=${encodeURIComponent(s)}&variety=${encodeURIComponent(v)}`;
+        // Critical: Encode all parameters to handle 8/12 etc.
+        let url = `/processing/soaking/get_available_qty?` + 
+                  `location=${encodeURIComponent(loc)}&` +
+                  `batch=${encodeURIComponent(b)}&` +
+                  `count=${encodeURIComponent(c)}&` +
+                  `species=${encodeURIComponent(s)}&` +
+                  `variety=${encodeURIComponent(v)}`;
+                  
         let r = await fetch(url);
         let d = await r.json();
         availableQtyGlobal = parseFloat(d.available_qty) || 0;
-        document.getElementById("avl_display").innerText = `Available: ${availableQtyGlobal.toFixed(2)} KG`;
+        
+        const avlEl = document.getElementById("avl_display");
+        avlEl.innerText = `Available: ${availableQtyGlobal.toFixed(2)} KG`;
+        avlEl.style.color = availableQtyGlobal > 0 ? "var(--accent)" : "var(--danger)";
     } catch (e) { 
         console.error(e); 
         document.getElementById("avl_display").innerText = "Error loading stock";

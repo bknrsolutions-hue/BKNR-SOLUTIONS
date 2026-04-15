@@ -322,8 +322,7 @@ function loadReports(){
   if(allow("soaking_report")) html += `<button onclick="openPage('/reports/soaking_report')"><i class="fa-solid fa-file-word"></i> Soaking Report</button>`;
   if(allow("production_report")) html += `<button onclick="openPage('/reports/production_report')"><i class="fa-solid fa-file-export"></i> Production Report</button>`;
   if(allow("floor_balance_report")) html += `<button onclick="openPage('/reports/floor_balance_report')"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report</button>`;
-
-  html += `<h3>Inventory Reports</h3>`;
+  if(allow("reprocess_report")) html += `<button onclick="openPage('/reports/re-process')"><i class="fa-solid fa-arrows-rotate"></i> Re-Process Report</button>`;
   if(allow("inventory_report")) html += `<button onclick="openPage('/inventory/stock_report')"><i class="fa-solid fa-boxes-packing"></i> Stock Status</button>`;
   if(allow("storage_cost_report")) html += `<button onclick="openPage('/reports/storage_cost_report')"><i class="fa-solid fa-coins"></i> Storage & Cost Report</button>`;
   if(allow("pending_orders_report")) html += `<button onclick="openPage('/reports/pending_orders_report')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders Report</button>`;

@@ -1,230 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>FLOOR BALANCE DASHBOARD | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="utf-8">
+    <title>FLOOR BALANCE | BKNR ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-:root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-  --card:#ffffff; --text:#1f2937; --muted:#64748b; --danger: #dc2626; --warning: #f59e0b;
-}
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); overflow-x: hidden;}
+   <style>
+    :root {
+        --primary: #0f172a; --accent: #2563eb; --border: #e2e8f0; --bg: #f8fafc; --sidebar: #ffffff; --text: #1e293b;
+    }
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; color: var(--text); }
 
-/* --- HEADER --- */
-.header-dash { background: #fff; padding: 12px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800;}
-.grand-total { background: var(--primary); color: #fff; padding: 6px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+    /* ================= SIDEBAR FILTERS ================= */
+    .sidebar { 
+        width: 200px; background: var(--sidebar); border-right: 1px solid var(--border); 
+        display: flex; flex-direction: column; padding: 12px; flex-shrink: 0;
+    }
+    .sidebar h2 { 
+        font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; 
+        margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 8px;
+    }
+    .filters { display: flex; flex-direction: column; gap: 10px; }
+    .fbox { display: flex; flex-direction: column; gap: 3px; }
+    .fbox label { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    select, input, #searchBox { padding: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; outline: none; width: 100%; }
+    #searchBox { border-left: 3px solid var(--accent); background: #f1f5f9; }
 
-/* --- GRID SYSTEM --- */
-.dashboard-grid { display: grid; grid-template-columns: 1fr 0px 0px; gap: 0px; padding: 15px; transition: all 0.3s ease-in-out; }
-.dashboard-grid.active-side { grid-template-columns: 1.2fr 0.9fr 0.9fr; gap: 15px; }
+    /* ================= MAIN CONTENT AREA ================= */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .status-bar { background: #fff; padding: 6px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; }
 
-.panel { background: #fff; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; height: 85vh; }
-.panel-title { padding: 10px 15px; background: #f8fafc; font-weight: 800; font-size: 10px; border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .section { flex: 1; margin: 4px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+    .table-wrap { flex: 1; overflow: auto; } 
+    
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; } 
 
-.side-panel { opacity: 0; visibility: hidden; }
-.active-side .side-panel { opacity: 1; visibility: visible; }
+    thead th {
+        background: #f1f5f9; padding: 4px 5px; font-size: 10px; font-weight: 800;
+        text-transform: uppercase; border-bottom: 2px solid var(--border);
+        border-right: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;
+    }
 
-.table-scroll { overflow-y: auto; flex: 1; }
-.dash-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
-.dash-table th { position: sticky; top: 0; background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); text-align: left; color: var(--muted); z-index: 20; }
-.dash-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    tbody td {
+        padding: 2px 5px; font-size: 11px; 
+        border-bottom: 1px solid #f1f5f9;
+        border-right: 1px solid #f8fafc; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        line-height: 1.1;
+    }
 
-/* Hierarchy Classes */
-.group-row { background: #f1f5f9 !important; cursor: pointer; border-left: 4px solid var(--primary); }
-.sub-group-row { background: #ffffff !important; display: none; cursor: pointer; border-left: 4px solid var(--accent); } 
-.spec-row { background: #fff !important; display: none; cursor: pointer; border-left: 4px solid var(--warning); }
-.batch-row { background: #fff !important; display: none; cursor: pointer; border-left: 4px solid #10b981; font-weight: 700 !important; }
-.leaf-row { background: #fffbeb !important; display: none; font-size: 10px; color: var(--muted); }
-.is-rejected { color: var(--danger) !important; }
+    .row-location { background: var(--primary) !important; color: #fff !important; font-weight: 700; text-align: left !important; font-size: 10px; padding: 3px 8px !important; }
+    .row-batch-total { background: #fdfdfd !important; font-weight: 700; color: #64748b; font-style: italic; }
+    .row-company-total { background: #f0f7ff !important; font-weight: 800; color: var(--accent); }
+    
+    .subtotal-label { text-align: right !important; padding-right: 10px !important; font-size: 10px; padding-top: 2px !important; padding-bottom: 2px !important; }
+    .subtotal-qty { text-align: right !important; font-family: 'Monaco', monospace; font-size: 11px; padding-right: 10px !important; padding-top: 2px !important; padding-bottom: 2px !important; }
 
-/* Side Table Specific Styles */
-.side-group-row { background: #f8fafc !important; cursor: pointer; font-weight: 800 !important; border-left: 3px solid var(--primary); }
-.side-leaf-row { display: none; background: #fff !important; font-weight: 400 !important; }
+    .qty-cell { text-align: right !important; font-weight: 800; font-family: 'Monaco', monospace; padding-right: 10px !important; color: #000; }
+    .badge { padding: 1px 5px; border-radius: 3px; font-size: 8.5px; font-weight: 800; }
+    .bg-rmp { background: #e0f2fe; color: #0369a1; }
+    .bg-repro { background: #dcfce7; color: #15803d; }
 
-.toggle-icon { transition: transform 0.2s; margin-right: 5px; width: 10px; display: inline-block; text-align: center; }
-.expanded > td > .toggle-icon { transform: rotate(90deg); color: var(--accent); }
+    tfoot td { background: var(--primary); color: #fff; font-weight: 800; font-size: 12px; position: sticky; bottom: 0; z-index: 10; padding: 8px; }
+
+    .w-sl { width: 40px; } 
+    .w-bt, .w-ty, .w-vr, .w-ct, .w-sp, .w-pf, .w-qt { width: calc((100% - 40px) / 7); }
 </style>
 </head>
+
 <body>
 
-<div class="header-dash">
-    <div class="header-titles"><h2>Floor Balance Analysis Dashboard</h2></div>
-    <div class="grand-total" id="gt_display">TOTAL: 0.00 KG</div>
+<div class="sidebar">
+    <h2><i class="fa-solid fa-filter"></i> Filters</h2>
+    <div class="filters">
+        <div class="fbox">
+            <label>Quick Search</label>
+            <input id="searchBox" oninput="filterTable()" placeholder="Batch, Variety...">
+        </div>
+        <div class="fbox">
+            <label>Location</label>
+            <select id="f_loc" onchange="filterTable()">
+                <option value="">All Locations</option>
+                {% for loc in rows_batch|map(attribute='location')|unique %}<option value="{{ loc }}">{{ loc }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Type</label>
+            <select id="f_type" onchange="filterTable()">
+                <option value="">All Types</option>
+                <option value="RMP">RMP</option>
+                <option value="REPROCESS">REPROCESS</option>
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Production For</label>
+            <select id="f_prod" onchange="filterTable()">
+                <option value="">All Companies</option>
+                {% for pf in rows_batch|map(attribute='production_for')|unique %}<option value="{{ pf }}">{{ pf }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Species</label>
+            <select id="f_spec" onchange="filterTable()">
+                <option value="">All Species</option>
+                {% for sp in rows_batch|map(attribute='species')|unique %}<option value="{{ sp }}">{{ sp }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+    <div style="margin-top: auto; font-size: 9px; color: #94a3b8; text-align: center;">
+        BKNR ERP v2.0
+    </div>
 </div>
 
-<div class="dashboard-grid" id="mainGrid">
-    <div class="panel">
-        <div class="panel-title"><span><i class="fa-solid fa-sitemap"></i> Batch Hierarchy</span></div>
-        <div class="table-scroll">
-            <table class="dash-table">
-                <thead><tr><th>Location / Batch Details</th><th style="text-align:right">Weight</th></tr></thead>
-                <tbody id="hierarchyBody"></tbody>
-            </table>
-        </div>
+<div class="main-content">
+    <div class="status-bar">
+        <span><i class="fa-solid fa-boxes-stacked"></i> FLOOR BALANCE REPORT</span>
+        <span id="rowCount">0 Items</span>
     </div>
 
-    <div class="panel side-panel">
-        <div class="panel-title"><span>Variety Analysis</span> <span id="vLabel" style="color:var(--accent)"></span></div>
-        <div class="table-scroll">
-            <table class="dash-table">
-                <thead><tr><th>Variety Name</th><th style="text-align:right">Qty</th></tr></thead>
-                <tbody id="varietyBody"></tbody>
-            </table>
-        </div>
-    </div>
-    
-    <div class="panel side-panel">
-        <div class="panel-title"><span>Count Analysis</span> <span id="cLabel" style="color:var(--accent)"></span></div>
-        <div class="table-scroll">
-            <table class="dash-table">
-                <thead><tr><th>Count Details</th><th style="text-align:right">Qty</th></tr></thead>
-                <tbody id="countBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+    <div class="section">
+        <div class="table-wrap">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th class="w-sl">#</th>
+                        <th class="w-bt">Batch ID</th>
+                        <th class="w-ty">Type</th>
+                        <th class="w-vr">Variety</th>
+                        <th class="w-ct">Count</th>
+                        <th class="w-sp">Species</th>
+                        <th class="w-pf">Production For</th>
+                        <th class="w-qt" style="text-align:right;">Qty (KG)</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    {% set ns = namespace(cur_loc="", cur_prod="", cur_batch="", sl=1, grand_total=0, comp_total=0, batch_total=0) %}
+                    
+                    {% for r in rows_batch %}
+                        
+                        {% if r.location != ns.cur_loc %}
+                            <tr class="row-location" data-loc="{{ r.location }}">
+                                <td colspan="8"><i class="fa-solid fa-warehouse"></i> {{ r.location | upper }}</td>
+                            </tr>
+                            {% set ns.cur_loc = r.location %}
+                        {% endif %}
 
-<div id="dataStore" style="display:none;">
-    {% for r in rows_batch %}
-    <span class="r-item" data-loc="{{r.location}}" data-comp="{{r.production_for}}" data-spec="{{r.species}}" data-batch="{{r.batch}}" data-var="{{r.variety}}" data-rejfor="{{r.rejection_for}}" data-cnt="{{r.count}}" data-qty="{{r.available_qty}}" data-rej="{{r.is_rejection}}"></span>
-    {% endfor %}
+                        {% if loop.index0 > 0 and r.batch != ns.cur_batch %}
+                            <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-prod="{{ ns.cur_prod }}" data-batch="{{ ns.cur_batch }}">
+                                <td colspan="7" class="subtotal-label">{{ ns.cur_batch }} Total:</td>
+                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.batch_total) }}</td>
+                            </tr>
+                            {% set ns.batch_total = 0 %}
+                        {% endif %}
+
+                        {% if loop.index0 > 0 and r.production_for != ns.cur_prod %}
+                            <tr class="row-company-total" data-loc="{{ ns.cur_loc }}" data-prod="{{ ns.cur_prod }}">
+                                <td colspan="7" class="subtotal-label">{{ ns.cur_prod }} Total:</td>
+                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.comp_total) }}</td>
+                            </tr>
+                            {% set ns.comp_total = 0 %}
+                        {% endif %}
+
+                        {% set ns.cur_prod = r.production_for %}{% set ns.cur_batch = r.batch %}
+
+                        <tr class="data-row" 
+                            data-loc="{{ r.location }}" 
+                            data-prod="{{ r.production_for }}" 
+                            data-batch="{{ r.batch }}" 
+                            data-spec="{{ r.species }}"
+                            data-source="{{ r.source }}">
+                            <td>{{ ns.sl }}</td>
+                            <td style="font-weight:700; color:var(--accent);">{{ r.batch }}</td>
+                            <td><span class="badge {{ 'bg-repro' if r.source == 'REPROCESS' else 'bg-rmp' }}">{{ r.source }}</span></td>
+                            <td style="font-weight:700;">{{ r.variety }}</td>
+                            <td style="font-weight:700; color:#475569;">{{ r.count }}</td>
+                            <td>{{ r.species }}</td>
+                            <td style="color: #64748b;">{{ r.production_for }}</td>
+                            <td class="qty-cell">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                        </tr>
+
+                        {% set ns.sl = ns.sl + 1 %}{% set ns.batch_total = ns.batch_total + r.available_qty %}
+                        {% set ns.comp_total = ns.comp_total + r.available_qty %}{% set ns.grand_total = ns.grand_total + r.available_qty %}
+
+                        {% if loop.last %}
+                            <tr class="row-batch-total" data-loc="{{ r.location }}" data-prod="{{ r.production_for }}" data-batch="{{ r.batch }}">
+                                <td colspan="7" class="subtotal-label">{{ r.batch }} Total:</td>
+                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.batch_total) }}</td>
+                            </tr>
+                            <tr class="row-company-total" data-loc="{{ r.location }}" data-prod="{{ r.production_for }}">
+                                <td colspan="7" class="subtotal-label">{{ r.production_for }} Total:</td>
+                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.comp_total) }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" style="text-align:right;">NET FLOOR BALANCE:</td>
+                        <td id="grandTotal" style="text-align:right;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script>
-let allData = [];
-window.onload = () => {
-    document.querySelectorAll(".r-item").forEach(el => {
-        allData.push({...el.dataset, qty: parseFloat(el.dataset.qty)});
-    });
-    renderHierarchy();
-    const total = allData.reduce((s, i) => s + i.qty, 0);
-    document.getElementById('gt_display').innerText = `TOTAL: ${total.toFixed(2)} KG`;
-};
-
-function renderHierarchy() {
-    const tbody = document.getElementById('hierarchyBody');
-    const tree = {};
+function filterTable() {
+    const locF = document.getElementById("f_loc").value.toLowerCase();
+    const typeF = document.getElementById("f_type").value.toLowerCase();
+    const prodF = document.getElementById("f_prod").value.toLowerCase();
+    const specF = document.getElementById("f_spec").value.toLowerCase();
+    const q = document.getElementById("searchBox").value.toLowerCase();
     
-    // Grouping Logic: Loc -> Comp -> Spec -> Batch
-    allData.forEach(d => {
-        if(!tree[d.loc]) tree[d.loc] = { total: 0, comps: {} };
-        tree[d.loc].total += d.qty;
+    const rows = document.querySelectorAll(".data-row");
+    let net = 0, visibleCount = 0;
+
+    rows.forEach(r => {
+        const match = (!locF || r.dataset.loc.toLowerCase() === locF) &&
+                      (!typeF || r.dataset.source.toLowerCase() === typeF) &&
+                      (!prodF || r.dataset.prod.toLowerCase() === prodF) &&
+                      (!specF || r.dataset.spec.toLowerCase() === specF) &&
+                      (!q || r.innerText.toLowerCase().includes(q));
         
-        if(!tree[d.loc].comps[d.comp]) tree[d.loc].comps[d.comp] = { total: 0, specs: {} };
-        tree[d.loc].comps[d.comp].total += d.qty;
-        
-        if(!tree[d.loc].comps[d.comp].specs[d.spec]) tree[d.loc].comps[d.comp].specs[d.spec] = { total: 0, batches: {} };
-        tree[d.loc].comps[d.comp].specs[d.spec].total += d.qty;
-
-        if(!tree[d.loc].comps[d.comp].specs[d.spec].batches[d.batch]) tree[d.loc].comps[d.comp].specs[d.spec].batches[d.batch] = { total: 0, items: [] };
-        tree[d.loc].comps[d.comp].specs[d.spec].batches[d.batch].total += d.qty;
-        tree[d.loc].comps[d.comp].specs[d.spec].batches[d.batch].items.push(d);
-    });
-
-    Object.keys(tree).sort().forEach((loc, lIdx) => {
-        const lId = `l-${lIdx}`;
-        let trL = createRow("group-row", `<td><span class="toggle-icon">▶</span> ${loc}</td><td style="text-align:right">${tree[loc].total.toFixed(2)}</td>`);
-        trL.onclick = () => { toggle(trL, lId); syncFilters('loc', loc, trL.classList.contains('expanded')); };
-        tbody.appendChild(trL);
-
-        Object.keys(tree[loc].comps).sort().forEach((comp, cIdx) => {
-            const cId = `c-${lIdx}-${cIdx}`;
-            let trC = createRow(`sub-group-row ${lId}`, `<td style="padding-left:15px;"><span class="toggle-icon">▶</span> ${comp}</td><td style="text-align:right">${tree[loc].comps[comp].total.toFixed(2)}</td>`);
-            trC.onclick = (e) => { e.stopPropagation(); toggle(trC, cId); syncFilters('comp', comp, trC.classList.contains('expanded'), loc); };
-            tbody.appendChild(trC);
-
-            Object.keys(tree[loc].comps[comp].specs).sort().forEach((spec, sIdx) => {
-                const sId = `s-${lIdx}-${cIdx}-${sIdx}`;
-                let trS = createRow(`spec-row ${cId}`, `<td style="padding-left:30px;"><span class="toggle-icon">▶</span> ${spec}</td><td style="text-align:right">${tree[loc].comps[comp].specs[spec].total.toFixed(2)}</td>`);
-                trS.onclick = (e) => { e.stopPropagation(); toggle(trS, sId); syncFilters('spec', spec, trS.classList.contains('expanded'), loc, comp); };
-                tbody.appendChild(trS);
-
-                Object.keys(tree[loc].comps[comp].specs[spec].batches).sort().forEach((batch, bIdx) => {
-                    const bId = `b-${lIdx}-${cIdx}-${sIdx}-${bIdx}`;
-                    let trB = createRow(`batch-row ${sId}`, `<td style="padding-left:45px;"><span class="toggle-icon">▶</span> Batch: ${batch}</td><td style="text-align:right">${tree[loc].comps[comp].specs[spec].batches[batch].total.toFixed(2)}</td>`);
-                    trB.onclick = (e) => { e.stopPropagation(); toggle(trB, bId); };
-                    tbody.appendChild(trB);
-
-                    tree[loc].comps[comp].specs[spec].batches[batch].items.forEach(item => {
-                        let vDisplay = item.rej === "True" ? `${item.var} (${item.rejfor})` : item.var;
-                        tbody.appendChild(createRow(`leaf-row ${bId} ${item.rej === 'True' ? 'is-rejected' : ''}`, `<td style="padding-left:60px;">${vDisplay} | Count: ${item.cnt}</td><td style="text-align:right">${item.qty.toFixed(2)}</td>`));
-                    });
-                });
-            });
-        });
-    });
-}
-
-function syncFilters(level, value, isExpanded, loc=null, comp=null) {
-    const grid = document.getElementById('mainGrid');
-    if (!isExpanded) { grid.classList.remove('active-side'); return; }
-    grid.classList.add('active-side');
-    let filtered = allData;
-    if (level === 'loc') filtered = allData.filter(d => d.loc === value);
-    if (level === 'comp') filtered = allData.filter(d => d.loc === loc && d.comp === value);
-    if (level === 'spec') filtered = allData.filter(d => d.loc === loc && d.comp === comp && d.spec === value);
-    updateSummary(filtered, value);
-}
-
-function updateSummary(data, label) {
-    document.getElementById('vLabel').innerText = `[${label}]`;
-    document.getElementById('cLabel').innerText = `[${label}]`;
-    
-    const vGroup = {};
-    data.forEach(d => {
-        let vKey = d.rej === "True" ? d.rejfor : d.var;
-        if(!vGroup[vKey]) vGroup[vKey] = { total: 0, items: [] };
-        vGroup[vKey].total += d.qty;
-        vGroup[vKey].items.push(d);
-    });
-    renderSideTable('varietyBody', vGroup, 'v-group');
-
-    const cGroup = {};
-    data.forEach(d => {
-        let cKey = d.cnt;
-        if(!cGroup[cKey]) cGroup[cKey] = { total: 0, items: [] };
-        cGroup[cKey].total += d.qty;
-        cGroup[cKey].items.push(d);
-    });
-    renderSideTable('countBody', cGroup, 'c-group');
-}
-
-function renderSideTable(tbodyId, groupData, classPrefix) {
-    const tbody = document.getElementById(tbodyId);
-    tbody.innerHTML = '';
-    
-    Object.entries(groupData).sort((a,b) => b[1].total - a[1].total).forEach(([key, val], idx) => {
-        const gId = `${classPrefix}-${idx}`;
-        let trG = createRow("side-group-row", `<td><span class="toggle-icon">▶</span> ${key}</td><td style="text-align:right">${val.total.toFixed(2)}</td>`);
-        trG.onclick = () => toggle(trG, gId);
-        tbody.appendChild(trG);
-        
-        val.items.forEach(item => {
-            let info = `B: ${item.batch} | ${item.spec}`;
-            tbody.appendChild(createRow(`side-leaf-row ${gId}`, `<td style="padding-left:20px; color:var(--muted); font-size:10px;">${info}</td><td style="text-align:right">${item.qty.toFixed(2)}</td>`));
-        });
-    });
-}
-
-function createRow(cls, html) { let tr = document.createElement('tr'); tr.className = cls; tr.innerHTML = html; return tr; }
-
-function toggle(row, targetClass) {
-    const isExpanding = !row.classList.contains('expanded');
-    row.classList.toggle('expanded');
-    document.querySelectorAll(`.${targetClass}`).forEach(child => {
-        child.style.display = isExpanding ? "table-row" : "none";
-        if (!isExpanding && child.classList.contains('expanded')) {
-            const subClass = Array.from(child.classList).find(c => c.startsWith('c-') || c.startsWith('s-') || c.startsWith('b-') || c.startsWith('v-group-') || c.startsWith('c-group-'));
-            if(subClass) toggle(child, subClass);
+        r.style.display = match ? "" : "none";
+        if(match) {
+            net += parseFloat(r.cells[7].innerText.replace(/,/g,''));
+            visibleCount++;
         }
     });
+
+    document.querySelectorAll(".row-batch-total, .row-company-total, .row-location").forEach(tr => {
+        const isLoc = tr.classList.contains("row-location");
+        const isBatch = tr.classList.contains("row-batch-total");
+        const hasVisible = [...rows].some(r => 
+            r.dataset.loc === tr.dataset.loc && 
+            (isLoc || r.dataset.prod === tr.dataset.prod) &&
+            (!isBatch || r.dataset.batch === tr.dataset.batch) &&
+            r.style.display !== "none"
+        );
+        tr.style.display = hasVisible ? "" : "none";
+    });
+
+    document.getElementById("grandTotal").innerText = net.toLocaleString('en-IN', {minimumFractionDigits: 2}) + " KG";
+    document.getElementById("rowCount").innerText = visibleCount + " Items";
 }
+filterTable();
 </script>
 </body>
 </html>

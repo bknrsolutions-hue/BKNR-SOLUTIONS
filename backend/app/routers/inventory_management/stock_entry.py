@@ -1,6 +1,7 @@
 import pytz
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct
 from datetime import datetime, date
@@ -8,6 +9,7 @@ from datetime import datetime, date
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry, pending_orders
 from app.database.models.processing import GateEntry
+from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     brands,
     glazes,
@@ -24,7 +26,7 @@ from app.database.models.criteria import (
 )
 
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
-
+templates = Jinja2Templates(directory="app/templates")
 
 # ==================================================
 # LOAD STOCK ENTRY PAGE (TODAY DATA ONLY)
@@ -37,11 +39,11 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
+    
     IST = pytz.timezone('Asia/Kolkata')
     ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
 
+    # Today's entries for the table
     table_data = (
         db.query(stock_entry)
         .filter(
@@ -52,6 +54,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # 1. Fetching Regular Batches from Gate Entry
     batches_raw = (
         db.query(
             GateEntry.batch_number,
@@ -71,6 +74,26 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         } for b in batches_raw if b.batch_number
     ]
 
+    # 2. Adding Reprocess Batches
+    repro_batches = (
+        db.query(
+            Reprocess.new_batch_id,
+            Reprocess.production_for,
+            Reprocess.production_at
+        )
+        .filter(Reprocess.company_id == company_code)
+        .distinct()
+        .all()
+    )
+
+    for rb in repro_batches:
+        if rb.new_batch_id:
+            batch_data_list.append({
+                "batch_number": rb.new_batch_id,
+                "production_for": rb.production_for,
+                "production_at": rb.production_at
+            })
+
     production_for_unique = sorted({
         p.production_for for p in
         db.query(production_for.production_for)
@@ -87,7 +110,6 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     ]
 
-    # Success message ని సెషన్ నుంచి తీసుకుంటున్నాము
     success_msg = request.session.pop("success_msg", None)
 
     context = {
@@ -109,7 +131,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         "po_numbers": [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number)],
     }
 
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, 
         name="inventory_management/stock_entry.html", 
         context=context
@@ -182,9 +204,7 @@ def save_stock_in(
     db.add(entry)
     db.commit()
 
-    # సక్సెస్ మెసేజ్ ని సెషన్‌లో యాడ్ చేస్తున్నాను
     request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
-    
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 
 
@@ -236,7 +256,7 @@ def stock_out_report(
 
 
 # ==================================================
-# SAVE STOCK OUT (WITH QUANTITY CALCULATION)
+# SAVE STOCK OUT
 # ==================================================
 @router.post("/stock_out_save")
 def stock_out_save(
@@ -308,8 +328,5 @@ def stock_out_save(
         db.add(entry)
 
     db.commit()
-
-    # సక్సెస్ మెసేజ్ ని సెషన్‌లో యాడ్ చేస్తున్నాను
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
-    
     return RedirectResponse("/inventory/stock_entry", status_code=303)

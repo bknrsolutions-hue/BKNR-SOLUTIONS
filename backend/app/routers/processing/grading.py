@@ -10,6 +10,7 @@ import re
 
 from app.database import get_db
 from app.database.models.processing import Grading, RawMaterialPurchasing
+from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     varieties, 
     species, 
@@ -33,10 +34,6 @@ def get_today_range():
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
     return start, end
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
 
 # -----------------------------------------------------
 # SHOW PAGE (WITH FULL SUMMARY LOGIC)
@@ -63,7 +60,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         Grading.date <= end.date()
     ).order_by(Grading.id.desc()).all()
 
-    # 3. REQUIREMENT LOGIC (Summary Calculation)
+    # 3. REQUIREMENT LOGIC (Exact Copy of Your Summary Calculation)
     p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_code).all()
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
     yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
@@ -140,67 +137,74 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
-    # ✅ FIXED: TemplateResponse for new FastAPI versions
     return templates.TemplateResponse(
-        request=request,
-        name="processing/grading.html",
+        request=request, name="processing/grading.html",
         context={
-            "species_list": species_list,
-            "variety_list": variety_list,
-            "peeling_locations": peeling_locations,
-            "prod_for_list": prod_for_list,
-            "today_data": today_data,
-            "hlso_summary": list(hlso_summary.values()),
-            "hoso_summary": list(hoso_summary.values()),
-            "drill_down_json": json.dumps(drill_down_data),
-            "edit_data": None,
+            "species_list": species_list, "variety_list": variety_list, "peeling_locations": peeling_locations,
+            "prod_for_list": prod_for_list, "today_data": today_data,
+            "hlso_summary": list(hlso_summary.values()), "hoso_summary": list(hoso_summary.values()),
+            "drill_down_json": json.dumps(drill_down_data), "edit_data": None,
             "message": request.session.pop("message", None)
         }
     )
 
 # -----------------------------------------------------
-# API: GET BATCHES (FILTERED BY SELECTED COMPANY)
+# API: GET BATCHES (RMP + REPROCESS)
 # -----------------------------------------------------
 @router.get("/grading/get_batches/{company}")
 def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"batches": []}
 
-    rows = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
+    # RMP Batches
+    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
         RawMaterialPurchasing.company_id == company_code,
         func.lower(RawMaterialPurchasing.production_for) == company.lower()
     ).all()
-    return {"batches": [r[0] for r in rows if r[0]]}
+    
+    # Reprocess Batches
+    r2 = db.query(distinct(Reprocess.new_batch_id)).filter(
+        Reprocess.company_id == company_code,
+        func.lower(Reprocess.production_for) == company.lower()
+    ).all()
+    
+    all_batches = set([r[0] for r in r1 if r[0]]) | set([r[0] for r in r2 if r[0]])
+    return {"batches": sorted(list(all_batches))}
 
 # -----------------------------------------------------
-# API: GET HOSO COUNTS (FILTERED BY COMPANY & BATCH)
+# API: GET HOSO COUNTS (RMP + REPROCESS)
 # -----------------------------------------------------
 @router.get("/grading/get_hoso/{company}/{batch}")
 def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"counts": []}
 
-    rows = db.query(distinct(RawMaterialPurchasing.count)).filter(
+    # RMP Counts
+    c1 = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.batch_number == batch,
         func.lower(RawMaterialPurchasing.production_for) == company.lower()
     ).all()
-    return {"counts": [r[0] for r in rows if r[0]]}
+    
+    # Reprocess Grades (as counts)
+    c2 = db.query(distinct(Reprocess.grade)).filter(
+        Reprocess.company_id == company_code,
+        Reprocess.new_batch_id == batch,
+        func.lower(Reprocess.production_for) == company.lower()
+    ).all()
+
+    all_counts = set([r[0] for r in c1 if r[0]]) | set([r[0] for r in c2 if r[0]])
+    return {"counts": sorted(list(all_counts))}
 
 # -----------------------------------------------------
 # POST: SAVE GRADING
 # -----------------------------------------------------
 @router.post("/grading")
 def save_grading(
-    request: Request,
-    batch_number: str = Form(...),
-    hoso_count: str = Form(...),
-    variety_name: str = Form(...),
-    graded_count: str = Form(...),
-    quantity: float = Form(...),
-    species_val: str = Form(...),
-    peeling_at: str = Form(...),
-    production_for: str = Form(...),
+    request: Request, batch_number: str = Form(...), hoso_count: str = Form(...),
+    variety_name: str = Form(...), graded_count: str = Form(...),
+    quantity: float = Form(...), species_val: str = Form(...),
+    peeling_at: str = Form(...), production_for: str = Form(...),
     db: Session = Depends(get_db)
 ):
     company_code, email = request.session.get("company_code"), request.session.get("email")
@@ -231,9 +235,14 @@ def update_grading(
     company_code = request.session.get("company_code")
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
-        entry.batch_number, entry.hoso_count, entry.variety_name = batch_number, hoso_count, variety_name
-        entry.graded_count, entry.quantity, entry.species = graded_count, quantity, species_val
-        entry.peeling_at, entry.production_for = peeling_at, production_for
+        entry.batch_number = batch_number
+        entry.hoso_count = hoso_count
+        entry.variety_name = variety_name
+        entry.graded_count = graded_count
+        entry.quantity = quantity
+        entry.species = species_val
+        entry.peeling_at = peeling_at
+        entry.production_for = production_for
         db.commit()
         request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/grading", status_code=303)

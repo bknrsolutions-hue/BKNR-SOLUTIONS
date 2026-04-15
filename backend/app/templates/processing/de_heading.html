@@ -257,9 +257,12 @@
 </div>
 
 <script>
+// 1. DATA INITIALIZATION
 const rawFloorData = {{ hoso_floor_balance | safe if hoso_floor_balance else '[]' }};
 let chartInstance = null;
+let selectedId = null;
 
+// కలర్ కోడింగ్ ఫంక్షన్
 const getLocationColor = (loc) => {
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
     let hash = 0;
@@ -267,13 +270,14 @@ const getLocationColor = (loc) => {
     return colors[Math.abs(hash) % colors.length];
 };
 
+// 2. DASHBOARD & FILTERING LOGIC
 function updateDashboard() {
     const spF = document.getElementById('dashboard_species_filter').value.trim().toLowerCase();
     const cpF = document.getElementById('dashboard_company_filter').value.trim().toLowerCase();
     const lcF = document.getElementById('dashboard_location_filter').value.trim().toLowerCase();
     
     const fbBody = document.getElementById('fb_main_body');
-    fbBody.innerHTML = "";
+    if(fbBody) fbBody.innerHTML = "";
 
     let hierarchy = {}; 
     let grandTotal = 0;
@@ -307,25 +311,28 @@ function updateDashboard() {
         counts.add(item.count);
     });
 
-    Object.keys(hierarchy).sort().forEach((comp, cIdx) => {
-        const cId = `comp_${cIdx}`;
-        fbBody.innerHTML += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td style="padding-left:15px;"><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td style="text-align:right; padding-right:15px;">${hierarchy[comp].total.toFixed(2)}</td></tr>`;
-        Object.keys(hierarchy[comp].locations).sort().forEach((loc, lIdx) => {
-            const lId = `${cId}_loc_${lIdx}`;
-            fbBody.innerHTML += `
-                <tr class="location-row child-of-${cId}" style="display:none;" onclick="toggleRows('#drill_${lId}', 'table-row')">
-                    <td><i class="fa-solid fa-location-dot" style="margin-left:25px; margin-right:8px;"></i> ${loc}</td>
-                    <td style="text-align:right; padding-right:15px;">${hierarchy[comp].locations[loc].total.toFixed(2)}</td>
-                </tr>
-                <tr class="drill-row" id="drill_${lId}" style="display:none;">
-                    <td colspan="2">
-                        <div class="drill-container"><table class="drill-table"><thead><tr><th>Species</th><th>Batch / Count</th><th style="text-align:right">Qty (Kg)</th></tr></thead>
-                        <tbody>${hierarchy[comp].locations[loc].items.map(i => `<tr><td>${i.species}</td><td>${i.batch} / ${i.count}</td><td style="text-align:right; font-weight:700;">${parseFloat(i.available_qty).toFixed(2)}</td></tr>`).join('')}</tbody>
-                        </table></div>
-                    </td>
-                </tr>`;
+    if(fbBody) {
+        Object.keys(hierarchy).sort().forEach((comp, cIdx) => {
+            const cId = `comp_${cIdx}`;
+            fbBody.innerHTML += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td style="padding-left:15px;"><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td style="text-align:right; padding-right:15px;">${hierarchy[comp].total.toFixed(2)}</td></tr>`;
+            
+            Object.keys(hierarchy[comp].locations).sort().forEach((loc, lIdx) => {
+                const lId = `${cId}_loc_${lIdx}`;
+                fbBody.innerHTML += `
+                    <tr class="location-row child-of-${cId}" style="display:none;" onclick="toggleRows('#drill_${lId}', 'table-row')">
+                        <td><i class="fa-solid fa-location-dot" style="margin-left:25px; margin-right:8px;"></i> ${loc}</td>
+                        <td style="text-align:right; padding-right:15px;">${hierarchy[comp].locations[loc].total.toFixed(2)}</td>
+                    </tr>
+                    <tr class="drill-row" id="drill_${lId}" style="display:none;">
+                        <td colspan="2">
+                            <div class="drill-container"><table class="drill-table"><thead><tr><th>Species</th><th>Batch / Count</th><th style="text-align:right">Qty (Kg)</th></tr></thead>
+                            <tbody>${hierarchy[comp].locations[loc].items.map(i => `<tr><td>${i.species}</td><td>${i.batch} / ${i.count}</td><td style="text-align:right; font-weight:700;">${parseFloat(i.available_qty).toFixed(2)}</td></tr>`).join('')}</tbody>
+                            </table></div>
+                        </td>
+                    </tr>`;
+            });
         });
-    });
+    }
 
     document.getElementById('gt_display').innerText = `TOTAL FLOOR: ${grandTotal.toFixed(2)} KG`;
     document.getElementById('stat_batches').innerText = batches.size;
@@ -335,11 +342,16 @@ function updateDashboard() {
     renderStackedBar(chartDataMap);
 }
 
+// 3. CHART RENDERING
 function renderStackedBar(dataMap) {
-    const ctx = document.getElementById('countStackedBar').getContext('2d');
+    const canvas = document.getElementById('countStackedBar');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (chartInstance) chartInstance.destroy();
+    
     const labels = Object.keys(dataMap).sort();
     const locations = [...new Set(rawFloorData.map(i => i.peeling_at || "Purchased Stock"))];
+    
     const datasets = locations.map(loc => ({
         label: loc,
         data: labels.map(label => dataMap[label][loc] || 0),
@@ -354,13 +366,14 @@ function renderStackedBar(dataMap) {
             responsive: true, maintainAspectRatio: false,
             plugins: { 
                 legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                datalabels: { color: '#fff', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 50 ? v.toFixed(0) : '' }
+                datalabels: { color: '#fff', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 5 ? v.toFixed(0) : '' }
             },
             scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
         }
     });
 }
 
+// 4. UI UTILITIES
 function toggleRows(selector, displayType) {
     const rows = document.querySelectorAll(selector);
     rows.forEach(row => {
@@ -369,9 +382,11 @@ function toggleRows(selector, displayType) {
                 row.style.display = 'none';
                 const drillAttr = row.getAttribute('onclick');
                 if(drillAttr) {
-                    const drillId = drillAttr.match(/'([^']+)'/)[1];
-                    const drillElement = document.querySelector(drillId);
-                    if(drillElement) drillElement.style.display = 'none';
+                    const drillIdMatch = drillAttr.match(/'([^']+)'/);
+                    if(drillIdMatch) {
+                        const drillElement = document.querySelector(drillIdMatch[1]);
+                        if(drillElement) drillElement.style.display = 'none';
+                    }
                 }
             } else { row.style.display = 'table-row'; }
         } else { row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row'; }
@@ -385,36 +400,41 @@ function updateTodayTableSubtotals() {
     tbody.querySelectorAll('.subtotal-row').forEach(r => r.remove());
     let locGroup = {};
     rows.forEach(r => {
-        const loc = r.dataset.loc;
-        if(!locGroup[loc]) locGroup[loc] = { in:0, out:0, amt:0, lastRow: null };
-        locGroup[loc].in += parseFloat(r.querySelector('.qty-in').innerText) || 0;
-        locGroup[loc].out += parseFloat(r.querySelector('.qty-out').innerText) || 0;
-        locGroup[loc].amt += parseFloat(r.querySelector('.amt').innerText) || 0;
+        const loc = r.dataset.loc || "Unknown";
+        if(!locGroup[loc]) locGroup[loc] = { hoso:0, hlso:0, amt:0, lastRow: null };
+        locGroup[loc].hoso += parseFloat(r.querySelector('.qty-hoso').innerText) || 0;
+        locGroup[loc].hlso += parseFloat(r.querySelector('.qty-hlso').innerText) || 0;
+        locGroup[loc].amt += parseFloat(r.querySelector('.amt-val').innerText) || 0;
         locGroup[loc].lastRow = r;
     });
     Object.keys(locGroup).forEach(loc => {
-        locGroup[loc].lastRow.insertAdjacentHTML('afterend', `<tr class="subtotal-row"><td colspan="4" style="text-align:right;">Sub-Total ${loc}:</td><td>${locGroup[loc].in.toFixed(2)}</td><td>${locGroup[loc].out.toFixed(2)}</td><td></td><td></td><td style="text-align:right;">${locGroup[loc].amt.toFixed(2)}</td></tr>`);
+        locGroup[loc].lastRow.insertAdjacentHTML('afterend', `
+            <tr class="subtotal-row" style="background:#f8fafc; font-weight:bold;">
+                <td colspan="4" style="text-align:right;">Sub-Total (${loc}):</td>
+                <td>${locGroup[loc].hoso.toFixed(2)}</td>
+                <td>${locGroup[loc].hlso.toFixed(2)}</td>
+                <td colspan="2"></td>
+                <td style="text-align:right;">${locGroup[loc].amt.toFixed(2)}</td>
+            </tr>`);
     });
 }
 
-// =====================================================
-// DYNAMIC FORM LOGIC (COMPANY + LOCATION -> BATCH -> COUNT)
-// =====================================================
-
+// 5. DYNAMIC API FETCHING
 async function loadBatches() {
     const comp = document.getElementById('form_production_for').value;
     const loc = document.getElementById('form_loc').value;
     if(!comp || !loc) return;
 
-    fetch(`/processing/get_valid_batches/${comp}/${loc}`)
+    fetch(`/processing/get_valid_batches/${encodeURIComponent(comp)}/${encodeURIComponent(loc)}`)
     .then(r => r.json())
     .then(data => {
         const dl = document.getElementById('batch_list_data');
         dl.innerHTML = '';
         if(data.batches) data.batches.forEach(b => dl.innerHTML += `<option value="${b}">`);
-        // Clear dependent fields
         document.getElementById('form_batch').value = '';
+        document.getElementById('form_count').value = '';
         document.getElementById('count_list_data').innerHTML = '';
+        document.getElementById('floor_display').innerText = "0.00";
     });
 }
 
@@ -424,72 +444,116 @@ async function loadCounts() {
     const batch = document.getElementById('form_batch').value;
     if(!comp || !loc || !batch) return;
 
-    fetch(`/processing/get_hoso/${comp}/${loc}/${batch}`)
+    fetch(`/processing/get_hoso/${encodeURIComponent(comp)}/${encodeURIComponent(loc)}/${encodeURIComponent(batch)}`)
     .then(r => r.json())
     .then(data => {
         const dl = document.getElementById('count_list_data');
         dl.innerHTML = '';
         if(data.counts) data.counts.forEach(c => dl.innerHTML += `<option value="${c}">`);
+        document.getElementById('form_count').value = '';
         checkFloor(); 
     });
 }
 
+// FIXED: Uses Query Parameters to avoid 404 error with '/' in counts
 async function checkFloor() {
     const loc = document.getElementById('form_loc').value;
     const b = document.getElementById('form_batch').value;
     const c = document.getElementById('form_count').value;
     const s = document.getElementById('form_species').value;
-    if(!loc || !b || !c || !s) { document.getElementById('floor_display').innerText = "0.00"; return; }
+    
+    if(!loc || !b || !c || !s) { 
+        document.getElementById('floor_display').innerText = "0.00"; 
+        return; 
+    }
+    
     try {
-        const response = await fetch(`/processing/get_available_qty/${loc}/${b}/${c}/${s}`);
+        const params = new URLSearchParams({
+            location: loc,
+            batch: b,
+            count: c,
+            species_name: s
+        });
+
+        const response = await fetch(`/processing/get_available_qty?${params.toString()}`);
         const data = await response.json();
-        document.getElementById('floor_display').innerText = data.available_qty || "0.00";
-    } catch(e) { console.error(e); }
+        const avl = data.available_qty || 0;
+        const display = document.getElementById('floor_display');
+        display.innerText = avl.toFixed(2);
+        display.style.color = avl > 0 ? "#1e40af" : "#ef4444";
+    } catch(e) { 
+        console.error("Floor check failed:", e); 
+        document.getElementById('floor_display').innerText = "0.00";
+    }
 }
 
 function getRate() {
     const c = document.getElementById('f_contractor').value;
     if(!c) return;
-    fetch(`/processing/get_rate/${c}`).then(r=>r.json()).then(data => {
+    fetch(`/processing/get_rate/${encodeURIComponent(c)}`).then(r=>r.json()).then(data => {
         document.getElementById('f_rate').value = data.rate;
         calculateForm();
     });
 }
 
+// 6. CALCULATIONS & MODAL
 function calculateForm() {
     const hoso = parseFloat(document.getElementById('f_hoso').value) || 0;
     const hlso = parseFloat(document.getElementById('f_hlso').value) || 0;
     const rate = parseFloat(document.getElementById('f_rate').value) || 0;
-    document.getElementById('f_yield').value = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) + "%" : "0%";
+    
+    const yieldVal = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) : 0;
+    document.getElementById('f_yield').value = yieldVal + "%";
     document.getElementById('f_amount').value = (hlso * rate).toFixed(2);
 }
 
+function openModal() { 
+    document.getElementById('entryModal').style.display = 'flex'; 
+}
+
+function closeModal() { 
+    document.getElementById('entryModal').style.display = 'none'; 
+    document.getElementById('deHeadingForm').reset();
+    document.getElementById('floor_display').innerText = "0.00";
+}
+
+// 7. FORM SUBMISSION
 document.getElementById('deHeadingForm').onsubmit = async function(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     const reqQty = parseFloat(document.getElementById('f_hoso').value) || 0;
     const availQty = parseFloat(document.getElementById('floor_display').innerText) || 0;
+
+    if (reqQty <= 0) { 
+        Swal.fire('Error', 'Please enter a valid HOSO Quantity', 'error'); 
+        return; 
+    }
+    
     if (reqQty > (availQty + 0.1)) { 
         Swal.fire('Error', `Quantity exceeds floor balance! (Available: ${availQty})`, 'error'); 
         return; 
     }
-    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    btn.disabled = true; 
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    
     try {
         const resp = await fetch('/processing/de_heading', { method: 'POST', body: new FormData(this) });
-        if (resp.ok) Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false }).then(() => window.location.reload());
-        else {
+        if (resp.ok) {
+            Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false })
+            .then(() => window.location.reload());
+        } else {
             const errData = await resp.json();
             throw new Error(errData.error || 'Save failed');
         }
-    } catch (err) { Swal.fire('Error', err.message, 'error'); btn.disabled = false; btn.innerText = 'Save Entry'; }
+    } catch (err) { 
+        Swal.fire('Error', err.message, 'error'); 
+        btn.disabled = false; 
+        btn.innerText = 'Save Entry'; 
+    }
 };
 
-function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
-function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
-document.getElementById('f_hoso').addEventListener('input', calculateForm);
-document.getElementById('f_hlso').addEventListener('input', calculateForm);
-
-let selectedId = null;
+// 8. ROW SELECTION & DELETE
 function selectRow(row) {
     document.querySelectorAll('#mainTable tr').forEach(r => r.classList.remove('selected-row'));
     row.classList.add('selected-row');
@@ -505,17 +569,37 @@ document.getElementById('menuBtn').onclick = (e) => {
 
 async function deleteSelected() {
     if(!selectedId) return;
-    const result = await Swal.fire({ title: 'Delete?', text: "This action cannot be undone!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
+    const result = await Swal.fire({ 
+        title: 'Delete?', 
+        text: "This action cannot be undone!", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#ef4444' 
+    });
+    
     if(result.isConfirmed) {
         try {
             const resp = await fetch(`/processing/de_heading/delete/${selectedId}`, { method: 'POST' });
             if(resp.ok) window.location.reload();
+            else throw new Error("Delete failed");
         } catch (err) { Swal.fire('Error', err.message, 'error'); }
     }
 }
 
-window.onclick = () => { document.getElementById('dropdownMenu').style.display = 'none'; };
-window.onload = updateDashboard;
+// 9. EVENT LISTENERS
+document.getElementById('f_hoso').addEventListener('input', calculateForm);
+document.getElementById('f_hlso').addEventListener('input', calculateForm);
+
+window.onclick = (e) => { 
+    if(!e.target.closest('.menu-trigger')) {
+        const m = document.getElementById('dropdownMenu');
+        if(m) m.style.display = 'none';
+    }
+};
+
+window.onload = () => {
+    updateDashboard();
+};
 </script>
 </body>
 </html>

@@ -288,6 +288,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 const RAW_FLOOR = {{ hlso_floor_balance | safe if hlso_floor_balance else '[]' }};
 const DRILL_DATA = {{ drill_down_json | safe if drill_down_json else '{}' }};
 
+// Global maps to store backend response for auto-filling
+let globalSpeciesMap = {};
+let globalVarietyMap = {};
+
 window.onload = runDashboard;
 
 function runDashboard() {
@@ -466,24 +470,53 @@ function handleCompanyChange() {
     )];
 
     relevantBatches.forEach(batch => {
-        bl.innerHTML += `<option value="${batch}">`;
+        let opt = document.createElement('option');
+        opt.value = batch;
+        bl.appendChild(opt);
     });
 }
 
 async function loadHLSO(){
     const b = document.getElementById("f_batch").value;
-    const cl = document.getElementById("fcnl"); cl.innerHTML = "";
+    const cl = document.getElementById("fcnl"); 
+    cl.innerHTML = "";
     if(!b) return;
-    let r = await fetch("/processing/peeling/get_hlso/" + encodeURIComponent(b));
-    let d = await r.json();
-    if(d.counts) d.counts.forEach(c => cl.innerHTML += `<option value="${c}">`);
-    
-    if(d.species_map && Object.keys(d.species_map).length > 0) {
-        const firstCount = d.counts[0];
-        document.getElementById("f_species").value = d.species_map[firstCount] || "";
-        document.getElementById("f_variety").value = d.variety_map[firstCount] || "";
-    }
+
+    try {
+        let r = await fetch("/processing/peeling/get_hlso/" + encodeURIComponent(b));
+        let d = await r.json();
+
+        if(d.counts && d.counts.length > 0) {
+            // Store maps for auto-fill logic
+            globalSpeciesMap = d.species_map || {};
+            globalVarietyMap = d.variety_map || {};
+
+            d.counts.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c;
+                cl.appendChild(opt);
+            });
+
+            // Auto-fill first count
+            const first = d.counts[0];
+            document.getElementById("f_count").value = first;
+            document.getElementById("f_species").value = globalSpeciesMap[first] || "";
+            document.getElementById("f_variety").value = globalVarietyMap[first] || "";
+            
+            loadAvailableQty();
+        }
+    } catch(e) { console.error("Load HLSO Failed:", e); }
 }
+
+// Fixed: On manual count change, update other fields
+document.getElementById("f_count").addEventListener('input', function() {
+    const val = this.value;
+    if(globalSpeciesMap[val]) {
+        document.getElementById("f_species").value = globalSpeciesMap[val];
+        document.getElementById("f_variety").value = globalVarietyMap[val];
+        loadAvailableQty();
+    }
+});
 
 async function loadAvailableQty(){
     const loc = document.getElementById("f_location").value;
@@ -498,18 +531,23 @@ async function loadAvailableQty(){
     }
 
     try {
-        const url = `/processing/peeling/get_available_qty?location=${encodeURIComponent(loc)}&batch=${encodeURIComponent(batch)}&count=${encodeURIComponent(count)}&species_name=${encodeURIComponent(spec)}&variety_name=${encodeURIComponent(variety)}`;
-        let r = await fetch(url);
+        const params = new URLSearchParams({
+            location: loc, batch: batch, count: count,
+            species_name: spec, variety_name: variety
+        });
+        let r = await fetch(`/processing/peeling/get_available_qty?${params.toString()}`);
         let d = await r.json();
         document.getElementById("floor_display").innerText = d.available_qty || "0.00";
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Floor check failed:", e); }
 }
 
 async function loadRate(){
     const c = document.getElementById("f_contractor").value;
     const v = document.getElementById("f_variety").value;
     if(!c || !v) return;
-    let r = await fetch(`/processing/peeling/get_rate?contractor=${encodeURIComponent(c)}&variety=${encodeURIComponent(v)}`);
+    
+    const params = new URLSearchParams({ contractor: c, variety: v });
+    let r = await fetch(`/processing/peeling/get_rate?${params.toString()}`);
     let d = await r.json();
     document.getElementById("f_rate").value = d.rate || 0; 
     calc();
@@ -523,42 +561,25 @@ function calc(){
     document.getElementById("f_amount").value = (o * r).toFixed(2);
 }
 
-// Validation Logic for Insufficient Quantity
-async function submitPeelingForm(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
+// Intercept form submission to check stock
+document.getElementById("peelingForm").onsubmit = async function(e) {
+    e.preventDefault();
+    const stock = parseFloat(document.getElementById("floor_display").innerText) || 0;
+    const req = parseFloat(document.getElementById("f_qty_in").value) || 0;
 
-    try {
-        const response = await fetch(form.action, {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) {
-            const result = await response.json();
-            if (result.error) {
-                // అలర్ట్ బాక్స్ ద్వారా Insufficient Qty ఎర్రర్ చూపించడం
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Stock Limited!',
-                    text: result.error
-                });
-                return;
-            }
-        }
-
-        if (response.redirected) {
-            window.location.href = response.url;
-        } else {
-            location.reload();
-        }
-
-    } catch (error) {
-        console.error("Save Error:", error);
-        alert("An error occurred while saving the entry.");
+    if(req > stock) {
+        Swal.fire('Insufficient Stock!', `Available: ${stock} KG, Requested: ${req} KG`, 'error');
+        return;
     }
-}
+
+    const formData = new FormData(this);
+    let r = await fetch(this.action, { method: "POST", body: formData });
+    if(r.ok) location.reload();
+    else {
+        let res = await r.json();
+        Swal.fire('Error', res.error || 'Failed to save', 'error');
+    }
+};
 
 document.getElementById("f_qty_in").oninput = calc;
 document.getElementById("f_qty_out").oninput = calc;
@@ -587,7 +608,9 @@ function deleteSelected() {
 function toggleReqDrill(el, s, v, c) {
     const dr = el.closest('tr').nextElementSibling, db = dr.querySelector('.drill-body');
     if (dr.style.display === "none") {
-        db.innerHTML = ""; const key = `${s}|${v}|${c}`, data = (DRILL_DATA.hlso && DRILL_DATA.hlso[key]) ? DRILL_DATA.hlso[key] : [];
+        db.innerHTML = ""; 
+        const key = `${s}|${v}|${c}`;
+        const data = (DRILL_DATA.hlso && DRILL_DATA.hlso[key]) ? DRILL_DATA.hlso[key] : [];
         if(data.length) data.forEach(m => db.innerHTML += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td style="text-align:right;">${m.qty.toFixed(2)}</td></tr>`);
         else db.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No details</td></tr>";
         dr.style.display = "table-row";
