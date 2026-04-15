@@ -137,7 +137,8 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     # 7. తాజా డేటాను డిస్ప్లే చేయడం
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
-    return request.app.state.templates.TemplateResponse(
-        "reports/re-process.html", 
-        {"request": request, "rows": rows}
-    )
+    return templates.TemplateResponse(
+    request,
+    "reports/floor_balance_report.html",
+    {"request": request, "data": data}
+)
