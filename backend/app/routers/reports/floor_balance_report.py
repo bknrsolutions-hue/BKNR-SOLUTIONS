@@ -117,7 +117,9 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     ))
 
     # --- 5. RETURN UPDATED RESPONSE ---
+    # ఇక్కడ కూడా ఎర్రర్ రాకుండా కీవర్డ్ ఆర్గ్యూమెంట్స్ వాడుతున్నాను
     return templates.TemplateResponse(
-        "reports/floor_balance_report.html",
-        {"request": request, "data": rows_batch}
+        request=request,
+        name="reports/floor_balance_report.html",
+        context={"data": rows_batch}
     )
