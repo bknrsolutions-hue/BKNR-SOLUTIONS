@@ -35,7 +35,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     c_upper = comp_code.upper()
     if "SOLUTIONS" in c_upper:
         parts = c_upper.split()
-        comp_prefix = parts[0][0] + parts[-1][0]
+        comp_prefix = parts[Part_index := 0][0] + parts[-1][0]
     else:
         comp_prefix = c_upper[:2]
 
@@ -91,14 +91,12 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         batch_calculated_rates[b_num] = residual_amt / total_rm_eq_w if total_rm_eq_w > 0 else 0
 
     # 6. 🔹 FRESH INSERT WITH UNIQUE COMBINATION LOGIC
-    # ప్రాసెస్ వైజ్ మరియు డేట్ వైజ్ సీరియల్ కౌంటర్
     counters = {} 
 
     for item in inventory_out_data:
         p_val = str(item.purpose or "GENERAL OUT").upper()
         d_str = item.date.strftime('%y%m%d') if item.date else datetime.now().strftime('%y%m%d')
         
-        # కౌంటర్ కీ: ప్రాసెస్ + డేట్ (ప్రతి రోజు ప్రాసెస్ కి 001 నుండి స్టార్ట్ అవుతుంది)
         count_key = f"{p_val}_{d_str}"
         counters[count_key] = counters.get(count_key, 0) + 1
         
@@ -108,11 +106,9 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         y_val = getattr(item, '_y', 1.0)
         b_rate = batch_calculated_rates.get(item.batch_number, 0)
         
-        # BKN/DC రేట్ రూల్
         final_rate = 280.0 if any(x in str(item.grade).upper() for x in ["BKN", "DC"]) else round(b_rate / y_val, 2)
         final_val = round(float(item.quantity or 0) * final_rate, 2)
 
-        # బ్యాచ్ ఐడి జనరేషన్: BK-ML-260415-001
         b_id = f"{comp_prefix}-{tag}-{d_str}-{counters[count_key]:03d}"
 
         db.add(Reprocess(
@@ -139,8 +135,9 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     # 7. తాజా డేటాను డిస్ప్లే చేయడం
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
-    # ఎర్రర్ ఫిక్స్: నేరుగా templates వాడాను
+    # ఎర్రర్ ఫిక్స్: Starlette TemplateResponse కి context కరెక్ట్ గా పంపడం
     return templates.TemplateResponse(
-        "reports/re-process.html", 
-        {"request": request, "rows": rows}
+        request=request,
+        name="reports/re-process.html", 
+        context={"rows": rows}
     )
