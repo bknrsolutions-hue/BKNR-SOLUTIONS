@@ -2,35 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="30"> <title>RE-PROCESS REPORT | BKNR ERP</title>
+<meta http-equiv="refresh" content="30"> 
+<title>RE-PROCESS REPORT | BKNR ERP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    :root{ --primary:#0f172a; --accent:#2563eb; --border:#cbd5e1; --bg:#f1f5f9; }
-    body{ margin:0; background:var(--bg); font-family:Inter, sans-serif; overflow:hidden; display:flex; flex-direction:column; height:100vh; }
-    .header{ background:#fff; padding:12px 20px; border-bottom:2px solid var(--primary); display:flex; justify-content:space-between; align-items:center; }
-    .header h2{ margin:0; font-size:15px; font-weight:800; color:var(--primary); }
+    :root{ --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f8fafc; }
+    body{ margin:0; background:var(--bg); font-family:'Segoe UI', Tahoma, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
     
-    .section{ flex:1; margin:10px 15px; background:#fff; border:1px solid var(--border); overflow:hidden; display:flex; flex-direction:column; border-radius:8px; }
-    .table-wrap{ flex:1; overflow:auto; }
-    table{ width:100%; border-collapse:collapse; min-width:1800px; }
+    .header{ background:#fff; padding:8px 15px; border-bottom:1.5px solid var(--primary); display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform: uppercase; }
+    
+    .section{ flex:1; margin:8px; background:#fff; border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
+    .table-wrap{ flex:1; overflow:auto; scrollbar-width: thin; }
+    
+    table{ width:100%; border-collapse:collapse; min-width:1600px; table-layout: fixed; }
 
-    thead th{ background:#f8fafc; padding:12px 8px; font-size:10px; font-weight:800; text-transform:uppercase; border-bottom:2px solid var(--border); position:sticky; top:0; z-index:10; }
-    tbody td{ padding:10px 8px; font-size:11px; border-bottom:1px solid #f1f5f9; text-align:center; white-space:nowrap; }
+    thead th{ background:#f1f5f9; padding:6px 4px; font-size:9px; font-weight:800; text-transform:uppercase; border-bottom:1.5px solid var(--border); position:sticky; top:0; z-index:10; color: #475569; }
+    tbody td{ padding:4px 6px; font-size:10px; border-bottom:1px solid #f1f5f9; text-align:center; white-space:nowrap; overflow: hidden; text-overflow: ellipsis; }
+    tbody tr:hover { background-color: #f8fafc; }
 
-    .row-date-group { background: #f8fafc !important; font-weight: 800; text-align: left !important; }
-    .batch-id { color:var(--accent); font-weight:bold; font-family:monospace; background:#eff6ff; padding:4px 8px; border-radius:4px; border:1px solid #dbeafe; }
-    .val-cell { color: #166534; font-weight: 700; }
-    tfoot td{ background:#f1f5f9; font-weight:800; font-size:13px; border-top:2px solid var(--primary); position:sticky; bottom:0; padding:15px; }
-    .search-box { padding:8px; width:300px; border:1px solid var(--border); border-radius:6px; font-size:12px; }
+    .row-date-group { background: #f1f5f9 !important; font-weight: 800; text-align: left !important; color: #1e293b; font-size: 11px; }
+    .row-date-group td { padding: 6px 10px; border-top: 1px solid var(--border); }
+
+    .batch-id { color:var(--accent); font-weight:bold; font-family:'Consolas', monospace; background:#eff6ff; padding:2px 5px; border-radius:3px; border:1px solid #dbeafe; font-size: 9.5px; }
+    .val-cell { color: #15803d; font-weight: 700; background: #f0fdf4; }
+    .prod-for-cell { color: #b45309; font-weight: 700; text-align: left !important; }
+    
+    tfoot td{ background:#e2e8f0; font-weight:800; font-size:11px; border-top:1.5px solid var(--primary); position:sticky; bottom:0; padding:6px 10px; z-index: 10; }
+    
+    .search-box { padding:5px 10px; width:220px; border:1px solid var(--border); border-radius:4px; font-size:11px; outline: none; }
+    .type-tag { background:#f1f5f9; padding:2px 5px; border-radius:3px; font-weight:800; font-size: 8.5px; border: 1px solid #e2e8f0; }
 </style>
 </head>
 <body>
 
 <div class="header">
-    <h2><i class="fas fa-microchip"></i> LIVE RE-PROCESS TRACKING</h2>
-    <div>
-        <input type="text" id="searchBox" class="search-box" placeholder="Search Batch ID, Variety, Purpose...">
-    </div>
+    <h2><i class="fas fa-sync-alt"></i> RE-PROCESS TRACKING</h2>
+    <input type="text" id="searchBox" class="search-box" placeholder="Search Batch, Variety, Production For...">
 </div>
 
 <div class="section">
@@ -38,26 +46,27 @@
         <table>
             <thead>
                 <tr>
-                    <th width="50">#</th>
-                    <th width="100">Date</th>
-                    <th width="180">Generated Batch ID</th>
-                    <th width="140">Original Batch</th>
-                    <th width="120">Purpose</th>
-                    <th width="200">Variety</th>
-                    <th width="100">Grade</th>
-                    <th width="100">Species</th>
-                    <th width="100">Freezer</th>
-                    <th width="80">Glaze (%)</th>
-                    <th width="120">In-Qty (Kg)</th>
-                    <th width="120">Rate (₹)</th>
-                    <th width="150">Total Value (₹)</th>
-                    <th width="150">Production At</th>
+                    <th width="35">#</th>
+                    <th width="75">Date</th>
+                    <th width="140">Generated Batch</th>
+                    <th width="110">Original Batch</th>
+                    <th width="140">Production For</th>
+                    <th width="80">Purpose</th>
+                    <th width="180">Variety</th>
+                    <th width="75">Grade</th>
+                    <th width="75">Species</th>
+                    <th width="75">Freezer</th>
+                    <th width="60">Glaze</th>
+                    <th width="85">In-Qty</th>
+                    <th width="85">Rate</th>
+                    <th width="100">Total Value</th>
+                    <th width="110">Production At</th>
                 </tr>
             </thead>
             <tbody id="tbody"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="10" style="text-align:right">TOTALS:</td>
+                    <td colspan="11" style="text-align:right">GRAND TOTALS:</td>
                     <td id="grand_qty">0.00</td>
                     <td></td>
                     <td id="grand_val">0.00</td>
@@ -75,6 +84,7 @@ const rawData = [
         date: "{{ r.date }}",
         new_id: "{{ r.new_batch_id }}",
         orig_batch: "{{ r.original_batch }}",
+        prod_for: "{{ r.production_for }}",
         type: "{{ r.reprocess_type }}",
         variety: "{{ r.variety }}",
         grade: "{{ r.grade }}",
@@ -108,24 +118,33 @@ function applyFilters() {
     });
 
     Object.keys(groups).sort().reverse().forEach(date => {
-        tbody.innerHTML += `<tr class="row-date-group"><td colspan="10"><i class="far fa-calendar-check"></i> DATE: ${date}</td><td>${groups[date].subQty.toFixed(2)}</td><td></td><td>₹${groups[date].subVal.toLocaleString('en-IN')}</td><td></td></tr>`;
+        tbody.innerHTML += `
+            <tr class="row-date-group">
+                <td colspan="11"><i class="far fa-calendar-alt"></i> ${date}</td>
+                <td>${groups[date].subQty.toFixed(2)}</td>
+                <td></td>
+                <td>₹${groups[date].subVal.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+                <td></td>
+            </tr>`;
+        
         groups[date].items.forEach((r, i) => {
             tbody.innerHTML += `
                 <tr>
                     <td>${i+1}</td>
                     <td>${r.date}</td>
                     <td><span class="batch-id">${r.new_id}</span></td>
-                    <td style="font-family:monospace; font-weight:600">${r.orig_batch}</td>
-                    <td><span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:bold">${r.type}</span></td>
+                    <td style="font-family:monospace;">${r.orig_batch}</td>
+                    <td class="prod-for-cell">${r.prod_for}</td>
+                    <td><span class="type-tag">${r.type}</span></td>
                     <td style="text-align:left; font-weight:600">${r.variety}</td>
-                    <td style="font-weight:bold; color:#1e293b">${r.grade}</td>
+                    <td style="font-weight:bold; color:#334155">${r.grade}</td>
                     <td>${r.species}</td>
                     <td>${r.freezer}</td>
                     <td>${r.glaze}%</td>
-                    <td style="font-weight:bold; background:#f0fdf4">${r.qty.toFixed(2)}</td>
-                    <td style="color:#2563eb; font-weight:600">₹${r.rate.toFixed(2)}</td>
+                    <td style="font-weight:bold;">${r.qty.toFixed(2)}</td>
+                    <td style="color:#2563eb;">₹${r.rate.toFixed(2)}</td>
                     <td class="val-cell">₹${r.value.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                    <td>${r.prod_at}</td>
+                    <td style="font-size: 9px; color: #64748b;">${r.prod_at}</td>
                 </tr>`;
         });
     });

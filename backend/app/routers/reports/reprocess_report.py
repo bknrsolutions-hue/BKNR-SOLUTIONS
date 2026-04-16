@@ -18,12 +18,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/re-process", response_class=HTMLResponse)
 async def reprocess_report_page(request: Request, db: Session = Depends(get_db)):
-    # 1. సెషన్ నుండి కంపెనీ కోడ్ చెక్
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # 2. 🔹 RECALL LOGIC: పాత డేటాను క్లీన్ చేసి మళ్ళీ లోడ్ చేయడం
+    # 1. 🔹 DELETE & REGENERATE
     try:
         db.query(Reprocess).filter(Reprocess.company_id == comp_code).delete()
         db.commit()
@@ -31,31 +30,21 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         db.rollback()
         print(f"Cleanup Error: {e}")
 
-    # 3. కంపెనీ ప్రిఫిక్స్
-    c_upper = comp_code.upper()
-    if "SOLUTIONS" in c_upper:
-        parts = c_upper.split()
-        comp_prefix = parts[0][0] + parts[-1][0]
-    else:
-        comp_prefix = c_upper[:2]
-
-    # 4. ఇన్వెంటరీ నుండి 'OUT' ఎంట్రీలు తీసుకోవడం
+    # 2. ఇన్వెంటరీ నుండి 'OUT' ఎంట్రీలు
     inventory_out_data = db.query(stock_entry).filter(
         stock_entry.company_id == comp_code,
         stock_entry.cargo_movement_type.ilike("OUT")
-    ).all()
+    ).order_by(stock_entry.date.asc(), stock_entry.id.asc()).all()
 
-    # మాస్టర్ డేటా ప్రిపరేషన్
     v_records = {v.variety_name.lower(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == comp_code).all()}
     batch_calculated_rates = {}
     unique_batches = list(set([r.batch_number for r in inventory_out_data if r.batch_number]))
 
-    # 5. ప్రతి బ్యాచ్ కి RM యావరేజ్ రేట్ క్యాలిక్యులేషన్
+    # 3. రేట్ క్యాలిక్యులేషన్ (యావరేజ్ కాస్టింగ్)
     for b_num in unique_batches:
         total_rmp_amt = db.query(func.sum(RawMaterialPurchasing.amount)).filter(
             RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == b_num
         ).scalar() or 0
-        
         rmp_avg_rate = db.query(func.avg(RawMaterialPurchasing.rate_per_kg)).filter(
             RawMaterialPurchasing.batch_number == b_num, RawMaterialPurchasing.company_id == comp_code
         ).scalar() or 0
@@ -89,35 +78,53 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
 
         batch_calculated_rates[b_num] = residual_amt / total_rm_eq_w if total_rm_eq_w > 0 else 0
 
-    # 6. 🔹 FRESH INSERT WITH CORRECT PRODUCTION_FOR
-    counters = {} 
+    # 4. 🔹 GROUPING LOGIC FOR SAME BATCH ID
+    # ఈ డిక్షనరీ లో మనం ఇప్పటికే జనరేట్ చేసిన బ్యాచ్ ఐడిలను స్టోర్ చేస్తాం
+    generated_batches = {} 
+    daily_counter = 0
 
     for item in inventory_out_data:
         p_val = str(item.purpose or "GENERAL OUT").upper()
         d_str = item.date.strftime('%y%m%d') if item.date else datetime.now().strftime('%y%m%d')
         
-        count_key = f"{p_val}_{d_str}"
-        counters[count_key] = counters.get(count_key, 0) + 1
-        
-        p_tag_map = {"SALES": "SL", "MELTING": "ML", "REPACKING": "RP", "REGLAZE": "RZ", "STORING": "ST"}
-        tag = p_tag_map.get(p_val, "RE")
-        
+        # Production For Discovery
+        p_for_name = item.production_for
+        if not p_for_name or str(p_for_name).strip().upper() in ["N/A", "NONE", ""]:
+            orig_row = db.query(RawMaterialPurchasing.production_for).filter(
+                RawMaterialPurchasing.batch_number == item.batch_number,
+                RawMaterialPurchasing.company_id == comp_code
+            ).first()
+            p_for_name = orig_row[0] if orig_row else "General Stock"
+
+        # 🔹 నిక్వెస్ట్ ప్రకారం: Match Key (Date + Purpose + Grade + Variety + Glaze + ProdFor + ProdAt)
+        match_key = (
+            d_str, 
+            p_val, 
+            str(item.grade).strip().upper(), 
+            str(item.variety).strip().upper(), 
+            str(item.glaze).strip(), 
+            str(p_for_name).strip().upper(),
+            str(item.production_at).strip().upper()
+        )
+
+        if match_key in generated_batches:
+            # ఒకవేళ అదే కాంబినేషన్ ఆల్రెడీ ఉంటే, పాత బ్యాచ్ ఐడి నే వాడు
+            b_id = generated_batches[match_key]
+        else:
+            # కొత్త కాంబినేషన్ అయితే సీరియల్ నంబర్ పెంచి కొత్త ఐడి ఇవ్వు
+            daily_counter += 1
+            prefix = str(p_for_name).strip().upper()[:2]
+            p_tag_map = {"SALES": "SL", "MELTING": "ML", "REPACKING": "RP", "REGLAZE": "RZ", "STORING": "ST"}
+            tag = p_tag_map.get(p_val, "RE")
+            
+            b_id = f"{prefix}-{tag}-{d_str}-{daily_counter:03d}"
+            generated_batches[match_key] = b_id
+
+        # కాస్టింగ్ వాల్యూస్
         y_val = getattr(item, '_y', 1.0)
         b_rate = batch_calculated_rates.get(item.batch_number, 0)
         final_rate = 280.0 if any(x in str(item.grade).upper() for x in ["BKN", "DC"]) else round(b_rate / y_val, 2)
         final_val = round(float(item.quantity or 0) * final_rate, 2)
-
-        # బ్యాచ్ ఐడి జనరేషన్
-        b_id = f"{comp_prefix}-{tag}-{d_str}-{counters[count_key]:03d}"
-
-        # --- PRODUCTION FOR ని RMP నుండి లాగడం ---
-        p_for = item.production_for
-        if not p_for or str(p_for).strip().upper() in ["N/A", "NONE", ""]:
-            orig_p_for = db.query(RawMaterialPurchasing.production_for).filter(
-                RawMaterialPurchasing.batch_number == item.batch_number,
-                RawMaterialPurchasing.company_id == comp_code
-            ).first()
-            p_for = orig_p_for[0] if orig_p_for else "General Stock"
 
         db.add(Reprocess(
             date=item.date,
@@ -133,7 +140,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             glaze=item.glaze,
             in_qty=item.quantity,
             production_at=item.production_at,
-            production_for=p_for,  # ఇక్కడ కరెక్ట్ గా అసైన్ అవుతుంది
+            production_for=p_for_name,
             product_kg_value=final_rate,
             inventory_value=final_val,
             status="In-Progress"
@@ -141,7 +148,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
 
     db.commit()
     
-    # 7. తాజా డేటాను డిస్ప్లే చేయడం
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
     return templates.TemplateResponse(
