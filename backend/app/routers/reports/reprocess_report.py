@@ -31,11 +31,11 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         db.rollback()
         print(f"Cleanup Error: {e}")
 
-    # 3. కంపెనీ ప్రిఫిక్స్ (BKNR -> BK, BKNR SOLUTIONS -> BS)
+    # 3. కంపెనీ ప్రిఫిక్స్
     c_upper = comp_code.upper()
     if "SOLUTIONS" in c_upper:
         parts = c_upper.split()
-        comp_prefix = parts[Part_index := 0][0] + parts[-1][0]
+        comp_prefix = parts[0][0] + parts[-1][0]
     else:
         comp_prefix = c_upper[:2]
 
@@ -45,7 +45,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         stock_entry.cargo_movement_type.ilike("OUT")
     ).all()
 
-    # మాస్టర్ డేటా & కాస్టింగ్ కోసం ప్రిపరేషన్
+    # మాస్టర్ డేటా ప్రిపరేషన్
     v_records = {v.variety_name.lower(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == comp_code).all()}
     batch_calculated_rates = {}
     unique_batches = list(set([r.batch_number for r in inventory_out_data if r.batch_number]))
@@ -73,7 +73,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
 
         residual_amt = float(total_rmp_amt) - float(total_floor_val)
         
-        # RM Equivalent Weight
         batch_items = [r for r in inventory_out_data if r.batch_number == b_num]
         total_rm_eq_w = 0
         for r in batch_items:
@@ -90,7 +89,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
 
         batch_calculated_rates[b_num] = residual_amt / total_rm_eq_w if total_rm_eq_w > 0 else 0
 
-    # 6. 🔹 FRESH INSERT WITH UNIQUE COMBINATION LOGIC
+    # 6. 🔹 FRESH INSERT WITH CORRECT PRODUCTION_FOR
     counters = {} 
 
     for item in inventory_out_data:
@@ -105,11 +104,20 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         
         y_val = getattr(item, '_y', 1.0)
         b_rate = batch_calculated_rates.get(item.batch_number, 0)
-        
         final_rate = 280.0 if any(x in str(item.grade).upper() for x in ["BKN", "DC"]) else round(b_rate / y_val, 2)
         final_val = round(float(item.quantity or 0) * final_rate, 2)
 
+        # బ్యాచ్ ఐడి జనరేషన్
         b_id = f"{comp_prefix}-{tag}-{d_str}-{counters[count_key]:03d}"
+
+        # --- PRODUCTION FOR ని RMP నుండి లాగడం ---
+        p_for = item.production_for
+        if not p_for or str(p_for).strip().upper() in ["N/A", "NONE", ""]:
+            orig_p_for = db.query(RawMaterialPurchasing.production_for).filter(
+                RawMaterialPurchasing.batch_number == item.batch_number,
+                RawMaterialPurchasing.company_id == comp_code
+            ).first()
+            p_for = orig_p_for[0] if orig_p_for else "General Stock"
 
         db.add(Reprocess(
             date=item.date,
@@ -125,6 +133,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             glaze=item.glaze,
             in_qty=item.quantity,
             production_at=item.production_at,
+            production_for=p_for,  # ఇక్కడ కరెక్ట్ గా అసైన్ అవుతుంది
             product_kg_value=final_rate,
             inventory_value=final_val,
             status="In-Progress"
@@ -135,7 +144,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     # 7. తాజా డేటాను డిస్ప్లే చేయడం
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
-    # ఎర్రర్ ఫిక్స్: Starlette TemplateResponse కి context కరెక్ట్ గా పంపడం
     return templates.TemplateResponse(
         request=request,
         name="reports/re-process.html", 
