@@ -21,26 +21,23 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     all_combos = set()
     report_date = datetime.now().date()
 
-    # --- 1. RMP & PROCESSING SOURCES (Strictly Session Company) ---
-    # RMP నుండి మెటీరియల్ డేటా
+    # --- 1. RMP & PROCESSING SOURCES ---
     rmp_data = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_id).all()
     for r in rmp_data:
         if r.batch_number:
             all_combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
 
-    # Grading నుండి గ్రేడ్ అయిన డేటా
     grad_data = db.query(Grading).filter(Grading.company_id == company_id).all()
     for g in grad_data:
         if g.batch_number:
             all_combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at or "Floor", "RMP"))
 
-    # Peeling నుండి తొక్క తీసిన మెటీరియల్ డేటా
     peel_data = db.query(Peeling).filter(Peeling.company_id == company_id).all()
     for p in peel_data:
         if p.batch_number:
             all_combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, p.production_for, p.peeling_at or "Floor", "RMP"))
 
-    # --- 2. REPROCESS SOURCES (With Auto-Discovery for Production For) ---
+    # --- 2. REPROCESS SOURCES ---
     repro_data = db.query(Reprocess).filter(
         Reprocess.company_id == company_id, 
         Reprocess.reprocess_type != 'SALES'
@@ -48,10 +45,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     
     for r in repro_data:
         if r.new_batch_id:
-            # మొదట Reprocess లో production_for ఉందో లేదో చూస్తుంది
             p_for = r.production_for
-            
-            # అక్కడ N/A లేదా ఖాళీగా ఉంటే, Original Batch నుండి కంపెనీని వెతుకుతుంది
             if not p_for or str(p_for).strip().upper() == "N/A":
                 orig = db.query(RawMaterialPurchasing.production_for).filter(
                     RawMaterialPurchasing.batch_number == r.original_batch,
@@ -76,10 +70,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     # --- 3. LIVE STOCK CALCULATION ---
     rows_batch = []
     for batch, count, species_val, variety, prod_for, location, s_type in all_combos:
-        # క్వెరీ కోసం N/A ని None గా మార్చడం
         pass_prod_for = None if prod_for == "N/A" else prod_for
-        
-        # Service ద్వారా బ్యాలెన్స్ లెక్కించడం
         qty = get_floor_balance(
             db=db, 
             company_id=company_id, 
@@ -92,7 +83,6 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
             source_type=s_type
         )
         
-        # కేవలం స్టాక్ ఉన్నవి (qty > 0) మాత్రమే రిపోర్ట్ లో చూపిస్తాం
         if qty and qty > 0.01:
             rows_batch.append({
                 "batch": batch,
@@ -106,8 +96,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
                 "date": report_date
             })
 
-    # --- 4. MULTI-LEVEL SORTING (For Grouping in UI) ---
-    # ఆర్డర్: Location > Production For > Species > Variety > Count
+    # --- 4. SORTING ---
     rows_batch.sort(key=lambda x: (
         str(x["location"]), 
         str(x["production_for"]), 
@@ -116,8 +105,9 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         str(x["count"])
     ))
 
-    # --- 5. FIXED RESPONSE ---
+    # --- 5. RETURN (FIXED LINE) ---
     return templates.TemplateResponse(
-        "reports/floor_balance_report.html",
-        {"request": request, "rows_batch": rows_batch}
+        request=request,
+        name="reports/floor_balance_report.html",
+        context={"rows_batch": rows_batch}
     )
