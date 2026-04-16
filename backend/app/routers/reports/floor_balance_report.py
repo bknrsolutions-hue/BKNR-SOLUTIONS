@@ -116,9 +116,8 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         str(x["count"])
     ))
 
+    # --- 5. RETURN UPDATED RESPONSE ---
     return templates.TemplateResponse(
-    request,
-    "reports/floor_balance_report.html",
-    {"request": request, "data": data}
-)
-    
+        "reports/floor_balance_report.html",
+        {"request": request, "data": rows_batch}
+    )

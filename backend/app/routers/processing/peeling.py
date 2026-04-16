@@ -216,44 +216,35 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
 def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     
-    # 1. Sources నుంచి డేటా కలెక్ట్ చేయడం
-    # Grading Source
     c1 = db.query(Grading.graded_count, Grading.species, Grading.variety_name, Grading.peeling_at).filter(
         Grading.company_id == company_id, Grading.batch_number == batch, ~Grading.variety_name.ilike("%HOSO%")
     ).all()
     
-    # Peeling Source (In case of partial peeling)
     c2 = db.query(Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.peeling_at).filter(
         Peeling.company_id == company_id, Peeling.batch_number == batch, ~Peeling.variety_name.ilike("%HOSO%")
     ).all()
     
-    # RMP Source
     c3 = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.peeling_at).filter(
         RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch, ~RawMaterialPurchasing.variety_name.ilike("%HOSO%")
     ).all()
     
-    # Reprocess Source - ఇక్కడ 'grade' ని తీసుకుంటున్నాం
     c4 = db.query(Reprocess.grade, Reprocess.species, Reprocess.variety, Reprocess.production_at).filter(
         Reprocess.company_id == company_id, Reprocess.new_batch_id == batch, ~Reprocess.variety.ilike("%HOSO%")
     ).all()
     
-    # అన్నింటినీ ఒకే సెట్ లోకి చేర్చడం (De-duplication)
     combos = set()
     for row in c1: combos.add((row[0], row[1], row[2], row[3]))
     for row in c2: combos.add((row[0], row[1], row[2], row[3]))
     for row in c3: combos.add((row[0], row[1], row[2], row[3]))
     for row in c4: combos.add((row[0], row[1], row[2], row[3]))
     
-    valid_counts = set()
-    species_map = {}
-    variety_map = {}
+    valid_counts, species_map, variety_map = set(), {}, {}
 
     for count, spc, var, loc in combos:
         if not count or str(count).strip() == "" or str(count).upper() == "N/A":
             continue
         
         location = loc if loc else "Floor"
-        # Floor Balance చెక్ చేయడం
         qty = get_floor_balance(db, company_id, location, batch, count, spc, var)
         
         if qty > 0.01:
@@ -268,19 +259,40 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
         "variety_map": variety_map
     }
 
+# API: GET AVAILABLE QTY (FIXED FOR PEELING)
 @router.get("/peeling/get_available_qty")
 def get_available_qty(
-    request: Request,
     location: str = Query(...), 
     batch: str = Query(...), 
     count: str = Query(...), 
     species_name: str = Query(...), 
-    variety_name: str = Query(...), 
+    variety_name: str = Query(...),
+    production_for: str = Query(...), # Added for precise filtering
+    request: Request = None, 
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_code")
-    qty = get_floor_balance(db, company_id, location, batch, count, species_name, variety_name)
-    return {"available_qty": round(max(qty, 0), 2)}
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return {"available_qty": 0}
+    
+    clean_batch = str(batch).strip()
+    clean_count = str(count).strip()
+
+    is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_code).first()
+    s_type = "REPROCESS" if is_repro else "RMP"
+
+    qty = get_floor_balance(
+        db=db, 
+        company_id=company_code, 
+        location=location, 
+        batch=clean_batch, 
+        count=clean_count, 
+        species=species_name, 
+        variety=variety_name,
+        production_for=production_for,
+        source_type=s_type
+    )
+    return {"available_qty": round(qty, 2) if qty else 0}
 
 @router.get("/peeling/get_rate")
 def get_rate(
@@ -297,44 +309,83 @@ def get_rate(
     ).order_by(peeling_rates.effective_from.desc()).first()
     return {"rate": float(row[0]) if row else 0}
 
-# =====================================================
-# CRUD OPERATIONS
-# =====================================================
-
 @router.post("/peeling")
-def save_peeling(
-    request: Request,
-    batch_number: str = Form(...), hlso_count: str = Form(...), hlso_qty: float = Form(...),
-    variety_name: str = Form(...), peeled_qty: float = Form(...), contractor_name: str = Form(...),
-    rate: float = Form(...), amount: float = Form(...), yield_percent: float = Form(...),
-    species_name: str = Form(...), peeling_at: str = Form(...), production_for: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    email = request.session.get("email")
-    company_id = request.session.get("company_code")
-    if not email or not company_id: return RedirectResponse("/auth/login", status_code=303)
-
-    avail = get_floor_balance(db, company_id, peeling_at, batch_number, hlso_count, species_name, variety_name)
+def save_peeling(request: Request, db: Session = Depends(get_db), 
+                 production_for: str = Form(...), location: str = Form(...), 
+                 batch_number: str = Form(...), in_count: str = Form(...), 
+                 species: str = Form(...), variety: str = Form(...),
+                 hlso_qty: float = Form(...), peeled_qty: float = Form(...), 
+                 yield_percent: str = Form(...), contractor_name: str = Form(...), 
+                 rate: float = Form(...), amount: float = Form(...)):
     
-    if hlso_qty > (avail + 0.05):
-         return JSONResponse(
-             status_code=400,
-             content={"error": f"Stock limited! Only {round(avail, 2)} KG available at {peeling_at}"}
-         )
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_code: 
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    obj = Peeling(
-        batch_number=batch_number, hlso_count=hlso_count, hlso_qty=hlso_qty,
-        variety_name=variety_name, peeled_qty=peeled_qty, contractor_name=contractor_name,
-        rate=rate, amount=amount, yield_percent=yield_percent, species=species_name,
-        peeling_at=peeling_at, production_for=production_for,
-        date=date.today(), time=datetime.now().time(), email=email, company_id=company_id
+    clean_batch = str(batch_number).strip()
+    clean_count = str(in_count).strip()
+
+    # Reprocess చెక్
+    is_repro = db.query(Reprocess).filter(
+        Reprocess.new_batch_id == clean_batch, 
+        Reprocess.company_id == company_code
+    ).first()
+    s_type = "REPROCESS" if is_repro else "RMP"
+
+    # --- ముఖ్యం: వెరైటీ PD/PDTO అయినా, స్టాక్ మాత్రం HLSO లో వెతకాలి ---
+    search_variety = "HLSO" 
+    
+    # Floor Balance చెక్
+    avail = get_floor_balance(
+        db, 
+        company_code, 
+        location, 
+        clean_batch, 
+        clean_count, 
+        species, 
+        search_variety, 
+        source_type=s_type
     )
-    db.add(obj)
-    db.commit()
+    
+    if hlso_qty > (avail + 0.1):
+        return JSONResponse({
+            "error": f"Insufficient balance. Available {search_variety}: {round(avail, 2)} KG"
+        }, status_code=400)
 
-    request.session["success_msg"] = f"Peeling Entry for Batch {batch_number} Saved Successfully!"
-    return RedirectResponse("/processing/peeling", status_code=303)
+    try: 
+        clean_yield = float(str(yield_percent).replace('%', ''))
+    except: 
+        clean_yield = 0.0
 
+    # Database Entry
+    new_entry = Peeling(
+        production_for=production_for, 
+        peeling_at=location, 
+        batch_number=clean_batch, 
+        hlso_count=clean_count,
+        species=species, 
+        variety_name=variety, # ఇక్కడ యూజర్ ఇచ్చిన PD/PDTO సేవ్ అవుతుంది
+        hlso_qty=hlso_qty, 
+        peeled_qty=peeled_qty, 
+        yield_percent=clean_yield,
+        contractor_name=contractor_name, 
+        rate=rate, 
+        amount=amount, 
+        date=date.today(), 
+        time=datetime.now().time(), 
+        email=email, 
+        company_id=company_code
+    )
+    
+    try:
+        db.add(new_entry)
+        db.commit()
+        return JSONResponse({"message": "Saved successfully"}) 
+    except Exception as e:
+        db.rollback()
+        print(f"Database Error: {str(e)}") # డీబగ్గింగ్ కోసం
+        return JSONResponse({"error": f"Database Error: {str(e)}"}, status_code=500)
 @router.post("/peeling/delete/{id}")
 def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")

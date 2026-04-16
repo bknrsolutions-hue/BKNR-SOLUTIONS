@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import re
@@ -13,6 +14,7 @@ from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yi
 from app.services.floor_balance import get_floor_balance
 
 router = APIRouter(tags=["REPROCESS"])
+templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/re-process", response_class=HTMLResponse)
 async def reprocess_report_page(request: Request, db: Session = Depends(get_db)):
@@ -111,7 +113,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         # బ్యాచ్ ఐడి జనరేషన్: BK-ML-260415-001
         b_id = f"{comp_prefix}-{tag}-{d_str}-{counters[count_key]:03d}"
 
-        # Reprocess మోడల్ లోకి డేటా ఇన్సర్ట్ (ఇక్కడ production_for యాడ్ చేశాను)
+        # Reprocess మోడల్ లోకి డేటా ఇన్సర్ట్
         db.add(Reprocess(
             date=item.date,
             company_id=comp_code,
@@ -122,7 +124,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             grade=item.grade,
             location=item.location,
             species=item.species,
-            production_for=item.production_for, # <--- MISSING FIELD ADDED
+            production_for=item.production_for,
             freezer=item.freezer,
             glaze=item.glaze,
             in_qty=item.quantity,
@@ -138,7 +140,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
     return templates.TemplateResponse(
-    request,
-    "reports/floor_balance_report.html",
-    {"request": request, "data": data}
-)
+        "reports/reprocess_report.html",
+        {"request": request, "data": rows}
+    )
