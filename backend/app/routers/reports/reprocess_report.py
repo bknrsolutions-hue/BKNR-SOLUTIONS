@@ -91,12 +91,14 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         batch_calculated_rates[b_num] = residual_amt / total_rm_eq_w if total_rm_eq_w > 0 else 0
 
     # 6. 🔹 FRESH INSERT WITH UNIQUE COMBINATION LOGIC
+    # ప్రాసెస్ వైజ్ మరియు డేట్ వైజ్ సీరియల్ కౌంటర్
     counters = {} 
 
     for item in inventory_out_data:
         p_val = str(item.purpose or "GENERAL OUT").upper()
         d_str = item.date.strftime('%y%m%d') if item.date else datetime.now().strftime('%y%m%d')
         
+        # కౌంటర్ కీ: ప్రాసెస్ + డేట్ (ప్రతి రోజు ప్రాసెస్ కి 001 నుండి స్టార్ట్ అవుతుంది)
         count_key = f"{p_val}_{d_str}"
         counters[count_key] = counters.get(count_key, 0) + 1
         
@@ -113,7 +115,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         # బ్యాచ్ ఐడి జనరేషన్: BK-ML-260415-001
         b_id = f"{comp_prefix}-{tag}-{d_str}-{counters[count_key]:03d}"
 
-        # Reprocess మోడల్ లోకి డేటా ఇన్సర్ట్
         db.add(Reprocess(
             date=item.date,
             company_id=comp_code,
@@ -124,7 +125,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             grade=item.grade,
             location=item.location,
             species=item.species,
-            production_for=item.production_for,
             freezer=item.freezer,
             glaze=item.glaze,
             in_qty=item.quantity,
@@ -139,9 +139,8 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
     # 7. తాజా డేటాను డిస్ప్లే చేయడం
     rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
     
-    # ఫిక్స్ చేసిన రిటర్న్ స్టేట్‌మెంట్
+    # ఎర్రర్ ఫిక్స్: నేరుగా templates వాడాను
     return templates.TemplateResponse(
-        request=request,
-        name="reports/reprocess_report.html",
-        context={"data": rows}
+        "reports/re-process.html", 
+        {"request": request, "rows": rows}
     )
