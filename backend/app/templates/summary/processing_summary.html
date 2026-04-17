@@ -127,7 +127,7 @@
         <tbody>
             {% for row in rows.rmp %}
             <tr>
-                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.species }}</td><td>{{ row.hsn_code }}</td><td>{{ row.peeling_at }}</td><td>{{ row.g1_qty }}/{{ row.g2_qty }}/{{ row.dc_qty }}</td><td>{{ row.remarks }}</td><td>{{ row.material_boxes }}</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.count }}</td><td class="qty-column">{{ row.received_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.species }}</td><td>{{ row.hsn_code }}</td><td>{{ row.peeling_at }}</td><td>{{ row.g1_qty }}/{{ row.g2_qty }}/{{ row.dc_qty }}</td><td>{{ row.remarks }}</td><td>{{ row.material_boxes }}</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.count }}</td><td class="qty-column">{{ row.received_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount | float) }}</td><td>{{ row.email }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -145,7 +145,7 @@
         <tbody>
             {% for row in rows.reprocess %}
             <tr>
-                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.production_for }}</td><td>{{ row.production_at }}</td><td>{{ row.species }}</td><td>{{ row.reprocess_type }}</td><td>{{ row.original_batch }}</td><td>{{ row.brand }}</td><td>{{ row.freezer }}</td><td>{{ row.packing_style }}</td><td>{{ row.no_of_mc }}/{{ row.loose }}</td><td><span class="tag">{{ row.variety }}</span></td><td>{{ row.grade }}</td><td class="qty-column">{{ row.in_qty }}</td><td class="qty-column">{{ row.out_qty }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value or 0) }}</td>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.production_for }}</td><td>{{ row.production_at }}</td><td>{{ row.species }}</td><td>{{ row.reprocess_type }}</td><td>{{ row.original_batch }}</td><td>{{ row.brand }}</td><td>{{ row.freezer }}</td><td>{{ row.packing_style }}</td><td>{{ row.no_of_mc }}/{{ row.loose }}</td><td><span class="tag">{{ row.variety }}</span></td><td>{{ row.grade }}</td><td class="qty-column">{{ row.in_qty }}</td><td class="qty-column">{{ row.out_qty }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value | float) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -164,7 +164,7 @@
         <tbody>
             {% for row in rows.deheading %}
             <tr>
-                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.species }}</td><td>{{ row.contractor }}</td><td>{{ row.hoso_qty }}</td><td>{{ row.yield_percent }}%</td><td>HOSO</td><td>{{ row.hoso_count }}</td><td class="qty-column">{{ row.hlso_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.species }}</td><td>{{ row.contractor }}</td><td>{{ row.hoso_qty }}</td><td>{{ row.yield_percent }}%</td><td>HOSO</td><td>{{ row.hoso_count }}</td><td class="qty-column">{{ row.hlso_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount | float) }}</td><td>{{ row.email }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -182,7 +182,7 @@
         <tbody>
             {% for row in rows.peeling %}
             <tr>
-                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.contractor_name }}</td><td>{{ row.hlso_qty }}</td><td>{{ row.yield_percent }}%</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.hlso_count }}</td><td class="qty-column">{{ row.peeled_qty }}</td><td>{{ row.rate }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.contractor_name }}</td><td>{{ row.hlso_qty }}</td><td>{{ row.yield_percent }}%</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.hlso_count }}</td><td class="qty-column">{{ row.peeled_qty }}</td><td>{{ row.rate }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount | float) }}</td><td>{{ row.email }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -262,13 +262,13 @@
                     <td><span class="tag">{{ row.variety }}</span></td>
                     <td>{{ row.grade or row.hlso_count }}</td>
                     <td class="qty-column">{{ row.quantity }}</td>
-                    <td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value or 0) }}</td>
+                    <td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value | float) }}</td>
                     <td>{{ row.email }}</td>
                 </tr>
                 
                 {% set ns.current_variety = row.variety %}
-                {% set ns.variety_qty = ns.variety_qty + (row.quantity|float) %}
-                {% set ns.variety_val = ns.variety_val + (row.inventory_value|float) %}
+                {% set ns.variety_qty = ns.variety_qty + (row.quantity | float) %}
+                {% set ns.variety_val = ns.variety_val + (row.inventory_value | float) %}
                 
                 {% if loop.last %}
                     <tr class="subtotal-row">
