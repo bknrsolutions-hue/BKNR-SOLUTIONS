@@ -4,317 +4,206 @@
 <meta charset="UTF-8">
 <title>Inventory Costing – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root{
-  --primary:#143465;
-  --accent:#3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --text:#1f2937;
-  --muted:#64748b;
-}
+:root{ --primary:#143465; --accent:#3b82f6; --border:#d6dde7; --bg:#f4f6f9; --text:#1f2937; --muted:#64748b; }
 *{box-sizing:border-box;font-family:'Inter',sans-serif}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
+body{ margin:0; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
 
-/* HEADER */
-.header-container{
-  background:#fff;
-  padding:16px 20px;
-  border-bottom:1px solid var(--border);
-  position:sticky;
-  top:0;
-  z-index:1000;
-}
-.header-main{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.header-main h2{
-  margin:0;
-  font-size:18px;
-  font-weight:800;
-  color:var(--primary);
-}
+.header-container{ background:#fff; padding:12px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1000; }
+.header-main{ display:flex; justify-content:space-between; align-items:center; }
+.header-main h2{ margin:0; font-size:16px; font-weight:800; color:var(--primary); }
 
-/* FILTER BAR */
-.filters{
-  margin-top:12px;
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  background:#f8fafc;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid var(--border);
-}
-.filters div{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-  min-width:100px;
-}
-.filters label{
-  font-size:8px;
-  font-weight:800;
-  color:var(--muted);
-  text-transform:uppercase;
-}
-.filters input,.filters select{
-  padding:5px 8px;
-  font-size:11px;
-  border-radius:6px;
-  border:1px solid var(--border);
-}
+/* TABS */
+.tabs{ display:flex; gap:5px; margin-top:10px; }
+.tab-btn{ padding:6px 15px; font-size:11px; font-weight:700; border:none; background:#e2e8f0; cursor:pointer; border-radius:5px; color:var(--muted); }
+.tab-btn.active{ background:var(--primary); color:#fff; }
 
-/* ACTION BAR */
-.action-bar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:10px 20px;
-}
-#rowCount{
-  font-size:11px;
-  font-weight:700;
-  color:var(--primary);
-  background:#eef2ff;
-  padding:4px 12px;
-  border-radius:20px;
-  border:1px solid #e0e7ff;
-}
+.filters{ margin-top:10px; display:flex; gap:8px; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid var(--border); flex-wrap:wrap; }
+.filters div{ display:flex; flex-direction:column; gap:2px; min-width:120px; }
+.filters label{ font-size:8px; font-weight:800; color:var(--muted); text-transform:uppercase; }
+.filters input, .filters select{ padding:4px 8px; font-size:11px; border-radius:5px; border:1px solid var(--border); }
 
-/* TABLE */
-.section{
-  margin:0 20px 20px;
-  background:#fff;
-  border-radius:12px;
-  border:1px solid var(--border);
-  overflow:hidden;
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
-.table-wrap{
-  overflow:auto;
-  flex:1;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:10px;
-  min-width:1800px;
-}
-th,td{
-  padding:9px 6px;
-  border-bottom:1px solid #edf2f7;
-  text-align:center;
-}
-th{
-  background:#f8fafc;
-  color:#475569;
-  font-weight:800;
-  text-transform:uppercase;
-  font-size:8px;
-  position:sticky;
-  top:0;
-}
-tr:hover{background:#f8fbff}
-tr.selected{
-  background:#eff6ff!important;
-  border-left:4px solid var(--accent);
-}
-.highlight{
-  background:#fff9f9;
-  font-weight:800;
-}
-tfoot td{
-  background:#f1f5f9;
-  font-weight:800;
-  color:var(--primary);
-  border-top:2px solid var(--border);
-  position:sticky;
-  bottom:0;
-}
+/* VIEWS */
+.view-section{ display:none; flex:1; overflow:auto; padding:15px; }
+.view-section.active{ display:block; }
 
-/* PRINT */
-@media print{
-  .header-container,.action-bar{display:none}
-  .section{margin:0;border:none}
-  table{border:1px solid #000}
-}
+/* TABLE VIEW */
+.table-card{ background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; }
+.table-wrap{ overflow:auto; max-height:calc(100vh - 250px); }
+table{ width:100%; border-collapse:collapse; font-size:10px; min-width:1600px; }
+th{ background:#f1f5f9; color:var(--primary); font-weight:800; text-transform:uppercase; position:sticky; top:0; padding:10px 5px; border-bottom:2px solid var(--border); }
+td{ padding:8px 5px; border-bottom:1px solid #edf2f7; text-align:center; }
+
+/* GRADE CARD VIEW */
+.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:15px; }
+.grade-card{ background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.card-header{ background:var(--primary); color:#fff; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; }
+.card-header h3{ margin:0; font-size:14px; font-weight:800; }
+.card-glaze{ background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px; font-size:10px; }
+.card-body{ padding:12px; }
+.variety-name{ font-weight:800; color:var(--primary); font-size:12px; margin-bottom:2px; }
+.packing-style{ font-size:10px; color:var(--muted); margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:5px; }
+.stats-row{ display:flex; justify-content:space-between; margin-bottom:5px; font-size:11px; }
+.stats-label{ color:var(--muted); font-weight:600; }
+.stats-val{ font-weight:800; color:var(--text); }
+.total-box{ margin-top:10px; background:#f0fdf4; padding:8px; border-radius:6px; border:1px solid #bbf7d0; }
+
+@media print{ .header-container, .tabs, .filters{ display:none; } }
 </style>
 </head>
-
 <body>
 
 <div class="header-container">
   <div class="header-main">
-    <div>
-      <h2>Inventory Costing Report</h2>
-      <p style="font-size:11px;color:var(--muted);margin:0">Stock · Cost · Sales Analysis</p>
+    <h2><i class="fas fa-boxes"></i> Inventory Costing Dashboard</h2>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchView('table', this)">TABLE VIEW</button>
+      <button class="tab-btn" onclick="switchView('cards', this)">GRADE CARDS</button>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--muted)">BKNR ERP</div>
   </div>
 
   <div class="filters">
-    <div><label>From</label><input type="date" id="f_from" oninput="applyFilters()"></div>
-    <div><label>To</label><input type="date" id="f_to" oninput="applyFilters()"></div>
+    <div><label>Search</label><input id="f_search" placeholder="Grade/Variety..." onkeyup="applyFilters()"></div>
     <div><label>Movement</label>
       <select id="f_type" oninput="applyFilters()">
-        <option value="">All</option>
-        <option value="IN">IN</option>
-        <option value="OUT">OUT</option>
+        <option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option>
       </select>
     </div>
-    <div style="min-width:160px">
-      <label>Search</label>
-      <input id="f_search" placeholder="Batch / Brand / Grade" onkeyup="applyFilters()">
+    <div style="font-size:11px; font-weight:800; align-self:center; margin-left:auto; color:var(--primary);" id="rowCount">0 Items</div>
+  </div>
+</div>
+
+<div id="tableView" class="view-section active">
+  <div class="table-card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Batch</th><th>Move</th><th>Species</th><th>Variety</th><th>Grade</th><th>Glaze</th><th>Packing</th><th style="background:#fff7ed">Qty</th><th style="background:#f0fdf4">Value</th><th>Prod At</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          {% for r in rows %}
+          <tr data-variety="{{r.variety}}" data-grade="{{r.grade}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" data-move="{{r.cargo_movement_type}}">
+            <td>{{ r.date }}</td><td>{{ r.batch_number }}</td><td>{{ r.cargo_movement_type }}</td><td>{{ r.species }}</td>
+            <td>{{ r.variety }}</td><td style="font-weight:800">{{ r.grade }}</td><td>{{ r.glaze }}</td><td>{{ r.packing_style }}</td>
+            <td style="font-weight:800">{{ r.quantity }}</td><td style="color:#15803d; font-weight:800">{{ r.inventory_value }}</td><td>{{ r.production_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<div class="action-bar">
-  <div id="rowCount">0 rows found</div>
-</div>
-
-<div class="section">
-<div class="table-wrap">
-<table id="mainTable">
-
-<thead>
-<tr>
-  <th>ID</th>
-  <th>Date</th>
-  <th>Batch</th>
-  <th>Prod Type</th>
-  <th>Move</th>
-  <th>Location</th>
-  <th>Brand</th>
-  <th>Species</th>
-  <th>Variety</th>
-  <th>Grade</th>
-  <th>Glaze</th>
-  <th>Freezer</th>
-  <th>Packing</th>
-  <th>PO No</th>
-  <th>Purpose</th>
-  <th>Prod For</th>
-  <th>Prod At</th>
-  <th class="highlight">MC</th>
-  <th class="highlight">Loose</th>
-  <th class="highlight">Qty</th>
-
-  <!-- 🔥 COSTING -->
-  <th class="highlight">Inventory Value</th>
-  <th>HLSO</th>
-  <th>HOSO</th>
-  <th>Sales Ref Rate</th>
-</tr>
-</thead>
-
-<tbody id="tbody">
-{% for r in rows %}
-<tr onclick="selectRow(this)">
-  <td>{{ r.id }}</td>
-  <td>{{ r.date }}</td>
-  <td>{{ r.batch_number }}</td>
-  <td>{{ r.type_of_production }}</td>
-  <td>{{ r.cargo_movement_type }}</td>
-  <td>{{ r.location }}</td>
-  <td>{{ r.brand }}</td>
-  <td>{{ r.species }}</td>
-  <td>{{ r.variety }}</td>
-  <td>{{ r.grade }}</td>
-  <td>{{ r.glaze }}</td>
-  <td>{{ r.freezer }}</td>
-  <td>{{ r.packing_style }}</td>
-  <td>{{ r.po_number or "-" }}</td>
-  <td>{{ r.purpose or "-" }}</td>
-  <td>{{ r.production_for }}</td>
-  <td>{{ r.production_at }}</td>
-  <td class="highlight">{{ r.no_of_mc }}</td>
-  <td class="highlight">{{ r.loose }}</td>
-  <td class="highlight">{{ r.quantity }}</td>
-
-  <!-- 🔥 COSTING DATA -->
-  <td class="highlight">{{ r.inventory_value }}</td>
-  <td>{{ r.hlso_count }}</td>
-  <td>{{ r.hoso_count }}</td>
-  <td>{{ r.sales_reference_rate }}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-<tfoot>
-<tr>
-  <td colspan="17" style="text-align:right">TOTAL</td>
-  <td id="t_mc">0</td>
-  <td id="t_lse">0</td>
-  <td id="t_qty">0</td>
-  <td id="t_inv">0</td>
-  <td id="t_hlso">0</td>
-  <td id="t_hoso">0</td>
-  <td>-</td>
-</tr>
-</tfoot>
-
-</table>
-</div>
+<div id="cardView" class="view-section">
+  <div class="cards-grid" id="cardContainer">
+    </div>
 </div>
 
 <script>
-const rows=[...document.querySelectorAll("#tbody tr")];
-
-function selectRow(tr){
-  rows.forEach(r=>r.classList.remove("selected"));
-  tr.classList.add("selected");
+function switchView(view, btn){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
+    document.getElementById(view + 'View').classList.add('active');
 }
 
 function applyFilters(){
-  let mc=0,lse=0,qty=0,inv=0,hlso=0,hoso=0,count=0;
-  const s=document.getElementById("f_search").value.toLowerCase();
-  const type=document.getElementById("f_type").value;
+    const s = document.getElementById("f_search").value.toLowerCase();
+    const type = document.getElementById("f_type").value;
+    const tableRows = [...document.querySelectorAll("#tbody tr")];
+    
+    let filteredData = [];
 
-  rows.forEach(r=>{
-    let ok=true;
-    if(type && r.children[4].innerText!==type) ok=false;
-    if(s && !r.innerText.toLowerCase().includes(s)) ok=false;
+    tableRows.forEach(r => {
+        const txt = r.innerText.toLowerCase();
+        const move = r.getAttribute('data-move');
+        const ok = (!s || txt.includes(s)) && (!type || move === type);
+        r.style.display = ok ? "" : "none";
+        
+        if(ok) {
+            filteredData.push({
+                variety: r.getAttribute('data-variety'),
+                grade: r.getAttribute('data-grade'),
+                glaze: r.getAttribute('data-glaze'),
+                qty: parseFloat(r.getAttribute('data-qty')) || 0,
+                val: parseFloat(r.getAttribute('data-val')) || 0,
+                pack: r.getAttribute('data-pack'),
+                move: move
+            });
+        }
+    });
 
-    r.style.display=ok?"":"none";
-
-    if(ok){
-      count++;
-      mc+=+r.children[17].innerText||0;
-      lse+=+r.children[18].innerText||0;
-      qty+=+r.children[19].innerText||0;
-      inv+=+r.children[20].innerText||0;
-      hlso+=+r.children[21].innerText||0;
-      hoso+=+r.children[22].innerText||0;
-    }
-  });
-
-  rowCount.innerText=count+" rows found";
-  t_mc.innerText=mc;
-  t_lse.innerText=lse;
-  t_qty.innerText=qty.toFixed(2);
-  t_inv.innerText=inv.toFixed(2);
-  t_hlso.innerText=hlso;
-  t_hoso.innerText=hoso;
+    document.getElementById("rowCount").innerText = filteredData.length + " Items";
+    renderCards(filteredData);
 }
 
-window.onload=applyFilters;
+function renderCards(data) {
+    const container = document.getElementById("cardContainer");
+    container.innerHTML = "";
+    
+    // Group by Grade + Variety + Glaze
+    const groups = {};
+    data.forEach(item => {
+        const key = `${item.grade}-${item.variety}-${item.glaze}`;
+        if(!groups[key]) {
+            groups[key] = { ...item, totalInQty: 0, totalInVal: 0, totalOutQty: 0, totalOutVal: 0 };
+        }
+        if(item.move === 'IN') {
+            groups[key].totalInQty += item.qty;
+            groups[key].totalInVal += item.val;
+        } else {
+            groups[key].totalOutQty += item.qty;
+            groups[key].totalOutVal += item.val;
+        }
+    });
+
+    Object.values(groups).forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'grade-card';
+        card.innerHTML = `
+            <div class="card-header">
+                <h3>${g.grade}</h3>
+                <span class="card-glaze"><i class="fas fa-tint"></i> ${g.glaze}</span>
+            </div>
+            <div class="card-body">
+                <div class="variety-name">${g.variety}</div>
+                <div class="packing-style">PACKING: ${g.pack}</div>
+                
+                <div class="stats-row">
+                    <span class="stats-label">STOCK IN:</span>
+                    <span class="stats-val">${g.totalInQty.toFixed(2)} Kg</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">IN VALUE:</span>
+                    <span class="stats-val">₹${g.totalInVal.toLocaleString('en-IN')}</span>
+                </div>
+                <div class="stats-row" style="margin-top:8px; color:#b91c1c">
+                    <span class="stats-label">STOCK OUT:</span>
+                    <span class="stats-val">${g.totalOutQty.toFixed(2)} Kg</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">OUT VALUE:</span>
+                    <span class="stats-val">₹${g.totalOutVal.toLocaleString('en-IN')}</span>
+                </div>
+
+                <div class="total-box">
+                    <div class="stats-row" style="margin-bottom:0">
+                        <span class="stats-label" style="color:#15803d">NET BALANCE:</span>
+                        <span class="stats-val" style="color:#15803d">${(g.totalInQty - g.totalOutQty).toFixed(2)} Kg</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+window.onload = applyFilters;
 </script>
 
 </body>

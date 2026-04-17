@@ -1,264 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Processing Summary – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BKNR ERP | Master Batch Summary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --brand: #1e3a8a; --accent: #ea580c; --border: #cbd5e1; --success: #16a34a; --danger: #dc2626; --bg-light: #f1f5f9; }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: var(--bg-light); color: #0f172a; padding: 10px; font-size: 9px; }
+        
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 3px solid var(--brand); }
+        .report-header h1 { margin: 0; font-size: 14px; color: var(--brand); font-weight: 800; }
+        
+        .filter-card { background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; align-items: flex-end; }
+        select { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 10px; font-weight: 600; }
 
-<style>
-:root{
-  --primary: #143465;
-  --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-}
-*{box-sizing:border-box;font-family: 'Inter', Segoe UI, sans-serif;}
-body{margin:0;background:var(--bg);color:var(--text); scroll-behavior: smooth;}
+        .batch-summary-report { background: white; padding: 15px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .report-row { display: flex; border-bottom: 1px dashed #e2e8f0; padding: 5px 0; }
+        .report-label { width: 220px; font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 10px; }
+        .report-value { font-weight: 800; color: #1e293b; font-size: 10px; }
+        .highlight-text { color: var(--brand); }
+        .money-text { color: var(--success); }
 
-/* ================= HEADER ================= */
-.header{
-  position:sticky; top:0; z-index:100;
-  background:#fff; padding:12px 18px;
-  border-bottom:1px solid var(--border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.header h2{margin:0;font-size:18px;color:var(--primary); font-weight:800; text-transform:uppercase;}
-.header p{margin:2px 0;font-size:10px;color:var(--muted); letter-spacing: 0.5px;}
-
-/* ================= FILTERS ================= */
-.filters{
-  margin-top:10px; background:#f9fafb; padding:10px;
-  border-radius:8px; display:grid; grid-template-columns:repeat(3,1fr);
-  gap:12px; border:1px solid var(--border);
-}
-.filters label{font-size:10px; font-weight:700; color:var(--primary); text-transform: uppercase;}
-.filters select, .filters input{
-  margin-top:4px; padding:6px; border-radius:6px;
-  border:1px solid var(--border); font-size:11px; outline:none;
-}
-
-/* ================= ACTIONS ================= */
-.actions{ margin-top:10px; display:flex; gap:8px; }
-.actions button{
-  padding:6px 15px; border-radius:6px; border:1px solid var(--border);
-  background:#fff; cursor:pointer; font-size:11px; font-weight:600; transition: 0.2s;
-}
-.actions button:hover{ background: var(--primary); color: #fff; }
-
-/* ================= CARDS (STICKY) ================= */
-.cards{
-  position:sticky; top:145px; z-index:90;
-  background:var(--bg); padding:10px 18px;
-  display:grid; grid-template-columns:repeat(8,1fr); gap:8px;
-}
-.card{
-  padding:10px; border-radius:10px; border:1px solid var(--border);
-  cursor:pointer; text-align: center; transition: 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.card:hover{ transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.card span{font-size:9px; color:var(--muted); font-weight:700; text-transform: uppercase;}
-.card h3{margin:4px 0 0; font-size:14px; font-weight:800; color: var(--primary);}
-
-/* Card Colors */
-.gate{background:#eff6ff; border-bottom: 3px solid #3b82f6;}
-.rmp{background:#ecfeff; border-bottom: 3px solid #06b6d4;}
-.de{background:#f0fdf4; border-bottom: 3px solid #22c55e;}
-.peel{background:#fff7ed; border-bottom: 3px solid #f97316;}
-.soak{background:#fdf4ff; border-bottom: 3px solid #d946ef;}
-.grade{background:#fefce8; border-bottom: 3px solid #eab308;}
-.prod{background:#fff1f2; border-bottom: 3px solid #f43f5e;}
-.yield{background:#143465; color: #fff; border-bottom: 3px solid #000;}
-.yield h3, .yield span{ color: #fff; }
-
-/* ================= SECTIONS & TABLES ================= */
-.section{
-  margin:20px 18px; background:#fff; padding:15px;
-  border-radius:12px; border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-.section h3{ margin:0 0 12px; font-size:15px; color:var(--primary); text-transform: uppercase; font-weight: 800; border-left: 4px solid var(--accent); padding-left: 10px; }
-
-.table-wrap{ max-height:400px; overflow:auto; border-radius: 8px; border: 1px solid #f1f5f9;}
-table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-th,td{ border-bottom:1px solid #f1f5f9; padding:8px 6px; font-size:10.5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-th{ background:#f8fafc; color: #475569; font-weight: 700; position:sticky; top:0; z-index:2; text-transform: uppercase; font-size: 9px;}
-
-.subtotal td{ background:#f1f5f9; font-weight:700; color: var(--accent); font-size: 10px; text-align: left !important; padding-left: 15px;}
-.grand td{ background:var(--primary) !important; color:#fff !important; font-weight:800; font-size: 11px;}
-
-@media print{
-  .header, .filters, .actions, .cards{ position: static; display: block; }
-  .cards { display: grid; grid-template-columns: repeat(4, 1fr); }
-  .table-wrap { max-height: none; overflow: visible; }
-}
-</style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        .section-title { margin: 20px 0 8px 0; font-size: 15px; font-weight: 800; color: var(--brand); display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-left: 4px solid var(--accent); padding-left: 10px; }
+        
+        .table-wrap { background: white; border-radius: 4px; border: 1px solid var(--border); width: 100%; margin-bottom: 15px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; table-layout: auto; word-break: break-word; }
+        th { background: #f8fafc; padding: 6px 4px; text-align: left; font-size: 10px; color: #475569; border-bottom: 2px solid var(--border); text-transform: uppercase; }
+        td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; font-size: 10px; vertical-align: middle; }
+        
+        .qty-column { font-weight: 800; color: #000; background: #fffcf0; }
+        .money-column { color: var(--success); font-weight: 700; }
+        .subtotal-row { background: #f1f5f9 !important; font-weight: 800; border-top: 2px solid var(--border); }
+        .tag { background: #eff6ff; color: #1e40af; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 7.5px; border: 1px solid #dbeafe; display: inline-block; }
+        .sl-no { font-weight: 700; color: #64748b; text-align: center; width: 30px; }
+        
+        @media print { 
+            .filter-card, button, .no-print { display: none; } 
+            body { padding: 0; background: white; } 
+            .table-wrap { border: 1px solid #000; }
+            .batch-summary-report { border: 1px solid #000; box-shadow: none; }
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-  <h2>Processing Summary</h2>
-  <p>Live Process Tracking: Gate Entry → RMP → De-Heading → Peeling → Soaking → Grading → Production</p>
-
-  <form method="get" id="filterForm">
-    <div class="filters">
-      <div>
-        <label>Batch Number</label>
-        <select name="batch" onchange="submitForm()">
-          <option value="">All Batches</option>
-          {% for b in batches %}
-          <option value="{{ b }}" {% if selected_batch==b %}selected{% endif %}>{{ b }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>From Date</label>
-        <input type="date" name="from_date" value="{{ from_date }}" onchange="submitForm()">
-      </div>
-      <div>
-        <label>To Date</label>
-        <input type="date" name="to_date" value="{{ to_date }}" onchange="submitForm()">
-      </div>
-    </div>
-  </form>
-
-  <div class="actions">
-    <button onclick="window.print()">🖨️ Print</button>
-    <button onclick="exportPDF()">📄 Export PDF</button>
-    <button onclick="exportExcel()">📊 Export Excel</button>
-  </div>
+<div class="report-header">
+    <h1><i class="fas fa-database"></i> BKNR ERP | FULL BATCH ANALYSIS</h1>
+    <button onclick="window.print()" class="no-print" style="background:var(--brand); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:700; font-size:10px;">
+        <i class="fas fa-print"></i> PRINT REPORT
+    </button>
 </div>
 
-<div class="cards">
-  <div class="card gate" onclick="go('gate')"><span>Batches</span><h3>{{ total_batches }}</h3></div>
-  <div class="card rmp" onclick="go('rmp')"><span>RMP Qty (KG)</span><h3>{{ total_rmp_qty }}</h3></div>
-  <div class="card de" onclick="go('de')"><span>De-Heading</span><h3>{{ total_de_hoso }}</h3></div>
-  <div class="card peel" onclick="go('peel')"><span>Peeling</span><h3>{{ total_peeling_qty }}</h3></div>
-  <div class="card soak" onclick="go('soak')"><span>Soaking</span><h3>{{ total_soaking_qty }}</h3></div>
-  <div class="card grade" onclick="go('grade')"><span>Grading</span><h3>{{ total_grading_qty }}</h3></div>
-  <div class="card prod" onclick="go('prod')"><span>Production</span><h3>{{ total_production_qty }}</h3></div>
-  <div class="card yield"><span>Overall Yield</span><h3>{{ overall_yield }}%</h3></div>
+<div class="filter-card no-print">
+    <form method="get" class="filter-grid">
+        <div><label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px;">PRODUCTION FOR</label>
+            <select name="production_for" onchange="this.form.submit()">
+                <option value="">-- SELECT --</option>
+                {% for c in companies %}<option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+            </select>
+        </div>
+        <div><label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px;">PROCESS TYPE</label>
+            <select name="prod_type" onchange="this.form.submit()">
+                <option value="RMP" {% if selected_prod_type == 'RMP' %}selected{% endif %}>RMP (Fresh)</option>
+                <option value="REPROCESS" {% if selected_prod_type == 'REPROCESS' %}selected{% endif %}>RE-PROCESSING</option>
+            </select>
+        </div>
+        <div><label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px;">BATCH NUMBER</label>
+            <select name="batch" onchange="this.form.submit()">
+                <option value="">-- SELECT BATCH --</option>
+                {% for b in batches %}<option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+            </select>
+        </div>
+        <a href="/summary/processing" style="text-decoration:none; background:#cbd5e1; color:#1e293b; padding:6px 12px; border-radius:4px; font-weight:700; font-size:10px; text-align:center;">RESET</a>
+    </form>
 </div>
 
-{% macro render_table(id, title, rows, qty_field) %}
-<div class="section" id="{{ id }}">
-  <h3>{{ title }}</h3>
+{% if selected_batch %}
 
-  {% if not rows %}
-  <p style="font-size:12px; color:#6b7280; padding: 10px;">No records found for this selection.</p>
-  {% else %}
+<div class="batch-summary-report">
+    <div style="font-size: 11px; font-weight: 800; color: var(--brand); margin-bottom: 10px; border-bottom: 2px solid var(--brand); padding-bottom: 4px;">BATCH SUMMARY REPORT</div>
+    
+    <div class="report-row"><div class="report-label">Batch Number</div><div class="report-value highlight-text">{{ selected_batch }}</div></div>
+    <div class="report-row"><div class="report-label">Supplier | Location</div><div class="report-value">{{ card.supplier_name or 'N/A' }} | {{ card.purchasing_location or 'N/A' }}</div></div>
+    <div class="report-row"><div class="report-label">Receiving At | Vehicle</div><div class="report-value">{{ card.receiving_center or 'N/A' }} | {{ card.vehicle_number or 'N/A' }}</div></div>
+    <div class="report-row"><div class="report-label">Boxes | Challan | Gatepass</div><div class="report-value">{{ card.total_boxes or '0' }} | {{ card.challan_number or 'N/A' }} | {{ card.gate_pass_number or 'N/A' }}</div></div>
+    <div class="report-row"><div class="report-label">RM Total Qty / Amount</div><div class="report-value">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | <span class="money-text">₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</span></div></div>
+    <div class="report-row"><div class="report-label">De-Heading Qty / Amount</div><div class="report-value">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | <span class="money-text">₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</span></div></div>
+    <div class="report-row"><div class="report-label">Grading | Peeling Qty</div><div class="report-value">{{ "%.2f"|format(card.grading_qty or 0) }} KG | {{ "%.2f"|format(card.peeling_qty or 0) }} KG</div></div>
+    <div class="report-row"><div class="report-label">Soaking | Chem | Salt</div><div class="report-value">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</div></div>
+    <div class="report-row"><div class="report-label">Production | Stock Qty</div><div class="report-value highlight-text">{{ "%.2f"|format(card.production_qty or 0) }} KG | {{ "%.2f"|format(card.stock_qty or 0) }} KG</div></div>
+    <div class="report-row"><div class="report-label">Stock Inventory Value</div><div class="report-value money-text">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</div></div>
+    <div class="report-row" style="background:#fff1f2;"><div class="report-label" style="color:var(--danger)">Floor Balance Quantity</div><div class="report-value" style="color:var(--danger)">{{ "%.2f"|format(card.floor_qty or 0) }} KG</div></div>
+</div>
 
-  {# Get Columns Safely #}
-  {% set all_cols = rows[0].__table__.columns %}
-  {% set ns_cols = namespace(cols=[]) %}
-  {% for c in all_cols %}
-    {% if c.name not in ['company_id', 'created_at', 'updated_at'] %}
-      {% set _ = ns_cols.cols.append(c) %}
-    {% endif %}
-  {% endfor %}
-  {% set cols = ns_cols.cols %}
-  {% set col_count = cols|length %}
-
-  <div class="table-wrap">
+{% if selected_prod_type == 'RMP' %}
+<div class="section-title">1. GATE ENTRY</div>
+<div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          {% for c in cols %}
-          <th>{{ c.name.replace('_',' ').upper() }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% set ns = namespace(pd=None, pv=None, ds=0, vs=0, gs=0) %}
-        {% for r in rows %}
-          {% set d = r.date %}
-          {% set v = r.variety_name if 'variety_name' in r.__dict__ else (r.variety if 'variety' in r.__dict__ else 'N/A') %}
-          {% set q = r.__dict__.get(qty_field, 0) or 0 %}
-
-          {# Variety Subtotal #}
-          {% if ns.pv and ns.pv != v %}
-          <tr class="subtotal"><td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ "%.2f"|format(ns.vs) }} KG</td></tr>
-          {% set ns.vs = 0 %}
-          {% endif %}
-
-          {# Date Subtotal #}
-          {% if ns.pd and ns.pd != d %}
-          <tr class="subtotal"><td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ "%.2f"|format(ns.ds) }} KG</td></tr>
-          {% set ns.ds = 0 %}
-          {% endif %}
-
-          <tr>
-            {% for c in cols %}
-            <td>{{ r.__dict__[c.name] if r.__dict__[c.name] is not none else '' }}</td>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod For</th><th>Species</th><th>Gate Pass</th><th>Challan</th><th>Center</th><th>Supplier</th><th>Location</th><th>Vehicle</th><th>Boxes</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.gate %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.time }}</td><td>{{ row.production_for }}</td><td>{{ row.species }}</td><td>{{ row.gate_pass_number }}</td><td>{{ row.challan_number }}</td><td>{{ row.receiving_center }}</td><td>{{ row.supplier_name }}</td><td>{{ row.purchasing_location }}</td><td>{{ row.vehicle_number }}</td><td class="qty-column">{{ row.no_of_material_boxes }}</td><td>{{ row.email }}</td>
+            </tr>
             {% endfor %}
-          </tr>
-
-          {% set ns.ds = ns.ds + q|float %}
-          {% set ns.vs = ns.vs + q|float %}
-          {% set ns.gs = ns.gs + q|float %}
-          {% set ns.pd = d %}
-          {% set ns.pv = v %}
-        {% endfor %}
-
-        {# Final Subtotals for the last group #}
-        <tr class="subtotal"><td colspan="{{ col_count }}">Variety Total ({{ ns.pv }}): {{ "%.2f"|format(ns.vs) }} KG</td></tr>
-        <tr class="subtotal"><td colspan="{{ col_count }}">Date Total ({{ ns.pd }}): {{ "%.2f"|format(ns.ds) }} KG</td></tr>
-        <tr class="grand"><td colspan="{{ col_count }}">GRAND TOTAL: {{ "%.2f"|format(ns.gs) }} KG</td></tr>
-      </tbody>
+        </tbody>
     </table>
-  </div>
-  {% endif %}
 </div>
-{% endmacro %}
 
-{{ render_table('gate','Gate Entry Records', gate_rows, 'no_of_material_boxes') }}
-{{ render_table('rmp','Raw Material Purchasing', rmp_rows, 'received_qty') }}
-{{ render_table('de','De-Heading Process', de_rows, 'hoso_qty') }}
-{{ render_table('peel','Peeling Process', peeling_rows, 'peeled_qty') }}
-{{ render_table('soak','Soaking Process', soaking_rows, 'in_qty') }}
-{{ render_table('grade','Grading Process', grading_rows, 'quantity') }}
-{{ render_table('prod','Final Production', production_rows, 'production_qty') }}
+<div class="section-title">2. RAW MATERIAL PURCHASING</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Species</th><th>HSN</th><th>Peeling At</th><th>G1/G2/DC</th><th>Remarks</th><th>Boxes</th><th>Variety</th><th>Count</th><th class="qty-column">Qty</th><th>Rate</th><th class="money-column">Amount</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.rmp %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.species }}</td><td>{{ row.hsn_code }}</td><td>{{ row.peeling_at }}</td><td>{{ row.g1_qty }}/{{ row.g2_qty }}/{{ row.dc_qty }}</td><td>{{ row.remarks }}</td><td>{{ row.material_boxes }}</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.count }}</td><td class="qty-column">{{ row.received_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="section-title">1. RE-PROCESSING INPUT</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Prod For</th><th>Prod At</th><th>Species</th><th>Type</th><th>Old Batch</th><th>Brand</th><th>Freezer</th><th>Packing</th><th>MC/Loose</th><th>Variety</th><th>Grade</th><th class="qty-column">In Qty</th><th class="qty-column">Out Qty</th><th class="money-column">Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.reprocess %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.production_for }}</td><td>{{ row.production_at }}</td><td>{{ row.species }}</td><td>{{ row.reprocess_type }}</td><td>{{ row.original_batch }}</td><td>{{ row.brand }}</td><td>{{ row.freezer }}</td><td>{{ row.packing_style }}</td><td>{{ row.no_of_mc }}/{{ row.loose }}</td><td><span class="tag">{{ row.variety }}</span></td><td>{{ row.grade }}</td><td class="qty-column">{{ row.in_qty }}</td><td class="qty-column">{{ row.out_qty }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value or 0) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 
-<script>
-// Scroll to Section
-function go(id){
-  const el = document.getElementById(id);
-  if(el){
-    const y = el.getBoundingClientRect().top + window.pageYOffset - 220;
-    window.scrollTo({top: y, behavior: "smooth"});
-  }
-}
+<div class="section-title">3. DE-HEADING PROCESS</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Prod At</th><th>Species</th><th>Contractor</th><th>HOSO Qty</th><th>Yield%</th><th>Variety</th><th>HOSO Count</th><th class="qty-column">HLSO Qty</th><th>Rate</th><th class="money-column">Amount</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.deheading %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.species }}</td><td>{{ row.contractor }}</td><td>{{ row.hoso_qty }}</td><td>{{ row.yield_percent }}%</td><td>HOSO</td><td>{{ row.hoso_count }}</td><td class="qty-column">{{ row.hlso_qty }}</td><td>{{ row.rate_per_kg }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-// Auto Submit
-function submitForm(){ document.getElementById("filterForm").submit(); }
+<div class="section-title">4. PEELING PROCESS</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Peeling At</th><th>Contractor</th><th>HLSO Qty</th><th>Yield%</th><th>Variety</th><th>HLSO Count</th><th class="qty-column">Peeled Qty</th><th>Rate</th><th class="money-column">Amount</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.peeling %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.peeling_at }}</td><td>{{ row.contractor_name }}</td><td>{{ row.hlso_qty }}</td><td>{{ row.yield_percent }}%</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.hlso_count }}</td><td class="qty-column">{{ row.peeled_qty }}</td><td>{{ row.rate }}</td><td class="money-column">₹ {{ "{:,.2f}".format(row.amount or 0) }}</td><td>{{ row.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-// PDF Export
-function exportPDF(){
-  const element = document.body;
-  const opt = {
-    margin: 0.2,
-    filename: 'Processing_Summary.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-  };
-  html2pdf().set(opt).from(element).save();
-}
+<div class="section-title">5. SOAKING PROCESS</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Sintex #</th><th>Chemical</th><th>Chem% / Qty</th><th>Salt% / Qty</th><th>Variety</th><th>Count</th><th class="qty-column">In Qty</th><th>Status</th><th style="color:red">Rej</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.soaking %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.sintex_number }}</td><td>{{ row.chemical_name }}</td><td>{{ row.chemical_percent }}% / {{ row.chemical_qty }}</td><td>{{ row.salt_percent }}% / {{ row.salt_qty }}</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.in_count }}</td><td class="qty-column">{{ row.in_qty }}</td><td>{{ row.status }}</td><td style="color:red">{{ row.rejection_qty }}</td><td>{{ row.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-// Excel Export (Basic CSV/HTML)
-function exportExcel(){
-  let html = document.body.outerHTML;
-  let a = document.createElement('a');
-  a.href = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
-  a.download = 'Processing_Summary.xls';
-  a.click();
-}
-</script>
+<div class="section-title">6. PRODUCTION PACKING</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Date</th><th>Prod At</th><th>Brand</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>MC</th><th>Loose</th><th>Variety</th><th>Grade</th><th class="qty-column">Prod Qty</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows.production %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.date }}</td><td>{{ row.production_at }}</td><td>{{ row.brand }}</td><td>{{ row.glaze }}</td><td>{{ row.freezer }}</td><td>{{ row.packing_style }}</td><td>{{ row.no_of_mc }}</td><td>{{ row.loose }}</td><td><span class="tag">{{ row.variety_name }}</span></td><td>{{ row.grade }}</td><td class="qty-column">{{ row.production_qty }}</td><td>{{ row.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section-title">7. STOCK INVENTORY LOG</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px">Sl</th><th>Species</th><th>Location</th><th>Prod At</th><th>Type</th><th>Movement</th><th>Brand</th><th>Freezer</th><th>Packing</th><th>MC</th><th>Loose</th><th>Variety</th><th>Grade</th><th class="qty-column">Qty (KG)</th><th class="money-column">Value</th><th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(current_variety='', variety_qty=0, variety_val=0) %}
+            {% for row in rows.stock|sort(attribute='variety') %}
+                {% if ns.current_variety != '' and ns.current_variety != row.variety %}
+                    <tr class="subtotal-row">
+                        <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns.current_variety }}):</td>
+                        <td class="qty-column">{{ "%.2f"|format(ns.variety_qty) }}</td>
+                        <td class="money-column">₹ {{ "{:,.2f}".format(ns.variety_val) }}</td>
+                        <td></td>
+                    </tr>
+                    {% set ns.variety_qty = 0 %}
+                    {% set ns.variety_val = 0 %}
+                {% endif %}
+                
+                <tr>
+                    <td class="sl-no">{{ loop.index }}</td>
+                    <td>{{ row.species }}</td>
+                    <td>{{ row.location }}</td>
+                    <td>{{ row.production_at }}</td>
+                    <td>{{ row.type_of_production }}</td>
+                    <td>{{ row.cargo_movement_type }}</td>
+                    <td>{{ row.brand }}</td>
+                    <td>{{ row.freezer }}</td>
+                    <td>{{ row.packing_style }}</td>
+                    <td>{{ row.no_of_mc }}</td>
+                    <td>{{ row.loose }}</td>
+                    <td><span class="tag">{{ row.variety }}</span></td>
+                    <td>{{ row.grade or row.hlso_count }}</td>
+                    <td class="qty-column">{{ row.quantity }}</td>
+                    <td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value or 0) }}</td>
+                    <td>{{ row.email }}</td>
+                </tr>
+                
+                {% set ns.current_variety = row.variety %}
+                {% set ns.variety_qty = ns.variety_qty + (row.quantity|float) %}
+                {% set ns.variety_val = ns.variety_val + (row.inventory_value|float) %}
+                
+                {% if loop.last %}
+                    <tr class="subtotal-row">
+                        <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns.current_variety }}):</td>
+                        <td class="qty-column">{{ "%.2f"|format(ns.variety_qty) }}</td>
+                        <td class="money-column">₹ {{ "{:,.2f}".format(ns.variety_val) }}</td>
+                        <td></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section-title" style="color:var(--danger)"><i class="fas fa-balance-scale"></i> 8. LIVE FLOOR BALANCE</div>
+<div class="table-wrap" style="border: 2px solid var(--danger);">
+    <table>
+        <thead>
+            <tr style="background:#fff1f2">
+                <th style="width:30px">Sl</th><th>Species</th><th>Location/Peeling At</th><th>Variety</th><th>Count/Grade</th><th class="qty-column" style="text-align:right; color:var(--danger)">Available Qty (KG)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in hoso_floor_balance %}
+            <tr>
+                <td class="sl-no">{{ loop.index }}</td><td>{{ row.species }}</td><td>{{ row.peeling_at }}</td><td><span class="tag">{{ row.variety }}</span></td><td>{{ row.count }}</td><td class="qty-column" style="text-align:right; font-weight:800; color:var(--danger)">{{ "%.2f"|format(row.available_qty) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div style="text-align:center; padding:100px; color:#94a3b8;"><i class="fas fa-search" style="font-size:40px; margin-bottom:15px; opacity:0.3;"></i><p>Select Filters to generate the full batch analysis report.</p></div>
+{% endif %}
 
 </body>
 </html>

@@ -1,153 +1,408 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Inventory Costing – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Analysis | BKNR ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --brand-primary: #0f172a;
+            --brand-accent: #2563eb;
+            --bg-main: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --in-color: #166534;
+            --out-color: #991b1b;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { margin: 0; background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-<style>
-:root{
-  --primary:#143465;
-  --accent:#3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --text:#1f2937;
-  --muted:#64748b;
-}
-*{box-sizing:border-box;font-family:'Inter',sans-serif}
-body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
-.header-container{background:#fff;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1000}
-.header-main{display:flex;justify-content:space-between;align-items:center}
-.header-main h2{margin:0;font-size:18px;font-weight:800;color:var(--primary)}
-.filters{margin-top:12px;display:flex;gap:8px;overflow-x:auto;background:#f8fafc;padding:10px;border-radius:10px;border:1px solid var(--border)}
-.filters div{display:flex;flex-direction:column;gap:3px;min-width:100px}
-.filters label{font-size:8px;font-weight:800;color:var(--muted);text-transform:uppercase}
-.filters input,.filters select{padding:5px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border)}
-.action-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px}
-#rowCount{font-size:11px;font-weight:700;color:var(--primary);background:#eef2ff;padding:4px 12px;border-radius:20px;border:1px solid #e0e7ff}
-.section{margin:0 20px 20px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
-.table-wrap{overflow:auto;flex:1}
-table{width:100%;border-collapse:collapse;font-size:10px;min-width:2200px}
-th,td{padding:9px 6px;border-bottom:1px solid #edf2f7;text-align:center}
-th{background:#f8fafc;color:#475569;font-weight:800;text-transform:uppercase;font-size:8px;position:sticky;top:0}
-.highlight{background:#fff9f9;font-weight:800}
-tfoot td{background:#f1f5f9;font-weight:800;color:var(--primary);border-top:2px solid var(--border);position:sticky;bottom:0}
-</style>
+        header { background: var(--brand-primary); color: white; padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .logo-section h1 { margin: 0; font-size: 16px; font-weight: 800; }
+        .logo-section p { margin: 0; font-size: 9px; opacity: 0.7; text-transform: uppercase; }
+
+        .control-bar { background: white; padding: 8px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .nav-tabs { display: flex; background: #f1f5f9; padding: 3px; border-radius: 6px; }
+        .tab-btn { padding: 6px 14px; border: none; background: transparent; font-size: 10px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; }
+        .tab-btn.active { background: white; color: var(--brand-accent); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        .filters-group { display: flex; gap: 8px; flex: 1; justify-content: flex-end; align-items: center; }
+        .search-wrapper { position: relative; width: 150px; }
+        .search-wrapper i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 11px; }
+        .search-input { width: 100%; padding: 6px 10px 6px 30px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; outline: none; }
+        .select-filter { padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; outline: none; background: #fff; min-width: 120px; }
+
+        main { flex: 1; overflow: hidden; padding: 10px; display: flex; flex-direction: column; }
+        .view-content { display: none; height: 100%; width: 100%; }
+        .view-content.active { display: block; overflow-y: auto; }
+
+        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; }
+        .empty-dashboard i { font-size: 40px; margin-bottom: 15px; opacity: 0.3; }
+
+        /* --- TABLE STYLE --- */
+        .table-container { background: white; border-radius: 4px; border: 1px solid var(--border-color); height: 100%; display: flex; flex-direction: column; }
+        .scroll-box { flex: 1; overflow: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 2600px; }
+        th { background: #f8fafc; padding: 8px 4px; font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
+        td { padding: 5px 4px; font-size: 10px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+        tr:hover td { background-color: #f0f9ff; }
+        
+        .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 40px; }
+        .sticky-batch { position: sticky; left: 40px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); }
+
+        /* --- DASHBOARD CARD --- */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+        .grade-card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .card-head { background: #f8fafc; padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .grade-title { font-size: 15px; font-weight: 800; color: var(--brand-primary); }
+        .glaze-badge { background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; border: 1px solid #dbeafe; }
+        .card-body { padding: 12px; }
+        .variety-label { font-size: 12px; font-weight: 700; color: var(--brand-accent); margin-bottom: 10px; }
+        
+        .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .move-box { background: #fbfcfd; border: 1px solid #f1f5f9; padding: 8px; border-radius: 8px; }
+        .move-box.in { border-left: 3px solid #22c55e; }
+        .move-box.out { border-left: 3px solid #ef4444; }
+        
+        .move-title { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; }
+        .stat-row:last-child { border: none; }
+        .s-label { font-size: 8px; color: var(--text-muted); font-weight: 600; }
+        .s-value { font-size: 10px; font-weight: 700; }
+
+        .card-footer { background: #f0fdf4; padding: 10px 15px; border-top: 1px solid #dcfce7; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 5px; align-items: center; }
+        .footer-stat { display: flex; flex-direction: column; }
+        .footer-main-val { font-size: 12px; font-weight: 800; color: #15803d; }
+        .fs-label { font-size: 7px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 2px;}
+
+        /* --- ENHANCED STATUS FOOTER --- */
+        .status-footer { background: white; padding: 10px 24px; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 30px; font-size: 10px; font-weight: 700; align-items: center; }
+        .stat-group { display: flex; align-items: center; gap: 15px; border-right: 2px solid #f1f5f9; padding-right: 15px; }
+        .stat-group:last-child { border: none; }
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1px; }
+        .stat-val { color: var(--brand-primary); }
+    </style>
 </head>
-
 <body>
 
-<div class="header-container">
-  <div class="header-main">
-    <div>
-      <h2>Inventory Costing Report</h2>
-      <p style="font-size:11px;color:var(--muted);margin:0">Stock · Cost · Sales Analysis</p>
+<header>
+    <div class="logo-section">
+        <h1>INVENTORY</h1>
+        <p>Analysis</p>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--muted)">BKNR ERP</div>
-  </div>
+    <div id="currentDate" style="font-size: 10px;"></div>
+</header>
+
+<div class="control-bar">
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchView('table', this)">DATA GRID</button>
+        <button class="tab-btn" onclick="switchView('dashboard', this)">GRADE DASHBOARD</button>
+    </div>
+
+    <div class="filters-group">
+        <select id="prodForFilter" class="select-filter" onchange="applyFilters()" style="border: 2px solid var(--brand-accent); font-weight: 700;">
+            <option value="">-- Production For --</option>
+            {% for item in rows|map(attribute='production_for')|select('string')|unique|sort %}
+            <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+
+        <select id="prodAtFilter" class="select-filter" onchange="applyFilters()">
+            <option value="">-- Production At --</option>
+            {% for item in rows|map(attribute='production_at')|select('string')|unique|sort %}
+            <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+
+        <div id="dashboardFilters" style="display: none; gap: 8px;">
+            <select id="gradeFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">All Grades</option>
+            </select>
+            <select id="varietyFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">All Varieties</option>
+            </select>
+            <select id="glazeFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">All Glazes</option>
+            </select>
+        </div>
+
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" id="globalSearch" class="search-input" placeholder="Search..." onkeyup="applyFilters()">
+        </div>
+    </div>
 </div>
 
-<div class="action-bar">
-  <div id="rowCount">0 rows found</div>
-</div>
+<main>
+    <div id="tableView" class="view-content active">
+        <div class="table-container">
+            <div class="scroll-box">
+                <table id="mainTable">
+                    <thead>
+                        <tr>
+                            <th class="sticky-id">SL</th>
+                            <th class="sticky-batch">Batch #</th>
+                            <th>Date</th>
+                            <th>Prod Type</th>
+                            <th>Movement</th>
+                            <th>Location</th>
+                            <th>Brand</th>
+                            <th>Species</th>
+                            <th>Variety</th>
+                            <th style="background:#eff6ff">Grade</th>
+                            <th>Glaze</th>
+                            <th>Freezer</th>
+                            <th>Packing</th>
+                            <th>PO Number</th>
+                            <th>Purpose</th>
+                            <th>Prod For</th>
+                            <th>Prod At</th>
+                            <th>MC</th>
+                            <th>Loose</th>
+                            <th style="background:#f0fdf4">Qty (Kg)</th>
+                            <th style="background:#fff7ed">Rate/Kg</th>
+                            <th style="background:#fff7ed">Inv Value</th>
+                            <th>HLSO Count</th>
+                            <th>HOSO Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="masterTbody">
+                        {% set total_rows = rows|length %}
+                        {% for r in rows|reverse %}
+                        <tr data-grade="{{r.grade}}" data-variety="{{r.variety}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" 
+                            data-rate="{{r.product_kg_value}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" 
+                            data-move="{{r.cargo_movement_type}}" data-prodfor="{{r.production_for}}" data-prodat="{{r.production_at}}">
+                            <td class="sticky-id">{{ total_rows - loop.index0 }}</td>
+                            <td class="sticky-batch" style="font-weight: 700; font-family: monospace;">{{ r.batch_number }}</td>
+                            <td>{{ r.date }}</td>
+                            <td>{{ r.type_of_production }}</td>
+                            <td><span style="padding: 1px 5px; border-radius: 3px; font-weight: 800; font-size: 8px; background: {{ '#dcfce7' if r.cargo_movement_type == 'IN' else '#fee2e2' }}; color: {{ '#166534' if r.cargo_movement_type == 'IN' else '#991b1b' }}">{{ r.cargo_movement_type }}</span></td>
+                            <td>{{ r.location }}</td>
+                            <td>{{ r.brand }}</td>
+                            <td>{{ r.species }}</td>
+                            <td style="font-weight: 600;">{{ r.variety }}</td>
+                            <td style="font-weight: 800; color: var(--brand-accent); background: #eff6ff;">{{ r.grade }}</td>
+                            <td>{{ r.glaze }}</td>
+                            <td>{{ r.freezer }}</td>
+                            <td>{{ r.packing_style }}</td>
+                            <td>{{ r.po_number or "-" }}</td>
+                            <td>{{ r.purpose or "-" }}</td>
+                            <td>{{ r.production_for or "-" }}</td>
+                            <td>{{ r.production_at }}</td>
+                            <td>{{ r.no_of_mc }}</td>
+                            <td>{{ r.loose }}</td>
+                            <td style="font-weight: 800;">{{ r.quantity }}</td>
+                            <td>₹{{ r.product_kg_value }}</td>
+                            <td style="font-weight: 800; color: var(--brand-accent);">₹{{ r.inventory_value }}</td>
+                            <td>{{ r.hlso_count }}</td>
+                            <td>{{ r.hoso_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-<div class="section">
-<div class="table-wrap">
-<table id="mainTable">
+    <div id="dashboardView" class="view-content">
+        <div id="dashContainer" class="grid-layout"></div>
+    </div>
+</main>
 
-<thead>
-<tr>
-  <th>ID</th><th>Date</th><th>Batch</th><th>Prod Type</th><th>Move</th>
-  <th>Location</th><th>Brand</th><th>Species</th><th>Variety</th><th>Grade</th>
-  <th>Glaze</th><th>Freezer</th><th>Packing</th><th>PO</th><th>Purpose</th>
-  <th>Prod For</th><th>Prod At</th>
-  <th class="highlight">MC</th>
-  <th class="highlight">Loose</th>
-  <th class="highlight">Qty</th>
-  <th class="highlight">KG Value</th>
-  <th class="highlight">Inventory Value</th>
-  <th>HLSO</th>
-  <th>HOSO</th>
-  <th>Sales Ref Rate</th>
-</tr>
-</thead>
-
-<tbody id="tbody">
-{% for r in rows %}
-<tr>
-<td>{{r.id}}</td>
-<td>{{r.date}}</td>
-<td>{{r.batch_number}}</td>
-<td>{{r.type_of_production}}</td>
-<td>{{r.cargo_movement_type}}</td>
-<td>{{r.location}}</td>
-<td>{{r.brand}}</td>
-<td>{{r.species}}</td>
-<td>{{r.variety}}</td>
-<td>{{r.grade}}</td>
-<td>{{r.glaze}}</td>
-<td>{{r.freezer}}</td>
-<td>{{r.packing_style}}</td>
-<td>{{r.po_number or "-"}}</td>
-<td>{{r.purpose or "-"}}</td>
-<td>{{r.production_for}}</td>
-<td>{{r.production_at}}</td>
-<td class="highlight">{{r.no_of_mc}}</td>
-<td class="highlight">{{r.loose}}</td>
-<td class="highlight">{{r.quantity}}</td>
-<td class="highlight">{{r.product_kg_value}}</td>
-<td class="highlight">{{r.inventory_value}}</td>
-<td>{{r.hlso_count}}</td>
-<td>{{r.hoso_count}}</td>
-<td>{{r.sales_reference_rate}}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-<tfoot>
-<tr>
-<td colspan="17" style="text-align:right">TOTAL</td>
-<td id="t_mc">0</td>
-<td id="t_lse">0</td>
-<td id="t_qty">0</td>
-<td>-</td>
-<td id="t_inv">0</td>
-<td id="t_hlso">0</td>
-<td id="t_hoso">0</td>
-<td>-</td>
-</tr>
-</tfoot>
-
-</table>
-</div>
+<div class="status-footer">
+    <div class="stat-group">
+        <div class="stat-item"><span class="stat-label">Total Items</span><span id="stat_items" class="stat-val">0</span></div>
+    </div>
+    <div class="stat-group">
+        <div class="stat-item"><span class="stat-label">Total Stock IN</span><span id="stat_in_qty" class="stat-val" style="color:var(--in-color)">0.00 Kg</span></div>
+        <div class="stat-item"><span class="stat-label">IN Value</span><span id="stat_in_val" class="stat-val" style="color:var(--in-color)">₹0.00</span></div>
+    </div>
+    <div class="stat-group">
+        <div class="stat-item"><span class="stat-label">Total Stock OUT</span><span id="stat_out_qty" class="stat-val" style="color:var(--out-color)">0.00 Kg</span></div>
+        <div class="stat-item"><span class="stat-label">OUT Value</span><span id="stat_out_val" class="stat-val" style="color:var(--out-color)">₹0.00</span></div>
+    </div>
+    <div class="stat-group" style="border:none">
+        <div class="stat-item"><span class="stat-label">Available Stock</span><span id="stat_qty" class="stat-val" style="color:var(--brand-accent)">0.00 Kg</span></div>
+        <div class="stat-item"><span class="stat-label">Avg Rate</span><span id="stat_avg_rate" class="stat-val" style="color:#b45309">₹0.00</span></div>
+        <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0.00</span></div>
+    </div>
 </div>
 
 <script>
-const rows=[...document.querySelectorAll("#tbody tr")];
-function applyFilters(){
- let mc=0,lse=0,qty=0,inv=0,hlso=0,hoso=0,count=0;
- rows.forEach(r=>{
-  count++;
-  mc+=+r.children[17].innerText||0;
-  lse+=+r.children[18].innerText||0;
-  qty+=+r.children[19].innerText||0;
-  inv+=+r.children[21].innerText||0;
-  hlso+=+r.children[22].innerText||0;
-  hoso+=+r.children[23].innerText||0;
- });
- rowCount.innerText=count+" rows found";
- t_mc.innerText=mc;
- t_lse.innerText=lse;
- t_qty.innerText=qty.toFixed(2);
- t_inv.innerText=inv.toFixed(2);
- t_hlso.innerText=hlso;
- t_hoso.innerText=hoso;
-}
-window.onload=applyFilters;
-</script>
+    document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
+    let currentView = 'table';
+
+    function switchView(view, btn) {
+        currentView = view;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+        document.getElementById(view + 'View').classList.add('active');
+        document.getElementById('dashboardFilters').style.display = (view === 'dashboard') ? 'flex' : 'none';
+        if(view === 'dashboard') populateDashboardFilters();
+        applyFilters();
+    }
+
+    function populateDashboardFilters() {
+        const rows = [...document.querySelectorAll("#masterTbody tr")];
+        const prodFor = document.getElementById("prodForFilter").value;
+        const prodAt = document.getElementById("prodAtFilter").value;
+        let grades = new Set(), varieties = new Set(), glazes = new Set();
+        
+        rows.forEach(r => {
+            const rProdFor = r.getAttribute('data-prodfor') || "";
+            const rProdAt = r.getAttribute('data-prodat') || "";
+            if ((!prodFor || rProdFor === prodFor) && (!prodAt || rProdAt === prodAt)) {
+                const g = r.getAttribute('data-grade');
+                const v = r.getAttribute('data-variety');
+                const gl = r.getAttribute('data-glaze');
+                if(g && g !== "None") grades.add(g);
+                if(v && v !== "None") varieties.add(v);
+                if(gl && gl !== "None") glazes.add(gl);
+            }
+        });
+        updateSelect("gradeFilter", grades, "All Grades");
+        updateSelect("varietyFilter", varieties, "All Varieties");
+        updateSelect("glazeFilter", glazes, "All Glazes");
+    }
+
+    function updateSelect(id, set, defaultText) {
+        const select = document.getElementById(id);
+        const currentVal = select.value;
+        select.innerHTML = `<option value="">${defaultText}</option>`;
+        [...set].sort().forEach(val => {
+            if (val && val !== "None") {
+                const opt = document.createElement("option");
+                opt.value = val; opt.textContent = val;
+                if(val === currentVal) opt.selected = true;
+                select.appendChild(opt);
+            }
+        });
+    }
+
+    function applyFilters() {
+        const query = document.getElementById("globalSearch").value.toLowerCase();
+        const prodFor = document.getElementById("prodForFilter").value;
+        const prodAt = document.getElementById("prodAtFilter").value;
+        const grade = document.getElementById("gradeFilter").value;
+        const variety = document.getElementById("varietyFilter").value;
+        const glaze = document.getElementById("glazeFilter").value;
+        
+        const rows = [...document.querySelectorAll("#masterTbody tr")];
+        let filteredData = [];
+        let inQty = 0, inVal = 0, outQty = 0, outVal = 0;
+
+        rows.forEach(r => {
+            const txt = r.innerText.toLowerCase();
+            const rProdFor = r.getAttribute('data-prodfor') || "";
+            const rProdAt = r.getAttribute('data-prodat') || "";
+            const rGrade = r.getAttribute('data-grade');
+            const rVariety = r.getAttribute('data-variety');
+            const rGlaze = r.getAttribute('data-glaze');
+            const rMove = r.getAttribute('data-move');
+            
+            const ok = (!query || txt.includes(query)) && 
+                       (!prodFor || rProdFor === prodFor) &&
+                       (!prodAt || rProdAt === prodAt) &&
+                       (currentView === 'table' || (
+                           (!grade || rGrade === grade) &&
+                           (!variety || rVariety === variety) &&
+                           (!glaze || rGlaze === glaze)
+                       ));
+
+            r.style.display = ok ? "" : "none";
+            
+            if(ok) {
+                const q = parseFloat(r.getAttribute('data-qty')) || 0;
+                const v = parseFloat(r.getAttribute('data-val')) || 0;
+                if(rMove === 'IN') { inQty += q; inVal += v; }
+                else { outQty += q; outVal += v; }
+
+                filteredData.push({
+                    grade: rGrade, variety: rVariety, glaze: rGlaze,
+                    qty: q, val: v, move: rMove,
+                    pack: r.getAttribute('data-pack')
+                });
+            }
+        });
+
+        const balQty = inQty - outQty;
+        const balVal = inVal - outVal;
+        const balAvg = balQty > 0 ? (balVal / balQty).toFixed(2) : "0.00";
+
+        document.getElementById("stat_items").innerText = filteredData.length;
+        document.getElementById("stat_in_qty").innerText = inQty.toFixed(2) + " Kg";
+        document.getElementById("stat_in_val").innerText = "₹" + Math.round(inVal).toLocaleString('en-IN');
+        document.getElementById("stat_out_qty").innerText = outQty.toFixed(2) + " Kg";
+        document.getElementById("stat_out_val").innerText = "₹" + Math.round(outVal).toLocaleString('en-IN');
+        document.getElementById("stat_qty").innerText = balQty.toFixed(2) + " Kg";
+        document.getElementById("stat_avg_rate").innerText = "₹" + balAvg;
+        document.getElementById("stat_val").innerText = "₹" + Math.round(balVal).toLocaleString('en-IN');
+
+        if(currentView === 'dashboard') renderDashboard(filteredData, prodFor);
+    }
+
+    function renderDashboard(data, prodFor) {
+        const container = document.getElementById("dashContainer");
+        if(!prodFor) {
+            container.innerHTML = `<div class="empty-dashboard"><i class="fas fa-filter"></i><h3>Production For Select Cheyyandi</h3><p>Dashboard చూడటానికి పైన ఉన్న డ్రాప్‌డౌన్ నుండి కంపెనీని ఎంచుకోండి.</p></div>`;
+            container.style.display = "block"; return;
+        }
+        container.style.display = "grid";
+        container.innerHTML = "";
+        const groups = {};
+        data.forEach(item => {
+            const key = `${item.grade}_${item.variety}_${item.glaze}`;
+            if(!groups[key]) groups[key] = { ...item, inQty: 0, inVal: 0, outQty: 0, outVal: 0 };
+            if(item.move === 'IN') { groups[key].inQty += item.qty; groups[key].inVal += item.val; }
+            else { groups[key].outQty += item.qty; groups[key].outVal += item.val; }
+        });
+
+        Object.values(groups).forEach(g => {
+            const availQty = g.inQty - g.outQty;
+            const availVal = g.inVal - g.outVal;
+            const inAvg = g.inQty > 0 ? (g.inVal / g.inQty).toFixed(2) : "0.00";
+            const outAvg = g.outQty > 0 ? (g.outVal / g.outQty).toFixed(2) : "0.00";
+            const availAvg = availQty > 0 ? (availVal / availQty).toFixed(2) : "0.00";
+
+            const card = document.createElement('div');
+            card.className = 'grade-card';
+            card.innerHTML = `
+                <div class="card-head"><span class="grade-title">${g.grade}</span><span class="glaze-badge">${g.glaze}</span></div>
+                <div class="card-body">
+                    <div class="variety-label">${g.variety}</div>
+                    <div class="movement-section">
+                        <div class="move-box in">
+                            <span class="move-title" style="color:var(--in-color)">Stock IN</span>
+                            <div class="stat-row"><span class="s-label">Qty</span><span class="s-value">${g.inQty.toFixed(2)}</span></div>
+                            <div class="stat-row"><span class="s-label">Avg Rate</span><span class="s-value">₹${inAvg}</span></div>
+                            <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(g.inVal).toLocaleString('en-IN')}</span></div>
+                        </div>
+                        <div class="move-box out">
+                            <span class="move-title" style="color:var(--out-color)">Stock OUT</span>
+                            <div class="stat-row"><span class="s-label">Qty</span><span class="s-value">${g.outQty.toFixed(2)}</span></div>
+                            <div class="stat-row"><span class="s-label">Avg Rate</span><span class="s-value">₹${outAvg}</span></div>
+                            <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(g.outVal).toLocaleString('en-IN')}</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="footer-stat"><span class="fs-label">Balance</span><span class="footer-main-val">${availQty.toFixed(2)} Kg</span></div>
+                    <div class="footer-stat"><span class="fs-label">Avail Avg</span><span class="footer-main-val" style="color:#b45309">₹${availAvg}</span></div>
+                    <div class="footer-stat" style="text-align:right"><span class="fs-label">Stock Value</span><span class="footer-main-val" style="font-size:11px;">₹${Math.round(availVal).toLocaleString('en-IN')}</span></div>
+                </div>`;
+            container.appendChild(card);
+        });
+    }
+
+    window.onload = applyFilters;
+</script>
 </body>
 </html>
