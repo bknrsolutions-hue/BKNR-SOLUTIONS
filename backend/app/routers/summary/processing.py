@@ -194,7 +194,7 @@ async def get_processing_summary(
                 r.product_kg_value = round(base_rate + addon, 2)
                 r.inventory_value = round(float(r.quantity or 0) * r.product_kg_value, 2)
 
-        # Common Calculations for Card
+        # Final Card Updates
         card["deheading_qty"] = sum(float(d.hlso_qty or 0) for d in rows["deheading"])
         card["deheading_amount"] = sum(float(d.amount or 0) for d in rows["deheading"])
         card["peeling_qty"] = sum(float(p.peeled_qty or 0) for p in rows["peeling"])
@@ -207,11 +207,18 @@ async def get_processing_summary(
         card["stock_amount"] = sum(float(st.inventory_value or 0) for st in rows["stock"])
         card["floor_qty"] = round(sum(f["available_qty"] for f in floor_balance_list), 2)
 
+    # 4. Return Template with Explicit Request argument
     return templates.TemplateResponse(
+        request=request, 
         name="summary/processing_summary.html", 
         context={
-            "request": request, "companies": companies, "batches": batches,
-            "selected_company": production_for, "selected_prod_type": prod_type, "selected_batch": batch,
-            "rows": rows, "card": card, "hoso_floor_balance": floor_balance_list
+            "companies": companies, 
+            "batches": batches,
+            "selected_company": production_for, 
+            "selected_prod_type": prod_type, 
+            "selected_batch": batch,
+            "rows": rows, 
+            "card": card, 
+            "hoso_floor_balance": floor_balance_list
         }
     )
