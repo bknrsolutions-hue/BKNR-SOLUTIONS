@@ -352,7 +352,12 @@
     function renderDashboard(data, prodFor) {
         const container = document.getElementById("dashContainer");
         if(!prodFor) {
-            container.innerHTML = `<div class="empty-dashboard"><i class="fas fa-filter"></i><h3>Production For Select Cheyyandi</h3><p>Dashboard చూడటానికి పైన ఉన్న డ్రాప్‌డౌన్ నుండి కంపెనీని ఎంచుకోండి.</p></div>`;
+            container.innerHTML = `
+                <div class="empty-dashboard">
+                    <i class="fas fa-filter"></i>
+                    <h3>Please select Production For</h3>
+                    <p>Select a company from the dropdown above to view the dashboard.</p>
+                </div>`;
             container.style.display = "block"; return;
         }
         container.style.display = "grid";

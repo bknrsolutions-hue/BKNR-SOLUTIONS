@@ -357,7 +357,7 @@ function loadSummaries(){
 
   if(allow("processing_summary")) 
     html += `<button onclick="openPage('/summary/processing')">
-               <i class="fa-solid fa-rectangle-list"></i> Processing Summary
+               <i class="fa-solid fa-rectangle-list"></i> Processing Batch Summary
              </button>`;
 
   if(allow("inventory_costing")) 
@@ -369,8 +369,16 @@ function loadSummaries(){
   if(allow("floor_balance_value")) 
     html += `<button onclick="openPage('/summary/floor_balance_value')">
                <i class="fa-solid fa-rectangle-list"></i> Floor Balance Value
+             </button>`;  
+  if(allow("costing_dashboard"))
+    html += `<button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
+               <i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard
              </button>`;
-             
+  if(allow("hr_dashboard")) {
+    html += `<button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
+               <i class="fa-solid fa-user-tie"></i> HR Dashboard
+             </button>`;
+  }
   document.getElementById("sideMenu").innerHTML = html;
 }
 /******** BILLS & OPERATIONS *********/
