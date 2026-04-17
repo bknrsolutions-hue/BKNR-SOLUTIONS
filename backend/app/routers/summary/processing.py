@@ -167,10 +167,11 @@ async def get_processing_summary(
         card["floor_qty"] = round(total_floor, 2)
 
     # 4. Return Template with Context
+ # 4. Return Template with Context
     return templates.TemplateResponse(
-        name="summary/processing_summary.html", 
-        context={
-            "request": request,
+        "summary/processing_summary.html",  # ఇక్కడ name= తీసేయండి
+        {
+            "request": request,             # ఇక్కడ context= తీసేసి డైరెక్ట్ డిక్షనరీ ఇవ్వండి
             "companies": companies,
             "batches": batches,
             "selected_company": production_for,
