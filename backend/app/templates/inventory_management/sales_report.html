@@ -2,372 +2,341 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sales Realization Detailed Report – BKNR ERP</title>
+<title>Ultimate Sales Intelligence – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <style>
-:root{
-  --primary:#0f172a; --border:#e2e8f0; --bg:#f8fafc; --accent: #2563eb; --card:#ffffff;
-  --success: #059669; --danger: #dc2626; --warning: #f59e0b;
+:root {
+    --bg: #f4f7fa; --panel: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
+    --primary: #4f46e5; --secondary: #0ea5e9; --success: #10b981; --danger: #f43f5e;
+    --warning: #f59e0b; --border: #e2e8f0;
 }
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color: #1e293b; font-size: 9px;}
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; overflow-y: auto; }
 
-/* HEADER SECTION */
-.header{
-  position:sticky; top:0; z-index: 1000;
-  background:#fff; padding:15px 25px;
-  border-bottom:1px solid var(--border);
-  display:flex; justify-content:space-between; align-items:center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+/* LAYOUT */
+.dashboard { display: flex; flex-direction: column; min-height: 100vh; }
+.header { 
+    background: white; padding: 12px 20px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 1000;
 }
-.header h2{margin:0; color:var(--primary); font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: -0.5px;}
+.header h1 { font-size: 15px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
 
-/* FILTER CONTROL PANEL */
-.section-filter{
-  margin:20px; background:#fff; padding:18px;
-  border-radius:12px; border:1px solid var(--border);
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+/* KPI STRIP */
+.kpi-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding: 15px 20px; }
+.kpi-box { 
+    background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.2s;
 }
-.field{display:flex; flex-direction:column; gap: 5px;}
-.field label{font-size:8px; font-weight:700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;}
-.field input, .field select{
-  padding:8px; border-radius:6px; border:1px solid var(--border); font-size: 10px; outline: none; background: #f9fafb; width: 100%;
-}
+.kpi-box:hover { transform: translateY(-2px); border-color: var(--primary); }
+.kpi-title { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
+.kpi-val { font-size: 16px; font-weight: 800; display: block; }
+.kpi-meta { font-size: 9px; font-weight: 600; margin-top: 4px; }
 
-/* EXECUTIVE SUMMARY (KPIs) */
-.summary-container {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 0 20px 20px;
-}
-.kpi-card {
-    background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--accent);
-}
-.kpi-card span { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-.kpi-card h2 { margin: 8px 0 0; font-size: 22px; color: var(--primary); font-weight: 800; }
+/* CHARTS SECTION - Updated to 3 columns to fit 6 charts */
+.charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 0 20px 15px; }
+.chart-box { background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+.chart-header { font-size: 10px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; color: var(--text-sub); }
+.canvas-container { height: 160px; position: relative; }
 
-/* DATA TABLE PRESENTATION */
-.table-wrap{
-  margin:0 20px 40px; background:#fff; border-radius:12px; border:1px solid var(--border);
-  overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+/* TABLE SECTION */
+.data-container { padding: 0 20px 20px; display: flex; flex-direction: column; }
+.table-panel { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+.table-scroll { overflow: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 2800px; } 
+thead th { 
+    background: #f8fafc; color: var(--text-sub); font-size: 9px; text-transform: uppercase;
+    padding: 10px; text-align: center; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100;
 }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center; }
 
-thead th {
-    background: #f1f5f9; color: #475569; padding: 12px 5px;
-    font-size: 8px; font-weight: 700; border-bottom: 2px solid var(--border);
-    text-transform: uppercase; text-align: center;
-}
+.status-pill { padding: 3px 8px; border-radius: 20px; font-weight: 800; font-size: 8px; border: none; }
+.pill-received { background: #dcfce7; color: #15803d; }
+.pill-unpaid { background: #fee2e2; color: #b91c1c; }
+.inp-edit { width: 55px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; text-align: center; font-weight: 700; }
+.subtotal-row { background: #fdfdfd; font-weight: 800; border-top: 1px solid #eee; }
+#msg { font-weight: 700; color: var(--success); }
+.filter-select { padding:5px; border-radius:4px; font-weight:700; border:1px solid #ddd; font-size: 10px; min-width: 90px; }
 
-tbody td {
-    padding: 10px 5px; border-bottom: 1px solid var(--border);
-    text-align: center; vertical-align: middle; font-size: 9.5px;
-}
-
-.rowspan-cell { background: #ffffff !important; font-weight: 700; color: var(--primary); border-right: 1px solid var(--border); position: relative; }
-.sl-col { width: 40px; }
-.inv-col { width: 110px; }
-.calc-col { background: #f0fdf4; color: #15803d; font-weight: 700; }
-.currency-col { background: #fffbeb; color: #b45309; font-weight: 700; }
-
-/* CONTEXT MENU (3-DOT) */
-.menu-container { position: absolute; top: 10px; right: 5px; }
-.menu-btn { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 5px; }
-.menu-btn:hover { color: var(--accent); }
-.menu-content { 
-    display: none; position: absolute; right: 0; background: white; 
-    min-width: 120px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
-    border-radius: 8px; z-index: 10; border: 1px solid var(--border);
-}
-.menu-content button {
-    display: block; width: 100%; text-align: left; padding: 8px 12px;
-    font-size: 9px; font-weight: 600; color: var(--primary); 
-    border: none; background: none; cursor: pointer;
-}
-.menu-content button:hover { background: #f8fafc; color: var(--accent); }
-.menu-content .del-opt { color: var(--danger); }
-.menu-content .del-opt:hover { background: #fef2f2; }
-
-.subtotal-row td { background: #f8fafc; font-weight: 800; color: var(--primary); border-top: 1px solid var(--border); font-size: 10px; }
-.grand-total { background: var(--primary) !important; color: white !important; font-weight: 800; }
-
-@media print { .header, .section-filter, .menu-container, .print-btn { display: none !important; } body { padding: 0; } }
+@media print { .header, .kpi-container, .charts-grid { display: none !important; } }
 </style>
 </head>
-
 <body>
 
-<div class="header">
-  <h2><i class="fa-solid fa-file-invoice-dollar"></i> Sales Realization Analysis</h2>
-  <div style="display: flex; gap: 12px;">
-    <button onclick="window.print()" class="print-btn" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">
-        <i class="fa fa-print"></i> EXPORT TO PRINT
-    </button>
-  </div>
-</div>
+<div class="dashboard">
+    <div class="header">
+        <h1><i class="fas fa-gem"></i> SALES REALIZATION & ANALYTICS</h1>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <span id="msg"></span>
+            <input type="text" id="buyer_search" placeholder="Search..." onkeyup="runAnalytics()" style="padding:5px; border:1px solid #ddd; border-radius:4px; font-size:10px;">
+            <select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Invoices</option></select>
+            <select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All POs</option></select>
+            <select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select>
+            <select id="sel_grade" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Grades</option></select>
+            <select id="sel_m" onchange="runAnalytics()" style="padding:5px; border-radius:4px; font-weight:700; font-size:10px;">
+                <option value="ALL">All Months</option>
+                <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+                <option value="04" selected>Apr</option><option value="05">May</option><option value="06">Jun</option>
+                <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+            </select>
+            <select id="sel_y" onchange="runAnalytics()" style="padding:5px; border-radius:4px; font-weight:700; font-size:10px;">
+                <option value="2025">2025</option><option value="2026" selected>2026</option>
+            </select>
+            <button onclick="window.print()" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:700; font-size:10px;">EXPORT</button>
+        </div>
+    </div>
 
-<div class="section-filter">
-    <div class="field">
-        <label>Start Date</label>
-        <input type="date" id="f_start_date" onchange="applyFilters()">
+    <div class="kpi-container">
+        <div class="kpi-box"><span class="kpi-title">Gross Revenue</span><span class="kpi-val" id="k_rev">₹ 0</span><span class="kpi-meta" id="k_usd_total">$ 0 Total</span></div>
+        <div class="kpi-box"><span class="kpi-title">Net Profit</span><span class="kpi-val" id="k_pl" style="color:var(--success)">₹ 0</span><span class="kpi-meta" id="k_margin">0% Margin</span></div>
+        <div class="kpi-box"><span class="kpi-title">Pending</span><span class="kpi-val" id="k_debt" style="color:var(--danger)">₹ 0</span><span class="kpi-meta" id="k_cei">0% Collected</span></div>
+        <div class="kpi-box"><span class="kpi-title">Total Invoices</span><span class="kpi-val" id="k_inv_count">0</span><span class="kpi-meta">exported</span></div>
+        <div class="kpi-box"><span class="kpi-title">Landed Logistics</span><span class="kpi-val" id="k_cost">₹ 0</span><span class="kpi-meta" id="k_cost_ratio">0% Ratio</span></div>
+        <div class="kpi-box"><span class="kpi-title">Packing Cost</span><span class="kpi-val" id="k_pk_total">₹ 0</span><span class="kpi-meta" id="k_pk_ratio">0% of Rev</span></div>
+        <div class="kpi-box"><span class="kpi-title">Volume</span><span class="kpi-val" id="k_qty">0 KG</span><span class="kpi-meta" id="k_mc">0 MC</span></div>
+        <div class="kpi-box"><span class="kpi-title">Profit / KG</span><span class="kpi-val" id="k_yield">₹ 0.00</span><span class="kpi-meta">Realization</span></div>
     </div>
-    <div class="field">
-        <label>End Date</label>
-        <input type="date" id="f_end_date" onchange="applyFilters()">
-    </div>
-    <div class="field">
-        <label>Consignee / Buyer</label>
-        <select id="sel_buyer" onchange="applyFilters()">
-            <option value="">All Consignees</option>
-        </select>
-    </div>
-    <div class="field">
-        <label>Private Label / Brand</label>
-        <select id="sel_brand" onchange="applyFilters()">
-            <option value="">All Brands</option>
-        </select>
-    </div>
-    <div class="field">
-        <label>Product Variety</label>
-        <select id="sel_variety" onchange="applyFilters()">
-            <option value="">All Varieties</option>
-        </select>
-    </div>
-    <div class="field" style="grid-column: span 1;">
-        <label>Global Search</label>
-        <input type="text" id="f_search" placeholder="Invoice #..." oninput="applyFilters()">
-    </div>
-</div>
 
-{# --- Server-side KPI Aggregate --- #}
-{% set ns = namespace(mc=0, usd=0, inr=0) %}
-{% for item in sales_data %}
-    {% set ns.mc = ns.mc + (item.obj.no_of_mc | float) %}
-    {% set ns.usd = ns.usd + (item.total_usd | float) %}
-    {% set ns.inr = ns.inr + (item.total_inr | float) %}
-{% endfor %}
+    <div class="charts-grid">
+        <div class="chart-box"><div class="chart-header">Daily Revenue Trend</div><div class="canvas-container"><canvas id="c_day_trend"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Country Share</div><div class="canvas-container"><canvas id="c_country"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Revenue vs Profit</div><div class="canvas-container"><canvas id="c_line"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Variety Performance</div><div class="canvas-container"><canvas id="c_variety"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Top Grades (MT)</div><div class="canvas-container"><canvas id="c_bar_grade"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Buyer Share</div><div class="canvas-container"><canvas id="c_buyer"></canvas></div></div>
+    </div>
 
-<div class="summary-container">
-    <div class="kpi-card"><span>Total Export Volume</span><h2 id="kpi_mc">{{ "{:,}".format(ns.mc | int) }} MC</h2></div>
-    <div class="kpi-card"><span>Gross Value (USD)</span><h2 id="kpi_usd">$ {{ "{:,.2f}".format(ns.usd) }}</h2></div>
-    <div class="kpi-card" style="border-top-color: var(--success);"><span>Realized Revenue (INR)</span><h2 id="kpi_inr" style="color:var(--success)">₹ {{ "{:,.2f}".format(ns.inr) }}</h2></div>
-    <div class="kpi-card"><span>Active Shipments</span><h2 id="rowCount">0 Shipments</h2></div>
-</div>
+    <div class="data-container">
+        <div class="table-panel">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SL</th><th>Invoice No</th><th>Date</th><th>Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO Number</th><th>Container No</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing Style</th><th>MC</th><th>KG</th><th style="background:#eef2ff">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:#fff1f2">Net Profit</th><th>Status</th><th>Company</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody">
+                        {% if sales_data %}
+                        {% set group_count = namespace(val=0) %}
+                        {% for inv, group in sales_data | groupby('obj.invoice_no') %}
+                            {% set first_item = group[0] %}
+                            {% set is_old_fy = first_item.obj.invoice_date < '2026-04-01' %}
+                            {% set has_unpaid = false %}
+                            {% for i in group %}{% if i.obj.status == 'Unpaid' %}{% set has_unpaid = true %}{% endif %}{% endfor %}
 
-<div class="table-wrap">
-    <table id="mainTable">
-        <thead>
-            <tr>
-                <th class="sl-col">SL</th>
-                <th class="inv-col">Shipment Info</th>
-                <th style="width:150px;">Consignee Details</th>
-                <th>Brand</th>
-                <th>Variety</th>
-                <th>Grade</th>
-                <th>Packing</th>
-                <th>MC Qty</th>
-                <th class="calc-col">Net Weight (KG)</th>
-                <th class="currency-col">Unit Price ($)</th>
-                <th class="currency-col">Total (USD)</th>
-                <th class="currency-col" style="background:#f0f9ff; color:#0369a1;">Realization (INR)</th>
-            </tr>
-        </thead>
-        <tbody id="tbody">
-            {% if sales_data %}
-            {% for inv_no, group in sales_data | groupby('obj.invoice_no') %}
-                {% for item in group %}
-                <tr class="data-row" 
-                    data-invoice="{{ inv_no | lower }}" 
-                    data-date="{{ item.obj.invoice_date }}"
-                    data-buyer="{{ item.obj.buyer_name }}" 
-                    data-brand="{{ item.obj.brand }}"
-                    data-variety="{{ item.obj.variety }}"
-                    data-grade="{{ item.obj.grade }}">
-                    
-                    {% if loop.first %}
-                    <td rowspan="{{ group|length }}" class="rowspan-cell">{{ item.sl_no }}</td>
-                    <td rowspan="{{ group|length }}" class="rowspan-cell">
-                        <div class="menu-container">
-                            <button class="menu-btn" onclick="toggleMenu('m_{{ inv_no }}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                            <div id="m_{{ inv_no }}" class="menu-content">
-                                <button onclick="window.print()"><i class="fa fa-print"></i> Print Invoice</button>
-                                <button onclick="exportToPDF('{{ inv_no }}')"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
-                                <hr style="margin:4px 0; border:0; border-top:1px solid #f1f5f9;">
-                                <form action="/inventory/delete_sales_invoice/{{ inv_no }}" method="post" onsubmit="return confirm('Execute permanent deletion for Invoice {{ inv_no }}?')">
-                                    <button type="submit" class="del-opt"><i class="fa-solid fa-trash-can"></i> Void Invoice</button>
-                                </form>
-                            </div>
-                        </div>
-                        <span style="color:var(--accent); font-weight:800;">#{{ inv_no }}</span><br>
-                        <small style="color:#64748b;">{{ item.obj.invoice_date }}</small>
-                    </td>
-                    <td rowspan="{{ group|length }}" class="rowspan-cell" style="text-align:left; padding-left:10px;">
-                        <div style="font-weight:700;">{{ item.obj.buyer_name }}</div>
-                        <span style="font-size:8px; color:#64748b;">{{ item.obj.country }}</span>
-                    </td>
-                    {% endif %}
-                    
-                    <td>{{ item.obj.brand }}</td>
-                    <td class="v-variety" style="font-weight:700;">{{ item.obj.variety }}</td>
-                    <td class="v-grade" style="color:var(--accent); font-weight:800;">{{ item.obj.grade }}</td>
-                    <td>{{ item.obj.packing_style }}</td>
-                    <td class="v-mc" style="font-weight:700;">{{ item.obj.no_of_mc }}</td>
-                    <td class="v-kg calc-col">{{ "{:,.2f}".format(item.total_qty_kg) }}</td>
-                    <td class="v-price currency-col">$ {{ item.obj.price }}</td>
-                    <td class="v-usd currency-col">$ {{ "{:,.2f}".format(item.total_usd) }}</td>
-                    <td class="v-inr currency-col" style="background:#f0f9ff; color:#0369a1;">₹ {{ "{:,.2f}".format(item.total_inr) }}</td>
-                </tr>
-                {% endfor %}
-                <tr class="subtotal-row" data-inv-sub="{{ inv_no }}">
-                    <td colspan="7" style="text-align:right; padding-right:15px;">SUB-TOTAL (#{{ inv_no }}):</td>
-                    <td class="s-mc">0</td>
-                    <td class="s-kg">0</td>
-                    <td></td>
-                    <td class="s-usd">0</td>
-                    <td class="s-inr">0</td>
-                </tr>
-            {% endfor %}
-            {% endif %}
-        </tbody>
-        <tfoot>
-            <tr class="grand-total">
-                <td colspan="7" style="text-align:right; padding-right:15px;">CONSOLIDATED TOTAL:</td>
-                <td id="gt_mc">0</td>
-                <td id="gt_kg">0</td>
-                <td></td>
-                <td id="gt_usd">0</td>
-                <td id="gt_inr">0</td>
-            </tr>
-        </tfoot>
-    </table>
+                            {% if not is_old_fy or (is_old_fy and has_unpaid) %}
+                            {% set group_count.val = group_count.val + 1 %}
+                            {% set s = namespace(mc=0, kg=0, usd=0, inr=0, st=0, fr=0, pk=0, pl=0) %}
+                            {% for i in group %}
+                                {% set s.mc = s.mc + i.obj.no_of_mc %}{% set s.kg = s.kg + i.total_qty_kg %}{% set s.usd = s.usd + i.total_usd %}{% set s.inr = s.inr + i.total_inr %}{% set s.st = s.st + i.stock_value %}{% set s.fr = s.fr + i.freight_cost %}{% set s.pk = s.pk + i.packing_cost %}{% set s.pl = s.pl + i.profit_loss %}
+                                <tr class="data-row" 
+                                    data-dt="{{ i.obj.invoice_date }}"
+                                    data-m="{{ i.obj.invoice_date[5:7] }}" 
+                                    data-y="{{ i.obj.invoice_date[0:4] }}" 
+                                    data-st="{{ i.obj.status }}" 
+                                    data-buyer="{{ i.obj.buyer_name | lower }}" 
+                                    data-country="{{ i.obj.country | lower }}" 
+                                    data-countryname="{{ i.obj.country }}"
+                                    data-grade="{{ i.obj.grade }}" 
+                                    data-variety="{{ i.obj.variety }}" 
+                                    data-inv="{{ i.obj.invoice_no }}" 
+                                    data-po="{{ i.obj.po_number }}">
+                                    <td>{{ group_count.val if loop.first else "" }}</td>
+                                    <td><b>{{ i.obj.invoice_no }}</b></td>
+                                    <td>{{ i.obj.invoice_date }}</td>
+                                    <td style="text-align:left;">{{ i.obj.buyer_name }}</td>
+                                    <td>{{ i.obj.country }}</td>
+                                    <td>{{ i.obj.brand }}</td>
+                                    <td>{{ i.obj.variety }}</td>
+                                    <td>{{ i.obj.grade }}</td>
+                                    <td>{{ i.obj.po_number }}</td>
+                                    <td>{{ i.obj.container_no }}</td>
+                                    <td>{{ i.obj.shipping_bill }}</td>
+                                    <td>{{ i.obj.count_glaze }} / {{ i.obj.weight_glaze }}</td>
+                                    <td>{{ i.obj.packing_style }}</td>
+                                    <td class="v-mc">{{ i.obj.no_of_mc }}</td>
+                                    <td class="v-kg">{{ "{:,.2f}".format(i.total_qty_kg) }}</td>
+                                    <td><input type="number" step="0.01" class="inp-edit" value="{{ i.obj.exchange_rate }}" onchange="updateRow('{{ i.obj.id }}', 'rate', this.value)"></td>
+                                    <td class="v-usd">$ {{ "{:,.2f}".format(i.total_usd) }}</td>
+                                    <td class="v-inr">₹ {{ "{:,.2f}".format(i.total_inr) }}</td>
+                                    <td class="v-st">₹ {{ "{:,.2f}".format(i.stock_value) }}</td>
+                                    <td class="v-fr">₹ {{ "{:,.2f}".format(i.freight_cost) }}</td>
+                                    <td class="v-pk">₹ {{ "{:,.2f}".format(i.packing_cost) }}</td>
+                                    <td class="v-pl" style="font-weight:800; color:{{ 'var(--success)' if i.profit_loss >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(i.profit_loss) }}</td>
+                                    <td>
+                                        <select onchange="updateRow('{{ i.obj.id }}', 'status', this.value)" class="status-pill {{ 'pill-received' if i.obj.status == 'Received' else 'pill-unpaid' }}">
+                                            <option value="Unpaid" {% if i.obj.status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                                            <option value="Received" {% if i.obj.status == 'Received' %}selected{% endif %}>Received</option>
+                                        </select>
+                                    </td>
+                                    <td>{{ i.obj.company_name }}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="subtotal-row">
+                                <td colspan="13" style="text-align:right">SUBTOTAL:</td>
+                                <td>{{ s.mc }}</td><td>{{ "{:,.2f}".format(s.kg) }}</td><td></td><td>$ {{ "{:,.2f}".format(s.usd) }}</td><td>₹ {{ "{:,.2f}".format(s.inr) }}</td><td>₹ {{ "{:,.2f}".format(s.st) }}</td><td>₹ {{ "{:,.2f}".format(s.fr) }}</td><td>₹ {{ "{:,.2f}".format(s.pk) }}</td><td style="color:{{ 'var(--success)' if s.pl >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(s.pl) }}</td><td></td><td></td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-function toggleMenu(id) {
-    document.querySelectorAll('.menu-content').forEach(m => { if(m.id !== id) m.style.display = 'none'; });
-    const el = document.getElementById(id);
-    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+let charts = {};
+Chart.register(ChartDataLabels);
+
+async function updateRow(id, type, val) {
+    const url = type === 'rate' ? "/inventory/update_exchange_rate" : "/inventory/update_status";
+    const payload = type === 'rate' ? { id: id, exchange_rate: val } : { id: id, status: val };
+    try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if(res.ok) { document.getElementById('msg').innerText = "✓ Saved"; setTimeout(() => location.reload(), 700); }
+    } catch(e) { alert("Error!"); }
 }
 
-window.onclick = function(event) {
-    if (!event.target.matches('.menu-btn') && !event.target.matches('.fa-ellipsis-vertical')) {
-        document.querySelectorAll('.menu-content').forEach(m => m.style.display = 'none');
-    }
-}
-
-function populateDropdowns() {
-    const filters = { buyer: new Set(), brand: new Set(), variety: new Set() };
-    document.querySelectorAll(".data-row").forEach(row => {
-        if(row.dataset.buyer) filters.buyer.add(row.dataset.buyer);
-        if(row.dataset.brand) filters.brand.add(row.dataset.brand);
-        if(row.dataset.variety) filters.variety.add(row.dataset.variety);
+function populateFilters() {
+    const invs = new Set(), pos = new Set(), varieties = new Set(), grades = new Set();
+    document.querySelectorAll('.data-row').forEach(tr => {
+        invs.add(tr.dataset.inv); pos.add(tr.dataset.po);
+        varieties.add(tr.dataset.variety); grades.add(tr.dataset.grade);
     });
-
-    const fillSelect = (id, set) => {
-        const sel = document.getElementById(id);
-        Array.from(set).sort().forEach(val => {
-            if(val && val !== 'None') {
-                const opt = document.createElement("option");
-                opt.value = val; opt.textContent = val;
-                sel.appendChild(opt);
-            }
-        });
-    };
-    fillSelect("sel_buyer", filters.buyer);
-    fillSelect("sel_brand", filters.brand);
-    fillSelect("sel_variety", filters.variety);
-}
-
-function applyFilters() {
-    const f = {
-        start: document.getElementById("f_start_date").value,
-        end: document.getElementById("f_end_date").value,
-        buyer: document.getElementById("sel_buyer").value,
-        brand: document.getElementById("sel_brand").value,
-        variety: document.getElementById("sel_variety").value,
-        search: document.getElementById("f_search").value.toLowerCase()
-    };
-
-    document.querySelectorAll(".data-row").forEach(row => {
-        const rowDate = row.dataset.date; // Expects YYYY-MM-DD
-        
-        let dateMatch = true;
-        if (f.start && rowDate < f.start) dateMatch = false;
-        if (f.end && rowDate > f.end) dateMatch = false;
-
-        const matches = dateMatch &&
-                        (!f.buyer || row.dataset.buyer === f.buyer) &&
-                        (!f.brand || row.dataset.brand === f.brand) &&
-                        (!f.variety || row.dataset.variety === f.variety) &&
-                        (!f.search || row.innerText.toLowerCase().includes(f.search));
-        
-        row.style.display = matches ? "" : "none";
-    });
-    updateTotals();
-}
-
-function updateTotals() {
-    const rows = document.querySelectorAll(".data-row");
-    let g = { mc:0, kg:0, usd:0, inr:0 };
-    let subTotals = {};
-    let visibleInvoices = new Set();
-
-    rows.forEach(row => {
-        if (row.style.display === "none") return;
-        const inv = row.getAttribute("data-invoice");
-        visibleInvoices.add(inv);
-        
-        if (!subTotals[inv]) subTotals[inv] = { mc:0, kg:0, usd:0, inr:0 };
-
-        const mc = parseFloat(row.querySelector(".v-mc").innerText) || 0;
-        const kg = parseFloat(row.querySelector(".v-kg").innerText.replace(/,/g, '')) || 0;
-        const usd = parseFloat(row.querySelector(".v-usd").innerText.replace(/[^0-9.-]/g, '')) || 0;
-        const inr = parseFloat(row.querySelector(".v-inr").innerText.replace(/[^0-9.-]/g, '')) || 0;
-
-        subTotals[inv].mc += mc; subTotals[inv].kg += kg;
-        subTotals[inv].usd += usd; subTotals[inv].inr += inr;
-        g.mc += mc; g.kg += kg; g.usd += usd; g.inr += inr;
-    });
-
-    document.querySelectorAll(".subtotal-row").forEach(sr => {
-        const inv = sr.getAttribute("data-inv-sub").toLowerCase();
-        const d = subTotals[inv];
-        if (d && visibleInvoices.has(inv)) {
-            sr.style.display = "";
-            sr.querySelector(".s-mc").innerText = d.mc;
-            sr.querySelector(".s-kg").innerText = d.kg.toLocaleString(undefined, {minimumFractionDigits: 2});
-            sr.querySelector(".s-usd").innerText = "$ " + d.usd.toLocaleString(undefined, {minimumFractionDigits: 2});
-            sr.querySelector(".s-inr").innerText = "₹ " + d.inr.toLocaleString(undefined, {minimumFractionDigits: 2});
-        } else { sr.style.display = "none"; }
-    });
-
-    const setUI = (id, val, prefix="") => {
+    const addOpts = (id, set) => {
         const el = document.getElementById(id);
-        if(el) el.innerText = prefix + val.toLocaleString(undefined, {minimumFractionDigits: (prefix ? 2 : 0)});
+        Array.from(set).sort().forEach(val => el.add(new Option(val, val)));
     };
-
-    setUI("gt_mc", g.mc);
-    setUI("gt_kg", g.kg);
-    setUI("gt_usd", g.usd, "$ ");
-    setUI("gt_inr", g.inr, "₹ ");
-    
-    setUI("kpi_mc", g.mc, "");
-    document.getElementById("kpi_mc").innerText += " MC";
-    setUI("kpi_usd", g.usd, "$ ");
-    setUI("kpi_inr", g.inr, "₹ ");
-    
-    document.getElementById("rowCount").innerText = visibleInvoices.size + " Shipments";
+    addOpts('sel_inv', invs); addOpts('sel_po', pos); addOpts('sel_variety', varieties); addOpts('sel_grade', grades);
 }
 
-function exportToPDF(inv) { alert("Generating Analytical PDF Export: " + inv); }
+function runAnalytics() {
+    const m = document.getElementById('sel_m').value, y = document.getElementById('sel_y').value;
+    const invF = document.getElementById('sel_inv').value, poF = document.getElementById('sel_po').value;
+    const varF = document.getElementById('sel_variety').value, grdF = document.getElementById('sel_grade').value;
+    const q = document.getElementById('buyer_search').value.toLowerCase();
+    
+    let d = { 
+        rev:0, usd:0, pl:0, paid:0, unpaid:0, cost:0, pk:0, kg:0, mc:0, invs: new Set(), 
+        grades:{}, buyers:{}, varieties:{}, countries:{}, 
+        dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } 
+    };
 
-window.onload = () => {
-    populateDropdowns();
-    updateTotals();
-};
+    document.querySelectorAll('.data-row').forEach(tr => {
+        let match = (m === 'ALL' || tr.dataset.m === m) && (tr.dataset.y === y);
+        if(invF !== 'ALL' && tr.dataset.inv !== invF) match = false;
+        if(poF !== 'ALL' && tr.dataset.po !== poF) match = false;
+        if(varF !== 'ALL' && tr.dataset.variety !== varF) match = false;
+        if(grdF !== 'ALL' && tr.dataset.grade !== grdF) match = false;
+        if(q && !tr.dataset.buyer.includes(q) && !tr.dataset.country.includes(q)) match = false;
+
+        if(match) {
+            tr.style.display = "";
+            const rev = parse(tr.querySelector('.v-inr').innerText), usd = parse(tr.querySelector('.v-usd').innerText);
+            const pl = parse(tr.querySelector('.v-pl').innerText), log = parse(tr.querySelector('.v-fr').innerText);
+            const pak = parse(tr.querySelector('.v-pk').innerText), kg = parse(tr.querySelector('.v-kg').innerText);
+            const dt = tr.dataset.dt;
+            
+            d.rev += rev; d.usd += usd; d.pl += pl; d.cost += log; d.pk += pak; d.kg += kg; d.mc += parseInt(tr.querySelector('.v-mc').innerText) || 0;
+            d.invs.add(tr.dataset.inv);
+            if(tr.dataset.st === 'Received') d.paid += rev; else d.unpaid += rev;
+            
+            d.grades[tr.dataset.grade] = (d.grades[tr.dataset.grade] || 0) + kg;
+            d.varieties[tr.dataset.variety] = (d.varieties[tr.dataset.variety] || 0) + rev;
+            d.buyers[tr.dataset.buyer] = (d.buyers[tr.dataset.buyer] || 0) + rev;
+            d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
+            
+            // Map daily trend
+            d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
+            d.timeline.labels.push(tr.querySelector('td:nth-child(2)').innerText); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
+        } else tr.style.display = "none";
+    });
+
+    document.querySelectorAll('.subtotal-row').forEach(sr => {
+        let prev = sr.previousElementSibling, hasVisible = false;
+        while(prev && prev.classList.contains('data-row')) { if(prev.style.display !== 'none') hasVisible = true; prev = prev.previousElementSibling; }
+        sr.style.display = hasVisible ? "" : "none";
+    });
+
+    updateKPIs(d); renderCharts(d);
+}
+
+function updateKPIs(d) {
+    const fL = (v) => "₹ " + (v/100000).toFixed(2) + " L";
+    document.getElementById('k_rev').innerText = fL(d.rev);
+    document.getElementById('k_usd_total').innerText = "$ " + d.usd.toLocaleString();
+    document.getElementById('k_pl').innerText = fL(d.pl);
+    document.getElementById('k_debt').innerText = fL(d.unpaid);
+    document.getElementById('k_inv_count').innerText = d.invs.size;
+    document.getElementById('k_cost').innerText = fL(d.cost);
+    document.getElementById('k_pk_total').innerText = fL(d.pk);
+    document.getElementById('k_qty').innerText = d.kg.toLocaleString() + " KG";
+    document.getElementById('k_mc').innerText = d.mc + " MC";
+    document.getElementById('k_margin').innerText = d.rev > 0 ? ((d.pl/d.rev)*100).toFixed(1) + "% Margin" : "0%";
+    document.getElementById('k_cei').innerText = d.rev > 0 ? ((d.paid/d.rev)*100).toFixed(1) + "% Paid" : "0%";
+    document.getElementById('k_yield').innerText = d.kg > 0 ? "₹ " + (d.pl/d.kg).toFixed(2) : "₹ 0.00";
+}
+
+function renderCharts(d) {
+    const cp = { datalabels: { display: true, color: '#475569', font: { weight: 'bold', size: 8 }, formatter: (v) => v > 1000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
+    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 8, font: { size: 9 } } } };
+
+    // 1. Day-wise Revenue Trend
+    if(charts.cDay) charts.cDay.destroy();
+    const sortedDates = Object.keys(d.dayTrend).sort();
+    charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
+        type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Daily Rev', data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: '#0ea5e911' }] }, 
+        options: { maintainAspectRatio: false, plugins: cp } 
+    });
+
+    // 2. Country Distribution
+    if(charts.cCountry) charts.cCountry.destroy();
+    charts.cCountry = new Chart(document.getElementById('c_country'), { 
+        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#f43f5e', '#0ea5e9'] }] }, 
+        options: { maintainAspectRatio: false, cutout: '60%', plugins: dp } 
+    });
+
+    // 3. Revenue vs Profit (Invoice-wise)
+    if(charts.c1) charts.c1.destroy();
+    charts.c1 = new Chart(document.getElementById('c_line'), { 
+        type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#4f46e5', tension: 0.3 }, { label: 'P/L', data: d.timeline.pl, borderColor: '#10b981', tension: 0.3 }] }, 
+        options: { maintainAspectRatio: false, plugins: cp } 
+    });
+
+    // 4. Variety
+    if(charts.c2) charts.c2.destroy();
+    charts.c2 = new Chart(document.getElementById('c_variety'), { 
+        type: 'doughnut', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'] }] }, 
+        options: { maintainAspectRatio: false, cutout: '65%', plugins: dp } 
+    });
+
+    // 5. Grade (MT)
+    if(charts.c3) charts.c3.destroy();
+    const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
+        type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9' }] }, 
+        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } } } 
+    });
+
+    // 6. Buyer
+    if(charts.c4) charts.c4.destroy();
+    const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    charts.c4 = new Chart(document.getElementById('c_buyer'), { 
+        type: 'pie', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: ['#4f46e588', '#0ea5e988', '#10b98188', '#f59e0b88', '#f43f5e88'] }] }, 
+        options: { maintainAspectRatio: false, plugins: dp } 
+    });
+}
+
+function parse(str) { return parseFloat(str.replace(/[^0-9.-]/g, '')) || 0; }
+window.onload = () => { populateFilters(); runAnalytics(); };
 </script>
 </body>
 </html>

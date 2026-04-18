@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cold Storage Holding – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --primary:#143465;
+  --accent: #3b82f6;
+  --border:#d6dde7;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#64748b;
+  --success: #166534;
+  --danger: #991b1b;
+}
+
+*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text)}
+
+/* HEADER */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:#fff;
+  padding:16px 25px;
+  border-bottom:1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
+.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+
+/* ALERT / SUCCESS MSG */
+#statusAlert {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    display: none;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    animation: slideDown 0.3s ease-out;
+}
+.alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; display: block !important; }
+
+@keyframes slideDown { from { top: -50px; } to { top: 20px; } }
+
+/* FORM SECTION */
+.section{
+  margin:18px;
+  background:var(--card);
+  padding:25px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-size: 11px; font-weight: 800; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; 
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.5px;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:16px;
+}
+@media(max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+
+.field{display:flex;flex-direction:column; gap: 5px;}
+.field label{
+  font-size:10px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform: uppercase;
+}
+.field input, .field select, .field textarea{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  font-size:13px;
+  background:#fff;
+  outline: none;
+  transition: 0.2s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.field input[readonly]{ background-color: #f8fafc; cursor: not-allowed; color: #64748b; }
+
+/* ACTIONS */
+.actions{
+  margin-top:20px;
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+}
+.btn{
+  padding:10px 22px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:#fff;
+  transition: 0.2s;
+}
+.btn-primary{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  box-shadow: 0 4px 10px rgba(59,130,246,0.3);
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* TABLE */
+.table-wrap{
+  margin:12px 18px 30px;
+  background:var(--card);
+  border-radius:16px;
+  border:1px solid var(--border);
+  overflow-x:auto;
+}
+table{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1500px;}
+thead th{
+  background:#f8fafc;
+  padding:14px 10px;
+  border-bottom: 1px solid var(--border);
+  color: #475569;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+tbody tr:hover{background:#f8fbff; cursor:pointer}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.badge-holding { background: #fef3c7; color: #92400e; }
+.badge-in { background: #dcfce7; color: #166534; }
+.badge-out { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+
+<body>
+{% if success_msg %}
+<div id="statusAlert" class="alert-success">
+    <i class="fa-solid fa-circle-check"></i> {{ success_msg }}
+</div>
+{% else %}
+<div id="statusAlert"></div>
+{% endif %}
+
+<div class="header">
+  <div class="header-titles">
+      <h2>Cold Storage Holding</h2>
+      <p><i class="fa-solid fa-warehouse"></i> External Inventory & Rent Management</p>
+  </div>
+</div>
+
+<form id="holdingForm" action="/inventory/cold_storage_holding/save" method="post" autocomplete="off">
+<div class="section">
+  
+  <div class="section-title"><i class="fa-solid fa-location-dot"></i> Storage Facility Details</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Facility Name</label>
+      <select name="cold_storage_name" id="cs_name" required onchange="filterAddressByFacility()">
+        <option value="" disabled selected>Select Cold Storage</option>
+        {% for cs in storage_masters %}
+        <option value="{{cs.storage_name}}">{{cs.storage_name}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div class="field" style="grid-column: span 2;">
+      <label>Full Address</label>
+      <input list="address_list" name="address" id="cs_address" required placeholder="Select/Type Address..." onchange="updateRateFromAddress()">
+      <datalist id="address_list"></datalist>
+    </div>
+
+    <div class="field">
+      <label>Rent Start Date</label>
+      <input type="date" name="rent_start_date" id="rent_start_date">
+    </div>
+    <div class="field">
+        <label>Holding Cost (Per MC)</label>
+        <input type="number" step="any" name="storage_rate_per_mc" id="cs_rate" value="0.00" readonly>
+      </div>
+  </div>
+
+  <div class="section-title" style="margin-top: 30px;"><i class="fa-solid fa-box-open"></i> Stock Identification</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Batch Number</label>
+      <input list="batch_list" name="batch_number" id="batch_number" required placeholder="Select/Enter Batch">
+      <datalist id="batch_list">
+        {% for b in batches %}<option value="{{b}}">{% endfor %}
+      </datalist>
+    </div>
+    <div class="field">
+      <label>Movement Type</label>
+      <select name="cargo_movement_type" required>
+        <option value="IN">📥 STOCK IN</option>
+        <option value="OUT">📤 STOCK OUT</option>
+      </select>
+    </div>
+    
+    <div class="field">
+      <label>Species</label>
+      <input list="species_list" name="species" required>
+      <datalist id="species_list">
+        {% for s in species %}<option value="{{s}}">{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Variety</label>
+      <input list="variety_list" name="variety" required>
+      <datalist id="variety_list">
+        {% for v in varieties %}<option value="{{v}}">{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Grade</label>
+      <input list="grade_list" name="grade" required>
+      <datalist id="grade_list">
+        {% for g in grades %}<option value="{{g}}">{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Brand</label>
+      <input list="brand_list" name="brand" required>
+      <datalist id="brand_list">
+        {% for b in brands %}<option value="{{b}}">{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label>Packing Style</label>
+      <input list="packing_list" name="packing_style" id="packing_style_input" required placeholder="Select Style" oninput="calculateHoldingQty()">
+      <datalist id="packing_list">
+        {% for p in packing_styles %}
+        <option value="{{p.packing_style}}" data-weight="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">
+        {% endfor %}
+      </datalist>
+    </div>
+
+    <div class="field">
+        <label>Glaze</label>
+        <input list="glaze_list" name="glaze">
+        <datalist id="glaze_list">
+          {% for g in glazes %}<option value="{{g}}">{% endfor %}
+        </datalist>
+    </div>
+
+    <div class="field">
+      <label>Freezer</label>
+      <select name="freezer">
+        <option value="" selected>N/A</option>
+        {% for f in freezers %}
+        <option value="{{f}}">{{f}}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+        <label>PO Number</label>
+        <input list="po_list" name="po_number" id="po_number" placeholder="Default N/A">
+        <datalist id="po_list">
+          <option value="N/A">
+          {% for po in pending_orders %}
+          <option value="{{po}}">
+          {% endfor %}
+        </datalist>
+    </div>
+
+    <div class="field">
+        <label>Purpose</label>
+        <select name="purpose">
+            <option value="Storing">Storing</option>
+            <option value="Sales">Sales</option>
+            <option value="Reprocess">Reprocess</option>
+        </select>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top: 30px;"><i class="fa-solid fa-weight-hanging"></i> Inventory Counts</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>No of MC</label>
+      <input type="number" name="no_of_mc" id="no_of_mc" required value="0" oninput="calculateHoldingQty()">
+    </div>
+    <div class="field">
+      <label>Loose (Slabs)</label>
+      <input type="number" name="loose" id="loose" value="0" oninput="calculateHoldingQty()">
+    </div>
+    <div class="field">
+      <label>Total Quantity (KG)</label>
+      <input type="number" step="any" name="quantity" id="quantity" required value="0.00" style="font-weight: 800; color: var(--accent); background: #f0f7ff;" readonly>
+    </div>
+    <div class="field" style="grid-column: span 2;">
+        <label>Remarks</label>
+        <input name="remarks">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn" onclick="location.reload()">Clear</button>
+    <button type="submit" id="saveBtn" class="btn btn-primary">Save Holding Entry</button>
+  </div>
+</div>
+</form>
+
+{% if current_holdings %}
+<div class="table-wrap">
+<table id="holdTable">
+<thead>
+  <tr>
+    <th>Status</th><th>Facility</th><th>Batch #</th><th>Movement</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Loose</th><th>Total Qty</th><th>In Date</th><th>Rate</th>
+  </tr>
+</thead>
+<tbody>
+{% for r in current_holdings %}
+<tr>
+  <td><span class="badge badge-holding">{{r.status}}</span></td>
+  <td style="font-weight:600">{{r.cold_storage_name}}</td>
+  <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
+  <td><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
+  <td>{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td>
+  <td style="font-weight: 700;">{{r.no_of_mc}}</td><td>{{r.loose}}</td>
+  <td style="font-weight: 800;">{{r.quantity}}</td><td style="color:var(--muted)">{{r.in_date}}</td>
+  <td>{{r.storage_rate_per_mc}}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+
+<script>
+// Auto-hide alert after 3 seconds
+setTimeout(() => {
+    const alert = document.getElementById('statusAlert');
+    if(alert) alert.style.display = 'none';
+}, 3000);
+
+// Master Data storage
+const storageMasters = [
+    {% for cs in storage_masters %}
+    { name: "{{cs.storage_name}}", address: "{{cs.address}}", rate: "{{cs.rate_per_mc_per_month}}" },
+    {% endfor %}
+];
+
+const packingStyles = [
+    {% for p in packing_styles %}
+    { style: "{{p.packing_style}}", weight: {{p.mc_weight or 0}}, slab: {{p.slab_weight or 0}} },
+    {% endfor %}
+];
+
+// Defaulting PO to N/A on load
+document.getElementById('po_number').value = "N/A";
+
+// Filter Address based on Facility
+function filterAddressByFacility() {
+    const selectedName = document.getElementById('cs_name').value;
+    const datalist = document.getElementById('address_list');
+    datalist.innerHTML = '';
+    storageMasters.forEach(item => {
+        if(item.name === selectedName) {
+            const option = document.createElement('option');
+            option.value = item.address;
+            datalist.appendChild(option);
+        }
+    });
+}
+
+// Auto-fill Rate
+function updateRateFromAddress() {
+    const selectedName = document.getElementById('cs_name').value;
+    const selectedAddr = document.getElementById('cs_address').value;
+    const match = storageMasters.find(i => i.name === selectedName && i.address === selectedAddr);
+    if(match) { document.getElementById('cs_rate').value = match.rate; }
+}
+
+// Calculation
+function calculateHoldingQty() {
+    const styleName = document.getElementById('packing_style_input').value;
+    const packing = packingStyles.find(p => p.style === styleName);
+    if (!packing) return;
+    const mcCount = parseInt(document.getElementById('no_of_mc').value) || 0;
+    const looseCount = parseInt(document.getElementById('loose').value) || 0;
+    const totalQty = (mcCount * packing.weight) + (looseCount * packing.slab);
+    document.getElementById('quantity').value = totalQty.toFixed(2);
+}
+
+document.getElementById('rent_start_date').valueAsDate = new Date();
+
+document.getElementById("holdingForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("saveBtn");
+    btn.disabled = true; btn.innerHTML = 'Saving...';
+    const formData = new FormData(e.target);
+    try {
+        const res = await fetch("/inventory/cold_storage_holding/save", { 
+            method: "POST", body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        if(res.ok) { 
+            window.location.href = "/inventory/cold_storage_holding"; // Refresh with message
+        } else { 
+            alert("Error while saving"); 
+            btn.disabled = false; 
+            btn.innerHTML = 'Save Holding Entry';
+        }
+    } catch (err) { 
+        btn.disabled = false; 
+        btn.innerHTML = 'Save Holding Entry';
+    }
+};
+</script>
+</body>
+</html>

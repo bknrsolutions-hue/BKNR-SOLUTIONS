@@ -107,6 +107,85 @@ class sales_dispatch(Base):
     price = Column(Float)
     variety = Column(String, nullable=True)
     grade = Column(String, nullable=True)
-    
+    po_number = Column(String(255), nullable=True)
+    company_name = Column(String(255)) 
+    exchange_rate = Column(Float, default=83.50)
+    stock_value = Column(Float, default=0.0)
+    profit_loss = Column(Float, default=0.0)
+    freight_cost = Column(Float, default=0.0)
+    packing_cost = Column(Float, default=0.0)
     status = Column(String(50), default="Unpaid") 
     created_at = Column(Date, default=func.now() if 'func' in globals() else datetime.now().date())
+  
+    
+# --------------------------------------------------------
+# COLD STORAGE HOLDING (FINAL MODEL)
+# --------------------------------------------------------
+class cold_storage_holding(Base, metacolumns):
+    __tablename__ = "cold_storage_holding"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Storage Location Details
+    cold_storage_name = Column(String(255))    # Name of the Storage Facility
+    address = Column(String(255), nullable=True)
+    
+    # Stock Identity & Movement
+    batch_number = Column(String(255), index=True)
+    cargo_movement_type = Column(String(50))     # IN / OUT
+    species = Column(String(100))
+    variety = Column(String(255))
+    grade = Column(String(255))
+    brand = Column(String(255))
+    freezer = Column(String(255))
+    packing_style = Column(String(255))
+    glaze = Column(String(50))
+
+    # Inventory Details
+    no_of_mc = Column(Integer)
+    loose = Column(Integer, default=0)
+    quantity = Column(Float)                     # Total Weight in KG
+
+    # References & Purpose
+    purpose = Column(String(255), nullable=True)
+    po_number = Column(String(255), nullable=True)
+    production_at = Column(String(255))
+    production_for = Column(String(255))
+
+    # Rent & Date Tracking
+    in_date = Column(Date, default=lambda: datetime.now().date())
+    storage_rate_per_mc = Column(Float, default=0.0)  # Rate per Master Carton
+    rent_start_date = Column(Date, nullable=True)
+    last_billed_date = Column(Date, nullable=True)
+    
+    # Status Management
+    status = Column(String(50), default="HOLDING")    # HOLDING / DISPATCHED / TRANSFERRED
+    remarks = Column(Text, nullable=True)
+ 
+  # --------------------------------------------------------
+# COLD STORAGE MASTER
+# --------------------------------------------------------
+class cold_storage(Base, metacolumns):
+    __tablename__ = "cold_storage"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Facility Details
+    storage_name = Column(String(255), unique=True, index=True) # Ex: "Vizag Main Cold Storage"
+    storage_type = Column(String(100)) # Internal / External / Third-party
+    address = Column(String(500), nullable=True)
+    contact_person = Column(String(255), nullable=True)
+    contact_number = Column(String(50), nullable=True)
+    
+    # Capacity Management
+    total_capacity_mc = Column(Integer, default=0) # Total Master Cartons capacity
+    no_of_chambers = Column(Integer, default=1)
+    
+    # Commercial Terms (Contract)
+    rate_per_mc_per_month = Column(Float, default=0.0)
+    loading_unloading_charges = Column(Float, default=0.0) # Per MC charge
+    handling_charges = Column(Float, default=0.0)
+    
+    # Status
+    is_active = Column(String(20), default="ACTIVE") # ACTIVE / INACTIVE
+    remarks = Column(Text, nullable=True)

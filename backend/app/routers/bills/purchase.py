@@ -10,6 +10,7 @@ import logging
 
 from app.database import get_db
 from app.database.models.bills import PurchaseInvoice
+from app.database.models.inventory_management import pending_orders, sales_dispatch
 from app.database.models.criteria import (
     production_at,
     vendors,
@@ -24,6 +25,7 @@ router = APIRouter(
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
+
 # ==================================================
 # 🧾 1. PURCHASE ENTRY PAGE
 # ==================================================
@@ -35,43 +37,55 @@ def purchase_entry_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_id:
         return RedirectResponse("/", status_code=302)
 
-    # 🔹 Production Units (Unit Master)
-    locations = (
-        db.query(production_at)
-        .filter(production_at.company_id == company_id)
-        .order_by(production_at.production_at)
-        .all()
-    )
+    # 🔹 Production Units
+    locations = db.query(production_at).filter(
+        production_at.company_id == company_id
+    ).order_by(production_at.production_at).all()
 
-    # 🔹 Vendors Master
-    all_vendors = (
-        db.query(vendors)
-        .filter(vendors.company_id == company_id)
-        .order_by(vendors.name)
-        .all()
-    )
+    # 🔹 Vendors
+    all_vendors = db.query(vendors).filter(
+        vendors.company_id == company_id
+    ).order_by(vendors.name).all()
 
-    # 🔹 Products / HSN Master
-    hsn_list = (
-        db.query(hsn_codes)
-        .filter(hsn_codes.company_id == company_id)
-        .order_by(hsn_codes.description)
-        .all()
-    )
+    # 🔹 HSN
+    hsn_list = db.query(hsn_codes).filter(
+        hsn_codes.company_id == company_id
+    ).order_by(hsn_codes.description).all()
 
-    # 🔹 Purchase Invoice History with Join for safety
-    invoice_history = (
-        db.query(PurchaseInvoice)
-        .filter(PurchaseInvoice.company_id == company_id)
-        .order_by(desc(PurchaseInvoice.id))
-        .limit(50)
-        .all()
-    )
+    # 🔹 Invoice History
+    invoice_history = db.query(PurchaseInvoice).filter(
+        PurchaseInvoice.company_id == company_id
+    ).order_by(desc(PurchaseInvoice.id)).limit(50).all()
 
-    # Vendor Map for Table Display (ID to Name)
     vendor_map = {v.id: v.name for v in all_vendors}
 
-    # ✅ FIX: TemplateResponse arguments updated
+    # ==================================================
+    # 🔥 PO NUMBER DROPDOWN DATA
+    # ==================================================
+    po_from_pending = db.query(pending_orders.po_number).filter(
+        pending_orders.company_id == company_id
+    ).distinct().all()
+
+    po_from_sales = db.query(sales_dispatch.po_number).filter(
+        sales_dispatch.company_id == company_id
+    ).distinct().all()
+
+    # flatten + clean
+    po_set = set()
+
+    for p in po_from_pending:
+        if p[0]:
+            po_set.add(p[0].strip())
+
+    for p in po_from_sales:
+        if p[0]:
+            po_set.add(p[0].strip())
+
+    po_list = sorted(list(po_set))
+
+    # 🔥 ADD DEFAULT
+    po_list.insert(0, "N/A")
+
     return templates.TemplateResponse(
         request=request,
         name="bills/purchase_entry.html",
@@ -81,10 +95,12 @@ def purchase_entry_page(request: Request, db: Session = Depends(get_db)):
             "vendor_map": vendor_map,
             "hsn_list": hsn_list,
             "invoice_history": invoice_history,
+            "po_list": po_list,   # 🔥 NEW
             "email": email,
             "company_id": company_id
         }
     )
+
 
 # ==================================================
 # 💾 2. SAVE PURCHASE INVOICE
@@ -101,6 +117,7 @@ async def save_purchase_invoice(
     qty: float = Form(...),
     base_price: float = Form(...),
     gst_percent: float = Form(...),
+    po_number: str = Form(None),   # 🔥 NEW FIELD
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
@@ -110,7 +127,6 @@ async def save_purchase_invoice(
         return JSONResponse({"status": "error", "message": "Session Expired"}, status_code=401)
 
     try:
-        # 🔴 DUPLICATE INVOICE CHECK
         duplicate = db.query(PurchaseInvoice).filter(
             PurchaseInvoice.invoice_no == invoice_no.strip(),
             PurchaseInvoice.company_id == company_id
@@ -118,22 +134,26 @@ async def save_purchase_invoice(
 
         if duplicate:
             return JSONResponse(
-                {"status": "error", "message": f"Invoice {invoice_no} already exists for your company"},
+                {"status": "error", "message": f"Invoice {invoice_no} already exists"},
                 status_code=400
             )
 
-        # 🧮 CALCULATIONS
+        # 🧮 CALCULATION
         taxable_value = round(qty * base_price, 2)
         tax_amount = round((taxable_value * gst_percent) / 100, 2)
         grand_total = round(taxable_value + tax_amount, 2)
 
-        # ⏱ Meta Info
         now = datetime.now()
 
-        # 💾 INSERT RECORD
+        # 🔥 CLEAN PO
+        if po_number:
+            po_number = po_number.strip()
+            if po_number.upper() in ["N/A", "", "-"]:
+                po_number = None
+
         new_invoice = PurchaseInvoice(
             unit_id=unit_id,
-            production_at_id=unit_id, # Syncing both columns
+            production_at_id=unit_id,
             vendor_id=vendor_id,
             invoice_date=invoice_date,
             invoice_no=invoice_no.upper().strip(),
@@ -144,6 +164,7 @@ async def save_purchase_invoice(
             gst_percent=gst_percent,
             tax_amount=tax_amount,
             grand_total=grand_total,
+            po_number=po_number,  # 🔥 SAVE
             company_id=company_id,
             email=email,
             date=now.strftime("%Y-%m-%d"),
@@ -163,13 +184,14 @@ async def save_purchase_invoice(
         logger.error(f"PURCHASE SAVE ERROR: {str(e)}")
         return JSONResponse({"status": "error", "message": "Internal Server Error"}, status_code=500)
 
+
 # ==================================================
-# 🗑️ 3. DELETE INVOICE
+# 🗑️ 3. DELETE
 # ==================================================
 @router.post("/delete/{inv_id}")
 def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    
+
     invoice = db.query(PurchaseInvoice).filter(
         PurchaseInvoice.id == inv_id,
         PurchaseInvoice.company_id == company_id
@@ -179,5 +201,5 @@ def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db))
         db.delete(invoice)
         db.commit()
         return {"status": "success"}
-    
-    return JSONResponse({"error": "Invoice not found or unauthorized"}, status_code=404)
+
+    return JSONResponse({"error": "Invoice not found"}, status_code=404)

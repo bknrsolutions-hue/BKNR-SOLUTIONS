@@ -1,204 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Container Logistics - BKNR ERP</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary: #0369a1; --navy: #0f172a; --slate: #64748b; --border: #cbd5e1; --success: #059669; --danger: #dc2626; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; padding: 15px; color: var(--navy); }
-        
-        /* Layout Containers */
-        .entry-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
-        .section-title { font-size: 14px; font-weight: 800; color: var(--navy); text-transform: uppercase; margin-bottom: 25px; border-left: 5px solid var(--primary); padding-left: 12px; display: flex; align-items: center; justify-content: space-between; }
-        
-        /* Grid Form */
-        .grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; align-items: end; }
-        .field-group { display: flex; flex-direction: column; width: 100%; }
-        label { font-size: 11px; font-weight: 700; color: var(--slate); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        input, select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; color: var(--navy); height: 42px; transition: all 0.2s; box-sizing: border-box; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1); }
-        input[readonly] { background: #f1f5f9; font-weight: 700; border: 1px solid #e2e8f0; cursor: not-allowed; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Container Logistics - BKNR ERP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        .btn-post { background: var(--primary); color: white; border: none; width: 100%; height: 42px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-post:hover { background: var(--navy); transform: translateY(-1px); }
-        
-        /* Table Design */
-        .table-section { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .table-header { padding: 15px 20px; background: var(--navy); color: white; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between; }
-        
-        .scroll-container { overflow-x: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
-        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: var(--slate); border-bottom: 2px solid var(--border); text-transform: uppercase; }
-        td { padding: 14px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
-        tr:hover { background: #f0f9ff; }
-        
-        /* Badges & Text Styling */
-        .text-bold { font-weight: 700; }
-        .container-badge { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; font-weight: 700; border: 1px solid #bae6fd; font-size: 12px; font-family: monospace; }
-        .po-badge { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid #fde68a; }
-        .cost-col { font-family: 'Courier New', Courier, monospace; font-weight: 600; text-align: right; }
-        .total-highlight { color: var(--success); font-weight: 800; font-size: 14px; text-align: right; }
-    </style>
+<style>
+:root { --primary: #0369a1; --navy: #0f172a; --slate: #64748b; --border: #cbd5e1; --success: #059669; --danger: #dc2626; }
+body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; padding: 15px; color: var(--navy); }
+
+/* Layout Containers */
+.entry-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
+.section-title { font-size: 14px; font-weight: 800; color: var(--navy); text-transform: uppercase; margin-bottom: 25px; border-left: 5px solid var(--primary); padding-left: 12px; display: flex; align-items: center; justify-content: space-between; }
+
+/* Grid Form */
+.grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; align-items: end; }
+.field-group { display: flex; flex-direction: column; width: 100%; }
+label { font-size: 11px; font-weight: 700; color: var(--slate); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+input, select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; color: var(--navy); height: 42px; transition: all 0.2s; box-sizing: border-box; }
+input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1); }
+input[readonly] { background: #f1f5f9; font-weight: 700; border: 1px solid #e2e8f0; cursor: not-allowed; }
+
+.btn-post { background: var(--primary); color: white; border: none; width: 100%; height: 42px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-post:hover { background: var(--navy); transform: translateY(-1px); }
+
+/* Table Design */
+.table-section { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.table-header { padding: 15px 20px; background: var(--navy); color: white; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between; }
+
+.scroll-container { overflow-x: auto; width: 100%; }
+table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: var(--slate); border-bottom: 2px solid var(--border); text-transform: uppercase; }
+td { padding: 14px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
+tr:hover { background: #f0f9ff; }
+
+/* Badges */
+.container-badge { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; font-weight: 700; border: 1px solid #bae6fd; font-size: 12px; font-family: monospace; }
+.po-badge { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid #fde68a; }
+.cost-col { font-family: 'Courier New', Courier, monospace; font-weight: 600; text-align: right; }
+.total-highlight { color: var(--success); font-weight: 800; font-size: 14px; text-align: right; }
+</style>
 </head>
+
 <body>
 
 <div class="entry-section">
-    <div class="section-title">
-        <span><i class="fa-solid fa-ship"></i> Container Logistics Entry - {{ comp_code }}</span>
-        <span style="color: var(--slate); font-size: 11px;">2026 Logistics Module</span>
-    </div>
-    
-    <form id="containerForm" method="POST" action="/api/container/save">
-        <div class="grid-container">
-            <div class="field-group">
-                <label>PO Number</label>
-                <input type="text" name="po_number" placeholder="PO/26/001" required autocomplete="off">
-            </div>
-
-            <div class="field-group">
-                <label>Container Number</label>
-                <input type="text" name="container_no" placeholder="MSCU1234567" required autocomplete="off">
-            </div>
-
-            <div class="field-group">
-                <label>Size</label>
-                <select name="container_size">
-                    <option value="20FT">20 FT</option>
-                    <option value="40FT" selected>40 FT HC</option>
-                    <option value="OTHER">Other</option>
-                </select>
-            </div>
-
-            <div class="field-group">
-                <label>Shipping Line / Vendor</label>
-                <select name="shipping_line_id" required>
-                    <option value="">-- SELECT VENDOR --</option>
-                    {% for v in shipping_vendors %}
-                    <option value="{{ v.id }}">{{ v.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="field-group">
-                <label>Ocean Freight (₹)</label>
-                <input type="number" step="0.01" name="ocean_freight" id="ocean_freight" oninput="calcTotal()" value="0">
-            </div>
-
-            <div class="field-group">
-                <label>Local Transport (₹)</label>
-                <input type="number" step="0.01" name="local_transport" id="local_transport" oninput="calcTotal()" value="0">
-            </div>
-
-            <div class="field-group">
-                <label>Handling / THC (₹)</label>
-                <input type="number" step="0.01" name="handling_charges" id="handling_charges" oninput="calcTotal()" value="0">
-            </div>
-
-            <div class="field-group">
-                <label>Detention / Other (₹)</label>
-                <input type="number" step="0.01" name="detention_charges" id="detention_charges" oninput="calcTotal()" value="0">
-            </div>
-
-            <div class="field-group">
-                <label>GST (%)</label>
-                <select id="gst_per" onchange="calcTotal()">
-                    <option value="0">0% (Exempt)</option>
-                    <option value="5">5%</option>
-                    <option value="12">12%</option>
-                    <option value="18" selected>18%</option>
-                </select>
-            </div>
-
-            <div class="field-group">
-                <label>Landed Total (incl. GST)</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="display_total" readonly class="total-highlight" style="background: #f0fdf4;" placeholder="₹ 0.00">
-                    <input type="hidden" name="grand_total" id="hidden_total">
-                    <button type="submit" class="btn-post">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> SAVE
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+<div class="section-title">
+<span><i class="fa-solid fa-ship"></i> Container Logistics Entry - {{ comp_code }}</span>
 </div>
 
+<form id="containerForm" method="POST" action="/api/container/save">
+<div class="grid-container">
+
+<!-- PO -->
+<div class="field-group">
+<label>PO Number</label>
+<select name="po_number" required>
+<option value="N/A">N/A</option>
+{% for po in po_list %}
+<option value="{{ po }}">{{ po }}</option>
+{% endfor %}
+</select>
+</div>
+
+<!-- Container -->
+<div class="field-group">
+<label>Container Number</label>
+<input type="text" name="container_no" required>
+</div>
+
+<!-- Size -->
+<div class="field-group">
+<label>Size</label>
+<select name="container_size">
+<option value="20FT">20 FT</option>
+<option value="40FT" selected>40 FT HC</option>
+</select>
+</div>
+
+<!-- Vendor -->
+<div class="field-group">
+<label>Vendor</label>
+<select name="shipping_line_id" required>
+{% for v in shipping_vendors %}
+<option value="{{ v.id }}">{{ v.name }}</option>
+{% endfor %}
+</select>
+</div>
+
+<!-- Ocean -->
+<div class="field-group">
+<label>Ocean Freight</label>
+<input type="number" id="ocean_freight" oninput="calcTotal()" value="0">
+</div>
+
+<!-- Local -->
+<div class="field-group">
+<label>Local Transport</label>
+<input type="number" id="local_transport" oninput="calcTotal()" value="0">
+</div>
+
+<!-- Handling -->
+<div class="field-group">
+<label>Handling</label>
+<input type="number" id="handling_charges" oninput="calcTotal()" value="0">
+</div>
+
+<!-- Detention -->
+<div class="field-group">
+<label>Detention</label>
+<input type="number" id="detention_charges" oninput="calcTotal()" value="0">
+</div>
+
+<!-- GST -->
+<div class="field-group">
+<label>GST %</label>
+<select id="gst_per" onchange="calcTotal()">
+<option value="0">0%</option>
+<option value="5">5%</option>
+<option value="12">12%</option>
+<option value="18" selected>18%</option>
+</select>
+</div>
+
+<!-- TAX -->
+<div class="field-group">
+<label>Tax Amount</label>
+<input type="text" id="tax_amount" readonly>
+</div>
+
+<!-- TOTAL -->
+<div class="field-group">
+<label>Total</label>
+<input type="text" id="display_total" readonly>
+<input type="hidden" name="grand_total" id="hidden_total">
+</div>
+
+<!-- SAVE -->
+<div class="field-group">
+<button type="submit" class="btn-post">
+<i class="fa-solid fa-cloud-arrow-up"></i> SAVE
+</button>
+</div>
+
+</div>
+</form>
+</div>
+
+<!-- TABLE -->
 <div class="table-section">
-    <div class="table-header">
-        <span><i class="fa-solid fa-list-check"></i> Logistics Movement History</span>
-        <button onclick="location.reload()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-rotate"></i></button>
-    </div>
-    <div class="scroll-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>PO Ref</th>
-                    <th>Container No</th>
-                    <th>Size</th>
-                    <th>Vendor</th>
-                    <th style="text-align:right;">Ocean</th>
-                    <th style="text-align:right;">Local</th>
-                    <th style="text-align:right;">Handling</th>
-                    <th style="text-align:right;">Landed Total</th>
-                    <th style="text-align:center;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log, v_name in container_history %}
-                <tr>
-                    <td><span class="po-badge">{{ log.po_number }}</span></td>
-                    <td><span class="container-badge">{{ log.container_no }}</span></td>
-                    <td class="text-bold">{{ log.size }}</td>
-                    <td>{{ v_name }}</td>
-                    <td class="cost-col">{{ "{:,.2f}".format(log.ocean_cost or 0) }}</td>
-                    <td class="cost-col">{{ "{:,.2f}".format(log.local_cost or 0) }}</td>
-                    <td class="cost-col">{{ "{:,.2f}".format(log.handling or 0) }}</td>
-                    <td class="total-highlight">₹ {{ "{:,.2f}".format(log.lended_total or 0) }}</td>
-                    <td style="text-align:center;">
-                        <a href="#" style="color: var(--primary); font-size: 16px;"><i class="fa-solid fa-pen-to-square"></i></a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="table-header">Container History</div>
+
+<div class="scroll-container">
+<table>
+<thead>
+<tr>
+<th>PO</th>
+<th>Container</th>
+<th>Size</th>
+<th>Vendor</th>
+<th>Ocean</th>
+<th>Local</th>
+<th>Handling</th>
+<th>Detention</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+{% for log, v_name in container_history %}
+<tr>
+<td><span class="po-badge">{{ log.po_number }}</span></td>
+<td><span class="container-badge">{{ log.container_no }}</span></td>
+<td>{{ log.size }}</td>
+<td>{{ v_name }}</td>
+<td class="cost-col">{{ log.ocean_cost }}</td>
+<td class="cost-col">{{ log.local_cost }}</td>
+<td class="cost-col">{{ log.handling }}</td>
+<td class="cost-col">{{ log.detention }}</td>
+<td class="total-highlight">₹ {{ log.lended_total }}</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+</div>
 </div>
 
 <script>
-    // Live Calculation Logic
-    function calcTotal() {
-        const ocean = parseFloat(document.getElementById('ocean_freight').value) || 0;
-        const local = parseFloat(document.getElementById('local_transport').value) || 0;
-        const handling = parseFloat(document.getElementById('handling_charges').value) || 0;
-        const detention = parseFloat(document.getElementById('detention_charges').value) || 0;
-        const gstRate = parseFloat(document.getElementById('gst_per').value) || 0;
+function calcTotal(){
+const ocean = parseFloat(document.getElementById('ocean_freight').value)||0;
+const local = parseFloat(document.getElementById('local_transport').value)||0;
+const handling = parseFloat(document.getElementById('handling_charges').value)||0;
+const detention = parseFloat(document.getElementById('detention_charges').value)||0;
+const gst = parseFloat(document.getElementById('gst_per').value)||0;
 
-        const subtotal = ocean + local + handling + detention;
-        const gstAmount = (subtotal * gstRate) / 100;
-        const grandTotal = subtotal + gstAmount;
+const subtotal = ocean+local+handling+detention;
+const tax = subtotal * gst / 100;
+const total = subtotal + tax;
 
-        // Update Display (with Currency Formatting)
-        document.getElementById('display_total').value = "₹ " + grandTotal.toLocaleString('en-IN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+document.getElementById('tax_amount').value = "₹ "+tax.toFixed(2);
+document.getElementById('display_total').value = "₹ "+total.toFixed(2);
+document.getElementById('hidden_total').value = total.toFixed(2);
+}
 
-        // Update Hidden Field for Database
-        document.getElementById('hidden_total').value = grandTotal.toFixed(2);
-    }
-
-    // Auto-Uppercase for Input Fields
-    document.querySelectorAll('input[name="po_number"], input[name="container_no"]').forEach(input => {
-        input.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-        });
-    });
-
-    // Initialize calc on load
-    window.onload = calcTotal;
+window.onload = calcTotal;
 </script>
 
 </body>

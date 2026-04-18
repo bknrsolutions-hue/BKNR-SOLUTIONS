@@ -31,7 +31,6 @@ h2{
   text-transform:uppercase;
 }
 
-/* ================= FORM BOX ================= */
 .form-box{
   width:96%;
   max-width:1500px;
@@ -53,10 +52,9 @@ h2{
   margin-bottom:18px;
 }
 
-/* 🟢 ఇక్కడ మార్చాను: columns పక్కకి వెళ్లకుండా కిందకి వస్తాయి */
 .row {
   display: flex;
-  flex-wrap: wrap; /* స్క్రీన్ చిన్నదైతే కిందకి వస్తాయి */
+  flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
 }
@@ -64,11 +62,10 @@ h2{
 .field-group {
   display: flex;
   flex-direction: column;
-  flex: 1 1 150px; /* మినిమం 150px ఉంటుంది, ఖాళీ ఉంటే పెరుగుతుంది */
+  flex: 1 1 150px;
   min-width: 140px;
 }
 
-/* పెద్ద వాటికి కొంచెం ఎక్కువ స్పేస్ */
 .field-lg { flex: 2 1 200px; }
 .field-sm { flex: 0 1 80px; }
 
@@ -86,7 +83,6 @@ input,select{
   border:1px solid var(--border);
   border-radius:6px;
   width:100%;
-  outline: none;
 }
 
 input:focus, select:focus{ border-color: var(--accent); }
@@ -102,14 +98,9 @@ input[readonly]{ background:#f8fafc; color: var(--primary); }
   font-size:12px;
   font-weight:800;
   cursor:pointer;
-  text-transform:uppercase;
   padding: 0 25px;
-  transition: 0.3s;
-  min-width: 120px;
 }
-.btn:hover{ background:var(--primary); transform: translateY(-1px); }
 
-/* ================= TABLE ================= */
 .table-wrap{
   width:96%;
   max-width:1500px;
@@ -117,7 +108,7 @@ input[readonly]{ background:#f8fafc; color: var(--primary); }
   background:#fff;
   border:1px solid var(--border);
   border-radius:10px;
-  overflow-x:auto; /* టేబుల్ కి మాత్రం పక్కకి స్క్రోల్ ఉంటుంది */
+  overflow-x:auto;
 }
 
 table{ width:100%; border-collapse:collapse; min-width: 1000px; }
@@ -125,16 +116,11 @@ table{ width:100%; border-collapse:collapse; min-width: 1000px; }
 th{
   background:#f8fafc;
   font-size:11px;
-  text-transform:uppercase;
   padding:12px 10px;
   border-bottom:2px solid var(--border);
-  text-align:left;
-  color: var(--primary);
 }
 
 td{ padding:12px 10px; font-size:13px; border-bottom:1px solid #f1f5f9; }
-
-tr:hover{ background:#f8fbff; }
 
 .bold{ font-weight:800; }
 .text-right{ text-align: right; }
@@ -146,148 +132,155 @@ tr:hover{ background:#f8fbff; }
 <h2>PURCHASE INVOICE ENTRY</h2>
 
 <div class="form-box">
-  <form id="purchaseForm" onsubmit="submitPurchase(event)">
-    <div class="section-title">Invoice Details</div>
+<form id="purchaseForm" onsubmit="submitPurchase(event)">
 
-    <div class="row">
-      <div class="field-group">
-        <label>Production At</label>
-        <select name="unit_id" required>
-          <option value="">-- SELECT --</option>
-          {% for l in locations %}
-          <option value="{{ l.id }}">{{ l.production_at }}</option>
-          {% endfor %}
-        </select>
-      </div>
+<div class="section-title">Invoice Details</div>
 
-      <div class="field-group">
-        <label>Invoice Date</label>
-        <input type="date" name="invoice_date" required>
-      </div>
+<div class="row">
 
-      <div class="field-group">
-        <label>Invoice No</label>
-        <input type="text" name="invoice_no" placeholder="INV-001" required>
-      </div>
+<div class="field-group">
+<label>Purchase For (PO)</label>
+<select name="po_number">
+<option value="N/A">N/A</option>
+{% for po in po_list %}
+<option value="{{ po }}">{{ po }}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="field-group">
-        <label>Vendor</label>
-        <select name="vendor_id" required>
-          <option value="">-- SELECT --</option>
-          {% for v in vendors %}
-          <option value="{{ v.id }}">{{ v.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
+<div class="field-group">
+<label>Production At</label>
+<select name="unit_id" required>
+<option value="">-- SELECT --</option>
+{% for l in locations %}
+<option value="{{ l.id }}">{{ l.production_at }}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="field-group field-lg">
-        <label>Product</label>
-        <select id="product_sel" onchange="setProduct()" required>
-          <option value="">-- SELECT --</option>
-          {% for h in hsn_list %}
-          <option
-            data-name="{{ h.description }}"
-            data-hsn="{{ h.hsn_code }}"
-            data-gst="{{ h.gst_percent }}">
-            {{ h.description }}
-          </option>
-          {% endfor %}
-        </select>
-        <input type="hidden" name="product_name" id="product_name">
-      </div>
+<div class="field-group">
+<label>Invoice Date</label>
+<input type="date" name="invoice_date" required>
+</div>
 
-      <div class="field-group">
-        <label>HSN</label>
-        <input name="hsn_code" id="hsn_code" readonly>
-      </div>
+<div class="field-group">
+<label>Invoice No</label>
+<input type="text" name="invoice_no" required>
+</div>
 
-      <div class="field-group field-sm">
-        <label>Qty</label>
-        <input type="number" step="0.01" name="qty" id="qty" required>
-      </div>
+<div class="field-group">
+<label>Vendor</label>
+<select name="vendor_id" required>
+<option value="">-- SELECT --</option>
+{% for v in vendors %}
+<option value="{{ v.id }}">{{ v.name }}</option>
+{% endfor %}
+</select>
+</div>
 
-      <div class="field-group field-sm">
-        <label>Price</label>
-        <input type="number" step="0.01" name="base_price" id="price" required>
-      </div>
+<div class="field-group field-lg">
+<label>Product</label>
+<select id="product_sel" onchange="setProduct()" required>
+<option value="">-- SELECT --</option>
+{% for h in hsn_list %}
+<option data-name="{{ h.description }}" data-hsn="{{ h.hsn_code }}" data-gst="{{ h.gst_percent }}">
+{{ h.description }}
+</option>
+{% endfor %}
+</select>
+<input type="hidden" name="product_name" id="product_name">
+</div>
 
-      <div class="field-group field-sm">
-        <label>GST %</label>
-        <input type="number" name="gst_percent" id="gst" readonly>
-      </div>
+<div class="field-group">
+<label>HSN</label>
+<input name="hsn_code" id="hsn_code" readonly>
+</div>
 
-      <div class="field-group">
-        <button type="submit" class="btn">SAVE ENTRY</button>
-      </div>
-    </div>
-  </form>
+<div class="field-group field-sm">
+<label>Qty</label>
+<input type="number" step="0.01" name="qty" required>
+</div>
+
+<div class="field-group field-sm">
+<label>Price</label>
+<input type="number" step="0.01" name="base_price" required>
+</div>
+
+<div class="field-group field-sm">
+<label>GST %</label>
+<input type="number" name="gst_percent" id="gst" readonly>
+</div>
+
+<div class="field-group">
+<button type="submit" class="btn">SAVE ENTRY</button>
+</div>
+
+</div>
+</form>
 </div>
 
 <div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Invoice</th>
-        <th>Vendor</th>
-        <th>Product</th>
-        <th>HSN</th>
-        <th class="text-right">Qty</th>
-        <th class="text-right">Rate</th>
-        <th class="text-right">Tax Amt</th>
-        <th class="text-right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for i in invoice_history %}
-      <tr>
-        <td>{{ i.invoice_date }}</td>
-        <td class="bold">{{ i.invoice_no }}</td>
-        <td>{{ i.vendor_id }}</td>
-        <td>{{ i.product_name }}</td>
-        <td>{{ i.hsn_code }}</td>
-        <td class="text-right">{{ i.qty }}</td>
-        <td class="text-right">{{ i.base_price }}</td>
-        <td class="text-right">₹ {{ i.tax_amount }}</td>
-        <td class="text-right bold" style="color:var(--primary)">₹ {{ i.grand_total }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Invoice</th>
+<th>PO</th>
+<th>Vendor</th>
+<th>Product</th>
+<th>Qty</th>
+<th>Rate</th>
+<th>Tax</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+{% for i in invoice_history %}
+<tr>
+<td>{{ i.invoice_date }}</td>
+<td class="bold">{{ i.invoice_no }}</td>
+<td>{{ i.po_number or 'N/A' }}</td>
+<td>{{ vendor_map.get(i.vendor_id) }}</td>
+<td>{{ i.product_name }}</td>
+<td class="text-right">{{ i.qty }}</td>
+<td class="text-right">{{ i.base_price }}</td>
+<td class="text-right">₹ {{ i.tax_amount }}</td>
+<td class="text-right bold">₹ {{ i.grand_total }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
 </div>
 
 <script>
 function setProduct(){
-  const s = document.getElementById("product_sel");
-  const o = s.options[s.selectedIndex];
-  if(!o.value) return;
-  document.getElementById("product_name").value = o.dataset.name || "";
-  document.getElementById("hsn_code").value = o.dataset.hsn || "";
-  document.getElementById("gst").value = o.dataset.gst || 0;
+const s = document.getElementById("product_sel");
+const o = s.options[s.selectedIndex];
+if(!o.value) return;
+document.getElementById("product_name").value = o.dataset.name || "";
+document.getElementById("hsn_code").value = o.dataset.hsn || "";
+document.getElementById("gst").value = o.dataset.gst || 0;
 }
 
-async function submitPurchase(event) {
-  event.preventDefault();
-  const form = event.target;
-  const formData = new FormData(form);
+async function submitPurchase(e){
+e.preventDefault();
+const formData = new FormData(e.target);
 
-  try {
-    // 🔹 /api path prefix handling
-    let response = await fetch("/api/purchase/save", { method: "POST", body: formData });
-    if (response.status === 404) {
-      response = await fetch("/purchase/save", { method: "POST", body: formData });
-    }
+let res = await fetch("/api/purchase/save",{method:"POST",body:formData});
 
-    const result = await response.json();
-    if (response.ok && result.status === "success") {
-      alert("✅ Saved Successfully!");
-      window.location.reload();
-    } else {
-      alert("❌ Error: " + (result.message || "Something went wrong"));
-    }
-  } catch (error) {
-    alert("❌ Connection Error");
-  }
+if(res.status === 404){
+res = await fetch("/purchase/save",{method:"POST",body:formData});
+}
+
+let data = await res.json();
+
+if(data.status==="success"){
+alert("✅ Saved Successfully");
+location.reload();
+}else{
+alert("❌ " + data.message);
+}
 }
 </script>
 

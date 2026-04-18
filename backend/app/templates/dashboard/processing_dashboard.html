@@ -9,52 +9,19 @@
 
     <style>
         :root {
-            --primary: #1e293b;
-            --accent: #3b82f6;
-            --bg: #f8fafc;
-            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --primary: #1e293b; --accent: #3b82f6; --bg: #f8fafc;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); --border: #e2e8f0;
         }
-
-        body {
-            margin: 0;
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: var(--bg);
-            color: #0f172a;
-        }
-
-        h2 {
-            text-align: center;
-            color: var(--primary);
-            margin: 20px 0;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .dashboard { width: 95%; margin: auto; padding-bottom: 50px; }
-
-        /* CORPORATE CARDS */
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            padding: 20px;
-            border-radius: 16px;
-            color: #fff;
-            box-shadow: var(--card-shadow);
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: #0f172a; }
+        .dashboard { width: 98%; margin: auto; padding: 20px 0 50px 0; }
+        
+        /* 1. TOP CARDS (TODAY ONLY) */
+        .cards-container { overflow-x: auto; margin-bottom: 25px; }
+        .cards { display: grid; grid-template-columns: repeat(8, minmax(150px, 1fr)); gap: 12px; min-width: 1250px; }
+        .card { padding: 15px; border-radius: 12px; color: #fff; box-shadow: var(--card-shadow); text-align: center; cursor: pointer; transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); }
-        .card h4 { margin: 0; font-size: 11px; text-transform: uppercase; opacity: 0.8; letter-spacing: 0.5px; }
-        .value { font-size: 24px; font-weight: 800; margin: 10px 0; cursor: pointer; }
-        .today { font-size: 12px; font-weight: 600; opacity: 0.9; cursor: pointer; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        .value { font-size: 22px; font-weight: 800; margin: 5px 0; }
+        .label { font-size: 10px; text-transform: uppercase; font-weight: 600; opacity: 0.9; }
 
         .blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
         .green { background: linear-gradient(135deg, #16a34a, #15803d); }
@@ -65,212 +32,228 @@
         .gray { background: linear-gradient(135deg, #475569, #334155); }
         .indigo { background: linear-gradient(135deg, #4f46e5, #4338ca); }
 
-        /* FILTER BAR */
-        .filter-bar {
-            background: #fff;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 20px;
-            align-items: flex-end;
-            margin-bottom: 25px;
-            border: 1px solid #e2e8f0;
+        /* 2. RAW MATERIAL SUMMARY TABLE */
+        .rm-summary-box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; box-shadow: var(--card-shadow); }
+        .rm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .rm-table th { text-align: left; padding: 10px; background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; }
+        .rm-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-weight: 700; }
+
+        /* 3. HOURLY CHARTS (3 COLUMNS) */
+        .charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .chart-box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--card-shadow); }
+        .chart-title { font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
+
+        /* 4. ATTENDANCE & SUMMARIES */
+        .attendance-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }
+        .att-card { background: #fff; padding: 10px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+        .att-icon { width: 28px; height: 28px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 15px; }
+
+        /* 5. FLOOR BALANCE */
+        .floor-box { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--card-shadow); }
+        .floor-frame { width: 100%; height: 450px; border: none; }
+
+        .section-head { font-size: 12px; font-weight: 800; color: #475569; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 10px; text-transform: uppercase; }
+        .section-head hr { flex: 1; border: 0; border-top: 1px solid var(--border); }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
         }
-
-        .filter-group { display: flex; flex-direction: column; gap: 5px; }
-        .filter-group label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        .filter-group input { padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; }
-        .filter-bar button { padding: 10px 25px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
-        .filter-bar button:hover { background: #000; }
-
-        /* CHART GRID */
-        .chart-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 25px; }
-        .chart-box { background: #fff; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; }
-        .chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
-        .chart-head strong { color: var(--primary); font-size: 14px; text-transform: uppercase; }
-        .chart-head select, .chart-head input { padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; font-weight: 600; }
-
-        /* FLOOR SECTION */
-        .floor-box { background: #fff; border-radius: 16px; box-shadow: var(--card-shadow); overflow: hidden; border: 1px solid #e2e8f0; }
-        .floor-frame { width: 100%; height: 700px; border: none; }
-
-        @media (max-width: 1024px) { .chart-grid { grid-template-columns: 1fr; } }
+        .modal-content {
+            background-color: #fff;
+            margin: 2% auto;
+            width: 90%;
+            height: 90vh;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .modal-header {
+            padding: 15px 25px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 16px; color: var(--primary); text-transform: uppercase; }
+        .close-btn { font-size: 28px; cursor: pointer; color: #64748b; line-height: 1; }
+        .close-btn:hover { color: #ef4444; }
+        #entryFrame { width: 100%; flex-grow: 1; border: none; }
     </style>
 </head>
 <body>
 
-    <h2><i class="fa-solid fa-chart-line"></i> Processing Dashboard</h2>
-
-    <div class="dashboard">
-
+<div class="dashboard">
+    <div class="cards-container">
         <div class="cards">
-            <div class="card blue">
-                <h4>Gate Entry</h4>
-                <div class="value" onclick="openReport('/reports/gate_entry_report')">{{ gate_total }}</div>
-                <div class="today" onclick="openReport('/reports/gate_entry_report')">Today: {{ gate_today }}</div>
-            </div>
-            <div class="card green">
-                <h4>Raw Material</h4>
-                <div class="value" onclick="openReport('/reports/raw_material_purchasing_report')">{{ rmp_total }} <small>kg</small></div>
-                <div class="today">Today: {{ rmp_today }} kg</div>
-            </div>
-            <div class="card orange">
-                <h4>De-Heading</h4>
-                <div class="value" onclick="openReport('/reports/de_heading_report')">{{ dh_total }} <small>kg</small></div>
-                <div class="today">Today: {{ dh_today }} kg</div>
-            </div>
-            <div class="card purple">
-                <h4>Grading</h4>
-                <div class="value" onclick="openReport('/reports/grading_report')">{{ grading_total }} <small>kg</small></div>
-                <div class="today">Today: {{ grading_today }} kg</div>
-            </div>
-            <div class="card teal">
-                <h4>Peeling</h4>
-                <div class="value" onclick="openReport('/reports/peeling_report')">{{ peeling_total }} <small>kg</small></div>
-                <div class="today">Today: {{ peeling_today }} kg</div>
-            </div>
-            <div class="card pink">
-                <h4>Soaking</h4>
-                <div class="value" onclick="openReport('/reports/soaking_report')">{{ soaking_total }} <small>kg</small></div>
-                <div class="today">Today: {{ soaking_today }} kg</div>
-            </div>
-            <div class="card gray">
-                <h4>Production</h4>
-                <div class="value" onclick="openReport('/reports/production_report')">{{ production_total }} <small>kg</small></div>
-                <div class="today">Today: {{ production_today }} kg</div>
-            </div>
-            <div class="card indigo">
-                <h4>Floor Balance</h4>
-                <div class="value" onclick="scrollToFloor()">{{ floor_total }} <small>kg</small></div>
-                <div class="today">Live Stock</div>
-            </div>
+            <div class="card blue" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry')"><div class="label">Gate Today</div><div class="value">{{ gate_today }}</div></div>
+            <div class="card green" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing')"><div class="label">RM Today</div><div class="value">{{ rmp_today }} <small>kg</small></div></div>
+            <div class="card orange" onclick="openEntryModal('/processing/de_heading', 'De-Heading Entry')"><div class="label">DH Today</div><div class="value">{{ dh_today }} <small>kg</small></div></div>
+            <div class="card purple" onclick="openEntryModal('/processing/grading', 'Grading Entry')"><div class="label">Grading Today</div><div class="value">{{ grading_today }} <small>kg</small></div></div>
+            <div class="card teal" onclick="openEntryModal('/processing/peeling', 'Peeling Entry')"><div class="label">Peeling Today</div><div class="value">{{ peeling_today }} <small>kg</small></div></div>
+            <div class="card pink" onclick="openEntryModal('/processing/soaking', 'Soaking Entry')"><div class="label">Soaking Today</div><div class="value">{{ soaking_today }} <small>kg</small></div></div>
+            <div class="card gray" onclick="openEntryModal('/processing/production', 'Production Entry')"><div class="label">Prod Today</div><div class="value">{{ production_today }} <small>kg</small></div></div>
+            <div class="card indigo"><div class="label">Live Floor</div><div class="value">{{ floor_total }} <small>kg</small></div></div>
         </div>
-
-        <form method="GET" action="/dashboard/processing_dashboard">
-            <div class="filter-bar">
-                <div class="filter-group">
-                    <label>From Date</label>
-                    <input type="date" name="from_date" value="{{ selected_from }}">
-                </div>
-                <div class="filter-group">
-                    <label>To Date</label>
-                    <input type="date" name="to_date" value="{{ selected_to }}">
-                </div>
-                <button type="submit"><i class="fa-solid fa-filter"></i> Apply Analysis</button>
-            </div>
-        </form>
-
-        <div class="chart-grid">
-            <div class="chart-box">
-                <div class="chart-head">
-                    <strong><i class="fa-solid fa-timeline"></i> Day Wise Flow</strong>
-                    <select id="dayFormSelect" onchange="updateDayFlow()">
-                        <option value="rmp">Raw Material</option>
-                        <option value="gate">Gate Entry</option>
-                        <option value="dh">De-Heading</option>
-                        <option value="grading">Grading</option>
-                        <option value="peeling">Peeling</option>
-                        <option value="soaking">Soaking</option>
-                        <option value="production">Production</option>
-                    </select>
-                </div>
-                <canvas id="dayFlowChart"></canvas>
-            </div>
-
-            <div class="chart-box">
-                <div class="chart-head">
-                    <strong><i class="fa-solid fa-clock"></i> Hourly Flow</strong>
-                    <div style="display:flex; gap:10px;">
-                        <select id="hourFormSelect" onchange="updateHourlyChart()">
-                            <option value="production">Production</option>
-                            <option value="peeling">Peeling</option>
-                            <option value="grading">Grading</option>
-                        </select>
-                        <input type="date" id="hourChartDate" value="{{ selected_hour_date }}" onchange="refreshWithDate()">
-                    </div>
-                </div>
-                <canvas id="hourFlowChart"></canvas>
-            </div>
-        </div>
-
-        <div class="floor-box" id="floorSection">
-            <div style="padding: 15px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 13px;">
-                <i class="fa-solid fa-warehouse"></i> LIVE FLOOR BALANCE DETAILS
-            </div>
-            <iframe src="/reports/floor_balance_report" class="floor-frame"></iframe>
-        </div>
-
     </div>
 
-    <script>
-        function openReport(url) { window.open(url, "_blank"); }
-        function scrollToFloor() { document.getElementById("floorSection").scrollIntoView({ behavior: "smooth" }); }
+    <div class="section-head">RM Purchasing Summary (Today) <hr></div>
+    <div class="rm-summary-box">
+        <table class="rm-table">
+            <thead>
+                <tr>
+                    <th>Species Name</th>
+                    <th>Count / Size</th>
+                    <th style="text-align: right;">Quantity (KG)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in rm_summary %}
+                <tr>
+                    <td>{{ item.species }}</td>
+                    <td>{{ item.count }}</td>
+                    <td style="text-align: right; color: var(--accent);">{{ item.qty }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-        function refreshWithDate() {
-            const hDate = document.getElementById('hourChartDate').value;
-            const fDate = document.querySelector('input[name="from_date"]').value;
-            const tDate = document.querySelector('input[name="to_date"]').value;
-            window.location.href = `/dashboard/processing_dashboard?hour_date=${hDate}&from_date=${fDate}&to_date=${tDate}`;
+    <div class="section-head">Hourly Processing Analysis <hr></div>
+    <div class="charts-row">
+        <div class="chart-box">
+            <div class="chart-title">De-Heading (Hourly)</div>
+            <canvas id="dhChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">Peeling (Hourly)</div>
+            <canvas id="peelingChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">Production (Hourly)</div>
+            <canvas id="prodChart"></canvas>
+        </div>
+    </div>
+
+    <div class="section-head">Live Attendance Status <hr></div>
+    <div class="attendance-stats">
+        <div class="att-card">
+            <div class="att-icon" style="background: #1e293b;"><i class="fa-solid fa-users"></i></div>
+            <div class="att-info"><h4>Total</h4><h2 id="att-total" style="margin:0; font-size:16px;">{{ att_stats.total }}</h2></div>
+        </div>
+        <div class="att-card">
+            <div class="att-icon" style="background: #059669;"><i class="fa-solid fa-door-open"></i></div>
+            <div class="att-info"><h4>Inside</h4><h2 id="att-in" style="margin:0; font-size:16px;">{{ att_stats.inside }}</h2></div>
+        </div>
+        <div class="att-card">
+            <div class="att-icon" style="background: #d97706;"><i class="fa-solid fa-mug-hot"></i></div>
+            <div class="att-info"><h4>Break</h4><h2 id="att-away" style="margin:0; font-size:16px;">{{ att_stats.away }}</h2></div>
+        </div>
+        <div class="att-card">
+            <div class="att-icon" style="background: #f59e0b;"><i class="fa-solid fa-star-half-stroke"></i></div>
+            <div class="att-info"><h4>Half</h4><h2 id="att-half" style="margin:0; font-size:16px;">{{ att_stats.half }}</h2></div>
+        </div>
+        <div class="att-card">
+            <div class="att-icon" style="background: #2563eb;"><i class="fa-solid fa-user-check"></i></div>
+            <div class="att-info"><h4>Single</h4><h2 id="att-single" style="margin:0; font-size:16px;">{{ att_stats.single }}</h2></div>
+        </div>
+        <div class="att-card">
+            <div class="att-icon" style="background: #7c3aed;"><i class="fa-solid fa-bolt"></i></div>
+            <div class="att-info"><h4>Double</h4><h2 id="att-double" style="margin:0; font-size:16px;">{{ att_stats.double }}</h2></div>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <h4 style="margin:0 0 10px 0; font-size:10px; color:#64748b;">DEPT SUMMARY</h4>
+            <table class="rm-table" style="font-size:11px;">
+                <tbody>
+                    {% for dept, vals in dept_summary.items() %}
+                    <tr>
+                        <td>{{ dept }}</td>
+                        <td style="text-align:right;">Active: {{ vals.active }}</td>
+                        <td style="text-align:right;">Closed: {{ vals.closed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="summary-card">
+            <h4 style="margin:0 0 10px 0; font-size:10px; color:#64748b;">DESG SUMMARY</h4>
+            <table class="rm-table" style="font-size:11px;">
+                <tbody>
+                    {% for desg, vals in desg_summary.items() %}
+                    <tr>
+                        <td>{{ desg }}</td>
+                        <td style="text-align:right;">Active: {{ vals.active }}</td>
+                        <td style="text-align:right;">Closed: {{ vals.closed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-head">Live Floor Balance Details <hr></div>
+    <div class="floor-box">
+        <iframe src="/reports/floor_balance_report" class="floor-frame"></iframe>
+    </div>
+</div>
+
+<div id="entryModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Entry Form</h3>
+            <span class="close-btn" onclick="closeEntryModal()">&times;</span>
+        </div>
+        <iframe id="entryFrame" src="" frameborder="0"></iframe>
+    </div>
+</div>
+
+<script>
+    // 3 Hourly Charts Logic
+    const hours = {{ hourly_labels | tojson }};
+    const chartOptions = { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
+
+    new Chart(document.getElementById("dhChart"), {
+        type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data }}, backgroundColor: '#ea580c' }] }, options: chartOptions
+    });
+    new Chart(document.getElementById("peelingChart"), {
+        type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data }}, backgroundColor: '#0d9488' }] }, options: chartOptions
+    });
+    new Chart(document.getElementById("prodChart"), {
+        type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data }}, backgroundColor: '#475569' }] }, options: chartOptions
+    });
+
+    // Modal Logic
+    function openEntryModal(url, title) {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('entryFrame').src = url + "?view=dashboard";
+        document.getElementById('entryModal').style.display = 'block';
+    }
+
+    function closeEntryModal() {
+        document.getElementById('entryModal').style.display = 'none';
+        document.getElementById('entryFrame').src = '';
+        location.reload(); // Refresh to update numbers
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('entryModal')) {
+            closeEntryModal();
         }
-
-        /* DAY FLOW LOGIC */
-        const flowDates = {{ flow_dates | tojson }};
-        const flowData = {{ flow_data | tojson }};
-
-        const dayCtx = document.getElementById("dayFlowChart").getContext("2d");
-        let dayChart = new Chart(dayCtx, {
-            type: "line",
-            data: {
-                labels: flowDates,
-                datasets: [{
-                    label: 'Qty (KG)',
-                    data: flowData.rmp,
-                    borderColor: "#3b82f6",
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: "#f1f5f9" } } }
-            }
-        });
-
-        function updateDayFlow() {
-            const val = document.getElementById("dayFormSelect").value;
-            dayChart.data.datasets[0].data = flowData[val];
-            dayChart.update();
-        }
-
-        /* HOURLY FLOW LOGIC */
-        const hourly = {{ hourly_data | tojson }};
-        const hourCtx = document.getElementById("hourFlowChart").getContext("2d");
-        let hourChart = new Chart(hourCtx, {
-            type: "bar",
-            data: {
-                labels: hourly.hours,
-                datasets: [{
-                    data: hourly.production,
-                    backgroundColor: "#6366f1",
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-
-        function updateHourlyChart() {
-            const val = document.getElementById("hourFormSelect").value;
-            hourChart.data.datasets[0].data = hourly[val];
-            hourChart.update();
-        }
-    </script>
+    }
+</script>
 </body>
 </html>

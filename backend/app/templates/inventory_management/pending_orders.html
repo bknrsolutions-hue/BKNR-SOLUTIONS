@@ -253,8 +253,20 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 <div class="section">
   <div class="form-grid">
     <div class="field"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
-    <div class="field"><label>Company Name</label><input name="company_name" id="company_name" value="{{ request.session.get('company_name') }}" readonly required></div>
+    
+    <div class="field">
+      <label>Company Name</label>
+      <select name="company_name" id="company_name" class="lookup" data-url="/criteria/production_for" required>
+        <option value="">Select Company</option>
+        {% for c in unique_companies %}
+          <option value="{{ c }}" {% if edit_rows and edit_rows[0].company_name == c %}selected{% elif request.session.get('company_name') == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
+      </select>
+    </div>
+
     <div class="field"><label>PO Number</label><input name="po_number" required placeholder="Ex: PO-2024-001" value="{{ edit_rows[0].po_number if edit_rows else '' }}"></div>
+    
     <div class="field">
       <label>Buyer</label>
       <select name="buyer" class="lookup" data-url="/criteria/buyers" required>
@@ -409,45 +421,21 @@ const dropdownMenu  = document.getElementById("dropdownMenu");
 const criteriaModal = new bootstrap.Modal(document.getElementById('criteriaModal'));
 const salesModal = new bootstrap.Modal(document.getElementById('salesDispatchModal'));
 
-// --- UPDATED: SAVE STATUS TO BACKEND USING progress_steps ---
 function updateStatusStyle(select, po) {
     const newStatus = select.value;
-
-    // 1. Change UI Color Immediately
     select.className = "status-select status-" + newStatus;
-
-    // 2. Open Sales Modal if Completed
     if (newStatus === 'completed') {
         document.getElementById('sales_po_number').value = po;
         salesModal.show();
     }
-
-    // 3. Send AJAX request to save in 'progress_steps' column
     fetch('/inventory/update_po_status', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            po_number: po,
-            status: newStatus 
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ po_number: po, status: newStatus })
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log("Status saved to progress_steps: " + newStatus);
-        } else {
-            console.error("Failed to save status");
-            alert("Warning: Status not saved to database.");
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert("Network Error: Could not save status.");
-    });
+    .catch(error => console.error('Error:', error));
 }
-// ------------------------------------------------------------
 
 document.addEventListener('change', function(e) {
   if (e.target.classList.contains('lookup') && e.target.value === "__add__") {

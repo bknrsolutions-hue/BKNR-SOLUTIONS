@@ -2,34 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="30"> 
 <title>RE-PROCESS REPORT | BKNR ERP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root{ --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f8fafc; }
     body{ margin:0; background:var(--bg); font-family:'Segoe UI', Tahoma, sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-    
     .header{ background:#fff; padding:8px 15px; border-bottom:1.5px solid var(--primary); display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform: uppercase; }
-    
     .section{ flex:1; margin:8px; background:#fff; border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; }
     .table-wrap{ flex:1; overflow:auto; scrollbar-width: thin; }
-    
     table{ width:100%; border-collapse:collapse; min-width:1600px; table-layout: fixed; }
-
     thead th{ background:#f1f5f9; padding:6px 4px; font-size:9px; font-weight:800; text-transform:uppercase; border-bottom:1.5px solid var(--border); position:sticky; top:0; z-index:10; color: #475569; }
     tbody td{ padding:4px 6px; font-size:10px; border-bottom:1px solid #f1f5f9; text-align:center; white-space:nowrap; overflow: hidden; text-overflow: ellipsis; }
-    tbody tr:hover { background-color: #f8fafc; }
-
     .row-date-group { background: #f1f5f9 !important; font-weight: 800; text-align: left !important; color: #1e293b; font-size: 11px; }
-    .row-date-group td { padding: 6px 10px; border-top: 1px solid var(--border); }
-
     .batch-id { color:var(--accent); font-weight:bold; font-family:'Consolas', monospace; background:#eff6ff; padding:2px 5px; border-radius:3px; border:1px solid #dbeafe; font-size: 9.5px; }
     .val-cell { color: #15803d; font-weight: 700; background: #f0fdf4; }
     .prod-for-cell { color: #b45309; font-weight: 700; text-align: left !important; }
-    
     tfoot td{ background:#e2e8f0; font-weight:800; font-size:11px; border-top:1.5px solid var(--primary); position:sticky; bottom:0; padding:6px 10px; z-index: 10; }
-    
     .search-box { padding:5px 10px; width:220px; border:1px solid var(--border); border-radius:4px; font-size:11px; outline: none; }
     .type-tag { background:#f1f5f9; padding:2px 5px; border-radius:3px; font-weight:800; font-size: 8.5px; border: 1px solid #e2e8f0; }
 </style>
@@ -81,7 +70,7 @@
 const rawData = [
     {% for r in rows %}
     {
-        date: "{{ r.date }}",
+        date: "{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}",
         new_id: "{{ r.new_batch_id }}",
         orig_batch: "{{ r.original_batch }}",
         prod_for: "{{ r.production_for }}",
@@ -91,9 +80,9 @@ const rawData = [
         species: "{{ r.species }}",
         freezer: "{{ r.freezer }}",
         glaze: "{{ r.glaze }}",
-        qty: {{ r.in_qty or 0 }},
-        rate: {{ r.product_kg_value or 0 }},
-        value: {{ r.inventory_value or 0 }},
+        qty: parseFloat("{{ r.in_qty or 0 }}"),
+        rate: parseFloat("{{ r.product_kg_value or 0 }}"),
+        value: parseFloat("{{ r.inventory_value or 0 }}"),
         prod_at: "{{ r.production_at }}"
     },
     {% endfor %}

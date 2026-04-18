@@ -308,6 +308,9 @@ function loadOps(){
   if(allow("stock_entry")) html += `<button onclick="openPage('/inventory/stock_entry')"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry</button>`;
   if(allow("pending_orders")) html += `<button onclick="openPage('/inventory/pending_orders')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders</button>`;
   if(allow("general_store_entry")) html += `<button onclick="openPage('/general_stock/entry')"><i class="fa-solid fa-shop"></i> General Store Entry</button>`;
+  if(allow("cold_storage_holding")) 
+  html += `<button onclick="openPage('/inventory/cold_storage_holding')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
@@ -326,7 +329,9 @@ function loadReports(){
   if(allow("inventory_report")) html += `<button onclick="openPage('/inventory/stock_report')"><i class="fa-solid fa-boxes-packing"></i> Stock Status</button>`;
   if(allow("storage_cost_report")) html += `<button onclick="openPage('/reports/storage_cost_report')"><i class="fa-solid fa-coins"></i> Storage & Cost Report</button>`;
   if(allow("pending_orders_report")) html += `<button onclick="openPage('/reports/pending_orders_report')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders Report</button>`;
-  if(allow("sales_dispatch_report")) html += `<button onclick="openPage('/inventory/sales_report')"><i class="fa-solid fa-file-invoice-dollar"></i> Sales Dispatch Report</button>`;
+  if(allow("sales_report")) 
+  html += `<button onclick="openPage('/inventory/sales_report')">
+  <i class="fa-solid fa-file-invoice-dollar"></i> Sales  Report</button>`;
   html += `<h3>General Store Reports</h3>`;
   if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> General Store Report</button>`;
   document.getElementById("sideMenu").innerHTML = html;
@@ -348,6 +353,10 @@ function loadCriteria(){
   forms.forEach(f=>{
     if(allow(f[0])) html += `<button onclick="openPage('/criteria/${f[0]}')"><i class="fa-solid fa-caret-right"></i> ${f[1]}</button>`;
   });
+  if(allow("cold_storage")) 
+  html += `<button onclick="openPage('/inventory/cold_storage')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage</button>`;
+  html += `<h3>General Store Reports</h3>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 

@@ -56,7 +56,7 @@ class PurchaseInvoice(Base):
     product_id = Column(Integer)
     product_name = Column(String(100))
     hsn_code = Column(String(20))
-    
+    po_number = Column(String(100), index=True) 
     qty = Column(Float)
     base_price = Column(Float)
     gst_percent = Column(Float)
@@ -102,7 +102,7 @@ class QATestingLog(Base):
     lab_name = Column(String(100))
     test_cost = Column(Float)
     report_ref = Column(String(50))
-
+    po_number = Column(String(100), index=True) 
 # 6. Other Expenses
 class OtherExpense(Base):
     __tablename__ = "other_expenses"
