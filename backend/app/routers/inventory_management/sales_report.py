@@ -281,9 +281,14 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         })
 
     db.commit()
-    return templates.TemplateResponse("inventory_management/sales_report.html", {
-        "request": request, "sales_data": processed, "unique_companies": unique_companies
-    })
+    return templates.TemplateResponse(
+    request=request, 
+    name="inventory_management/sales_report.html", 
+    context={
+        "sales_data": processed, 
+        "unique_companies": unique_companies
+    }
+)
 
 # -------------------------------------------------------------------------
 # 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX)
