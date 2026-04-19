@@ -86,7 +86,11 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         "pending_orders": po_numbers_list, # Updated dropdown data
     }
 
-    return templates.TemplateResponse("inventory_management/cold_storage_holding.html", context)
+    return templates.TemplateResponse(
+    request=request, 
+    name="inventory_management/cold_storage_holding.html", 
+    context=context
+)
 
 
 # ==================================================
