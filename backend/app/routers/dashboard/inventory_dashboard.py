@@ -1,196 +1,191 @@
 # app/routers/dashboards/inventory.py
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import date
+from datetime import datetime, timedelta, date
 import logging
+from collections import defaultdict
 
 from app.database import get_db
-from app.database.models.inventory_management import stock_entry, pending_orders
-from app.database.models.processing import RawMaterialPurchasing, DeHeading, Peeling, Production
-from app.database.models.criteria import packing_styles
+from app.database.models.inventory_management import stock_entry, cold_storage_holding, pending_orders, sales_dispatch
+from app.database.models.reprocess import Reprocess
+from app.database.models.criteria import (
+    buyers, buyer_agents, brands, countries,
+    varieties, grades, glazes, packing_styles, freezers, species, 
+    production_for
+)
 
-router = APIRouter(tags=["INVENTORY DASHBOARD"])
-templates = Jinja2Templates(directory="app/templates")
+router = APIRouter(prefix="/inventory_dashboard", tags=["INVENTORY DASHBOARD"])
 logger = logging.getLogger(__name__)
 
-# ============================================================
-# 📦 INVENTORY DASHBOARD
-# ============================================================
-@router.get("/inventory_dashboard", response_class=HTMLResponse)
-def inventory_dashboard(
+@router.get("/", response_class=HTMLResponse)
+async def get_inventory_dashboard(
     request: Request,
-    db: Session = Depends(get_db),
-    prod_for: str = "ALL",
-    prod_at: str = "ALL",
-    from_date: str = "",
-    to_date: str = ""
+    from_date: str = Query(None),
+    to_date: str = Query(None),
+    sel_species: str = Query("ALL"),
+    sel_variety: str = Query("ALL"),
+    sel_grade: str = Query("ALL"),
+    sel_packing: str = Query("ALL"),
+    sel_prod_for: str = Query("ALL"),
+    sel_prod_at: str = Query("ALL"),
+    sel_glaze: str = Query("ALL"),
+    sel_freezer: str = Query("ALL"),
+    db: Session = Depends(get_db)
 ):
-    # ---------------------------------------------------------
-    # 1. SESSION SECURITY
-    # ---------------------------------------------------------
+    # 1. Session & Security
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
-
     if not email or not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # ---------------------------------------------------------
-    # 2. COSTING MAPS (Batch + Species wise rate calculation)
-    # ---------------------------------------------------------
-    # Raw Material Purchase Amount Map
-    rm_rows = db.query(
-        RawMaterialPurchasing.batch_number,
-        RawMaterialPurchasing.species,
-        func.coalesce(func.sum(RawMaterialPurchasing.amount), 0)
-    ).filter(RawMaterialPurchasing.company_id == comp_code).group_by(
-        RawMaterialPurchasing.batch_number, RawMaterialPurchasing.species
-    ).all()
+    # 2. Date Logic
+    if not from_date:
+        from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    if not to_date:
+        to_date = datetime.now().strftime('%Y-%m-%d')
 
-    rm_amt_map = {(str(b).strip(), str(s).strip().lower()): float(a) for b, s, a in rm_rows}
+    # 3. Filter Logic
+    def apply_filters(query, model):
+        if sel_species != "ALL": query = query.filter(model.species == sel_species)
+        if sel_variety != "ALL": query = query.filter(model.variety == sel_variety)
+        if sel_grade != "ALL": query = query.filter(model.grade == sel_grade)
+        if sel_packing != "ALL": query = query.filter(model.packing_style == sel_packing)
+        if hasattr(model, 'glaze') and sel_glaze != "ALL": query = query.filter(model.glaze == sel_glaze)
+        if hasattr(model, 'freezer_type') and sel_freezer != "ALL": query = query.filter(model.freezer_type == sel_freezer)
+        if hasattr(model, 'production_for') and sel_prod_for != "ALL": query = query.filter(model.production_for == sel_prod_for)
+        if hasattr(model, 'production_at') and sel_prod_at != "ALL": query = query.filter(model.production_at == sel_prod_at)
+        
+        d_field = 'date' if hasattr(model, 'date') else 'in_date'
+        try:
+            if from_date: query = query.filter(getattr(model, d_field) >= date.fromisoformat(from_date))
+            if to_date: query = query.filter(getattr(model, d_field) <= date.fromisoformat(to_date))
+        except: pass
+        return query
 
-    # Total Stock In Quantity Map for Rate derivation
-    stock_in_rows = db.query(
-        stock_entry.batch_number,
-        stock_entry.species,
-        func.coalesce(func.sum(stock_entry.quantity), 0)
-    ).filter(
-        stock_entry.company_id == comp_code, 
-        stock_entry.cargo_movement_type == "IN"
-    ).group_by(stock_entry.batch_number, stock_entry.species).all()
+    stock_rows = apply_filters(db.query(stock_entry).filter(stock_entry.company_id == comp_code), stock_entry).all()
+    cs_rows = apply_filters(db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code), cold_storage_holding).all()
 
-    stock_qty_map = {(str(b).strip(), str(s).strip().lower()): float(q) for b, s, q in stock_in_rows}
-
-    # ---------------------------------------------------------
-    # 3. STOCK QUERY + FILTERS
-    # ---------------------------------------------------------
-    q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
-
-    if prod_for != "ALL": q = q.filter(stock_entry.production_for == prod_for)
-    if prod_at != "ALL": q = q.filter(stock_entry.production_at == prod_at)
+    # 4. Data Aggregation
+    inventory_sum = 0.0
+    inventory_val = 0.0
+    total_sales_qty = 0.0
+    cs_net = 0.0
+    reprocess_qty = 0.0
     
-    try:
-        if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
-        if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
-    except Exception as e:
-        logger.error(f"Date Filter Error: {e}")
+    # Tables & Charts
+    production_at_totals = defaultdict(float)
+    production_for_breakdown = defaultdict(lambda: defaultdict(float))
+    storage_wise_totals = defaultdict(float)
+    storage_prod_for_breakdown = defaultdict(lambda: defaultdict(float))
+    
+    variety_chart = defaultdict(float)
+    grade_data = defaultdict(float)
+    daily_flow = defaultdict(lambda: {"IN": 0.0, "OUT": 0.0})
+    table_grouping = defaultdict(float)
 
-    rows = q.all()
-
-    # ---------------------------------------------------------
-    # 4. DASHBOARD AGGREGATES & KPI LOGIC
-    # ---------------------------------------------------------
-    total_qty = total_value = 0.0
-    production_qty = production_val = 0.0
-    sales_qty = sales_val = 0.0
-    store_out_qty = store_out_val = 0.0
-
-    grade_cards = {}
-    variety_chart = {}
-    flow_chart = {}
-
-    for r in rows:
+    # Process Stock Entry
+    for r in stock_rows:
         sign = 1 if r.cargo_movement_type == "IN" else -1
         qty = float(r.quantity or 0) * sign
-
-        key = (str(r.batch_number).strip(), str(r.species or "").strip().lower())
-        rm_amt = rm_amt_map.get(key, 0)
-        in_qty = stock_qty_map.get(key, 0)
-
-        # Derived Rate Logic
-        rate = round(rm_amt / in_qty, 2) if in_qty > 0 else float(r.sales_reference_rate or 0)
-        value = abs(qty) * rate
-
-        # Aggregate Totals
-        total_qty += qty
-        total_value += (value * sign)
-
-        prod_type = (r.type_of_production or "").upper()
-        if prod_type == "PRODUCTION":
-            production_qty += qty
-            production_val += value
-        elif prod_type in ["SALES", "STORE OUT"]:
-            if prod_type == "SALES":
-                sales_qty += abs(qty)
-                sales_val += value
-            store_out_qty += abs(qty)
-            store_out_val += value
-
-        # Grade-wise grouping
-        g = r.grade or "N/A"
-        if g not in grade_cards:
-            grade_cards[g] = {"avail_qty": 0.0, "avail_val": 0.0, "sales_qty": 0.0, "sales_val": 0.0}
+        rate = float(r.product_kg_value or r.sales_reference_rate or 0)
         
-        grade_cards[g]["avail_qty"] += qty
-        grade_cards[g]["avail_val"] += (value * sign)
-        if prod_type == "SALES":
-            grade_cards[g]["sales_qty"] += abs(qty)
-            grade_cards[g]["sales_val"] += value
+        inventory_sum += qty
+        inventory_val += (abs(qty) * rate * sign)
 
-        # Charts Data
-        v = r.variety or "N/A"
-        variety_chart[v] = variety_chart.get(v, 0) + qty
-        if r.date:
-            dkey = r.date.strftime("%Y-%m-%d")
-            flow_chart[dkey] = flow_chart.get(dkey, 0) + qty
+        # Sales logic: Stock Entry Sales
+        if r.purpose == "SALES" or r.type_of_production == "SALES":
+            total_sales_qty += abs(qty)
 
-    # ---------------------------------------------------------
-    # 5. PROCESSING & PENDING ORDERS (Safe Totals)
-    # ---------------------------------------------------------
-    def get_sum(model, col):
-        return db.query(func.coalesce(func.sum(col), 0)).filter(model.company_id == comp_code).scalar() or 0
+        # Reprocess logic: Non-Raw types
+        if r.type_of_production and r.type_of_production.upper() != "RAW":
+            reprocess_qty += qty # Net sum of non-raw (In minus Out)
 
-    rm_total = get_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty)
-    dh_total = get_sum(DeHeading, DeHeading.hoso_qty)
-    peeling_total = get_sum(Peeling, Peeling.peeled_qty)
-    prod_total = get_sum(Production, Production.production_qty)
+        # Breakdowns
+        pa = r.production_at or "OTHERS"
+        pf = r.production_for or "STOCK"
+        production_at_totals[pa] += qty
+        production_for_breakdown[pa][pf] += qty
+        
+        variety_chart[r.variety or "N/A"] += qty
+        grade_data[r.grade or "N/A"] += qty
+        
+        # Table Ledger
+        t_key = (pa, r.species, r.variety, r.grade, getattr(r, 'freezer_type', 'N/A'), r.packing_style)
+        table_grouping[t_key] += qty
+        
+        d_str = r.date.strftime('%d %b') if r.date else "N/A"
+        daily_flow[d_str][r.cargo_movement_type] += abs(qty)
 
-    # Pending Orders Logic
-    pack_rows = db.query(packing_styles).filter(packing_styles.company_id == comp_code).all()
-    PACK_WT = {p.packing_style: float(p.mc_weight or 0) for p in pack_rows}
+    # Process Cold Storage
+    for c in cs_rows:
+        sign = 1 if c.cargo_movement_type == "IN" else -1
+        qty = float(c.quantity or 0) * sign
+        cs_net += qty
+        
+        # Sales logic: CS Out for Sales
+        if c.cargo_movement_type == "OUT" and c.purpose == "SALES":
+            total_sales_qty += abs(qty)
 
-    pending_qty = pending_val = 0.0
-    pending_rows = db.query(pending_orders).filter(pending_orders.company_id == comp_code).all()
+        storage = c.cold_storage_name or "EXTERNAL CS"
+        pf_cs = c.production_for or "STOCK"
+        storage_wise_totals[storage] += qty
+        storage_prod_for_breakdown[storage][pf_cs] += qty
+        
+        # Add to table grouping under CS
+        t_key_cs = (storage, c.species, c.variety, c.grade, "CS-STK", c.packing_style)
+        table_grouping[t_key_cs] += qty
+
+        d_str = c.in_date.strftime('%d %b') if hasattr(c, 'in_date') and c.in_date else "N/A"
+        daily_flow[d_str][c.cargo_movement_type] += abs(qty)
+
+    # 5. Final Formatting
+    stock_table_data = []
+    sub_totals = defaultdict(float)
+    for (pa, sp, vr, gr, fr, pk), q in table_grouping.items():
+        if abs(q) > 0.01: # Filter zero stocks
+            stock_table_data.append({"prod_at": pa, "species": sp, "variety": vr, "grade": gr, "freezer": fr, "packing": pk, "qty": q})
+            sub_totals[pa] += q
     
-    for p in pending_rows:
-        mc = float(p.no_of_mc or 0)
-        wt = PACK_WT.get(p.packing_style, 0)
-        pending_qty += (mc * wt)
-        pending_val += (mc * float(p.selling_price or 0) * float(p.exchange_rate or 0))
+    stock_table_data.sort(key=lambda x: x['prod_at'])
 
-    # ---------------------------------------------------------
-    # 6. FINAL RESPONSE
-    # ---------------------------------------------------------
-    return templates.TemplateResponse(
-        request=request,
-        name="inventory_management/inventory_dashboard.html",
-        context={
-            "available_qty": round(total_qty, 2),
-            "available_val": round(total_value, 2),
-            "production_qty": round(production_qty, 2),
-            "production_val": round(production_val, 2),
-            "sales_qty": round(sales_qty, 2),
-            "sales_val": round(sales_val, 2),
-            "pending_orders_qty": round(pending_qty, 2),
-            "pending_orders_val": round(pending_val, 2),
-            "reprocess_qty": round(store_out_qty - sales_qty, 2),
-            "grade_cards": grade_cards,
-            "rm_total": round(rm_total, 2),
-            "dh_total": round(dh_total, 2),
-            "peeling_total": round(peeling_total, 2),
-            "prod_total": round(prod_total, 2),
-            "flow_labels": list(flow_chart.keys()),
-            "flow_values": list(flow_chart.values()),
-            "variety_labels": list(variety_chart.keys()),
-            "variety_values": list(variety_chart.values()),
-            "sel_prod_for": prod_for,
-            "sel_prod_at": prod_at,
-            "from_date": from_date,
-            "to_date": to_date,
-            "email": email,
-            "comp_code": comp_code
-        }
-    )
+    def get_list(model, field):
+        return [getattr(x, field) for x in db.query(model).all()]
+
+    context = {
+        "request": request,
+        "from_date": from_date, "to_date": to_date,
+        "available_qty": round(inventory_sum + cs_net, 2),
+        "available_val": round(inventory_val, 2),
+        "inventory_sum": round(inventory_sum, 2),
+        "cs_net": round(cs_net, 2),
+        "total_sales_qty": round(total_sales_qty, 2),
+        "reprocess_qty": round(reprocess_qty, 2),
+        "production_at_totals": dict(production_at_totals),
+        "production_for_breakdown": {k: dict(v) for k, v in production_for_breakdown.items()},
+        "storage_wise_totals": dict(storage_wise_totals),
+        "storage_prod_for_breakdown": {k: dict(v) for k, v in storage_prod_for_breakdown.items()},
+        "variety_labels": list(variety_chart.keys()),
+        "variety_values": list(variety_chart.values()),
+        "grade_labels": list(grade_data.keys())[:10],
+        "grade_values": list(grade_data.values())[:10],
+        "daily_labels": list(daily_flow.keys()),
+        "daily_in": [v["IN"] for v in daily_flow.values()],
+        "daily_out": [v["OUT"] for v in daily_flow.values()],
+        "stock_table_data": stock_table_data,
+        "sub_totals": dict(sub_totals),
+        "species_list": get_list(species, "species_name"),
+        "varieties_list": get_list(varieties, "variety_name"),
+        "grades_list": get_list(grades, "grade_name"),
+        "packing_list": get_list(packing_styles, "packing_style"),
+        "glaze_list": get_list(glazes, "glaze_name"),
+        "freezer_list": get_list(freezers, "freezer_name"),
+        "prod_for_list": get_list(production_for, "production_for"),
+        "sel_species": sel_species, "sel_variety": sel_variety, "sel_grade": sel_grade,
+        "sel_packing": sel_packing, "sel_prod_for": sel_prod_for, "sel_prod_at": sel_prod_at,
+        "sel_glaze": sel_glaze, "sel_freezer": sel_freezer
+    }
+
+    return request.app.state.templates.TemplateResponse("inventory_management/inventory_dashboard.html", context)

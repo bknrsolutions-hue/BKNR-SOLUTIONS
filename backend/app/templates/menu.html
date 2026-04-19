@@ -334,6 +334,8 @@ function loadReports(){
   <i class="fa-solid fa-file-invoice-dollar"></i> Sales  Report</button>`;
   html += `<h3>General Store Reports</h3>`;
   if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> General Store Report</button>`;
+  html += `<button onclick="openPage('/inventory/cold_storage_holding_report')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding Report</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 

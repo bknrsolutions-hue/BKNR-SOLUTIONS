@@ -151,7 +151,8 @@ class cold_storage_holding(Base, metacolumns):
     po_number = Column(String(255), nullable=True)
     production_at = Column(String(255))
     production_for = Column(String(255))
-
+    product_kg_value = Column(Float, default=0.0)
+    inventory_value = Column(Float, default=0.0) 
     # Rent & Date Tracking
     in_date = Column(Date, default=lambda: datetime.now().date())
     storage_rate_per_mc = Column(Float, default=0.0)  # Rate per Master Carton

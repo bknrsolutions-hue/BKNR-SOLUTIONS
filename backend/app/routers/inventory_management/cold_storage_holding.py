@@ -1,5 +1,5 @@
 import pytz
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form, Depends, Body
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -13,11 +13,15 @@ from app.database.models.processing import GateEntry
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     brands, glazes, varieties, grades, packing_styles, freezers,
+    production_for, 
     species as species_model
 )
 
-router = APIRouter( tags=["COLD STORAGE HOLDING"])
+router = APIRouter(tags=["COLD STORAGE HOLDING"])
+
+# Jinja2 setup with 'do' extension enabled
 templates = Jinja2Templates(directory="app/templates")
+templates.env.add_extension('jinja2.ext.do') # <--- ఈ లైన్ HTML ఎర్రర్‌ను ఫిక్స్ చేస్తుంది
 
 # ==================================================
 # LOAD COLD STORAGE HOLDING PAGE
@@ -30,10 +34,9 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # Success message pull
     success_msg = request.session.pop("success_msg", None)
 
-    # 1. Today's Movements / Recent Holdings
+    # 1. Recent Holdings
     current_holdings = (
         db.query(cold_storage_holding)
         .filter(cold_storage_holding.company_id == company_code)
@@ -41,26 +44,16 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 2. Fetch Storage Masters
+    # 2. Storage Masters
     storage_masters = db.query(cold_storage).filter(
         cold_storage.company_id == company_code,
         cold_storage.is_active == "ACTIVE"
     ).all()
 
-    # 3. Dynamic Batches (Gate Entry + Reprocess)
-    batches_raw = db.query(GateEntry.batch_number).filter(
-        GateEntry.company_id == company_code
-    ).distinct().all()
-    
-    repro_batches = db.query(Reprocess.new_batch_id).filter(
-        Reprocess.company_id == company_code
-    ).distinct().all()
-
-    all_batches = sorted(list({b.batch_number for b in batches_raw if b.batch_number} | 
-                              {rb.new_batch_id for rb in repro_batches if rb.new_batch_id}))
+    # 3. Production For List
+    prod_for_list = db.query(production_for).filter(production_for.company_id == company_code).all()
 
     # 4. Master Data for Dropdowns
-    # Pending Orders nundi PO Numbers list ikkada load avtundi
     po_numbers_list = [
         p.po_number for p in 
         db.query(pending_orders.po_number)
@@ -75,7 +68,7 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         "success_msg": success_msg,
         "current_holdings": current_holdings,
         "storage_masters": storage_masters,
-        "batches": all_batches,
+        "production_for_list": prod_for_list,
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species_model).filter(species_model.company_id == company_code).all()],
         "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code).all()],
@@ -83,16 +76,48 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == company_code).all()],
         "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
-        "pending_orders": po_numbers_list, # Updated dropdown data
+        "pending_orders": po_numbers_list,
     }
 
     return templates.TemplateResponse(
-    request=request, 
-    name="inventory_management/cold_storage_holding.html", 
-    context=context
-)
+        request=request, 
+        name="inventory_management/cold_storage_holding.html", 
+        context=context
+    )
 
+# ==================================================
+# API TO GET BATCHES FILTERED BY PURPOSE "STORING"
+# ==================================================
+@router.get("/get_storing_batches")
+async def get_storing_batches(
+    production_for_val: str, 
+    purpose_val: str = "Storing", 
+    db: Session = Depends(get_db), 
+    request: Request = None
+):
+    company_code = request.session.get("company_code")
 
+    # Reprocess టేబుల్ నుండి ఫిల్టర్ చేస్తున్నాం
+    batches = (
+        db.query(Reprocess.new_batch_id)
+        .filter(
+            Reprocess.company_id == company_code,
+            Reprocess.production_for == production_for_val,
+            # ఇక్కడ కాలమ్ పేరు reprocess_type అని మార్చాను
+            func.lower(Reprocess.reprocess_type) == func.lower(purpose_val),
+            Reprocess.new_batch_id != None,
+            Reprocess.new_batch_id != ""
+        )
+        .distinct()
+        .all()
+    )
+    
+    result = [b.new_batch_id for b in batches]
+    
+    # Debugging కోసం
+    print(f"Client: {production_for_val}, Type: {purpose_val}, Found: {len(result)}")
+    
+    return {"batches": result}
 # ==================================================
 # SAVE HOLDING ENTRY (IN/OUT)
 # ==================================================
@@ -117,7 +142,8 @@ async def save_holding(
     storage_rate_per_mc: float = Form(0.0),
     glaze: str = Form(""),
     purpose: str = Form("Storing"),
-    po_number: str = Form("N/A"), # PO number form field
+    production_for: str = Form(...),
+    po_number: str = Form("N/A"),
     remarks: str = Form("")
 ):
     email = request.session.get("email")
@@ -130,6 +156,14 @@ async def save_holding(
         rent_date = datetime.strptime(rent_start_date, "%Y-%m-%d").date() if rent_start_date else date.today()
     except:
         rent_date = date.today()
+
+    kg_val = 0.0
+    rp_batch = db.query(Reprocess).filter(
+        Reprocess.new_batch_id == batch_number,
+        Reprocess.company_id == company_code
+    ).first()
+    if rp_batch:
+        kg_val = rp_batch.product_kg_value or 0.0
 
     new_entry = cold_storage_holding(
         cold_storage_name=cold_storage_name,
@@ -146,8 +180,10 @@ async def save_holding(
         no_of_mc=no_of_mc,
         loose=loose,
         quantity=quantity,
+        product_kg_value=kg_val,
         purpose=purpose,
-        po_number=po_number, # Saved here
+        production_for=production_for,
+        po_number=po_number,
         rent_start_date=rent_date,
         storage_rate_per_mc=storage_rate_per_mc,
         remarks=remarks,
@@ -169,7 +205,6 @@ async def save_holding(
     except Exception as e:
         db.rollback()
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 # ==================================================
 # DELETE ENTRY

@@ -208,12 +208,26 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
   <div class="section-title" style="margin-top: 30px;"><i class="fa-solid fa-box-open"></i> Stock Identification</div>
   <div class="form-grid">
     <div class="field">
+      <label>Production For</label>
+      <select name="production_for" id="production_for" required onchange="fetchStoringBatches()">
+        <option value="" disabled selected>Select Client</option>
+        {% set unique_clients = [] %}
+        {% for pf in production_for_list %}
+            {% if pf.production_for not in unique_clients %}
+                {% do unique_clients.append(pf.production_for) %}
+                <option value="{{pf.production_for}}">{{pf.production_for}}</option>
+            {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
       <label>Batch Number</label>
       <input list="batch_list" name="batch_number" id="batch_number" required placeholder="Select/Enter Batch">
       <datalist id="batch_list">
-        {% for b in batches %}<option value="{{b}}">{% endfor %}
-      </datalist>
+        </datalist>
     </div>
+
     <div class="field">
       <label>Movement Type</label>
       <select name="cargo_movement_type" required>
@@ -295,7 +309,7 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
 
     <div class="field">
         <label>Purpose</label>
-        <select name="purpose">
+        <select name="purpose" id="purpose_field" onchange="fetchStoringBatches()">
             <option value="Storing">Storing</option>
             <option value="Sales">Sales</option>
             <option value="Reprocess">Reprocess</option>
@@ -335,7 +349,7 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
 <table id="holdTable">
 <thead>
   <tr>
-    <th>Status</th><th>Facility</th><th>Batch #</th><th>Movement</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Loose</th><th>Total Qty</th><th>In Date</th><th>Rate</th>
+    <th>Status</th><th>Facility</th><th>Production For</th><th>Batch #</th><th>Movement</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Loose</th><th>Total Qty</th><th>In Date</th>
   </tr>
 </thead>
 <tbody>
@@ -343,12 +357,12 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
 <tr>
   <td><span class="badge badge-holding">{{r.status}}</span></td>
   <td style="font-weight:600">{{r.cold_storage_name}}</td>
+  <td style="font-weight:600; color:#475569">{{r.production_for}}</td>
   <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
   <td><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
   <td>{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td>
   <td style="font-weight: 700;">{{r.no_of_mc}}</td><td>{{r.loose}}</td>
   <td style="font-weight: 800;">{{r.quantity}}</td><td style="color:var(--muted)">{{r.in_date}}</td>
-  <td>{{r.storage_rate_per_mc}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -357,13 +371,12 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
 {% endif %}
 
 <script>
-// Auto-hide alert after 3 seconds
+// Auto-hide alert
 setTimeout(() => {
     const alert = document.getElementById('statusAlert');
     if(alert) alert.style.display = 'none';
 }, 3000);
 
-// Master Data storage
 const storageMasters = [
     {% for cs in storage_masters %}
     { name: "{{cs.storage_name}}", address: "{{cs.address}}", rate: "{{cs.rate_per_mc_per_month}}" },
@@ -376,10 +389,48 @@ const packingStyles = [
     {% endfor %}
 ];
 
+// UPDATED: FETCH BATCHES BASED ON BOTH PRODUCTION FOR & PURPOSE
+async function fetchStoringBatches() {
+    const pfSelect = document.getElementById('production_for');
+    const purposeSelect = document.getElementById('purpose_field');
+    const batchList = document.getElementById('batch_list');
+    
+    const pfValue = pfSelect.value;
+    const purposeValue = purposeSelect ? purposeSelect.value : "Storing";
+    
+    if(!pfValue) {
+        console.log("Production For is empty");
+        return;
+    }
+
+    try {
+        // API URL ని సరిగ్గా బిల్డ్ చేస్తున్నాం
+        const response = await fetch(`/inventory/get_storing_batches?production_for_val=${encodeURIComponent(pfValue)}&purpose_val=${encodeURIComponent(purposeValue)}`);
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        console.log("Batches received:", data.batches); // Debugging line
+        
+        batchList.innerHTML = ''; // పాత ఆప్షన్స్ క్లియర్
+        
+        if(data.batches && data.batches.length > 0) {
+            data.batches.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch;
+                batchList.appendChild(option);
+            });
+        } else {
+            console.log("No batches found for this criteria");
+        }
+    } catch (err) {
+        console.error("Fetch error:", err);
+    }
+}
+
 // Defaulting PO to N/A on load
 document.getElementById('po_number').value = "N/A";
 
-// Filter Address based on Facility
 function filterAddressByFacility() {
     const selectedName = document.getElementById('cs_name').value;
     const datalist = document.getElementById('address_list');
@@ -393,7 +444,6 @@ function filterAddressByFacility() {
     });
 }
 
-// Auto-fill Rate
 function updateRateFromAddress() {
     const selectedName = document.getElementById('cs_name').value;
     const selectedAddr = document.getElementById('cs_address').value;
@@ -401,7 +451,6 @@ function updateRateFromAddress() {
     if(match) { document.getElementById('cs_rate').value = match.rate; }
 }
 
-// Calculation
 function calculateHoldingQty() {
     const styleName = document.getElementById('packing_style_input').value;
     const packing = packingStyles.find(p => p.style === styleName);
@@ -424,7 +473,7 @@ document.getElementById("holdingForm").onsubmit = async (e) => {
             method: "POST", body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'}
         });
         if(res.ok) { 
-            window.location.href = "/inventory/cold_storage_holding"; // Refresh with message
+            window.location.href = "/inventory/cold_storage_holding";
         } else { 
             alert("Error while saving"); 
             btn.disabled = false; 

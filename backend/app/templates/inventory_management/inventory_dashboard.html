@@ -1,189 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Dashboard | {{ comp_code }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .kpi-card { transition: transform 0.2s; }
-        .kpi-card:hover { transform: translateY(-5px); }
-        canvas { max-height: 300px; width: 100% !important; }
-    </style>
+<meta charset="UTF-8">
+<title>BKNR ERP - Inventory Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg: #f4f7fa; --panel: #ffffff; --primary: #2563eb; --text-main: #1e293b;
+    --text-sub: #64748b; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b;
+}
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; }
+
+/* HEADER & FILTERS */
+.main-header { 
+    background: white; padding: 12px 20px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 1000;
+}
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.header-title h1 { font-size: 16px; margin: 0; font-weight: 800; color: var(--primary); }
+.company-tag { background: #eff6ff; color: var(--primary); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 10px; }
+
+.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+.filter-group { display: flex; flex-direction: column; gap: 3px; }
+.filter-group label { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+.filter-select { padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 10px; font-weight: 600; background: white; min-width: 110px; }
+
+/* BREAKDOWN CARDS */
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 15px; }
+.b-card { background: white; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.b-head { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; background: #f8fafc; border-radius: 10px 10px 0 0; }
+.b-head h3 { margin: 0; font-size: 10px; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.5px; }
+.b-head .total-val { font-size: 16px; font-weight: 800; }
+
+.b-body { padding: 5px 0; max-height: 180px; overflow-y: auto; }
+.b-row { display: flex; justify-content: space-between; padding: 7px 15px; border-bottom: 1px solid #f1f5f9; }
+.b-row span:first-child { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; }
+.b-row span:last-child { font-weight: 700; color: var(--primary); }
+
+/* ANALYTICS */
+.analytics-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; padding: 0 15px 15px; }
+.chart-box { background: white; padding: 15px; border-radius: 10px; border: 1px solid var(--border); }
+.chart-title { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
+
+/* TABLE */
+.table-container { padding: 0 15px 15px; }
+.table-card { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+.table-scroll { overflow: auto; max-height: 450px; }
+table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+thead th { background: #f8fafc; padding: 10px; font-size: 9px; text-transform: uppercase; color: var(--text-sub); border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+.sub-total-row { background: #f0f9ff; font-weight: 800; color: var(--primary); }
+</style>
 </head>
-<body class="p-4 md:p-6">
+<body>
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800">
-                <i class="fa-solid fa-chart-line text-blue-600 mr-2"></i> {{ comp_code }} Inventory Dashboard
-            </h1>
-            <p class="text-sm text-slate-500">Real-time inventory tracking and analytics</p>
+<div class="main-header">
+    <div class="header-top">
+        <div class="header-title">
+            <h1><i class="fas fa-boxes-stacked"></i> INVENTORY BREAKDOWN DASHBOARD</h1>
         </div>
-
-        <form method="get" class="flex flex-wrap gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
-            <input type="date" name="from_date" value="{{ from_date }}" class="text-sm border p-2 rounded-md outline-none">
-            <input type="date" name="to_date" value="{{ to_date }}" class="text-sm border p-2 rounded-md outline-none">
-            
-            <select name="prod_for" class="text-sm border p-2 rounded-md outline-none bg-white">
-                <option value="ALL" {% if sel_prod_for == 'ALL' %}selected{% endif %}>Production For: ALL</option>
-                </select>
-
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition">
-                <i class="fa-solid fa-filter mr-1"></i> Apply
-            </button>
-        </form>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Stock</span>
-            <div class="text-2xl font-bold text-slate-800 mt-1">{{ "{:,.2f}".format(available_qty) }} <span class="text-sm text-slate-400">KG</span></div>
-            <div class="text-sm font-semibold text-blue-600 mt-1">₹ {{ "{:,.2f}".format(available_val) }}</div>
-        </div>
-
-        <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border-l-4 border-emerald-500">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Production</span>
-            <div class="text-2xl font-bold text-slate-800 mt-1">{{ "{:,.2f}".format(production_qty) }} <span class="text-sm text-slate-400">KG</span></div>
-            <div class="text-sm font-semibold text-emerald-600 mt-1">Value: ₹ {{ "{:,.2f}".format(production_val) }}</div>
-        </div>
-
-        <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border-l-4 border-orange-500">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Sales</span>
-            <div class="text-2xl font-bold text-slate-800 mt-1">{{ "{:,.2f}".format(sales_qty) }} <span class="text-sm text-slate-400">KG</span></div>
-            <div class="text-sm font-semibold text-orange-600 mt-1">₹ {{ "{:,.2f}".format(sales_val) }}</div>
-        </div>
-
-        <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border-l-4 border-purple-500">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Orders</span>
-            <div class="text-2xl font-bold text-slate-800 mt-1">{{ "{:,.2f}".format(pending_orders_qty) }} <span class="text-sm text-slate-400">KG</span></div>
-            <div class="text-sm font-semibold text-purple-600 mt-1">₹ {{ "{:,.2f}".format(pending_orders_val) }}</div>
-        </div>
-
-        <div class="kpi-card bg-white p-5 rounded-2xl shadow-sm border-l-4 border-rose-500">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reprocessing</span>
-            <div class="text-2xl font-bold text-slate-800 mt-1">{{ "{:,.2f}".format(reprocess_qty) }} <span class="text-sm text-slate-400">KG</span></div>
-            <p class="text-[10px] text-slate-400 mt-1">(Store Out - Sales)</p>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="company-tag"><i class="fas fa-industry"></i> {{ request.session.get('company_code') }}</div>
+            <button type="button" onclick="window.print()" style="background:var(--primary); color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:700; cursor:pointer; font-size:10px;">EXPORT PDF</button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 class="font-bold text-slate-700 mb-4"><i class="fa-solid fa-chart-area mr-2"></i> Inventory Movement Flow</h3>
-            <canvas id="flowChart"></canvas>
+    <form method="get" action="" class="filter-bar">
+        <div class="filter-group">
+            <label>Species</label>
+            <select name="sel_species" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL SPECIES</option>
+                {% for s in species_list %}<option value="{{s}}" {% if sel_species == s %}selected{% endif %}>{{s}}</option>{% endfor %}
+            </select>
         </div>
+        <div class="filter-group">
+            <label>Variety</label>
+            <select name="sel_variety" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL VARIETIES</option>
+                {% for v in varieties_list %}<option value="{{v}}" {% if sel_variety == v %}selected{% endif %}>{{v}}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Grade</label>
+            <select name="sel_grade" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL GRADES</option>
+                {% for g in grades_list %}<option value="{{g}}" {% if sel_grade == g %}selected{% endif %}>{{g}}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Production For</label>
+            <select name="sel_prod_for" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL PRODUCTION FOR</option>
+                {% set seen_prod_for = [] %}
+                {% for p in prod_for_list %}
+                    {% if p not in seen_prod_for %}
+                        <option value="{{p}}" {% if sel_prod_for == p %}selected{% endif %}>{{p}}</option>
+                        {% if seen_prod_for.append(p) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Production At</label>
+            <select name="sel_prod_at" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL LOCATIONS</option>
+                {% for loc in production_at_totals.keys() %}<option value="{{loc}}" {% if sel_prod_at == loc %}selected{% endif %}>{{loc}}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Glaze</label>
+            <select name="sel_glaze" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL GLAZE</option>
+                {% for gl in glaze_list %}<option value="{{gl}}" {% if sel_glaze == gl %}selected{% endif %}>{{gl}}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Freezer</label>
+            <select name="sel_freezer" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL FREEZERS</option>
+                {% for f in freezer_list %}<option value="{{f}}" {% if sel_freezer == f %}selected{% endif %}>{{f}}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Packing Style</label>
+            <select name="sel_packing" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL PACKING</option>
+                {% for pk in packing_list %}<option value="{{pk}}" {% if sel_packing == pk %}selected{% endif %}>{{pk}}</option>{% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
 
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 class="font-bold text-slate-700 mb-4"><i class="fa-solid fa-chart-pie mr-2"></i> Variety Distribution</h3>
-            <canvas id="varietyChart"></canvas>
+<div class="summary-grid">
+    <div class="b-card">
+        <div class="b-head"><h3>Total Inventory</h3><span class="total-val">{{ "{:,.2f}".format(available_qty) }} KG</span></div>
+        <div class="b-body">
+            {% for loc, qty in production_at_totals.items() %}<div class="b-row"><span><i class="fas fa-warehouse"></i> {{ loc }}</span><span>{{ "{:,.2f}".format(qty) }} KG</span></div>{% endfor %}
+            {% for storage, qty in storage_wise_totals.items() %}<div class="b-row"><span><i class="fas fa-cold-storage"></i> {{ storage }}</span><span>{{ "{:,.2f}".format(qty) }} KG</span></div>{% endfor %}
         </div>
     </div>
-
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
-        <h3 class="font-bold text-slate-700 mb-6 text-center underline decoration-blue-500 underline-offset-8">Processing Pipeline Totals</h3>
-        <div class="flex flex-col md:flex-row justify-around gap-8">
-            <div class="text-center">
-                <div class="text-xs font-bold text-slate-400 uppercase">RM Received</div>
-                <div class="text-xl font-bold text-slate-700">{{ "{:,.0f}".format(rm_total) }}</div>
-            </div>
-            <i class="fa-solid fa-chevron-right self-center text-slate-300 hidden md:block"></i>
-            <div class="text-center">
-                <div class="text-xs font-bold text-slate-400 uppercase">HOSO Produced</div>
-                <div class="text-xl font-bold text-blue-600">{{ "{:,.0f}".format(dh_total) }}</div>
-            </div>
-            <i class="fa-solid fa-chevron-right self-center text-slate-300 hidden md:block"></i>
-            <div class="text-center">
-                <div class="text-xs font-bold text-slate-400 uppercase">Peeled Qty</div>
-                <div class="text-xl font-bold text-emerald-600">{{ "{:,.0f}".format(peeling_total) }}</div>
-            </div>
-            <i class="fa-solid fa-chevron-right self-center text-slate-300 hidden md:block"></i>
-            <div class="text-center">
-                <div class="text-xs font-bold text-slate-400 uppercase">Final Production</div>
-                <div class="text-xl font-bold text-indigo-600">{{ "{:,.0f}".format(prod_total) }}</div>
-            </div>
+    <div class="b-card">
+        <div class="b-head"><h3>Total Sales</h3><span class="total-val" style="color:var(--success)">{{ "{:,.2f}".format(total_sales_qty) }} KG</span></div>
+        <div class="b-body">
+            {% for loc, pf_dict in production_for_breakdown.items() %}
+                {% if pf_dict.get('SALES') or pf_dict.get('ORDER') %}
+                <div class="b-row"><span><i class="fas fa-truck-moving"></i> {{ loc }} Dispatch</span><span>{{ "{:,.2f}".format(pf_dict.get('SALES', 0) + pf_dict.get('ORDER', 0)) }} KG</span></div>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
-
-    <h3 class="font-bold text-slate-700 mb-4 text-lg">Grade-wise Inventory Summary</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {% for grade, data in grade_cards.items() %}
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-            <div class="flex justify-between items-start mb-2">
-                <span class="px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded uppercase">{{ grade }}</span>
-            </div>
-            <div class="space-y-2">
-                <div class="flex justify-between">
-                    <span class="text-[11px] text-slate-500">Available:</span>
-                    <span class="text-[11px] font-bold text-blue-600">{{ "{:,.0f}".format(data.avail_qty) }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-[11px] text-slate-500">Value:</span>
-                    <span class="text-[11px] font-bold text-slate-700">₹{{ "{:,.0f}".format(data.avail_val) }}</span>
-                </div>
-                <div class="flex justify-between border-t pt-2">
-                    <span class="text-[11px] text-slate-500">Sales Qty:</span>
-                    <span class="text-[11px] font-bold text-orange-600">{{ "{:,.0f}".format(data.sales_qty) }}</span>
-                </div>
-            </div>
+    <div class="b-card">
+        <div class="b-head"><h3>Reprocess Vol</h3><span class="total-val" style="color:var(--warning)">{{ "{:,.2f}".format(reprocess_qty) }} KG</span></div>
+        <div class="b-body">
+            <div class="b-row"><span><i class="fas fa-sync"></i> Net Reprocessed</span><span>{{ "{:,.2f}".format(reprocess_qty) }} KG</span></div>
         </div>
-        {% endfor %}
     </div>
+</div>
 
-    <script>
-        // Flow Chart (Line)
-        const ctxFlow = document.getElementById('flowChart').getContext('2d');
-        new Chart(ctxFlow, {
-            type: 'line',
-            data: {
-                labels: {{ flow_labels | tojson }},
-                datasets: [{
-                    label: 'Net Quantity Movement (KG)',
-                    data: {{ flow_values | tojson }},
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#3b82f6'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: false, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
+<div class="analytics-grid">
+    <div class="chart-box"><div class="chart-title">Daily Flow (IN/OUT)</div><div style="height:170px;"><canvas id="flowChart"></canvas></div></div>
+    <div class="chart-box"><div class="chart-title">Variety Wise</div><div style="height:170px;"><canvas id="varietyChart"></canvas></div></div>
+    <div class="chart-box"><div class="chart-title">Top 10 Grades</div><div style="height:170px;"><canvas id="gradeChart"></canvas></div></div>
+</div>
 
-        // Variety Chart (Pie)
-        const ctxVariety = document.getElementById('varietyChart').getContext('2d');
-        new Chart(ctxVariety, {
-            type: 'doughnut',
-            data: {
-                labels: {{ variety_labels | tojson }},
-                datasets: [{
-                    data: {{ variety_values | tojson }},
-                    backgroundColor: [
-                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
-                }
-            }
-        });
-    </script>
+<div class="table-container">
+    <div class="table-card">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr><th>Location</th><th>Species</th><th>Variety</th><th>Grade</th><th>Freezer/Storage</th><th>Packing Style</th><th>Total KG</th></tr>
+                </thead>
+                <tbody>
+                    {% set current_loc = namespace(val=None) %}
+                    {% for row in stock_table_data %}
+                        {% if current_loc.val is not none and current_loc.val != row.prod_at %}
+                            <tr class="sub-total-row"><td colspan="6" style="text-align:right;">SUBTOTAL {{ current_loc.val }}:</td><td>{{ "{:,.2f}".format(sub_totals[current_loc.val]) }} KG</td></tr>
+                        {% endif %}
+                        {% set current_loc.val = row.prod_at %}
+                        <tr><td style="font-weight:700;">{{ row.prod_at }}</td><td>{{ row.species }}</td><td>{{ row.variety }}</td><td>{{ row.grade }}</td><td>{{ row.freezer }}</td><td>{{ row.packing }}</td><td style="font-weight:800; color:var(--primary);">{{ "{:,.2f}".format(row.qty) }}</td></tr>
+                        {% if loop.last %}
+                            <tr class="sub-total-row"><td colspan="6" style="text-align:right;">SUBTOTAL {{ row.prod_at }}:</td><td>{{ "{:,.2f}".format(sub_totals[row.prod_at]) }} KG</td></tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
+<script>
+window.onload = () => {
+    const commonOpts = { maintainAspectRatio: false, plugins: { legend: { display: false } } };
+    new Chart(document.getElementById('flowChart'), {
+        type: 'line',
+        data: { labels: {{ daily_labels | tojson }}, datasets: [{ label: 'IN', data: {{ daily_in | tojson }}, borderColor: '#2563eb', tension: 0.3 }, { label: 'OUT', data: {{ daily_out | tojson }}, borderColor: '#f59e0b', tension: 0.3 }] },
+        options: { ...commonOpts, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 8 } } } } }
+    });
+    new Chart(document.getElementById('varietyChart'), {
+        type: 'doughnut',
+        data: { labels: {{ variety_labels | tojson }}, datasets: [{ data: {{ variety_values | tojson }}, backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444'] }] },
+        options: { ...commonOpts, cutout: '70%', plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 8 } } } } }
+    });
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'bar',
+        data: { labels: {{ grade_labels | tojson }}, datasets: [{ data: {{ grade_values | tojson }}, backgroundColor: '#2563eb' }] },
+        options: commonOpts
+    });
+};
+</script>
 </body>
 </html>
