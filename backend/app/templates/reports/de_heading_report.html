@@ -2,40 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DE-HEADING REPORT | BKNR ERP</title>
+<title>STOCK LEDGER | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
- --primary:#0f172a;
- --accent:#2563eb;
- --border:#e2e8f0;
- --bg:#f1f5f9;
- --header:#ffffff;
- --text:#1e293b;
- --danger: #ef4444;
- --success: #22c55e;
+ --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f1f5f9;
+ --header:#ffffff; --text:#1e293b; --danger: #ef4444; --success: #22c55e;
 }
 
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
-body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
-}
+body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
 
 /* ================= HEADER & FILTERS ================= */
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
+.header-top { display: flex; justify-content: space-between; align-items: center; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+ margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
  gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
 /* ================= ACTIONS ================= */
@@ -52,13 +44,12 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
 .menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
-.menu-list hr{ border:0; border-top:1px solid var(--border); margin:0; }
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1850px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2000px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
@@ -67,7 +58,7 @@ thead th{
 }
 
 tbody td{
- padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ padding:6px 4px; font-size:10px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -75,19 +66,18 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
-.w-sl { width: 45px; } .w-dt { width: 90px; } .w-bt { width: 100px; } .w-con { width: 150px; }
-.w-sp { width: 120px; } .w-ct { width: 70px; } .w-qt { width: 85px; } .w-rt { width: 80px; }
-.w-am { width: 110px; } .w-loc { width: 130px; } .w-for { width: 130px; } .w-em { width: 160px; }
-.w-diff { width: 140px; }
-
-.yield-cell { font-weight: 800; color: var(--accent); }
-.diff-cell { font-size: 9px; font-weight: 600; }
+.inv-col { background: #fffcf0; font-weight: 700; color: #92400e; }
+.qty-col { font-weight: 800; color: var(--accent); }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
-/* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+/* ================= FOOTER (GRAND TOTALS) ================= */
+tfoot td{ 
+    background:#fafbfe !important; color:#4b4040 !important; 
+    font-weight:900; font-size:11px; border-top:2px solid #ffffff; 
+    position:sticky; bottom:0; z-index:20; padding:10px 4px; 
+}
 
-/* ================= MODAL & AUDIT ================= */
+/* ================= MODALS & PANELS ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
 .modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
 .btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
@@ -98,14 +88,14 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-.audit-item{ padding:10px; border-bottom:1px solid #e2e8f0; font-size:11px; }
+.audit-item{ padding:12px; border-bottom:1px solid #e2e8f0; border-left:4px solid var(--accent); margin:5px; background:#f8fafc; border-radius:4px; }
 
 @media print {
     .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
     body { overflow: visible !important; }
     .section { border: none !important; margin: 0 !important; }
-    .table-wrap { overflow: visible !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
+    tfoot td { background: #eee !important; color: #000 !important; }
 }
 </style>
 </head>
@@ -113,17 +103,20 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 <body>
 
 <div class="header">
-    <h2>DE-HEADING REPORT</h2>
+    <div class="header-top">
+        <h2>STOCK LEDGER REPORT</h2>
+        <div style="font-size: 10px; font-weight: 700; color: #64748b;">BKNR ERP · 2026</div>
+    </div>
     <div class="filters">
-        <div class="fbox"><label>Month View</label><input type="month" id="f_month"></div>
-        <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
-        <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
-        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All Batches</option></select></div>
-        <div class="fbox"><label>Contractor</label><select id="f_contractor"><option value="">All Contractors</option></select></div>
-        <div class="fbox"><label>Peeling At</label><select id="f_peeling"><option value="">All Locations</option></select></div>
+        <div class="fbox"><label>From</label><input type="date" id="f_from" value="{{from_date}}"></div>
+        <div class="fbox"><label>To</label><input type="date" id="f_to" value="{{to_date}}"></div>
+        <div class="fbox"><label>Movement</label><select id="f_type"><option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
+        <div class="fbox"><label>Batch #</label><select id="f_batch"><option value="">All Batches</option></select></div>
+        <div class="fbox"><label>Brand</label><select id="f_brand"><option value="">All Brands</option></select></div>
         <div class="fbox"><label>Species</label><select id="f_species"><option value="">All Species</option></select></div>
-        <div class="fbox"><label>Prod For</label><select id="f_production"><option value="">All Production</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Contractor, User...">
+        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
+        <div class="fbox"><label>Location</label><select id="f_loc"><option value="">All Locations</option></select></div>
+        <input id="searchBox" placeholder="Quick Search Batch, Brand, Grade, PO, User...">
     </div>
 </div>
 
@@ -134,22 +127,17 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
         <div class="menu-list" id="mainMenu">
             {% if is_admin %}
             <div onclick="enableEdit()">✏️ Edit Selected Row</div>
-            <div onclick="saveEdit()">💾 Save Changes</div>
+            <div onclick="askSave()">💾 Save Changes</div>
             {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
             <hr>
-            <b>📋 Table Options</b>
-            <div onclick="window.print()">🖨 Print Table (Browser)</div>
-            <div onclick="askConfirm('pdf_table')">📄 Export Table PDF</div>
-            <hr>
-            <b>🧾 Monthly Bill</b>
-            <div onclick="askConfirm('print_bill')">🖨 Print Monthly Bill</div>
-            <div onclick="askConfirm('pdf_bill')">📩 Export Monthly Bill (PDF)</div>
-            <hr>
-            <div onclick="askConfirm('excel_table')">📊 Export Excel Filtered Table</div>
+            <b>📋 Export Options</b>
+            <div onclick="printReport()">🖨 Print View</div>
+            <div onclick="exportFile('xlsx')">📊 Export Excel (.xlsx)</div>
+            <div onclick="exportFile('pdf')">📄 Export PDF (.pdf)</div>
             <hr>
             {% if is_admin %}
-            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Selected Row</div>
+            <div onclick="askDelete()" style="color:red">🗑 Delete Selected Row</div>
             {% endif %}
         </div>
     </div>
@@ -157,25 +145,29 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 
 <div class="section">
     <div class="table-wrap">
-        <table id="deheadTable">
+        <table id="stockTable">
             <thead>
                 <tr>
-                    <th class="w-sl">#</th>
-                    <th class="w-dt">Date</th>
-                    <th class="w-bt">Batch No</th>
-                    <th class="w-con">Contractor</th>
-                    <th class="w-sp">Species</th>
-                    <th class="w-ct">Hoso-Cnt</th>
-                    <th class="w-qt">HOSO Kg</th>
-                    <th class="w-qt">HLSO Kg</th>
-                    <th class="w-rt">Yield%</th>
-                    <th class="w-rt">Target%</th>
-                    <th class="w-diff">Difference</th>
-                    <th class="w-rt">Rate</th>
-                    <th class="w-am">Amount</th>
-                    <th class="w-loc">Peeling At</th>
-                    <th class="w-for">Prod For</th>
-                    <th class="w-em">System User</th>
+                    <th style="width:40px">#</th>
+                    <th style="width:90px">Date</th>
+                    <th style="width:110px">Batch #</th>
+                    <th style="width:60px">Type</th>
+                    <th style="width:100px">Brand</th>
+                    <th style="width:100px">Species</th>
+                    <th style="width:100px">Location</th>
+                    <th style="width:100px">PO #</th>
+                    <th style="width:100px">Prod For</th>
+                    <th style="width:100px">Prod At</th>
+                    <th style="width:80px">Freezer</th>
+                    <th style="width:100px">Pack Style</th>
+                    <th style="width:120px">Variety</th>
+                    <th style="width:70px">Glaze</th>
+                    <th style="width:80px">Grade</th>
+                    <th style="width:70px">No of MC</th>
+                    <th style="width:70px">Loose Qty</th>
+                    <th style="width:100px" class="qty-col">Qty (KG)</th>
+                    <th style="width:110px" class="inv-col">Purpose</th>
+                    <th style="width:150px">System User</th>
                 </tr>
             </thead>
             <tbody id="tbody">
@@ -183,41 +175,51 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                 <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
                     <td class="slno"></td>
                     <td>{{ r.date }}</td>
-                    <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
-                    <td class="lookup contractor" data-field="contractor">{{ r.contractor }}</td>
-                    <td class="lookup species" data-field="species">{{ r.species }}</td>
-                    <td class="editable" data-field="hoso_count">{{ r.hoso_count or 0 }}</td>
-                    <td class="editable hoso" data-field="hoso_qty">{{ r.hoso_qty or 0 }}</td>
-                    <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty or 0 }}</td>
-                    <td class="yield-cell">{{ r.yield_percent or 0 }}%</td>
-                    <td class="editable target" data-field="target_yield">{{ r.target_yield or 0 }}</td>
-                    <td class="diff-cell">--</td>
-                    <td class="editable rate" data-field="rate_per_kg">{{ r.rate_per_kg or 0 }}</td>
-                    <td class="amt-cell" data-val="{{ r.amount or 0 }}">₹{{ r.amount or 0 }}</td>
-                    <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
-                    <td class="lookup production" data-field="production_for">{{ r.production_for }}</td>
+                    <td class="editable" data-field="batch_number" style="font-weight:700">{{ r.batch_number }}</td>
+                    <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
+                    <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
+                    <td class="lookup species_list" data-field="species">{{ r.species }}</td>
+                    <td class="editable" data-field="location">{{ r.location }}</td>
+                    <td>{{ r.po_number }}</td>
+                    <td class="lookup production_for_list" data-field="production_for">{{ r.production_for }}</td>
+                    <td class="lookup production_at_list" data-field="production_at">{{ r.production_at }}</td>
+                    <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
+                    <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
+                    <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
+                    <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
+                    <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
+                    <td class="editable" data-field="no_of_mc">{{ r.no_of_mc or 0 }}</td>
+                    <td class="editable" data-field="loose">{{ r.loose or 0 }}</td>
+                    <td class="qty-col">{{ "{:,.2f}".format(r.quantity or 0) }}</td>
+                    <td class="editable inv-col" data-field="purpose">{{ r.purpose }}</td>
                     <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right">PAGE TOTALS:</td>
-                    <td id="tot_hoso">0.00</td>
-                    <td id="tot_hlso">0.00</td>
-                    <td id="avg_yield" style="color:var(--accent)">0%</td>
+                    <td colspan="15" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
+                    <td id="tot_mc">0</td>
+                    <td id="tot_lse">0</td>
+                    <td id="tot_qty" class="qty-col">0.00</td>
                     <td colspan="2"></td>
-                    <td id="tot_amt">₹0.00</td>
-                    <td colspan="3"></td>
                 </tr>
             </tfoot>
         </table>
     </div>
 </div>
 
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:13px;">📜 STOCK EDIT LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+</div>
+
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin-top:0;"></h4>
+        <h4 id="confirmMsg" style="margin-top:0;">Confirm Action?</h4>
         <div style="display:flex; justify-content:center; gap:10px;">
             <button class="btn-y" id="btnYes">Proceed</button>
             <button class="btn-n" onclick="closeModal()">Cancel</button>
@@ -225,24 +227,22 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     </div>
 </div>
 
-<div class="audit-panel" id="auditPanel">
-    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:13px;">📜 EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
-    </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
-</div>
-
 <script>
 const lookups = {
-    contractor: {{ contractors|tojson or [] }},
-    species: {{ species_list|tojson or [] }},
-    peeling: {{ peeling_locations|tojson or [] }},
-    production: {{ production_for_list|tojson or [] }}
+    brands_list: {{ brands_list|tojson or [] }},
+    species_list: {{ species_list|tojson or [] }},
+    varieties_list: {{ varieties_list|tojson or [] }},
+    grades_list: {{ grades_list|tojson or [] }},
+    glazes_list: {{ glazes_list|tojson or [] }},
+    freezers_list: {{ freezers_list|tojson or [] }},
+    packing_styles_list: {{ packing_styles_list|tojson or [] }},
+    production_for_list: {{ production_for_list|tojson or [] }},
+    production_at_list: {{ production_at_list|tojson or [] }}
 };
 
 const baseUrl = window.location.pathname.replace(/\/$/, ""); 
-let selectedRow = null, currentAction = null;
+let selectedRow = null;
+let currentAction = null; 
 const allRows = [...document.querySelectorAll("#tbody tr")];
 
 function selectRow(tr) { 
@@ -251,216 +251,201 @@ function selectRow(tr) {
     selectedRow = tr; 
 }
 
-function calcDiff() {
-    allRows.forEach(r => {
-        if(r.style.display === "none") return;
-        const hoso = parseFloat(r.querySelector(".hoso").innerText) || 0;
-        const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
-        const target = parseFloat(r.querySelector('[data-field="target_yield"]').innerText) || 0;
-        
-        if(hoso > 0 && target > 0) {
-            const baseNeeded = hlso / (target / 100);
-            const diff = baseNeeded - hoso;
-            const pct = (diff / hoso) * 100;
-            const color = diff < 0 ? 'var(--danger)' : 'var(--success)';
-            r.querySelector(".diff-cell").innerHTML = `<span style="color:${color}">${diff.toFixed(2)} (${Math.abs(pct).toFixed(2)}%)</span>`;
-        }
-    });
-}
-
 function applyFilters() {
-    const fm = document.getElementById("f_month").value;
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const ft = document.getElementById("f_type").value;
     const fb = document.getElementById("f_batch").value.toLowerCase();
-    const fc = document.getElementById("f_contractor").value.toLowerCase();
-    const fl = document.getElementById("f_peeling").value.toLowerCase();
+    const fbr = document.getElementById("f_brand").value.toLowerCase();
     const fs = document.getElementById("f_species").value.toLowerCase();
-    const fpr = document.getElementById("f_production").value.toLowerCase();
+    const fv = document.getElementById("f_variety").value.toLowerCase();
+    const fl = document.getElementById("f_loc").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
     
-    let hT=0, lT=0, aT=0;
-    let visibleRows = [];
+    let mcT=0, lsT=0, qtyT=0, visibleCount=0;
 
     allRows.forEach(r => {
-        const d = r.dataset.date;
-        const b = r.querySelector('[data-field="batch_number"]').innerText.toLowerCase();
-        const c = r.querySelector('[data-field="contractor"]').innerText.toLowerCase();
-        const l = r.querySelector('[data-field="peeling_at"]').innerText.toLowerCase();
-        const s = r.querySelector('[data-field="species"]').innerText.toLowerCase();
-        const prod = r.querySelector('[data-field="production_for"]').innerText.toLowerCase();
-        const text = r.innerText.toLowerCase();
-        
+        const d = r.dataset.date, text = r.innerText.toLowerCase();
+        const type = r.cells[3].innerText;
+        const batch = r.cells[2].innerText.toLowerCase();
+        const brand = r.cells[4].innerText.toLowerCase();
+        const spec = r.cells[5].innerText.toLowerCase();
+        const var_ = r.cells[12].innerText.toLowerCase();
+        const loc = r.cells[6].innerText.toLowerCase();
+
         let ok = true;
-        if(fm && !d.startsWith(fm)) ok = false;
         if(f1 && d < f1) ok = false; if(f2 && d > f2) ok = false;
-        if(fb && b !== fb) ok = false; if(fc && c !== fc) ok = false;
-        if(fl && l !== fl) ok = false; if(fs && s !== fs) ok = false;
-        if(fpr && prod !== fpr) ok = false;
+        if(ft && type !== ft) ok = false;
+        if(fb && batch !== fb) ok = false;
+        if(fbr && brand !== fbr) ok = false;
+        if(fs && spec !== fs) ok = false;
+        if(fv && var_ !== fv) ok = false;
+        if(fl && loc !== fl) ok = false;
         if(q && !text.includes(q)) ok = false;
 
         if(ok) {
-            r.style.display = ""; visibleRows.push(r);
-            hT += parseFloat(r.querySelector(".hoso").innerText) || 0;
-            lT += parseFloat(r.querySelector(".hlso").innerText) || 0;
-            aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
+            r.style.display = ""; visibleCount++;
+            // Calculate Stock in Hand (IN + , OUT -)
+            const sign = type === 'IN' ? 1 : -1;
+            mcT += (parseInt(r.cells[15].innerText) || 0) * sign;
+            lsT += (parseInt(r.cells[16].innerText) || 0) * sign;
+            qtyT += (parseFloat(r.cells[17].innerText.replace(/,/g,'')) || 0) * sign;
         } else { r.style.display = "none"; }
     });
 
-    const totalVisible = visibleRows.length;
-    visibleRows.forEach((r, idx) => { r.querySelector(".slno").innerText = totalVisible - idx; });
-
-    document.getElementById("rowCount").innerText = `${totalVisible} rows found`;
-    document.getElementById("tot_hoso").innerText = hT.toFixed(2);
-    document.getElementById("tot_hlso").innerText = lT.toFixed(2);
-    document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
-    document.getElementById("avg_yield").innerText = hT > 0 ? ((lT/hT)*100).toFixed(2) + "%" : "0%";
-    calcDiff();
-}
-
-function askConfirm(action) { 
-    currentAction = action; 
-    document.getElementById("confirmMsg").innerText = `Proceed with ${action.replace(/_/g,' ').toUpperCase()}?`; 
-    document.getElementById("confirmModal").style.display = "flex"; 
-}
-
-function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
-
-document.getElementById("btnYes").onclick = async () => {
-    closeModal();
-    const visibleIds = allRows.filter(r => r.style.display !== "none").map(r => r.dataset.id).join(",");
-    const fc = document.getElementById("f_contractor").value;
-    const fm = document.getElementById("f_month").value;
-
-    if (currentAction === 'pdf_table') {
-        window.location.href = `${baseUrl}/export_pdf?ids=${visibleIds}`;
-    } else if (currentAction === 'print_bill') {
-        if(!fc || !fm) return alert("Select Month and Contractor first!");
-        window.open(`${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}`, '_blank');
-    } else if (currentAction === 'pdf_bill') {
-        if(!fc || !fm) return alert("Select Month and Contractor first!");
-        window.location.href = `${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}&download=true`;
-    } else if (currentAction === 'excel_table') {
-        window.location.href = `${baseUrl}/export_excel?ids=${visibleIds}`;
-    } else if (currentAction === 'delete_row') {
-        if(!selectedRow) return;
-        const res = await fetch(`${baseUrl}/delete`, { 
-            method:"POST", 
-            headers:{"Content-Type":"application/json"}, 
-            body:JSON.stringify({id: selectedRow.dataset.id}) 
-        });
-        if(res.ok) location.reload();
-    }
-};
-
-async function toggleAudit() {
-    const panel = document.getElementById("auditPanel");
-    const content = document.getElementById("auditContent");
-
-    if (panel.style.display === "flex") {
-        panel.style.display = "none";
-        return;
-    }
-
-    panel.style.display = "flex";
-    content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">Fetching Global Logs...</p>`;
-
-    try {
-        // Ikkada audit_all endpoint ki call chestunnam
-        const res = await fetch(`${baseUrl}/audit_all`); 
-        const logs = await res.json();
-
-        if(!logs.length) {
-            content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`;
-            return;
-        }
-
-        content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left: 3px solid var(--accent); margin-bottom: 5px; background: #fff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
-                    <span style="font-size:9px; font-weight:bold; color:var(--primary);">Batch: ${l.batch}</span>
-                </div>
-                <div style="font-size:10px; font-weight:700; margin:3px 0;">${l.action}</div>
-                <div style="font-size:10px; color:#64748b;">${l.details}</div>
-                <div style="font-size:9px; color:#94a3b8; margin-top:2px; text-align:right;">Modified by: ${l.user}</div>
-            </div>
-        `).join('');
-    } catch(e) {
-        content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading global logs.</p>`;
-    }
+    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
+    document.getElementById("tot_mc").innerText = mcT;
+    document.getElementById("tot_lse").innerText = lsT;
+    document.getElementById("tot_qty").innerText = qtyT.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    
+    let s = visibleCount;
+    allRows.filter(r => r.style.display!=="none").forEach(r => r.querySelector(".slno").innerText = s--);
 }
 
 function enableEdit() {
     if(!selectedRow) return alert("Select a row first!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
-        const val = td.innerText.replace('₹','').replace('%','').trim();
+        const val = td.innerText.trim();
+        const field = td.dataset.field;
         if(td.classList.contains("lookup")){
             const type = td.classList[1]; const opts = lookups[type] || [];
-            td.innerHTML = `<select class="edit-input" data-field="${td.dataset.field}">
+            td.innerHTML = `<select class="edit-input" data-field="${field}" data-old-val="${val}">
                 ${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}
             </select>`;
         } else { 
-            td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${val}" oninput="recalcRow(this)">`; 
+            td.innerHTML = `<input class="edit-input" data-field="${field}" data-old-val="${val}" value="${val}">`; 
         }
     });
 }
 
-function recalcRow(input) {
-    const tr = input.closest('tr');
-    const hoso = parseFloat(tr.querySelector('[data-field="hoso_qty"] input')?.value || tr.querySelector('.hoso').innerText) || 0;
-    const hlso = parseFloat(tr.querySelector('[data-field="hlso_qty"] input')?.value || tr.querySelector('.hlso').innerText) || 0;
-    const rate = parseFloat(tr.querySelector('[data-field="rate_per_kg"] input')?.value || tr.querySelector('.rate').innerText) || 0;
-    
-    const yieldVal = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) : 0;
-    const amt = (hlso * rate).toFixed(2);
-    
-    tr.querySelector('.yield-cell').innerText = yieldVal + '%';
-    tr.querySelector('.amt-cell').innerText = '₹' + amt;
-    tr.querySelector('.amt-cell').setAttribute('data-val', amt);
-}
-
-async function saveEdit() {
-    if(!selectedRow) return;
+function askSave() {
+    if(!selectedRow) return alert("Select a row!");
     const inputs = selectedRow.querySelectorAll(".edit-input");
     if(!inputs.length) return alert("Enable edit mode first!");
-    
+    currentAction = "save";
+    document.getElementById("confirmMsg").innerText = "Save changes to this record?";
+    document.getElementById("confirmModal").style.display = "flex";
+}
+
+async function executeSave() {
+    const inputs = selectedRow.querySelectorAll(".edit-input");
     const payload = { id: selectedRow.dataset.id };
-    inputs.forEach(i => payload[i.dataset.field] = i.value);
-    
-    const res = await fetch(`${baseUrl}/update`, { 
-        method:"POST", 
-        headers:{"Content-Type":"application/json"}, 
-        body:JSON.stringify(payload) 
+    let hasChanges = false;
+    inputs.forEach(i => {
+        const newVal = i.value.trim();
+        const oldVal = i.dataset.oldVal;
+        if (newVal !== oldVal) {
+            payload[i.dataset.field] = newVal;
+            hasChanges = true;
+        }
+    });
+    if (!hasChanges) { alert("No changes detected!"); location.reload(); return; }
+    try {
+        const res = await fetch(`${baseUrl}/update`, { 
+            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) 
+        });
+        if(res.ok) location.reload();
+        else { const err = await res.json(); alert("Error: " + (err.detail || "Update failed")); }
+    } catch (e) { alert("Network Error"); }
+}
+
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    const content = document.getElementById("auditContent");
+    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
+    panel.style.display = "flex";
+    content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">Fetching Global Logs...</p>`;
+    try {
+        const res = await fetch(`${baseUrl}/audit_all`); 
+        const logs = await res.json();
+        if(!logs.length) { content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`; return; }
+        content.innerHTML = logs.map(l => `
+            <div class="audit-item">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
+                    <span style="font-size:9px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 4px; border-radius:3px;">Batch: ${l.batch}</span>
+                </div>
+                <div style="font-size:10px; font-weight:800; color:var(--primary); text-transform:uppercase;">${l.field}</div>
+                <div style="font-size:10px; color:#1e293b; background:#fff; padding:4px; border-radius:4px; margin-top:3px; border: 1px dashed #e2e8f0;">${l.details}</div>
+                <div style="font-size:9px; color:#94a3b8; margin-top:4px; text-align:right;">User: <b>${l.user}</b></div>
+            </div>
+        `).join('');
+    } catch(e) { content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading logs.</p>`; }
+}
+
+function askDelete() {
+    if(!selectedRow) return alert("Select a row!");
+    currentAction = "delete";
+    document.getElementById("confirmMsg").innerText = "Delete this Stock Entry permanently?";
+    document.getElementById("confirmModal").style.display = "flex";
+}
+
+async function executeDelete() {
+    const res = await fetch(`${baseUrl}/delete`, { 
+        method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) 
     });
     if(res.ok) location.reload();
 }
 
-function toggleMenu(e) { 
-    e.stopPropagation(); 
-    const m = document.getElementById("mainMenu"); 
-    m.style.display = m.style.display==="block"?"none":"block"; 
+function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
+document.getElementById("btnYes").onclick = () => { closeModal(); if(currentAction === "save") executeSave(); else if(currentAction === "delete") executeDelete(); };
+
+function exportFile(ext) {
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const ft = document.getElementById("f_type").value;
+    const fb = document.getElementById("f_batch").value;
+    const fbr = document.getElementById("f_brand").value;
+    const fs = document.getElementById("f_species").value;
+    const fv = document.getElementById("f_variety").value;
+    const fl = document.getElementById("f_loc").value;
+    let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
+    if(ext === 'pdf') params += "&download=true";
+    window.location.href = `${baseUrl}/export_${ext}${params}`;
 }
 
+function printReport() {
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const ft = document.getElementById("f_type").value;
+    const fb = document.getElementById("f_batch").value;
+    const fbr = document.getElementById("f_brand").value;
+    const fs = document.getElementById("f_species").value;
+    const fv = document.getElementById("f_variety").value;
+    const fl = document.getElementById("f_loc").value;
+    let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
+    const pdfUrl = `${baseUrl}/export_pdf${params}`;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = pdfUrl;
+    document.body.appendChild(iframe);
+
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+    };
+}
+
+function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
 document.onclick = () => document.getElementById("mainMenu").style.display="none";
 
 function fillFilters() {
-    const sets = { batch: new Set(), contractor: new Set(), species: new Set(), production: new Set(), peeling: new Set() };
+    const sets = { batch: new Set(), brand: new Set(), species: new Set(), variety: new Set(), loc: new Set() };
     allRows.forEach(r => {
-        sets.batch.add(r.querySelector('[data-field="batch_number"]').innerText);
-        sets.contractor.add(r.querySelector('[data-field="contractor"]').innerText);
-        sets.species.add(r.querySelector('[data-field="species"]').innerText);
-        sets.production.add(r.querySelector('[data-field="production_for"]').innerText);
-        sets.peeling.add(r.querySelector('[data-field="peeling_at"]').innerText);
+        sets.batch.add(r.cells[2].innerText.trim());
+        sets.brand.add(r.cells[4].innerText.trim());
+        sets.species.add(r.cells[5].innerText.trim());
+        sets.variety.add(r.cells[12].innerText.trim());
+        sets.loc.add(r.cells[6].innerText.trim());
     });
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);
-        if(sel) [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
+        [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
     });
 }
 
 fillFilters();
-[f_month, f_from, f_to, f_batch, f_contractor, f_peeling, f_species, f_production].forEach(el => { if(el) el.onchange = applyFilters; });
-if(document.getElementById("searchBox")) searchBox.oninput = applyFilters;
+document.querySelectorAll(".filters input, .filters select").forEach(el => el.onchange = applyFilters);
+document.getElementById("searchBox").oninput = applyFilters;
 applyFilters();
 </script>
 </body>

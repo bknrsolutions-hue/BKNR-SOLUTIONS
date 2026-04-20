@@ -49,7 +49,7 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2600px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2000px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
@@ -58,7 +58,7 @@ thead th{
 }
 
 tbody td{
- padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ padding:6px 4px; font-size:10px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -70,8 +70,12 @@ tr.selected{background:#dbeafe !important;}
 .qty-col { font-weight: 800; color: var(--accent); }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
-/* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+/* ================= FOOTER (GRAND TOTALS) ================= */
+tfoot td{ 
+    background:#d3d8e0 !important; color:#201c1c !important; 
+    font-weight:900; font-size:11px; border-top:2px solid #c5cfde; 
+    position:sticky; bottom:0; z-index:20; padding:10px 4px; 
+}
 
 /* ================= MODALS & PANELS ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
@@ -91,6 +95,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     body { overflow: visible !important; }
     .section { border: none !important; margin: 0 !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
+    tfoot td { background: #eee !important; color: #000 !important; }
 }
 </style>
 </head>
@@ -147,25 +152,21 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th style="width:90px">Date</th>
                     <th style="width:110px">Batch #</th>
                     <th style="width:60px">Type</th>
-                    <th style="width:110px">Brand</th>
-                    <th style="width:110px">Species</th>
-                    <th style="width:120px">Variety</th>
-                    <th style="width:80px">Grade</th>
-                    <th style="width:70px">Glaze</th>
-                    <th style="width:90px">Freezer</th>
-                    <th style="width:110px">Pack Style</th>
+                    <th style="width:100px">Brand</th>
+                    <th style="width:100px">Species</th>
                     <th style="width:100px">Location</th>
                     <th style="width:100px">PO #</th>
-                    <th style="width:110px">Prod For</th>
-                    <th style="width:110px">Prod At</th>
-                    <th style="width:70px" class="inv-col">HLSO Cnt</th>
-                    <th style="width:70px" class="inv-col">HOSO Cnt</th>
-                    <th style="width:60px">MC</th>
-                    <th style="width:60px">Lse</th>
-                    <th style="width:85px" class="qty-col">Qty (KG)</th>
-                    <th style="width:90px" class="inv-col">Cost/KG</th>
-                    <th style="width:110px" class="inv-col">Inv Value</th>
-                    <th style="width:90px" class="inv-col">Sales Rate</th>
+                    <th style="width:100px">Prod For</th>
+                    <th style="width:100px">Prod At</th>
+                    <th style="width:80px">Freezer</th>
+                    <th style="width:100px">Pack Style</th>
+                    <th style="width:120px">Variety</th>
+                    <th style="width:70px">Glaze</th>
+                    <th style="width:80px">Grade</th>
+                    <th style="width:70px">No of MC</th>
+                    <th style="width:70px">Loose Qty</th>
+                    <th style="width:100px" class="qty-col">Qty (KG)</th>
+                    <th style="width:110px" class="inv-col">Purpose</th>
                     <th style="width:150px">System User</th>
                 </tr>
             </thead>
@@ -178,35 +179,29 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
                     <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
                     <td class="lookup species_list" data-field="species">{{ r.species }}</td>
-                    <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
-                    <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
-                    <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
-                    <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
-                    <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
                     <td class="editable" data-field="location">{{ r.location }}</td>
                     <td>{{ r.po_number }}</td>
                     <td class="lookup production_for_list" data-field="production_for">{{ r.production_for }}</td>
                     <td class="lookup production_at_list" data-field="production_at">{{ r.production_at }}</td>
-                    <td class="editable inv-col" data-field="hlso_count">{{ r.hlso_count or 0 }}</td>
-                    <td class="editable inv-col" data-field="hoso_count">{{ r.hoso_count or 0 }}</td>
+                    <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
+                    <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
+                    <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
+                    <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
+                    <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
                     <td class="editable" data-field="no_of_mc">{{ r.no_of_mc or 0 }}</td>
                     <td class="editable" data-field="loose">{{ r.loose or 0 }}</td>
-                    <td class="qty-col">{{ r.quantity or 0 }}</td>
-                    <td class="editable inv-col" data-field="product_kg_value">{{ r.product_kg_value or 0 }}</td>
-                    <td class="inv-col">₹{{ r.inventory_value or 0 }}</td>
-                    <td class="editable inv-col" data-field="sales_reference_rate">{{ r.sales_reference_rate or 0 }}</td>
+                    <td class="qty-col">{{ "{:,.2f}".format(r.quantity or 0) }}</td>
+                    <td class="editable inv-col" data-field="purpose">{{ r.purpose }}</td>
                     <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="17" style="text-align:right">PAGE TOTALS (Visible):</td>
+                    <td colspan="15" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
                     <td id="tot_mc">0</td>
                     <td id="tot_lse">0</td>
                     <td id="tot_qty" class="qty-col">0.00</td>
-                    <td></td>
-                    <td id="tot_val">₹0.00</td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
@@ -266,7 +261,7 @@ function applyFilters() {
     const fl = document.getElementById("f_loc").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
     
-    let mcT=0, lsT=0, qtyT=0, valT=0, visibleCount=0;
+    let mcT=0, lsT=0, qtyT=0, visibleCount=0;
 
     allRows.forEach(r => {
         const d = r.dataset.date, text = r.innerText.toLowerCase();
@@ -274,8 +269,8 @@ function applyFilters() {
         const batch = r.cells[2].innerText.toLowerCase();
         const brand = r.cells[4].innerText.toLowerCase();
         const spec = r.cells[5].innerText.toLowerCase();
-        const var_ = r.cells[6].innerText.toLowerCase();
-        const loc = r.cells[11].innerText.toLowerCase();
+        const var_ = r.cells[12].innerText.toLowerCase();
+        const loc = r.cells[6].innerText.toLowerCase();
 
         let ok = true;
         if(f1 && d < f1) ok = false; if(f2 && d > f2) ok = false;
@@ -289,19 +284,18 @@ function applyFilters() {
 
         if(ok) {
             r.style.display = ""; visibleCount++;
+            // Calculate Stock in Hand (IN + , OUT -)
             const sign = type === 'IN' ? 1 : -1;
-            mcT += (parseInt(r.cells[17].innerText) || 0) * sign;
-            lsT += (parseInt(r.cells[18].innerText) || 0) * sign;
-            qtyT += (parseFloat(r.cells[19].innerText) || 0) * sign;
-            valT += (parseFloat(r.cells[21].innerText.replace('₹','')) || 0);
+            mcT += (parseInt(r.cells[15].innerText) || 0) * sign;
+            lsT += (parseInt(r.cells[16].innerText) || 0) * sign;
+            qtyT += (parseFloat(r.cells[17].innerText.replace(/,/g,'')) || 0) * sign;
         } else { r.style.display = "none"; }
     });
 
     document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
     document.getElementById("tot_mc").innerText = mcT;
     document.getElementById("tot_lse").innerText = lsT;
-    document.getElementById("tot_qty").innerText = qtyT.toFixed(2);
-    document.getElementById("tot_val").innerText = "₹" + valT.toLocaleString('en-IN', {minimumFractionDigits:2});
+    document.getElementById("tot_qty").innerText = qtyT.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
     
     let s = visibleCount;
     allRows.filter(r => r.style.display!=="none").forEach(r => r.querySelector(".slno").innerText = s--);
@@ -310,7 +304,7 @@ function applyFilters() {
 function enableEdit() {
     if(!selectedRow) return alert("Select a row first!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
-        const val = td.innerText.replace('₹','').trim();
+        const val = td.innerText.trim();
         const field = td.dataset.field;
         if(td.classList.contains("lookup")){
             const type = td.classList[1]; const opts = lookups[type] || [];
@@ -404,10 +398,7 @@ function exportFile(ext) {
     const fv = document.getElementById("f_variety").value;
     const fl = document.getElementById("f_loc").value;
     let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
-    
-    // PDF export ki download parameter add chesam
     if(ext === 'pdf') params += "&download=true";
-    
     window.location.href = `${baseUrl}/export_${ext}${params}`;
 }
 
@@ -422,7 +413,6 @@ function printReport() {
     let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
     const pdfUrl = `${baseUrl}/export_pdf${params}`;
 
-    // Invisible iframe trick for direct print (No Download)
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = pdfUrl;
@@ -444,8 +434,8 @@ function fillFilters() {
         sets.batch.add(r.cells[2].innerText.trim());
         sets.brand.add(r.cells[4].innerText.trim());
         sets.species.add(r.cells[5].innerText.trim());
-        sets.variety.add(r.cells[6].innerText.trim());
-        sets.loc.add(r.cells[11].innerText.trim());
+        sets.variety.add(r.cells[12].innerText.trim());
+        sets.loc.add(r.cells[6].innerText.trim());
     });
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);

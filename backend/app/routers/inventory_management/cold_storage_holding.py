@@ -167,6 +167,7 @@ async def save_holding(
 
     new_entry = cold_storage_holding(
         cold_storage_name=cold_storage_name,
+        production_at=cold_storage_name, # <--- ఇక్కడ default గా cold_storage_name సేవ్ అవుతుంది
         address=address,
         batch_number=batch_number,
         cargo_movement_type=cargo_movement_type,

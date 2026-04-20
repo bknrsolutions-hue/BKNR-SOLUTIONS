@@ -1,190 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>BKNR ERP - Inventory Intelligence</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <title>BKNR ERP | Compact Inventory Intelligence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-:root {
-    --bg: #f4f7fa; --panel: #ffffff; --primary: #2563eb; --text-main: #1e293b;
-    --text-sub: #64748b; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b;
-}
-* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; }
+    <style>
+        :root {
+            --bg: #f8fafc; --panel: #ffffff; --primary: #0f172a; --accent: #2563eb;
+            --text-main: #1e293b; --text-sub: #64748b; --border: #e2e8f0;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 10.5px; line-height: 1.4; }
 
-/* HEADER & FILTERS */
-.main-header { 
-    background: white; padding: 12px 20px; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 1000;
-}
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.header-title h1 { font-size: 16px; margin: 0; font-weight: 800; color: var(--primary); }
-.company-tag { background: #eff6ff; color: var(--primary); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 10px; }
+        /* HEADER & FILTERS */
+        .main-header { 
+            background: white; padding: 10px 15px; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .header-title h1 { font-size: 14px; margin: 0; font-weight: 800; color: var(--primary); }
+        .company-tag { background: #f1f5f9; color: var(--text-main); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid var(--border); }
 
-.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
-.filter-group { display: flex; flex-direction: column; gap: 3px; }
-.filter-group label { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-.filter-select { padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 10px; font-weight: 600; background: white; min-width: 110px; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 6px; background: #ffffff; padding: 8px; border-radius: 6px; border: 1px solid var(--border); }
+        .filter-group { display: flex; flex-direction: column; gap: 2px; }
+        .filter-group label { font-size: 8px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; }
+        .filter-select { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 9px; font-weight: 600; background: #fbfcfe; min-width: 105px; outline: none; }
 
-/* BREAKDOWN CARDS */
-.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 15px; }
-.b-card { background: white; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.b-head { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; background: #f8fafc; border-radius: 10px 10px 0 0; }
-.b-head h3 { margin: 0; font-size: 10px; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.5px; }
-.b-head .total-val { font-size: 16px; font-weight: 800; }
+        /* KPI CARDS - MORE COMPACT */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px; }
+        .stat-card { background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); border-left: 3px solid var(--accent); }
+        .stat-card h3 { margin: 0; font-size: 8px; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.3px; }
+        .stat-card .value { font-size: 15px; font-weight: 800; margin: 3px 0; color: var(--primary); display: block; }
+        .stat-card .sub-text { font-size: 8.5px; font-weight: 600; color: var(--text-sub); }
 
-.b-body { padding: 5px 0; max-height: 180px; overflow-y: auto; }
-.b-row { display: flex; justify-content: space-between; padding: 7px 15px; border-bottom: 1px solid #f1f5f9; }
-.b-row span:first-child { font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; }
-.b-row span:last-child { font-weight: 700; color: var(--primary); }
+        /* COMPACT ANALYTICS */
+        .analytics-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; padding: 0 12px 12px; }
+        .chart-container { background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); height: 180px; }
+        .chart-container h4 { margin: 0 0 8px 0; font-size: 9px; text-transform: uppercase; color: var(--text-sub); border-bottom: 1px solid var(--bg); padding-bottom: 4px; }
 
-/* ANALYTICS */
-.analytics-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; padding: 0 15px 15px; }
-.chart-box { background: white; padding: 15px; border-radius: 10px; border: 1px solid var(--border); }
-.chart-title { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
+        /* BREAKDOWN & TABLES */
+        .report-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 12px; }
+        .breakdown-card { background: white; border-radius: 8px; border: 1px solid var(--border); padding: 10px; }
+        .breakdown-card h4 { margin: 0 0 8px 0; font-size: 10px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+        
+        .loc-header { background: #f8fafc; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; font-weight: 800; border: 1px solid var(--border); margin-bottom: 4px; }
+        .prod-for-row { padding: 4px 15px; display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); color: #475569; font-size: 9px; }
 
-/* TABLE */
-.table-container { padding: 0 15px 15px; }
-.table-card { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
-.table-scroll { overflow: auto; max-height: 450px; }
-table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-thead th { background: #f8fafc; padding: 10px; font-size: 9px; text-transform: uppercase; color: var(--text-sub); border-bottom: 2px solid var(--border); position: sticky; top: 0; }
-tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-.sub-total-row { background: #f0f9ff; font-weight: 800; color: var(--primary); }
-</style>
+        .table-section { padding: 0 12px 12px; }
+        .table-wrapper { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+        .scroll-area { overflow: auto; max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        thead th { background: #f8fafc; padding: 8px 10px; font-size: 8.5px; text-transform: uppercase; color: var(--text-sub); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        tbody td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+        
+        .sub-total-row { background: #f0f9ff !important; font-weight: 800; color: var(--accent); font-size: 9px; }
+        .qty-link { color: var(--accent); font-weight: 800; text-decoration: none; padding: 2px 5px; border-radius: 3px; background: #eff6ff; }
+
+        @media print { .filter-bar, .company-tag[style*="cursor"] { display: none; } }
+    </style>
 </head>
 <body>
 
 <div class="main-header">
     <div class="header-top">
-        <div class="header-title">
-            <h1><i class="fas fa-boxes-stacked"></i> INVENTORY BREAKDOWN DASHBOARD</h1>
-        </div>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div class="company-tag"><i class="fas fa-industry"></i> {{ request.session.get('company_code') }}</div>
-            <button type="button" onclick="window.print()" style="background:var(--primary); color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:700; cursor:pointer; font-size:10px;">EXPORT PDF</button>
+        <div class="header-title"><h1><i class="fas fa-boxes-stacked"></i> Inventory Intelligence</h1></div>
+        <div style="display: flex; gap: 8px;">
+            <div class="company-tag">{{ request.session.get('company_code') }}</div>
+            <button type="button" onclick="window.print()" class="company-tag" style="cursor:pointer; background:var(--primary); color:white; border:none;">PRINT</button>
         </div>
     </div>
 
-    <form method="get" action="" class="filter-bar">
+    <form method="get" class="filter-bar">
+        {% for name, label, list_data, sel_val in [
+            ('sel_species', 'Species', species_list, sel_species),
+            ('sel_variety', 'Variety', varieties_list, sel_variety),
+            ('sel_grade', 'Grade', grades_list, sel_grade),
+            ('sel_prod_for', 'Client', prod_for_list, sel_prod_for)
+        ] %}
         <div class="filter-group">
-            <label>Species</label>
-            <select name="sel_species" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL SPECIES</option>
-                {% for s in species_list %}<option value="{{s}}" {% if sel_species == s %}selected{% endif %}>{{s}}</option>{% endfor %}
+            <label>{{ label }}</label>
+            <select name="{{ name }}" class="filter-select" onchange="this.form.submit()">
+                <option value="ALL">ALL</option>
+                {% for item in list_data %}<option value="{{item}}" {{'selected' if sel_val == item}}>{{item}}</option>{% endfor %}
             </select>
         </div>
+        {% endfor %}
         <div class="filter-group">
-            <label>Variety</label>
-            <select name="sel_variety" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL VARIETIES</option>
-                {% for v in varieties_list %}<option value="{{v}}" {% if sel_variety == v %}selected{% endif %}>{{v}}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Grade</label>
-            <select name="sel_grade" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL GRADES</option>
-                {% for g in grades_list %}<option value="{{g}}" {% if sel_grade == g %}selected{% endif %}>{{g}}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Production For</label>
-            <select name="sel_prod_for" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL PRODUCTION FOR</option>
-                {% set seen_prod_for = [] %}
-                {% for p in prod_for_list %}
-                    {% if p not in seen_prod_for %}
-                        <option value="{{p}}" {% if sel_prod_for == p %}selected{% endif %}>{{p}}</option>
-                        {% if seen_prod_for.append(p) %}{% endif %}
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Production At</label>
+            <label>Location</label>
             <select name="sel_prod_at" class="filter-select" onchange="this.form.submit()">
                 <option value="ALL">ALL LOCATIONS</option>
-                {% for loc in production_at_totals.keys() %}<option value="{{loc}}" {% if sel_prod_at == loc %}selected{% endif %}>{{loc}}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Glaze</label>
-            <select name="sel_glaze" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL GLAZE</option>
-                {% for gl in glaze_list %}<option value="{{gl}}" {% if sel_glaze == gl %}selected{% endif %}>{{gl}}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Freezer</label>
-            <select name="sel_freezer" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL FREEZERS</option>
-                {% for f in freezer_list %}<option value="{{f}}" {% if sel_freezer == f %}selected{% endif %}>{{f}}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Packing Style</label>
-            <select name="sel_packing" class="filter-select" onchange="this.form.submit()">
-                <option value="ALL">ALL PACKING</option>
-                {% for pk in packing_list %}<option value="{{pk}}" {% if sel_packing == pk %}selected{% endif %}>{{pk}}</option>{% endfor %}
+                {% for loc in plant_report.keys() %}<option value="{{loc}}" {{'selected' if sel_prod_at == loc}}>{{loc}} (P)</option>{% endfor %}
+                {% for loc in cs_report.keys() %}<option value="{{loc}}" {{'selected' if sel_prod_at == loc}}>{{loc}} (CS)</option>{% endfor %}
             </select>
         </div>
     </form>
 </div>
 
-<div class="summary-grid">
-    <div class="b-card">
-        <div class="b-head"><h3>Total Inventory</h3><span class="total-val">{{ "{:,.2f}".format(available_qty) }} KG</span></div>
-        <div class="b-body">
-            {% for loc, qty in production_at_totals.items() %}<div class="b-row"><span><i class="fas fa-warehouse"></i> {{ loc }}</span><span>{{ "{:,.2f}".format(qty) }} KG</span></div>{% endfor %}
-            {% for storage, qty in storage_wise_totals.items() %}<div class="b-row"><span><i class="fas fa-cold-storage"></i> {{ storage }}</span><span>{{ "{:,.2f}".format(qty) }} KG</span></div>{% endfor %}
-        </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Inventory</h3>
+        <span class="value">{{ "{:,.2f}".format(available_qty) }} <small>KG</small></span>
+        <div class="sub-text">Live + Storage</div>
     </div>
-    <div class="b-card">
-        <div class="b-head"><h3>Total Sales</h3><span class="total-val" style="color:var(--success)">{{ "{:,.2f}".format(total_sales_qty) }} KG</span></div>
-        <div class="b-body">
-            {% for loc, pf_dict in production_for_breakdown.items() %}
-                {% if pf_dict.get('SALES') or pf_dict.get('ORDER') %}
-                <div class="b-row"><span><i class="fas fa-truck-moving"></i> {{ loc }} Dispatch</span><span>{{ "{:,.2f}".format(pf_dict.get('SALES', 0) + pf_dict.get('ORDER', 0)) }} KG</span></div>
-                {% endif %}
-            {% endfor %}
-        </div>
+    <div class="stat-card" style="border-left-color: var(--success);">
+        <h3>Total Sales</h3>
+        <span class="value" style="color: var(--success);">{{ "{:,.2f}".format(total_sales_qty|default(0)) }} <small>KG</small></span>
+        <div class="sub-text">Export Outflow</div>
     </div>
-    <div class="b-card">
-        <div class="b-head"><h3>Reprocess Vol</h3><span class="total-val" style="color:var(--warning)">{{ "{:,.2f}".format(reprocess_qty) }} KG</span></div>
-        <div class="b-body">
-            <div class="b-row"><span><i class="fas fa-sync"></i> Net Reprocessed</span><span>{{ "{:,.2f}".format(reprocess_qty) }} KG</span></div>
-        </div>
+    <div class="stat-card" style="border-left-color: var(--warning);">
+        <h3>Reprocess</h3>
+        <span class="value" style="color: var(--warning);">{{ "{:,.2f}".format(reprocess_qty|default(0)) }} <small>KG</small></span>
+        <div class="sub-text">Non-Raw Stock</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #6366f1;">
+        <h3>Capacity</h3>
+        <span class="value">{{ "{:,}".format(total_mc_count|default(0)) }} <small>MC</small></span>
+        <div class="sub-text">L: {{ live_stock_mc }} | CS: {{ storage_mc }}</div>
     </div>
 </div>
 
-<div class="analytics-grid">
-    <div class="chart-box"><div class="chart-title">Daily Flow (IN/OUT)</div><div style="height:170px;"><canvas id="flowChart"></canvas></div></div>
-    <div class="chart-box"><div class="chart-title">Variety Wise</div><div style="height:170px;"><canvas id="varietyChart"></canvas></div></div>
-    <div class="chart-box"><div class="chart-title">Top 10 Grades</div><div style="height:170px;"><canvas id="gradeChart"></canvas></div></div>
+<div class="analytics-row">
+    <div class="chart-container">
+        <h4>In-Out Flow</h4>
+        <canvas id="flowChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <h4>Varieties</h4>
+        <canvas id="varietyChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <h4>Top Grades</h4>
+        <canvas id="gradeChart"></canvas>
+    </div>
 </div>
 
-<div class="table-container">
-    <div class="table-card">
-        <div class="table-scroll">
+<div class="report-container">
+    <div class="breakdown-card">
+        <h4><i class="fas fa-industry"></i> Plant Breakdown</h4>
+        {% for loc, data in plant_report.items() %}
+            <div class="loc-header"><span>{{ loc }}</span> <span>{{ "{:,.2f}".format(data.total) }}</span></div>
+            {% for pf, q in data.for_breakdown.items() %}<div class="prod-for-row"><span>{{ pf }}</span> <span>{{ "{:,.2f}".format(q) }}</span></div>{% endfor %}
+        {% endfor %}
+    </div>
+    <div class="breakdown-card">
+        <h4><i class="fas fa-snowflake"></i> Cold Storage</h4>
+        {% for loc, data in cs_report.items() %}
+            <div class="loc-header"><span>{{ loc }}</span> <span>{{ "{:,.2f}".format(data.total) }}</span></div>
+            {% for pf, q in data.for_breakdown.items() %}<div class="prod-for-row"><span>{{ pf }}</span> <span>{{ "{:,.2f}".format(q) }}</span></div>{% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="table-section">
+    <div class="table-wrapper">
+        <div class="scroll-area">
             <table>
                 <thead>
-                    <tr><th>Location</th><th>Species</th><th>Variety</th><th>Grade</th><th>Freezer/Storage</th><th>Packing Style</th><th>Total KG</th></tr>
+                    <tr>
+                        <th>Location</th>
+                        <th>Freezer</th>
+                        <th>Variety</th>
+                        <th>Packing Style</th>
+                        <th>Glaze</th>
+                        <th>Grade</th>
+                        <th style="text-align:right;">No of MC</th>
+                        <th style="text-align:right;">Loose Quantity (KG)</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {% set current_loc = namespace(val=None) %}
+                    {% set ns = namespace(
+                        curr_loc=None, loc_total=0,
+                        curr_vr=None, vr_total=0,
+                        curr_gl=None, gl_total=0
+                    ) %}
+
                     {% for row in stock_table_data %}
-                        {% if current_loc.val is not none and current_loc.val != row.prod_at %}
-                            <tr class="sub-total-row"><td colspan="6" style="text-align:right;">SUBTOTAL {{ current_loc.val }}:</td><td>{{ "{:,.2f}".format(sub_totals[current_loc.val]) }} KG</td></tr>
+                        {# 1. Location Sub-total Logic #}
+                        {% if ns.curr_loc is not none and ns.curr_loc != row.loc %}
+                            <tr class="sub-total-row" style="background: #e2e8f0 !important;">
+                                <td colspan="7" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td style="text-align:right;">{{ "{:,.2f}".format(ns.loc_total) }}</td>
+                            </tr>
+                            {% set ns.loc_total = 0 %}
                         {% endif %}
-                        {% set current_loc.val = row.prod_at %}
-                        <tr><td style="font-weight:700;">{{ row.prod_at }}</td><td>{{ row.species }}</td><td>{{ row.variety }}</td><td>{{ row.grade }}</td><td>{{ row.freezer }}</td><td>{{ row.packing }}</td><td style="font-weight:800; color:var(--primary);">{{ "{:,.2f}".format(row.qty) }}</td></tr>
+
+                        {# 2. Variety Sub-total Logic #}
+                        {% if ns.curr_vr is not none and ns.curr_vr != row.vr and ns.curr_loc == row.loc %}
+                            <tr class="sub-total-row" style="background: #f1f5f9 !important; color: #475569;">
+                                <td colspan="7" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td style="text-align:right;">{{ "{:,.2f}".format(ns.vr_total) }}</td>
+                            </tr>
+                            {% set ns.vr_total = 0 %}
+                        {% endif %}
+
+                        {# Update Tracking Variables #}
+                        {% set ns.curr_loc = row.loc %}
+                        {% set ns.curr_vr = row.vr %}
+                        {% set ns.loc_total = ns.loc_total + row.qty %}
+                        {% set ns.vr_total = ns.vr_total + row.qty %}
+
+                        <tr>
+                            <td style="font-weight:700; color:var(--primary);">{{ row.loc }}</td>
+                            <td>{{ row.fr }}</td>
+                            <td>{{ row.vr }}</td>
+                            <td>{{ row.pk }}</td>
+                            <td>{{ row.gl }}</td>
+                            <td>{{ row.gr }}</td>
+                            <td align="right" style="font-weight:600;">{{ row.mc }}</td>
+                            <td align="right">
+                                <a href="#" class="qty-link" onclick="viewSource('{{row.src}}','{{row.vr}}','{{row.gr}}')">
+                                    {{ "{:,.2f}".format(row.qty) }}
+                                </a>
+                            </td>
+                        </tr>
+
+                        {# Final Closures for Last Row #}
                         {% if loop.last %}
-                            <tr class="sub-total-row"><td colspan="6" style="text-align:right;">SUBTOTAL {{ row.prod_at }}:</td><td>{{ "{:,.2f}".format(sub_totals[row.prod_at]) }} KG</td></tr>
+                            <tr class="sub-total-row" style="background: #f1f5f9 !important;">
+                                <td colspan="7" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td style="text-align:right;">{{ "{:,.2f}".format(ns.vr_total) }}</td>
+                            </tr>
+                            <tr class="sub-total-row" style="background: #e2e8f0 !important;">
+                                <td colspan="7" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td style="text-align:right;">{{ "{:,.2f}".format(ns.loc_total) }}</td>
+                            </tr>
                         {% endif %}
                     {% endfor %}
                 </tbody>
@@ -194,24 +238,44 @@ tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; text-align: cent
 </div>
 
 <script>
-window.onload = () => {
-    const commonOpts = { maintainAspectRatio: false, plugins: { legend: { display: false } } };
-    new Chart(document.getElementById('flowChart'), {
-        type: 'line',
-        data: { labels: {{ daily_labels | tojson }}, datasets: [{ label: 'IN', data: {{ daily_in | tojson }}, borderColor: '#2563eb', tension: 0.3 }, { label: 'OUT', data: {{ daily_out | tojson }}, borderColor: '#f59e0b', tension: 0.3 }] },
-        options: { ...commonOpts, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 8 } } } } }
-    });
-    new Chart(document.getElementById('varietyChart'), {
-        type: 'doughnut',
-        data: { labels: {{ variety_labels | tojson }}, datasets: [{ data: {{ variety_values | tojson }}, backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444'] }] },
-        options: { ...commonOpts, cutout: '70%', plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 8 } } } } }
-    });
-    new Chart(document.getElementById('gradeChart'), {
-        type: 'bar',
-        data: { labels: {{ grade_labels | tojson }}, datasets: [{ data: {{ grade_values | tojson }}, backgroundColor: '#2563eb' }] },
-        options: commonOpts
-    });
-};
+    function viewSource(src, vr, gr) {
+        const path = src === 'PLANT' ? '/inventory_management/stock_entry' : '/inventory_management/cold_storage_holding';
+        window.location.href = `${path}?sel_variety=${vr}&sel_grade=${gr}`;
+    }
+
+    const chartConfig = { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 8 } } } } };
+
+    window.onload = () => {
+        new Chart(document.getElementById('flowChart'), {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels | tojson }},
+                datasets: [
+                    { label: 'In', data: {{ daily_in | tojson }}, borderColor: '#10b981', tension: 0.2, pointRadius: 0 },
+                    { label: 'Out', data: {{ daily_out | tojson }}, borderColor: '#ef4444', tension: 0.2, pointRadius: 0 }
+                ]
+            },
+            options: chartConfig
+        });
+
+        new Chart(document.getElementById('varietyChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ variety_labels | tojson }},
+                datasets: [{ data: {{ variety_values | tojson }}, backgroundColor: ['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444'] }]
+            },
+            options: { ...chartConfig, cutout: '70%' }
+        });
+
+        new Chart(document.getElementById('gradeChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ grade_labels | tojson }},
+                datasets: [{ label: 'KG', data: {{ grade_values | tojson }}, backgroundColor: '#2563eb' }]
+            },
+            options: chartConfig
+        });
+    }
 </script>
 </body>
 </html>
