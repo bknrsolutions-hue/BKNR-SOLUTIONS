@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, date
+from datetime import datetime
 import datetime as dt
 from io import BytesIO
 
@@ -60,11 +60,14 @@ async def de_heading_report(
         r.target_yield = target_yield_map.get(str(r.hoso_count), 0)
 
     # Unique values for searchable dropdown filters
-    batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
-    contractors = sorted(list({r.contractor for r in rows if r.contractor}))
-    species_list = sorted(list({r.species for r in rows if r.species}))
-    peeling_locations = sorted(list({r.peeling_at for r in rows if r.peeling_at}))
-    production_for_list = sorted(list({r.production_for for r in rows if r.production_for}))
+    def get_unique(field_attr):
+        return sorted(list({getattr(r, field_attr) for r in rows if getattr(r, field_attr)}))
+
+    batches = get_unique("batch_number")
+    contractors = get_unique("contractor")
+    species_list = get_unique("species")
+    peeling_locations = get_unique("peeling_at")
+    production_for_list = get_unique("production_for")
 
     return templates.TemplateResponse(
         request=request,
@@ -94,7 +97,7 @@ async def update_deheading_row(
     edited_by = request.session.get("email")
 
     if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin only")
+        raise HTTPException(status_code=403, detail="Admin access required")
 
     row = db.query(DeHeading).filter(
         DeHeading.id == payload.get("id"), 
@@ -114,15 +117,15 @@ async def update_deheading_row(
             old_value = getattr(row, field)
             new_value = payload[field]
 
-            # Float conversion for numeric fields
+            # Numeric validation and conversion
             if field in ["hoso_qty", "hlso_qty", "rate_per_kg"]:
                 try:
                     new_value = float(new_value or 0)
-                except ValueError:
+                except (ValueError, TypeError):
                     new_value = 0.0
 
             if str(old_value) != str(new_value):
-                # Save to AuditLog (Reference Style)
+                # Audit Log Entry - Using modern UTC timestamp
                 db.add(AuditLog(
                     table_name="de_heading",
                     record_id=row.id,
@@ -131,19 +134,19 @@ async def update_deheading_row(
                     old_value=str(old_value),
                     new_value=str(new_value),
                     edited_by=edited_by,
-                    edited_at=dt.datetime.utcnow()
+                    edited_at=dt.datetime.now(dt.timezone.utc)
                 ))
                 setattr(row, field, new_value)
 
-    # Auto Calculations
-    if row.hoso_qty > 0:
-        row.yield_percent = round((row.hlso_qty / row.hoso_qty) * 100, 2)
+    # Auto Calculations post-update
+    if (row.hoso_qty or 0) > 0:
+        row.yield_percent = round(((row.hlso_qty or 0) / row.hoso_qty) * 100, 2)
     else:
         row.yield_percent = 0
-    row.amount = round(row.hlso_qty * row.rate_per_kg, 2)
+    row.amount = round((row.hlso_qty or 0) * (row.rate_per_kg or 0), 2)
 
     db.commit()
-    return {"status": "success", "message": "Record updated"}
+    return {"status": "success", "message": "Record updated successfully"}
 
 # ------------------------------------------------------------
 # 3. FETCH FULL AUDIT HISTORY (Company Wise)
@@ -152,6 +155,7 @@ async def update_deheading_row(
 async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     
+    # Audit log join with DeHeading to show Batch Number for context
     logs = (
         db.query(AuditLog, DeHeading.batch_number)
         .join(DeHeading, AuditLog.record_id == DeHeading.id)
@@ -161,16 +165,17 @@ async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db
         .all()
     )
     
-    return [
-        {
+    result = []
+    for log in logs:
+        result.append({
             "timestamp": log.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
             "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
             "batch": log.batch_number,
             "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
             "details": f"{log.AuditLog.old_value} ➔ {log.AuditLog.new_value}",
             "type": "UPDATE"
-        } for log in logs
-    ]
+        })
+    return result
 
 # ============================================================
 # 4. CONTRACTOR MONTHLY BILL (PDF/HTML)
@@ -194,7 +199,7 @@ def de_heading_monthly_bill(
         id_list = [int(x) for x in ids.split(",") if x.strip()]
         query = query.filter(DeHeading.id.in_(id_list))
     else:
-        # month is 'YYYY-MM'
+        # Filtering by YYYY-MM
         query = query.filter(func.to_char(DeHeading.date, 'YYYY-MM') == month)
 
     rows = query.order_by(DeHeading.date.asc()).all()
@@ -251,7 +256,7 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     return StreamingResponse(
         BytesIO(pdf), 
         media_type="application/pdf", 
-        headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"}
+        headers={"Content-Disposition": "attachment; filename=DE_HEADING_REPORT.pdf"}
     )
 
 @router.get("/export_excel")
@@ -265,7 +270,11 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     
     wb = Workbook()
     ws = wb.active
-    ws.append(["Date", "Batch No", "Contractor", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount", "Peeling At", "Production For"])
+    ws.title = "De-Heading Data"
+    
+    # Headers
+    headers = ["Date", "Batch No", "Contractor", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount", "Peeling At", "Production For"]
+    ws.append(headers)
     
     for r in rows:
         ws.append([
@@ -280,7 +289,7 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     return StreamingResponse(
         stream, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": "attachment; filename=DE_HEADING.xlsx"}
+        headers={"Content-Disposition": "attachment; filename=DE_HEADING_DATA.xlsx"}
     )
 
 # ============================================================
@@ -294,13 +303,14 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
     
     row = db.query(DeHeading).filter(DeHeading.id == row_id, DeHeading.company_id == company_id).first()
     if row:
+        # Log deletion in Audit
         db.add(AuditLog(
             table_name="de_heading", record_id=row.id, company_id=company_id,
-            field_name="DELETE", old_value="Record", new_value="Deleted",
-            edited_by=edited_by, edited_at=dt.datetime.utcnow()
+            field_name="DELETE", old_value="DeHeading Record", new_value="DELETED",
+            edited_by=edited_by, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
         db.delete(row)
         db.commit()
-        return {"status": "success", "message": "Deleted successfully"}
+        return {"status": "success", "message": "Record deleted successfully"}
     
     return {"status": "error", "message": "Record not found"}

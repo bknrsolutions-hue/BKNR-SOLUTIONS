@@ -29,8 +29,8 @@ body{
 
 .filters{
  margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
+ grid-template-columns:repeat(auto-fit, minmax(105px, 1fr));
+ gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
@@ -52,13 +52,12 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
 .menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
-.menu-list hr{ border:0; border-top:1px solid var(--border); margin:0; }
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1800px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1750px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
@@ -75,11 +74,15 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
-.w-sl { width: 45px; } .w-dt { width: 90px; } .w-bt { width: 100px; } .w-con { width: 150px; }
-.w-var { width: 120px; } .w-ct { width: 70px; } .w-qt { width: 85px; } .w-rt { width: 80px; }
-.w-am { width: 110px; } .w-loc { width: 130px; } .w-pf { width: 140px; } .w-em { width: 160px; }
+/* Optimized Column Widths */
+.w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 90px; } .w-con { width: 130px; }
+.w-var { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 75px; } .w-rt { width: 65px; }
+.w-yld { width: 70px; } .w-diff { width: 70px; } .w-am { width: 95px; } .w-loc { width: 110px; } 
+.w-pf { width: 120px; } .w-em { width: 140px; }
 
 .yield-cell { font-weight: 800; color: var(--accent); }
+.target-cell { font-weight: 600; color: #64748b; background: #f8fafc; }
+.diff-cell { font-weight: 700; }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
 /* ================= FOOTER ================= */
@@ -87,16 +90,15 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 
 /* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:400px; background:#fff; 
+    position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-.audit-item{ padding:10px; border-bottom:1px solid #e2e8f0; font-size:11px; }
 
 @media print {
     .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
@@ -121,7 +123,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
         <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
         <div class="fbox"><label>Peeling At</label><select id="f_peeling"><option value="">All Locations</option></select></div>
         <div class="fbox"><label>Production For</label><select id="f_prod_for"><option value="">All Production For</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Contractor, Production For...">
+        <input id="searchBox" placeholder="Search Batch, Contractor, Production For...">
     </div>
 </div>
 
@@ -136,18 +138,17 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
             <hr>
-            <b>📋 Table Options</b>
-            <div onclick="window.print()">🖨 Print Table (Browser)</div>
+            <b>📋 Export Options</b>
+            <div onclick="window.print()">🖨 Print Current View</div>
             <div onclick="askConfirm('pdf_table')">📄 Export Table PDF</div>
+            <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <hr>
             <b>🧾 Monthly Bill</b>
-            <div onclick="askConfirm('print_bill')">🖨 Print Monthly Bill</div>
-            <div onclick="askConfirm('pdf_bill')">📩 Export Monthly Bill (PDF)</div>
-            <hr>
-            <div onclick="askConfirm('excel_table')">📊 Export Excel Filtered Table</div>
+            <div onclick="askConfirm('print_bill')">🖨 Print Bill</div>
+            <div onclick="askConfirm('pdf_bill')">📩 Download Bill PDF</div>
             <hr>
             {% if is_admin %}
-            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Selected Row</div>
+            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
             {% endif %}
         </div>
     </div>
@@ -163,15 +164,17 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-bt">Batch No</th>
                     <th class="w-con">Contractor</th>
                     <th class="w-var">Variety</th>
-                    <th class="w-ct">HLSO Cnt</th>
+                    <th class="w-ct">HL-Cnt</th>
                     <th class="w-qt">HLSO Kg</th>
                     <th class="w-qt">Peeled Kg</th>
-                    <th class="w-rt">Yield%</th>
+                    <th class="w-yld">Target %</th>
+                    <th class="w-yld">Actual %</th>
+                    <th class="w-diff">Diff %</th>
                     <th class="w-rt">Rate</th>
                     <th class="w-am">Amount</th>
                     <th class="w-loc">Peeling At</th>
                     <th class="w-pf">Production For</th>
-                    <th class="w-em">System User</th>
+                    <th class="w-em">User</th>
                 </tr>
             </thead>
             <tbody id="tbody">
@@ -185,7 +188,9 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <td class="editable" data-field="hlso_count">{{ r.hlso_count or 0 }}</td>
                     <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty or 0 }}</td>
                     <td class="editable peeled" data-field="peeled_qty">{{ r.peeled_qty or 0 }}</td>
-                    <td class="yield-cell">{{ r.yield_percent or 0 }}%</td>
+                    <td class="target-cell">{{ r.target_yield or 0 }}%</td>
+                    <td class="yield-cell" data-target="{{ r.target_yield or 0 }}">{{ r.yield_percent or 0 }}%</td>
+                    <td class="diff-cell">0.00%</td>
                     <td class="editable rate" data-field="rate">{{ r.rate or 0 }}</td>
                     <td class="amt-cell" data-val="{{ r.amount or 0 }}">₹{{ r.amount or 0 }}</td>
                     <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
@@ -196,11 +201,14 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right">PAGE TOTALS:</td>
+                    <td colspan="6" style="text-align:right">TOTALS:</td>
                     <td id="tot_hlso">0.00</td>
                     <td id="tot_peeled">0.00</td>
+                    <td></td>
                     <td id="avg_yield" style="color:var(--accent)">0%</td>
-                    <td id="tot_amt" colspan="2">₹0.00</td>
+                    <td id="avg_diff">0%</td>
+                    <td></td>
+                    <td id="tot_amt">₹0.00</td>
                     <td colspan="3"></td>
                 </tr>
             </tfoot>
@@ -210,18 +218,16 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin-top:0;"></h4>
-        <div style="display:flex; justify-content:center; gap:10px;">
-            <button class="btn-y" id="btnYes">Proceed</button>
-            <button class="btn-n" onclick="closeModal()">Cancel</button>
-        </div>
+        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <button class="btn-y" id="btnYes">Yes, Proceed</button>
+        <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:13px;">📜 EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">EDIT HISTORY LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
     </div>
     <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
@@ -233,9 +239,9 @@ const lookups = {
     peeling: {{ locations|tojson or [] }}
 };
 
-const baseUrl = window.location.pathname.replace(/\/$/, ""); 
 let selectedRow = null, currentAction = null;
 const allRows = [...document.querySelectorAll("#tbody tr")];
+const baseUrl = window.location.pathname.replace(/\/$/, "");
 
 function selectRow(tr) { 
     allRows.forEach(r => r.classList.remove("selected")); 
@@ -253,8 +259,7 @@ function applyFilters() {
     const fpf = document.getElementById("f_prod_for").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
     
-    let hlT=0, pT=0, aT=0;
-    let visibleRows = [];
+    let hlT=0, pT=0, aT=0, diffSum=0, visibleCount = 0;
 
     allRows.forEach(r => {
         const d = r.dataset.date;
@@ -263,7 +268,7 @@ function applyFilters() {
         const v = r.querySelector('[data-field="variety_name"]').innerText.toLowerCase();
         const l = r.querySelector('[data-field="peeling_at"]').innerText.toLowerCase();
         const pf = r.querySelector('[data-field="production_for"]').innerText.toLowerCase();
-        const text = r.innerText.toLowerCase();
+        const rowTxt = r.innerText.toLowerCase();
         
         let ok = true;
         if(fm && !d.startsWith(fm)) ok = false;
@@ -271,97 +276,69 @@ function applyFilters() {
         if(fb && b !== fb) ok = false; if(fc && c !== fc) ok = false;
         if(fv && v !== fv) ok = false; if(fl && l !== fl) ok = false;
         if(fpf && pf !== fpf) ok = false;
-        if(q && !text.includes(q)) ok = false;
+        if(q && !rowTxt.includes(q)) ok = false;
 
         if(ok) {
-            r.style.display = ""; visibleRows.push(r);
-            hlT += parseFloat(r.querySelector(".hlso").innerText) || 0;
-            pT += parseFloat(r.querySelector(".peeled").innerText) || 0;
+            r.style.display = ""; visibleCount++;
+            const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
+            const peeled = parseFloat(r.querySelector(".peeled").innerText) || 0;
+            const actualY = hlso > 0 ? (peeled/hlso)*100 : 0;
+            const targetY = parseFloat(r.querySelector(".yield-cell").dataset.target) || 0;
+            const diff = actualY - targetY;
+
+            const diffCell = r.querySelector(".diff-cell");
+            diffCell.innerText = diff.toFixed(2) + "%";
+            diffCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
+
+            hlT += hlso; pT += peeled;
             aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
+            diffSum += diff;
+            r.querySelector(".slno").innerText = visibleCount;
         } else { r.style.display = "none"; }
     });
 
-    const totalVisible = visibleRows.length;
-    visibleRows.forEach((r, idx) => { r.querySelector(".slno").innerText = totalVisible - idx; });
-
-    document.getElementById("rowCount").innerText = `${totalVisible} rows found`;
+    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
     document.getElementById("tot_hlso").innerText = hlT.toFixed(2);
     document.getElementById("tot_peeled").innerText = pT.toFixed(2);
     document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
     document.getElementById("avg_yield").innerText = hlT > 0 ? ((pT/hlT)*100).toFixed(2) + "%" : "0%";
+    const avgDiff = visibleCount > 0 ? (diffSum / visibleCount) : 0;
+    document.getElementById("avg_diff").innerText = avgDiff.toFixed(2) + "%";
+    document.getElementById("avg_diff").style.color = avgDiff >= 0 ? "var(--success)" : "var(--danger)";
 }
 
+// Confirm Actions
 function askConfirm(action) { 
     currentAction = action; 
-    document.getElementById("confirmMsg").innerText = `Proceed with ${action.replace(/_/g,' ').toUpperCase()}?`; 
+    document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
     document.getElementById("confirmModal").style.display = "flex"; 
 }
-
 function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
 
 document.getElementById("btnYes").onclick = async () => {
     closeModal();
-    const visibleIds = allRows.filter(r => r.style.display !== "none").map(r => r.dataset.id).join(",");
-    const fc = document.getElementById("f_contractor").value;
-    const fm = document.getElementById("f_month").value;
+    const ids = allRows.filter(r => r.style.display !== "none").map(r => r.dataset.id).join(",");
+    const contractor = document.getElementById("f_contractor").value;
+    const month = document.getElementById("f_month").value;
 
-    if (currentAction === 'pdf_table') {
-        window.location.href = `${baseUrl}/export_pdf?ids=${visibleIds}`;
-    } else if (currentAction === 'print_bill') {
-        if(!fc || !fm) return alert("Select Month and Contractor first!");
-        window.open(`${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}`, '_blank');
-    } else if (currentAction === 'pdf_bill') {
-        if(!fc || !fm) return alert("Select Month and Contractor first!");
-        window.location.href = `${baseUrl}/contractor_monthly_bill?month=${fm}&contractor=${encodeURIComponent(fc)}&ids=${visibleIds}&download=true`;
-    } else if (currentAction === 'excel_table') {
-        window.location.href = `${baseUrl}/export_excel?ids=${visibleIds}`;
-    } else if (currentAction === 'delete_row') {
-        if(!selectedRow) return;
+    if (currentAction === 'pdf_table') window.location.href = `${baseUrl}/export_pdf?ids=${ids}`;
+    else if (currentAction === 'excel_table') window.location.href = `${baseUrl}/export_excel?ids=${ids}`;
+    else if (currentAction === 'print_bill') {
+        if(!contractor || !month) return alert("Select Month & Contractor!");
+        window.open(`${baseUrl}/contractor_monthly_bill?month=${month}&contractor=${encodeURIComponent(contractor)}&ids=${ids}`, '_blank');
+    }
+    else if (currentAction === 'pdf_bill') {
+        if(!contractor || !month) return alert("Select Month & Contractor!");
+        window.location.href = `${baseUrl}/contractor_monthly_bill?month=${month}&contractor=${encodeURIComponent(contractor)}&ids=${ids}&download=true`;
+    }
+    else if (currentAction === 'delete_row' && selectedRow) {
         const res = await fetch(`${baseUrl}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
         if(res.ok) location.reload();
     }
 };
 
-async function toggleAudit() {
-    const panel = document.getElementById("auditPanel");
-    const content = document.getElementById("auditContent");
-
-    if (panel.style.display === "flex") {
-        panel.style.display = "none";
-        return;
-    }
-
-    panel.style.display = "flex";
-    content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">Fetching Global Logs...</p>`;
-
-    try {
-        // Ikkada audit_all endpoint ki call chestunnam
-        const res = await fetch(`${baseUrl}/audit_all`); 
-        const logs = await res.json();
-
-        if(!logs.length) {
-            content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`;
-            return;
-        }
-
-        content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left: 3px solid var(--accent); margin-bottom: 5px; background: #fff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
-                    <span style="font-size:9px; font-weight:bold; color:var(--primary);">Batch: ${l.batch}</span>
-                </div>
-                <div style="font-size:10px; font-weight:700; margin:3px 0;">${l.action}</div>
-                <div style="font-size:10px; color:#64748b;">${l.details}</div>
-                <div style="font-size:9px; color:#94a3b8; margin-top:2px; text-align:right;">Modified by: ${l.user}</div>
-            </div>
-        `).join('');
-    } catch(e) {
-        content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading global logs.</p>`;
-    }
-}
-
 function enableEdit() {
-    if(!selectedRow) return alert("Select a row first!");
+    if(!selectedRow) return alert("Select a row!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.replace('₹','').replace('%','').trim();
         if(td.classList.contains("lookup")){
@@ -381,10 +358,16 @@ function recalcRow(input) {
     const peeled = parseFloat(tr.querySelector('[data-field="peeled_qty"] input')?.value || tr.querySelector('.peeled').innerText) || 0;
     const rate = parseFloat(tr.querySelector('[data-field="rate"] input')?.value || tr.querySelector('.rate').innerText) || 0;
     
-    const yieldVal = hlso > 0 ? ((peeled / hlso) * 100).toFixed(2) : 0;
+    const actualY = hlso > 0 ? (peeled/hlso)*100 : 0;
+    const targetY = parseFloat(tr.querySelector(".yield-cell").dataset.target) || 0;
+    const diff = actualY - targetY;
+
+    tr.querySelector('.yield-cell').innerText = actualY.toFixed(2) + '%';
+    const dCell = tr.querySelector('.diff-cell');
+    dCell.innerText = diff.toFixed(2) + '%';
+    dCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
+
     const amt = (peeled * rate).toFixed(2);
-    
-    tr.querySelector('.yield-cell').innerText = yieldVal + '%';
     tr.querySelector('.amt-cell').innerText = '₹' + amt;
     tr.querySelector('.amt-cell').setAttribute('data-val', amt);
 }
@@ -392,25 +375,33 @@ function recalcRow(input) {
 async function saveEdit() {
     if(!selectedRow) return;
     const inputs = selectedRow.querySelectorAll(".edit-input");
-    if(!inputs.length) return alert("Enable edit mode first!");
-    
+    if(!inputs.length) return;
     const payload = { id: selectedRow.dataset.id };
     inputs.forEach(i => payload[i.dataset.field] = i.value);
-    
-    const res = await fetch(`${baseUrl}/update`, { 
-        method:"POST", headers:{"Content-Type":"application/json"}, 
-        body:JSON.stringify(payload) 
-    });
+    const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
     if(res.ok) location.reload();
 }
 
-function toggleMenu(e) { 
-    e.stopPropagation(); 
-    const m = document.getElementById("mainMenu"); 
-    m.style.display = m.style.display==="block"?"none":"block"; 
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
+    panel.style.display = "flex";
+    const content = document.getElementById("auditContent");
+    content.innerHTML = "Loading...";
+    try {
+        const res = await fetch(`${baseUrl}/audit_all`);
+        const logs = await res.json();
+        content.innerHTML = logs.map(l => `
+            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px;">
+                <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
+                ${l.action}: ${l.details}<br>
+                <small>By: ${l.user}</small>
+            </div>`).join('');
+    } catch(e) { content.innerHTML = "Error loading logs."; }
 }
 
-document.onclick = () => document.getElementById("mainMenu").style.display="none";
+function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
+document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
 function fillFilters() {
     const sets = { batch: new Set(), contractor: new Set(), variety: new Set(), peeling: new Set(), prod_for: new Set() };
@@ -430,7 +421,8 @@ function fillFilters() {
 fillFilters();
 [f_month, f_from, f_to, f_batch, f_contractor, f_variety, f_peeling, f_prod_for].forEach(el => { if(el) el.onchange = applyFilters; });
 if(document.getElementById("searchBox")) searchBox.oninput = applyFilters;
-applyFilters();
+
+window.onload = applyFilters;
 </script>
 </body>
 </html>
