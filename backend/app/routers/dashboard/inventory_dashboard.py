@@ -41,9 +41,7 @@ async def get_inventory_dashboard(
     plant_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     cs_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     
-    # Table Grouping Key: (loc, fr, vr, pk, gl, gr, src) -> Total 7 values for unique rows
     table_grouping = defaultdict(lambda: {"qty": 0.0, "mc": 0})
-    
     variety_stats = defaultdict(float)
     grade_stats = defaultdict(float)
     daily_flow = defaultdict(lambda: {"IN": 0.0, "OUT": 0.0})
@@ -64,7 +62,6 @@ async def get_inventory_dashboard(
         if str(r.type_of_production or "").strip().upper() != "RAW": 
             reprocess_qty += net
 
-        # Global Filters
         if sel_species != "ALL" and r.species != sel_species: continue
         if sel_variety != "ALL" and r.variety != sel_variety: continue
         if sel_grade != "ALL" and r.grade != sel_grade: continue
@@ -76,7 +73,6 @@ async def get_inventory_dashboard(
         plant_report[loc]["total"] += net
         plant_report[loc]["for_breakdown"][r.production_for or "N/A"] += net
 
-        # t_key grouping (Unpack Error fix: using consistent 7 elements)
         t_key = (loc, r.freezer or "IQF", r.variety, r.packing_style or "N/A", r.glaze or "NW", r.grade, "PLANT")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
@@ -110,7 +106,6 @@ async def get_inventory_dashboard(
         cs_report[loc]["total"] += net
         cs_report[loc]["for_breakdown"][c.production_for or "N/A"] += net
 
-        # t_key grouping (Consistent with Plant)
         t_key = (loc, "CS", c.variety, c.packing_style or "N/A", c.glaze or "NW", c.grade, "CS")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
@@ -124,7 +119,6 @@ async def get_inventory_dashboard(
     stock_table_data = []
     sub_totals = defaultdict(float)
     
-    # Correct Unpacking: 7 values to match t_key precisely
     for (loc, fr, vr, pk, gl, gr, src), data in table_grouping.items():
         if abs(data["qty"]) > 0.01:
             stock_table_data.append({
@@ -133,9 +127,7 @@ async def get_inventory_dashboard(
             })
             sub_totals[loc] += data["qty"]
     
-    # Sorting by Location then Variety for clean Sub-totals in UI
     stock_table_data.sort(key=lambda x: (x['loc'], x['vr']))
-
     sorted_dates = sorted(daily_flow.keys())
     
     def get_list(model, field):
@@ -171,8 +163,8 @@ async def get_inventory_dashboard(
         "sel_prod_at": sel_prod_at
     }
 
-    # TemplateResponse call with correct Argument order: (TemplateName, Context)
+    # CRITICAL FIX: Use 'name=' and 'context=' keywords to avoid TypeError
     return request.app.state.templates.TemplateResponse(
-        "inventory_management/inventory_dashboard.html", 
-        context
+        name="inventory_management/inventory_dashboard.html", 
+        context=context
     )
