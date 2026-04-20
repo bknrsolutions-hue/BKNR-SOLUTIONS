@@ -41,7 +41,7 @@ async def get_inventory_dashboard(
     plant_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     cs_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     
-    # Table Grouping Key: (loc, fr, vr, pk, gl, gr, src) -> 7 Values
+    # Table Grouping Key: (loc, fr, vr, pk, gl, gr, src) -> Total 7 values for unique rows
     table_grouping = defaultdict(lambda: {"qty": 0.0, "mc": 0})
     
     variety_stats = defaultdict(float)
@@ -76,7 +76,7 @@ async def get_inventory_dashboard(
         plant_report[loc]["total"] += net
         plant_report[loc]["for_breakdown"][r.production_for or "N/A"] += net
 
-        # t_key with 7 elements to avoid Unpack Error
+        # t_key grouping (Unpack Error fix: using consistent 7 elements)
         t_key = (loc, r.freezer or "IQF", r.variety, r.packing_style or "N/A", r.glaze or "NW", r.grade, "PLANT")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
@@ -110,7 +110,7 @@ async def get_inventory_dashboard(
         cs_report[loc]["total"] += net
         cs_report[loc]["for_breakdown"][c.production_for or "N/A"] += net
 
-        # t_key with 7 elements to match Plant logic
+        # t_key grouping (Consistent with Plant)
         t_key = (loc, "CS", c.variety, c.packing_style or "N/A", c.glaze or "NW", c.grade, "CS")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
@@ -124,7 +124,7 @@ async def get_inventory_dashboard(
     stock_table_data = []
     sub_totals = defaultdict(float)
     
-    # Correct Unpacking: 7 values match t_key
+    # Correct Unpacking: 7 values to match t_key precisely
     for (loc, fr, vr, pk, gl, gr, src), data in table_grouping.items():
         if abs(data["qty"]) > 0.01:
             stock_table_data.append({
@@ -133,7 +133,7 @@ async def get_inventory_dashboard(
             })
             sub_totals[loc] += data["qty"]
     
-    # Sort by Location then Variety for proper Sub-total grouping in HTML
+    # Sorting by Location then Variety for clean Sub-totals in UI
     stock_table_data.sort(key=lambda x: (x['loc'], x['vr']))
 
     sorted_dates = sorted(daily_flow.keys())
@@ -164,8 +164,15 @@ async def get_inventory_dashboard(
         "varieties_list": get_list(varieties, "variety_name"),
         "grades_list": get_list(grades, "grade_name"),
         "prod_for_list": get_list(production_for, "production_for"),
-        "sel_species": sel_species, "sel_variety": sel_variety, 
-        "sel_grade": sel_grade, "sel_prod_for": sel_prod_for, "sel_prod_at": sel_prod_at
+        "sel_species": sel_species, 
+        "sel_variety": sel_variety, 
+        "sel_grade": sel_grade, 
+        "sel_prod_for": sel_prod_for, 
+        "sel_prod_at": sel_prod_at
     }
 
-    return request.app.state.templates.TemplateResponse("inventory_management/inventory_dashboard.html", context)
+    # TemplateResponse call with correct Argument order: (TemplateName, Context)
+    return request.app.state.templates.TemplateResponse(
+        "inventory_management/inventory_dashboard.html", 
+        context
+    )
