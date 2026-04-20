@@ -163,8 +163,8 @@ async def get_inventory_dashboard(
         "sel_prod_at": sel_prod_at
     }
 
-    # CRITICAL FIX: Use 'name=' and 'context=' keywords to avoid TypeError
     return request.app.state.templates.TemplateResponse(
-        name="inventory_management/inventory_dashboard.html", 
-        context=context
-    )
+    request=request,                                      # 1. Request object must be first (or named)
+    name="inventory_management/inventory_dashboard.html", # 2. Template path
+    context=context                                       # 3. Data dictionary
+)
