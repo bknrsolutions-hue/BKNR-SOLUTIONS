@@ -59,9 +59,13 @@ async def get_inventory_dashboard(
         
         if move == "OUT" and "SALE" in str(r.purpose or "").upper(): 
             total_sales_qty += qty
-        if str(r.type_of_production or "").strip().upper() != "RAW": 
-            reprocess_qty += net
+            
+        # Reprocess Quantity: Non-RAW and Movement is IN
+        is_not_raw = str(r.type_of_production or "").strip().upper() != "RAW"
+        if is_not_raw and move == "IN":
+            reprocess_qty += qty
 
+        # Global Filters
         if sel_species != "ALL" and r.species != sel_species: continue
         if sel_variety != "ALL" and r.variety != sel_variety: continue
         if sel_grade != "ALL" and r.grade != sel_grade: continue
@@ -92,8 +96,14 @@ async def get_inventory_dashboard(
 
         available_qty += net
         storage_mc += mc
+        
         if move == "OUT" and "SALE" in str(c.purpose or "").upper(): 
             total_sales_qty += qty
+            
+        # FIX: cold_storage_holding lo 'type_of_production' ledu kabatti
+        # CS loki vachedi antha finished goods e kabatti direct 'IN' count chestunnam
+        if move == "IN":
+            reprocess_qty += qty
 
         if sel_species != "ALL" and c.species != sel_species: continue
         if sel_variety != "ALL" and c.variety != sel_variety: continue
@@ -156,15 +166,12 @@ async def get_inventory_dashboard(
         "varieties_list": get_list(varieties, "variety_name"),
         "grades_list": get_list(grades, "grade_name"),
         "prod_for_list": get_list(production_for, "production_for"),
-        "sel_species": sel_species, 
-        "sel_variety": sel_variety, 
-        "sel_grade": sel_grade, 
-        "sel_prod_for": sel_prod_for, 
-        "sel_prod_at": sel_prod_at
+        "sel_species": sel_species, "sel_variety": sel_variety, 
+        "sel_grade": sel_grade, "sel_prod_for": sel_prod_for, "sel_prod_at": sel_prod_at
     }
 
     return request.app.state.templates.TemplateResponse(
-    request=request,                                      # 1. Request object must be first (or named)
-    name="inventory_management/inventory_dashboard.html", # 2. Template path
-    context=context                                       # 3. Data dictionary
-)
+        request=request,
+        name="inventory_management/inventory_dashboard.html",
+        context=context
+    )
