@@ -354,16 +354,22 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
 </thead>
 <tbody>
 {% for r in current_holdings %}
-<tr>
-  <td><span class="badge badge-holding">{{r.status}}</span></td>
-  <td style="font-weight:600">{{r.cold_storage_name}}</td>
-  <td style="font-weight:600; color:#475569">{{r.production_for}}</td>
-  <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
-  <td><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
-  <td>{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td>
-  <td style="font-weight: 700;">{{r.no_of_mc}}</td><td>{{r.loose}}</td>
-  <td style="font-weight: 800;">{{r.quantity}}</td><td style="color:var(--muted)">{{r.in_date}}</td>
-</tr>
+    {# 
+       'today_date' comes from backend context.
+       We compare it with the record's in_date.
+    #}
+    {% if r.in_date|string == today_date %}
+    <tr>
+      <td><span class="badge badge-holding">{{r.status}}</span></td>
+      <td style="font-weight:600">{{r.cold_storage_name}}</td>
+      <td style="font-weight:600; color:#475569">{{r.production_for}}</td>
+      <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
+      <td><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
+      <td>{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td>
+      <td style="font-weight: 700;">{{r.no_of_mc}}</td><td>{{r.loose}}</td>
+      <td style="font-weight: 800;">{{r.quantity}}</td><td style="color:var(--muted)">{{r.in_date}}</td>
+    </tr>
+    {% endif %}
 {% endfor %}
 </tbody>
 </table>
@@ -389,46 +395,31 @@ const packingStyles = [
     {% endfor %}
 ];
 
-// UPDATED: FETCH BATCHES BASED ON BOTH PRODUCTION FOR & PURPOSE
 async function fetchStoringBatches() {
-    const pfSelect = document.getElementById('production_for');
-    const purposeSelect = document.getElementById('purpose_field');
+    const pfValue = document.getElementById('production_for').value;
+    const purposeValue = document.getElementById('purpose_field').value; 
     const batchList = document.getElementById('batch_list');
     
-    const pfValue = pfSelect.value;
-    const purposeValue = purposeSelect ? purposeSelect.value : "Storing";
-    
-    if(!pfValue) {
-        console.log("Production For is empty");
-        return;
-    }
+    if(!pfValue) return;
 
     try {
-        // API URL ని సరిగ్గా బిల్డ్ చేస్తున్నాం
-        const response = await fetch(`/inventory/get_storing_batches?production_for_val=${encodeURIComponent(pfValue)}&purpose_val=${encodeURIComponent(purposeValue)}`);
-        
-        if (!response.ok) throw new Error('Network response was not ok');
-        
+        const url = `/inventory/get_storing_batches?production_for_val=${encodeURIComponent(pfValue)}&purpose_val=${encodeURIComponent(purposeValue)}`;
+        const response = await fetch(url);
         const data = await response.json();
-        console.log("Batches received:", data.batches); // Debugging line
         
-        batchList.innerHTML = ''; // పాత ఆప్షన్స్ క్లియర్
-        
+        batchList.innerHTML = ''; 
         if(data.batches && data.batches.length > 0) {
             data.batches.forEach(batch => {
                 const option = document.createElement('option');
                 option.value = batch;
                 batchList.appendChild(option);
             });
-        } else {
-            console.log("No batches found for this criteria");
         }
     } catch (err) {
-        console.error("Fetch error:", err);
+        console.error("Error fetching batches:", err);
     }
 }
 
-// Defaulting PO to N/A on load
 document.getElementById('po_number').value = "N/A";
 
 function filterAddressByFacility() {

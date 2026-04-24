@@ -78,6 +78,7 @@ async def save_cs(
         contact_number=form_data.get("contact_number"),
         total_capacity_mc=int(form_data.get("total_capacity_mc") or 0),
         no_of_chambers=int(form_data.get("no_of_chambers") or 1),
+        rent_type=form_data.get("rent_type"),
         rate_per_mc_per_month=float(form_data.get("rate_per_mc_per_month") or 0.0),
         loading_unloading_charges=float(form_data.get("loading_unloading_charges") or 0.0),
         handling_charges=float(form_data.get("handling_charges") or 0.0),
@@ -121,6 +122,7 @@ async def update_cs(
         row.contact_number = form_data.get("contact_number")
         row.total_capacity_mc = int(form_data.get("total_capacity_mc") or 0)
         row.no_of_chambers = int(form_data.get("no_of_chambers") or 1)
+        row.rent_type = form_data.get("rent_type")
         row.rate_per_mc_per_month = float(form_data.get("rate_per_mc_per_month") or 0.0)
         row.loading_unloading_charges = float(form_data.get("loading_unloading_charges") or 0.0)
         row.handling_charges = float(form_data.get("handling_charges") or 0.0)

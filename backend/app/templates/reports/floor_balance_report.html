@@ -1,83 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>FLOOR BALANCE | BKNR ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<title>FLOOR BALANCE | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-   <style>
-    :root {
-        --primary: #0f172a; --accent: #2563eb; --border: #e2e8f0; --bg: #f8fafc; --sidebar: #ffffff; --text: #1e293b;
-    }
-    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-    body { margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; color: var(--text); }
+<style>
+:root{
+ --primary:#0f172a;
+ --accent:#2563eb;
+ --border:#e2e8f0;
+ --bg:#f1f5f9;
+ --header:#ffffff;
+ --text:#1e293b;
+}
 
-    /* ================= SIDEBAR FILTERS ================= */
-    .sidebar { 
-        width: 200px; background: var(--sidebar); border-right: 1px solid var(--border); 
-        display: flex; flex-direction: column; padding: 12px; flex-shrink: 0;
-    }
-    .sidebar h2 { 
-        font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; 
-        margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 8px;
-    }
-    .filters { display: flex; flex-direction: column; gap: 10px; }
-    .fbox { display: flex; flex-direction: column; gap: 3px; }
-    .fbox label { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-    select, input, #searchBox { padding: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; outline: none; width: 100%; }
-    #searchBox { border-left: 3px solid var(--accent); background: #f1f5f9; }
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+body{
+ margin:0; background:var(--bg); height:100vh;
+ display:flex; overflow:hidden; color:var(--text);
+}
 
-    /* ================= MAIN CONTENT AREA ================= */
-    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-    .status-bar { background: #fff; padding: 6px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; }
+/* ================= SIDEBAR FILTERS ================= */
+.sidebar { 
+    width: 220px; background: #fff; border-right: 2px solid var(--primary); 
+    display: flex; flex-direction: column; padding: 15px; flex-shrink: 0;
+}
+.sidebar h2 { 
+    margin: 0 0 15px 0; font-size: 14px; font-weight: 800; color: var(--primary); 
+    text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 8px;
+}
+.filters { display: flex; flex-direction: column; gap: 12px; }
+.fbox { display: flex; flex-direction: column; gap: 4px; }
+.fbox label { font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
 
-    .section { flex: 1; margin: 4px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
-    .table-wrap { flex: 1; overflow: auto; } 
-    
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; } 
+select, input, #searchBox { 
+    padding: 6px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; 
+    outline: none; background: #fff; width: 100%;
+}
+#searchBox { border-left: 4px solid var(--accent); margin-bottom: 5px; }
 
-    thead th {
-        background: #f1f5f9; padding: 4px 5px; font-size: 10px; font-weight: 800;
-        text-transform: uppercase; border-bottom: 2px solid var(--border);
-        border-right: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;
-    }
+/* ================= MAIN CONTENT ================= */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-    tbody td {
-        padding: 2px 5px; font-size: 11px; 
-        border-bottom: 1px solid #f1f5f9;
-        border-right: 1px solid #f8fafc; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        line-height: 1.1;
-    }
+.header-top { 
+    background: #fff; padding: 12px 20px; border-bottom: 1px solid var(--border); 
+    display: flex; justify-content: space-between; align-items: center;
+}
+.header-top h2 { margin: 0; font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; }
+#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); }
 
-    .row-location { background: var(--primary) !important; color: #fff !important; font-weight: 700; text-align: left !important; font-size: 10px; padding: 3px 8px !important; }
-    .row-batch-total { background: #fdfdfd !important; font-weight: 700; color: #64748b; font-style: italic; }
-    .row-company-total { background: #f0f7ff !important; font-weight: 800; color: var(--accent); }
-    
-    .subtotal-label { text-align: right !important; padding-right: 10px !important; font-size: 10px; padding-top: 2px !important; padding-bottom: 2px !important; }
-    .subtotal-qty { text-align: right !important; font-family: 'Monaco', monospace; font-size: 11px; padding-right: 10px !important; padding-top: 2px !important; padding-bottom: 2px !important; }
+/* ================= TABLE AREA ================= */
+.section { flex: 1; margin: 8px; background: #fff; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.table-wrap { flex: 1; overflow: auto; width: 100%; } 
 
-    .qty-cell { text-align: right !important; font-weight: 800; font-family: 'Monaco', monospace; padding-right: 10px !important; color: #000; }
-    .badge { padding: 1px 5px; border-radius: 3px; font-size: 8.5px; font-weight: 800; }
-    .bg-rmp { background: #e0f2fe; color: #0369a1; }
-    .bg-repro { background: #dcfce7; color: #15803d; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; } 
 
-    tfoot td { background: var(--primary); color: #fff; font-weight: 800; font-size: 12px; position: sticky; bottom: 0; z-index: 10; padding: 8px; }
+thead th {
+    background: #f1f5f9; padding: 8px 2px; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; border-bottom: 2px solid var(--border);
+    border-right: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;
+}
 
-    .w-sl { width: 40px; } 
-    .w-bt, .w-ty, .w-vr, .w-ct, .w-sp, .w-pf, .w-qt { width: calc((100% - 40px) / 7); }
+tbody td {
+    padding: 8px 5px; font-size: 9.5px; border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f8fafc; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-weight: 400;
+}
+
+tbody tr:hover:not(.row-location):not(.row-batch-total) { background: #f0f9ff; cursor: pointer; }
+tr.selected { background: #dbeafe !important; }
+
+/* Column Widths */
+.w-sl { width: 45px; } .w-bt { width: 120px; } .w-ty { width: 100px; } .w-vr { width: 160px; }
+.w-ct { width: 90px; } .w-sp { width: 120px; } .w-pf { width: 180px; } .w-qt { width: 110px; }
+
+/* Grouping & Subtotals */
+.row-location { background: var(--primary) !important; color: #fff !important; font-weight: 800; text-align: left !important; }
+.row-location td { color: #fff !important; padding: 10px 15px; font-size: 12px; }
+
+.row-batch-total { background: #f8fafc !important; color: var(--primary) !important; font-weight: 800; }
+.subtotal-label { text-align: right !important; padding-right: 25px !important; text-transform: uppercase; font-size: 10px; }
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 12px !important; }
+
+.badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; border: 1px solid #cbd5e1; background: #f1f5f9; }
+
+/* ================= FOOTER ================= */
+tfoot td { 
+    background: #f8fafc; font-weight: 800; font-size: 12px; border-top: 2.5px solid var(--primary); 
+    position: sticky; bottom: 0; z-index: 10; padding: 15px; color: var(--primary); 
+}
 </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-    <h2><i class="fa-solid fa-filter"></i> Filters</h2>
+    <h2>Filters</h2>
     <div class="filters">
         <div class="fbox">
-            <label>Quick Search</label>
-            <input id="searchBox" oninput="filterTable()" placeholder="Batch, Variety...">
+            <label>Search Batch/Variety</label>
+            <input id="searchBox" oninput="filterTable()" placeholder="Type to search...">
         </div>
         <div class="fbox">
             <label>Location</label>
@@ -87,7 +111,7 @@
             </select>
         </div>
         <div class="fbox">
-            <label>Type</label>
+            <label>Source Type</label>
             <select id="f_type" onchange="filterTable()">
                 <option value="">All Types</option>
                 <option value="RMP">RMP</option>
@@ -109,15 +133,12 @@
             </select>
         </div>
     </div>
-    <div style="margin-top: auto; font-size: 9px; color: #94a3b8; text-align: center;">
-        BKNR ERP v2.0
-    </div>
 </div>
 
 <div class="main-content">
-    <div class="status-bar">
-        <span><i class="fa-solid fa-boxes-stacked"></i> FLOOR BALANCE REPORT</span>
-        <span id="rowCount">0 Items</span>
+    <div class="header-top">
+        <h2>Floor Balance Tracker</h2>
+        <div id="rowCount">0 Items Displayed</div>
     </div>
 
     <div class="section">
@@ -127,79 +148,72 @@
                     <tr>
                         <th class="w-sl">#</th>
                         <th class="w-bt">Batch ID</th>
-                        <th class="w-ty">Type</th>
+                        <th class="w-ty">Source</th>
                         <th class="w-vr">Variety</th>
-                        <th class="w-ct">Count</th>
+                        <th class="w-ct">Count/Grade</th>
                         <th class="w-sp">Species</th>
                         <th class="w-pf">Production For</th>
-                        <th class="w-qt" style="text-align:right;">Qty (KG)</th>
+                        <th class="w-qt" style="text-align:right; padding-right:12px;">Available (KG)</th>
                     </tr>
                 </thead>
                 <tbody id="tbody">
-                    {% set ns = namespace(cur_loc="", cur_prod="", cur_batch="", sl=1, grand_total=0, comp_total=0, batch_total=0) %}
+                    {% set ns = namespace(cur_loc="", cur_batch="", sl=1, grand_total=0, batch_total=0) %}
                     
                     {% for r in rows_batch %}
                         
+                        {# 1. Location Row #}
                         {% if r.location != ns.cur_loc %}
                             <tr class="row-location" data-loc="{{ r.location }}">
-                                <td colspan="8"><i class="fa-solid fa-warehouse"></i> {{ r.location | upper }}</td>
+                                <td colspan="8">{{ r.location | upper }}</td>
                             </tr>
                             {% set ns.cur_loc = r.location %}
                         {% endif %}
 
+                        {# 2. Batch Total Row (if batch changes) #}
                         {% if loop.index0 > 0 and r.batch != ns.cur_batch %}
-                            <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-prod="{{ ns.cur_prod }}" data-batch="{{ ns.cur_batch }}">
-                                <td colspan="7" class="subtotal-label">{{ ns.cur_batch }} Total:</td>
-                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.batch_total) }}</td>
+                            <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-batch="{{ ns.cur_batch }}">
+                                <td colspan="7" class="subtotal-label">BATCH [{{ ns.cur_batch }}] TOTAL:</td>
+                                <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                             </tr>
                             {% set ns.batch_total = 0 %}
                         {% endif %}
 
-                        {% if loop.index0 > 0 and r.production_for != ns.cur_prod %}
-                            <tr class="row-company-total" data-loc="{{ ns.cur_loc }}" data-prod="{{ ns.cur_prod }}">
-                                <td colspan="7" class="subtotal-label">{{ ns.cur_prod }} Total:</td>
-                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.comp_total) }}</td>
-                            </tr>
-                            {% set ns.comp_total = 0 %}
-                        {% endif %}
+                        {% set ns.cur_batch = r.batch %}
 
-                        {% set ns.cur_prod = r.production_for %}{% set ns.cur_batch = r.batch %}
-
-                        <tr class="data-row" 
+                        {# 3. Data Row #}
+                        <tr class="data-row" onclick="selectRow(this)"
                             data-loc="{{ r.location }}" 
                             data-prod="{{ r.production_for }}" 
                             data-batch="{{ r.batch }}" 
                             data-spec="{{ r.species }}"
                             data-source="{{ r.source }}">
                             <td>{{ ns.sl }}</td>
-                            <td style="font-weight:700; color:var(--accent);">{{ r.batch }}</td>
-                            <td><span class="badge {{ 'bg-repro' if r.source == 'REPROCESS' else 'bg-rmp' }}">{{ r.source }}</span></td>
-                            <td style="font-weight:700;">{{ r.variety }}</td>
-                            <td style="font-weight:700; color:#475569;">{{ r.count }}</td>
+                            <td>{{ r.batch }}</td>
+                            <td><span class="badge">{{ r.source }}</span></td>
+                            <td style="text-align:left;">{{ r.variety }}</td>
+                            <td>{{ r.count }}</td>
                             <td>{{ r.species }}</td>
-                            <td style="color: #64748b;">{{ r.production_for }}</td>
-                            <td class="qty-cell">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                            <td>{{ r.production_for }}</td>
+                            <td style="text-align:right;">{{ "{:,.2f}".format(r.available_qty) }}</td>
                         </tr>
 
-                        {% set ns.sl = ns.sl + 1 %}{% set ns.batch_total = ns.batch_total + r.available_qty %}
-                        {% set ns.comp_total = ns.comp_total + r.available_qty %}{% set ns.grand_total = ns.grand_total + r.available_qty %}
+                        {% set ns.sl = ns.sl + 1 %}
+                        {% set ns.batch_total = ns.batch_total + r.available_qty %}
+                        {% set ns.grand_total = ns.grand_total + r.available_qty %}
 
+                        {# 4. Final Batch Total #}
                         {% if loop.last %}
-                            <tr class="row-batch-total" data-loc="{{ r.location }}" data-prod="{{ r.production_for }}" data-batch="{{ r.batch }}">
-                                <td colspan="7" class="subtotal-label">{{ r.batch }} Total:</td>
-                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.batch_total) }}</td>
-                            </tr>
-                            <tr class="row-company-total" data-loc="{{ r.location }}" data-prod="{{ r.production_for }}">
-                                <td colspan="7" class="subtotal-label">{{ r.production_for }} Total:</td>
-                                <td class="subtotal-qty">{{ "{:,.2f}".format(ns.comp_total) }}</td>
+                            <tr class="row-batch-total" data-loc="{{ r.location }}" data-batch="{{ r.batch }}">
+                                <td colspan="7" class="subtotal-label">BATCH [{{ r.batch }}] TOTAL:</td>
+                                <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                             </tr>
                         {% endif %}
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="7" style="text-align:right;">NET FLOOR BALANCE:</td>
-                        <td id="grandTotal" style="text-align:right;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
+                        <td colspan="7" style="text-align:right; padding-right:20px;">GRAND TOTAL BALANCE:</td>
+                        <td id="grandTotal" style="text-align:right; padding-right:12px;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
                     </tr>
                 </tfoot>
             </table>
@@ -208,6 +222,11 @@
 </div>
 
 <script>
+function selectRow(tr) {
+    document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected"));
+    tr.classList.add("selected");
+}
+
 function filterTable() {
     const locF = document.getElementById("f_loc").value.toLowerCase();
     const typeF = document.getElementById("f_type").value.toLowerCase();
@@ -232,22 +251,24 @@ function filterTable() {
         }
     });
 
-    document.querySelectorAll(".row-batch-total, .row-company-total, .row-location").forEach(tr => {
+    // Handle visibility for headers and batch totals
+    document.querySelectorAll(".row-batch-total, .row-location").forEach(tr => {
         const isLoc = tr.classList.contains("row-location");
-        const isBatch = tr.classList.contains("row-batch-total");
         const hasVisible = [...rows].some(r => 
             r.dataset.loc === tr.dataset.loc && 
-            (isLoc || r.dataset.prod === tr.dataset.prod) &&
-            (!isBatch || r.dataset.batch === tr.dataset.batch) &&
+            (isLoc || r.dataset.batch === tr.dataset.batch) &&
             r.style.display !== "none"
         );
         tr.style.display = hasVisible ? "" : "none";
     });
 
     document.getElementById("grandTotal").innerText = net.toLocaleString('en-IN', {minimumFractionDigits: 2}) + " KG";
-    document.getElementById("rowCount").innerText = visibleCount + " Items";
+    document.getElementById("rowCount").innerText = visibleCount + " Items Displayed";
 }
+
+// Initial count run
 filterTable();
 </script>
+
 </body>
 </html>

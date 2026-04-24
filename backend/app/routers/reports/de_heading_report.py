@@ -74,6 +74,7 @@ async def de_heading_report(
         name="reports/de_heading_report.html",
         context={
             "rows": rows,
+            "datetime": datetime,
             "batches": batches,
             "contractors": contractors,
             "species_list": species_list,

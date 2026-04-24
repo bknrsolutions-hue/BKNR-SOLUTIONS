@@ -158,6 +158,10 @@ class cold_storage_holding(Base, metacolumns):
     storage_rate_per_mc = Column(Float, default=0.0)  # Rate per Master Carton
     rent_start_date = Column(Date, nullable=True)
     last_billed_date = Column(Date, nullable=True)
+    rent_type = Column(String(20))
+    handling_rate = Column(Float, default=0.0)
+    loading_unloading_cost = Column(Float, default=0.0)
+    paid_amount = Column(Float, default=0.0)
     
     # Status Management
     status = Column(String(50), default="HOLDING")    # HOLDING / DISPATCHED / TRANSFERRED
@@ -186,7 +190,7 @@ class cold_storage(Base, metacolumns):
     rate_per_mc_per_month = Column(Float, default=0.0)
     loading_unloading_charges = Column(Float, default=0.0) # Per MC charge
     handling_charges = Column(Float, default=0.0)
-    
+    rent_type = Column(String(20))
     # Status
     is_active = Column(String(20), default="ACTIVE") # ACTIVE / INACTIVE
     remarks = Column(Text, nullable=True)

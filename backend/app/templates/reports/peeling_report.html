@@ -4,20 +4,23 @@
 <meta charset="UTF-8">
 <title>PEELING REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
- --primary:#0f172a;
- --accent:#2563eb;
- --border:#e2e8f0;
- --bg:#f1f5f9;
+ --primary:#0f172a; 
+ --accent:#2563eb;  
+ --border:#e2e8f0;  
+ --bg:#f1f5f9;      
  --header:#ffffff;
  --text:#1e293b;
+ --text-muted:#64748b;
  --danger: #ef4444;
  --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
 body{
  margin:0; background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text);
@@ -57,38 +60,41 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1750px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1650px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
+ background:#f8fafc; padding:8px 2px; font-size:9px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ color: var(--text); letter-spacing: 0.5px;
 }
 
 tbody td{
- padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ padding:8px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+ font-weight: 400; /* Data bold lekunda normal ga */
 }
 
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
+tbody tr:hover{background:#f1f7ff; cursor:pointer;}
+tr.selected{background:#eef2ff !important; border-left: 3px solid var(--accent);}
 
-/* Optimized Column Widths */
-.w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 90px; } .w-con { width: 130px; }
-.w-var { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 75px; } .w-rt { width: 65px; }
-.w-yld { width: 70px; } .w-diff { width: 70px; } .w-am { width: 95px; } .w-loc { width: 110px; } 
-.w-pf { width: 120px; } .w-em { width: 140px; }
+/* Column Widths */
+.w-sl { width: 35px; } .w-dt { width: 85px; } .w-bt { width: 90px; } .w-con { width: 130px; }
+.w-var { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 80px; } .w-rt { width: 65px; }
+.w-yld { width: 75px; } .w-diff { width: 75px; } .w-am { width: 100px; } .w-loc { width: 110px; } 
+.w-pf { width: 130px; } .w-em { width: 140px; }
 
-.yield-cell { font-weight: 800; color: var(--accent); }
-.target-cell { font-weight: 600; color: #64748b; background: #f8fafc; }
-.diff-cell { font-weight: 700; }
+.yield-cell { font-weight: 700; color: var(--accent); }
+.amt-cell { font-weight: 600; color: var(--primary); }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ 
+    background:#f8fafc; font-weight:800; font-size:11px; color:var(--primary);
+    border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:12px; 
+}
 
-/* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
 .modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
 .btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
@@ -99,21 +105,18 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-
-@media print {
-    .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
-    body { overflow: visible !important; }
-    .section { border: none !important; margin: 0 !important; }
-    .table-wrap { overflow: visible !important; }
-    table { min-width: 100% !important; table-layout: auto !important; }
-}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-    <h2>PEELING REPORT</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>PEELING REPORT</h2>
+        <div style="font-size: 11px; color: var(--text-muted);">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
     <div class="filters">
         <div class="fbox"><label>Month View</label><input type="month" id="f_month"></div>
         <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
@@ -181,18 +184,18 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                 {% for r in rows %}
                 <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
                     <td class="slno"></td>
-                    <td>{{ r.date }}</td>
+                    <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
                     <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
                     <td class="lookup contractor" data-field="contractor_name">{{ r.contractor_name }}</td>
                     <td class="lookup variety" data-field="variety_name">{{ r.variety_name }}</td>
                     <td class="editable" data-field="hlso_count">{{ r.hlso_count or 0 }}</td>
-                    <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty or 0 }}</td>
-                    <td class="editable peeled" data-field="peeled_qty">{{ r.peeled_qty or 0 }}</td>
-                    <td class="target-cell">{{ r.target_yield or 0 }}%</td>
+                    <td class="editable hlso" data-field="hlso_qty" style="text-align:right;">{{ r.hlso_qty or 0 }}</td>
+                    <td class="editable peeled" data-field="peeled_qty" style="text-align:right;">{{ r.peeled_qty or 0 }}</td>
+                    <td style="color:var(--text-muted)">{{ r.target_yield or 0 }}%</td>
                     <td class="yield-cell" data-target="{{ r.target_yield or 0 }}">{{ r.yield_percent or 0 }}%</td>
-                    <td class="diff-cell">0.00%</td>
+                    <td class="diff-cell">{{ r.diff_percent or '0.00' }}%</td>
                     <td class="editable rate" data-field="rate">{{ r.rate or 0 }}</td>
-                    <td class="amt-cell" data-val="{{ r.amount or 0 }}">₹{{ r.amount or 0 }}</td>
+                    <td class="amt-cell" data-val="{{ r.amount or 0 }}" style="text-align:right;">₹{{ "{:,.2f}".format(r.amount or 0) }}</td>
                     <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
                     <td class="editable" data-field="production_for">{{ r.production_for }}</td>
                     <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
@@ -201,14 +204,14 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right">TOTALS:</td>
-                    <td id="tot_hlso">0.00</td>
-                    <td id="tot_peeled">0.00</td>
+                    <td colspan="6" style="text-align:right">GRAND TOTALS:</td>
+                    <td id="tot_hlso" style="text-align:right">0.00</td>
+                    <td id="tot_peeled" style="text-align:right">0.00</td>
                     <td></td>
-                    <td id="avg_yield" style="color:var(--accent)">0%</td>
-                    <td id="avg_diff">0%</td>
+                    <td id="avg_yield" style="color:var(--accent); text-align:center;">0%</td>
+                    <td id="avg_diff" style="text-align:center;">0%</td>
                     <td></td>
-                    <td id="tot_amt">₹0.00</td>
+                    <td id="tot_amt" style="text-align:right">₹0.00</td>
                     <td colspan="3"></td>
                 </tr>
             </tfoot>
@@ -235,7 +238,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 <script>
 const lookups = {
     contractor: {{ contractors|tojson or [] }},
-    variety: {{ varieties|tojson or [] }},
+    variety: {{ varieties_dropdown|tojson or [] }}, 
     peeling: {{ locations|tojson or [] }}
 };
 
@@ -307,7 +310,6 @@ function applyFilters() {
     document.getElementById("avg_diff").style.color = avgDiff >= 0 ? "var(--success)" : "var(--danger)";
 }
 
-// Confirm Actions
 function askConfirm(action) { 
     currentAction = action; 
     document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
@@ -392,7 +394,7 @@ async function toggleAudit() {
         const res = await fetch(`${baseUrl}/audit_all`);
         const logs = await res.json();
         content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px;">
+            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px; font-size:10px;">
                 <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
                 ${l.action}: ${l.details}<br>
                 <small>By: ${l.user}</small>

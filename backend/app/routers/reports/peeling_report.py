@@ -14,7 +14,9 @@ from io import BytesIO
 from openpyxl import Workbook
 
 from app.database import get_db
+# ✅ Varieties model correct ga import chesam
 from app.database.models.processing import Peeling, AuditLog
+from app.database.models.criteria import varieties as Varieties
 
 router = APIRouter(
     prefix="/peeling_report",
@@ -41,14 +43,24 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # ✅ Dynamic Target Yield Lookup (No DB Column)
+    var_list = db.query(Varieties).filter(Varieties.company_id == comp_code).all()
+    yield_map = {v.variety_name: float(v.peeling_yield or 0) for v in var_list}
+
+    for r in rows:
+        # DB lo save cheyakunda dynamic ga attribute attach chestunnam
+        r.target_yield = yield_map.get(r.variety_name, 0)
+        # Diff calculation
+        act_yld = float(r.yield_percent or 0)
+        r.diff_percent = round(act_yld - float(r.target_yield), 2)
+
     # Unique filter options for dropdowns
     batches = sorted({r.batch_number for r in rows if r.batch_number})
     contractors = sorted({r.contractor_name for r in rows if r.contractor_name})
-    varieties = sorted({r.variety_name for r in rows if r.variety_name})
+    varieties_dropdown = sorted(list(yield_map.keys())) # Using map keys for all possible varieties
     locations = sorted({r.peeling_at for r in rows if r.peeling_at})
     production_for_list = sorted({r.production_for for r in rows if r.production_for})
 
-    # ✅ FIXED TemplateResponse: Latest FastAPI format
     return templates.TemplateResponse(
         request=request,
         name="reports/peeling_report.html",
@@ -56,7 +68,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             "rows": rows,
             "batches": batches,
             "contractors": contractors,
-            "varieties": varieties,
+            "varieties_dropdown": varieties_dropdown, # Fixed name for tojson
             "locations": locations,
             "production_for_list": production_for_list,
             "is_admin": role == "admin"
@@ -84,7 +96,6 @@ async def update_peeling(
     if not row:
         raise HTTPException(status_code=404, detail="Record not found")
 
-    # Fields to monitor for Audit Logs
     updatable_fields = [
         "batch_number", "contractor_name", "variety_name", "hlso_count",
         "hlso_qty", "peeled_qty", "rate", "peeling_at", "production_for"
@@ -96,7 +107,6 @@ async def update_peeling(
             old_val = str(getattr(row, field) or "").strip()
 
             if old_val != new_val:
-                # Add Audit Entry
                 audit = AuditLog(
                     table_name="peeling",
                     record_id=record_id,
@@ -105,7 +115,7 @@ async def update_peeling(
                     old_value=old_val,
                     new_value=new_val,
                     edited_by=user_email,
-                    edited_at=dt.datetime.utcnow() # Using dt for clarity
+                    edited_at=dt.datetime.utcnow()
                 )
                 db.add(audit)
                 setattr(row, field, payload[field])
@@ -118,6 +128,7 @@ async def update_peeling(
 
         row.yield_percent = round((p_qty / h_qty * 100), 2) if h_qty > 0 else 0
         row.amount = round(p_qty * rt, 2)
+            
     except Exception as e:
         print(f"Recalculation Error: {row.batch_number}: {e}")
 
@@ -164,7 +175,6 @@ async def delete_peeling(request: Request, payload: dict = Body(...), db: Sessio
 
     row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
     if row:
-        # Audit Delete Action
         db.add(AuditLog(
             table_name="peeling", record_id=row.id, company_id=comp_code,
             field_name="DELETE", old_value="Record", new_value="Deleted",
@@ -225,7 +235,6 @@ def peeling_monthly_bill(
         id_list = [int(i) for i in ids.split(",") if i.isdigit()]
         q = q.filter(Peeling.id.in_(id_list))
     else:
-        # month is YYYY-MM
         q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
 
     rows = q.order_by(Peeling.date.asc()).all()
@@ -244,6 +253,10 @@ def peeling_monthly_bill(
             "grand_total": round(grand_total, 2),
             "contractor_name": contractor, 
             "month_year": month,
-            "bill_date": datetime.now() 
+            "bill_date": datetime.now(),
+            # ✅ JSON Error raakunda fix chesam
+            "contractors": [], 
+            "varieties_dropdown": [], 
+            "locations": []
         }
     )

@@ -141,7 +141,15 @@ tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accen
 
     <div class="row">
       <div class="col">
-        <label>Rate Per MC / Month</label>
+        <label>Rent Type</label>
+        <select name="rent_type" id="rent_type">
+            <option value="">--Select--</option>
+            <option value="DAY">DAY</option>
+            <option value="MONTH">MONTH</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>Rate Per MC</label>
         <input type="number" step="0.01" name="rate_per_mc_per_month" id="rate_per_mc_per_month" value="0.0">
       </div>
       <div class="col">
@@ -197,6 +205,7 @@ tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accen
           <th>Type</th>
           <th>Contact</th>
           <th>Capacity (MC)</th>
+          <th>Rent Type</th>
           <th>Rate/MC</th>
           <th>Loading</th>
           <th>Handling</th>
@@ -211,6 +220,7 @@ tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accen
           <td>{{ row.storage_type }}</td>
           <td>{{ row.contact_person }} ({{ row.contact_number }})</td>
           <td>{{ row.total_capacity_mc }}</td>
+          <td>{{ row.rent_type }}</td>
           <td>₹{{ row.rate_per_mc_per_month }}</td>
           <td>₹{{ row.loading_unloading_charges }}</td>
           <td>₹{{ row.handling_charges }}</td>
@@ -268,6 +278,7 @@ function editSelected() {
   document.getElementById("contact_number").value = data.contact_number;
   document.getElementById("total_capacity_mc").value = data.total_capacity_mc;
   document.getElementById("no_of_chambers").value = data.no_of_chambers;
+  document.getElementById("rent_type").value = data.rent_type || "";
   document.getElementById("rate_per_mc_per_month").value = data.rate_per_mc_per_month;
   document.getElementById("loading_unloading_charges").value = data.loading_unloading_charges;
   document.getElementById("handling_charges").value = data.handling_charges;

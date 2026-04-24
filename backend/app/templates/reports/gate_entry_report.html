@@ -66,18 +66,18 @@ select, input[type=date], #searchBox{
 .section{ flex: 1; overflow: hidden; margin: 5px; background: #fff; border: 1px solid var(--border); display: flex; flex-direction: column; }
 .table-wrap{ overflow-y: auto; overflow-x: hidden; flex: 1; width: 100%; } 
 
-table{ width: 100%; border-collapse: collapse; table-layout: fixed; }
+table{ width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1320px; }
 
 thead th{
   background: #f1f5f9; color: #334155; padding: 8px 1px;
-  font-size: 8.5px; font-weight: 700; position: sticky;
+  font-size: 10px; font-weight: 700; position: sticky;
   top: 0; text-align: center; border-bottom: 2px solid var(--border);
   border-right: 1px solid #e2e8f0; z-index: 10;
   text-transform: uppercase;
 }
 
 tbody td{
-  padding: 6px 1px; font-size: 9px;
+  padding: 6px 1px; font-size: 9.5px;
   border-bottom: 1px solid #f1f5f9; text-align: center;
   border-right: 1px solid #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }

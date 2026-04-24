@@ -2,26 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>COLD STORAGE HOLDING | BKNR ERP</title>
+<title>CS INVENTORY | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* 1. RMP DESIGN SYSTEM */
 :root{
- --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f1f5f9;
- --header:#ffffff; --text:#1e293b; --danger: #ef4444; --success: #22c55e;
+ --primary:#0f172a; /* Midnight Blue */
+ --accent:#2563eb;  /* Action Blue */
+ --border:#e2e8f0;  /* Standard Border */
+ --bg:#f1f5f9;      /* Background Gray */
+ --header:#ffffff;
+ --text:#1e293b;
+ --danger: #ef4444;
+ --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
-body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{
+ margin:0; background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+}
 
-/* ================= HEADER & FILTERS ================= */
+/* ================= HEADER & FILTERS (RMP STYLE) ================= */
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header-top { display: flex; justify-content: space-between; align-items: center; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+ margin-top:8px; display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
  gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
@@ -30,7 +41,11 @@ body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction
 select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
-/* ================= ACTIONS ================= */
+/* ================= TABS & ACTIONS ================= */
+.tabs { display: flex; background: #fff; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 20px; }
+.tab { padding: 10px 5px; font-size: 10px; font-weight: 800; cursor: pointer; color: #64748b; border-bottom: 3px solid transparent; text-transform: uppercase; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
@@ -38,27 +53,28 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 .dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
 
 .menu-list{
- position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
+ position:absolute; right:0; top:30px; width:180px; background:#fff; border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
-/* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+/* ================= TABLE AREA (RMP COMPACT) ================= */
+.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:none; flex-direction:column; overflow:hidden; }
+.section.active { display: flex; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2500px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2300px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
+ background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ color: var(--primary);
 }
 
 tbody td{
- padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -66,53 +82,47 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
-.inv-col { background: #fffcf0; font-weight: 700; color: #92400e; }
-.qty-col { font-weight: 800; color: var(--accent); }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+/* Special Row Styles */
+.row-sub-total { background: #f8fafc !important; font-weight: 800; color: var(--accent); border-top: 1px solid var(--border); }
+.row-sub-total td { font-size: 10px !important; color: var(--accent); }
+.qty-bold { font-weight: 700; color: var(--primary); }
+
+/* Column Widths */
+.w-sl { width: 35px; } .w-dt { width: 85px; } .w-st { width: 140px; } .w-bt { width: 95px; }
+.w-tp { width: 60px; } .w-sp { width: 110px; } .w-vr { width: 110px; } .w-gd { width: 70px; }
+.w-br { width: 110px; } .w-fz { width: 90px; } .w-gz { width: 60px; } .w-ps { width: 110px; }
+.w-mc { width: 65px; } .w-ls { width: 55px; } .w-qt { width: 90px; } .w-val { width: 100px; }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
-
-/* ================= MODALS & AUDIT ================= */
-#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
-
-.audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:400px; background:#fff; 
-    border-left:3px solid var(--primary); display:none; flex-direction:column; 
-    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
+tfoot td{ 
+    background:#f8fafc; font-weight:800; font-size:11px; color:var(--primary);
+    border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:10px; 
 }
-.audit-item{ padding:12px; border-bottom:1px solid #e2e8f0; border-left:4px solid var(--accent); margin:5px; background:#f8fafc; border-radius:4px; font-size:10px; }
 
-@media print {
-    .header, .actions, .dots, .audit-panel, #confirmModal { display: none !important; }
-    body { overflow: visible !important; }
-    .section { border: none !important; margin: 0 !important; }
-    table { min-width: 100% !important; table-layout: auto !important; }
-}
+.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 </style>
 </head>
 
 <body>
 
 <div class="header">
-    <div class="header-top">
-        <h2>COLD STORAGE HOLDING REPORT</h2>
-        <div style="font-size: 10px; font-weight: 700; color: #64748b;">{{ company_name }} · BKNR ERP</div>
-    </div>
+    <h2>CS INVENTORY</h2>
     <div class="filters">
-        <div class="fbox"><label>From</label><input type="date" id="f_from" value="{{from_date}}"></div>
-        <div class="fbox"><label>To</label><input type="date" id="f_to" value="{{to_date}}"></div>
-        <div class="fbox"><label>Movement</label><select id="f_type"><option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
-        <div class="fbox"><label>Storage</label><select id="f_storage"><option value="">All Storages</option></select></div>
-        <div class="fbox"><label>Status</label><select id="f_status"><option value="">All Status</option><option value="HOLDING">HOLDING</option><option value="DISPATCHED">DISPATCHED</option></select></div>
-        <div class="fbox"><label>Species</label><select id="f_species"><option value="">All Species</option></select></div>
-        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
-        <div class="fbox"><label>Brand</label><select id="f_brand"><option value="">All Brands</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Brand, Storage, PO...">
+        <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
+        <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
+        <div class="fbox"><label>Storage</label><select id="f_storage"><option value="">All</option></select></div>
+        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All</option></select></div>
+        <div class="fbox"><label>Species</label><select id="f_species"><option value="">All</option></select></div>
+        <div class="fbox"><label>Prod For</label><select id="f_prod_for"><option value="">All</option></select></div>
+        <div class="fbox"><label>Type</label><select id="f_mtype"><option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
+        <div class="fbox"><label>Status</label><select id="f_status"><option value="">All</option><option value="HOLDING">HOLDING</option><option value="DISPATCHED">DISPATCHED</option></select></div>
+        <input id="searchBox" placeholder="Search batch, storage, species...">
     </div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('report', this)">HOLDING REPORT</div>
+    <div class="tab" onclick="switchTab('available', this)">STOCK BALANCE</div>
 </div>
 
 <div class="actions">
@@ -120,356 +130,216 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            {% if is_admin %}
-            <div onclick="enableEdit()">✏️ Edit Record</div>
-            <div onclick="askSave()">💾 Save Changes</div>
-            {% endif %}
-            <div onclick="toggleAudit()">📜 View Edit Logs</div>
+            <div onclick="enableEdit()">✏️ Edit Selected</div>
+            <div onclick="saveEdit()">💾 Save Changes</div>
             <hr>
-            <b>📋 Export Options</b>
-            <div onclick="window.print()">🖨 Print View</div>
-            <div onclick="exportToExcel()">📊 Export Excel (.xlsx)</div>
-            <hr>
-            {% if is_admin %}
-            <div onclick="askDelete()" style="color:red">🗑 Delete Entry</div>
-            {% endif %}
+            <div onclick="deleteRow()" style="color:red">🗑 Delete Record</div>
         </div>
     </div>
 </div>
 
-<div class="section">
+<div class="section active" id="reportSection">
     <div class="table-wrap">
-        <table id="storageTable">
+        <table id="reportTable">
             <thead>
                 <tr>
-                    <th style="width:40px">#</th>
-                    <th style="width:90px">In Date</th>
-                    <th style="width:130px">Facility Name</th>
-                    <th style="width:110px">Batch #</th>
-                    <th style="width:50px">Type</th>
-                    <th style="width:100px">Species</th>
-                    <th style="width:100px">Variety</th>
-                    <th style="width:70px">Grade</th>
-                    <th style="width:100px">Brand</th>
-                    <th style="width:100px">Pack Style</th>
-                    <th style="width:50px">MC</th>
-                    <th style="width:50px">Lse</th>
-                    <th style="width:80px" class="qty-col">Qty (KG)</th>
-                    <th style="width:80px" class="inv-col">KG Val</th>
-                    <th style="width:100px" class="inv-col">Inv Value</th>
-                    <th style="width:110px">Prod For</th>
-                    <th style="width:90px">Rent Dt</th>
-                    <th style="width:70px">Rate/MC</th>
-                    <th style="width:90px">Status</th>
-                    <th style="width:150px">Remarks</th>
+                    <th class="w-sl">#</th><th class="w-dt">Date</th><th class="w-st">Storage</th><th class="w-bt">Batch #</th>
+                    <th class="w-tp">Mov</th><th class="w-sp">Species</th><th class="w-vr">Variety</th><th class="w-gd">Grade</th>
+                    <th class="w-br">Brand</th><th class="w-fz">Freezer</th><th class="w-gz">Glaze</th><th class="w-ps">Pack Style</th>
+                    <th class="w-mc">MC</th><th class="w-ls">Lse</th><th class="w-qt">Qty(KG)</th><th class="w-bt">PO #</th>
+                    <th class="w-vr">Purpose</th><th class="w-st">Prod At</th><th class="w-st">Prod For</th><th class="w-val">Inv Val</th>
+                    <th class="w-val">Hold Cost</th><th class="w-val">Other Chg</th><th class="w-val">Total Pay</th><th class="w-st">Status</th><th class="w-vr">Remarks</th>
                 </tr>
             </thead>
-            <tbody id="tbody">
-                {% for r in rows %}
-                <tr data-id="{{ r.id }}" data-date="{{ r.in_date }}" onclick="selectRow(this)">
-                    <td class="slno"></td>
-                    <td>{{ r.in_date }}</td>
-                    <td class="editable" data-field="cold_storage_name">{{ r.cold_storage_name }}</td>
-                    <td style="font-weight:700">{{ r.batch_number }}</td>
-                    <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
-                    <td class="lookup" data-field="species">{{ r.species }}</td>
-                    <td class="lookup" data-field="variety">{{ r.variety }}</td>
-                    <td class="lookup" data-field="grade">{{ r.grade }}</td>
-                    <td class="lookup" data-field="brand">{{ r.brand }}</td>
-                    <td class="lookup" data-field="packing_style">{{ r.packing_style }}</td>
-                    <td class="editable" data-field="no_of_mc">{{ r.no_of_mc }}</td>
-                    <td class="editable" data-field="loose">{{ r.loose }}</td>
-                    <td class="qty-col">{{ r.quantity }}</td>
-                    <td class="editable inv-col" data-field="product_kg_value">{{ r.product_kg_value }}</td>
-                    <td class="inv-col" style="font-weight:800">₹{{ r.inventory_value }}</td>
-                    <td>{{ r.production_for }}</td>
-                    <td>{{ r.rent_start_date }}</td>
-                    <td class="editable" data-field="storage_rate_per_mc">{{ r.storage_rate_per_mc }}</td>
-                    <td class="editable" data-field="status" style="font-weight:bold; color: {{ '#2563eb' if r.status=='HOLDING' else '#64748b' }}">{{ r.status }}</td>
-                    <td class="editable" data-field="remarks">{{ r.remarks }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tbody id="reportTbody"></tbody>
             <tfoot>
-                <tr>
-                    <td colspan="10" style="text-align:right">PAGE TOTALS:</td>
-                    <td id="tot_mc">0</td>
-                    <td id="tot_lse">0</td>
-                    <td id="tot_qty" class="qty-col">0.00</td>
-                    <td></td>
-                    <td id="tot_inv" class="inv-col">₹0.00</td>
-                    <td colspan="5"></td>
-                </tr>
+                <tr><td colspan="12" style="text-align:right">NET TOTAL:</td><td id="rpt_mc">0</td><td id="rpt_ls">0</td><td id="rpt_qty">0</td><td colspan="10"></td></tr>
             </tfoot>
         </table>
     </div>
 </div>
 
-<div class="audit-panel" id="auditPanel">
-    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:13px;">📜 EDIT HISTORY</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px;">×</span>
+<div class="section" id="availableSection">
+    <div class="table-wrap">
+        <table id="availableTable">
+            <thead>
+                <tr>
+                    <th class="w-sl">#</th><th class="w-st">Storage</th><th class="w-bt">Batch #</th><th class="w-sp">Species</th>
+                    <th class="w-vr">Variety</th><th class="w-gd">Grade</th><th class="w-br">Brand</th><th class="w-fz">Freezer</th>
+                    <th class="w-gz">Glaze</th><th class="w-ps">Pack Style</th><th class="w-mc">Bal MC</th><th class="w-ls">Bal Lse</th>
+                    <th class="w-qt">Bal Qty</th><th class="w-st">Prod At</th><th class="w-st">Prod For</th><th class="w-val">Inv Val</th><th class="w-st">Status</th>
+                </tr>
+            </thead>
+            <tbody id="availableTbody"></tbody>
+            <tfoot>
+                <tr><td colspan="10" style="text-align:right">TOTAL STOCK:</td><td id="avl_mc">0</td><td id="avl_ls">0</td><td id="avl_qty">0</td><td colspan="4"></td></tr>
+            </tfoot>
+        </table>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1;"></div>
 </div>
-
-<div id="confirmModal">
-    <div class="modal-content">
-        <h4 id="confirmMsg">Are you sure?</h4>
-        <div style="display:flex; justify-content:center; gap:10px;">
-            <button class="btn-y" id="btnYes">Yes</button>
-            <button class="btn-n" onclick="closeModal()">No</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-// Logic and Routing Fixes - Absolute Final Version
-const base_url = "/inventory/cold_storage_holding_report";
+const apiBase = window.location.pathname.replace(/\/$/, ""); 
+
+const rawData = [
+    {% for r in rows %}
+    {
+        id: "{{ r.id }}", in_date: "{{ r.in_date }}", cold_storage_name: "{{ r.cold_storage_name or '' }}",
+        batch_number: "{{ r.batch_number or '' }}", cargo_movement_type: "{{ r.cargo_movement_type or 'IN' }}",
+        species: "{{ r.species or '' }}", variety: "{{ r.variety or '' }}", grade: "{{ r.grade or '' }}",
+        brand: "{{ r.brand or '' }}", freezer: "{{ r.freezer or '' }}", glaze: "{{ r.glaze or '' }}",
+        packing_style: "{{ r.packing_style or '' }}", no_of_mc: {{ r.no_of_mc or 0 }},
+        loose: {{ r.loose or 0 }}, quantity: {{ r.quantity or 0 }},
+        po_number: "{{ r.po_number or '' }}", purpose: "{{ r.purpose or '' }}",
+        production_at: "{{ r.production_at or '' }}", production_for: "{{ r.production_for or '' }}",
+        inventory_value: {{ r.inventory_value or 0 }}, holding_cost: {{ r.holding_cost or 0 }},
+        other_charges: {{ r.other_charges or 0 }}, total_payable: {{ r.total_payable or 0 }},
+        status: "{{ r.status or 'HOLDING' }}", remarks: "{{ r.remarks or '' }}"
+    },
+    {% endfor %}
+];
+
 const lookups = {
-    species: {{ species_list | default([]) | tojson }},
-    variety: {{ varieties_list | default([]) | tojson }},
-    brand: {{ brands_list | default([]) | tojson }},
-    grade: {{ grades_list | default([]) | tojson }},
-    packing_style: {{ packing_styles_list | default([]) | tojson }},
-    status: ["HOLDING", "DISPATCHED"]
+    species: {{ species_list | tojson or '[]' }},
+    brand: {{ brands_list | tojson or '[]' }},
+    variety: {{ varieties_list | tojson or '[]' }},
+    grade: {{ grades_list | tojson or '[]' }},
+    packing_style: {{ packing_styles_list | tojson or '[]' }},
+    status: ["HOLDING", "DISPATCHED", "TRANSFERRED"],
+    cargo_movement_type: ["IN", "OUT"]
 };
-
-let selectedRow = null;
-const allRows = [...document.querySelectorAll("#tbody tr")];
-
-function selectRow(tr) { 
-    allRows.forEach(r => r.classList.remove("selected")); 
-    tr.classList.add("selected"); 
-    selectedRow = tr; 
-}
-
-function toggleMenu(e) { 
-    e.stopPropagation(); 
-    const m = document.getElementById("mainMenu"); 
-    m.style.display = m.style.display === "block" ? "none" : "block"; 
-}
-
-document.onclick = () => {
-    document.getElementById("mainMenu").style.display = "none";
-};
-
-// ================= EDIT & SAVE LOGIC =================
-function enableEdit() {
-    if(!selectedRow) return alert("Please select a row to edit!");
-    
-    selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
-        if(td.querySelector("input, select")) return; // Already in edit mode
-        
-        const val = td.innerText.trim().replace('₹', '');
-        const field = td.dataset.field;
-        
-        if(td.classList.contains("lookup")) {
-            let html = `<select class="edit-input" style="width:100%">`;
-            (lookups[field] || []).forEach(opt => {
-                html += `<option value="${opt}" ${opt === val ? 'selected' : ''}>${opt}</option>`;
-            });
-            html += `</select>`;
-            td.innerHTML = html;
-        } else {
-            td.innerHTML = `<input type="text" class="edit-input" value="${val}" style="width:100%">`;
-        }
-    });
-}
-
-async function askSave() {
-    if(!selectedRow) return;
-    
-    const data = { id: selectedRow.dataset.id };
-    selectedRow.querySelectorAll("[data-field]").forEach(td => {
-        const input = td.querySelector("input, select");
-        if(input) {
-            data[td.dataset.field] = input.value;
-        }
-    });
-
-    try {
-        const res = await fetch(`${base_url}/update`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(data)
-        });
-        
-        if(res.ok) {
-            alert("Data Saved Successfully!");
-            location.reload(); // Reload to show updated calculations (Qty/Inv Value)
-        } else {
-            const err = await res.json();
-            alert("Save Failed: " + (err.detail || "Unknown error"));
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Network Error while saving!");
-    }
-}
-
-// ================= DELETE LOGIC =================
-function askDelete() {
-    if(!selectedRow) return alert("Select a row first!");
-    
-    document.getElementById("confirmMsg").innerText = "Are you sure you want to delete this record?";
-    document.getElementById("confirmModal").style.display = "flex";
-    
-    document.getElementById("btnYes").onclick = async () => {
-        try {
-            const res = await fetch(`${base_url}/delete`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({id: selectedRow.dataset.id})
-            });
-            if(res.ok) {
-                location.reload();
-            } else {
-                alert("Delete Failed!");
-            }
-        } catch (e) {
-            alert("Error: " + e);
-        }
-        closeModal();
-    };
-}
-
-function closeModal() { 
-    document.getElementById("confirmModal").style.display = "none"; 
-}
-
-// ================= AUDIT LOGIC =================
-async function toggleAudit() {
-    const panel = document.getElementById("auditPanel");
-    if(panel.style.display === "flex") { panel.style.display = "none"; return; }
-    
-    if(!selectedRow) return alert("Select a row to view logs!");
-    
-    panel.style.display = "flex";
-    document.getElementById("auditContent").innerHTML = "Loading logs...";
-    
-    try {
-        const res = await fetch(`${base_url}/audit_logs/${selectedRow.dataset.id}`);
-        const logs = await res.json();
-        
-        document.getElementById("auditContent").innerHTML = logs.map(l => `
-            <div class="audit-item">
-                <b>${l.date}</b> | <i>${l.user}</i><br>
-                <span style="color:var(--accent)">${l.field}:</span> ${l.change}
-            </div>
-        `).join('') || '<p style="text-align:center; font-size:10px;">No logs found for this entry.</p>';
-    } catch (e) {
-        document.getElementById("auditContent").innerHTML = "Error loading logs.";
-    }
-}
-
-// ================= EXPORT LOGIC =================
-function exportToExcel() {
-    const from = document.getElementById("f_from").value;
-    const to = document.getElementById("f_to").value;
-    window.location.href = `${base_url}/export_xlsx?from_date=${from}&to_date=${to}`;
-}
-
-function exportPDF() {
-    const element = document.querySelector(".table-wrap");
-    const opt = {
-        margin: 0.2,
-        filename: 'Cold_Storage_Holding_Report.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'a3', orientation: 'landscape' }
-    };
-    
-    // Hide administrative columns or UI elements temporarily if needed
-    html2pdf().set(opt).from(element).save();
-}
-
-// ================= FILTER LOGIC =================
-function applyFilters() {
-    const f1 = document.getElementById("f_from").value;
-    const f2 = document.getElementById("f_to").value;
-    const ft = document.getElementById("f_type").value;
-    const fs = document.getElementById("f_status").value;
-    const fst = document.getElementById("f_storage").value.toLowerCase();
-    const q = document.getElementById("searchBox").value.toLowerCase();
-    
-    let mcT=0, lsT=0, qtyT=0, invT=0, visibleCount=0;
-
-    allRows.forEach(r => {
-        const d = r.dataset.date;
-        const text = r.innerText.toLowerCase();
-        const type = r.cells[4].innerText;
-        const storage = r.cells[2].innerText.toLowerCase();
-        const status = r.cells[18].innerText;
-
-        let ok = true;
-        if(f1 && d < f1) ok = false; 
-        if(f2 && d > f2) ok = false;
-        if(ft && type !== ft) ok = false;
-        if(fs && status !== fs) ok = false;
-        if(fst && !storage.includes(fst)) ok = false;
-        if(q && !text.includes(q)) ok = false;
-
-        if(ok) {
-            r.style.display = ""; 
-            visibleCount++;
-            r.querySelector(".slno").innerText = visibleCount;
-            
-            // Totals Calculation (Sign based on Movement Type)
-            const sign = (type === 'IN') ? 1 : -1;
-            mcT += (parseInt(r.cells[10].innerText) || 0) * sign;
-            lsT += (parseInt(r.cells[11].innerText) || 0) * sign;
-            qtyT += (parseFloat(r.cells[12].innerText) || 0) * sign;
-            
-            // Clean currency for calculation
-            const invValStr = r.cells[14].innerText.replace('₹', '').replace(/,/g, '');
-            invT += (parseFloat(invValStr) || 0) * sign;
-        } else { 
-            r.style.display = "none"; 
-        }
-    });
-
-    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
-    document.getElementById("tot_mc").innerText = mcT;
-    document.getElementById("tot_lse").innerText = lsT;
-    document.getElementById("tot_qty").innerText = qtyT.toFixed(2);
-    document.getElementById("tot_inv").innerText = '₹' + invT.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
 
 function fillFilters() {
-    const sets = { storage: new Set(), species: new Set(), variety: new Set(), brand: new Set() };
-    allRows.forEach(r => {
-        if(r.cells[2].innerText.trim()) sets.storage.add(r.cells[2].innerText.trim());
-        if(r.cells[5].innerText.trim()) sets.species.add(r.cells[5].innerText.trim());
-        if(r.cells[6].innerText.trim()) sets.variety.add(r.cells[6].innerText.trim());
-        if(r.cells[8].innerText.trim()) sets.brand.add(r.cells[8].innerText.trim());
+    const add = (id, list) => {
+        const el = document.getElementById(id);
+        [...new Set(list)].filter(Boolean).sort().forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
+    };
+    add('f_storage', rawData.map(r => r.cold_storage_name));
+    add('f_batch', rawData.map(r => r.batch_number));
+    add('f_species', lookups.species);
+    add('f_prod_for', rawData.map(r => r.production_for));
+}
+
+function switchTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    el.classList.add('active'); 
+    document.getElementById(tab + 'Section').classList.add('active');
+    applyFilters();
+}
+
+function applyFilters() {
+    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const fs = f_storage.value.toLowerCase(), fb = f_batch.value.toLowerCase();
+    const fsp = f_species.value.toLowerCase(), fpf = f_prod_for.value.toLowerCase();
+    const fmt = f_mtype.value.toLowerCase(), fstat = f_status.value.toLowerCase(), q = searchBox.value.toLowerCase();
+
+    let filtered = rawData.filter(d => {
+        if(f1 && d.in_date < f1) return false;
+        if(f2 && d.in_date > f2) return false;
+        if(fs && d.cold_storage_name.toLowerCase() !== fs) return false;
+        if(fb && d.batch_number.toLowerCase() !== fb) return false;
+        if(fsp && d.species.toLowerCase() !== fsp) return false;
+        if(fpf && d.production_for.toLowerCase() !== fpf) return false;
+        if(fmt && d.cargo_movement_type.toLowerCase() !== fmt) return false;
+        if(fstat && d.status.toLowerCase() !== fstat) return false;
+        if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) return false;
+        return true;
     });
+
+    if (document.getElementById('reportSection').classList.contains('active')) renderReport(filtered);
+    else renderAvailable(filtered);
+}
+
+function renderReport(data) {
+    const tbody = document.getElementById("reportTbody"); tbody.innerHTML = "";
+    let tmc=0, tls=0, tqty=0, lastStore = null, smc=0, sls=0, sqty=0;
     
-    Object.keys(sets).forEach(k => {
-        const sel = document.getElementById(`f_${k}`);
-        if(sel) {
-            [...sets[k]].sort().forEach(v => {
-                const opt = document.createElement("option");
-                opt.value = v;
-                opt.innerText = v;
-                sel.appendChild(opt);
-            });
+    data.sort((a,b) => a.cold_storage_name.localeCompare(b.cold_storage_name)).forEach((r, idx) => {
+        const sign = r.cargo_movement_type === 'IN' ? 1 : -1;
+        if (lastStore && r.cold_storage_name !== lastStore) {
+            tbody.innerHTML += `<tr class="row-sub-total"><td colspan="12">SUB-TOTAL: ${lastStore}</td><td>${smc}</td><td>${sls}</td><td>${sqty.toFixed(2)}</td><td colspan="10"></td></tr>`;
+            smc = sls = sqty = 0;
         }
+        tmc += (r.no_of_mc * sign); tls += (r.loose * sign); tqty += (r.quantity * sign);
+        smc += (r.no_of_mc * sign); sls += (r.loose * sign); sqty += (r.quantity * sign);
+        lastStore = r.cold_storage_name;
+
+        tbody.innerHTML += `
+            <tr data-id="${r.id}" onclick="selectRow(this)">
+                <td>${idx+1}</td><td>${r.in_date}</td><td class="edit" data-field="cold_storage_name">${r.cold_storage_name}</td>
+                <td class="edit" data-field="batch_number">${r.batch_number}</td>
+                <td class="look" data-field="cargo_movement_type" style="font-weight:800; color:${r.cargo_movement_type==='IN'?'var(--success)':'var(--danger)'}">${r.cargo_movement_type}</td>
+                <td class="look" data-field="species">${r.species}</td><td class="look" data-field="variety">${r.variety}</td>
+                <td class="look" data-field="grade">${r.grade}</td><td class="look" data-field="brand">${r.brand}</td>
+                <td class="edit" data-field="freezer">${r.freezer}</td><td class="edit" data-field="glaze">${r.glaze}</td>
+                <td class="look" data-field="packing_style">${r.packing_style}</td><td class="edit" data-field="no_of_mc">${r.no_of_mc}</td>
+                <td class="edit" data-field="loose">${r.loose}</td><td class="qty-bold">${r.quantity.toFixed(2)}</td>
+                <td class="edit" data-field="po_number">${r.po_number}</td><td class="edit" data-field="purpose">${r.purpose}</td>
+                <td class="edit" data-field="production_at">${r.production_at}</td><td class="edit" data-field="production_for">${r.production_for}</td>
+                <td>${r.inventory_value.toLocaleString()}</td><td>${r.holding_cost.toFixed(2)}</td>
+                <td>${r.other_charges.toFixed(2)}</td><td class="qty-bold">${r.total_payable.toFixed(2)}</td>
+                <td class="look" data-field="status">${r.status}</td><td class="edit" data-field="remarks">${r.remarks}</td>
+            </tr>`;
+    });
+    if (lastStore) tbody.innerHTML += `<tr class="row-sub-total"><td colspan="12">SUB-TOTAL: ${lastStore}</td><td>${smc}</td><td>${sls}</td><td>${sqty.toFixed(2)}</td><td colspan="10"></td></tr>`;
+    document.getElementById("rowCount").innerText = `${data.length} records found`;
+    rpt_mc.innerText = tmc; rpt_ls.innerText = tls; rpt_qty.innerText = tqty.toFixed(2);
+}
+
+function renderAvailable(data) {
+    const tbody = document.getElementById("availableTbody"); tbody.innerHTML = "";
+    let stock = {}, amc=0, als=0, aqty=0;
+    data.forEach(r => {
+        const sign = r.cargo_movement_type === 'IN' ? 1 : -1;
+        const key = `${r.cold_storage_name}|${r.batch_number}|${r.species}|${r.variety}|${r.grade}|${r.brand}|${r.packing_style}`;
+        if(!stock[key]) stock[key] = { ...r, no_of_mc:0, loose:0, quantity:0, inventory_value:0 };
+        stock[key].no_of_mc += (r.no_of_mc * sign); 
+        stock[key].loose += (r.loose * sign);
+        stock[key].quantity += (r.quantity * sign); 
+        stock[key].inventory_value += (r.inventory_value);
+    });
+
+    Object.values(stock).filter(s => s.quantity > 0.01).forEach((s, idx) => {
+        amc += s.no_of_mc; als += s.loose; aqty += s.quantity;
+        tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.cold_storage_name}</td><td><b>${s.batch_number}</b></td><td>${s.species}</td><td>${s.variety}</td><td>${s.grade}</td><td>${s.brand}</td><td>${s.freezer}</td><td>${s.glaze}</td><td>${s.packing_style}</td><td class="qty-bold">${s.no_of_mc}</td><td class="qty-bold">${s.loose}</td><td class="qty-bold" style="color:var(--success)">${s.quantity.toFixed(2)}</td><td>${s.production_at}</td><td>${s.production_for}</td><td>${s.inventory_value.toLocaleString()}</td><td>${s.status}</td></tr>`;
+    });
+    avl_mc.innerText = amc; avl_ls.innerText = als; avl_qty.innerText = aqty.toFixed(2);
+}
+
+let selectedRow = null;
+function selectRow(tr) { document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected")); tr.classList.add("selected"); selectedRow = tr; }
+function toggleMenu(e) { e.stopPropagation(); mainMenu.style.display = mainMenu.style.display==="block"?"none":"block"; }
+document.onclick = () => mainMenu.style.display="none";
+
+function enableEdit() {
+    if(!selectedRow) return alert("Select a row!");
+    selectedRow.querySelectorAll(".edit").forEach(td => td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${td.innerText}">`);
+    selectedRow.querySelectorAll(".look").forEach(td => {
+        const f = td.dataset.field; const val = td.innerText;
+        let h = `<select class="edit-input" data-field="${f}">`;
+        (lookups[f] || []).forEach(o => h += `<option value="${o}" ${o===val?'selected':''}>${o}</option>`);
+        td.innerHTML = h + `</select>`;
     });
 }
 
-// Initial Setup
-fillFilters();
-document.querySelectorAll(".filters input, .filters select").forEach(el => {
-    el.addEventListener('change', applyFilters);
-});
-document.getElementById("searchBox").addEventListener('input', applyFilters);
+async function saveEdit() {
+    if(!selectedRow) return;
+    const payload = { id: selectedRow.dataset.id };
+    selectedRow.querySelectorAll(".edit-input").forEach(i => payload[i.dataset.field] = i.value);
+    const res = await fetch(`${apiBase}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    if(res.ok) location.reload(); else alert("Error updating");
+}
 
-// Trigger initial filter on load
-applyFilters();
+async function deleteRow() {
+    if(!selectedRow || !confirm("Delete record?")) return;
+    const res = await fetch(`${apiBase}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
+    if(res.ok) location.reload(); else alert("Delete failed");
+}
+
+fillFilters(); applyFilters();
+[f_from, f_to, f_storage, f_batch, f_species, f_prod_for, f_mtype, f_status].forEach(el => el.onchange = applyFilters);
+searchBox.oninput = applyFilters;
 </script>
-
 </body>
 </html>

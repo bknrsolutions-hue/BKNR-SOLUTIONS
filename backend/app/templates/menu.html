@@ -206,8 +206,8 @@ iframe {
 </div>
 
 <div class="top-menu">
-  <button class="active" onclick="setActive(this); loadDash()"><i class="fa-solid fa-gauge"></i> Dashboards</button>
-  <button onclick="setActive(this); loadOps()"><i class="fa-solid fa-gears"></i> Operations</button>
+  <button id="btn-dash" class="active" onclick="setActive(this); loadDash()"><i class="fa-solid fa-gauge"></i> Dashboards</button>
+  <button id="btn-ops" onclick="setActive(this); loadOps()"><i class="fa-solid fa-gears"></i> Operations</button>
   <button onclick="setActive(this); loadReports()"><i class="fa-solid fa-file-invoice"></i> Reports</button>
   <button onclick="setActive(this); loadCriteria()"><i class="fa-solid fa-list-check"></i> Criteria</button>
   <button onclick="setActive(this); loadSummaries()"><i class="fa-solid fa-clipboard-list"></i> Summaries</button>
@@ -376,7 +376,6 @@ function loadSummaries(){
                <i class="fa-solid fa-calculator"></i> Inventory Costing
              </button>`;
 
-  // ఇక్కడ "/summary/floor_balance" ని "/summary/floor_balance_value" గా మార్చు
   if(allow("floor_balance_value")) 
     html += `<button onclick="openPage('/summary/floor_balance_value')">
                <i class="fa-solid fa-rectangle-list"></i> Floor Balance Value
@@ -434,41 +433,33 @@ function loadBills() {
 function loadAttendance(){
   let html = `<h3>Attendance</h3>`;
 
-  // 👤 Employee Registration
   if(allow("employee_registration"))
     html += `<button onclick="openPage('/attendance/employee/register')">
               <i class="fa-solid fa-id-card"></i> Employee Registration
             </button>`;
 
-  // 💰 Employee Increment
   if(allow("employee_increment"))
     html += `<button onclick="openPage('/attendance/employee-increment')">
               <i class="fa-solid fa-arrow-trend-up"></i> Employee Increment
             </button>`;
 
-  // 📅 Daily Attendance
   if(allow("daily_attendance"))
     html += `<button onclick="openPage('/attendance/daily')">
               <i class="fa-solid fa-calendar-check"></i> Daily Attendance
             </button>`;
 
-  // 💵 Monthly Salary Sheet (New Addition)
   if(allow("salary_report"))
     html += `<button onclick="openPage('/attendance/salary/monthly-sheet')">
               <i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet
             </button>`;
-  // 🧾 Payroll Statutory Master (PF / ESI / PT / LWF)
  if(allow("tax_master"))
    html += `<button onclick="openPage('/attendance/tax-master')">
             <i class="fa-solid fa-file-shield"></i> Payroll Statutory Master
           </button>`;
-  // 💰 Salary Advance
  if (allow("salary_advance"))
   html += `<button onclick="openPage('/attendance/salary-advance')">
             <i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance
           </button>`;
-
-
 
   document.getElementById("sideMenu").innerHTML = html;
 }
@@ -487,7 +478,31 @@ async function logout(){
   }
 }
 
-loadDash();
+// DEFAULT PAGE LOAD LOGIC
+function initDefaultPage() {
+  if(allow("processing_dashboard")) {
+    // Dashboard access unte, default ga load chey
+    loadDash();
+    openPage('/dashboard/processing_dashboard');
+  } else {
+    // Dashboard access lekapothe, Operations menu open chesi first link load chey
+    loadOps();
+    setActive(document.getElementById('btn-ops'));
+    
+    // Side menu lo unna first button ni ethiki trigger chesthadhi
+    const firstBtn = document.querySelector('#sideMenu button');
+    if(firstBtn) {
+      firstBtn.click();
+    } else {
+      // Operations kuda lekapothe, Just Dash menu open lo unchuthundi
+      loadDash();
+    }
+  }
+}
+
+// Start application
+initDefaultPage();
+
 </script>
 </body>
 </html>

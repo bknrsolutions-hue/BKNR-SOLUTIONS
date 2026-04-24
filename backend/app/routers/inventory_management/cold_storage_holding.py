@@ -21,7 +21,7 @@ router = APIRouter(tags=["COLD STORAGE HOLDING"])
 
 # Jinja2 setup with 'do' extension enabled
 templates = Jinja2Templates(directory="app/templates")
-templates.env.add_extension('jinja2.ext.do') # <--- ఈ లైన్ HTML ఎర్రర్‌ను ఫిక్స్ చేస్తుంది
+templates.env.add_extension('jinja2.ext.do')
 
 # ==================================================
 # LOAD COLD STORAGE HOLDING PAGE
@@ -63,12 +63,14 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         .all() if p.po_number
     ]
 
+    # Context update with today_date for HTML filtering
     context = {
         "request": request,
         "success_msg": success_msg,
         "current_holdings": current_holdings,
         "storage_masters": storage_masters,
         "production_for_list": prod_for_list,
+        "today_date": date.today().isoformat(), # <--- HTML filtering కోసం ఇది యాడ్ చేశాను
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species_model).filter(species_model.company_id == company_code).all()],
         "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code).all()],
@@ -97,13 +99,11 @@ async def get_storing_batches(
 ):
     company_code = request.session.get("company_code")
 
-    # Reprocess టేబుల్ నుండి ఫిల్టర్ చేస్తున్నాం
     batches = (
         db.query(Reprocess.new_batch_id)
         .filter(
             Reprocess.company_id == company_code,
             Reprocess.production_for == production_for_val,
-            # ఇక్కడ కాలమ్ పేరు reprocess_type అని మార్చాను
             func.lower(Reprocess.reprocess_type) == func.lower(purpose_val),
             Reprocess.new_batch_id != None,
             Reprocess.new_batch_id != ""
@@ -113,11 +113,10 @@ async def get_storing_batches(
     )
     
     result = [b.new_batch_id for b in batches]
-    
-    # Debugging కోసం
     print(f"Client: {production_for_val}, Type: {purpose_val}, Found: {len(result)}")
     
     return {"batches": result}
+
 # ==================================================
 # SAVE HOLDING ENTRY (IN/OUT)
 # ==================================================
@@ -167,7 +166,7 @@ async def save_holding(
 
     new_entry = cold_storage_holding(
         cold_storage_name=cold_storage_name,
-        production_at=cold_storage_name, # <--- ఇక్కడ default గా cold_storage_name సేవ్ అవుతుంది
+        production_at=cold_storage_name, 
         address=address,
         batch_number=batch_number,
         cargo_movement_type=cargo_movement_type,
