@@ -152,7 +152,10 @@ async def cold_storage_report_page(
         "company_name": c_info.company_name if c_info else "BKNR ERP",
         "role": role
     }
-    return request.app.state.templates.TemplateResponse("inventory_management/cold_storage_report.html", context)
+    return request.app.state.templates.TemplateResponse(
+    name="inventory_management/cold_storage_report.html", 
+    context=context
+)
 
 # ------------------------------------------------------------
 # 2. API: UPDATE RECORD
