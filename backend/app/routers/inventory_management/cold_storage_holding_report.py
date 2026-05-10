@@ -153,6 +153,7 @@ async def cold_storage_report_page(
         "role": role
     }
     return request.app.state.templates.TemplateResponse(
+    request=request,  # Ikkada idi miss ayyindi
     name="inventory_management/cold_storage_report.html", 
     context=context
 )
