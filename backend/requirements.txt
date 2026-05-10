@@ -1,4 +1,3 @@
-y
 fastapi
 uvicorn
 sqlalchemy
