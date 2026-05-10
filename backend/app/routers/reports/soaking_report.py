@@ -1,12 +1,12 @@
 # ============================================================
-# SOAKING REPORT ROUTER (BKNR ERP - UPDATED)
+# SOAKING REPORT ROUTER (BKNR ERP - UPDATED WITH FY)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, extract
 from datetime import datetime
 import pytz
 from io import BytesIO
@@ -25,11 +25,12 @@ templates = Jinja2Templates(directory="app/templates")
 IST = pytz.timezone('Asia/Kolkata')
 
 # ------------------------------------------------------------
-# 1. MAIN REPORT VIEW
+# 1. MAIN REPORT VIEW (WITH FY FILTER)
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def soaking_main_report(
     request: Request,
+    fy: str = Query(None), # Financial Year parameter
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
@@ -37,14 +38,25 @@ async def soaking_main_report(
     if not company_id:
         return RedirectResponse("/auth/login", status_code=302)
 
-    rows = (
-        db.query(Soaking)
-        .filter(Soaking.company_id == company_id)
-        .order_by(desc(Soaking.date), desc(Soaking.id))
-        .all()
-    )
+    rows = []
+    if fy:
+        # Financial Year Logic (e.g., FY 2024 is April 2024 to March 2025)
+        start_year = int(fy)
+        end_year = start_year + 1
+        
+        # SQL filtering for the selected Financial Year
+        rows = (
+            db.query(Soaking)
+            .filter(
+                Soaking.company_id == company_id,
+                Soaking.date >= f"{start_year}-04-01",
+                Soaking.date <= f"{end_year}-03-31"
+            )
+            .order_by(desc(Soaking.date), desc(Soaking.id))
+            .all()
+        )
 
-    # Searchable dropdowns logic
+    # Searchable dropdowns logic based on filtered rows
     varieties = sorted(list({r.variety_name for r in rows if r.variety_name}))
     locations = sorted(list({r.production_at for r in rows if r.production_at}))
     batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
@@ -54,10 +66,12 @@ async def soaking_main_report(
         name="reports/soaking_report.html",
         context={
             "rows": rows,
+            "selected_fy": fy,
             "varieties": varieties,
             "locations": locations,
             "batches": batches,
-            "is_admin": role == "admin"
+            "is_admin": role == "admin",
+            "datetime": datetime # For header date display
         }
     )
 
@@ -108,9 +122,13 @@ async def update_soaking_row(
                     edited_by=edited_by,
                     edited_at=datetime.utcnow()
                 ))
+                
                 # Update numeric fields correctly
                 if field in ["in_qty", "chemical_percent", "salt_percent", "rejection_qty"]:
-                    setattr(row, field, float(payload[field] or 0))
+                    try:
+                        setattr(row, field, float(payload[field] or 0))
+                    except ValueError:
+                        setattr(row, field, 0.0)
                 else:
                     setattr(row, field, payload[field])
                 has_changes = True
@@ -153,7 +171,7 @@ async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db))
             "timestamp": log.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"),
             "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
             "batch": log.batch_number,
-            "field": log.AuditLog.field_name.replace('_', ' ').title(),
+            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
             "details": f"'{log.AuditLog.old_value}' → '{log.AuditLog.new_value}'"
         } for log in logs
     ]
@@ -176,14 +194,19 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     ws = wb.active
     ws.title = "Soaking Report"
     
-    headers = ["Date", "Sintex No", "Batch", "Variety", "In Qty", "Rej Qty", "Chem Name", "Chem Kg", "Salt Kg", "Status", "At"]
+    # Headers based on your table requirements
+    headers = [
+        "Date", "Sintex No", "Batch", "Variety", "In Qty", "Rej Qty", 
+        "Chem Name", "Chem %", "Chem Kg", "Salt %", "Salt Kg", "Status", "At"
+    ]
     ws.append(headers)
     for cell in ws[1]: cell.font = Font(bold=True)
     
     for r in rows:
         ws.append([
             str(r.date), r.sintex_number, r.batch_number, r.variety_name, 
-            r.in_qty, r.rejection_qty, r.chemical_name, r.chemical_qty, r.salt_qty, r.status, r.production_at
+            r.in_qty, r.rejection_qty, r.chemical_name, r.chemical_percent,
+            r.chemical_qty, r.salt_percent, r.salt_qty, r.status, r.production_at
         ])
     
     stream = BytesIO()
@@ -201,10 +224,19 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
 @router.post("/delete")
 async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    row = db.query(Soaking).filter(Soaking.id == payload.get("id"), Soaking.company_id == company_id).first()
+    role = request.session.get("role")
+    
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    row = db.query(Soaking).filter(
+        Soaking.id == payload.get("id"), 
+        Soaking.company_id == company_id
+    ).first()
     
     if row:
         db.delete(row)
         db.commit()
         return {"status": "success"}
+        
     return {"status": "error", "message": "Record not found"}

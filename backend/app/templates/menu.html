@@ -370,6 +370,10 @@ function loadSummaries(){
     html += `<button onclick="openPage('/summary/processing')">
                <i class="fa-solid fa-rectangle-list"></i> Processing Batch Summary
              </button>`;
+  if(allow("processing_summary")) 
+    html += `<button onclick="openPage('/summary/periodic-report')">
+               <i class="fa-solid fa-calendar-days"></i> Periodic Processing Summary
+             </button>`;
 
   if(allow("inventory_costing")) 
     html += `<button onclick="openPage('/summary/inventory_costing')">

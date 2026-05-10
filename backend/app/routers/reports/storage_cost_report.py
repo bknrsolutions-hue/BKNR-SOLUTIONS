@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import date, datetime, timedelta  # ఇక్కడ timedelta యాడ్ చేశాను
+from datetime import date, timedelta
 import calendar
 
 from app.database import get_db
@@ -28,128 +28,151 @@ def storage_cost_report(
     company_code = request.session.get("company_code")
     today = date.today()
 
-    # 📅 MONTHLY BILLING BOUNDARIES
-    billing_end_date = today
-    billing_start_date = None
-
+    # 📅 MONTHLY BOUNDARIES
     if selected_month:
         try:
             yr, mn = map(int, selected_month.split("-"))
             billing_start_date = date(yr, mn, 1)
-            last_day = calendar.monthrange(yr, mn)[1]
-            billing_end_date = date(yr, mn, last_day)
+            billing_end_date = date(yr, mn, calendar.monthrange(yr, mn)[1])
         except:
-            billing_start_date = None
+            billing_start_date = date(today.year, today.month, 1)
             billing_end_date = today
+    else:
+        billing_start_date = date(today.year, today.month, 1)
+        billing_end_date = today
 
-    # BASE QUERY
+    # 🔍 FETCH ALL DATA (FIFO కోసం Billing End Date వరకు ఉన్నవన్నీ కావాలి)
     q = db.query(Inventory).filter(Inventory.company_id == company_code)
+    
     if production_for: q = q.filter(Inventory.production_for == production_for)
     if production_at: q = q.filter(Inventory.production_at == production_at)
     if freezer: q = q.filter(Inventory.freezer == freezer)
     
-    q = q.filter(Inventory.date <= billing_end_date)
-    rows = q.order_by(Inventory.batch_number, Inventory.date.asc()).all()
+    all_rows = q.filter(Inventory.date <= billing_end_date).order_by(Inventory.date.asc()).all()
 
-    # 📂 GROUPING LOGIC
+    # 📂 COMBO-WISE GROUPING
     grouped_dict = {}
-    for r in rows:
+
+    for r in all_rows:
+        # Combo Key: Batch + Freezer + Glaze + Grade + Variety + Packing Style
         combo_key = (r.batch_number, r.freezer, r.glaze, r.grade, r.variety, r.packing_style)
+        
         if combo_key not in grouped_dict:
             grouped_dict[combo_key] = {
-                "batch_number": r.batch_number, "freezer": r.freezer, "glaze": r.glaze,
-                "grade": r.grade, "variety": r.variety, "packing_style": r.packing_style,
-                "production_for": r.production_for, "production_at": r.production_at,
-                "in_date": r.date, "movements": [],
-                "total_in_mc": 0.0, "total_out_mc": 0.0, "total_qty": 0.0
+                "details": r,  # 🔥 ఇక్కడ r ని సేవ్ చేయడం వల్ల HTML లో r.details.column_name పనిచేస్తుంది
+                "batch_number": r.batch_number,
+                "freezer": r.freezer,
+                "glaze": r.glaze,
+                "grade": r.grade,
+                "variety": r.variety,
+                "packing_style": r.packing_style,
+                "species": r.species,
+                "brand": r.brand,
+                "production_for": r.production_for,
+                "production_at": r.production_at,
+                "opening_mc": 0.0,
+                "monthly_in_mc": 0.0,
+                "monthly_out_mc": 0.0,
+                "monthly_in_qty": 0.0,
+                "in_movements": [], # FIFO tracking
+                "this_month_ledger": [], # Tab 2 & 3 కోసం
+                "earliest_in_date": r.date
             }
+        
         data = grouped_dict[combo_key]
+        qty_mc = int(r.no_of_mc or 0)
+        qty_kg = float(r.quantity or 0)
+
         if r.cargo_movement_type == "IN":
-            data["total_in_mc"] += float(r.no_of_mc or 0)
-            data["total_qty"] += float(r.quantity or 0)
-            if r.date < data["in_date"]: data["in_date"] = r.date
+            # FIFO Tracking
+            data["in_movements"].append({"date": r.date, "qty": qty_mc, "rem": qty_mc})
+            
+            if r.date < billing_start_date:
+                data["opening_mc"] += qty_mc
+            else:
+                data["monthly_in_mc"] += qty_mc
+                data["monthly_in_qty"] += qty_kg
+                data["this_month_ledger"].append(r)
         else:
-            data["total_out_mc"] += float(r.no_of_mc or 0)
-        data["movements"].append(r)
+            # OUT logic with FIFO
+            temp_out = qty_mc
+            for inv in data["in_movements"]:
+                if temp_out <= 0: break
+                take = min(inv["rem"], temp_out)
+                inv["rem"] -= take
+                temp_out -= take
 
-    # 💰 CALCULATION LOGIC (Specific Month Only)
+            if r.date < billing_start_date:
+                data["opening_mc"] -= qty_mc
+            else:
+                data["monthly_out_mc"] += qty_mc
+                data["this_month_ledger"].append(r)
+
+    # 💰 FINAL CALCULATIONS
     report_data = []
-    total_payable_sum, total_holding_sum, total_qty_sum = 0.0, 0.0, 0.0
-
+    total_qty_sum = 0.0
+    total_holding_sum = 0.0
+    total_payable_sum = 0.0
+    
     for key, item in grouped_dict.items():
+        item["closing_mc"] = item["opening_mc"] + item["monthly_in_mc"] - item["monthly_out_mc"]
+        
+        # Skip if no activity and no stock
+        if item["opening_mc"] == 0 and item["monthly_in_mc"] == 0 and item["monthly_out_mc"] == 0:
+            continue
+
+        # Fetch Costing Rates
         costing = db.query(ProductionFor).filter(
             ProductionFor.company_id == company_code,
             ProductionFor.production_for == item["production_for"],
             ProductionFor.freezer_name == item["freezer"],
-            ProductionFor.glaze_percent == item["glaze"],
-            ProductionFor.apply_from <= item["in_date"]
+            ProductionFor.apply_from <= item["earliest_in_date"]
         ).order_by(ProductionFor.apply_from.desc()).first()
 
         rate = float(costing.rate_per_mc_day) if costing else 0.0
-        free_days = int(costing.free_days) if costing and costing.free_days else 0
-        prod_cost_kg = float(costing.production_cost_per_kg) if costing else 0.0
-        
+        free_days = int(costing.free_days) if costing else 0
+        p_cost_kg = float(costing.production_cost_per_kg) if costing else 0.0
+
+        # FIFO Holding Cost Calculation
+        holding_cost = 0.0
+        for inv in item["in_movements"]:
+            if inv["rem"] > 0:
+                billable_start = inv["date"] + timedelta(days=free_days)
+                calc_start = max(billable_start, billing_start_date)
+                if billing_end_date >= calc_start:
+                    days = (billing_end_date - calc_start).days + 1
+                    holding_cost += days * rate * inv["rem"]
+
         item.update({
-            "production_cost_per_kg": prod_cost_kg,
             "holding_cost_per_mc_day": rate,
-            "holding_free_days": free_days,
-            "payable_amount": item["total_qty"] * prod_cost_kg
+            "holding_cost": round(holding_cost, 2),
+            "payable_amount": round(item["monthly_in_qty"] * p_cost_kg, 2)
         })
         
+        # Totals for Summary Boxes
+        total_qty_sum += item["monthly_in_qty"]
+        total_holding_sum += item["holding_cost"]
         total_payable_sum += item["payable_amount"]
-        total_qty_sum += item["total_qty"]
-
-        # --- మంత్లీ కాలిక్యులేషన్ లాజిక్ ---
-        current_holding = 0.0
-        total_p_days = 0
         
-        # స్టాక్ ఎప్పుడు ఫ్రీ డేస్ దాటి బిల్లింగ్ కి వస్తుందో ఆ డేట్
-        billable_after_date = item["in_date"] + timedelta(days=free_days)
-
-        # ఈ నెలలో మనం లెక్కించాల్సిన స్టార్ట్ డేట్ (Billing Start లేదా Billable Start.. ఏది లేట్ అయితే అది)
-        if billing_start_date:
-            effective_start = max(billable_after_date, billing_start_date)
-        else:
-            effective_start = billable_after_date
-
-        # 1. OUT అయిన వాటికి ఈ నెల లెక్క
-        for m in item["movements"]:
-            if m.cargo_movement_type == "OUT":
-                if billing_start_date and m.date < billing_start_date: continue
-                
-                calc_until = min(m.date, billing_end_date)
-                days_in_month = (calc_until - effective_start).days
-                if days_in_month > 0:
-                    total_p_days += days_in_month
-                    current_holding += days_in_month * rate * float(m.no_of_mc or 0)
-
-        # 2. బ్యాలెన్స్ స్టాక్ కి ఈ నెల లెక్క
-        balance_mc = item["total_in_mc"] - item["total_out_mc"]
-        item["balance_mc"] = balance_mc
-        if balance_mc > 0:
-            days_in_month = (billing_end_date - effective_start).days
-            if days_in_month > 0:
-                total_p_days += days_in_month
-                current_holding += days_in_month * rate * balance_mc
-
-        item["payable_days"] = total_p_days
-        item["holding_cost"] = round(current_holding, 2)
-        total_holding_sum += current_holding
         report_data.append(item)
 
-    # Filter Lists
-    p_for = [x[0] for x in db.query(Inventory.production_for).filter(Inventory.company_id == company_code).distinct().all()]
-    p_at = [x[0] for x in db.query(Inventory.production_at).filter(Inventory.company_id == company_code).distinct().all()]
+    # Dropdowns
+    p_for_list = [x[0] for x in db.query(Inventory.production_for).filter(Inventory.company_id == company_code).distinct().all()]
+    p_at_list = [x[0] for x in db.query(Inventory.production_at).filter(Inventory.company_id == company_code).distinct().all()]
     fzrs = [x[0] for x in db.query(Inventory.freezer).filter(Inventory.company_id == company_code).distinct().all()]
 
     return templates.TemplateResponse(
-        request=request, name="reports/storage_report.html",
+        request=request, 
+        name="reports/storage_report.html",
         context={
             "report_data": report_data,
-            "total_payable_sum": round(total_payable_sum, 2),
-            "total_holding_sum": round(total_holding_sum, 2),
+            "production_for_list": p_for_list,
+            "production_at_list": p_at_list,
+            "freezers": fzrs,
+            "selected_month": selected_month,
+            "billing_start_date": billing_start_date,
             "total_qty_sum": round(total_qty_sum, 2),
-            "production_for_list": p_for, "production_at_list": p_at, "freezers": fzrs,
-            "selected_month": selected_month, "billing_end_date": billing_end_date
+            "total_holding_sum": round(total_holding_sum, 2),
+            "total_payable_sum": round(total_payable_sum, 2)
         }
     )

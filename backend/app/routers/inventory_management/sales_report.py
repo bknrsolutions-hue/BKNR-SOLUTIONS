@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from datetime import datetime
 from collections import defaultdict
 from pydantic import BaseModel
@@ -25,7 +25,7 @@ router = APIRouter(tags=["SALES REPORT & PENDING ORDERS"])
 templates = Jinja2Templates(directory="app/templates")
 
 # -----------------------------------
-# HELPER FUNCTIONS
+# HELPER FUNCTIONS (Original as is)
 # -----------------------------------
 def clean_po(val):
     if not val:
@@ -45,7 +45,7 @@ def calculate_pieces(grade_str, manual_pcs):
     return 0
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE
+# 1️⃣ PENDING ORDERS PAGE (Updated with FY Filter)
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
@@ -54,16 +54,24 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # 🔹 FY Filtering Logic
+    selected_fy = request.query_params.get('fy')
+    rows = []
+    
+    if selected_fy:
+        start_date = f"{selected_fy}-04-01"
+        end_date = f"{int(selected_fy) + 1}-03-31"
+        rows = db.query(pending_orders).filter(
+            pending_orders.company_id == company_code,
+            pending_orders.date.between(start_date, end_date)
+        ).order_by(pending_orders.sl_no, pending_orders.id).all()
+
     prod_names = db.query(production_for.production_for).filter(
         production_for.company_id == company_code,
         production_for.production_for != None
     ).distinct().all()
 
     unique_companies = [c[0] for c in prod_names if c[0]]
-
-    rows = db.query(pending_orders).filter(
-        pending_orders.company_id == company_code
-    ).order_by(pending_orders.sl_no, pending_orders.id).all()
 
     po_groups = defaultdict(list)
     for r in rows:
@@ -94,6 +102,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             "po_groups": po_groups,
             "edit_rows": edit_rows,
             "next_sl": next_sl,
+            "selected_fy": selected_fy, # UI state maintain cheyadaniki
             "unique_companies": unique_companies,
             "buyers": get_lookup(buyers, "buyer_name"),
             "agents": get_lookup(buyer_agents, "agent_name"),
@@ -110,7 +119,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     )
 
 # -------------------------------------------------------------------------
-# 2️⃣ SAVE PENDING ORDERS
+# 2️⃣ SAVE PENDING ORDERS (Original Logic)
 # -------------------------------------------------------------------------
 @router.post("/pending_orders")
 def save_pending_orders(
@@ -175,7 +184,7 @@ def save_pending_orders(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES (TRANSFER WITH EXCHANGE RATE)
+# 3️⃣ MOVE TO SALES (Original Logic)
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -209,7 +218,7 @@ def move_to_sales(
             variety=item.variety,
             grade=item.grade,
             company_name=item.company_name,
-            exchange_rate=item.exchange_rate, # Exchange Rate transferred here
+            exchange_rate=item.exchange_rate, 
             status="Unpaid",
             created_at=datetime.now().date()
         ))
@@ -223,7 +232,7 @@ def move_to_sales(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 4️⃣ SALES REPORT PAGE (DYNAMIC CALCULATIONS)
+# 4️⃣ SALES REPORT PAGE (Updated with FY Filter & Calculations)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report(request: Request, db: Session = Depends(get_db)):
@@ -231,67 +240,76 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # 🔹 FY Filter
+    selected_fy = request.query_params.get('fy')
+    processed = []
+
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
-    sales_data = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code).order_by(
-        sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no
-    ).all()
+    if selected_fy:
+        start_date = f"{selected_fy}-04-01"
+        end_date = f"{int(selected_fy) + 1}-03-31"
 
-    packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
+        sales_data = db.query(sales_dispatch).filter(
+            sales_dispatch.company_id == company_code,
+            sales_dispatch.invoice_date.between(start_date, end_date)
+        ).order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
 
-    # Load Stocks, Freight, and Packing costs into maps
-    raw_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
-    stock_map = {}
-    for row in raw_stock:
-        po = clean_po(row.po_number)
-        if po:
-            val = float(row.inventory_value or 0)
-            if val == 0: val = float(row.quantity or 0) * float(row.product_kg_value or 0)
-            stock_map[po] = stock_map.get(po, 0) + val
+        packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+        weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
 
-    freight_map = {clean_po(c.po_number): float(c.lended_total or 0) for c in db.query(ContainerLog).filter(ContainerLog.company_id == company_code).all() if clean_po(c.po_number)}
-    packing_map = {clean_po(p.po_number): float(p.grand_total or 0) for p in db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == company_code).all() if clean_po(p.po_number)}
+        # Original Costing Maps
+        raw_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+        stock_map = {}
+        for row in raw_stock:
+            po = clean_po(row.po_number)
+            if po:
+                val = float(row.inventory_value or 0)
+                if val == 0: val = float(row.quantity or 0) * float(row.product_kg_value or 0)
+                stock_map[po] = stock_map.get(po, 0) + val
 
-    processed = []
-    current_invoice, sl_no = None, 0
+        freight_map = {clean_po(c.po_number): float(c.lended_total or 0) for c in db.query(ContainerLog).filter(ContainerLog.company_id == company_code).all() if clean_po(c.po_number)}
+        packing_map = {clean_po(p.po_number): float(p.grand_total or 0) for p in db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == company_code).all() if clean_po(p.po_number)}
 
-    for s in sales_data:
-        if s.invoice_no != current_invoice:
-            sl_no += 1
-            current_invoice = s.invoice_no
+        current_invoice, sl_no = None, 0
+        for s in sales_data:
+            if s.invoice_no != current_invoice:
+                sl_no += 1
+                current_invoice = s.invoice_no
 
-        qty = float(s.no_of_mc or 0) * weight_map.get(str(s.packing_style).strip(), 1.0)
-        usd = qty * float(s.price or 0)
-        inr = usd * float(s.exchange_rate or 83.5)
-        
-        sale_po = clean_po(s.po_number)
-        stock_val = stock_map.get(sale_po, 0)
-        f_cost = freight_map.get(sale_po, 0)
-        p_cost = packing_map.get(sale_po, 0)
-        pl = inr - (stock_val + f_cost + p_cost)
+            qty = float(s.no_of_mc or 0) * weight_map.get(str(s.packing_style).strip(), 1.0)
+            usd = qty * float(s.price or 0)
+            inr = usd * float(s.exchange_rate or 83.5)
+            
+            sale_po = clean_po(s.po_number)
+            stock_val = stock_map.get(sale_po, 0)
+            f_cost = freight_map.get(sale_po, 0)
+            p_cost = packing_map.get(sale_po, 0)
+            pl = inr - (stock_val + f_cost + p_cost)
 
-        # Update DB fields
-        s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
+            # Update DB fields
+            s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
 
-        processed.append({
-            "sl_no": sl_no, "obj": s, "total_qty_kg": qty, "total_usd": usd, "total_inr": inr,
-            "stock_value": stock_val, "freight_cost": f_cost, "packing_cost": p_cost, "profit_loss": pl
-        })
+            processed.append({
+                "sl_no": sl_no, "obj": s, "total_qty_kg": qty, "total_usd": usd, "total_inr": inr,
+                "stock_value": stock_val, "freight_cost": f_cost, "packing_cost": p_cost, "profit_loss": pl
+            })
+        db.commit()
 
-    db.commit()
     return templates.TemplateResponse(
-    request=request, 
-    name="inventory_management/sales_report.html", 
-    context={
-        "sales_data": processed, 
-        "unique_companies": unique_companies
-    }
-)
+        request=request, 
+        name="inventory_management/sales_report.html", 
+        context={
+            "sales_data": processed, 
+            "unique_companies": unique_companies,
+            "selected_fy": selected_fy,
+            "datetime": datetime
+        }
+    )
 
 # -------------------------------------------------------------------------
-# 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX)
+# 5️⃣ EDIT EXCHANGE RATE (Original Logic)
 # -------------------------------------------------------------------------
 @router.post("/update_exchange_rate")
 async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
@@ -303,14 +321,12 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     if not sale_item:
         return {"status": "error", "message": "Record not found"}
     
-    # Get MC Weight for re-calc
     p_style = db.query(packing_styles).filter(
         packing_styles.company_id == sale_item.company_id,
         packing_styles.packing_style == sale_item.packing_style
     ).first()
     mc_weight = float(p_style.mc_weight or 1.0) if p_style else 1.0
     
-    # Re-calculate
     sale_item.exchange_rate = new_rate
     qty_kg = float(sale_item.no_of_mc or 0) * mc_weight
     total_inr = (qty_kg * float(sale_item.price or 0)) * new_rate
@@ -326,7 +342,7 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     }
 
 # -------------------------------------------------------------------------
-# 6️⃣ STATUS UPDATE ROUTE (AJAX)
+# 6️⃣ STATUS UPDATE (Original Logic)
 # -------------------------------------------------------------------------
 @router.post("/update_status")
 async def update_status(request: Request, db: Session = Depends(get_db)):

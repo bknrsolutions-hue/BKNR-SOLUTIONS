@@ -25,16 +25,27 @@ body{
 }
 
 /* ================= HEADER & SEARCH ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); display:flex; justify-content:space-between; align-items:center; }
+.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
+.header-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
-#searchBox{ padding:6px 12px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; width: 250px; border-left: 4px solid var(--accent); }
+.filters{
+ margin-top:8px; display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+ gap:8px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
+}
+.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
+
+select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1300px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1400px; } 
 
 thead th{
  background:#f8fafc; padding:12px 4px; font-size:10px; font-weight:700;
@@ -47,27 +58,28 @@ tbody td{
  padding:8px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:left;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- font-weight: 400; color: var(--text); /* Data bold & colors lekunda */
+ font-weight: 400; color: var(--text);
 }
 
-/* GROUP HEADER STYLE */
 .row-date-group { background: #f8fafc !important; }
 .row-date-group td { 
     border-bottom: 2px solid var(--border); 
     font-size: 11px; 
     font-weight: 800 !important; 
     color: var(--primary); 
-    text-align: middle !important; 
     padding: 10px 15px;
 }
 
 tbody tr:hover:not(.row-date-group){background:#f1f7ff; cursor:pointer;}
 
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+
 /* Column Widths */
-.w-sl { width: 40px; } .w-dt { width: 90px; } .w-gb { width: 140px; } .w-ob { width: 110px; }
-.w-pf { width: 150px; } .w-pp { width: 90px; } .w-var { width: 80px; } .w-gr { width: 80px; }
-.w-sp { width: 80px; } .w-fr { width: 80px; } .w-gz { width: 60px; } .w-qt { width: 90px; }
-.w-rt { width: 90px; } .w-vl { width: 180px; } .w-loc { width: 120px; }
+.w-sl { width: 45px; } .w-dt { width: 90px; } .w-gb { width: 140px; } .w-ob { width: 110px; }
+.w-pf { width: 150px; } .w-pp { width: 100px; } .w-var { width: 110px; } .w-gr { width: 80px; }
+.w-sp { width: 80px; } .w-fr { width: 80px; } .w-gz { width: 60px; } .w-qt { width: 100px; }
+.w-rt { width: 90px; } .w-vl { width: 150px; } .w-loc { width: 120px; }
 
 /* ================= FOOTER ================= */
 tfoot td{ 
@@ -76,7 +88,7 @@ tfoot td{
 }
 
 @media print {
-    .header, #searchBox { display: none !important; }
+    .header, .filters { display: none !important; }
     .section { border: none !important; margin: 0 !important; }
     .table-wrap { overflow: visible !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
@@ -87,8 +99,29 @@ tfoot td{
 <body>
 
 <div class="header">
-    <h2>RE-PROCESS TRACKING</h2>
-    <input type="text" id="searchBox" placeholder="Search Batch, Variety, Production For...">
+    <div class="header-top">
+        <h2>RE-PROCESS TRACKING</h2>
+        <div style="font-size: 11px; color: var(--text-muted);">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
+    
+    <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox"><label>From</label><input type="date" id="f_from" onchange="applyFilters()"></div>
+        <div class="fbox"><label>To</label><input type="date" id="f_to" onchange="applyFilters()"></div>
+        <input type="text" id="searchBox" placeholder="Quick Search Batch, Variety, Grade..." onkeyup="applyFilters()">
+    </div>
 </div>
 
 <div class="section">
@@ -114,7 +147,16 @@ tfoot td{
                 </tr>
             </thead>
             <tbody id="tbody">
-                </tbody>
+                {% if not rows %}
+                <tr>
+                    <td colspan="15" class="empty-state">
+                        <i class="fa-solid fa-arrows-rotate"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view re-process data.</span>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
             <tfoot>
                 <tr>
                     <td colspan="11" style="text-align:right">GRAND TOTALS:</td>
@@ -151,15 +193,39 @@ const rawData = [
     {% endfor %}
 ];
 
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
+
 function applyFilters() {
-    const q = document.getElementById("searchBox").value.toLowerCase();
+    const fyVal = document.getElementById("f_fy").value;
     const tbody = document.getElementById("tbody");
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    const f1 = document.getElementById("f_from").value;
+    const f2 = document.getElementById("f_to").value;
+
+    if(!fyVal) {
+        tbody.innerHTML = `<tr><td colspan="15" class="empty-state"><i class="fa-solid fa-arrows-rotate"></i><br><b>Financial Year Not Selected</b><br><span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span></td></tr>`;
+        document.getElementById("grand_qty").innerText = "0.00 Kg";
+        document.getElementById("grand_val").innerText = "₹0.00";
+        return;
+    }
+
     tbody.innerHTML = "";
+    let filtered = rawData.filter(d => {
+        let ok = true;
+        if(f1 && d.date < f1) ok = false;
+        if(f2 && d.date > f2) ok = false;
+        if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) ok = false;
+        return ok;
+    });
 
-    let filtered = rawData.filter(d => !q || Object.values(d).join(' ').toLowerCase().includes(q));
     let gQty = 0, gVal = 0;
-
     const groups = {};
+    
     filtered.forEach(d => {
         if(!groups[d.date]) groups[d.date] = { items: [], subQty: 0, subVal: 0, display: d.display_date };
         groups[d.date].items.push(d);
@@ -171,7 +237,6 @@ function applyFilters() {
 
     Object.keys(groups).sort().reverse().forEach(dateKey => {
         const group = groups[dateKey];
-        // Render Group Header (No Symbol)
         tbody.innerHTML += `
             <tr class="row-date-group">
                 <td colspan="11">DATE: ${group.display}</td>
@@ -188,9 +253,9 @@ function applyFilters() {
                     <td>${r.display_date}</td>
                     <td>${r.new_id}</td>
                     <td>${r.orig_batch}</td>
-                    <td style="text-align:left;">${r.prod_for}</td>
+                    <td>${r.prod_for}</td>
                     <td>${r.type}</td>
-                    <td style="text-align:left;">${r.variety}</td>
+                    <td>${r.variety}</td>
                     <td>${r.grade}</td>
                     <td>${r.species}</td>
                     <td>${r.freezer}</td>
@@ -207,8 +272,7 @@ function applyFilters() {
     document.getElementById("grand_val").innerText = "₹" + gVal.toLocaleString('en-IN', {minimumFractionDigits: 2});
 }
 
-document.getElementById("searchBox").oninput = applyFilters;
-applyFilters();
+window.onload = applyFilters;
 </script>
 </body>
 </html>

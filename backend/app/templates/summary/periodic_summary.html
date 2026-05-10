@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BKNR ERP | Master Periodic Summary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --brand: #1e3a8a; --accent: #ea580c; --border: #cbd5e1; --success: #16a34a; --danger: #dc2626; --bg-light: #f1f5f9; }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: var(--bg-light); color: #0f172a; padding: 10px; font-size: 8px; }
+        
+        /* Header Styling */
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: white; padding: 12px; border-radius: 4px; border-bottom: 3px solid var(--brand); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .report-header h1 { margin: 0; font-size: 14px; color: var(--brand); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Filters */
+        .filter-card { background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .filter-grid { display: grid; grid-template-columns: repeat(2, 200px) auto; gap: 15px; align-items: flex-end; }
+        .filter-group label { font-size: 9px; font-weight: 800; display: block; margin-bottom: 4px; color: #475569; }
+        select { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 10px; font-weight: 600; background: #f8fafc; cursor: pointer; }
+
+        /* Table Design */
+        .table-wrap { background: white; border-radius: 4px; border: 1px solid var(--border); width: 100%; overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
+        th { background: #f8fafc; padding: 10px 6px; text-align: right; font-size: 8.5px; color: #1e293b; border-bottom: 2px solid var(--border); text-transform: uppercase; border-right: 1px solid #e2e8f0; font-weight: 800; }
+        th:nth-child(1), th:nth-child(2) { text-align: left; }
+        
+        td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 9px; font-weight: 700; text-align: right; border-right: 1px solid #f1f5f9; }
+        td:nth-child(1), td:nth-child(2) { text-align: left; color: var(--brand); font-weight: 800; }
+
+        /* Functional Highlighting */
+        .col-rmp { background: #fffcf0; } /* Acquisition */
+        .col-rep { background: #fdf2f8; } /* Reprocess */
+        .col-prod { background: #f0fdf4; color: var(--success); } /* Final Production */
+        .col-stock { background: #eff6ff; } /* Inventory */
+        .col-bal { background: #fef2f2; color: var(--danger); } /* Floor Balance */
+        
+        .tag-yield { background: #166534; color: white; padding: 2px 5px; border-radius: 3px; font-size: 8.5px; font-weight: 800; }
+        .btn-print { background: var(--brand); color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: 700; font-size: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-print:hover { background: #172554; }
+
+        @media print { 
+            .filter-card, .no-print, .btn-print { display: none !important; } 
+            body { padding: 0; background: white; } 
+            .table-wrap { border: none; }
+            th { background: #eee !important; color: black; border: 1px solid #000; }
+            td { border: 1px solid #000; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-header">
+    <h1><i class="fas fa-warehouse"></i> MASTER PERIODIC PRODUCTION & INVENTORY SUMMARY</h1>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn-print">
+            <i class="fas fa-print"></i> EXPORT TO PDF
+        </button>
+    </div>
+</div>
+
+<div class="filter-card no-print">
+    <form method="get" class="filter-grid">
+        <div class="filter-group">
+            <label>REPORT VIEW</label>
+            <select name="view_type" onchange="this.form.submit()">
+                <option value="day" {% if view_type == 'day' %}selected{% endif %}>Daily Breakup</option>
+                <option value="month" {% if view_type == 'month' %}selected{% endif %}>Monthly Summary</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>PRODUCTION FOR</label>
+            <select name="production_for" onchange="this.form.submit()">
+                <option value="">-- SHOW ALL COMPANIES --</option>
+                {% for c in companies %}
+                <option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="padding-bottom: 2px;">
+            <a href="/summary/periodic-report" style="text-decoration:none; background:#e2e8f0; color:#475569; padding:7px 15px; border-radius:4px; font-weight:700; font-size:10px; display:inline-block;">
+                <i class="fas fa-sync"></i> RESET
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:40px">Sl.No</th>
+                <th style="width:120px">Period/Date</th>
+                <th class="col-rmp">RMP Qty (KG)</th>
+                <th class="col-rmp">RMP Value (₹)</th>
+                <th class="col-rep">Reprocess (KG)</th>
+                <th>De-Heading</th>
+                <th>Peeling</th>
+                <th>Grading</th>
+                <th>Soaking</th>
+                <th class="col-prod">Production (KG)</th>
+                <th class="col-stock">Cold Store IN</th>
+                <th class="col-stock">Cold Store OUT</th>
+                <th class="col-bal">Floor Balance</th>
+                <th style="text-align:center">Recovery %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in periodic_data %}
+            <tr>
+                <td style="text-align:center;">{{ loop.index }}</td>
+                <td>{{ row.period }}</td>
+                <td class="col-rmp">{{ "{:,.2f}".format(row.rmp_qty) }}</td>
+                <td class="col-rmp" style="color:var(--success)">₹ {{ "{:,.2f}".format(row.rmp_amt) }}</td>
+                <td class="col-rep">{{ "{:,.2f}".format(row.rep_qty) }}</td>
+                <td>{{ "{:,.2f}".format(row.deh_qty) }}</td>
+                <td>{{ "{:,.2f}".format(row.peel_qty) }}</td>
+                <td>{{ "{:,.2f}".format(row.grad_qty) }}</td>
+                <td>{{ "{:,.2f}".format(row.soak_qty) }}</td>
+                <td class="col-prod">{{ "{:,.2f}".format(row.prod_qty) }}</td>
+                <td class="col-stock">{{ "{:,.2f}".format(row.stock_in) }}</td>
+                <td class="col-stock">{{ "{:,.2f}".format(row.stock_out) }}</td>
+                <td class="col-bal">{{ "{:,.2f}".format(row.floor_bal) }}</td>
+                <td style="text-align:center">
+                    {% if row.rmp_qty > 0 %}
+                    <span class="tag-yield">{{ "%.2f"|format((row.prod_qty / row.rmp_qty) * 100) }}%</span>
+                    {% else %}
+                    <span style="color:#94a3b8">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            
+            {% if not periodic_data %}
+            <tr>
+                <td colspan="14" style="text-align:center; padding:40px; color:#94a3b8; background:#fff;">
+                    <i class="fas fa-inbox" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                    No production data found for the selected filters.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:15px;" class="no-print">
+    <div style="background:white; border:1px solid var(--border); padding:12px; border-radius:4px;">
+        <h3 style="font-size:10px; margin-top:0; color:var(--brand); text-transform:uppercase;">Note on Logic</h3>
+        <p style="font-size:9px; color:#64748b; line-height:1.4; margin:0;">
+            * <b>Floor Balance</b> is calculated as: (RMP Qty + Reprocess Qty) - Production Qty.<br>
+            * <b>Recovery %</b> represents the yield ratio from Raw Material to Finished Production.<br>
+            * All quantities are in Kilograms (KG).
+        </p>
+    </div>
+    <div style="background:#fff7ed; border:1px solid #fed7aa; padding:12px; border-radius:4px;">
+        <h3 style="font-size:10px; margin-top:0; color:#9a3412; text-transform:uppercase;">Data Integrity</h3>
+        <p style="font-size:9px; color:#9a3412; line-height:1.4; margin:0;">
+            This report summarizes data across all modules including RMP, Processing, and Cold Storage. 
+            Please ensure all batches for the period are closed for accurate balance reporting.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

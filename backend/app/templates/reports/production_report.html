@@ -4,31 +4,44 @@
 <meta charset="UTF-8">
 <title>PRODUCTION REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
- --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f1f5f9;
- --header:#ffffff; --text:#1e293b; --danger: #ef4444; --success: #22c55e;
+ --primary:#0f172a;
+ --accent:#2563eb;
+ --border:#e2e8f0;
+ --bg:#f1f5f9;
+ --header:#ffffff;
+ --text:#1e293b;
+ --text-muted:#64748b;
+ --danger: #ef4444;
+ --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
-body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
+body{
+ margin:0; background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+}
 
 /* ================= HEADER & FILTERS ================= */
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.header-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
-/* View Selector Buttons */
 .view-btns { display: flex; gap: 5px; }
 .v-btn { 
     padding: 5px 12px; font-size: 10px; font-weight: 700; border: 1px solid var(--border); 
-    background: #fff; cursor: pointer; border-radius: 4px; color: #64748b;
+    background: #fff; cursor: pointer; border-radius: 4px; color: #64748b; transition: 0.2s;
 }
 .v-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.v-btn:hover:not(.active) { background: #f8fafc; }
 
 .filters{
- margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+ margin-top:8px; display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
  gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
@@ -36,6 +49,7 @@ body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction
 
 select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
@@ -51,13 +65,12 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
 .menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
-.menu-list hr{ border:0; border-top:1px solid var(--border); margin:0; }
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1600px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1350px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
@@ -74,36 +87,37 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
-/* Grouping Styles */
-tr.group-header { background: #334155 !important; color: #fff; font-weight: 800; }
-tr.sub-group-header { background: #f1f5f9 !important; color: var(--accent); font-weight: 700; text-align: left; }
-tr.sub-total-row { background: #eff6ff; font-weight: 800; border-top: 1px solid #bfdbfe; }
+/* Subtotal Row Specific Styles */
+.subtotal-row { background: #f8fafc !important; font-weight: 700; border-top: 2px solid #e2e8f0; }
+.subtotal-row td { color: var(--accent); border-bottom: 2px solid #cbd5e1; }
+.diff-pos { color: var(--success); font-weight: 800; }
+.diff-neg { color: var(--danger); font-weight: 800; }
 
-/* Column widths */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+
+/* Column Widths */
 .w-sl { width: 45px; } .w-dt { width: 90px; } .w-bt { width: 100px; } .w-brd { width: 110px; }
 .w-spc { width: 110px; } .w-var { width: 120px; } .w-grd { width: 90px; } .w-frz { width: 100px; } 
 .w-pck { width: 150px; } .w-mc { width: 65px; } .w-lse { width: 65px; } .w-qty { width: 90px; } 
-.w-typ { width: 100px; } .w-loc { width: 120px; } .w-pf { width: 120px; } .w-em { width: 150px; }
+.w-yield { width: 85px; } .w-diff { width: 85px; } .w-typ { width: 100px; } .w-loc { width: 120px; } 
+.w-pf { width: 120px; } .w-em { width: 150px; }
 
 .calc-cell { font-weight: 800; color: var(--accent); background: #f8fafc; }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
-/* ================= FOOTER ================= */
 tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
 
-/* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
 .modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:400px; background:#fff; 
+    position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-.audit-item{ padding:10px; border-bottom:1px solid #e2e8f0; font-size:11px; }
-
 </style>
 </head>
 
@@ -114,20 +128,30 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
         <h2>PRODUCTION REPORT</h2>
         <div class="view-btns">
             <button class="v-btn active" onclick="switchView('detail', this)">PRODUCTION DETAILS</button>
-            <button class="v-btn" onclick="switchView('batch', this)">SUMMARY: BATCH WISE</button>
-            <button class="v-btn" onclick="switchView('day', this)">SUMMARY: DAY WISE</button>
+            <button class="v-btn" onclick="switchView('summary', this)">SUBTOTAL SUMMARY</button>
         </div>
     </div>
     <div class="filters">
-        <div class="fbox"><label>Month View</label><input type="month" id="f_month"></div>
-        <div class="fbox"><label>From</label><input type="date" id="f_from" value="{{ from_date }}"></div>
-        <div class="fbox"><label>To</label><input type="date" id="f_to" value="{{ to_date }}"></div>
-        <div class="fbox"><label>Brand</label><select id="f_brand"><option value="">All Brands</option></select></div>
-        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
-        <div class="fbox"><label>Freezer</label><select id="f_freezer"><option value="">All Freezers</option></select></div>
-        <div class="fbox"><label>Prod Type</label><select id="f_type"><option value="">All Types</option></select></div>
-        <div class="fbox"><label>Prod For</label><select id="f_production"><option value="">All Production</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Brand, Grade, User...">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox"><label>Month View</label><input type="month" id="f_month" onchange="applyFilters()"></div>
+        <div class="fbox"><label>From</label><input type="date" id="f_from" value="{{ from_date }}" onchange="applyFilters()"></div>
+        <div class="fbox"><label>To</label><input type="date" id="f_to" value="{{ to_date }}" onchange="applyFilters()"></div>
+        <div class="fbox"><label>Brand</label><select id="f_brand" onchange="applyFilters()"><option value="">All Brands</option></select></div>
+        <div class="fbox"><label>Variety</label><select id="f_variety" onchange="applyFilters()"><option value="">All Varieties</option></select></div>
+        <div class="fbox"><label>Freezer</label><select id="f_freezer" onchange="applyFilters()"><option value="">All Freezers</option></select></div>
+        <div class="fbox"><label>Prod Type</label><select id="f_type" onchange="applyFilters()"><option value="">All Types</option></select></div>
+        <div class="fbox"><label>Prod For</label><select id="f_production" onchange="applyFilters()"><option value="">All Production</option></select></div>
+        <input id="searchBox" placeholder="Quick Search Batch, Brand, Grade, User..." onkeyup="applyFilters()">
     </div>
 </div>
 
@@ -142,9 +166,10 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
             <hr>
-            <b>📋 Table Options</b>
-            <div onclick="exportFiltered('pdf_print')">🖨 Print View (PDF)</div>
-            <div onclick="askConfirm('pdf_table')">📥 Export PDF (Download)</div>
+            <b>📋 Export Options</b>
+            <div onclick="window.print()">🖨 Print Current View</div>
+            <div onclick="exportFiltered('pdf_print')">📄 Print View (PDF)</div>
+            <div onclick="askConfirm('pdf_table')">📥 Download PDF Report</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel Filtered</div>
             <hr>
             {% if is_admin %}
@@ -171,6 +196,8 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-mc">MC</th>
                     <th class="w-lse">Loose</th>
                     <th class="w-qty">Prod Qty</th>
+                    <th class="w-yield">Yield %</th>
+                    <th class="w-diff">Diff Qty</th>
                     <th class="w-typ">Prod Type</th>
                     <th class="w-loc">Prod At</th>
                     <th class="w-pf">Prod For</th>
@@ -178,14 +205,87 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                 </tr>
             </thead>
             <tbody id="tbody">
-                </tbody>
+                {% if not rows %}
+                <tr>
+                    <td colspan="18" class="empty-state">
+                        <i class="fa-solid fa-industry"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year to view production data.</span>
+                    </td>
+                </tr>
+                {% else %}
+                    {% set ns = namespace(last_key=None) %}
+                    {% for r in rows %}
+                        {% set current_key = (r.production_for, r.production_at, r.species, r.variety_name, r.batch_number) %}
+                        
+                        {# Subtotal Row #}
+                        {% if ns.last_key and ns.last_key != current_key %}
+                            {% set s = subtotals.get(ns.last_key) %}
+                            <tr class="subtotal-row">
+                                <td colspan="9" style="text-align:right">SUBTOTAL ({{ ns.last_key[4] }}):</td>
+                                <td>-</td><td>-</td>
+                                <td class="calc-cell">{{ s.prod_qty }}</td>
+                                <td class="{{ 'diff-pos' if s.diff_yield_perc >= 0 else 'diff-neg' }}">
+                                    {{ s.actual_yield }}% ({{ s.diff_yield_perc }}%)
+                                </td>
+                                <td class="{{ 'diff-pos' if s.diff_qty >= 0 else 'diff-neg' }}">
+                                    {{ s.diff_qty }}
+                                </td>
+                                <td colspan="3">In: {{ s.soaking_in }} | Trg: {{ s.target_yield }}%</td>
+                            </tr>
+                        {% endif %}
+
+                        <tr data-id="{{ r.id }}" data-date="{{ r.date }}" 
+                            data-brand="{{ r.brand }}" data-variety="{{ r.variety_name }}" 
+                            data-freezer="{{ r.freezer }}" data-type="{{ r.production_type }}" 
+                            data-pf="{{ r.production_for }}" onclick="selectRow(this)">
+                            <td class="slno"></td>
+                            <td>{{ r.date }}</td>
+                            <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
+                            <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
+                            <td class="lookup species_list" data-field="species">{{ r.species }}</td>
+                            <td class="lookup varieties_list" data-field="variety_name">{{ r.variety_name }}</td>
+                            <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
+                            <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
+                            <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
+                            <td class="editable" data-field="no_of_mc">{{ r.no_of_mc }}</td>
+                            <td class="editable" data-field="loose">{{ r.loose }}</td>
+                            <td class="calc-cell">{{ r.production_qty }}</td>
+                            <td>-</td><td>-</td>
+                            <td class="lookup prod_types_list" data-field="production_type">{{ r.production_type }}</td>
+                            <td class="lookup prod_at_list" data-field="production_at">{{ r.production_at }}</td>
+                            <td class="lookup prod_for_list" data-field="production_for">{{ r.production_for }}</td>
+                            <td style="font-size: 8px;">{{ r.email }}</td>
+                        </tr>
+
+                        {% set ns.last_key = current_key %}
+                        
+                        {# Final Subtotal for last group #}
+                        {% if loop.last %}
+                            {% set s = subtotals.get(current_key) %}
+                            <tr class="subtotal-row">
+                                <td colspan="9" style="text-align:right">SUBTOTAL ({{ current_key[4] }}):</td>
+                                <td>-</td><td>-</td>
+                                <td class="calc-cell">{{ s.prod_qty }}</td>
+                                <td class="{{ 'diff-pos' if s.diff_yield_perc >= 0 else 'diff-neg' }}">
+                                    {{ s.actual_yield }}% ({{ s.diff_yield_perc }}%)
+                                </td>
+                                <td class="{{ 'diff-pos' if s.diff_qty >= 0 else 'diff-neg' }}">
+                                    {{ s.diff_qty }}
+                                </td>
+                                <td colspan="3">In: {{ s.soaking_in }} | Trg: {{ s.target_yield }}%</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </tbody>
             <tfoot>
                 <tr>
                     <td colspan="9" style="text-align:right">PAGE TOTALS:</td>
                     <td id="tot_mc">0</td>
                     <td id="tot_loose">0</td>
                     <td id="tot_qty">0.00</td>
-                    <td colspan="4"></td>
+                    <td colspan="6"></td>
                 </tr>
             </tfoot>
         </table>
@@ -194,18 +294,16 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin-top:0;"></h4>
-        <div style="display:flex; justify-content:center; gap:10px;">
-            <button class="btn-y" id="btnYes">Proceed</button>
-            <button class="btn-n" onclick="closeModal()">Cancel</button>
-        </div>
+        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <button class="btn-y" id="btnYes">Yes, Proceed</button>
+        <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:13px;">📜 PRODUCTION EDIT LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">PRODUCTION EDIT HISTORY</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
     </div>
     <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
@@ -223,268 +321,107 @@ const lookups = {
     prod_types_list: {{ prod_types_list|tojson or [] }}
 };
 
-const baseUrl = window.location.pathname.replace(/\/+$/, ""); 
+let selectedRow = null, currentAction = null;
+const baseUrl = window.location.pathname.replace(/\/$/, "");
 
-let selectedRow = null;
-let currentAction = null;
-let currentView = 'detail';
-
-// Data from Jinja
-const rawData = [
-    {% for r in rows %}
-    {
-        id: "{{ r.id }}",
-        date: "{{ r.date }}",
-        batch_number: "{{ r.batch_number }}",
-        brand: "{{ r.brand }}",
-        species: "{{ r.species }}",
-        variety_name: "{{ r.variety_name }}",
-        grade: "{{ r.grade }}",
-        freezer: "{{ r.freezer }}",
-        packing_style: "{{ r.packing_style }}",
-        no_of_mc: {{ r.no_of_mc or 0 }},
-        loose: {{ r.loose or 0 }},
-        production_qty: {{ r.production_qty or 0 }},
-        production_type: "{{ r.production_type }}",
-        production_at: "{{ r.production_at }}",
-        production_for: "{{ r.production_for }}",
-        email: "{{ r.email }}"
-    },
-    {% endfor %}
-];
-
-function switchView(view, btn) {
-    currentView = view;
-    document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    applyFilters();
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
 }
 
-function selectRow(tr) { 
-    if(tr.className.includes('header') || tr.className.includes('total')) return;
-    document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected")); 
-    tr.classList.add("selected"); 
-    selectedRow = tr; 
+function switchView(mode, btn) {
+    document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const subs = document.querySelectorAll('.subtotal-row');
+    subs.forEach(s => s.style.display = (mode === 'detail') ? '' : ''); // Summary logic handled by filtering visibility
+    if(mode === 'summary') {
+        document.querySelectorAll('#tbody tr:not(.subtotal-row)').forEach(r => r.style.display = 'none');
+    } else {
+        applyFilters();
+    }
 }
 
 function applyFilters() {
-    const fm = document.getElementById("f_month").value;
-    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
-    const fbrd = document.getElementById("f_brand").value.toLowerCase();
-    const fv = document.getElementById("f_variety").value.toLowerCase();
-    const ffrz = document.getElementById("f_freezer").value.toLowerCase();
-    const ftyp = document.getElementById("f_type").value.toLowerCase();
-    const fpr = document.getElementById("f_production").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
+    const fm = document.getElementById("f_month").value;
+    const f1 = document.getElementById("f_from").value;
+    const f2 = document.getElementById("f_to").value;
+    const fbrd = document.getElementById("f_brand").value;
+    const fvar = document.getElementById("f_variety").value;
+    const ffrz = document.getElementById("f_freezer").value;
+    const ftyp = document.getElementById("f_type").value;
+    const fpf = document.getElementById("f_production").value;
+
+    const dataRows = [...document.querySelectorAll("#tbody tr:not(.subtotal-row)")];
+    const subRows = [...document.querySelectorAll("#tbody tr.subtotal-row")];
     
-    let filtered = rawData.filter(r => {
+    let mcT=0, lsT=0, qtyT=0, visibleCount=0;
+
+    dataRows.forEach(tr => {
+        const d = tr.dataset.date;
+        const brand = tr.dataset.brand;
+        const variety = tr.dataset.variety;
+        const freezer = tr.dataset.freezer;
+        const type = tr.dataset.type;
+        const pf = tr.dataset.pf;
+        const text = tr.innerText.toLowerCase();
+
         let ok = true;
-        if(fm && !r.date.startsWith(fm)) ok = false;
-        if(f1 && r.date < f1) ok = false; 
-        if(f2 && r.date > f2) ok = false;
-        if(fbrd && r.brand.toLowerCase() !== fbrd) ok = false;
-        if(fv && r.variety_name.toLowerCase() !== fv) ok = false;
-        if(ffrz && r.freezer.toLowerCase() !== ffrz) ok = false;
-        if(ftyp && r.production_type.toLowerCase() !== ftyp) ok = false;
-        if(fpr && r.production_for.toLowerCase() !== fpr) ok = false;
-        if(q) {
-            const txt = `${r.batch_number} ${r.brand} ${r.grade} ${r.variety_name} ${r.email}`.toLowerCase();
-            if(!txt.includes(q)) ok = false;
+        if(fm && !d.startsWith(fm)) ok = false;
+        if(f1 && d < f1) ok = false;
+        if(f2 && d > f2) ok = false;
+        if(fbrd && brand !== fbrd) ok = false;
+        if(fvar && variety !== fvar) ok = false;
+        if(ffrz && freezer !== ffrz) ok = false;
+        if(ftyp && type !== ftyp) ok = false;
+        if(fpf && pf !== fpf) ok = false;
+        if(q && !text.includes(q)) ok = false;
+
+        if(ok) {
+            tr.style.display = "";
+            visibleCount++;
+            mcT += parseFloat(tr.cells[9].innerText) || 0;
+            lsT += parseFloat(tr.cells[10].innerText) || 0;
+            qtyT += parseFloat(tr.cells[11].innerText) || 0;
+        } else {
+            tr.style.display = "none";
         }
-        return ok;
     });
 
-    renderTable(filtered);
-}
-
-function renderTable(data) {
-    const tbody = document.getElementById("tbody");
-    tbody.innerHTML = "";
-    
-    let displayRows = [];
-    if (currentView === 'detail') {
-        displayRows = data;
-    } else {
-        const primaryKey = (currentView === 'batch') ? 'batch_number' : 'date';
-        displayRows = groupDataAdvanced(data, primaryKey);
-    }
-
-    let mcT=0, looseT=0, qtyT=0;
-    
-    // Calculate total actual data records for reverse serial numbering
-    const totalDataCount = displayRows.filter(r => !r.isHeader && !r.isSubHeader && !r.isTotal).length;
-    let dataIdx = 0;
-
-    displayRows.forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = r.id || "";
-        tr.dataset.date = r.date || "";
-        tr.onclick = () => selectRow(tr);
-
-        if(r.isHeader) {
-            tr.className = "group-header";
-            tr.innerHTML = `<td colspan="16" style="text-align:left; padding-left:15px;">${r.title}</td>`;
-        } 
-        else if(r.isSubHeader) {
-            tr.className = "sub-group-header";
-            tr.innerHTML = `<td colspan="16" style="text-align:left; padding-left:30px;">↳ VARIETY: ${r.title}</td>`;
-        }
-        else if(r.isTotal) {
-            tr.className = "sub-total-row";
-            tr.innerHTML = `
-                <td colspan="9" style="text-align:right">${r.title}</td>
-                <td>${r.no_of_mc}</td>
-                <td>${r.loose}</td>
-                <td class="qty">${r.production_qty.toFixed(2)}</td>
-                <td colspan="4"></td>
-            `;
-        } 
-        else {
-            // Reverse SL No Logic: TotalCount - CurrentIndex
-            const slNo = totalDataCount - dataIdx;
-            dataIdx++;
-
-            tr.innerHTML = `
-                <td class="slno">${slNo}</td>
-                <td>${r.date}</td>
-                <td class="editable" data-field="batch_number">${r.batch_number}</td>
-                <td class="lookup brands_list" data-field="brand">${r.brand}</td>
-                <td class="lookup species_list" data-field="species">${r.species}</td>
-                <td class="lookup varieties_list" data-field="variety_name">${r.variety_name}</td>
-                <td class="lookup grades_list" data-field="grade">${r.grade}</td>
-                <td class="lookup freezers_list" data-field="freezer">${r.freezer}</td>
-                <td class="lookup packing_styles_list" data-field="packing_style">${r.packing_style}</td>
-                <td class="editable no_mc" data-field="no_of_mc">${r.no_of_mc}</td>
-                <td class="editable loose" data-field="loose">${r.loose}</td>
-                <td class="calc-cell prod_qty" data-field="production_qty">${r.production_qty}</td>
-                <td class="lookup prod_types_list" data-field="production_type">${r.production_type}</td>
-                <td class="lookup prod_at_list" data-field="production_at">${r.production_at}</td>
-                <td class="lookup prod_for_list" data-field="production_for">${r.production_for}</td>
-                <td style="font-size: 8px; color: #94a3b8;">${r.email}</td>
-            `;
-            mcT += r.no_of_mc;
-            looseT += r.loose;
-            qtyT += r.production_qty;
-        }
-        tbody.appendChild(tr);
+    // Update Sl No in reverse
+    const visibleDataRows = dataRows.filter(r => r.style.display !== 'none');
+    const totalVisible = visibleDataRows.length;
+    visibleDataRows.forEach((r, idx) => {
+        r.querySelector('.slno').innerText = totalVisible - idx;
     });
 
-    document.getElementById("rowCount").innerText = `${data.length} records found`;
+    // Subtotal Row Visibility Logic
+    subRows.forEach(sr => {
+        let hasVisibleSibling = false;
+        let prev = sr.previousElementSibling;
+        while(prev && !prev.classList.contains('subtotal-row')) {
+            if(prev.style.display !== 'none') { hasVisibleSibling = true; break; }
+            prev = prev.previousElementSibling;
+        }
+        sr.style.display = hasVisibleSibling ? "" : "none";
+    });
+
     document.getElementById("tot_mc").innerText = mcT;
-    document.getElementById("tot_loose").innerText = looseT;
+    document.getElementById("tot_loose").innerText = lsT;
     document.getElementById("tot_qty").innerText = qtyT.toFixed(2);
+    document.getElementById("rowCount").innerText = `${totalVisible} rows found`;
 }
 
-// Advanced Grouping Logic: Primary (Batch/Date) -> Secondary (Variety)
-function groupDataAdvanced(data, primaryKey) {
-    const mainGroups = {};
-    data.forEach(r => {
-        const val = r[primaryKey];
-        if(!mainGroups[val]) mainGroups[val] = {};
-        
-        const variety = r.variety_name;
-        if(!mainGroups[val][variety]) mainGroups[val][variety] = [];
-        mainGroups[val][variety].push(r);
-    });
+function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
+document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
-    const result = [];
-    // Sort Primary Keys (Date/Batch)
-    Object.keys(mainGroups).sort().reverse().forEach(pKey => {
-        result.push({ isHeader: true, title: (primaryKey === 'batch_number' ? 'BATCH: ' : 'DATE: ') + pKey });
-        
-        let pMc=0, pLs=0, pQty=0;
-        
-        // Sort Varieties within the group
-        Object.keys(mainGroups[pKey]).sort().forEach(vKey => {
-            result.push({ isSubHeader: true, title: vKey });
-            
-            let vMc=0, vLs=0, vQty=0;
-            mainGroups[pKey][vKey].forEach(row => {
-                result.push(row);
-                vMc += row.no_of_mc; vLs += row.loose; vQty += row.production_qty;
-            });
-            
-            // Sub Total for Variety
-            result.push({ isTotal: true, title: "VARIETY TOTAL ("+vKey+"): ", no_of_mc: vMc, loose: vLs, production_qty: vQty });
-            
-            pMc += vMc; pLs += vLs; pQty += vQty;
-        });
-
-        // Main Total for Batch/Date
-        result.push({ isTotal: true, title: "GRAND TOTAL FOR "+pKey+": ", no_of_mc: pMc, loose: pLs, production_qty: pQty });
-    });
-    return result;
-}
-
-// Filter Logic for Export
-function exportFiltered(type) {
-    const visibleRows = rawData.filter(r => {
-        const fm = document.getElementById("f_month").value;
-        const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
-        const fbrd = document.getElementById("f_brand").value.toLowerCase();
-        let ok = true;
-        if(fm && !r.date.startsWith(fm)) ok = false;
-        if(f1 && r.date < f1) ok = false; if(f2 && r.date > f2) ok = false;
-        if(fbrd && r.brand.toLowerCase() !== fbrd) ok = false;
-        return ok;
-    });
-    const visibleIds = visibleRows.map(r => r.id).join(",");
-
-    if(!visibleIds) return alert("No data to export!");
-
-    if(type === 'excel_table') {
-        window.location.href = `${baseUrl}/export_xlsx?ids=${visibleIds}`;
-    } else if(type === 'pdf_table') {
-        window.location.href = `${baseUrl}/export_pdf?ids=${visibleIds}&download=true`;
-    } else if(type === 'pdf_print') {
-        window.open(`${baseUrl}/export_pdf?ids=${visibleIds}&download=false`, '_blank');
-    }
-}
-
-function askConfirm(action) { 
-    if(!selectedRow && action === 'delete_row') return alert("Please select a row first!");
-    currentAction = action; 
-    document.getElementById("confirmMsg").innerText = `Proceed with ${action.replace(/_/g,' ').toUpperCase()}?`; 
-    document.getElementById("confirmModal").style.display = "flex"; 
-}
-function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
-
-document.getElementById("btnYes").onclick = async () => {
-    closeModal();
-    if (currentAction === 'delete_row') {
-        const res = await fetch(`${baseUrl}/delete`, { 
-            method:"POST", 
-            headers:{"Content-Type":"application/json"}, 
-            body:JSON.stringify({id: parseInt(selectedRow.dataset.id)}) 
-        });
-        if(res.ok) location.reload();
-    } else {
-        exportFiltered(currentAction);
-    }
-};
-
-async function toggleAudit() {
-    const panel = document.getElementById("auditPanel");
-    const content = document.getElementById("auditContent");
-    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
-    panel.style.display = "flex";
-    content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">Fetching Logs...</p>`;
-    try {
-        const res = await fetch(`${baseUrl}/audit_all`); 
-        const logs = await res.json();
-        if(!logs || !logs.length) { content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`; return; }
-        content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left: 3px solid var(--accent); margin-bottom: 5px; background: #fff;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
-                    <span style="font-size:9px; font-weight:bold;">Batch: ${l.batch}</span>
-                </div>
-                <div style="font-size:10px; font-weight:700; margin:3px 0;">${l.field} Updated</div>
-                <div style="font-size:10px; color:#64748b;">${l.details}</div>
-                <div style="font-size:9px; color:#94a3b8; margin-top:2px; text-align:right;">User: ${l.user}</div>
-            </div>
-        `).join('');
-    } catch(e) { content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading logs.</p>`; }
+function selectRow(tr) { 
+    if(tr.classList.contains('subtotal-row')) return;
+    document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected")); 
+    tr.classList.add("selected"); 
+    selectedRow = tr; 
 }
 
 function enableEdit() {
@@ -507,30 +444,56 @@ async function saveEdit() {
     if(!selectedRow) return;
     const inputs = selectedRow.querySelectorAll(".edit-input");
     if(!inputs.length) return alert("Enable edit mode first!");
-    const payload = { id: parseInt(selectedRow.dataset.id) };
-    inputs.forEach(i => { payload[i.dataset.field] = i.value; });
+    const payload = { id: selectedRow.dataset.id };
+    inputs.forEach(i => payload[i.dataset.field] = i.value);
     try {
-        const res = await fetch(`${baseUrl}/update`, { 
-            method:"POST", 
-            headers:{"Content-Type":"application/json"}, 
-            body:JSON.stringify(payload) 
-        });
-        if(res.ok) location.reload(); else alert("Update Failed");
-    } catch(e) { alert("Network Error."); }
+        const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+        if(res.ok) location.reload();
+    } catch(e) { alert("Save failed!"); }
 }
 
-function toggleMenu(e) { 
-    e.stopPropagation(); 
-    const m = document.getElementById("mainMenu"); 
-    m.style.display = m.style.display==="block"?"none":"block"; 
+function askConfirm(action) { 
+    currentAction = action; 
+    document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
+    document.getElementById("confirmModal").style.display = "flex"; 
 }
-document.onclick = () => document.getElementById("mainMenu").style.display="none";
+function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
+
+document.getElementById("btnYes").onclick = async () => {
+    closeModal();
+    const fy = document.getElementById("f_fy").value;
+    if (currentAction === 'pdf_table') window.location.href = `${baseUrl}/export_pdf?download=true&fy=${fy}`;
+    else if (currentAction === 'excel_table') window.location.href = `${baseUrl}/export_xlsx?fy=${fy}`;
+    else if (currentAction === 'delete_row' && selectedRow) {
+        const res = await fetch(`${baseUrl}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
+        if(res.ok) location.reload();
+    }
+};
+
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    panel.style.display = panel.style.display === "flex" ? "none" : "flex";
+    if(panel.style.display === "none") return;
+    const content = document.getElementById("auditContent");
+    content.innerHTML = "Loading...";
+    const res = await fetch(`${baseUrl}/audit_all`);
+    const logs = await res.json();
+    content.innerHTML = logs.map(l => `
+        <div style="border-left:2px solid var(--accent); margin-bottom:5px; background:#fff; padding:8px; font-size:10px;">
+            <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
+            Updated: ${l.field || 'Record'}<br>
+            <small>By: ${l.user}</small>
+        </div>`).join('');
+}
 
 function fillFilters() {
     const sets = { brand: new Set(), variety: new Set(), freezer: new Set(), type: new Set(), production: new Set() };
-    rawData.forEach(r => {
-        sets.brand.add(r.brand); sets.variety.add(r.variety_name); sets.freezer.add(r.freezer);
-        sets.type.add(r.production_type); sets.production.add(r.production_for);
+    document.querySelectorAll("#tbody tr:not(.subtotal-row)").forEach(r => {
+        sets.brand.add(r.dataset.brand);
+        sets.variety.add(r.dataset.variety);
+        sets.freezer.add(r.dataset.freezer);
+        sets.type.add(r.dataset.type);
+        sets.production.add(r.dataset.pf);
     });
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);
@@ -538,16 +501,10 @@ function fillFilters() {
     });
 }
 
-// Initialize
-fillFilters();
-[document.getElementById("f_month"), document.getElementById("f_from"), document.getElementById("f_to"), 
- document.getElementById("f_brand"), document.getElementById("f_variety"), document.getElementById("f_freezer"), 
- document.getElementById("f_type"), document.getElementById("f_production")].forEach(el => { 
-    if(el) el.onchange = applyFilters; 
-});
-document.getElementById("searchBox").oninput = applyFilters;
-applyFilters(); 
-
+window.onload = () => {
+    fillFilters();
+    applyFilters();
+};
 </script>
 </body>
 </html>

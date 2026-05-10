@@ -1,12 +1,12 @@
 # ============================================================
-# PRODUCTION REPORT ROUTER (BKNR ERP - FULLY UPDATED)
+# PRODUCTION REPORT ROUTER (BKNR ERP - FULLY UPDATED WITH FY)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, extract, func
 from datetime import datetime, date
 import pytz
 from io import BytesIO
@@ -15,7 +15,7 @@ from openpyxl.styles import Font
 from weasyprint import HTML
 
 from app.database import get_db
-from app.database.models.processing import Production, AuditLog
+from app.database.models.processing import Production, AuditLog, Soaking
 from app.database.models.users import Company
 from app.database.models.criteria import (
     brands, species as species_model, varieties, glazes, 
@@ -36,15 +36,16 @@ def get_company_info(db: Session, comp_code: str):
     return (c.company_name or "", c.address or "") if c else ("", "")
 
 # ------------------------------------------------------------
-# MAIN REPORT PAGE
+# MAIN REPORT PAGE (WITH FY FILTER & AUTO-CALCULATED SUB-TOTALS)
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 def production_report_page(
     request: Request,
-    db: Session = Depends(get_db),
+    fy: str = Query(None), # Financial Year parameter
     from_date: str = "",
-    to_date: str = ""
+    to_date: str = "",
+    db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
@@ -53,28 +54,86 @@ def production_report_page(
         return RedirectResponse("/auth/login", status_code=302)
 
     comp_code = str(comp_code)
-    q = db.query(Production).filter(Production.company_id == comp_code)
+    rows = []
+    subtotals = {}
 
-    if from_date:
-        try: q = q.filter(Production.date >= date.fromisoformat(from_date))
-        except: pass
-    if to_date:
-        try: q = q.filter(Production.date <= date.fromisoformat(to_date))
-        except: pass
+    if fy:
+        # Financial Year Logic (e.g., FY 2024 is April 2024 to March 2025)
+        start_year = int(fy)
+        end_year = start_year + 1
+        
+        q = db.query(Production).filter(
+            Production.company_id == comp_code,
+            Production.date >= f"{start_year}-04-01",
+            Production.date <= f"{end_year}-03-31"
+        )
 
-    rows = q.order_by(desc(Production.date), desc(Production.id)).all()
+        if from_date:
+            try: q = q.filter(Production.date >= date.fromisoformat(from_date))
+            except: pass
+        if to_date:
+            try: q = q.filter(Production.date <= date.fromisoformat(to_date))
+            except: pass
+
+        rows = q.order_by(desc(Production.date), desc(Production.id)).all()
+
+        # ------------------------------------------------------------
+        # SUB-TOTALS & DYNAMIC CALCULATIONS LOGIC
+        # Grouping by: Production For, Production At, Species, Variety, Batch
+        # ------------------------------------------------------------
+        for r in rows:
+            key = (r.production_for, r.production_at, r.species, r.variety_name, r.batch_number)
+            
+            if key not in subtotals:
+                # 1. Lookup Target Yield (Soaking Yield) from Varieties table
+                var_data = db.query(varieties).filter(
+                    varieties.company_id == comp_code,
+                    varieties.variety_name == r.variety_name
+                ).first()
+                target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
+
+                # 2. Get Soaking In-Qty Sum for this Batch/Variety combo
+                soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
+                    Soaking.company_id == comp_code,
+                    Soaking.batch_number == r.batch_number,
+                    Soaking.variety_name == r.variety_name
+                ).scalar() or 0.0
+
+                subtotals[key] = {
+                    "prod_qty": 0.0,
+                    "target_yield": target_yield,
+                    "soaking_in": float(soaking_in),
+                    "actual_yield": 0.0,
+                    "diff_yield_perc": 0.0,
+                    "diff_qty": 0.0
+                }
+            
+            subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+
+        # 3. Finalize Calculations for each subtotal group
+        for key in subtotals:
+            s = subtotals[key]
+            if s["soaking_in"] > 0:
+                s["actual_yield"] = round((s["prod_qty"] / s["soaking_in"]) * 100, 2)
+                # Difference Yield % = Actual Yield - Target Yield
+                s["diff_yield_perc"] = round(s["actual_yield"] - s["target_yield"], 2)
+                # Difference Qty Calculation based on yield gap
+                # Formula: (In Qty * Target Yield %) - Production Qty
+                expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
+                s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
 
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    # ✅ FIXED: TemplateResponse with explicit request and context
     return templates.TemplateResponse(
         request=request,
         name="reports/production_report.html",
         context={
             "rows": rows,
+            "subtotals": subtotals, # Passed to HTML for rendering subtotal rows
+            "selected_fy": fy,
             "from_date": from_date,
             "to_date": to_date,
             "is_admin": role == "admin",
@@ -89,7 +148,8 @@ def production_report_page(
             "packing_styles_list": get_list(packing_styles, "packing_style"),
             "prod_at_list": get_list(production_at, "production_at"),
             "prod_for_list": get_list(production_for, "production_for"),
-            "prod_types_list": get_list(production_types, "production_type")
+            "prod_types_list": get_list(production_types, "production_type"),
+            "datetime": datetime 
         }
     )
 
@@ -132,7 +192,12 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                     edited_at=datetime.utcnow()
                 )
                 db.add(audit)
-                setattr(row, f, payload[f])
+                
+                # Numeric field handling
+                if f in ["no_of_mc", "loose"]:
+                    setattr(row, f, float(payload[f] or 0))
+                else:
+                    setattr(row, f, payload[f])
                 has_changes = True
 
     if has_changes:
@@ -167,7 +232,6 @@ def delete_production(request: Request, payload: dict = Body(...), db: Session =
     
     row = db.query(Production).filter(Production.id == payload.get("id"), Production.company_id == comp_code).first()
     if row:
-        # Add deletion log
         db.add(AuditLog(
             table_name="production", record_id=row.id, company_id=comp_code,
             field_name="DELETE", old_value="Record", new_value="Deleted",
@@ -255,7 +319,6 @@ def export_production_pdf(
     rows = q.order_by(Production.date.asc()).all()
     company_name, company_address = get_company_info(db, comp_code)
     
-    # Ikada templates directory lo 'reports/production_report_print.html' undali
     html_content = templates.get_template("reports/production_report_print.html").render({
         "request": request,
         "rows": rows,

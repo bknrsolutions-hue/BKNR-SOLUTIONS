@@ -1,345 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>CS INVENTORY | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <title>BKNR | Cold Storage Inventory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a; --accent: #2563eb; --border: #e2e8f0; --bg: #f1f5f9;
+            --header: #ffffff; --text: #1e293b; --danger: #ef4444; --success: #22c55e;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--text); }
 
-<style>
-/* 1. RMP DESIGN SYSTEM */
-:root{
- --primary:#0f172a; /* Midnight Blue */
- --accent:#2563eb;  /* Action Blue */
- --border:#e2e8f0;  /* Standard Border */
- --bg:#f1f5f9;      /* Background Gray */
- --header:#ffffff;
- --text:#1e293b;
- --danger: #ef4444;
- --success: #22c55e;
-}
+        .header { background: var(--header); padding: 10px 15px; border-bottom: 2px solid var(--primary); }
+        .filters {
+            margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border);
+        }
+        .fbox { display: flex; flex-direction: column; gap: 2px; }
+        .fbox label { font-size: 8px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+        select, input { padding: 5px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; outline: none; background: white; }
+        #searchBox { grid-column: span 2; border-left: 3px solid var(--accent); }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
-}
+        .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border); }
+        .s-card { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border); border-left: 4px solid var(--border); }
+        .s-card span { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+        .s-card b { font-size: 16px; display: block; margin-top: 2px; }
+        .blue { border-left-color: var(--accent); } .red { border-left-color: var(--danger); } .green { border-left-color: var(--success); }
 
-/* ================= HEADER & FILTERS (RMP STYLE) ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+        .tabs { display: flex; background: #fff; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 20px; }
+        .tab { padding: 12px 5px; font-size: 11px; font-weight: 800; cursor: pointer; border-bottom: 3px solid transparent; color: #64748b; text-transform: uppercase; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
-}
-.fbox{display:flex;flex-direction:column;gap:2px;}
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
-
-select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
-
-/* ================= TABS & ACTIONS ================= */
-.tabs { display: flex; background: #fff; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 20px; }
-.tab { padding: 10px 5px; font-size: 10px; font-weight: 800; cursor: pointer; color: #64748b; border-bottom: 3px solid transparent; text-transform: uppercase; }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
-#rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
-
-.menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
-
-.menu-list{
- position:absolute; right:0; top:30px; width:180px; background:#fff; border:1px solid var(--border);
- border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
-}
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-
-/* ================= TABLE AREA (RMP COMPACT) ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:none; flex-direction:column; overflow:hidden; }
-.section.active { display: flex; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
-
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2300px; } 
-
-thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
- text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
- color: var(--primary);
-}
-
-tbody td{
- padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
- white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
-
-/* Special Row Styles */
-.row-sub-total { background: #f8fafc !important; font-weight: 800; color: var(--accent); border-top: 1px solid var(--border); }
-.row-sub-total td { font-size: 10px !important; color: var(--accent); }
-.qty-bold { font-weight: 700; color: var(--primary); }
-
-/* Column Widths */
-.w-sl { width: 35px; } .w-dt { width: 85px; } .w-st { width: 140px; } .w-bt { width: 95px; }
-.w-tp { width: 60px; } .w-sp { width: 110px; } .w-vr { width: 110px; } .w-gd { width: 70px; }
-.w-br { width: 110px; } .w-fz { width: 90px; } .w-gz { width: 60px; } .w-ps { width: 110px; }
-.w-mc { width: 65px; } .w-ls { width: 55px; } .w-qt { width: 90px; } .w-val { width: 100px; }
-
-/* ================= FOOTER ================= */
-tfoot td{ 
-    background:#f8fafc; font-weight:800; font-size:11px; color:var(--primary);
-    border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:10px; 
-}
-
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
-</style>
+        .section { flex: 1; margin: 5px; background: #fff; border: 1px solid var(--border); display: none; overflow: hidden; flex-direction: column; }
+        .section.active { display: flex; }
+        .table-wrap { flex: 1; overflow: auto; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 1800px; table-layout: fixed; }
+        thead th { background: #f1f5f9; padding: 10px; font-size: 10px; font-weight: 800; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); color: var(--primary); }
+        tbody td { padding: 8px; font-size: 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; text-align: center; }
+        .qty-bold { font-weight: 700; color: var(--primary); }
+    </style>
 </head>
-
 <body>
 
 <div class="header">
-    <h2>CS INVENTORY</h2>
+    <h2 style="margin:0; font-size:14px; font-weight: 800;">BKNR | CS INVENTORY DASHBOARD</h2>
     <div class="filters">
         <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
-        <div class="fbox"><label>Storage</label><select id="f_storage"><option value="">All</option></select></div>
-        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All</option></select></div>
-        <div class="fbox"><label>Species</label><select id="f_species"><option value="">All</option></select></div>
-        <div class="fbox"><label>Prod For</label><select id="f_prod_for"><option value="">All</option></select></div>
-        <div class="fbox"><label>Type</label><select id="f_mtype"><option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
-        <div class="fbox"><label>Status</label><select id="f_status"><option value="">All</option><option value="HOLDING">HOLDING</option><option value="DISPATCHED">DISPATCHED</option></select></div>
-        <input id="searchBox" placeholder="Search batch, storage, species...">
+        <div class="fbox"><label>Storage</label><select id="f_storage"><option value="all">All Storage</option></select></div>
+        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="all">All Batches</option></select></div>
+        <input id="searchBox" placeholder="Search batch, variety, species...">
     </div>
+</div>
+
+<div class="summary-strip">
+    <div class="s-card blue"><span>Total Inward</span><b id="sum_in">0 MC</b></div>
+    <div class="s-card red"><span>Total Outward</span><b id="sum_out">0 MC</b></div>
+    <div class="s-card green"><span>Net Stock</span><b id="sum_closing">0 MC</b></div>
+    <div class="s-card" style="background:var(--primary); color:#fff; border:none;"><span>Inventory Value</span><b id="sum_val">₹ 0.00</b></div>
 </div>
 
 <div class="tabs">
-    <div class="tab active" onclick="switchTab('report', this)">HOLDING REPORT</div>
-    <div class="tab" onclick="switchTab('available', this)">STOCK BALANCE</div>
-</div>
-
-<div class="actions">
-    <div id="rowCount">0 rows found</div>
-    <div class="menu-box">
-        <div class="dots" onclick="toggleMenu(event)">⋮</div>
-        <div class="menu-list" id="mainMenu">
-            <div onclick="enableEdit()">✏️ Edit Selected</div>
-            <div onclick="saveEdit()">💾 Save Changes</div>
-            <hr>
-            <div onclick="deleteRow()" style="color:red">🗑 Delete Record</div>
-        </div>
-    </div>
+    <div class="tab active" onclick="switchTab('report', this)">MOVEMENT LEDGER</div>
+    <div class="tab" onclick="switchTab('stock', this)">STOCK BALANCE</div>
 </div>
 
 <div class="section active" id="reportSection">
     <div class="table-wrap">
-        <table id="reportTable">
+        <table>
             <thead>
                 <tr>
-                    <th class="w-sl">#</th><th class="w-dt">Date</th><th class="w-st">Storage</th><th class="w-bt">Batch #</th>
-                    <th class="w-tp">Mov</th><th class="w-sp">Species</th><th class="w-vr">Variety</th><th class="w-gd">Grade</th>
-                    <th class="w-br">Brand</th><th class="w-fz">Freezer</th><th class="w-gz">Glaze</th><th class="w-ps">Pack Style</th>
-                    <th class="w-mc">MC</th><th class="w-ls">Lse</th><th class="w-qt">Qty(KG)</th><th class="w-bt">PO #</th>
-                    <th class="w-vr">Purpose</th><th class="w-st">Prod At</th><th class="w-st">Prod For</th><th class="w-val">Inv Val</th>
-                    <th class="w-val">Hold Cost</th><th class="w-val">Other Chg</th><th class="w-val">Total Pay</th><th class="w-st">Status</th><th class="w-vr">Remarks</th>
+                    <th style="width:100px">Date</th>
+                    <th style="width:150px">Cold Storage</th>
+                    <th style="width:120px">Batch #</th>
+                    <th style="width:80px">Type</th>
+                    <th style="width:120px">Species</th>
+                    <th style="width:150px">Variety</th>
+                    <th style="width:100px">Grade</th>
+                    <th style="width:80px">MC</th>
+                    <th style="width:100px">Quantity</th>
+                    <th style="width:130px">Inv Value</th>
+                    <th style="width:100px">Status</th>
                 </tr>
             </thead>
             <tbody id="reportTbody"></tbody>
-            <tfoot>
-                <tr><td colspan="12" style="text-align:right">NET TOTAL:</td><td id="rpt_mc">0</td><td id="rpt_ls">0</td><td id="rpt_qty">0</td><td colspan="10"></td></tr>
-            </tfoot>
         </table>
     </div>
 </div>
 
-<div class="section" id="availableSection">
+<div class="section" id="stockSection">
     <div class="table-wrap">
-        <table id="availableTable">
+        <table>
             <thead>
                 <tr>
-                    <th class="w-sl">#</th><th class="w-st">Storage</th><th class="w-bt">Batch #</th><th class="w-sp">Species</th>
-                    <th class="w-vr">Variety</th><th class="w-gd">Grade</th><th class="w-br">Brand</th><th class="w-fz">Freezer</th>
-                    <th class="w-gz">Glaze</th><th class="w-ps">Pack Style</th><th class="w-mc">Bal MC</th><th class="w-ls">Bal Lse</th>
-                    <th class="w-qt">Bal Qty</th><th class="w-st">Prod At</th><th class="w-st">Prod For</th><th class="w-val">Inv Val</th><th class="w-st">Status</th>
+                    <th style="width:150px">Cold Storage</th>
+                    <th style="width:120px">Batch #</th>
+                    <th style="width:150px">Variety</th>
+                    <th style="width:100px">Grade</th>
+                    <th style="width:100px">Bal MC</th>
+                    <th style="width:120px">Bal Qty (KG)</th>
+                    <th style="width:150px">Valuation</th>
                 </tr>
             </thead>
-            <tbody id="availableTbody"></tbody>
-            <tfoot>
-                <tr><td colspan="10" style="text-align:right">TOTAL STOCK:</td><td id="avl_mc">0</td><td id="avl_ls">0</td><td id="avl_qty">0</td><td colspan="4"></td></tr>
-            </tfoot>
+            <tbody id="stockTbody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-const apiBase = window.location.pathname.replace(/\/$/, ""); 
-
+// Data safely parsed from Python/Jinja
 const rawData = [
     {% for r in rows %}
     {
-        id: "{{ r.id }}", in_date: "{{ r.in_date }}", cold_storage_name: "{{ r.cold_storage_name or '' }}",
-        batch_number: "{{ r.batch_number or '' }}", cargo_movement_type: "{{ r.cargo_movement_type or 'IN' }}",
-        species: "{{ r.species or '' }}", variety: "{{ r.variety or '' }}", grade: "{{ r.grade or '' }}",
-        brand: "{{ r.brand or '' }}", freezer: "{{ r.freezer or '' }}", glaze: "{{ r.glaze or '' }}",
-        packing_style: "{{ r.packing_style or '' }}", no_of_mc: {{ r.no_of_mc or 0 }},
-        loose: {{ r.loose or 0 }}, quantity: {{ r.quantity or 0 }},
-        po_number: "{{ r.po_number or '' }}", purpose: "{{ r.purpose or '' }}",
-        production_at: "{{ r.production_at or '' }}", production_for: "{{ r.production_for or '' }}",
-        inventory_value: {{ r.inventory_value or 0 }}, holding_cost: {{ r.holding_cost or 0 }},
-        other_charges: {{ r.other_charges or 0 }}, total_payable: {{ r.total_payable or 0 }},
-        status: "{{ r.status or 'HOLDING' }}", remarks: "{{ r.remarks or '' }}"
+        in_date: "{{ r.in_date or '' }}",
+        cold_storage_name: "{{ r.cold_storage_name or '' }}",
+        batch_number: "{{ r.batch_number or '' }}",
+        cargo_movement_type: ("{{ r.cargo_movement_type or 'IN' }}").toUpperCase().trim(),
+        species: "{{ r.species or '' }}",
+        variety: "{{ r.variety or '' }}",
+        grade: "{{ r.grade or '' }}",
+        no_of_mc: parseFloat("{{ r.no_of_mc or 0 }}") || 0,
+        quantity: parseFloat("{{ r.quantity or 0 }}") || 0,
+        inventory_value: parseFloat("{{ r.inventory_value or 0 }}") || 0,
+        status: "{{ r.status or 'HOLDING' }}".toUpperCase()
     },
     {% endfor %}
 ];
 
-const lookups = {
-    species: {{ species_list | tojson or '[]' }},
-    brand: {{ brands_list | tojson or '[]' }},
-    variety: {{ varieties_list | tojson or '[]' }},
-    grade: {{ grades_list | tojson or '[]' }},
-    packing_style: {{ packing_styles_list | tojson or '[]' }},
-    status: ["HOLDING", "DISPATCHED", "TRANSFERRED"],
-    cargo_movement_type: ["IN", "OUT"]
-};
-
-function fillFilters() {
-    const add = (id, list) => {
-        const el = document.getElementById(id);
-        [...new Set(list)].filter(Boolean).sort().forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
-    };
-    add('f_storage', rawData.map(r => r.cold_storage_name));
-    add('f_batch', rawData.map(r => r.batch_number));
-    add('f_species', lookups.species);
-    add('f_prod_for', rawData.map(r => r.production_for));
-}
-
-function switchTab(tab, el) {
+function switchTab(type, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    el.classList.add('active'); 
-    document.getElementById(tab + 'Section').classList.add('active');
-    applyFilters();
+    el.classList.add('active');
+    document.getElementById(type + 'Section').classList.add('active');
 }
 
 function applyFilters() {
-    const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
-    const fs = f_storage.value.toLowerCase(), fb = f_batch.value.toLowerCase();
-    const fsp = f_species.value.toLowerCase(), fpf = f_prod_for.value.toLowerCase();
-    const fmt = f_mtype.value.toLowerCase(), fstat = f_status.value.toLowerCase(), q = searchBox.value.toLowerCase();
+    const f1 = document.getElementById('f_from').value;
+    const f2 = document.getElementById('f_to').value;
+    const fs = document.getElementById('f_storage').value;
+    const fb = document.getElementById('f_batch').value;
+    const q = document.getElementById('searchBox').value.toLowerCase();
 
-    let filtered = rawData.filter(d => {
+    const filtered = rawData.filter(d => {
         if(f1 && d.in_date < f1) return false;
         if(f2 && d.in_date > f2) return false;
-        if(fs && d.cold_storage_name.toLowerCase() !== fs) return false;
-        if(fb && d.batch_number.toLowerCase() !== fb) return false;
-        if(fsp && d.species.toLowerCase() !== fsp) return false;
-        if(fpf && d.production_for.toLowerCase() !== fpf) return false;
-        if(fmt && d.cargo_movement_type.toLowerCase() !== fmt) return false;
-        if(fstat && d.status.toLowerCase() !== fstat) return false;
+        if(fs !== 'all' && d.cold_storage_name !== fs) return false;
+        if(fb !== 'all' && d.batch_number !== fb) return false;
         if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) return false;
         return true;
     });
 
-    if (document.getElementById('reportSection').classList.contains('active')) renderReport(filtered);
-    else renderAvailable(filtered);
+    render(filtered);
 }
 
-function renderReport(data) {
-    const tbody = document.getElementById("reportTbody"); tbody.innerHTML = "";
-    let tmc=0, tls=0, tqty=0, lastStore = null, smc=0, sls=0, sqty=0;
+function render(data) {
+    let tin = 0, tout = 0, tval = 0;
+    const rBody = document.getElementById('reportTbody');
+    const sBody = document.getElementById('stockTbody');
     
-    data.sort((a,b) => a.cold_storage_name.localeCompare(b.cold_storage_name)).forEach((r, idx) => {
-        const sign = r.cargo_movement_type === 'IN' ? 1 : -1;
-        if (lastStore && r.cold_storage_name !== lastStore) {
-            tbody.innerHTML += `<tr class="row-sub-total"><td colspan="12">SUB-TOTAL: ${lastStore}</td><td>${smc}</td><td>${sls}</td><td>${sqty.toFixed(2)}</td><td colspan="10"></td></tr>`;
-            smc = sls = sqty = 0;
-        }
-        tmc += (r.no_of_mc * sign); tls += (r.loose * sign); tqty += (r.quantity * sign);
-        smc += (r.no_of_mc * sign); sls += (r.loose * sign); sqty += (r.quantity * sign);
-        lastStore = r.cold_storage_name;
+    rBody.innerHTML = "";
+    sBody.innerHTML = "";
 
-        tbody.innerHTML += `
-            <tr data-id="${r.id}" onclick="selectRow(this)">
-                <td>${idx+1}</td><td>${r.in_date}</td><td class="edit" data-field="cold_storage_name">${r.cold_storage_name}</td>
-                <td class="edit" data-field="batch_number">${r.batch_number}</td>
-                <td class="look" data-field="cargo_movement_type" style="font-weight:800; color:${r.cargo_movement_type==='IN'?'var(--success)':'var(--danger)'}">${r.cargo_movement_type}</td>
-                <td class="look" data-field="species">${r.species}</td><td class="look" data-field="variety">${r.variety}</td>
-                <td class="look" data-field="grade">${r.grade}</td><td class="look" data-field="brand">${r.brand}</td>
-                <td class="edit" data-field="freezer">${r.freezer}</td><td class="edit" data-field="glaze">${r.glaze}</td>
-                <td class="look" data-field="packing_style">${r.packing_style}</td><td class="edit" data-field="no_of_mc">${r.no_of_mc}</td>
-                <td class="edit" data-field="loose">${r.loose}</td><td class="qty-bold">${r.quantity.toFixed(2)}</td>
-                <td class="edit" data-field="po_number">${r.po_number}</td><td class="edit" data-field="purpose">${r.purpose}</td>
-                <td class="edit" data-field="production_at">${r.production_at}</td><td class="edit" data-field="production_for">${r.production_for}</td>
-                <td>${r.inventory_value.toLocaleString()}</td><td>${r.holding_cost.toFixed(2)}</td>
-                <td>${r.other_charges.toFixed(2)}</td><td class="qty-bold">${r.total_payable.toFixed(2)}</td>
-                <td class="look" data-field="status">${r.status}</td><td class="edit" data-field="remarks">${r.remarks}</td>
-            </tr>`;
-    });
-    if (lastStore) tbody.innerHTML += `<tr class="row-sub-total"><td colspan="12">SUB-TOTAL: ${lastStore}</td><td>${smc}</td><td>${sls}</td><td>${sqty.toFixed(2)}</td><td colspan="10"></td></tr>`;
-    document.getElementById("rowCount").innerText = `${data.length} records found`;
-    rpt_mc.innerText = tmc; rpt_ls.innerText = tls; rpt_qty.innerText = tqty.toFixed(2);
-}
+    const stockMap = {};
 
-function renderAvailable(data) {
-    const tbody = document.getElementById("availableTbody"); tbody.innerHTML = "";
-    let stock = {}, amc=0, als=0, aqty=0;
     data.forEach(r => {
-        const sign = r.cargo_movement_type === 'IN' ? 1 : -1;
-        const key = `${r.cold_storage_name}|${r.batch_number}|${r.species}|${r.variety}|${r.grade}|${r.brand}|${r.packing_style}`;
-        if(!stock[key]) stock[key] = { ...r, no_of_mc:0, loose:0, quantity:0, inventory_value:0 };
-        stock[key].no_of_mc += (r.no_of_mc * sign); 
-        stock[key].loose += (r.loose * sign);
-        stock[key].quantity += (r.quantity * sign); 
-        stock[key].inventory_value += (r.inventory_value);
+        const isIN = r.cargo_movement_type === 'IN';
+        const val = r.inventory_value;
+        const mc = r.no_of_mc;
+        const qty = r.quantity;
+
+        // KPI Calculations
+        if(isIN) { 
+            tin += mc; 
+            tval += val; 
+        } else { 
+            tout += mc; 
+            tval -= Math.abs(val); 
+        }
+
+        // Report Table
+        rBody.innerHTML += `
+            <tr>
+                <td>${r.in_date}</td>
+                <td>${r.cold_storage_name}</td>
+                <td><b>${r.batch_number}</b></td>
+                <td style="color:${isIN ? 'var(--success)' : 'var(--danger)'}; font-weight:800">${r.cargo_movement_type}</td>
+                <td>${r.species}</td><td>${r.variety}</td><td>${r.grade}</td>
+                <td class="qty-bold">${mc}</td>
+                <td class="qty-bold">${qty.toFixed(2)}</td>
+                <td style="font-weight:600">₹ ${val.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                <td>${r.status}</td>
+            </tr>`;
+
+        // Stock Balancing Logic
+        const key = `${r.cold_storage_name}|${r.batch_number}|${r.variety}|${r.grade}`;
+        if(!stockMap[key]) stockMap[key] = { ...r, no_of_mc: 0, quantity: 0, inventory_value: 0 };
+        const factor = isIN ? 1 : -1;
+        stockMap[key].no_of_mc += (mc * factor);
+        stockMap[key].quantity += (qty * factor);
+        stockMap[key].inventory_value += (val * factor);
     });
 
-    Object.values(stock).filter(s => s.quantity > 0.01).forEach((s, idx) => {
-        amc += s.no_of_mc; als += s.loose; aqty += s.quantity;
-        tbody.innerHTML += `<tr><td>${idx+1}</td><td>${s.cold_storage_name}</td><td><b>${s.batch_number}</b></td><td>${s.species}</td><td>${s.variety}</td><td>${s.grade}</td><td>${s.brand}</td><td>${s.freezer}</td><td>${s.glaze}</td><td>${s.packing_style}</td><td class="qty-bold">${s.no_of_mc}</td><td class="qty-bold">${s.loose}</td><td class="qty-bold" style="color:var(--success)">${s.quantity.toFixed(2)}</td><td>${s.production_at}</td><td>${s.production_for}</td><td>${s.inventory_value.toLocaleString()}</td><td>${s.status}</td></tr>`;
+    // Stock Balance Table
+    Object.values(stockMap).forEach(s => {
+        if(Math.abs(s.quantity) > 0.001) {
+            sBody.innerHTML += `
+                <tr>
+                    <td>${s.cold_storage_name}</td><td><b>${s.batch_number}</b></td>
+                    <td>${s.variety}</td><td>${s.grade}</td>
+                    <td class="qty-bold">${s.no_of_mc}</td>
+                    <td class="qty-bold" style="color:var(--accent)">${s.quantity.toFixed(2)}</td>
+                    <td style="font-weight:600">₹ ${s.inventory_value.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                </tr>`;
+        }
     });
-    avl_mc.innerText = amc; avl_ls.innerText = als; avl_qty.innerText = aqty.toFixed(2);
+
+    // Update Summary Cards
+    document.getElementById('sum_in').innerText = tin + " MC";
+    document.getElementById('sum_out').innerText = tout + " MC";
+    document.getElementById('sum_closing').innerText = (tin - tout) + " MC";
+    document.getElementById('sum_val').innerText = "₹ " + tval.toLocaleString('en-IN', {minimumFractionDigits: 2});
 }
 
-let selectedRow = null;
-function selectRow(tr) { document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected")); tr.classList.add("selected"); selectedRow = tr; }
-function toggleMenu(e) { e.stopPropagation(); mainMenu.style.display = mainMenu.style.display==="block"?"none":"block"; }
-document.onclick = () => mainMenu.style.display="none";
+// Startup logic
+document.addEventListener('DOMContentLoaded', () => {
+    const s_el = document.getElementById('f_storage');
+    const b_el = document.getElementById('f_batch');
+    
+    const stores = [...new Set(rawData.map(d => d.cold_storage_name))].filter(Boolean).sort();
+    const batches = [...new Set(rawData.map(d => d.batch_number))].filter(Boolean).sort();
+    
+    stores.forEach(s => s_el.innerHTML += `<option value="${s}">${s}</option>`);
+    batches.forEach(b => b_el.innerHTML += `<option value="${b}">${b}</option>`);
 
-function enableEdit() {
-    if(!selectedRow) return alert("Select a row!");
-    selectedRow.querySelectorAll(".edit").forEach(td => td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${td.innerText}">`);
-    selectedRow.querySelectorAll(".look").forEach(td => {
-        const f = td.dataset.field; const val = td.innerText;
-        let h = `<select class="edit-input" data-field="${f}">`;
-        (lookups[f] || []).forEach(o => h += `<option value="${o}" ${o===val?'selected':''}>${o}</option>`);
-        td.innerHTML = h + `</select>`;
-    });
-}
-
-async function saveEdit() {
-    if(!selectedRow) return;
-    const payload = { id: selectedRow.dataset.id };
-    selectedRow.querySelectorAll(".edit-input").forEach(i => payload[i.dataset.field] = i.value);
-    const res = await fetch(`${apiBase}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) location.reload(); else alert("Error updating");
-}
-
-async function deleteRow() {
-    if(!selectedRow || !confirm("Delete record?")) return;
-    const res = await fetch(`${apiBase}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
-    if(res.ok) location.reload(); else alert("Delete failed");
-}
-
-fillFilters(); applyFilters();
-[f_from, f_to, f_storage, f_batch, f_species, f_prod_for, f_mtype, f_status].forEach(el => el.onchange = applyFilters);
-searchBox.oninput = applyFilters;
+    applyFilters();
+    
+    document.querySelectorAll('input, select').forEach(el => el.onchange = applyFilters);
+    document.getElementById('searchBox').oninput = applyFilters;
+});
 </script>
 </body>
 </html>

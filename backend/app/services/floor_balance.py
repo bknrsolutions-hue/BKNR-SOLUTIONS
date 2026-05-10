@@ -94,9 +94,27 @@ def get_floor_balance(
     elif variety_upper == "HLSO":
         g_h = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, String)) == clean_count).scalar() or 0
         dh_o = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hlso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, String)) == clean_count).scalar() or 0
-        p_u = apply_filters(db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)), Peeling).filter(func.trim(cast(Peeling.hlso_count, String)) == clean_count).scalar() or 0
-        available = base_stock + float(g_h) + float(dh_o) - float(p_u)
-
+        
+        # --- MODIFIED PEELING QUERY ---
+        # Ikkada manually query chestunnam variety filter lekunda, 
+        # endukante HLSO nundi ey variety tayaru chesina stock deduct avvali.
+        p_q = db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)).filter(
+            Peeling.company_id == company_id,
+            Peeling.batch_number == batch,
+            Peeling.peeling_at == location,
+            Peeling.species == species,
+            func.trim(cast(Peeling.hlso_count, String)) == clean_count
+        )
+        
+        # Production for filter optional kabatti adi check chestunnam
+        if production_for and production_for != "N/A":
+            p_q = p_q.filter(Peeling.production_for == production_for)
+        elif production_for == "N/A":
+            p_q = p_q.filter((Peeling.production_for == None) | (Peeling.production_for == ""))
+            
+        p_u = p_q.scalar() or 0
+        
+        available = base_stock + float(g_h)  - float(p_u)
     else:
         p_q = apply_filters(db.query(func.coalesce(func.sum(Peeling.peeled_qty), 0)), Peeling).filter(func.trim(cast(Peeling.hlso_count, String)) == clean_count).scalar() or 0
         available = base_stock + float(p_q)

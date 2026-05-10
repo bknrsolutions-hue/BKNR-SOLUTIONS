@@ -41,6 +41,9 @@ body{
 select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
+/* Financial Year Specific Styling */
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
@@ -60,10 +63,10 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1650px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1750px; } 
 
 thead th{
- background:#f8fafc; padding:8px 2px; font-size:9px; font-weight:800;
+ background:#f8fafc; padding:8px 2px; font-size:10px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
  color: var(--text); letter-spacing: 0.5px;
@@ -73,17 +76,21 @@ tbody td{
  padding:8px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- font-weight: 400; /* Data bold lekunda normal ga */
+ font-weight: 400; 
 }
 
 tbody tr:hover{background:#f1f7ff; cursor:pointer;}
 tr.selected{background:#eef2ff !important; border-left: 3px solid var(--accent);}
 
+/* Empty State Styling */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+
 /* Column Widths */
 .w-sl { width: 35px; } .w-dt { width: 85px; } .w-bt { width: 90px; } .w-con { width: 130px; }
 .w-var { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 80px; } .w-rt { width: 65px; }
-.w-yld { width: 75px; } .w-diff { width: 75px; } .w-am { width: 100px; } .w-loc { width: 110px; } 
-.w-pf { width: 130px; } .w-em { width: 140px; }
+.w-yld { width: 75px; } .w-diff { width: 75px; } .w-diff-kg { width: 80px; } .w-am { width: 100px; } 
+.w-loc { width: 110px; } .w-pf { width: 130px; } .w-em { width: 140px; }
 
 .yield-cell { font-weight: 700; color: var(--accent); }
 .amt-cell { font-weight: 600; color: var(--primary); }
@@ -118,6 +125,17 @@ tfoot td{
         </div>
     </div>
     <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="fbox"><label>Month View</label><input type="month" id="f_month"></div>
         <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
@@ -173,6 +191,7 @@ tfoot td{
                     <th class="w-yld">Target %</th>
                     <th class="w-yld">Actual %</th>
                     <th class="w-diff">Diff %</th>
+                    <th class="w-diff-kg">Diff Kg</th>
                     <th class="w-rt">Rate</th>
                     <th class="w-am">Amount</th>
                     <th class="w-loc">Peeling At</th>
@@ -181,26 +200,37 @@ tfoot td{
                 </tr>
             </thead>
             <tbody id="tbody">
-                {% for r in rows %}
-                <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
-                    <td class="slno"></td>
-                    <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
-                    <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
-                    <td class="lookup contractor" data-field="contractor_name">{{ r.contractor_name }}</td>
-                    <td class="lookup variety" data-field="variety_name">{{ r.variety_name }}</td>
-                    <td class="editable" data-field="hlso_count">{{ r.hlso_count or 0 }}</td>
-                    <td class="editable hlso" data-field="hlso_qty" style="text-align:right;">{{ r.hlso_qty or 0 }}</td>
-                    <td class="editable peeled" data-field="peeled_qty" style="text-align:right;">{{ r.peeled_qty or 0 }}</td>
-                    <td style="color:var(--text-muted)">{{ r.target_yield or 0 }}%</td>
-                    <td class="yield-cell" data-target="{{ r.target_yield or 0 }}">{{ r.yield_percent or 0 }}%</td>
-                    <td class="diff-cell">{{ r.diff_percent or '0.00' }}%</td>
-                    <td class="editable rate" data-field="rate">{{ r.rate or 0 }}</td>
-                    <td class="amt-cell" data-val="{{ r.amount or 0 }}" style="text-align:right;">₹{{ "{:,.2f}".format(r.amount or 0) }}</td>
-                    <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
-                    <td class="editable" data-field="production_for">{{ r.production_for }}</td>
-                    <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                {% if not rows %}
+                <tr>
+                    <td colspan="17" class="empty-state">
+                        <i class="fa-solid fa-calendar-check"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view report data.</span>
+                    </td>
                 </tr>
-                {% endfor %}
+                {% else %}
+                    {% for r in rows %}
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                        <td class="slno"></td>
+                        <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
+                        <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
+                        <td class="lookup contractor" data-field="contractor_name">{{ r.contractor_name }}</td>
+                        <td class="lookup variety" data-field="variety_name">{{ r.variety_name }}</td>
+                        <td class="editable" data-field="hlso_count">{{ r.hlso_count or 0 }}</td>
+                        <td class="editable hlso" data-field="hlso_qty" style="text-align:right;">{{ r.hlso_qty or 0 }}</td>
+                        <td class="editable peeled" data-field="peeled_qty" style="text-align:right;">{{ r.peeled_qty or 0 }}</td>
+                        <td class="target-val" style="color:var(--text-muted)">{{ r.target_yield_percent or 0 }}%</td>
+                        <td class="yield-cell" data-target="{{ r.target_yield_percent or 0 }}">{{ r.yield_percent or 0 }}%</td>
+                        <td class="diff-cell">{{ r.diff_percent or '0.00' }}%</td>
+                        <td class="diff-kg-cell">{{ r.diff_qty or '0.00' }}</td>
+                        <td class="editable rate" data-field="rate">{{ r.rate or 0 }}</td>
+                        <td class="amt-cell" data-val="{{ r.amount or 0 }}" style="text-align:right;">₹{{ "{:,.2f}".format(r.amount or 0) }}</td>
+                        <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
+                        <td class="editable" data-field="production_for">{{ r.production_for }}</td>
+                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
             <tfoot>
                 <tr>
@@ -210,6 +240,7 @@ tfoot td{
                     <td></td>
                     <td id="avg_yield" style="color:var(--accent); text-align:center;">0%</td>
                     <td id="avg_diff" style="text-align:center;">0%</td>
+                    <td id="tot_diff_kg" style="text-align:right">0.00</td>
                     <td></td>
                     <td id="tot_amt" style="text-align:right">₹0.00</td>
                     <td colspan="3"></td>
@@ -236,6 +267,7 @@ tfoot td{
 </div>
 
 <script>
+// Data for Lookups
 const lookups = {
     contractor: {{ contractors|tojson or [] }},
     variety: {{ varieties_dropdown|tojson or [] }}, 
@@ -243,16 +275,27 @@ const lookups = {
 };
 
 let selectedRow = null, currentAction = null;
-const allRows = [...document.querySelectorAll("#tbody tr")];
+const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 const baseUrl = window.location.pathname.replace(/\/$/, "");
 
+// Financial Year Change Logic
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
+
 function selectRow(tr) { 
+    if(tr.classList.contains('empty-state')) return;
     allRows.forEach(r => r.classList.remove("selected")); 
     tr.classList.add("selected"); 
     selectedRow = tr; 
 }
 
 function applyFilters() {
+    if(allRows.length === 0) return;
+
     const fm = document.getElementById("f_month").value;
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
     const fb = document.getElementById("f_batch").value.toLowerCase();
@@ -262,9 +305,10 @@ function applyFilters() {
     const fpf = document.getElementById("f_prod_for").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
     
-    let hlT=0, pT=0, aT=0, diffSum=0, visibleCount = 0;
+    let hlT=0, pT=0, aT=0, diffSum=0, diffKgSum=0;
 
-    allRows.forEach(r => {
+    // 1. Identify which rows are visible based on current filters
+    const visibleRows = allRows.filter(r => {
         const d = r.dataset.date;
         const b = r.querySelector('[data-field="batch_number"]').innerText.toLowerCase();
         const c = r.querySelector('[data-field="contractor_name"]').innerText.toLowerCase();
@@ -280,37 +324,68 @@ function applyFilters() {
         if(fv && v !== fv) ok = false; if(fl && l !== fl) ok = false;
         if(fpf && pf !== fpf) ok = false;
         if(q && !rowTxt.includes(q)) ok = false;
-
-        if(ok) {
-            r.style.display = ""; visibleCount++;
-            const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
-            const peeled = parseFloat(r.querySelector(".peeled").innerText) || 0;
-            const actualY = hlso > 0 ? (peeled/hlso)*100 : 0;
-            const targetY = parseFloat(r.querySelector(".yield-cell").dataset.target) || 0;
-            const diff = actualY - targetY;
-
-            const diffCell = r.querySelector(".diff-cell");
-            diffCell.innerText = diff.toFixed(2) + "%";
-            diffCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
-
-            hlT += hlso; pT += peeled;
-            aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
-            diffSum += diff;
-            r.querySelector(".slno").innerText = visibleCount;
-        } else { r.style.display = "none"; }
+        return ok;
     });
 
-    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
+    const totalVisible = visibleRows.length;
+    let slCounter = 0;
+
+    allRows.forEach(r => {
+        // If row is not in visible list, hide and return
+        if(!visibleRows.includes(r)) {
+            r.style.display = "none";
+            return;
+        }
+
+        r.style.display = "";
+        
+        // 🔹 Descending SL No Logic
+        r.querySelector(".slno").innerText = totalVisible - slCounter;
+        slCounter++;
+
+        const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
+        const peeled = parseFloat(r.querySelector(".peeled").innerText) || 0;
+        const actualY = hlso > 0 ? (peeled/hlso)*100 : 0;
+        const targetY = parseFloat(r.querySelector(".yield-cell").dataset.target) || 0;
+        
+        // Diff % Logic
+        const diffPct = actualY - targetY;
+        const diffCell = r.querySelector(".diff-cell");
+        diffCell.innerText = diffPct.toFixed(2) + "%";
+        diffCell.style.color = diffPct >= 0 ? "var(--success)" : "var(--danger)";
+
+        // Diff Kg Logic
+        let diffKg = 0;
+        if(targetY > 0) {
+            const expectedHlso = peeled / (targetY / 100);
+            diffKg = expectedHlso - hlso;
+        }
+        const kgCell = r.querySelector(".diff-kg-cell");
+        kgCell.innerText = diffKg.toFixed(2);
+        kgCell.style.color = diffKg >= 0 ? "var(--success)" : "var(--danger)";
+
+        hlT += hlso; pT += peeled;
+        aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
+        diffSum += diffPct;
+        diffKgSum += diffKg;
+    });
+
+    document.getElementById("rowCount").innerText = `${totalVisible} rows found`;
     document.getElementById("tot_hlso").innerText = hlT.toFixed(2);
     document.getElementById("tot_peeled").innerText = pT.toFixed(2);
     document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
     document.getElementById("avg_yield").innerText = hlT > 0 ? ((pT/hlT)*100).toFixed(2) + "%" : "0%";
-    const avgDiff = visibleCount > 0 ? (diffSum / visibleCount) : 0;
+    
+    const avgDiff = totalVisible > 0 ? (diffSum / totalVisible) : 0;
     document.getElementById("avg_diff").innerText = avgDiff.toFixed(2) + "%";
     document.getElementById("avg_diff").style.color = avgDiff >= 0 ? "var(--success)" : "var(--danger)";
+
+    document.getElementById("tot_diff_kg").innerText = diffKgSum.toFixed(2);
+    document.getElementById("tot_diff_kg").style.color = diffKgSum >= 0 ? "var(--success)" : "var(--danger)";
 }
 
 function askConfirm(action) { 
+    if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
     currentAction = action; 
     document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
     document.getElementById("confirmModal").style.display = "flex"; 
@@ -362,15 +437,25 @@ function recalcRow(input) {
     
     const actualY = hlso > 0 ? (peeled/hlso)*100 : 0;
     const targetY = parseFloat(tr.querySelector(".yield-cell").dataset.target) || 0;
-    const diff = actualY - targetY;
-
+    
     tr.querySelector('.yield-cell').innerText = actualY.toFixed(2) + '%';
+    
+    const diffPct = actualY - targetY;
     const dCell = tr.querySelector('.diff-cell');
-    dCell.innerText = diff.toFixed(2) + '%';
-    dCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
+    dCell.innerText = diffPct.toFixed(2) + '%';
+    dCell.style.color = diffPct >= 0 ? "var(--success)" : "var(--danger)";
+
+    let diffKg = 0;
+    if(targetY > 0) {
+        const expectedHlso = peeled / (targetY / 100);
+        diffKg = expectedHlso - hlso;
+    }
+    const kgCell = tr.querySelector('.diff-kg-cell');
+    kgCell.innerText = diffKg.toFixed(2);
+    kgCell.style.color = diffKg >= 0 ? "var(--success)" : "var(--danger)";
 
     const amt = (peeled * rate).toFixed(2);
-    tr.querySelector('.amt-cell').innerText = '₹' + amt;
+    tr.querySelector('.amt-cell').innerText = '₹' + parseFloat(amt).toLocaleString('en-IN', {minimumFractionDigits:2});
     tr.querySelector('.amt-cell').setAttribute('data-val', amt);
 }
 
@@ -381,7 +466,14 @@ async function saveEdit() {
     const payload = { id: selectedRow.dataset.id };
     inputs.forEach(i => payload[i.dataset.field] = i.value);
     const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) location.reload();
+    if(res.ok) {
+        const data = await res.json();
+        if(data.target_yield !== undefined) {
+             selectedRow.querySelector(".target-val").innerText = data.target_yield + "%";
+             selectedRow.querySelector(".yield-cell").dataset.target = data.target_yield;
+        }
+        location.reload();
+    }
 }
 
 async function toggleAudit() {
@@ -406,6 +498,7 @@ function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById(
 document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
 function fillFilters() {
+    if(allRows.length === 0) return;
     const sets = { batch: new Set(), contractor: new Set(), variety: new Set(), peeling: new Set(), prod_for: new Set() };
     allRows.forEach(r => {
         sets.batch.add(r.querySelector('[data-field="batch_number"]').innerText);
@@ -416,12 +509,20 @@ function fillFilters() {
     });
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);
-        if(sel) [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
+        if(sel) {
+            sel.innerHTML = `<option value="">All ${k.replace('_',' ')}s</option>`;
+            [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
+        }
     });
 }
 
+// Initialization
 fillFilters();
-[f_month, f_from, f_to, f_batch, f_contractor, f_variety, f_peeling, f_prod_for].forEach(el => { if(el) el.onchange = applyFilters; });
+const filterEls = [document.getElementById("f_month"), document.getElementById("f_from"), document.getElementById("f_to"), 
+                   document.getElementById("f_batch"), document.getElementById("f_contractor"), document.getElementById("f_variety"), 
+                   document.getElementById("f_peeling"), document.getElementById("f_prod_for")];
+
+filterEls.forEach(el => { if(el) el.onchange = applyFilters; });
 if(document.getElementById("searchBox")) searchBox.oninput = applyFilters;
 
 window.onload = applyFilters;

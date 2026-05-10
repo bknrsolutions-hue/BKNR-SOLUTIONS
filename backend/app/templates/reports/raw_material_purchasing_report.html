@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>RAW MATERIAL PURCHASING | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
@@ -13,9 +15,10 @@
  --bg:#f1f5f9;
  --header:#ffffff;
  --text:#1e293b;
+ --text-muted:#64748b;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
 body{
  margin:0; background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text);
@@ -23,6 +26,7 @@ body{
 
 /* ================= HEADER & FILTERS ================= */
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
+.header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
@@ -35,6 +39,9 @@ body{
 
 select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+
+/* FY Dropdown Specific */
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
@@ -52,43 +59,36 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+.table-wrap{ flex:1; overflow:auto; width: 100%; position: relative; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1600px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:9px; font-weight:800;
+ background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
 }
 
 tbody td{
- padding:6px 2px; font-size:10px; border-bottom:1px solid #f1f5f9;
+ padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
+
+/* Empty State Styling */
+.empty-state { padding: 100px 20px; text-align: center; color: var(--text-muted); background: #fff; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
 
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
 /* Precise Column Widths */
-.w-sl { width: 35px; }
-.w-dt { width: 75px; }
-.w-bt { width: 85px; }
-.w-sp { width: 130px; }
-.w-vr { width: 100px; }
-.w-bx { width: 60px; }
-.w-hs { width: 70px; }
-.w-ct { width: 60px; }
-.w-qt { width: 65px; }
-.w-rt { width: 65px; }
-.w-am { width: 90px; }
-.w-rm { width: 120px; }
+.w-sl { width: 35px; } .w-dt { width: 75px; } .w-bt { width: 85px; } .w-sp { width: 130px; }
+.w-vr { width: 100px; } .w-bx { width: 60px; } .w-hs { width: 70px; } .w-ct { width: 60px; }
+.w-qt { width: 65px; } .w-rt { width: 65px; } .w-am { width: 90px; } .w-rm { width: 120px; }
 .w-em { width: 120px; }
 
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
-
-/* Sub-total Row Style */
 .row-batch-total { background: #f1f5f9 !important; color: var(--primary) !important; font-weight: 800; text-align: left !important; }
 .qty-bold { text-align: right !important; font-weight: 800; padding-right: 5px; }
 
@@ -108,8 +108,24 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 <body>
 
 <div class="header">
-    <h2>RAW MATERIAL PURCHASING REPORT</h2>
+    <div class="header-top">
+        <h2>RAW MATERIAL PURCHASING REPORT</h2>
+        <div style="font-size: 11px; color: var(--text-muted);">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
     <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
         <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All</option>{% for b in batches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}</select></div>
@@ -123,11 +139,11 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 </div>
 
 <div class="actions">
-    <div id="rowCount">0 rows</div>
+    <div id="rowCount">0 rows found</div>
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            <div onclick="enableEdit()">✏️ Edit Row</div>
+            <div onclick="enableEdit()">✏️ Edit Selected Row</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
             <div onclick="toggleAudit()">📜 Full Audit History</div>
             <hr>
@@ -139,7 +155,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             <div onclick="askConfirm('pdf_table')">📄 Export PDF (Table)</div>
             <div onclick="askConfirm('pdf_summary')">📑 Export PDF (Summary)</div>
             <hr>
-            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Row</div>
+            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
         </div>
     </div>
 </div>
@@ -170,16 +186,26 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-em">Email</th>
                 </tr>
             </thead>
-            <tbody id="tbody"></tbody>
+            <tbody id="tbody">
+                {% if not rows %}
+                <tr>
+                    <td colspan="19" class="empty-state">
+                        <i class="fa-solid fa-calendar-check"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
             <tfoot>
                 <tr>
                     <td colspan="11" style="text-align:right">NET TOTAL:</td>
-                    <td id="tot_g1">0</td>
-                    <td id="tot_g2">0</td>
-                    <td id="tot_dc">0</td>
-                    <td id="tot_rec">0</td>
-                    <td id="avg_net_rate" style="color:blue;">0</td>
-                    <td id="tot_amt">0</td>
+                    <td id="tot_g1">0.00</td>
+                    <td id="tot_g2">0.00</td>
+                    <td id="tot_dc">0.00</td>
+                    <td id="tot_rec">0.00</td>
+                    <td id="avg_net_rate" style="color:blue;">0.00</td>
+                    <td id="tot_amt">0.00</td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
@@ -204,29 +230,17 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 </div>
 
 <script>
-// Backend Data
 const rawData = [
     {% for r in rows %}
     {
-        id: "{{ r.id }}",
-        date: "{{ r.date }}",
-        batch_number: "{{ r.batch_number }}",
-        supplier_name: "{{ r.supplier_name }}",
-        variety_name: "{{ r.variety_name }}",
-        material_boxes: {{ r.material_boxes or 0 }},
-        hsn_code: "{{ r.hsn_code or '' }}",
-        peeling_at: "{{ r.peeling_at or '' }}",
-        production_for: "{{ r.production_for or '' }}",
-        species: "{{ r.species }}",
-        count: "{{ r.count }}",
-        g1_qty: {{ r.g1_qty or 0 }},
-        g2_qty: {{ r.g2_qty or 0 }},
-        dc_qty: {{ r.dc_qty or 0 }},
-        received_qty: {{ r.received_qty or 0 }},
-        rate_per_kg: {{ r.rate_per_kg or 0 }},
-        amount: {{ r.amount or 0 }},
-        remarks: "{{ r.remarks or '' }}",
-        email: "{{ r.email or '' }}"
+        id: "{{ r.id }}", date: "{{ r.date }}", batch_number: "{{ r.batch_number }}",
+        supplier_name: "{{ r.supplier_name }}", variety_name: "{{ r.variety_name }}",
+        material_boxes: {{ r.material_boxes or 0 }}, hsn_code: "{{ r.hsn_code or '' }}",
+        peeling_at: "{{ r.peeling_at or '' }}", production_for: "{{ r.production_for or '' }}",
+        species: "{{ r.species }}", count: "{{ r.count }}",
+        g1_qty: {{ r.g1_qty or 0 }}, g2_qty: {{ r.g2_qty or 0 }}, dc_qty: {{ r.dc_qty or 0 }},
+        received_qty: {{ r.received_qty or 0 }}, rate_per_kg: {{ r.rate_per_kg or 0 }},
+        amount: {{ r.amount or 0 }}, remarks: "{{ r.remarks or '' }}", email: "{{ r.email or '' }}"
     },
     {% endfor %}
 ];
@@ -234,28 +248,37 @@ const rawData = [
 const lookups = {
     supplier: {{ suppliers|tojson or [] }},
     variety: {{ varieties|tojson or [] }},
-    species: {{ species|tojson or [] }},
+    species: {{ species_list|tojson or [] if species_list else [] }},
     peeling: {{ peeling_locations|tojson or [] }},
     production: {{ production_for_list|tojson or [] }}
 };
 
-const baseUrl = "/reports/raw_material_purchasing";
+const baseUrl = window.location.pathname.replace(/\/$/, "");
 let selectedRow = null, currentAction = null;
 
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
+
 function selectRow(tr) { 
-    if(tr.classList.contains("row-batch-total")) return;
+    if(tr.classList.contains("row-batch-total") || tr.classList.contains("empty-state")) return;
     document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected")); 
     tr.classList.add("selected"); 
     selectedRow = tr; 
 }
 
 function applyFilters() {
+    const tbody = document.getElementById("tbody");
+    if (rawData.length === 0) return;
+
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
     const fb = f_batch.value.toLowerCase(), fs = f_supplier.value.toLowerCase(), fv = f_variety.value.toLowerCase();
     const fp = f_peeling.value.toLowerCase(), fh = f_hsn.value.toLowerCase(), fprod = f_production.value.toLowerCase();
     const q = searchBox.value.toLowerCase();
     
-    const tbody = document.getElementById("tbody");
     tbody.innerHTML = "";
 
     let filtered = rawData.filter(d => {
@@ -277,16 +300,16 @@ function applyFilters() {
 
     filtered.forEach(d => {
         if(!groups[d.batch_number]) groups[d.batch_number] = { g1:0, g2:0, dc:0, rec:0, amt:0, items:[] };
-        groups[d.batch_number].g1 += d.g1_qty;
-        groups[d.batch_number].g2 += d.g2_qty;
-        groups[d.batch_number].dc += d.dc_qty;
-        groups[d.batch_number].rec += d.received_qty;
-        groups[d.batch_number].amt += d.amount;
-        groups[d.batch_number].items.push(d);
+        groups[d.batch_number].g1 += d.g1_qty; groups[d.batch_number].g2 += d.g2_qty;
+        groups[d.batch_number].dc += d.dc_qty; groups[d.batch_number].rec += d.received_qty;
+        groups[d.batch_number].amt += d.amount; groups[d.batch_number].items.push(d);
         netG1 += d.g1_qty; netG2 += d.g2_qty; netDC += d.dc_qty; netRec += d.received_qty; netAmt += d.amount;
     });
 
-    let sl = 1;
+    // 🔹 Descending SL No Logic
+    let totalItemsCount = filtered.length;
+    let currentSl = 0;
+
     for(let b in groups) {
         const g = groups[b];
         const trSub = document.createElement("tr");
@@ -298,48 +321,29 @@ function applyFilters() {
             const tr = document.createElement("tr");
             tr.dataset.id = r.id;
             tr.onclick = () => selectRow(tr);
-            tr.innerHTML = `
-                <td>${sl++}</td>
-                <td>${r.date}</td>
-                <td class="editable" data-field="batch_number">${r.batch_number}</td>
-                <td class="lookup supplier" data-field="supplier_name">${r.supplier_name}</td>
-                <td class="lookup variety" data-field="variety_name">${r.variety_name}</td>
-                <td class="editable" data-field="material_boxes">${r.material_boxes}</td>
-                <td class="editable" data-field="hsn_code">${r.hsn_code}</td>
-                <td class="lookup peeling" data-field="peeling_at">${r.peeling_at}</td>
-                <td class="lookup production" data-field="production_for">${r.production_for}</td>
-                <td class="lookup species" data-field="species">${r.species}</td>
-                <td class="editable" data-field="count">${r.count}</td>
-                <td class="g1">${r.g1_qty.toFixed(2)}</td>
-                <td class="g2">${r.g2_qty.toFixed(2)}</td>
-                <td class="dc">${r.dc_qty.toFixed(2)}</td>
-                <td class="rec">${r.received_qty.toFixed(2)}</td>
-                <td class="editable rate" data-field="rate_per_kg">${r.rate_per_kg.toFixed(2)}</td>
-                <td class="amt">${r.amount.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
-                <td class="editable" data-field="remarks">${r.remarks}</td>
-                <td>${r.email}</td>
-            `;
+            
+            // Calculate Descending SL NO
+            let slNo = totalItemsCount - currentSl;
+            currentSl++;
+
+            tr.innerHTML = `<td>${slNo}</td><td>${r.date}</td><td class="editable" data-field="batch_number">${r.batch_number}</td><td class="lookup supplier" data-field="supplier_name">${r.supplier_name}</td><td class="lookup variety" data-field="variety_name">${r.variety_name}</td><td class="editable" data-field="material_boxes">${r.material_boxes}</td><td class="editable" data-field="hsn_code">${r.hsn_code}</td><td class="lookup peeling" data-field="peeling_at">${r.peeling_at}</td><td class="lookup production" data-field="production_for">${r.production_for}</td><td class="lookup species" data-field="species">${r.species}</td><td class="editable" data-field="count">${r.count}</td><td class="g1">${r.g1_qty.toFixed(2)}</td><td class="g2">${r.g2_qty.toFixed(2)}</td><td class="dc">${r.dc_qty.toFixed(2)}</td><td class="rec">${r.received_qty.toFixed(2)}</td><td class="editable rate" data-field="rate_per_kg">${r.rate_per_kg.toFixed(2)}</td><td class="amt">${r.amount.toLocaleString('en-IN',{minimumFractionDigits:2})}</td><td class="editable" data-field="remarks">${r.remarks}</td><td>${r.email}</td>`;
             tbody.appendChild(tr);
         });
     }
-    document.getElementById("rowCount").innerText = `${filtered.length} rows`;
+    document.getElementById("rowCount").innerText = `${filtered.length} rows found`;
     tot_g1.innerText = netG1.toFixed(2); tot_g2.innerText = netG2.toFixed(2); tot_dc.innerText = netDC.toFixed(2);
     tot_rec.innerText = netRec.toFixed(2); tot_amt.innerText = netAmt.toLocaleString('en-IN',{minimumFractionDigits:2});
     avg_net_rate.innerText = netRec > 0 ? (netAmt/netRec).toFixed(2) : "0.00";
 }
 
-// ================= EDIT FUNCTIONS FIXED =================
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
-        const val = td.innerText.trim();
-        const field = td.dataset.field;
+        const val = td.innerText.trim(); const field = td.dataset.field;
         if(td.classList.contains("lookup")){
             const type = td.classList[1]; const opts = lookups[type] || [];
             td.innerHTML = `<select class="edit-input" data-field="${field}">${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;
-        } else { 
-            td.innerHTML = `<input class="edit-input" data-field="${field}" value="${val}">`; 
-        }
+        } else { td.innerHTML = `<input class="edit-input" data-field="${field}" value="${val}">`; }
     });
 }
 
@@ -348,17 +352,9 @@ async function saveEdit() {
     const payload = { id: selectedRow.dataset.id };
     const inputs = selectedRow.querySelectorAll(".edit-input");
     if(!inputs.length) return alert("Enable Edit mode first!");
-    
     inputs.forEach(i => { payload[i.dataset.field] = i.value; });
-
-    const res = await fetch(`${baseUrl}/update`, { 
-        method:"POST", 
-        headers:{"Content-Type":"application/json"}, 
-        body:JSON.stringify(payload) 
-    });
-    
-    if(res.ok) location.reload(); 
-    else alert("Error updating row.");
+    const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    if(res.ok) location.reload(); else alert("Error updating row.");
 }
 
 async function deleteRowAction() {
@@ -369,20 +365,21 @@ async function deleteRowAction() {
 
 function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
 function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
-function askConfirm(action) { currentAction = action; document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ')}?`; document.getElementById("confirmModal").style.display = "flex"; }
+function askConfirm(action) { currentAction = action; document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; document.getElementById("confirmModal").style.display = "flex"; }
 
 document.getElementById("btnYes").onclick = () => {
     closeModal();
     const visibleIds = [...document.querySelectorAll("#tbody tr[data-id]")].map(tr => tr.dataset.id).join(",");
+    const fy = document.getElementById('f_fy').value;
     if (currentAction === 'print_table') window.print();
     else if (currentAction === 'delete_row') deleteRowAction();
     else if (currentAction.startsWith('excel') || currentAction.startsWith('pdf') || currentAction === 'print_summary') {
         const actionMap = {
-            'print_summary': `${baseUrl}/print_summary?ids=${visibleIds}`,
-            'excel_table': `${baseUrl}/export_excel?type=table&ids=${visibleIds}`,
-            'excel_summary': `${baseUrl}/export_excel?type=summary&ids=${visibleIds}`,
-            'pdf_table': `${baseUrl}/export_pdf?type=table&ids=${visibleIds}`,
-            'pdf_summary': `${baseUrl}/export_pdf?type=summary&ids=${visibleIds}`
+            'print_summary': `${baseUrl}/print_summary?ids=${visibleIds}&fy=${fy}`,
+            'excel_table': `${baseUrl}/export_excel?type=table&ids=${visibleIds}&fy=${fy}`,
+            'excel_summary': `${baseUrl}/export_excel?type=summary&ids=${visibleIds}&fy=${fy}`,
+            'pdf_table': `${baseUrl}/export_pdf?type=table&ids=${visibleIds}&fy=${fy}`,
+            'pdf_summary': `${baseUrl}/export_pdf?type=summary&ids=${visibleIds}&fy=${fy}`
         };
         window.open(actionMap[currentAction], '_blank');
     }
@@ -392,14 +389,8 @@ function toggleAudit() {
     const p = document.getElementById("auditPanel"); 
     p.style.display = p.style.display==="flex"?"none":"flex";
     if(p.style.display==="flex") {
-        fetch("/reports/raw_material_purchasing/audit").then(r=>r.json()).then(data=>{
-            document.getElementById("auditContent").innerHTML = data.map(l=>`
-                <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
-                    <b>REC: ${l.record_id}</b> | ${l.time}<br>
-                    Field: ${l.field}<br>
-                    <span style="color:red;">${l.old}</span> → <span style="color:green;">${l.new}</span>
-                </div>
-            `).join("");
+        fetch(`${baseUrl}/audit`).then(r=>r.json()).then(data=>{
+            document.getElementById("auditContent").innerHTML = data.map(l=>`<div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;"><b>REC: ${l.record_id}</b> | ${l.time}<br>Field: ${l.field}<br><span style="color:red;">${l.old}</span> → <span style="color:green;">${l.new}</span></div>`).join("");
         });
     }
 }

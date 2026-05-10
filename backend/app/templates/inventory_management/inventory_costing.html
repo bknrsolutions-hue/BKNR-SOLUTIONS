@@ -121,11 +121,14 @@
         </select>
 
         <div id="dashboardFilters" style="display: none; gap: 8px;">
-            <select id="gradeFilter" class="select-filter" onchange="applyFilters()">
-                <option value="">All Grades</option>
+            <select id="speciesFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">All Species</option>
             </select>
             <select id="varietyFilter" class="select-filter" onchange="applyFilters()">
                 <option value="">All Varieties</option>
+            </select>
+            <select id="gradeFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">All Grades</option>
             </select>
             <select id="glazeFilter" class="select-filter" onchange="applyFilters()">
                 <option value="">All Glazes</option>
@@ -175,7 +178,7 @@
                     <tbody id="masterTbody">
                         {% set total_rows = rows|length %}
                         {% for r in rows|reverse %}
-                        <tr data-grade="{{r.grade}}" data-variety="{{r.variety}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" 
+                        <tr data-species="{{r.species}}" data-grade="{{r.grade}}" data-variety="{{r.variety}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" 
                             data-rate="{{r.product_kg_value}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" 
                             data-move="{{r.cargo_movement_type}}" data-prodfor="{{r.production_for}}" data-prodat="{{r.production_at}}">
                             <td class="sticky-id">{{ total_rows - loop.index0 }}</td>
@@ -185,7 +188,7 @@
                             <td><span style="padding: 1px 5px; border-radius: 3px; font-weight: 800; font-size: 8px; background: {{ '#dcfce7' if r.cargo_movement_type == 'IN' else '#fee2e2' }}; color: {{ '#166534' if r.cargo_movement_type == 'IN' else '#991b1b' }}">{{ r.cargo_movement_type }}</span></td>
                             <td>{{ r.location }}</td>
                             <td>{{ r.brand }}</td>
-                            <td>{{ r.species }}</td>
+                            <td style="font-weight: 600;">{{ r.species }}</td>
                             <td style="font-weight: 600;">{{ r.variety }}</td>
                             <td style="font-weight: 800; color: var(--brand-accent); background: #eff6ff;">{{ r.grade }}</td>
                             <td>{{ r.glaze }}</td>
@@ -199,7 +202,9 @@
                             <td>{{ r.loose }}</td>
                             <td style="font-weight: 800;">{{ r.quantity }}</td>
                             <td>₹{{ r.product_kg_value }}</td>
-                            <td style="font-weight: 800; color: var(--brand-accent);">₹{{ r.inventory_value }}</td>
+                            <td style="font-weight: 800; color: {% if r.inventory_value < 0 %}#dc2626{% else %}var(--brand-accent){% endif %};">
+    ₹{{ "{:,.0f}".format(r.inventory_value) }}
+</td>
                             <td>{{ r.hlso_count }}</td>
                             <td>{{ r.hoso_count }}</td>
                         </tr>
@@ -233,7 +238,6 @@
         <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0.00</span></div>
     </div>
 </div>
-
 <script>
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -254,20 +258,23 @@
         const rows = [...document.querySelectorAll("#masterTbody tr")];
         const prodFor = document.getElementById("prodForFilter").value;
         const prodAt = document.getElementById("prodAtFilter").value;
-        let grades = new Set(), varieties = new Set(), glazes = new Set();
+        let species = new Set(), grades = new Set(), varieties = new Set(), glazes = new Set();
         
         rows.forEach(r => {
             const rProdFor = r.getAttribute('data-prodfor') || "";
             const rProdAt = r.getAttribute('data-prodat') || "";
             if ((!prodFor || rProdFor === prodFor) && (!prodAt || rProdAt === prodAt)) {
+                const s = r.getAttribute('data-species');
                 const g = r.getAttribute('data-grade');
                 const v = r.getAttribute('data-variety');
                 const gl = r.getAttribute('data-glaze');
+                if(s && s !== "None") species.add(s);
                 if(g && g !== "None") grades.add(g);
                 if(v && v !== "None") varieties.add(v);
                 if(gl && gl !== "None") glazes.add(gl);
             }
         });
+        updateSelect("speciesFilter", species, "All Species");
         updateSelect("gradeFilter", grades, "All Grades");
         updateSelect("varietyFilter", varieties, "All Varieties");
         updateSelect("glazeFilter", glazes, "All Glazes");
@@ -291,18 +298,22 @@
         const query = document.getElementById("globalSearch").value.toLowerCase();
         const prodFor = document.getElementById("prodForFilter").value;
         const prodAt = document.getElementById("prodAtFilter").value;
+        const species = document.getElementById("speciesFilter").value;
         const grade = document.getElementById("gradeFilter").value;
         const variety = document.getElementById("varietyFilter").value;
         const glaze = document.getElementById("glazeFilter").value;
         
         const rows = [...document.querySelectorAll("#masterTbody tr")];
         let filteredData = [];
+        
+        // Strictly using backend values for totals
         let inQty = 0, inVal = 0, outQty = 0, outVal = 0;
 
         rows.forEach(r => {
             const txt = r.innerText.toLowerCase();
             const rProdFor = r.getAttribute('data-prodfor') || "";
             const rProdAt = r.getAttribute('data-prodat') || "";
+            const rSpecies = r.getAttribute('data-species');
             const rGrade = r.getAttribute('data-grade');
             const rVariety = r.getAttribute('data-variety');
             const rGlaze = r.getAttribute('data-glaze');
@@ -312,6 +323,7 @@
                        (!prodFor || rProdFor === prodFor) &&
                        (!prodAt || rProdAt === prodAt) &&
                        (currentView === 'table' || (
+                           (!species || rSpecies === species) &&
                            (!grade || rGrade === grade) &&
                            (!variety || rVariety === variety) &&
                            (!glaze || rGlaze === glaze)
@@ -322,26 +334,34 @@
             if(ok) {
                 const q = parseFloat(r.getAttribute('data-qty')) || 0;
                 const v = parseFloat(r.getAttribute('data-val')) || 0;
-                if(rMove === 'IN') { inQty += q; inVal += v; }
-                else { outQty += q; outVal += v; }
+
+                if(rMove === 'IN') { 
+                    inQty += q; 
+                    inVal += v; 
+                } else { 
+                    outQty += q; 
+                    outVal += v; // v is already negative from backend
+                }
 
                 filteredData.push({
-                    grade: rGrade, variety: rVariety, glaze: rGlaze,
+                    species: rSpecies, grade: rGrade, variety: rVariety, glaze: rGlaze,
                     qty: q, val: v, move: rMove,
                     pack: r.getAttribute('data-pack')
                 });
             }
         });
 
+        // Backend-driven logic: Balance = IN + OUT (since OUT is negative)
         const balQty = inQty - outQty;
-        const balVal = inVal - outVal;
+        const balVal = inVal + outVal;
         const balAvg = balQty > 0 ? (balVal / balQty).toFixed(2) : "0.00";
 
         document.getElementById("stat_items").innerText = filteredData.length;
         document.getElementById("stat_in_qty").innerText = inQty.toFixed(2) + " Kg";
         document.getElementById("stat_in_val").innerText = "₹" + Math.round(inVal).toLocaleString('en-IN');
         document.getElementById("stat_out_qty").innerText = outQty.toFixed(2) + " Kg";
-        document.getElementById("stat_out_val").innerText = "₹" + Math.round(outVal).toLocaleString('en-IN');
+        // Displaying OUT value as positive in summary for UI clarity
+        document.getElementById("stat_out_val").innerText = "₹" + Math.round(Math.abs(outVal)).toLocaleString('en-IN');
         document.getElementById("stat_qty").innerText = balQty.toFixed(2) + " Kg";
         document.getElementById("stat_avg_rate").innerText = "₹" + balAvg;
         document.getElementById("stat_val").innerText = "₹" + Math.round(balVal).toLocaleString('en-IN');
@@ -364,25 +384,32 @@
         container.innerHTML = "";
         const groups = {};
         data.forEach(item => {
-            const key = `${item.grade}_${item.variety}_${item.glaze}`;
+            const key = `${item.species}_${item.variety}_${item.grade}_${item.glaze}`;
             if(!groups[key]) groups[key] = { ...item, inQty: 0, inVal: 0, outQty: 0, outVal: 0 };
             if(item.move === 'IN') { groups[key].inQty += item.qty; groups[key].inVal += item.val; }
             else { groups[key].outQty += item.qty; groups[key].outVal += item.val; }
         });
 
         Object.values(groups).forEach(g => {
+            // Using backend values: Balance = IN + OUT
             const availQty = g.inQty - g.outQty;
-            const availVal = g.inVal - g.outVal;
+            const availVal = g.inVal + g.outVal;
             const inAvg = g.inQty > 0 ? (g.inVal / g.inQty).toFixed(2) : "0.00";
-            const outAvg = g.outQty > 0 ? (g.outVal / g.outQty).toFixed(2) : "0.00";
+            const outAvg = g.outQty > 0 ? (Math.abs(g.outVal) / g.outQty).toFixed(2) : "0.00";
             const availAvg = availQty > 0 ? (availVal / availQty).toFixed(2) : "0.00";
 
             const card = document.createElement('div');
             card.className = 'grade-card';
             card.innerHTML = `
-                <div class="card-head"><span class="grade-title">${g.grade}</span><span class="glaze-badge">${g.glaze}</span></div>
+                <div class="card-head">
+                    <span class="grade-title">${g.grade}</span>
+                    <span class="glaze-badge">${g.glaze}</span>
+                </div>
                 <div class="card-body">
-                    <div class="variety-label">${g.variety}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div class="variety-label" style="margin-bottom:0;">${g.variety}</div>
+                        <div style="font-size:10px; font-weight:800; color:var(--text-muted); background:#f1f5f9; padding:2px 6px; border-radius:4px;">${g.species}</div>
+                    </div>
                     <div class="movement-section">
                         <div class="move-box in">
                             <span class="move-title" style="color:var(--in-color)">Stock IN</span>
@@ -394,7 +421,7 @@
                             <span class="move-title" style="color:var(--out-color)">Stock OUT</span>
                             <div class="stat-row"><span class="s-label">Qty</span><span class="s-value">${g.outQty.toFixed(2)}</span></div>
                             <div class="stat-row"><span class="s-label">Avg Rate</span><span class="s-value">₹${outAvg}</span></div>
-                            <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(g.outVal).toLocaleString('en-IN')}</span></div>
+                            <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(Math.abs(g.outVal)).toLocaleString('en-IN')}</span></div>
                         </div>
                     </div>
                 </div>

@@ -169,40 +169,51 @@
                         <th>Glaze</th>
                         <th>Grade</th>
                         <th style="text-align:right;">No of MC</th>
-                        <th style="text-align:right;">Loose Quantity (KG)</th>
+                        <th style="text-align:right;">Loose</th>
+                        <th style="text-align:right;">Quantity (KG)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% set ns = namespace(
-                        curr_loc=None, loc_total=0,
-                        curr_vr=None, vr_total=0,
-                        curr_gl=None, gl_total=0
+                        curr_loc=None, loc_total=0, loc_mc=0, loc_loose=0,
+                        curr_vr=None, vr_total=0, vr_mc=0, vr_loose=0
                     ) %}
 
                     {% for row in stock_table_data %}
                         {# 1. Location Sub-total Logic #}
                         {% if ns.curr_loc is not none and ns.curr_loc != row.loc %}
                             <tr class="sub-total-row" style="background: #e2e8f0 !important;">
-                                <td colspan="7" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td colspan="6" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.loc_mc) }}</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.loc_loose) }}</td>
                                 <td style="text-align:right;">{{ "{:,.2f}".format(ns.loc_total) }}</td>
                             </tr>
-                            {% set ns.loc_total = 0 %}
+                            {% set ns.loc_total = 0 %}{% set ns.loc_mc = 0 %}{% set ns.loc_loose = 0 %}
                         {% endif %}
 
                         {# 2. Variety Sub-total Logic #}
                         {% if ns.curr_vr is not none and ns.curr_vr != row.vr and ns.curr_loc == row.loc %}
                             <tr class="sub-total-row" style="background: #f1f5f9 !important; color: #475569;">
-                                <td colspan="7" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td colspan="6" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.vr_mc) }}</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.vr_loose) }}</td>
                                 <td style="text-align:right;">{{ "{:,.2f}".format(ns.vr_total) }}</td>
                             </tr>
-                            {% set ns.vr_total = 0 %}
+                            {% set ns.vr_total = 0 %}{% set ns.vr_mc = 0 %}{% set ns.vr_loose = 0 %}
                         {% endif %}
 
                         {# Update Tracking Variables #}
                         {% set ns.curr_loc = row.loc %}
                         {% set ns.curr_vr = row.vr %}
-                        {% set ns.loc_total = ns.loc_total + row.qty %}
-                        {% set ns.vr_total = ns.vr_total + row.qty %}
+                        
+                        {# Summing Values #}
+                        {% set ns.loc_total = ns.loc_total + (row.qty|default(0)) %}
+                        {% set ns.loc_mc = ns.loc_mc + (row.mc|default(0)) %}
+                        {% set ns.loc_loose = ns.loc_loose + (row.loose|default(0)) %}
+                        
+                        {% set ns.vr_total = ns.vr_total + (row.qty|default(0)) %}
+                        {% set ns.vr_mc = ns.vr_mc + (row.mc|default(0)) %}
+                        {% set ns.vr_loose = ns.vr_loose + (row.loose|default(0)) %}
 
                         <tr>
                             <td style="font-weight:700; color:var(--primary);">{{ row.loc }}</td>
@@ -211,10 +222,11 @@
                             <td>{{ row.pk }}</td>
                             <td>{{ row.gl }}</td>
                             <td>{{ row.gr }}</td>
-                            <td align="right" style="font-weight:600;">{{ row.mc }}</td>
+                            <td align="right" style="font-weight:600;">{{ row.mc|default(0) }}</td>
+                            <td align="right" style="font-weight:600;">{{ row.loose|default(0) }}</td>
                             <td align="right">
                                 <a href="#" class="qty-link" onclick="viewSource('{{row.src}}','{{row.vr}}','{{row.gr}}')">
-                                    {{ "{:,.2f}".format(row.qty) }}
+                                    {{ "{:,.2f}".format(row.qty|default(0)) }}
                                 </a>
                             </td>
                         </tr>
@@ -222,11 +234,15 @@
                         {# Final Closures for Last Row #}
                         {% if loop.last %}
                             <tr class="sub-total-row" style="background: #f1f5f9 !important;">
-                                <td colspan="7" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td colspan="6" style="text-align:right;">{{ ns.curr_vr }} Sub-total:</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.vr_mc) }}</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.vr_loose) }}</td>
                                 <td style="text-align:right;">{{ "{:,.2f}".format(ns.vr_total) }}</td>
                             </tr>
                             <tr class="sub-total-row" style="background: #e2e8f0 !important;">
-                                <td colspan="7" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td colspan="6" style="text-align:right;">TOTAL FOR {{ ns.curr_loc }}:</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.loc_mc) }}</td>
+                                <td style="text-align:right;">{{ "{:,}".format(ns.loc_loose) }}</td>
                                 <td style="text-align:right;">{{ "{:,.2f}".format(ns.loc_total) }}</td>
                             </tr>
                         {% endif %}
@@ -236,7 +252,6 @@
         </div>
     </div>
 </div>
-
 <script>
     function viewSource(src, vr, gr) {
         const path = src === 'PLANT' ? '/inventory_management/stock_entry' : '/inventory_management/cold_storage_holding';

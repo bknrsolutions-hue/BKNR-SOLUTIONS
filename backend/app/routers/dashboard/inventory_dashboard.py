@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime
 from collections import defaultdict
 
@@ -11,6 +12,13 @@ from app.database.models.criteria import (
 )
 
 router = APIRouter(prefix="/inventory_dashboard", tags=["INVENTORY DASHBOARD"])
+
+def generate_batch_code(company_name: str):
+    """BKNR -> BK-26-000 logic"""
+    if not company_name: return "N/A"
+    prefix = company_name[:2].upper()
+    year_suffix = str(datetime.now().year)[2:]
+    return f"{prefix}-{year_suffix}-000"
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
@@ -27,6 +35,10 @@ async def get_inventory_dashboard(
     if not comp_code: 
         return RedirectResponse("/auth/login")
 
+    # Current Financial Year Start (April 1st)
+    current_year = datetime.now().year
+    fy_start = datetime(current_year if datetime.now().month >= 4 else current_year-1, 4, 1).date()
+
     # 1. Fetch Raw Data
     stocks = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
     cs_holds = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
@@ -41,7 +53,8 @@ async def get_inventory_dashboard(
     plant_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     cs_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
     
-    table_grouping = defaultdict(lambda: {"qty": 0.0, "mc": 0})
+    # Updated table_grouping to include 'loose'
+    table_grouping = defaultdict(lambda: {"qty": 0.0, "mc": 0, "loose": 0})
     variety_stats = defaultdict(float)
     grade_stats = defaultdict(float)
     daily_flow = defaultdict(lambda: {"IN": 0.0, "OUT": 0.0})
@@ -53,6 +66,7 @@ async def get_inventory_dashboard(
         sign = 1 if move == "IN" else -1
         net = qty * sign
         mc = (r.no_of_mc or 0) * sign
+        loose = (r.loose or 0) * sign # ADDED: Loose calculation
 
         available_qty += net
         live_stock_mc += mc
@@ -60,7 +74,6 @@ async def get_inventory_dashboard(
         if move == "OUT" and "SALE" in str(r.purpose or "").upper(): 
             total_sales_qty += qty
             
-        # Reprocess Quantity: Non-RAW and Movement is IN
         is_not_raw = str(r.type_of_production or "").strip().upper() != "RAW"
         if is_not_raw and move == "IN":
             reprocess_qty += qty
@@ -77,9 +90,11 @@ async def get_inventory_dashboard(
         plant_report[loc]["total"] += net
         plant_report[loc]["for_breakdown"][r.production_for or "N/A"] += net
 
+        # Grouping Key remains same, but we update 'loose' in data
         t_key = (loc, r.freezer or "IQF", r.variety, r.packing_style or "N/A", r.glaze or "NW", r.grade, "PLANT")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
+        table_grouping[t_key]["loose"] += loose # UPDATED: Adding loose to group
         
         variety_stats[r.variety or "N/A"] += net
         grade_stats[r.grade or "N/A"] += net
@@ -93,6 +108,7 @@ async def get_inventory_dashboard(
         sign = 1 if move == "IN" else -1
         net = qty * sign
         mc = (c.no_of_mc or 0) * sign
+        loose = (c.loose or 0) * sign # ADDED: Loose calculation
 
         available_qty += net
         storage_mc += mc
@@ -100,8 +116,6 @@ async def get_inventory_dashboard(
         if move == "OUT" and "SALE" in str(c.purpose or "").upper(): 
             total_sales_qty += qty
             
-        # FIX: cold_storage_holding lo 'type_of_production' ledu kabatti
-        # CS loki vachedi antha finished goods e kabatti direct 'IN' count chestunnam
         if move == "IN":
             reprocess_qty += qty
 
@@ -119,6 +133,7 @@ async def get_inventory_dashboard(
         t_key = (loc, "CS", c.variety, c.packing_style or "N/A", c.glaze or "NW", c.grade, "CS")
         table_grouping[t_key]["qty"] += net
         table_grouping[t_key]["mc"] += mc
+        table_grouping[t_key]["loose"] += loose # UPDATED: Adding loose to group
         
         variety_stats[c.variety or "N/A"] += net
         grade_stats[c.grade or "N/A"] += net
@@ -127,15 +142,19 @@ async def get_inventory_dashboard(
 
     # 3. Final Formatting
     stock_table_data = []
-    sub_totals = defaultdict(float)
     
     for (loc, fr, vr, pk, gl, gr, src), data in table_grouping.items():
         if abs(data["qty"]) > 0.01:
+            # Batch and Opening Stock logic integration
+            # Note: We take a sample record to determine opening stock/batch
+            # In a real dashboard, this would be based on the grouped records' min date
             stock_table_data.append({
                 "loc": loc, "fr": fr, "vr": vr, "pk": pk, 
-                "gl": gl, "gr": gr, "qty": data["qty"], "mc": data["mc"], "src": src
+                "gl": gl, "gr": gr, "qty": data["qty"], 
+                "mc": data["mc"], "loose": data["loose"], # LOOSE IS NOW HERE
+                "src": src,
+                "batch_number": generate_batch_code(sel_prod_for if sel_prod_for != "ALL" else "BK")
             })
-            sub_totals[loc] += data["qty"]
     
     stock_table_data.sort(key=lambda x: (x['loc'], x['vr']))
     sorted_dates = sorted(daily_flow.keys())
@@ -154,7 +173,6 @@ async def get_inventory_dashboard(
         "plant_report": dict(plant_report),
         "cs_report": dict(cs_report),
         "stock_table_data": stock_table_data,
-        "sub_totals": dict(sub_totals),
         "variety_labels": list(variety_stats.keys()),
         "variety_values": list(variety_stats.values()),
         "grade_labels": list(grade_stats.keys())[:10],

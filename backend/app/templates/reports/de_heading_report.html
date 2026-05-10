@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>DE-HEADING REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
@@ -13,11 +15,12 @@
  --bg:#f1f5f9;
  --header:#ffffff;
  --text:#1e293b;
+ --text-muted:#64748b;
  --danger: #ef4444;
  --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
 body{
  margin:0; background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text);
@@ -38,6 +41,9 @@ body{
 select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
+/* FY Dropdown Specific */
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
@@ -57,7 +63,7 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1500px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1650px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
@@ -73,6 +79,10 @@ tbody td{
 
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
+
+/* Empty State Styling */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
 
 /* Optimized Column Widths */
 .w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 95px; } .w-con { width: 130px; }
@@ -99,21 +109,29 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-
-@media print {
-    .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
-    body { overflow: visible !important; }
-    .section { border: none !important; margin: 0 !important; }
-    .table-wrap { overflow: visible !important; }
-    table { min-width: 100% !important; table-layout: auto !important; }
-}
 </style>
 </head>
 <body>
 
 <div class="header">
-    <h2>DE-HEADING REPORT</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>DE-HEADING REPORT</h2>
+        <div style="font-size: 11px; color: var(--text-muted);">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
     <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="fbox"><label>Month</label><input type="month" id="f_month" onchange="applyFilters()"></div>
         <div class="fbox"><label>From</label><input type="date" id="f_from" onchange="applyFilters()"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to" onchange="applyFilters()"></div>
@@ -194,6 +212,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-yld">Target %</th>
                     <th class="w-yld">Actual %</th>
                     <th class="w-diff">Diff %</th>
+                    <th class="w-diff">Diff Kg</th>
                     <th class="w-rt">Rate</th>
                     <th class="w-am">Amount</th>
                     <th class="w-loc">Peeling At</th>
@@ -202,26 +221,37 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                 </tr>
             </thead>
             <tbody id="tbody">
-                {% for r in rows %}
-                <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
-                    <td class="slno"></td>
-                    <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
-                    <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
-                    <td class="lookup contractor" data-field="contractor">{{ r.contractor }}</td>
-                    <td class="lookup species" data-field="species">{{ r.species }}</td>
-                    <td class="editable" data-field="hoso_count">{{ r.hoso_count }}</td>
-                    <td class="editable hoso" data-field="hoso_qty">{{ r.hoso_qty }}</td>
-                    <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty }}</td>
-                    <td class="target-cell">{{ r.target_yield or 0 }}%</td>
-                    <td class="yield-cell" data-target="{{ r.target_yield or 0 }}">{{ r.yield_percent or 0 }}%</td>
-                    <td class="diff-cell">0.00%</td>
-                    <td class="editable rate" data-field="rate_per_kg">{{ r.rate_per_kg }}</td>
-                    <td class="amt-cell" data-val="{{ r.amount }}">₹{{ r.amount }}</td>
-                    <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
-                    <td class="editable" data-field="production_for">{{ r.production_for }}</td>
-                    <td style="font-size: 8px; color: #94a3b8;">{{ r.email or 'System' }}</td>
+                {% if not rows %}
+                <tr>
+                    <td colspan="17" class="empty-state">
+                        <i class="fa-solid fa-calendar-check"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span>
+                    </td>
                 </tr>
-                {% endfor %}
+                {% else %}
+                    {% for r in rows %}
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                        <td class="slno">{{ (rows|length) - loop.index0 }}</td>
+                        <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
+                        <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
+                        <td class="lookup contractor" data-field="contractor">{{ r.contractor }}</td>
+                        <td class="lookup species" data-field="species">{{ r.species }}</td>
+                        <td class="editable" data-field="hoso_count">{{ r.hoso_count }}</td>
+                        <td class="editable hoso" data-field="hoso_qty">{{ r.hoso_qty }}</td>
+                        <td class="editable hlso" data-field="hlso_qty">{{ r.hlso_qty }}</td>
+                        <td class="target-cell" data-target="{{ r.target_yield_percent or 0 }}">{{ r.target_yield_percent or 0 }}%</td>
+                        <td class="yield-cell">{{ r.yield_percent or 0 }}%</td>
+                        <td class="diff-pct-cell">{{ r.diff_percent or 0 }}%</td>
+                        <td class="diff-kg-cell">{{ r.diff_qty or 0 }}</td>
+                        <td class="editable rate" data-field="rate_per_kg">{{ r.rate_per_kg }}</td>
+                        <td class="amt-cell" data-val="{{ r.amount }}">₹{{ r.amount }}</td>
+                        <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
+                        <td class="editable" data-field="production_for">{{ r.production_for }}</td>
+                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email or 'System' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
             <tfoot>
                 <tr>
@@ -230,7 +260,8 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <td id="tot_hlso">0.00</td>
                     <td></td>
                     <td id="avg_yield" style="color:var(--accent)">0%</td>
-                    <td id="avg_diff">0%</td>
+                    <td id="avg_diff_pct">0%</td>
+                    <td id="tot_diff_kg">0.00</td>
                     <td></td>
                     <td id="tot_amt">₹0.00</td>
                     <td colspan="3"></td>
@@ -264,15 +295,30 @@ const lookups = {
 };
 
 let selectedRow = null, currentAction = null;
-const allRows = [...document.querySelectorAll("#tbody tr")];
+const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 const baseUrl = window.location.pathname.replace(/\/$/, "");
+
+// Financial Year Change Logic
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
 
 function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
 document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
-function selectRow(tr) { allRows.forEach(r => r.classList.remove("selected")); tr.classList.add("selected"); selectedRow = tr; }
+function selectRow(tr) { 
+    if(tr.classList.contains('empty-state')) return;
+    allRows.forEach(r => r.classList.remove("selected")); 
+    tr.classList.add("selected"); 
+    selectedRow = tr; 
+}
 
 function applyFilters() {
+    if(allRows.length === 0) return;
+
     const fm = document.getElementById("f_month").value;
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
     const fb = document.getElementById("f_batch").value.toLowerCase();
@@ -282,7 +328,8 @@ function applyFilters() {
     const fpf = document.getElementById("f_prod_for").value.toLowerCase();
     const q = document.getElementById("searchBox").value.toLowerCase();
     
-    let hoT=0, hlT=0, aT=0, diffSum=0, visibleCount = 0;
+    let hoT=0, hlT=0, aT=0, dK=0, dP=0, vCount=0;
+    let filteredRows = [];
 
     allRows.forEach(r => {
         const d = r.dataset.date;
@@ -291,7 +338,6 @@ function applyFilters() {
         const s = r.querySelector('[data-field="species"]').innerText.toLowerCase();
         const loc = r.querySelector('[data-field="peeling_at"]').innerText.toLowerCase();
         const pf = r.querySelector('[data-field="production_for"]').innerText.toLowerCase();
-        const rowTxt = r.innerText.toLowerCase();
         
         let ok = true;
         if(fm && !d.startsWith(fm)) ok = false;
@@ -299,38 +345,43 @@ function applyFilters() {
         if(fb && b !== fb) ok = false; if(fc && c !== fc) ok = false;
         if(fs && s !== fs) ok = false; if(fl && loc !== fl) ok = false;
         if(fpf && pf !== fpf) ok = false;
-        if(q && !rowTxt.includes(q)) ok = false;
+        if(q && !r.innerText.toLowerCase().includes(q)) ok = false;
 
         if(ok) {
-            r.style.display = ""; visibleCount++;
-            const hoso = parseFloat(r.querySelector(".hoso").innerText) || 0;
-            const hlso = parseFloat(r.querySelector(".hlso").innerText) || 0;
-            const actualY = hoso > 0 ? (hlso/hoso)*100 : 0;
-            const targetY = parseFloat(r.querySelector(".yield-cell").dataset.target) || 0;
-            const diff = actualY - targetY;
-
-            const diffCell = r.querySelector(".diff-cell");
-            diffCell.innerText = diff.toFixed(2) + "%";
-            diffCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
-
-            hoT += hoso; hlT += hlso;
+            r.style.display = ""; vCount++;
+            hoT += parseFloat(r.querySelector(".hoso").innerText) || 0;
+            hlT += parseFloat(r.querySelector(".hlso").innerText) || 0;
             aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
-            diffSum += diff;
-            r.querySelector(".slno").innerText = visibleCount;
-        } else { r.style.display = "none"; }
+            
+            const dp = parseFloat(r.querySelector(".diff-pct-cell").innerText) || 0;
+            const dkVal = parseFloat(r.querySelector(".diff-kg-cell").innerText) || 0;
+            dP += dp; dK += dkVal;
+
+            r.querySelector(".diff-pct-cell").style.color = dp >= 0 ? "var(--success)" : "var(--danger)";
+            r.querySelector(".diff-kg-cell").style.color = dkVal >= 0 ? "var(--success)" : "var(--danger)";
+            filteredRows.push(r);
+        } else {
+            r.style.display = "none";
+        }
     });
 
-    document.getElementById("rowCount").innerText = `${visibleCount} records found`;
+    // 🔹 SL No Descending Order Logic
+    filteredRows.forEach((row, index) => {
+        row.querySelector(".slno").innerText = filteredRows.length - index;
+    });
+
+    document.getElementById("rowCount").innerText = `${vCount} records found`;
     document.getElementById("tot_hoso").innerText = hoT.toFixed(2);
     document.getElementById("tot_hlso").innerText = hlT.toFixed(2);
     document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
     document.getElementById("avg_yield").innerText = hoT > 0 ? ((hlT/hoT)*100).toFixed(2) + "%" : "0%";
-    const avgDiff = visibleCount > 0 ? (diffSum / visibleCount) : 0;
-    document.getElementById("avg_diff").innerText = avgDiff.toFixed(2) + "%";
-    document.getElementById("avg_diff").style.color = avgDiff >= 0 ? "var(--success)" : "var(--danger)";
+    
+    document.getElementById("avg_diff_pct").innerText = vCount > 0 ? (dP/vCount).toFixed(2) + "%" : "0%";
+    document.getElementById("tot_diff_kg").innerText = dK.toFixed(2);
 }
 
 function askConfirm(action) { 
+    if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
     currentAction = action; 
     document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
     document.getElementById("confirmModal").style.display = "flex"; 
@@ -369,29 +420,9 @@ function enableEdit() {
                 ${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}
             </select>`;
         } else { 
-            td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${val}" oninput="recalcRow(this)">`; 
+            td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${val}">`; 
         }
     });
-}
-
-function recalcRow(input) {
-    const tr = input.closest('tr');
-    const hoso = parseFloat(tr.querySelector('[data-field="hoso_qty"] input')?.value || tr.querySelector('.hoso').innerText) || 0;
-    const hlso = parseFloat(tr.querySelector('[data-field="hlso_qty"] input')?.value || tr.querySelector('.hlso').innerText) || 0;
-    const rate = parseFloat(tr.querySelector('[data-field="rate_per_kg"] input')?.value || tr.querySelector('.rate').innerText) || 0;
-    
-    const actualY = hoso > 0 ? (hlso/hoso)*100 : 0;
-    const targetY = parseFloat(tr.querySelector(".yield-cell").dataset.target) || 0;
-    const diff = actualY - targetY;
-
-    tr.querySelector('.yield-cell').innerText = actualY.toFixed(2) + '%';
-    const dCell = tr.querySelector('.diff-cell');
-    dCell.innerText = diff.toFixed(2) + '%';
-    dCell.style.color = diff >= 0 ? "var(--success)" : "var(--danger)";
-
-    const amt = (hlso * rate).toFixed(2);
-    tr.querySelector('.amt-cell').innerText = '₹' + amt;
-    tr.querySelector('.amt-cell').setAttribute('data-val', amt);
 }
 
 async function saveEdit() {
@@ -400,26 +431,34 @@ async function saveEdit() {
     if(!inputs.length) return;
     const payload = { id: selectedRow.dataset.id };
     inputs.forEach(i => payload[i.dataset.field] = i.value);
-    const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) location.reload();
+    
+    try {
+        const res = await fetch(`${baseUrl}/update`, { 
+            method:"POST", 
+            headers:{"Content-Type":"application/json"}, 
+            body:JSON.stringify(payload) 
+        });
+        const data = await res.json();
+        if(data.status === "success") {
+            location.reload(); 
+        }
+    } catch(e) { alert("Save failed!"); }
 }
 
 async function toggleAudit() {
     const panel = document.getElementById("auditPanel");
-    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
-    panel.style.display = "flex";
+    panel.style.display = panel.style.display === "flex" ? "none" : "flex";
+    if(panel.style.display === "none") return;
     const content = document.getElementById("auditContent");
     content.innerHTML = "Loading...";
-    try {
-        const res = await fetch(`${baseUrl}/audit_all`);
-        const logs = await res.json();
-        content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px;">
-                <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
-                ${l.action}: ${l.details}<br>
-                <small>By: ${l.user}</small>
-            </div>`).join('');
-    } catch(e) { content.innerHTML = "Error loading logs."; }
+    const res = await fetch(`${baseUrl}/audit_all`);
+    const logs = await res.json();
+    content.innerHTML = logs.map(l => `
+        <div style="border-left:2px solid var(--accent); margin-bottom:5px; background:#fff; padding:8px; font-size:10px;">
+            <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
+            ${l.action}: ${l.details}<br>
+            <small>By: ${l.user}</small>
+        </div>`).join('');
 }
 
 window.onload = applyFilters;

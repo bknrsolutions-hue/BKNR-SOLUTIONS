@@ -85,25 +85,25 @@ class DeHeading(Base):
     __tablename__ = "de_heading"
 
     id = Column(Integer, primary_key=True, index=True)
-
+    date = Column(Date)
+    time = Column(Time)
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
+    species = Column(String)
     batch_number = Column(String(100))
     hoso_count = Column(String(50))
     hoso_qty = Column(Float)
     hlso_qty = Column(Float)
     yield_percent = Column(Float)
+    target_yield_percent = Column(Float)
+    diff_qty = Column(Float)        
+    diff_percent = Column(Float)
 
     contractor = Column(String(255))
     rate_per_kg = Column(Float)
     amount = Column(Float)
-
-    species = Column(String)
-    company_id = Column(String(50))
     email = Column(String)
-
-    date = Column(Date)
-    time = Column(Time)
-    peeling_at = Column(String(255))
-    production_for = Column(String(255))
+    company_id = Column(String(50))
 
 # ---------------------------------------------------------
 # GRADING (Matches PostgreSQL exactly)
@@ -146,11 +146,14 @@ class Peeling(Base):
     peeled_qty = Column(Float)
 
     yield_percent = Column(Float)
+    target_yield_percent = Column(Float)
     species = Column(String(100))
     contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
     rate = Column(Float)
     amount = Column(Float)
-
+ 
+    diff_qty = Column(Float)        
+    diff_percent = Column(Float)
     date = Column(Date)
     time = Column(Time)
 
@@ -216,7 +219,9 @@ class Production(Base):
     production_qty = Column(Float)
 
     production_type = Column(String)
-  
+    target_yield_percent = Column(Float)
+    diff_qty = Column(Float)        
+    diff_percent = Column(Float)
 
     species = Column(String(100))
     company_id = Column(String(50))

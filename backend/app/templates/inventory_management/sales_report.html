@@ -13,7 +13,7 @@
 :root {
     --bg: #f4f7fa; --panel: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
     --primary: #4f46e5; --secondary: #0ea5e9; --success: #10b981; --danger: #f43f5e;
-    --warning: #f59e0b; --border: #e2e8f0;
+    --warning: #f59e0b; --border: #e2e8f0; --accent: #6366f1;
 }
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
 body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; overflow-y: auto; }
@@ -27,6 +27,11 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 }
 .header h1 { font-size: 15px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
 
+/* NEW FILTERS STYLE */
+.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.fbox { display: flex; flex-direction: column; gap: 4px; }
+.fbox label { font-size: 9px; font-weight: 700; text-transform: uppercase; }
+
 /* KPI STRIP */
 .kpi-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding: 15px 20px; }
 .kpi-box { 
@@ -38,7 +43,7 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 .kpi-val { font-size: 16px; font-weight: 800; display: block; }
 .kpi-meta { font-size: 9px; font-weight: 600; margin-top: 4px; }
 
-/* CHARTS SECTION - Updated to 3 columns to fit 6 charts */
+/* CHARTS SECTION */
 .charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 0 20px 15px; }
 .chart-box { background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
 .chart-header { font-size: 10px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; color: var(--text-sub); }
@@ -71,24 +76,64 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
 <div class="dashboard">
     <div class="header">
         <h1><i class="fas fa-gem"></i> SALES REALIZATION & ANALYTICS</h1>
-        <div style="display:flex; gap:8px; align-items:center;">
+        
+        <div class="filters">
             <span id="msg"></span>
-            <input type="text" id="buyer_search" placeholder="Search..." onkeyup="runAnalytics()" style="padding:5px; border:1px solid #ddd; border-radius:4px; font-size:10px;">
-            <select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Invoices</option></select>
-            <select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All POs</option></select>
-            <select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select>
-            <select id="sel_grade" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Grades</option></select>
-            <select id="sel_m" onchange="runAnalytics()" style="padding:5px; border-radius:4px; font-weight:700; font-size:10px;">
-                <option value="ALL">All Months</option>
-                <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
-                <option value="04" selected>Apr</option><option value="05">May</option><option value="06">Jun</option>
-                <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
-                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-            </select>
-            <select id="sel_y" onchange="runAnalytics()" style="padding:5px; border-radius:4px; font-weight:700; font-size:10px;">
-                <option value="2025">2025</option><option value="2026" selected>2026</option>
-            </select>
-            <button onclick="window.print()" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:700; font-size:10px;">EXPORT</button>
+            
+            <!-- Financial Year Filter START -->
+            <div class="fbox">
+                <label style="color:var(--accent)">Financial Year *</label>
+                <select id="f_fy" class="filter-select" onchange="changeFY(this.value)" style="border: 2px solid var(--primary); background: #eef2ff;">
+                    <option value="">-- SELECT FY --</option>
+                    {% set start_yr = 2024 %}
+                    {% set end_yr = 2027 %}
+                    {% for y in range(start_yr, end_yr) %}
+                    <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Financial Year Filter END -->
+
+            <div class="fbox">
+                <label>Search</label>
+                <input type="text" id="buyer_search" placeholder="Search..." onkeyup="runAnalytics()" style="padding:5px; border:1px solid #ddd; border-radius:4px; font-size:10px;">
+            </div>
+
+            <div class="fbox">
+                <label>Invoice</label>
+                <select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Invoices</option></select>
+            </div>
+
+            <div class="fbox">
+                <label>PO No</label>
+                <select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All POs</option></select>
+            </div>
+
+            <div class="fbox">
+                <label>Variety</label>
+                <select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select>
+            </div>
+
+            <div class="fbox">
+                <label>Grade</label>
+                <select id="sel_grade" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Grades</option></select>
+            </div>
+
+            <div class="fbox">
+                <label>Month</label>
+                <select id="sel_m" onchange="runAnalytics()" class="filter-select">
+                    <option value="ALL">All Months</option>
+                    <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+                    <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+                    <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+                    <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                </select>
+            </div>
+
+            <div class="fbox">
+                <label>&nbsp;</label>
+                <button onclick="window.print()" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:700; font-size:10px; cursor:pointer;">EXPORT</button>
+            </div>
         </div>
     </div>
 
@@ -123,66 +168,50 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
                     </thead>
                     <tbody id="tbody">
                         {% if sales_data %}
-                        {% set group_count = namespace(val=0) %}
-                        {% for inv, group in sales_data | groupby('obj.invoice_no') %}
-                            {% set first_item = group[0] %}
-                            {% set is_old_fy = first_item.obj.invoice_date < '2026-04-01' %}
-                            {% set has_unpaid = false %}
-                            {% for i in group %}{% if i.obj.status == 'Unpaid' %}{% set has_unpaid = true %}{% endif %}{% endfor %}
-
-                            {% if not is_old_fy or (is_old_fy and has_unpaid) %}
-                            {% set group_count.val = group_count.val + 1 %}
-                            {% set s = namespace(mc=0, kg=0, usd=0, inr=0, st=0, fr=0, pk=0, pl=0) %}
-                            {% for i in group %}
-                                {% set s.mc = s.mc + i.obj.no_of_mc %}{% set s.kg = s.kg + i.total_qty_kg %}{% set s.usd = s.usd + i.total_usd %}{% set s.inr = s.inr + i.total_inr %}{% set s.st = s.st + i.stock_value %}{% set s.fr = s.fr + i.freight_cost %}{% set s.pk = s.pk + i.packing_cost %}{% set s.pl = s.pl + i.profit_loss %}
-                                <tr class="data-row" 
-                                    data-dt="{{ i.obj.invoice_date }}"
-                                    data-m="{{ i.obj.invoice_date[5:7] }}" 
-                                    data-y="{{ i.obj.invoice_date[0:4] }}" 
-                                    data-st="{{ i.obj.status }}" 
-                                    data-buyer="{{ i.obj.buyer_name | lower }}" 
-                                    data-country="{{ i.obj.country | lower }}" 
-                                    data-countryname="{{ i.obj.country }}"
-                                    data-grade="{{ i.obj.grade }}" 
-                                    data-variety="{{ i.obj.variety }}" 
-                                    data-inv="{{ i.obj.invoice_no }}" 
-                                    data-po="{{ i.obj.po_number }}">
-                                    <td>{{ group_count.val if loop.first else "" }}</td>
-                                    <td><b>{{ i.obj.invoice_no }}</b></td>
-                                    <td>{{ i.obj.invoice_date }}</td>
-                                    <td style="text-align:left;">{{ i.obj.buyer_name }}</td>
-                                    <td>{{ i.obj.country }}</td>
-                                    <td>{{ i.obj.brand }}</td>
-                                    <td>{{ i.obj.variety }}</td>
-                                    <td>{{ i.obj.grade }}</td>
-                                    <td>{{ i.obj.po_number }}</td>
-                                    <td>{{ i.obj.container_no }}</td>
-                                    <td>{{ i.obj.shipping_bill }}</td>
-                                    <td>{{ i.obj.count_glaze }} / {{ i.obj.weight_glaze }}</td>
-                                    <td>{{ i.obj.packing_style }}</td>
-                                    <td class="v-mc">{{ i.obj.no_of_mc }}</td>
-                                    <td class="v-kg">{{ "{:,.2f}".format(i.total_qty_kg) }}</td>
-                                    <td><input type="number" step="0.01" class="inp-edit" value="{{ i.obj.exchange_rate }}" onchange="updateRow('{{ i.obj.id }}', 'rate', this.value)"></td>
-                                    <td class="v-usd">$ {{ "{:,.2f}".format(i.total_usd) }}</td>
-                                    <td class="v-inr">₹ {{ "{:,.2f}".format(i.total_inr) }}</td>
-                                    <td class="v-st">₹ {{ "{:,.2f}".format(i.stock_value) }}</td>
-                                    <td class="v-fr">₹ {{ "{:,.2f}".format(i.freight_cost) }}</td>
-                                    <td class="v-pk">₹ {{ "{:,.2f}".format(i.packing_cost) }}</td>
-                                    <td class="v-pl" style="font-weight:800; color:{{ 'var(--success)' if i.profit_loss >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(i.profit_loss) }}</td>
-                                    <td>
-                                        <select onchange="updateRow('{{ i.obj.id }}', 'status', this.value)" class="status-pill {{ 'pill-received' if i.obj.status == 'Received' else 'pill-unpaid' }}">
-                                            <option value="Unpaid" {% if i.obj.status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
-                                            <option value="Received" {% if i.obj.status == 'Received' %}selected{% endif %}>Received</option>
-                                        </select>
-                                    </td>
-                                    <td>{{ i.obj.company_name }}</td>
-                                </tr>
-                            {% endfor %}
-                            <tr class="subtotal-row">
-                                <td colspan="13" style="text-align:right">SUBTOTAL:</td>
-                                <td>{{ s.mc }}</td><td>{{ "{:,.2f}".format(s.kg) }}</td><td></td><td>$ {{ "{:,.2f}".format(s.usd) }}</td><td>₹ {{ "{:,.2f}".format(s.inr) }}</td><td>₹ {{ "{:,.2f}".format(s.st) }}</td><td>₹ {{ "{:,.2f}".format(s.fr) }}</td><td>₹ {{ "{:,.2f}".format(s.pk) }}</td><td style="color:{{ 'var(--success)' if s.pl >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(s.pl) }}</td><td></td><td></td>
+                        {% for item in sales_data %}
+                            {% set s = item.obj %}
+                            <tr class="data-row" 
+                                data-dt="{{ s.invoice_date }}"
+                                data-m="{{ s.invoice_date[5:7] }}" 
+                                data-y="{{ s.invoice_date[0:4] }}" 
+                                data-st="{{ s.status }}" 
+                                data-buyer="{{ s.buyer_name | lower }}" 
+                                data-country="{{ s.country | lower }}" 
+                                data-countryname="{{ s.country }}"
+                                data-grade="{{ s.grade }}" 
+                                data-variety="{{ s.variety }}" 
+                                data-inv="{{ s.invoice_no }}" 
+                                data-po="{{ s.po_number }}">
+                                <td>{{ loop.index }}</td>
+                                <td><b>{{ s.invoice_no }}</b></td>
+                                <td>{{ s.invoice_date }}</td>
+                                <td style="text-align:left;">{{ s.buyer_name }}</td>
+                                <td>{{ s.country }}</td>
+                                <td>{{ s.brand }}</td>
+                                <td>{{ s.variety }}</td>
+                                <td>{{ s.grade }}</td>
+                                <td>{{ s.po_number }}</td>
+                                <td>{{ s.container_no }}</td>
+                                <td>{{ s.shipping_bill }}</td>
+                                <td>{{ s.count_glaze }} / {{ s.weight_glaze }}</td>
+                                <td>{{ s.packing_style }}</td>
+                                <td class="v-mc">{{ s.no_of_mc }}</td>
+                                <td class="v-kg">{{ "{:,.2f}".format(item.total_qty_kg) }}</td>
+                                <td><input type="number" step="0.01" class="inp-edit" value="{{ s.exchange_rate }}" onchange="updateRow('{{ s.id }}', 'rate', this.value)"></td>
+                                <td class="v-usd">$ {{ "{:,.2f}".format(item.total_usd) }}</td>
+                                <td class="v-inr">₹ {{ "{:,.2f}".format(item.total_inr) }}</td>
+                                <td class="v-st">₹ {{ "{:,.2f}".format(s.stock_value) }}</td>
+                                <td class="v-fr">₹ {{ "{:,.2f}".format(s.freight_cost) }}</td>
+                                <td class="v-pk">₹ {{ "{:,.2f}".format(s.packing_cost) }}</td>
+                                <td class="v-pl" style="font-weight:800; color:{{ 'var(--success)' if s.profit_loss >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(s.profit_loss) }}</td>
+                                <td>
+                                    <select onchange="updateRow('{{ s.id }}', 'status', this.value)" class="status-pill {{ 'pill-received' if s.status == 'Received' else 'pill-unpaid' }}">
+                                        <option value="Unpaid" {% if s.status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                                        <option value="Received" {% if s.status == 'Received' %}selected{% endif %}>Received</option>
+                                    </select>
+                                </td>
+                                <td>{{ s.company_name }}</td>
                             </tr>
-                            {% endif %}
                         {% endfor %}
                         {% endif %}
                     </tbody>
@@ -195,6 +224,13 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
 <script>
 let charts = {};
 Chart.register(ChartDataLabels);
+
+function changeFY(year) {
+    if(!year) return;
+    const url = new URL(window.location);
+    url.searchParams.set('fy', year);
+    window.location.href = url.href;
+}
 
 async function updateRow(id, type, val) {
     const url = type === 'rate' ? "/inventory/update_exchange_rate" : "/inventory/update_status";
@@ -219,7 +255,7 @@ function populateFilters() {
 }
 
 function runAnalytics() {
-    const m = document.getElementById('sel_m').value, y = document.getElementById('sel_y').value;
+    const m = document.getElementById('sel_m').value;
     const invF = document.getElementById('sel_inv').value, poF = document.getElementById('sel_po').value;
     const varF = document.getElementById('sel_variety').value, grdF = document.getElementById('sel_grade').value;
     const q = document.getElementById('buyer_search').value.toLowerCase();
@@ -231,7 +267,7 @@ function runAnalytics() {
     };
 
     document.querySelectorAll('.data-row').forEach(tr => {
-        let match = (m === 'ALL' || tr.dataset.m === m) && (tr.dataset.y === y);
+        let match = (m === 'ALL' || tr.dataset.m === m);
         if(invF !== 'ALL' && tr.dataset.inv !== invF) match = false;
         if(poF !== 'ALL' && tr.dataset.po !== poF) match = false;
         if(varF !== 'ALL' && tr.dataset.variety !== varF) match = false;
@@ -254,16 +290,9 @@ function runAnalytics() {
             d.buyers[tr.dataset.buyer] = (d.buyers[tr.dataset.buyer] || 0) + rev;
             d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
             
-            // Map daily trend
             d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
             d.timeline.labels.push(tr.querySelector('td:nth-child(2)').innerText); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
         } else tr.style.display = "none";
-    });
-
-    document.querySelectorAll('.subtotal-row').forEach(sr => {
-        let prev = sr.previousElementSibling, hasVisible = false;
-        while(prev && prev.classList.contains('data-row')) { if(prev.style.display !== 'none') hasVisible = true; prev = prev.previousElementSibling; }
-        sr.style.display = hasVisible ? "" : "none";
     });
 
     updateKPIs(d); renderCharts(d);
@@ -289,7 +318,6 @@ function renderCharts(d) {
     const cp = { datalabels: { display: true, color: '#475569', font: { weight: 'bold', size: 8 }, formatter: (v) => v > 1000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
     const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 8, font: { size: 9 } } } };
 
-    // 1. Day-wise Revenue Trend
     if(charts.cDay) charts.cDay.destroy();
     const sortedDates = Object.keys(d.dayTrend).sort();
     charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
@@ -297,28 +325,24 @@ function renderCharts(d) {
         options: { maintainAspectRatio: false, plugins: cp } 
     });
 
-    // 2. Country Distribution
     if(charts.cCountry) charts.cCountry.destroy();
     charts.cCountry = new Chart(document.getElementById('c_country'), { 
         type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#f43f5e', '#0ea5e9'] }] }, 
         options: { maintainAspectRatio: false, cutout: '60%', plugins: dp } 
     });
 
-    // 3. Revenue vs Profit (Invoice-wise)
     if(charts.c1) charts.c1.destroy();
     charts.c1 = new Chart(document.getElementById('c_line'), { 
         type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#4f46e5', tension: 0.3 }, { label: 'P/L', data: d.timeline.pl, borderColor: '#10b981', tension: 0.3 }] }, 
         options: { maintainAspectRatio: false, plugins: cp } 
     });
 
-    // 4. Variety
     if(charts.c2) charts.c2.destroy();
     charts.c2 = new Chart(document.getElementById('c_variety'), { 
         type: 'doughnut', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'] }] }, 
         options: { maintainAspectRatio: false, cutout: '65%', plugins: dp } 
     });
 
-    // 5. Grade (MT)
     if(charts.c3) charts.c3.destroy();
     const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
@@ -326,7 +350,6 @@ function renderCharts(d) {
         options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } } } 
     });
 
-    // 6. Buyer
     if(charts.c4) charts.c4.destroy();
     const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c4 = new Chart(document.getElementById('c_buyer'), { 
