@@ -90,7 +90,6 @@ async def cold_storage_report_page(
 
     for r in rows:
         # --- REPROCESS LOOKUP (Enhanced Matching) ---
-        # Strategy: Match exactly first, if fails, match by Batch ID + Variety
         reprocess_item = db.query(Reprocess).filter(
             Reprocess.company_id == comp_code,
             func.trim(Reprocess.new_batch_id) == func.trim(r.batch_number),
@@ -101,7 +100,6 @@ async def cold_storage_report_page(
             func.trim(Reprocess.freezer) == func.trim(r.freezer or "")
         ).first()
 
-        # Fallback to Batch ID only if strict match fails
         if not reprocess_item:
             reprocess_item = db.query(Reprocess).filter(
                 Reprocess.company_id == comp_code,
@@ -115,16 +113,13 @@ async def cold_storage_report_page(
         qty = float(r.quantity or 0)
         m_type = str(r.cargo_movement_type or "").upper()
         
-        # 1. Inventory Value (Storing in model for Template access)
         r.inventory_value = round(qty * kg_rate, 2) if m_type == 'IN' else -round(abs(qty) * kg_rate, 2)
         
-        # 2. Holding Cost
         if m_type == 'IN' and r.status == "HOLDING":
             r.holding_cost = calculate_batch_holding_cost(db, r.batch_number, comp_code, r.id)
         else:
             r.holding_cost = 0.0
 
-        # 3. Other Charges
         h_rate = float(r.handling_rate or 0)
         lu_rate = float(r.loading_unloading_cost or 0)
         mc_units = abs(float(r.no_of_mc or 0)) + (1.0 if float(r.loose or 0) > 0 else 0.0)
@@ -134,7 +129,6 @@ async def cold_storage_report_page(
         else:
             r.other_charges = round(lu_rate * mc_units, 2)
 
-        # 4. Total Payable
         r.total_payable = round(r.holding_cost + r.other_charges, 2)
 
     def get_list(model, attr):
@@ -143,7 +137,10 @@ async def cold_storage_report_page(
     c_info = db.query(Company).filter(Company.company_code == comp_code).first()
     
     context = {
-        "request": request, "rows": rows, "from_date": from_date, "to_date": to_date,
+        "request": request, 
+        "rows": rows, 
+        "from_date": from_date, 
+        "to_date": to_date,
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "varieties_list": get_list(varieties, "variety_name"),
@@ -152,11 +149,13 @@ async def cold_storage_report_page(
         "company_name": c_info.company_name if c_info else "BKNR ERP",
         "role": role
     }
+    
+    # FIXED: Added explicit request=request to prevent TemplateResponse error
     return request.app.state.templates.TemplateResponse(
-    request=request,  # Ikkada idi miss ayyindi
-    name="inventory_management/cold_storage_report.html", 
-    context=context
-)
+        request=request, 
+        name="inventory_management/cold_storage_report.html", 
+        context=context
+    )
 
 # ------------------------------------------------------------
 # 2. API: UPDATE RECORD
@@ -182,7 +181,6 @@ async def update_cold_storage(request: Request, payload: dict = Body(...), db: S
     for f in editable:
         if f in payload: setattr(row, f, payload[f])
 
-    # Recalculate Qty
     pack = db.query(packing_styles).filter(
         packing_styles.company_id == comp_code, 
         packing_styles.packing_style == row.packing_style
@@ -236,7 +234,6 @@ def export_xlsx(request: Request, db: Session = Depends(get_db), from_date: str 
     ])
     
     for r in rows:
-        # Export logic using the same Enhanced Matching
         reprocess_item = db.query(Reprocess).filter(
             Reprocess.company_id == comp_code,
             func.trim(Reprocess.new_batch_id) == func.trim(r.batch_number),
