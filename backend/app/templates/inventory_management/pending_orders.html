@@ -19,17 +19,16 @@
 }
 *{box-sizing:border-box;font-family: 'Inter', sans-serif;}
 
-/* --- MAIN LAYOUT (Stable Form, Scrollable Table) --- */
+/* --- MAIN LAYOUT --- */
 body {
   margin: 0;
   background: var(--bg);
-  height: 100vh; /* Full Height */
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* No body scroll */
+  overflow: hidden;
 }
 
-/* Header & Form shouldn't shrink */
 .header, #flash-message, .section {
   flex-shrink: 0;
 }
@@ -58,7 +57,6 @@ body {
   font-size: 12px; outline: none;
 }
 .field input[readonly] { background-color: #f8fafc; color: #475569; cursor: not-allowed; font-weight: 600; }
-.field input:focus { border-color: var(--accent); }
 
 /* ITEMS TABLE IN FORM */
 .items-table-wrap { overflow-x: auto; margin-top: 10px; }
@@ -74,7 +72,7 @@ body {
     border-radius:4px; cursor:pointer; 
 }
 
-/* --- TABLE WRAPPER (Scrollable Area) --- */
+/* --- TABLE WRAPPER --- */
 .table-wrap {
   margin: 10px 18px 0 18px;
   background: #fff;
@@ -97,7 +95,7 @@ body {
 .data-container {
     height: auto; 
     flex-grow: 1; 
-    overflow-y: auto; /* Scroll here */
+    overflow-y: auto;
     overflow-x: auto;
 }
 
@@ -117,65 +115,47 @@ body {
   padding: 10px 15px; font-size: 12px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary);
 }
-.menu-item:last-child { border-bottom: none; }
 .menu-item:hover { background: #f1f5ff; color: var(--accent); }
 
 /* DATA TABLE */
 .data-table { width:100%; border-collapse:collapse; font-size:10px; table-layout: auto; }
 .data-table th, .data-table td{ 
-    border:1px solid var(--border); 
-    padding:8px 5px; 
-    text-align:center; 
-    white-space: nowrap;
+    border:1px solid var(--border); padding:8px 5px; text-align:center; white-space: nowrap;
 }
 .data-table th { 
     background: #f1f5f9; color: #475569; font-weight: 700; 
-    text-transform: uppercase; font-size: 9px; 
-    position: sticky; top: 0; z-index: 5;
+    text-transform: uppercase; font-size: 9px; position: sticky; top: 0; z-index: 5;
 }
 .po-cell{background:#f8faff;font-weight:700; color: var(--accent); vertical-align: middle !important;}
 .subtotal-row td{background:#f3f6fb;font-weight:800}
 tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
-.btn-add-row {
-    padding: 6px 12px; background: #fff; border: 1px solid var(--border);
-    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
-}
-.btn-save-po {
-    padding: 6px 20px; background: var(--accent); color: #fff; border: none;
-    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
-}
+.btn-add-row { padding: 6px 12px; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; }
+.btn-save-po { padding: 6px 20px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; }
 
 /* STATUS COLORS */
-.status-select {
-    padding: 2px; border-radius: 4px; font-size: 9px; font-weight: 700;
-    cursor: pointer; border: 1px solid var(--border); outline: none;
-    text-transform: uppercase;
-}
+.status-select { padding: 2px; border-radius: 4px; font-size: 9px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); outline: none; }
 .status-pending { background: #fef2f2; color: #ef4444; }
 .status-processing { background: #fffbeb; color: #f59e0b; }
 .status-completed { background: #f0fdf4; color: #16a34a; }
 
-/* PRINT STYLES */
 @media print {
   body { height: auto; display: block; overflow: visible; }
-  body * { visibility: hidden; background: #fff !important; }
+  body * { visibility: hidden; }
   .table-wrap, .table-wrap * { visibility: visible; }
-  .table-wrap { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; margin: 0; padding: 0;}
+  .table-wrap { position: absolute; left: 0; top: 0; width: 100%; border: none; margin: 0; padding: 0;}
   .table-header-tool, #threeDotsMenu, .status-select { display: none !important; }
-  .data-container { height: auto !important; overflow: visible !important; }
-  .data-table { font-size: 9pt; width: 100%; border: 1px solid #000; }
-  .data-table th, .data-table td { border: 1px solid #ccc !important; padding: 4px !important; }
-  .po-cell { color: #000 !important; }
 }
 </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
 
 <div class="header">
   <h2>Pending Orders</h2>
-  <div style="font-size: 12px; color: #64748b; font-weight: 600;"> </div>
+  <div style="font-size: 12px; color: #64748b; font-weight: 600;">BKNR ERP System</div>
 </div>
 
 {% if message %}
@@ -194,6 +174,7 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 </script>
 {% endif %}
 
+<!-- Sales Dispatch Modal -->
 <div class="modal fade" id="salesDispatchModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content shadow-lg border-0">
@@ -235,12 +216,13 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
   </div>
 </div>
 
+<!-- Criteria Modal -->
 <div class="modal fade" id="criteriaModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content shadow-lg">
       <div class="modal-header" style="background: var(--primary); color: white;">
         <h5 class="modal-title" id="modalTitle">Add New</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-0">
         <iframe id="criteriaIframe" src="" style="width:100%; height:500px; border:none;"></iframe>
@@ -259,7 +241,7 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
       <select name="company_name" id="company_name" class="lookup" data-url="/criteria/production_for" required>
         <option value="">Select Company</option>
         {% for c in unique_companies %}
-          <option value="{{ c }}" {% if edit_rows and edit_rows[0].company_name == c %}selected{% elif request.session.get('company_name') == c %}selected{% endif %}>{{ c }}</option>
+          <option value="{{ c }}" {% if edit_rows and edit_rows[0].company_name == c %}selected{% endif %}>{{ c }}</option>
         {% endfor %}
         <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
       </select>
@@ -348,18 +330,15 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
 </div>
 </form>
 
-{% if po_groups %}
 <div class="table-wrap">
   <div class="table-header-tool">
-      <h3>Active Purchase Orders</h3>
+      <h3>All Companies - Active Purchase Orders</h3>
       <div id="threeDotsMenu">
         <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div id="dropdownMenu">
           <div class="menu-item" onclick="editPO()"><i class="fa-solid fa-pen-to-square"></i> Edit PO</div>
           <div class="menu-item" onclick="deletePO()"><i class="fa-solid fa-trash-can"></i> Delete PO</div>
           <div class="menu-item" onclick="printPO()"><i class="fa-solid fa-print"></i> Print</div>
-          <div class="menu-item" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
-          <div class="menu-item" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
         </div>
       </div>
   </div>
@@ -372,6 +351,7 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
         </tr>
       </thead>
       <tbody>
+       {% if po_groups %}
        {% for po, rows in po_groups.items() %}
         {% set ns = namespace(total_mc=0) %}
         {% for r in rows %}
@@ -389,8 +369,7 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
             
             {% if loop.first %}
             <td rowspan="{{ rows|length }}" style="vertical-align: middle; background:#fffbeb;">
-              {% set current_status = rows[0].progress_steps if rows[0].progress_steps else 'pending' %}
-              
+              {% set current_status = r.progress_steps if r.progress_steps else 'pending' %}
               <select class="status-select status-{{ current_status | lower }}" onchange="updateStatusStyle(this, '{{ po }}')">
                 <option value="pending" {% if current_status|lower == 'pending' %}selected{% endif %}>PENDING</option>
                 <option value="processing" {% if current_status|lower == 'processing' %}selected{% endif %}>PROCESSING</option>
@@ -406,14 +385,15 @@ tr.active{background:#eff6ff !important; border-left: 4px solid var(--accent); }
           <td colspan="4"></td>
         </tr>
        {% endfor %}
+       {% else %}
+       <tr><td colspan="19" style="padding: 20px; text-align: center; color: #94a3b8;">No orders found.</td></tr>
+       {% endif %}
       </tbody>
     </table>
   </div>
 </div>
-{% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 let activePO = null;
 const threeDotsMenu = document.getElementById("threeDotsMenu");
@@ -432,9 +412,7 @@ function updateStatusStyle(select, po) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ po_number: po, status: newStatus })
-    })
-    .then(response => response.json())
-    .catch(error => console.error('Error:', error));
+    });
 }
 
 document.addEventListener('change', function(e) {
@@ -462,7 +440,6 @@ function addRow(){
 function removeRow(btn){
   const t = document.querySelector("#itemsTable tbody");
   if(t.querySelectorAll("tr").length > 1) btn.closest("tr").remove();
-  else alert("At least one row is required.");
 }
 
 function selectPO(po){
@@ -484,8 +461,6 @@ window.addEventListener("click", () => {
 function editPO(){ if(activePO) location = "/inventory/pending_orders?edit=" + activePO; }
 function deletePO(){ if(activePO && confirm("Delete PO : " + activePO + " ?")){ const f = document.createElement("form"); f.method = "POST"; f.action = "/inventory/pending_orders/delete_po/" + activePO; document.body.appendChild(f); f.submit(); } }
 function printPO(){ window.print(); }
-function exportPDF(){ window.open("/inventory/pending_orders/export/pdf", "_blank"); }
-function exportExcel(){ window.open("/inventory/pending_orders/export/excel", "_blank"); }
 </script>
 
 </body>

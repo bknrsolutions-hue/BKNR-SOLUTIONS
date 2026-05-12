@@ -50,7 +50,9 @@ def hr_dashboard(request: Request, db: Session = Depends(get_db)):
             }}
             .btn:hover {{ background: #000; transform: translateY(-2px); }}
         </style>
-    </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
     <body>
         <div class="card">
             <div class="icon"><i class="fa-solid fa-people-group"></i></div>

@@ -1,0 +1,48 @@
+/* సర్వసాధారణమైన షేప్ కరెక్షన్ */
+* {
+    box-sizing: border-box; /* ప్యాడింగ్ వల్ల విడ్త్ పెరగకుండా చూస్తుంది */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+    overflow-x: hidden !important; /* సైడ్ స్క్రోలింగ్ ఆపుతుంది */
+}
+
+/* కంటైనర్లు మరియు సెక్షన్లు */
+.section, .card, .container {
+    width: 95% !important;
+    margin: 10px auto !important;
+    float: none !important; /* పాత ఫ్లోట్ స్టైల్స్ ఉంటే తీసేస్తుంది */
+}
+
+/* టేబుల్స్ ఫిక్స్ */
+.table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    display: block !important;
+}
+
+table {
+    width: 100% !important;
+    min-width: 600px;
+}
+
+/* మొబైల్ వ్యూ కరెక్షన్ */
+@media (max-width: 768px) {
+    .header {
+        display: block !important; /* ఫ్లెక్స్ వల్ల వచ్చే ఇబ్బందులు పోతాయి */
+        text-align: center;
+        height: auto !important;
+    }
+    
+    div, section, td, th {
+        font-size: 14px !important; /* మొబైల్ లో టెక్స్ట్ చిన్నగా */
+    }
+
+    input, select, button {
+        width: 100% !important;
+        margin: 5px 0 !important;
+    }
+}

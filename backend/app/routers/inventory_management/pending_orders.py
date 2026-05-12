@@ -30,11 +30,15 @@ class StatusUpdate(BaseModel):
 
 def calculate_pieces(grade_str, manual_pcs):
     try:
+        # If manual pieces are provided and greater than 0, use them
         if manual_pcs and str(manual_pcs).strip() and int(manual_pcs) > 0:
             return int(manual_pcs)
+        
+        # Regex to find numbers in grade (e.g., "Vannamei 31/40" -> 40)
         nums = re.findall(r'\d+', str(grade_str))
         if nums:
             last_num = int(nums[-1])
+            # Common yield calculation logic: last number * 2.2
             return round(last_num * 2.2)
     except:
         pass
@@ -42,15 +46,17 @@ def calculate_pieces(grade_str, manual_pcs):
 
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE
+# 1️⃣ PENDING ORDERS PAGE (GET)
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
+    
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # Fetch unique company names for the dropdown
     prod_names = db.query(production_for.production_for).filter(
         production_for.company_id == company_code,
         production_for.production_for != None
@@ -58,14 +64,17 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
 
     unique_companies = [c[0] for c in prod_names if c[0]]
 
+    # Fetch all pending orders for the table
     rows = db.query(pending_orders).filter(
         pending_orders.company_id == company_code
     ).order_by(pending_orders.sl_no, pending_orders.id).all()
 
+    # Grouping by PO Number for display logic
     po_groups = defaultdict(list)
     for r in rows:
         po_groups[r.po_number].append(r)
 
+    # Logic for Editing an existing PO
     edit_rows = []
     if edit:
         edit_rows = db.query(pending_orders).filter(
@@ -73,6 +82,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             pending_orders.po_number == edit
         ).all()
 
+    # Calculate next serial number
     max_sl = db.query(func.max(pending_orders.sl_no)).filter(
         pending_orders.company_id == company_code
     ).scalar()
@@ -81,6 +91,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if edit_rows:
         next_sl = edit_rows[0].sl_no
 
+    # Helper to fetch dropdown lists
     def get_lookup(model, field_name):
         return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
 
@@ -88,7 +99,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         request=request,
         name="inventory_management/pending_orders.html",
         context={
-            "po_groups": po_groups,
+            "po_groups": dict(po_groups),  # Converted to dict for Jinja2 compatibility
             "edit_rows": edit_rows,
             "next_sl": next_sl,
             "unique_companies": unique_companies,
@@ -108,7 +119,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
 
 
 # -------------------------------------------------------------------------
-# 2️⃣ SAVE PENDING ORDERS
+# 2️⃣ SAVE PENDING ORDERS (POST)
 # -------------------------------------------------------------------------
 @router.post("/pending_orders")
 def save_pending_orders(
@@ -137,12 +148,16 @@ def save_pending_orders(
     company_code = request.session.get("company_code")
     email = request.session.get("email")
 
-    # Delete existing PO items to avoid duplicates on update
+    if not company_code:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    # Delete existing items for this PO to handle updates (Delete-and-Insert strategy)
     db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
     ).delete()
 
+    # Loop through list inputs from the dynamic rows
     for i in range(len(brand)):
         db.add(pending_orders(
             sl_no=sl_no,
@@ -171,11 +186,12 @@ def save_pending_orders(
         ))
 
     db.commit()
+    request.session["message"] = f"PO {po_number} saved successfully!"
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES (SALES DISPATCH)
+# 3️⃣ MOVE TO SALES (SALES DISPATCH) (POST)
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -187,7 +203,7 @@ def move_to_sales(
 ):
     company_code = request.session.get("company_code")
 
-    # Fetch items from Pending Orders
+    # Fetch items belonging to this PO
     items = db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
@@ -197,8 +213,7 @@ def move_to_sales(
         raise HTTPException(status_code=404, detail="PO Number not found")
 
     for item in items:
-        # Transfer data from Pending Orders to Sales Dispatch
-        # All extra columns from your model are included here
+        # Transfer and map data from Pending Orders to Sales Dispatch model
         db.add(sales_dispatch(
             company_id=company_code,
             invoice_no=invoice_no,
@@ -215,22 +230,44 @@ def move_to_sales(
             variety=item.variety,
             grade=item.grade,
             company_name=item.company_name,
-            exchange_rate=item.exchange_rate, # Saving exchange rate as requested
-            shipping_bill=None,  # Manual input later in report
-            container_no=None,   # Manual input later in report
-            stock_value=0.0,     # Calculation or manual update
-            profit_loss=0.0,     # Calculation or manual update
-            freight_cost=0.0,    # Manual input
-            packing_cost=0.0,    # Manual input
-            status="Unpaid",     # Default status
+            exchange_rate=item.exchange_rate,
+            shipping_bill=None,  
+            container_no=None,   
+            stock_value=0.0,     
+            profit_loss=0.0,     
+            freight_cost=0.0,    
+            packing_cost=0.0,    
+            status="Unpaid",     
             created_at=datetime.now().date()
         ))
 
-    # After moving to sales, delete from pending orders
+    # Remove from Pending Orders after successful transfer
     db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
     ).delete()
 
     db.commit()
+    request.session["message"] = f"PO {po_number} moved to Sales Dispatch (Inv: {invoice_no})"
     return RedirectResponse("/inventory/pending_orders", status_code=303)
+
+# -------------------------------------------------------------------------
+# 4️⃣ UPDATE PO STATUS (FOR AJAX/MODAL CALLS)
+# -------------------------------------------------------------------------
+@router.post("/update_po_status")
+async def update_po_status(data: StatusUpdate, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    
+    orders = db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        pending_orders.po_number == data.po_number
+    ).all()
+    
+    if not orders:
+        raise HTTPException(status_code=404, detail="PO Not Found")
+        
+    for order in orders:
+        order.progress_steps = data.status
+        
+    db.commit()
+    return {"message": "Status Updated"}
