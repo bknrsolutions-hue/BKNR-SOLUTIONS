@@ -11,28 +11,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="/static/css/style.css">
 
 <style>
-/* GLOBAL STYLES */
 body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
   background: #f4f7f9;
-  overflow: hidden; /* Main page scroll అవ్వకుండా */
 }
 
 /* CORPORATE HEADER */
 .header {
-  background: #0f172a;
-  padding: 10px 20px;
+  background: #0f172a; /* Deep Corporate Navy */
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 1000;
 }
 
 .header .company-title {
@@ -80,19 +76,19 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+#installBtn:hover {
+  background: #1d4ed8;
+}
+
 /* TOP NAVIGATION */
 .top-menu {
   background: #ffffff;
   display: flex;
-  gap: 5px;
-  padding: 0 15px;
+  gap: 10px;
+  padding: 0 20px;
   border-bottom: 1px solid #e2e8f0;
-  overflow-x: auto; /* మొబైల్ లో పక్కకు స్క్రోల్ అవ్వడానికి */
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
 }
-
-.top-menu::-webkit-scrollbar { display: none; }
 
 .top-menu button {
   background: none;
@@ -103,7 +99,7 @@ body {
   font-weight: 600;
   color: #64748b;
   border-bottom: 3px solid transparent;
-  flex-shrink: 0;
+  white-space: nowrap;
   transition: 0.2s;
 }
 
@@ -115,25 +111,23 @@ body {
   border-bottom: 3px solid #2563eb;
 }
 
-/* MAIN LAYOUT */
 .container {
   display: flex;
   height: calc(100vh - 105px);
 }
 
-/* SIDEBAR */
+/** LEFT SIDEBAR **/
 .left-menu {
-  width: 220px;
+  width: 190px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
-  padding: 15px 10px;
+  padding: 15px 12px;
   overflow-y: auto;
-  transition: all 0.3s;
 }
 
 .left-menu h3 {
   font-size: 11px;
-  margin: 15px 8px 8px;
+  margin: 18px 8px 8px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -157,66 +151,44 @@ body {
   transition: 0.2s;
 }
 
-.left-menu button i { margin-right: 10px; width: 18px; text-align: center; opacity: 0.7; }
-.left-menu button:hover { background: #f1f5f9; color: #2563eb; }
+.left-menu button i {
+  margin-right: 10px;
+  width: 16px;
+  text-align: center;
+  opacity: 0.7;
+}
 
-/* CONTENT AREA */
-.frame-container {
-  flex: 1;
-  background: #f8fafc;
-  padding: 5px;
+.left-menu button:hover {
+  background: #f1f5f9;
+  color: #2563eb;
 }
 
 iframe {
   width: 100%;
   height: 100%;
   border: none;
-  border-radius: 8px;
+  background: #f8fafc;
 }
 
-/* --- MOBILE RESPONSIVE FIXES --- */
+.frame-container {
+  flex: 1;
+  padding: 10px;
+}
+
+/* Mobile Responsiveness for Top Menu */
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    padding: 10px;
-    height: auto;
-    gap: 8px;
-  }
-  
-  .header .company-title { font-size: 15px; }
-  .header .user-info { font-size: 12px; }
-
-  .container {
-    flex-direction: column; /* మొబైల్ లో మెనూ పైన, ఐఫ్రేమ్ కింద */
-    height: calc(100vh - 165px);
-  }
-
   .left-menu {
-    width: 100% !important;
-    height: auto !important;
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    padding: 8px !important;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-    gap: 8px;
+    width: 60px;
   }
-
-  .left-menu h3 { display: none !important; }
-
-  .left-menu button {
-    width: auto !important;
-    white-space: nowrap;
-    background: #f1f5f9 !important;
-    padding: 8px 15px !important;
-    border-radius: 20px !important;
-    font-size: 12px;
+  .left-menu button span {
+    display: none;
   }
-
-  .left-menu::-webkit-scrollbar { display: none; }
-  
-  .frame-container { padding: 0; }
+  .left-menu h3 {
+    display: none;
+  }
+  .header .company-title {
+    font-size: 14px;
+  }
 }
 </style>
 </head>
@@ -224,10 +196,11 @@ iframe {
 <body>
 
 <div class="header">
-  <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code', 'BKNR ERP') }}</div>
+  <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
   <div style="display:flex; align-items:center;">
     <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL APP</button>
-    <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name', 'User') }}</div>
+    
+    <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name') }}</div>
     <div class="logout" onclick="logout()">LOGOUT</div>
   </div>
 </div>
@@ -261,37 +234,64 @@ if ("serviceWorker" in navigator) {
 // PWA INSTALL LOGIC
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
+
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   installBtn.style.display = 'block';
 });
+
 installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') installBtn.style.display = 'none';
+    if (outcome === 'accepted') {
+      installBtn.style.display = 'none';
+    }
     deferredPrompt = null;
   }
 });
 
+window.addEventListener('appinstalled', () => {
+  installBtn.style.display = 'none';
+});
+
+
 const permissions = {{ request.session.get('permissions')|tojson }};
-function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
+
+function allow(key){
+  return permissions.includes("ALL") || permissions.includes(key);
+}
 
 function setActive(btn){
   document.querySelectorAll(".top-menu button").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");
 }
 
-function openPage(route){ document.getElementById("frame").src = route; }
+function openPage(route){
+  document.getElementById("frame").src = route;
+}
 
-/******** DASHBOARDS *********/
 function loadDash(){
-  let html = `<h3>Dashboards</h3>`;
-  html += `<button onclick="openPage('/dashboard/processing_dashboard')"><i class="fa-solid fa-chart-line"></i> Processing</button>`;
-  html += `<button onclick="openPage('/dashboard/inventory_dashboard')"><i class="fa-solid fa-warehouse"></i> Inventory</button>`;
-  html += `<button onclick="openPage('/dashboard/hr_dashboard')"><i class="fa-solid fa-user-tie"></i> HR Dashboard</button>`;
-  html += `<button onclick="openPage('/dashboard/costing_dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i> Costing</button>`;
+  let html = `
+    <div class="menu-section">
+      <h3><i class="fa-solid fa-gauge-high"></i> Dashboards</h3>
+      <div class="button-grid">
+        <button class="menu-btn" onclick="openPage('/dashboard/processing_dashboard')">
+          <i class="fa-solid fa-chart-line"></i> Processing
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/inventory_dashboard')">
+          <i class="fa-solid fa-warehouse"></i> Inventory
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
+          <i class="fa-solid fa-user-tie"></i> HR Dashboard
+        </button>
+        <button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
+          <i class="fa-solid fa-file-invoice-dollar"></i> Costing
+        </button>
+      </div>
+    </div>
+  `;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
@@ -299,7 +299,7 @@ function loadDash(){
 function loadOps(){
   let html = `<h3>Operations</h3>`;
   if(allow("gate_entry")) html += `<button onclick="openPage('/processing/gate_entry')"><i class="fa-solid fa-door-open"></i> Gate Entry</button>`;
-  if(allow("raw_material_purchasing")) html += `<button onclick="openPage('/processing/raw_material_purchasing')"><i class="fa-solid fa-truck-ramp-box"></i> RM Purchasing</button>`;
+  if(allow("raw_material_purchasing")) html += `<button onclick="openPage('/processing/raw_material_purchasing')"><i class="fa-solid fa-truck-ramp-box"></i> Raw Material Purchasing</button>`;
   if(allow("de_heading")) html += `<button onclick="openPage('/processing/de_heading')"><i class="fa-solid fa-scissors"></i> De-Heading</button>`;
   if(allow("grading")) html += `<button onclick="openPage('/processing/grading')"><i class="fa-solid fa-filter"></i> Grading</button>`;
   if(allow("peeling")) html += `<button onclick="openPage('/processing/peeling')"><i class="fa-solid fa-hand-holding-droplet"></i> Peeling</button>`;
@@ -307,8 +307,10 @@ function loadOps(){
   if(allow("production")) html += `<button onclick="openPage('/processing/production')"><i class="fa-solid fa-industry"></i> Production</button>`;
   if(allow("stock_entry")) html += `<button onclick="openPage('/inventory/stock_entry')"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry</button>`;
   if(allow("pending_orders")) html += `<button onclick="openPage('/inventory/pending_orders')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders</button>`;
-  if(allow("general_store_entry")) html += `<button onclick="openPage('/general_stock/entry')"><i class="fa-solid fa-shop"></i> Store Entry</button>`;
-  if(allow("cold_storage_holding")) html += `<button onclick="openPage('/inventory/cold_storage_holding')"><i class="fa-solid fa-warehouse"></i> Cold Storage</button>`;
+  if(allow("general_store_entry")) html += `<button onclick="openPage('/general_stock/entry')"><i class="fa-solid fa-shop"></i> General Store Entry</button>`;
+  if(allow("cold_storage_holding")) 
+  html += `<button onclick="openPage('/inventory/cold_storage_holding')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
@@ -327,10 +329,13 @@ function loadReports(){
   if(allow("inventory_report")) html += `<button onclick="openPage('/inventory/stock_report')"><i class="fa-solid fa-boxes-packing"></i> Stock Status</button>`;
   if(allow("storage_cost_report")) html += `<button onclick="openPage('/reports/storage_cost_report')"><i class="fa-solid fa-coins"></i> Storage & Cost Report</button>`;
   if(allow("pending_orders_report")) html += `<button onclick="openPage('/reports/pending_orders_report')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders Report</button>`;
-  if(allow("sales_report")) html += `<button onclick="openPage('/inventory/sales_report')"><i class="fa-solid fa-file-invoice-dollar"></i> Sales Report</button>`;
+  if(allow("sales_report")) 
+  html += `<button onclick="openPage('/inventory/sales_report')">
+  <i class="fa-solid fa-file-invoice-dollar"></i> Sales  Report</button>`;
   html += `<h3>General Store Reports</h3>`;
-  if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> Store Report</button>`;
-  html += `<button onclick="openPage('/inventory/cold_storage_holding_report')"><i class="fa-solid fa-warehouse"></i> Cold Storage Report</button>`;
+  if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> General Store Report</button>`;
+  html += `<button onclick="openPage('/inventory/cold_storage_holding_report')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding Report</button>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
@@ -350,42 +355,116 @@ function loadCriteria(){
   forms.forEach(f=>{
     if(allow(f[0])) html += `<button onclick="openPage('/criteria/${f[0]}')"><i class="fa-solid fa-caret-right"></i> ${f[1]}</button>`;
   });
-  if(allow("cold_storage")) html += `<button onclick="openPage('/inventory/cold_storage')"><i class="fa-solid fa-warehouse"></i> Cold Storage</button>`;
+  if(allow("cold_storage")) 
+  html += `<button onclick="openPage('/inventory/cold_storage')">
+  <i class="fa-solid fa-warehouse"></i> Cold Storage</button>`;
+  html += `<h3>General Store Reports</h3>`;
   document.getElementById("sideMenu").innerHTML = html;
 }
 
 /******** SUMMARIES *********/
 function loadSummaries(){
   let html = `<h3>Summaries</h3>`;
-  if(allow("processing_summary")) html += `<button onclick="openPage('/summary/processing')"><i class="fa-solid fa-rectangle-list"></i> Processing Batch</button>`;
-  if(allow("processing_summary")) html += `<button onclick="openPage('/summary/periodic-report')"><i class="fa-solid fa-calendar-days"></i> Periodic Summary</button>`;
-  if(allow("inventory_costing")) html += `<button onclick="openPage('/summary/inventory_costing')"><i class="fa-solid fa-calculator"></i> Inventory Costing</button>`;
-  if(allow("floor_balance_value")) html += `<button onclick="openPage('/summary/floor_balance_value')"><i class="fa-solid fa-rectangle-list"></i> Floor Balance Value</button>`;  
-  if(allow("costing_dashboard")) html += `<button onclick="openPage('/dashboard/costing_dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i> Costing Dash</button>`;
+
+  if(allow("processing_summary")) 
+    html += `<button onclick="openPage('/summary/processing')">
+               <i class="fa-solid fa-rectangle-list"></i> Processing Batch Summary
+             </button>`;
+  if(allow("processing_summary")) 
+    html += `<button onclick="openPage('/summary/periodic-report')">
+               <i class="fa-solid fa-calendar-days"></i> Periodic Processing Summary
+             </button>`;
+
+  if(allow("inventory_costing")) 
+    html += `<button onclick="openPage('/summary/inventory_costing')">
+               <i class="fa-solid fa-calculator"></i> Inventory Costing
+             </button>`;
+
+  if(allow("floor_balance_value")) 
+    html += `<button onclick="openPage('/summary/floor_balance_value')">
+               <i class="fa-solid fa-rectangle-list"></i> Floor Balance Value
+             </button>`;  
+  if(allow("costing_dashboard"))
+    html += `<button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
+               <i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard
+             </button>`;
+  if(allow("hr_dashboard")) {
+    html += `<button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
+               <i class="fa-solid fa-user-tie"></i> HR Dashboard
+             </button>`;
+  }
+  document.getElementById("sideMenu").innerHTML = html;
+}
+/******** BILLS & OPERATIONS *********/
+function loadBills() {
+  let html = `<h3>Utilities & Operations Management</h3>`;
+
+  if (allow("electricity_bills"))
+    html += `<button onclick="openPage('/api/electricity/entry')">
+               <i class="fa-solid fa-bolt"></i> Electricity Utilization
+             </button>`;
+
+  if (allow("diesel_bills"))
+    html += `<button onclick="openPage('/api/diesel/entry')">
+               <i class="fa-solid fa-gas-pump"></i> Diesel Consumption
+             </button>`;
+
+  if (allow("packaging_bills"))
+    html += `<button onclick="openPage('/api/purchase/entry')">
+               <i class="fa-solid fa-file-invoice-dollar"></i> Purchase & Packaging
+             </button>`;
+
+  if (allow("logistics_bills"))
+    html += `<button onclick="openPage('/api/container/entry')">
+               <i class="fa-solid fa-truck-fast"></i> Logistics & Freight
+             </button>`;
+
+  if (allow("qa_testing"))
+    html += `<button onclick="openPage('/api/qa/entry')">
+               <i class="fa-solid fa-microscope"></i> QA Testing Charges
+             </button>`;
+
+  if (allow("other_expenses"))
+    html += `<button onclick="openPage('/api/expenses/entry')">
+               <i class="fa-solid fa-receipt"></i> Other Expenses
+             </button>`;
+
   document.getElementById("sideMenu").innerHTML = html;
 }
 
-/******** BILLS *********/
-function loadBills() {
-  let html = `<h3>Utilities Management</h3>`;
-  if (allow("electricity_bills")) html += `<button onclick="openPage('/api/electricity/entry')"><i class="fa-solid fa-bolt"></i> Electricity</button>`;
-  if (allow("diesel_bills")) html += `<button onclick="openPage('/api/diesel/entry')"><i class="fa-solid fa-gas-pump"></i> Diesel</button>`;
-  if (allow("packaging_bills")) html += `<button onclick="openPage('/api/purchase/entry')"><i class="fa-solid fa-file-invoice-dollar"></i> Purchase & Packaging</button>`;
-  if (allow("logistics_bills")) html += `<button onclick="openPage('/api/container/entry')"><i class="fa-solid fa-truck-fast"></i> Logistics & Freight</button>`;
-  if (allow("qa_testing")) html += `<button onclick="openPage('/api/qa/entry')"><i class="fa-solid fa-microscope"></i> QA Testing</button>`;
-  if (allow("other_expenses")) html += `<button onclick="openPage('/api/expenses/entry')"><i class="fa-solid fa-receipt"></i> Other Expenses</button>`;
-  document.getElementById("sideMenu").innerHTML = html;
-}
 
 /******** ATTENDANCE *********/
 function loadAttendance(){
   let html = `<h3>Attendance</h3>`;
-  if(allow("employee_registration")) html += `<button onclick="openPage('/attendance/employee/register')"><i class="fa-solid fa-id-card"></i> Registration</button>`;
-  if(allow("employee_increment")) html += `<button onclick="openPage('/attendance/employee-increment')"><i class="fa-solid fa-arrow-trend-up"></i> Increment</button>`;
-  if(allow("daily_attendance")) html += `<button onclick="openPage('/attendance/daily')"><i class="fa-solid fa-calendar-check"></i> Daily Attendance</button>`;
-  if(allow("salary_report")) html += `<button onclick="openPage('/attendance/salary/monthly-sheet')"><i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet</button>`;
-  if(allow("tax_master")) html += `<button onclick="openPage('/attendance/tax-master')"><i class="fa-solid fa-file-shield"></i> Payroll Master</button>`;
-  if(allow("salary_advance")) html += `<button onclick="openPage('/attendance/salary-advance')"><i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance</button>`;
+
+  if(allow("employee_registration"))
+    html += `<button onclick="openPage('/attendance/employee/register')">
+              <i class="fa-solid fa-id-card"></i> Employee Registration
+            </button>`;
+
+  if(allow("employee_increment"))
+    html += `<button onclick="openPage('/attendance/employee-increment')">
+              <i class="fa-solid fa-arrow-trend-up"></i> Employee Increment
+            </button>`;
+
+  if(allow("daily_attendance"))
+    html += `<button onclick="openPage('/attendance/daily')">
+              <i class="fa-solid fa-calendar-check"></i> Daily Attendance
+            </button>`;
+
+  if(allow("salary_report"))
+    html += `<button onclick="openPage('/attendance/salary/monthly-sheet')">
+              <i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet
+            </button>`;
+ if(allow("tax_master"))
+   html += `<button onclick="openPage('/attendance/tax-master')">
+            <i class="fa-solid fa-file-shield"></i> Payroll Statutory Master
+          </button>`;
+ if (allow("salary_advance"))
+  html += `<button onclick="openPage('/attendance/salary-advance')">
+            <i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance
+          </button>`;
+
   document.getElementById("sideMenu").innerHTML = html;
 }
 
@@ -396,20 +475,38 @@ function loadAdmin(){
   document.getElementById("sideMenu").innerHTML = html;
 }
 
-async function logout(){ if(confirm("Are you sure?")) { await fetch("/auth/logout"); window.location.href="/"; } }
+async function logout(){
+  if(confirm("Are you sure you want to logout?")) {
+    await fetch("/auth/logout");
+    window.location.href="/";
+  }
+}
 
+// DEFAULT PAGE LOAD LOGIC
 function initDefaultPage() {
   if(allow("processing_dashboard")) {
+    // Dashboard access unte, default ga load chey
     loadDash();
     openPage('/dashboard/processing_dashboard');
   } else {
+    // Dashboard access lekapothe, Operations menu open chesi first link load chey
     loadOps();
     setActive(document.getElementById('btn-ops'));
+    
+    // Side menu lo unna first button ni ethiki trigger chesthadhi
     const firstBtn = document.querySelector('#sideMenu button');
-    if(firstBtn) firstBtn.click(); else loadDash();
+    if(firstBtn) {
+      firstBtn.click();
+    } else {
+      // Operations kuda lekapothe, Just Dash menu open lo unchuthundi
+      loadDash();
+    }
   }
 }
+
+// Start application
 initDefaultPage();
+
 </script>
 </body>
 </html>
