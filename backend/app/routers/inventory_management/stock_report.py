@@ -1,12 +1,12 @@
 # ============================================================
-# STOCK REPORT ROUTER – FINAL (FULL FILTERS & EXPORTS)
+# STOCK REPORT ROUTER – FINAL (WITH FY FILTERS & EXPORTS)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, and_
 from datetime import datetime, date
 import pytz
 import openpyxl 
@@ -16,13 +16,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from app.database import get_db
-from app.database.models.inventory_management import stock_entry, pending_orders
+from app.database.models.inventory_management import stock_entry
 from app.database.models.users import Company
 from app.database.models.processing import AuditLog 
 from app.database.models.criteria import (
     production_for, production_at, freezers, packing_styles,
-    glazes, varieties, grades, production_types, purposes,
-    brands, species as species_model
+    glazes, varieties, grades, brands, species as species_model
 )
 
 router = APIRouter(prefix="/stock_report", tags=["STOCK REPORT"])
@@ -64,7 +63,8 @@ async def stock_report_page(
     request: Request,
     db: Session = Depends(get_db),
     from_date: str = "",
-    to_date: str = ""
+    to_date: str = "",
+    fy: str = Query(None)
 ):
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
@@ -73,11 +73,27 @@ async def stock_report_page(
     if not email or not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
+    # --- Financial Year Logic ---
+    selected_fy = fy
+    if selected_fy:
+        start_year = int(selected_fy)
+        fy_start = date(start_year, 4, 1)
+        fy_end = date(start_year + 1, 3, 31)
+        # Dates apply only if manually not changed or if FY is explicitly clicked
+        if not from_date: from_date = fy_start.isoformat()
+        if not to_date: to_date = fy_end.isoformat()
+
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+    
+    # Apply Filters only if FY or Date is present
     if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
 
-    rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
+    # If no FY and no dates, return empty or default behavior (here returning empty rows if no FY)
+    if not selected_fy and not from_date:
+        rows = []
+    else:
+        rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
@@ -87,6 +103,7 @@ async def stock_report_page(
         "rows": rows, 
         "from_date": from_date, 
         "to_date": to_date,
+        "selected_fy": selected_fy,
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
@@ -102,7 +119,6 @@ async def stock_report_page(
     company_name, company_address = get_company_info(db, comp_code)
     context.update({"company_name": company_name, "company_address": company_address})
 
-    # ✅ FIXED TEMPLATE RESPONSE: Added request as explicit argument
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="inventory_management/stock_report.html",
@@ -133,7 +149,7 @@ async def update_stock(request: Request, payload: dict = Body(...), db: Session 
         if new_mc > bal_mc or new_ls > bal_ls:
             raise HTTPException(status_code=400, detail=f"Insufficient Stock! Available: {bal_mc} MC, {bal_ls} Lse")
 
-    fields = ["batch_number", "location", "brand", "freezer", "glaze", "species", "packing_style", "variety", "grade", "no_of_mc", "loose", "product_kg_value", "sales_reference_rate", "hlso_count", "hoso_count"]
+    fields = ["batch_number", "location", "brand", "freezer", "glaze", "species", "packing_style", "variety", "grade", "no_of_mc", "loose", "product_kg_value", "sales_reference_rate", "hlso_count", "hoso_count", "purpose"]
     for f in fields:
         if f in payload:
             old_v, new_v = str(getattr(row, f) or "").strip(), str(payload[f] or "").strip()
@@ -200,7 +216,7 @@ def export_xlsx(
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename=Stock_Ledger.xlsx"})
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=Stock_Ledger.xlsx"})
 
 # ------------------------------------------------------------
 # EXPORT PDF (WITH FULL FILTERS & PRINT LOGIC)

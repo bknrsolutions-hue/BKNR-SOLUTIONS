@@ -2,511 +2,329 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP – Menu</title>
+<title>BKNR ERP – Full Enterprise Portal</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- PWA & Mobile Meta -->
 <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+:root {
+    --primary: #0f172a; 
+    --accent: #2563eb;
+    --text: #1e293b;
+    --header-h: 52px;
+    --nav-h: 48px;
+}
+
 body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background: #f4f7f9;
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f1f5f9;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
 
-/* CORPORATE HEADER */
-.header {
-  background: #0f172a; /* Deep Corporate Navy */
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+/* TOP MNC HEADER */
+.main-header {
+    background: var(--primary);
+    height: var(--header-h);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 24px; color: white; z-index: 2000;
 }
+.brand { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+.header-actions { display: flex; align-items: center; gap: 15px; }
 
-.header .company-title {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.header .logout {
-  background: transparent;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 11px;
-  margin-left: 15px;
-  cursor: pointer;
-  border: 1px solid #ef4444;
-  color: #ef4444;
-  font-weight: 700;
-  transition: 0.3s;
-}
-
-.header .logout:hover {
-  background: #ef4444;
-  color: white;
-}
-
-.header .user-info {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* INSTALL BUTTON STYLE */
 #installBtn {
-  display: none;
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-right: 15px;
-  transition: 0.3s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    background: var(--accent); color: white; border: none; padding: 6px 12px;
+    border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; display: none;
 }
 
-#installBtn:hover {
-  background: #1d4ed8;
+.logout-btn {
+    border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px;
+    border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.3s;
+}
+.logout-btn:hover { background: #ef4444; color: white; }
+
+/* NAVIGATION BAR */
+.nav-bar {
+    background: #ffffff;
+    height: var(--nav-h);
+    display: flex; padding: 0 10px;
+    border-bottom: 1px solid #e2e8f0;
+    z-index: 1001; position: relative;
+    overflow-x: auto; scrollbar-width: none;
+}
+.nav-bar::-webkit-scrollbar { display: none; }
+
+.nav-item {
+    background: none; border: none; padding: 0 18px; height: 100%;
+    font-size: 13px; font-weight: 600; color: #64748b;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: 0.2s; position: relative; white-space: nowrap;
+}
+.nav-item:hover, .nav-item.active { color: var(--accent); background: #f8fafc; }
+.nav-item.active::after {
+    content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--accent);
 }
 
-/* TOP NAVIGATION */
-.top-menu {
-  background: #ffffff;
-  display: flex;
-  gap: 10px;
-  padding: 0 20px;
-  border-bottom: 1px solid #e2e8f0;
-  overflow-x: auto;
-}
-
-.top-menu button {
-  background: none;
-  border: none;
-  padding: 15px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #64748b;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-  transition: 0.2s;
-}
-
-.top-menu button i { margin-right: 6px; }
-
-.top-menu button.active,
-.top-menu button:hover {
-  color: #2563eb;
-  border-bottom: 3px solid #2563eb;
-}
-
-.container {
-  display: flex;
-  height: calc(100vh - 105px);
-}
-
-/** LEFT SIDEBAR **/
-.left-menu {
-  width: 190px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  padding: 15px 12px;
-  overflow-y: auto;
-}
-
-.left-menu h3 {
-  font-size: 11px;
-  margin: 18px 8px 8px;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-}
-
-.left-menu button {
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  margin-bottom: 4px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #475569;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  transition: 0.2s;
-}
-
-.left-menu button i {
-  margin-right: 10px;
-  width: 16px;
-  text-align: center;
-  opacity: 0.7;
-}
-
-.left-menu button:hover {
-  background: #f1f5f9;
-  color: #2563eb;
-}
-
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: #f8fafc;
-}
-
-.frame-container {
-  flex: 1;
-  padding: 10px;
-}
-
-/* Mobile Responsiveness for Top Menu */
-@media (max-width: 768px) {
-  .left-menu {
-    width: 60px;
-  }
-  .left-menu button span {
+/* THE PREMIUM DROPDOWN - ZERO GAP */
+.dropdown-menu {
+    position: fixed;
+    width: 290px;
+    background: #ffffff;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    border: 1px solid #e2e8f0;
+    border-top: none; 
     display: none;
-  }
-  .left-menu h3 {
-    display: none;
-  }
-  .header .company-title {
-    font-size: 14px;
-  }
+    flex-direction: column;
+    z-index: 9999;
+    padding: 8px 0;
+    max-height: 85vh;
+    overflow-y: auto;
 }
+.dropdown-menu.show { display: flex; }
+
+.dropdown-header {
+    padding: 10px 18px 5px; font-size: 10px; color: #94a3b8;
+    text-transform: uppercase; font-weight: 800; letter-spacing: 1px;
+}
+
+.dropdown-item {
+    padding: 10px 18px; display: flex; align-items: center; gap: 12px;
+    color: var(--text); font-size: 13px; font-weight: 500;
+    transition: 0.2s; cursor: pointer; text-decoration: none;
+}
+.dropdown-item i { width: 18px; text-align: center; color: #94a3b8; font-size: 14px; }
+.dropdown-item:hover { background: #eff6ff; color: var(--accent); padding-left: 24px; }
+.dropdown-item:hover i { color: var(--accent); }
+
+/* CONTENT AREA */
+.main-container { flex: 1; position: relative; z-index: 1; }
+iframe { width: 100%; height: 100%; border: none; background: white; }
 </style>
 </head>
-
 <body>
 
-<div class="header">
-  <div class="company-title"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
-  <div style="display:flex; align-items:center;">
-    <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL APP</button>
-    
-    <div class="user-info"><i class="fa-solid fa-circle-user"></i> {{ request.session.get('name') }}</div>
-    <div class="logout" onclick="logout()">LOGOUT</div>
-  </div>
+<div class="main-header">
+    <div class="brand"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
+    <div class="header-actions">
+        <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL</button>
+        <span style="font-size:13px; font-weight:500;"><i class="fa-regular fa-circle-user"></i> {{ request.session.get('name') }}</span>
+        <div class="logout-btn" onclick="logout()">LOGOUT</div>
+    </div>
 </div>
 
-<div class="top-menu">
-  <button id="btn-dash" class="active" onclick="setActive(this); loadDash()"><i class="fa-solid fa-gauge"></i> Dashboards</button>
-  <button id="btn-ops" onclick="setActive(this); loadOps()"><i class="fa-solid fa-gears"></i> Operations</button>
-  <button onclick="setActive(this); loadReports()"><i class="fa-solid fa-file-invoice"></i> Reports</button>
-  <button onclick="setActive(this); loadCriteria()"><i class="fa-solid fa-list-check"></i> Criteria</button>
-  <button onclick="setActive(this); loadSummaries()"><i class="fa-solid fa-clipboard-list"></i> Summaries</button>
-  <button onclick="setActive(this); loadBills()"><i class="fa-solid fa-wallet"></i> Bills & Accounts</button>
-  <button onclick="setActive(this); loadAttendance()"><i class="fa-solid fa-calendar-days"></i> Attendance</button>
-  <button onclick="setActive(this); loadAdmin()"><i class="fa-solid fa-user-shield"></i> Admin</button>
+<div class="nav-bar" id="topNav">
+    <button class="nav-item active" onmouseover="showMenu(this, 'dash')"><i class="fa-solid fa-gauge"></i> Dashboards</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'ops')"><i class="fa-solid fa-gears"></i> Operations</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'reports')"><i class="fa-solid fa-file-invoice"></i> Reports</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'criteria')"><i class="fa-solid fa-list-check"></i> Criteria</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'summaries')"><i class="fa-solid fa-clipboard-list"></i> Summaries</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'bills')"><i class="fa-solid fa-wallet"></i> Bills & Accounts</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'attendance')"><i class="fa-solid fa-calendar-day"></i> Attendance</button>
+    <button class="nav-item" onmouseover="showMenu(this, 'admin')"><i class="fa-solid fa-user-shield"></i> Admin</button>
 </div>
 
-<div class="container">
-  <div id="sideMenu" class="left-menu"></div>
-  <div class="frame-container">
-    <iframe id="frame"></iframe>
-  </div>
+<div id="dropMenu" class="dropdown-menu" onmouseleave="hideMenu()" onmouseenter="clearHideTimer()">
+    <!-- Menu generated by JS -->
+</div>
+
+<div class="main-container">
+    <iframe id="frame" name="frame" onmouseenter="hideMenu()"></iframe>
 </div>
 
 <script>
-// PWA Service Worker Registration
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/service-worker.js")
-    .then(() => console.log("Service Worker Registered"))
-    .catch((err) => console.log("Service Worker Failed", err));
-}
-
-// PWA INSTALL LOGIC
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-
-installBtn.addEventListener('click', async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      installBtn.style.display = 'none';
-    }
-    deferredPrompt = null;
-  }
-});
-
-window.addEventListener('appinstalled', () => {
-  installBtn.style.display = 'none';
-});
-
-
 const permissions = {{ request.session.get('permissions')|tojson }};
+function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
 
-function allow(key){
-  return permissions.includes("ALL") || permissions.includes(key);
+// --- COMPLETE DATA OBJECT (NO MISSING LINKS) ---
+const menuData = {
+    dash: {
+        title: "Dashboards",
+        items: [
+            ['/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard'],
+            ['/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory Dashboard'],
+            ['/dashboard/hr_dashboard', 'fa-user-tie', 'HR Dashboard'],
+            ['/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing Dashboard']
+        ]
+    },
+    ops: {
+        title: "Operations",
+        items: [
+            ['gate_entry', '/processing/gate_entry', 'fa-door-open', 'Gate Entry'],
+            ['raw_material_purchasing', '/processing/raw_material_purchasing', 'fa-truck-ramp-box', 'RM Purchasing'],
+            ['de_heading', '/processing/de_heading', 'fa-scissors', 'De-Heading'],
+            ['grading', '/processing/grading', 'fa-filter', 'Grading'],
+            ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling'],
+            ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking'],
+            ['production', '/processing/production', 'fa-industry', 'Production'],
+            ['stock_entry', '/inventory/stock_entry', 'fa-boxes-stacked', 'Stock Entry'],
+            ['pending_orders', '/inventory/pending_orders', 'fa-clock-rotate-left', 'Pending Orders'],
+            ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry'],
+            ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding']
+        ]
+    },
+    reports: {
+        title: "Processing Reports",
+        items: [
+            ['gate_entry_report', '/reports/gate_entry', 'fa-file-lines', 'Gate Entry Report'],
+            ['rmp_report', '/reports/raw_material_purchasing', 'fa-file-invoice', 'RM Purchase Report'],
+            ['de_heading_report', '/reports/de_heading', 'fa-file-medical', 'De-Heading Report'],
+            ['grading_report', '/reports/grading_report', 'fa-file-shield', 'Grading Report'],
+            ['peeling_report', '/reports/peeling_report', 'fa-file-import', 'Peeling Report'],
+            ['soaking_report', '/reports/soaking_report', 'fa-file-word', 'Soaking Report'],
+            ['production_report', '/reports/production_report', 'fa-file-export', 'Production Report'],
+            ['floor_balance_report', '/reports/floor_balance_report', 'fa-scale-balanced', 'Floor Balance Report'],
+            ['reprocess_report', '/reports/re-process', 'fa-arrows-rotate', 'Re-Process Report'],
+            ['inventory_report', '/inventory/stock_report', 'fa-boxes-packing', 'Stock Status Report'],
+            ['storage_cost_report', '/reports/storage_cost_report', 'fa-coins', 'Storage & Cost Report'],
+            ['pending_orders_report', '/reports/pending_orders_report', 'fa-clock', 'Pending Orders Report'],
+            ['sales_report', '/inventory/sales_report', 'fa-receipt', 'Sales Report'],
+            ['gs_report', '/general_stock/report', 'fa-file-zipper', 'General Store Report'],
+            ['cold_storage_holding_report', '/inventory/cold_storage_holding_report', 'fa-warehouse', 'Cold Storage Report']
+        ]
+    },
+    criteria: {
+        title: "Master Data",
+        items: [
+            ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers'],
+            ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers'],
+            ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents'],
+            ['species', '/criteria/species', 'fa-caret-right', 'Species'],
+            ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties'],
+            ['grades', '/criteria/grades', 'fa-caret-right', 'Grades'],
+            ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes'],
+            ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles'],
+            ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals'],
+            ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers'],
+            ['countries', '/criteria/countries', 'fa-caret-right', 'Countries'],
+            ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers'],
+            ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At'],
+            ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At'],
+            ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types'],
+            ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes'],
+            ['purchasing_locations', '/criteria/purchasing_locations', 'fa-caret-right', 'Purchasing Locations'],
+            ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO'],
+            ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO'],
+            ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates'],
+            ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors'],
+            ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations'],
+            ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For'],
+            ['brands', '/criteria/brands', 'fa-caret-right', 'Brands'],
+            ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors'],
+            ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes'],
+            ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master']
+        ]
+    },
+    summaries: {
+        title: "Summaries",
+        items: [
+            ['processing_summary', '/summary/processing', 'fa-rectangle-list', 'Batch Summary'],
+            ['processing_summary', '/summary/periodic-report', 'fa-calendar-days', 'Periodic Summary'],
+            ['inventory_costing', '/summary/inventory_costing', 'fa-calculator', 'Inventory Costing'],
+            ['floor_balance_value', '/summary/floor_balance_value', 'fa-scale-balanced', 'Floor Balance Value']
+        ]
+    },
+    bills: {
+        title: "Finance & Operations",
+        items: [
+            ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills'],
+            ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption'],
+            ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging'],
+            ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight'],
+            ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges'],
+            ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses']
+        ]
+    },
+    attendance: {
+        title: "HRMS",
+        items: [
+            ['employee_registration', '/attendance/employee/register', 'fa-id-card', 'Staff Registration'],
+            ['employee_increment', '/attendance/employee-increment', 'fa-arrow-trend-up', 'Increment Details'],
+            ['daily_attendance', '/attendance/daily', 'fa-calendar-check', 'Daily Attendance'],
+            ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet'],
+            ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master'],
+            ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance']
+        ]
+    },
+    admin: {
+        title: "Administration",
+        items: [
+            ['add_user', '/admin/add_user', 'fa-user-plus', 'User Management']
+        ]
+    }
+};
+
+let hideTimer;
+const dropMenu = document.getElementById('dropMenu');
+const frame = document.getElementById('frame');
+
+function showMenu(btn, key) {
+    clearHideTimer();
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    btn.classList.add('active');
+
+    const data = menuData[key];
+    if (!data) return;
+
+    let html = `<div class="dropdown-header">${data.title}</div>`;
+    data.items.forEach(item => {
+        let route, icon, label, permKey;
+        if(item.length === 4) { [permKey, route, icon, label] = item; }
+        else { [route, icon, label] = item; permKey = null; }
+
+        if(!permKey || allow(permKey)) {
+            html += `<div class="dropdown-item" onclick="loadPage('${route}')">
+                        <i class="fa-solid ${icon}"></i> ${label}
+                     </div>`;
+        }
+    });
+
+    const rect = btn.getBoundingClientRect();
+    dropMenu.style.left = rect.left + 'px';
+    dropMenu.style.top = rect.bottom + 'px';
+    dropMenu.innerHTML = html;
+    dropMenu.classList.add('show');
 }
 
-function setActive(btn){
-  document.querySelectorAll(".top-menu button").forEach(x=>x.classList.remove("active"));
-  btn.classList.add("active");
+function hideMenu() {
+    hideTimer = setTimeout(() => {
+        dropMenu.classList.remove('show');
+    }, 150);
 }
 
-function openPage(route){
-  document.getElementById("frame").src = route;
-}
+function clearHideTimer() { clearTimeout(hideTimer); }
 
-function loadDash(){
-  let html = `
-    <div class="menu-section">
-      <h3><i class="fa-solid fa-gauge-high"></i> Dashboards</h3>
-      <div class="button-grid">
-        <button class="menu-btn" onclick="openPage('/dashboard/processing_dashboard')">
-          <i class="fa-solid fa-chart-line"></i> Processing
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/inventory_dashboard')">
-          <i class="fa-solid fa-warehouse"></i> Inventory
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
-          <i class="fa-solid fa-user-tie"></i> HR Dashboard
-        </button>
-        <button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Costing
-        </button>
-      </div>
-    </div>
-  `;
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-/******** OPERATIONS *********/
-function loadOps(){
-  let html = `<h3>Operations</h3>`;
-  if(allow("gate_entry")) html += `<button onclick="openPage('/processing/gate_entry')"><i class="fa-solid fa-door-open"></i> Gate Entry</button>`;
-  if(allow("raw_material_purchasing")) html += `<button onclick="openPage('/processing/raw_material_purchasing')"><i class="fa-solid fa-truck-ramp-box"></i> Raw Material Purchasing</button>`;
-  if(allow("de_heading")) html += `<button onclick="openPage('/processing/de_heading')"><i class="fa-solid fa-scissors"></i> De-Heading</button>`;
-  if(allow("grading")) html += `<button onclick="openPage('/processing/grading')"><i class="fa-solid fa-filter"></i> Grading</button>`;
-  if(allow("peeling")) html += `<button onclick="openPage('/processing/peeling')"><i class="fa-solid fa-hand-holding-droplet"></i> Peeling</button>`;
-  if(allow("soaking")) html += `<button onclick="openPage('/processing/soaking')"><i class="fa-solid fa-droplet"></i> Soaking</button>`;
-  if(allow("production")) html += `<button onclick="openPage('/processing/production')"><i class="fa-solid fa-industry"></i> Production</button>`;
-  if(allow("stock_entry")) html += `<button onclick="openPage('/inventory/stock_entry')"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry</button>`;
-  if(allow("pending_orders")) html += `<button onclick="openPage('/inventory/pending_orders')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders</button>`;
-  if(allow("general_store_entry")) html += `<button onclick="openPage('/general_stock/entry')"><i class="fa-solid fa-shop"></i> General Store Entry</button>`;
-  if(allow("cold_storage_holding")) 
-  html += `<button onclick="openPage('/inventory/cold_storage_holding')">
-  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding</button>`;
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-/******** REPORTS *********/
-function loadReports(){
-  let html = `<h3>Processing Reports</h3>`;
-  if(allow("gate_entry_report")) html += `<button onclick="openPage('/reports/gate_entry')"><i class="fa-solid fa-file-lines"></i> Gate Entry Report</button>`;
-  if(allow("rmp_report")) html += `<button onclick="openPage('/reports/raw_material_purchasing')"><i class="fa-solid fa-file-invoice"></i> RM Purchase Report</button>`;
-  if(allow("de_heading_report")) html += `<button onclick="openPage('/reports/de_heading')"><i class="fa-solid fa-file-medical"></i> De-Heading Report</button>`;
-  if(allow("grading_report")) html += `<button onclick="openPage('/reports/grading_report')"><i class="fa-solid fa-file-shield"></i> Grading Report</button>`;
-  if(allow("peeling_report")) html += `<button onclick="openPage('/reports/peeling_report')"><i class="fa-solid fa-file-import"></i> Peeling Report</button>`;
-  if(allow("soaking_report")) html += `<button onclick="openPage('/reports/soaking_report')"><i class="fa-solid fa-file-word"></i> Soaking Report</button>`;
-  if(allow("production_report")) html += `<button onclick="openPage('/reports/production_report')"><i class="fa-solid fa-file-export"></i> Production Report</button>`;
-  if(allow("floor_balance_report")) html += `<button onclick="openPage('/reports/floor_balance_report')"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report</button>`;
-  if(allow("reprocess_report")) html += `<button onclick="openPage('/reports/re-process')"><i class="fa-solid fa-arrows-rotate"></i> Re-Process Report</button>`;
-  if(allow("inventory_report")) html += `<button onclick="openPage('/inventory/stock_report')"><i class="fa-solid fa-boxes-packing"></i> Stock Status</button>`;
-  if(allow("storage_cost_report")) html += `<button onclick="openPage('/reports/storage_cost_report')"><i class="fa-solid fa-coins"></i> Storage & Cost Report</button>`;
-  if(allow("pending_orders_report")) html += `<button onclick="openPage('/reports/pending_orders_report')"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders Report</button>`;
-  if(allow("sales_report")) 
-  html += `<button onclick="openPage('/inventory/sales_report')">
-  <i class="fa-solid fa-file-invoice-dollar"></i> Sales  Report</button>`;
-  html += `<h3>General Store Reports</h3>`;
-  if(allow("gs_report")) html += `<button onclick="openPage('/general_stock/report')"><i class="fa-solid fa-file-zipper"></i> General Store Report</button>`;
-  html += `<button onclick="openPage('/inventory/cold_storage_holding_report')">
-  <i class="fa-solid fa-warehouse"></i> Cold Storage Holding Report</button>`;
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-/******** CRITERIA *********/
-function loadCriteria(){
-  let html = `<h3>Master Criteria</h3>`;
-  const forms = [
-    ["suppliers", "Suppliers"], ["buyers", "Buyers"], ["buyer_agents", "Buyer Agents"],
-    ["species", "Species"], ["varieties", "Varieties"], ["grades", "Grades"],
-    ["glazes", "Glazes"], ["packing_styles", "Packing Styles"], ["chemicals", "Chemicals"],
-    ["freezers", "Freezers"], ["countries", "Countries"], ["vehicle_numbers", "Vehicle Numbers"],
-    ["production_at", "Production At"], ["peeling_at", "Peeling At"], ["production_types", "Production Types"],
-    ["purposes", "Purposes"], ["purchasing_locations", "Purchasing Locations"], ["grade_to_hoso", "Grade to HOSO"],
-    ["hoso_hlso", "HOSO & HLSO"], ["peeling_rates", "Peeling Rates"], ["contractors", "Contractors"],
-    ["coldstore_locations", "Coldstore locations"], ["production_for", "Production For"], ["brands", "Brands"],["vendors", "Vendors"],["hsn_codes", "HSN Codes"]
-  ];
-  forms.forEach(f=>{
-    if(allow(f[0])) html += `<button onclick="openPage('/criteria/${f[0]}')"><i class="fa-solid fa-caret-right"></i> ${f[1]}</button>`;
-  });
-  if(allow("cold_storage")) 
-  html += `<button onclick="openPage('/inventory/cold_storage')">
-  <i class="fa-solid fa-warehouse"></i> Cold Storage</button>`;
-  html += `<h3>General Store Reports</h3>`;
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-/******** SUMMARIES *********/
-function loadSummaries(){
-  let html = `<h3>Summaries</h3>`;
-
-  if(allow("processing_summary")) 
-    html += `<button onclick="openPage('/summary/processing')">
-               <i class="fa-solid fa-rectangle-list"></i> Processing Batch Summary
-             </button>`;
-  if(allow("processing_summary")) 
-    html += `<button onclick="openPage('/summary/periodic-report')">
-               <i class="fa-solid fa-calendar-days"></i> Periodic Processing Summary
-             </button>`;
-
-  if(allow("inventory_costing")) 
-    html += `<button onclick="openPage('/summary/inventory_costing')">
-               <i class="fa-solid fa-calculator"></i> Inventory Costing
-             </button>`;
-
-  if(allow("floor_balance_value")) 
-    html += `<button onclick="openPage('/summary/floor_balance_value')">
-               <i class="fa-solid fa-rectangle-list"></i> Floor Balance Value
-             </button>`;  
-  if(allow("costing_dashboard"))
-    html += `<button class="menu-btn" onclick="openPage('/dashboard/costing_dashboard')">
-               <i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard
-             </button>`;
-  if(allow("hr_dashboard")) {
-    html += `<button class="menu-btn" onclick="openPage('/dashboard/hr_dashboard')">
-               <i class="fa-solid fa-user-tie"></i> HR Dashboard
-             </button>`;
-  }
-  document.getElementById("sideMenu").innerHTML = html;
-}
-/******** BILLS & OPERATIONS *********/
-function loadBills() {
-  let html = `<h3>Utilities & Operations Management</h3>`;
-
-  if (allow("electricity_bills"))
-    html += `<button onclick="openPage('/api/electricity/entry')">
-               <i class="fa-solid fa-bolt"></i> Electricity Utilization
-             </button>`;
-
-  if (allow("diesel_bills"))
-    html += `<button onclick="openPage('/api/diesel/entry')">
-               <i class="fa-solid fa-gas-pump"></i> Diesel Consumption
-             </button>`;
-
-  if (allow("packaging_bills"))
-    html += `<button onclick="openPage('/api/purchase/entry')">
-               <i class="fa-solid fa-file-invoice-dollar"></i> Purchase & Packaging
-             </button>`;
-
-  if (allow("logistics_bills"))
-    html += `<button onclick="openPage('/api/container/entry')">
-               <i class="fa-solid fa-truck-fast"></i> Logistics & Freight
-             </button>`;
-
-  if (allow("qa_testing"))
-    html += `<button onclick="openPage('/api/qa/entry')">
-               <i class="fa-solid fa-microscope"></i> QA Testing Charges
-             </button>`;
-
-  if (allow("other_expenses"))
-    html += `<button onclick="openPage('/api/expenses/entry')">
-               <i class="fa-solid fa-receipt"></i> Other Expenses
-             </button>`;
-
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-
-/******** ATTENDANCE *********/
-function loadAttendance(){
-  let html = `<h3>Attendance</h3>`;
-
-  if(allow("employee_registration"))
-    html += `<button onclick="openPage('/attendance/employee/register')">
-              <i class="fa-solid fa-id-card"></i> Employee Registration
-            </button>`;
-
-  if(allow("employee_increment"))
-    html += `<button onclick="openPage('/attendance/employee-increment')">
-              <i class="fa-solid fa-arrow-trend-up"></i> Employee Increment
-            </button>`;
-
-  if(allow("daily_attendance"))
-    html += `<button onclick="openPage('/attendance/daily')">
-              <i class="fa-solid fa-calendar-check"></i> Daily Attendance
-            </button>`;
-
-  if(allow("salary_report"))
-    html += `<button onclick="openPage('/attendance/salary/monthly-sheet')">
-              <i class="fa-solid fa-file-invoice-dollar"></i> Monthly Salary Sheet
-            </button>`;
- if(allow("tax_master"))
-   html += `<button onclick="openPage('/attendance/tax-master')">
-            <i class="fa-solid fa-file-shield"></i> Payroll Statutory Master
-          </button>`;
- if (allow("salary_advance"))
-  html += `<button onclick="openPage('/attendance/salary-advance')">
-            <i class="fa-solid fa-hand-holding-dollar"></i> Salary Advance
-          </button>`;
-
-  document.getElementById("sideMenu").innerHTML = html;
-}
-
-/******** ADMIN *********/
-function loadAdmin(){
-  let html = `<h3>Admin</h3>`;
-  if(allow("add_user")) html += `<button onclick="openPage('/admin/add_user')"><i class="fa-solid fa-user-plus"></i> Add User</button>`;
-  document.getElementById("sideMenu").innerHTML = html;
+function loadPage(url) {
+    frame.src = url;
+    dropMenu.classList.remove('show');
 }
 
 async function logout(){
-  if(confirm("Are you sure you want to logout?")) {
-    await fetch("/auth/logout");
-    window.location.href="/";
-  }
+    if(confirm("Secure Logout?")) { await fetch("/auth/logout"); window.location.href="/"; }
 }
 
-// DEFAULT PAGE LOAD LOGIC
-function initDefaultPage() {
-  if(allow("processing_dashboard")) {
-    // Dashboard access unte, default ga load chey
-    loadDash();
-    openPage('/dashboard/processing_dashboard');
-  } else {
-    // Dashboard access lekapothe, Operations menu open chesi first link load chey
-    loadOps();
-    setActive(document.getElementById('btn-ops'));
-    
-    // Side menu lo unna first button ni ethiki trigger chesthadhi
-    const firstBtn = document.querySelector('#sideMenu button');
-    if(firstBtn) {
-      firstBtn.click();
+// Initial Load
+window.onload = () => {
+    if(allow("processing_dashboard")) {
+        loadPage('/dashboard/processing_dashboard');
     } else {
-      // Operations kuda lekapothe, Just Dash menu open lo unchuthundi
-      loadDash();
+        const ops = menuData.ops.items;
+        for(let item of ops) {
+            if(allow(item[0])) { loadPage(item[1]); break; }
+        }
     }
-  }
+};
+
+// PWA
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/service-worker.js");
 }
-
-// Start application
-initDefaultPage();
-
 </script>
 </body>
 </html>

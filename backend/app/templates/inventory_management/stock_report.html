@@ -30,6 +30,8 @@ body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction
 select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
@@ -49,7 +51,7 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2000px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2100px; } 
 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
@@ -66,11 +68,11 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
+.empty-state { padding: 80px 20px; text-align: center; color: #64748b; }
 .inv-col { background: #fffcf0; font-weight: 700; color: #92400e; }
 .qty-col { font-weight: 800; color: var(--accent); }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
-/* ================= FOOTER (GRAND TOTALS) ================= */
 tfoot td{ 
     background:#d3d8e0 !important; color:#201c1c !important; 
     font-weight:900; font-size:11px; border-top:2px solid #c5cfde; 
@@ -88,15 +90,6 @@ tfoot td{
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
-.audit-item{ padding:12px; border-bottom:1px solid #e2e8f0; border-left:4px solid var(--accent); margin:5px; background:#f8fafc; border-radius:4px; }
-
-@media print {
-    .header, .actions, .audit-panel, #confirmModal, .dots { display: none !important; }
-    body { overflow: visible !important; }
-    .section { border: none !important; margin: 0 !important; }
-    table { min-width: 100% !important; table-layout: auto !important; }
-    tfoot td { background: #eee !important; color: #000 !important; }
-}
 </style>
 </head>
 
@@ -108,6 +101,17 @@ tfoot td{
         <div style="font-size: 10px; font-weight: 700; color: #64748b;">BKNR ERP · 2026</div>
     </div>
     <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="fbox"><label>From</label><input type="date" id="f_from" value="{{from_date}}"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to" value="{{to_date}}"></div>
         <div class="fbox"><label>Movement</label><select id="f_type"><option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option></select></div>
@@ -148,9 +152,10 @@ tfoot td{
         <table id="stockTable">
             <thead>
                 <tr>
-                    <th style="width:40px">#</th>
+                    <th style="width:45px">#</th>
                     <th style="width:90px">Date</th>
                     <th style="width:110px">Batch #</th>
+                    <th style="width:110px">Type of Production</th>
                     <th style="width:60px">Type</th>
                     <th style="width:100px">Brand</th>
                     <th style="width:100px">Species</th>
@@ -171,34 +176,45 @@ tfoot td{
                 </tr>
             </thead>
             <tbody id="tbody">
-                {% for r in rows %}
-                <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
-                    <td class="slno"></td>
-                    <td>{{ r.date }}</td>
-                    <td class="editable" data-field="batch_number" style="font-weight:700">{{ r.batch_number }}</td>
-                    <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
-                    <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
-                    <td class="lookup species_list" data-field="species">{{ r.species }}</td>
-                    <td class="editable" data-field="location">{{ r.location }}</td>
-                    <td>{{ r.po_number }}</td>
-                    <td class="lookup production_for_list" data-field="production_for">{{ r.production_for }}</td>
-                    <td class="lookup production_at_list" data-field="production_at">{{ r.production_at }}</td>
-                    <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
-                    <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
-                    <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
-                    <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
-                    <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
-                    <td class="editable" data-field="no_of_mc">{{ r.no_of_mc or 0 }}</td>
-                    <td class="editable" data-field="loose">{{ r.loose or 0 }}</td>
-                    <td class="qty-col">{{ "{:,.2f}".format(r.quantity or 0) }}</td>
-                    <td class="editable inv-col" data-field="purpose">{{ r.purpose }}</td>
-                    <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                {% if not rows %}
+                <tr>
+                    <td colspan="21" class="empty-state">
+                        <i class="fa-solid fa-folder-open" style="font-size:30px; opacity:0.3;"></i><br><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size:10px;">Please select FY from the filter to view data.</span>
+                    </td>
                 </tr>
-                {% endfor %}
+                {% else %}
+                    {% for r in rows %}
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                        <td class="slno"></td>
+                        <td>{{ r.date }}</td>
+                        <td class="editable" data-field="batch_number" style="font-weight:700">{{ r.batch_number }}</td>
+                        <td class="lookup production_types_list" data-field="type_of_production">{{ r.type_of_production }}</td>
+                        <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
+                        <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
+                        <td class="lookup species_list" data-field="species">{{ r.species }}</td>
+                        <td class="editable" data-field="location">{{ r.location }}</td>
+                        <td>{{ r.po_number }}</td>
+                        <td class="lookup production_for_list" data-field="production_for">{{ r.production_for }}</td>
+                        <td class="lookup production_at_list" data-field="production_at">{{ r.production_at }}</td>
+                        <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
+                        <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
+                        <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
+                        <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
+                        <td class="lookup grades_list" data-field="grade">{{ r.grade }}</td>
+                        <td class="editable" data-field="no_of_mc">{{ r.no_of_mc or 0 }}</td>
+                        <td class="editable" data-field="loose">{{ r.loose or 0 }}</td>
+                        <td class="qty-col">{{ "{:,.2f}".format(r.quantity or 0) }}</td>
+                        <td class="editable inv-col" data-field="purpose">{{ r.purpose }}</td>
+                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="15" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
+                    <td colspan="16" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
                     <td id="tot_mc">0</td>
                     <td id="tot_lse">0</td>
                     <td id="tot_qty" class="qty-col">0.00</td>
@@ -237,21 +253,32 @@ const lookups = {
     freezers_list: {{ freezers_list|tojson or [] }},
     packing_styles_list: {{ packing_styles_list|tojson or [] }},
     production_for_list: {{ production_for_list|tojson or [] }},
-    production_at_list: {{ production_at_list|tojson or [] }}
+    production_at_list: {{ production_at_list|tojson or [] }},
+    production_types_list: ["PROCESSED", "SEMIPROCESSED", "RAW"] // Default values or add from backend
 };
 
 const baseUrl = window.location.pathname.replace(/\/$/, ""); 
 let selectedRow = null;
 let currentAction = null; 
-const allRows = [...document.querySelectorAll("#tbody tr")];
+const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
+
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
 
 function selectRow(tr) { 
+    if(tr.classList.contains('empty-state')) return;
     allRows.forEach(r => r.classList.remove("selected")); 
     tr.classList.add("selected"); 
     selectedRow = tr; 
 }
 
 function applyFilters() {
+    if(allRows.length === 0) return;
+
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
     const ft = document.getElementById("f_type").value;
     const fb = document.getElementById("f_batch").value.toLowerCase();
@@ -262,15 +289,16 @@ function applyFilters() {
     const q = document.getElementById("searchBox").value.toLowerCase();
     
     let mcT=0, lsT=0, qtyT=0, visibleCount=0;
+    let filteredRows = [];
 
     allRows.forEach(r => {
         const d = r.dataset.date, text = r.innerText.toLowerCase();
-        const type = r.cells[3].innerText;
         const batch = r.cells[2].innerText.toLowerCase();
-        const brand = r.cells[4].innerText.toLowerCase();
-        const spec = r.cells[5].innerText.toLowerCase();
-        const var_ = r.cells[12].innerText.toLowerCase();
-        const loc = r.cells[6].innerText.toLowerCase();
+        const type = r.cells[4].innerText;
+        const brand = r.cells[5].innerText.toLowerCase();
+        const spec = r.cells[6].innerText.toLowerCase();
+        const loc = r.cells[7].innerText.toLowerCase();
+        const var_ = r.cells[13].innerText.toLowerCase();
 
         let ok = true;
         if(f1 && d < f1) ok = false; if(f2 && d > f2) ok = false;
@@ -284,21 +312,22 @@ function applyFilters() {
 
         if(ok) {
             r.style.display = ""; visibleCount++;
-            // Calculate Stock in Hand (IN + , OUT -)
             const sign = type === 'IN' ? 1 : -1;
-            mcT += (parseInt(r.cells[15].innerText) || 0) * sign;
-            lsT += (parseInt(r.cells[16].innerText) || 0) * sign;
-            qtyT += (parseFloat(r.cells[17].innerText.replace(/,/g,'')) || 0) * sign;
+            mcT += (parseInt(r.cells[16].innerText) || 0) * sign;
+            lsT += (parseInt(r.cells[17].innerText) || 0) * sign;
+            qtyT += (parseFloat(r.cells[18].innerText.replace(/,/g,'')) || 0) * sign;
+            filteredRows.push(r);
         } else { r.style.display = "none"; }
+    });
+
+    filteredRows.forEach((row, index) => {
+        row.querySelector(".slno").innerText = filteredRows.length - index;
     });
 
     document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
     document.getElementById("tot_mc").innerText = mcT;
     document.getElementById("tot_lse").innerText = lsT;
     document.getElementById("tot_qty").innerText = qtyT.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
-    
-    let s = visibleCount;
-    allRows.filter(r => r.style.display!=="none").forEach(r => r.querySelector(".slno").innerText = s--);
 }
 
 function enableEdit() {
@@ -359,14 +388,14 @@ async function toggleAudit() {
         const logs = await res.json();
         if(!logs.length) { content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`; return; }
         content.innerHTML = logs.map(l => `
-            <div class="audit-item">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-                    <b style="color:var(--accent); font-size:10px;">${l.timestamp}</b>
-                    <span style="font-size:9px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 4px; border-radius:3px;">Batch: ${l.batch}</span>
+            <div class="audit-item" style="padding:10px; border-bottom:1px solid #e2e8f0; border-left:4px solid var(--accent); margin-bottom:5px; background:#f8fafc;">
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                    <b style="color:var(--accent)">${l.timestamp}</b>
+                    <span style="background:#f1f5f9; padding:2px 4px;">Batch: ${l.batch}</span>
                 </div>
-                <div style="font-size:10px; font-weight:800; color:var(--primary); text-transform:uppercase;">${l.field}</div>
-                <div style="font-size:10px; color:#1e293b; background:#fff; padding:4px; border-radius:4px; margin-top:3px; border: 1px dashed #e2e8f0;">${l.details}</div>
-                <div style="font-size:9px; color:#94a3b8; margin-top:4px; text-align:right;">User: <b>${l.user}</b></div>
+                <div style="font-weight:800; font-size:10px;">${l.field || l.action}</div>
+                <div style="font-size:10px; color:#1e293b;">${l.details}</div>
+                <div style="font-size:9px; color:#94a3b8; text-align:right;">User: ${l.user}</div>
             </div>
         `).join('');
     } catch(e) { content.innerHTML = `<p style="color:red; font-size:10px; padding:20px;">Error loading logs.</p>`; }
@@ -426,16 +455,17 @@ function printReport() {
 }
 
 function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
-document.onclick = () => document.getElementById("mainMenu").style.display="none";
+document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
 function fillFilters() {
+    if(allRows.length === 0) return;
     const sets = { batch: new Set(), brand: new Set(), species: new Set(), variety: new Set(), loc: new Set() };
     allRows.forEach(r => {
         sets.batch.add(r.cells[2].innerText.trim());
-        sets.brand.add(r.cells[4].innerText.trim());
-        sets.species.add(r.cells[5].innerText.trim());
-        sets.variety.add(r.cells[12].innerText.trim());
-        sets.loc.add(r.cells[6].innerText.trim());
+        sets.brand.add(r.cells[5].innerText.trim());
+        sets.species.add(r.cells[6].innerText.trim());
+        sets.loc.add(r.cells[7].innerText.trim());
+        sets.variety.add(r.cells[13].innerText.trim());
     });
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);
@@ -443,10 +473,14 @@ function fillFilters() {
     });
 }
 
-fillFilters();
-document.querySelectorAll(".filters input, .filters select").forEach(el => el.onchange = applyFilters);
-document.getElementById("searchBox").oninput = applyFilters;
-applyFilters();
+window.onload = () => {
+    fillFilters();
+    document.querySelectorAll(".filters input, .filters select").forEach(el => {
+        if(el.id !== 'f_fy') el.onchange = applyFilters;
+    });
+    document.getElementById("searchBox").oninput = applyFilters;
+    applyFilters();
+};
 </script>
 </body>
 </html>

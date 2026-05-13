@@ -1,25 +1,41 @@
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, date
 from collections import defaultdict
 
 from app.database import get_db
-from app.database.models.inventory_management import stock_entry, cold_storage_holding
-from app.database.models.criteria import (
-    varieties, grades, glazes, packing_styles, freezers, species, production_for
+
+from app.database.models.inventory_management import (
+    stock_entry,
+    cold_storage_holding
 )
 
-router = APIRouter(prefix="/inventory_dashboard", tags=["INVENTORY DASHBOARD"])
+from app.database.models.criteria import (
+    varieties,
+    grades,
+    species,
+    production_for
+)
 
+router = APIRouter(
+    prefix="/inventory_dashboard",
+    tags=["INVENTORY DASHBOARD"]
+)
+
+# ============================================================
+# GENERATE BATCH CODE
+# ============================================================
 def generate_batch_code(company_name: str):
-    """BKNR -> BK-26-000 logic"""
-    if not company_name: return "N/A"
+    if not company_name:
+        return "N/A"
     prefix = company_name[:2].upper()
     year_suffix = str(datetime.now().year)[2:]
     return f"{prefix}-{year_suffix}-000"
 
+# ============================================================
+# INVENTORY DASHBOARD
+# ============================================================
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def get_inventory_dashboard(
@@ -29,167 +45,246 @@ async def get_inventory_dashboard(
     sel_grade: str = Query("ALL"),
     sel_prod_at: str = Query("ALL"),
     sel_prod_for: str = Query("ALL"),
+    sel_fy: str = Query("CURRENT"),
     db: Session = Depends(get_db)
 ):
+    # SESSION & COMPANY CHECK
     comp_code = request.session.get("company_code")
-    if not comp_code: 
+    if not comp_code:
         return RedirectResponse("/auth/login")
 
-    # Current Financial Year Start (April 1st)
-    current_year = datetime.now().year
-    fy_start = datetime(current_year if datetime.now().month >= 4 else current_year-1, 4, 1).date()
+    # TODAY & FY CALCULATION
+    today = datetime.now().date()
+    current_year = today.year
+    current_fy_start_year = current_year if today.month >= 4 else current_year - 1
+    current_fy_name = f"{current_fy_start_year}-{str(current_fy_start_year + 1)[2:]}"
 
-    # 1. Fetch Raw Data
+    if sel_fy == "CURRENT":
+        fy_start_year = current_fy_start_year
+    else:
+        try:
+            fy_start_year = int(sel_fy.split("-")[0])
+        except:
+            fy_start_year = current_fy_start_year
+
+    fy_start = date(fy_start_year, 4, 1)
+    fy_end = date(fy_start_year + 1, 3, 31)
+
+    # FETCH DATA
     stocks = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
     cs_holds = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
 
-    # 2. Aggregators
-    available_qty = 0.0
+    # KPI Quantity Counters
+    opening_stock_qty = 0.0
+    opening_stock_mc = 0
+    grand_opening_loose = 0
+    closing_stock_qty = 0.0
+    closing_stock_mc = 0
+    grand_loose = 0
     total_sales_qty = 0.0
     reprocess_qty = 0.0
-    live_stock_mc = 0
-    storage_mc = 0
-
-    plant_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
-    cs_report = defaultdict(lambda: {"total": 0.0, "for_breakdown": defaultdict(float)})
+    current_fy_stock_qty = 0.0
+    total_in_qty = 0.0
+    total_out_qty = 0.0
     
-    # Updated table_grouping to include 'loose'
-    table_grouping = defaultdict(lambda: {"qty": 0.0, "mc": 0, "loose": 0})
+    # KPI Value Counters (NEWLY ADDED)
+    opening_stock_value = 0.0
+    total_in_value = 0.0
+    total_out_value = 0.0
+    total_inventory_value = 0.0
+
+    # Aging Counters
+    age_30, age_90, age_700, dead_stock_qty = 0.0, 0.0, 0.0, 0.0
+
+    table_grouping = defaultdict(lambda: {
+        "opening_qty": 0.0, "opening_mc": 0, "opening_loose": 0,
+        "in_qty": 0.0, "out_qty": 0.0, "qty": 0.0, "mc": 0, "loose": 0,
+        "total_val_sum": 0.0, "ageing_days": 0, "production_for": "", "sp": ""
+    })
+    
     variety_stats = defaultdict(float)
     grade_stats = defaultdict(float)
     daily_flow = defaultdict(lambda: {"IN": 0.0, "OUT": 0.0})
 
-    # A. Process Plant (Live Stock) Data
-    for r in stocks:
-        move = str(r.cargo_movement_type or "").strip().upper()
-        qty = float(r.quantity or 0)
+    def is_filtered(item, loc_val):
+        if sel_species != "ALL" and item.species != sel_species: return True
+        if sel_variety != "ALL" and item.variety != sel_variety: return True
+        if sel_grade != "ALL" and item.grade != sel_grade: return True
+        if sel_prod_for != "ALL" and item.production_for != sel_prod_for: return True
+        if sel_prod_at != "ALL" and loc_val != sel_prod_at: return True
+        return False
+
+    # Combined Processing
+    all_raw_data = []
+    for s in stocks: all_raw_data.append((s, s.production_at or "PLANT", s.date))
+    for c in cs_holds: all_raw_data.append((c, c.cold_storage_name or "CS", c.in_date))
+
+    # PRE-CALCULATE RATES (For accurate value calculation)
+    global_item_rates_helper = defaultdict(lambda: {"sum_val": 0.0, "sum_qty": 0.0})
+    for item, loc, s_date in all_raw_data:
+        qty = float(getattr(item, "quantity", 0) or 0)
+        rate = float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0)
+        move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
+        if move == "IN" and qty > 0:
+            g_key = (item.species or "N/A", item.variety or "N/A", item.packing_style or "N/A", item.glaze or "NW", item.grade or "N/A")
+            global_item_rates_helper[g_key]["sum_val"] += (qty * rate)
+            global_item_rates_helper[g_key]["sum_qty"] += qty
+
+    rate_map = {gk: (v["sum_val"] / v["sum_qty"] if abs(v["sum_qty"]) > 0.01 else 0.0) for gk, v in global_item_rates_helper.items()}
+
+    # MAIN LOOP
+    for item, loc, s_date in all_raw_data:
+        if not s_date or is_filtered(item, loc): continue
+
+        move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
+        qty = float(getattr(item, "quantity", 0) or 0)
+        mc = int(getattr(item, "no_of_mc", 0) or 0)
+        loose = int(getattr(item, "loose", 0) or 0)
+        
+        # Get rate from rate_map or fallback to item rate
+        g_key = (item.species or "N/A", item.variety or "N/A", item.packing_style or "N/A", item.glaze or "NW", item.grade or "N/A")
+        avg_rate = rate_map.get(g_key, float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0))
+        
         sign = 1 if move == "IN" else -1
         net = qty * sign
-        mc = (r.no_of_mc or 0) * sign
-        loose = (r.loose or 0) * sign # ADDED: Loose calculation
+        val_net = net * avg_rate
+        mc_net = mc * sign
+        loose_net = loose * sign
 
-        available_qty += net
-        live_stock_mc += mc
+        ageing_days = (today - s_date).days
+
+        # Opening Stock KPIs
+        if s_date < fy_start:
+            opening_stock_qty += net
+            opening_stock_value += val_net
+            opening_stock_mc += mc_net
+            grand_opening_loose += loose_net
         
-        if move == "OUT" and "SALE" in str(r.purpose or "").upper(): 
-            total_sales_qty += qty
+        # Current FY KPIs
+        if fy_start <= s_date <= fy_end:
+            current_fy_stock_qty += net
+            if move == "IN": 
+                total_in_qty += qty
+                total_in_value += (qty * avg_rate)
+            elif move == "OUT":
+                total_out_qty += qty
+                total_out_value += (qty * avg_rate)
+
+        # Closing Stock KPIs
+        if s_date <= fy_end:
+            closing_stock_qty += net
+            total_inventory_value += val_net
+            closing_stock_mc += mc_net
+            grand_loose += loose_net
             
-        is_not_raw = str(r.type_of_production or "").strip().upper() != "RAW"
-        if is_not_raw and move == "IN":
+            if move == "IN":
+                if ageing_days <= 30: age_30 += qty
+                elif ageing_days <= 90: age_90 += qty
+                elif ageing_days <= 700: age_700 += qty
+                else: dead_stock_qty += qty
+
+        # Sales & Reprocess
+        purpose = str(getattr(item, "purpose", "") or "").upper()
+        if move == "OUT" and "SALE" in purpose:
+            total_sales_qty += qty
+        
+        prod_type = str(getattr(item, "type_of_production", "") or "").upper()
+        if move == "IN" and prod_type != "RAW":
             reprocess_qty += qty
 
-        # Global Filters
-        if sel_species != "ALL" and r.species != sel_species: continue
-        if sel_variety != "ALL" and r.variety != sel_variety: continue
-        if sel_grade != "ALL" and r.grade != sel_grade: continue
-        if sel_prod_for != "ALL" and r.production_for != sel_prod_for: continue
+        # Table Grouping
+        fr = getattr(item, "freezer", "IQF") if hasattr(item, "freezer") else "CS"
+        t_key = (loc, fr, item.variety or "N/A", item.packing_style or "N/A", item.glaze or "NW", item.grade or "N/A", item.production_for or "N/A")
 
-        loc = r.production_at or "PLANT"
-        if sel_prod_at != "ALL" and loc != sel_prod_at: continue
-
-        plant_report[loc]["total"] += net
-        plant_report[loc]["for_breakdown"][r.production_for or "N/A"] += net
-
-        # Grouping Key remains same, but we update 'loose' in data
-        t_key = (loc, r.freezer or "IQF", r.variety, r.packing_style or "N/A", r.glaze or "NW", r.grade, "PLANT")
-        table_grouping[t_key]["qty"] += net
-        table_grouping[t_key]["mc"] += mc
-        table_grouping[t_key]["loose"] += loose # UPDATED: Adding loose to group
+        if s_date < fy_start:
+            table_grouping[t_key]["opening_qty"] += net
+            table_grouping[t_key]["opening_mc"] += mc_net
+            table_grouping[t_key]["opening_loose"] += loose_net
         
-        variety_stats[r.variety or "N/A"] += net
-        grade_stats[r.grade or "N/A"] += net
-        d_str = r.date.strftime('%Y-%m-%d') if r.date else "N/A"
-        daily_flow[d_str][move] += qty
-
-    # B. Process Cold Storage Data
-    for c in cs_holds:
-        move = str(c.cargo_movement_type or "").strip().upper()
-        qty = float(c.quantity or 0)
-        sign = 1 if move == "IN" else -1
-        net = qty * sign
-        mc = (c.no_of_mc or 0) * sign
-        loose = (c.loose or 0) * sign # ADDED: Loose calculation
-
-        available_qty += net
-        storage_mc += mc
-        
-        if move == "OUT" and "SALE" in str(c.purpose or "").upper(): 
-            total_sales_qty += qty
+        if fy_start <= s_date <= fy_end:
+            if move == "IN": table_grouping[t_key]["in_qty"] += qty
+            else: table_grouping[t_key]["out_qty"] += qty
             
-        if move == "IN":
-            reprocess_qty += qty
+        if s_date <= fy_end:
+            table_grouping[t_key]["qty"] += net
+            table_grouping[t_key]["mc"] += mc_net
+            table_grouping[t_key]["loose"] += loose_net
+            table_grouping[t_key]["total_val_sum"] += val_net
 
-        if sel_species != "ALL" and c.species != sel_species: continue
-        if sel_variety != "ALL" and c.variety != sel_variety: continue
-        if sel_grade != "ALL" and c.grade != sel_grade: continue
-        if sel_prod_for != "ALL" and c.production_for != sel_prod_for: continue
+        table_grouping[t_key].update({"ageing_days": ageing_days, "production_for": item.production_for or "N/A", "sp": item.species or "N/A"})
+        variety_stats[item.variety or "N/A"] += net
+        grade_stats[item.grade or "N/A"] += net
+        daily_flow[s_date.strftime("%Y-%m-%d")][move] += qty
 
-        loc = c.cold_storage_name or "CS"
-        if sel_prod_at != "ALL" and loc != sel_prod_at: continue
-
-        cs_report[loc]["total"] += net
-        cs_report[loc]["for_breakdown"][c.production_for or "N/A"] += net
-
-        t_key = (loc, "CS", c.variety, c.packing_style or "N/A", c.glaze or "NW", c.grade, "CS")
-        table_grouping[t_key]["qty"] += net
-        table_grouping[t_key]["mc"] += mc
-        table_grouping[t_key]["loose"] += loose # UPDATED: Adding loose to group
-        
-        variety_stats[c.variety or "N/A"] += net
-        grade_stats[c.grade or "N/A"] += net
-        d_str = c.in_date.strftime('%Y-%m-%d') if c.in_date else "N/A"
-        daily_flow[d_str][move] += qty
-
-    # 3. Final Formatting
+    # Table Generation
     stock_table_data = []
-    
-    for (loc, fr, vr, pk, gl, gr, src), data in table_grouping.items():
-        if abs(data["qty"]) > 0.01:
-            # Batch and Opening Stock logic integration
-            # Note: We take a sample record to determine opening stock/batch
-            # In a real dashboard, this would be based on the grouped records' min date
+    for (loc, fr, vr, pk, gl, gr, p_for), data in table_grouping.items():
+        if abs(data["qty"]) > 0.01 or abs(data["opening_qty"]) > 0.01:
+            g_key = (data["sp"], vr, pk, gl, gr)
+            final_rate = rate_map.get(g_key, 0.0)
+            inv_value = data["qty"] * final_rate
+
             stock_table_data.append({
-                "loc": loc, "fr": fr, "vr": vr, "pk": pk, 
-                "gl": gl, "gr": gr, "qty": data["qty"], 
-                "mc": data["mc"], "loose": data["loose"], # LOOSE IS NOW HERE
-                "src": src,
-                "batch_number": generate_batch_code(sel_prod_for if sel_prod_for != "ALL" else "BK")
+                "loc": loc, "fr": fr, "sp": data["sp"], "vr": vr, "pk": pk, "gl": gl, "gr": gr,
+                "production_for": p_for, "opening_qty": round(data["opening_qty"], 2),
+                "opening_mc": data["opening_mc"], "opening_loose": data["opening_loose"],
+                "in_qty": round(data["in_qty"], 2), "out_qty": round(data["out_qty"], 2),
+                "qty": round(data["qty"], 2), "mc": data["mc"], "loose": data["loose"],
+                "avg_rate": round(abs(final_rate), 2), "value": round(inv_value, 2),
+                "ageing_days": data["ageing_days"]
             })
-    
-    stock_table_data.sort(key=lambda x: (x['loc'], x['vr']))
-    sorted_dates = sorted(daily_flow.keys())
-    
+
+    stock_table_data.sort(key=lambda x: (x["loc"], x["sp"], x["vr"], x["gr"]))
+
+    # Charts & Options
+    fy_labels, fy_opening, fy_closing = [], [], []
+    start_year = 2023
+    for yr in range(start_year, today.year + 1):
+        fy_name = f"{yr}-{str(yr + 1)[2:]}"
+        f_s, f_e = date(yr, 4, 1), date(yr + 1, 3, 31)
+        o_v, c_v = 0.0, 0.0
+        for item, loc, s_date in all_raw_data:
+            if is_filtered(item, loc): continue
+            n = float(getattr(item, "quantity", 0) or 0) * (1 if str(getattr(item, "cargo_movement_type", "")).upper() == "IN" else -1)
+            if s_date < f_s: o_v += n
+            if s_date <= f_e: c_v += n
+        fy_labels.append(fy_name); fy_opening.append(round(o_v, 2)); fy_closing.append(round(c_v, 2))
+
     def get_list(model, field):
         return sorted(list(set([getattr(x, field) for x in db.query(model).filter(model.company_id == comp_code).all() if getattr(x, field)])))
 
+    fy_options = [f"{yr}-{str(yr+1)[2:]}" for yr in range(start_year, today.year + 1)][::-1]
+
     context = {
         "request": request,
-        "available_qty": available_qty,
-        "total_sales_qty": total_sales_qty,
-        "reprocess_qty": reprocess_qty,
-        "total_mc_count": live_stock_mc + storage_mc,
-        "live_stock_mc": live_stock_mc,
-        "storage_mc": storage_mc,
-        "plant_report": dict(plant_report),
-        "cs_report": dict(cs_report),
+        "total_sales_qty": round(total_sales_qty, 2),
+        "reprocess_qty": round(reprocess_qty, 2),
+        "total_mc_count": closing_stock_mc,
+        "opening_stock_qty": round(opening_stock_qty, 2),
+        "opening_stock_value": round(opening_stock_value, 2), # NEW
+        "current_fy_stock_qty": round(current_fy_stock_qty, 2),
+        "closing_stock_qty": round(closing_stock_qty, 2),
+        "grand_opening_mc": opening_stock_mc,
+        "grand_opening_loose": grand_opening_loose,
+        "closing_stock_mc": closing_stock_mc,
+        "grand_loose": grand_loose,
+        "total_in_qty": round(total_in_qty, 2),
+        "total_in_value": round(total_in_value, 2), # NEW
+        "total_out_qty": round(total_out_qty, 2),
+        "total_out_value": round(total_out_value, 2), # NEW
+        "total_inventory_value": round(total_inventory_value, 2),
+        "dead_stock_qty": round(dead_stock_qty, 2),
+        "age_30": round(age_30, 2), "age_90": round(age_90, 2), "age_700": round(age_700, 2),
         "stock_table_data": stock_table_data,
-        "variety_labels": list(variety_stats.keys()),
-        "variety_values": list(variety_stats.values()),
-        "grade_labels": list(grade_stats.keys())[:10],
-        "grade_values": list(grade_stats.values())[:10],
-        "daily_labels": sorted_dates,
-        "daily_in": [daily_flow[d]["IN"] for d in sorted_dates],
-        "daily_out": [daily_flow[d]["OUT"] for d in sorted_dates],
-        "species_list": get_list(species, "species_name"),
-        "varieties_list": get_list(varieties, "variety_name"),
-        "grades_list": get_list(grades, "grade_name"),
-        "prod_for_list": get_list(production_for, "production_for"),
-        "sel_species": sel_species, "sel_variety": sel_variety, 
-        "sel_grade": sel_grade, "sel_prod_for": sel_prod_for, "sel_prod_at": sel_prod_at
+        "variety_labels": list(variety_stats.keys()), "variety_values": list(variety_stats.values()),
+        "grade_labels": list(grade_stats.keys())[:10], "grade_values": list(grade_stats.values())[:10],
+        "fy_labels": fy_labels, "fy_opening": fy_opening, "fy_closing": fy_closing, "fy_options": fy_options,
+        "species_list": get_list(species, "species_name"), "varieties_list": get_list(varieties, "variety_name"),
+        "grades_list": get_list(grades, "grade_name"), "prod_for_list": get_list(production_for, "production_for"),
+        "sel_species": sel_species, "sel_variety": sel_variety, "sel_grade": sel_grade,
+        "sel_prod_for": sel_prod_for, "sel_fy": sel_fy, "current_fy_name": current_fy_name
     }
 
     return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="inventory_management/inventory_dashboard.html",
-        context=context
+        request=request, name="inventory_management/inventory_dashboard.html", context=context
     )
