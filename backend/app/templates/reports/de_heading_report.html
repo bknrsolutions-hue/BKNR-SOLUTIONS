@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>DE-HEADING REPORT | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -24,91 +24,123 @@
 body{
  margin:0; background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+ -webkit-font-smoothing: antialiased;
 }
 
-/* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+/* ================= HEADER & FILTERS (VERTICAL FOR MOBILE) ================= */
+.header{ background:var(--header); padding:10px 15px; border-bottom:1px solid var(--border); }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
- gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
+ margin-top:10px; display:grid;
+ grid-template-columns: 1fr; /* Default: One below another (Full Width) for Form on Mobile */
+ gap:8px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid var(--border);
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+@media(min-width: 600px) {
+    .filters { grid-template-columns: repeat(3, 1fr); } /* 3 Columns for Tablets */
+}
+@media(min-width: 1024px) {
+    .filters { grid-template-columns: repeat(5, 1fr); } /* Multi column for Desktop */
+    #searchBox { grid-column: span 2 !important; }
+}
+
+.fbox{display:flex;flex-direction:column;gap:3px;}
+.fbox label{ font-size:8.5px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing: 0.3px; }
+
+select,input[type=date],input[type=month],#searchBox{ 
+    padding:8px 10px; font-size:11px; border:1px solid var(--border); border-radius:6px; 
+    background:#fff; outline:none; height: 36px; width: 100%;
+}
+#searchBox{ border-left:4px solid var(--accent); }
+
+@media(max-width: 1023px) {
+    #searchBox { grid-column: span 1 / auto; } /* Normal row on mobile screens */
+}
 
 /* FY Dropdown Specific */
-#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); background-color: #eff6ff; }
 
 /* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
-#rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
+.actions{ background:#fff; padding:8px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+#rowCount{ font-size:10px; font-weight:700; color:var(--accent); text-transform: uppercase; }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.dots{ width:30px; height:30px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:6px; cursor:pointer; background:#fff; font-size:14px;}
 
 .menu-list{
- position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
- border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+ position:absolute; right:0; top:35px; width:220px; background:#fff; border:1px solid var(--border);
+ border-radius:8px; display:none; z-index:5000; box-shadow:0 10px 25px rgba(0,0,0,0.15);
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+.menu-list div{ padding:10px 14px; font-size:11px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list b { display: block; padding: 8px 14px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
-/* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+/* ================= TABLE AREA (STACKED STYLING & VERTICAL FLOW) ================= */
+.section{ flex:1; margin:0; background:#fff; display:flex; flex-direction:column; overflow:hidden; }
+.table-wrap{ 
+    flex:1; overflow:auto; width: 100%; 
+    -webkit-overflow-scrolling: touch; 
+} 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1650px; } 
+/* Charts & Tables are naturally single-column blocks now */
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1550px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
- text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ background:#f8fafc; padding:10px 4px; font-size:9.5px; font-weight:800;
+ text-transform:uppercase; border-bottom:1px solid var(--border);
+ border-right:1px solid #f1f5f9; position:sticky; top:0; z-index:10;
+ color: var(--primary);
 }
 
 tbody td{
- padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
+ padding:10px 4px; font-size:10.5px; border-bottom:1px solid #f8fafc;
+ border-right:1px solid #fcfdfe; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+ font-weight: 500;
 }
 
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
+tbody tr:nth-child(even) { background: #fafbfc; }
+tbody tr:hover{ background:#f0f9ff; }
+tr.selected{ background:#dbeafe !important; border-left: 4px solid var(--accent); }
 
-/* Empty State Styling */
-.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
-
-/* Optimized Column Widths */
-.w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 95px; } .w-con { width: 130px; }
+/* Column Width Layouts */
+.w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 95px; } .w-con { width: 125px; }
 .w-sp { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 75px; } .w-yld { width: 70px; }
-.w-diff { width: 70px; } .w-rt { width: 65px; } .w-am { width: 95px; } .w-loc { width: 110px; } 
-.w-pf { width: 120px; } .w-em { width: 140px; }
+.w-diff { width: 70px; } .w-rt { width: 65px; } .w-am { width: 90px; } .w-loc { width: 110px; } 
+.w-pf { width: 115px; } .w-em { width: 110px; }
 
 .yield-cell { font-weight: 800; color: var(--accent); }
 .target-cell { font-weight: 600; color: #64748b; background: #f8fafc; }
 .diff-cell { font-weight: 700; }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+.edit-input{ width:100%; font-size:11px; border:1px solid var(--accent); padding:5px; text-align:center; outline:none; border-radius: 4px; }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ 
+    background:#ffffff; font-weight:800; font-size:10.5px; 
+    border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; 
+    padding:12px 6px; color:var(--primary);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
 
-/* ================= MODAL & AUDIT ================= */
-#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
+/* ================= MODALS & AUDIT ================= */
+#confirmModal{ position:fixed; inset:0; background:rgba(15,23,42,0.7); display:none; align-items:center; justify-content:center; z-index:6000; padding: 20px; }
+.modal-content{ background:#fff; padding:24px; border-radius:12px; width:100%; max-width:320px; text-align:center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; width: 100%; margin-bottom: 8px; }
+.btn-n{ background:#f1f5f9; color: var(--text); border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; width: 100%; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
-    border-left:3px solid var(--primary); display:none; flex-direction:column; 
-    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
+    position:fixed; right:0; top:0; bottom:0; width:100%; max-width:360px; background:#fff; 
+    border-left:1px solid var(--border); display:none; flex-direction:column; 
+    z-index:5500; box-shadow:-10px 0 30px rgba(0,0,0,0.1); 
 }
+
+.empty-state { padding: 70px 20px; text-align: center; color: var(--text-muted); }
+.empty-state i { font-size: 36px; margin-bottom: 12px; color: var(--accent); opacity: 0.4; }
+
+/* Horizontal Scroll Bar Configuration */
+.table-wrap::-webkit-scrollbar { height: 5px; }
+.table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -116,7 +148,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 <div class="header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>DE-HEADING REPORT</h2>
-        <div style="font-size: 11px; color: var(--text-muted);">
+        <div style="font-size: 9.5px; font-weight: 700; color: var(--text-muted);">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
     </div>
@@ -273,18 +305,18 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px; color: var(--primary);"></h4>
         <button class="btn-y" id="btnYes">Yes, Proceed</button>
         <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:12px;">EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height: 1;">×</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:12px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
@@ -298,7 +330,6 @@ let selectedRow = null, currentAction = null;
 const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 const baseUrl = window.location.pathname.replace(/\/$/, "");
 
-// Financial Year Change Logic
 function changeFY(val) {
     if(!val) return;
     const url = new URL(window.location.href);
@@ -365,7 +396,6 @@ function applyFilters() {
         }
     });
 
-    // 🔹 SL No Descending Order Logic
     filteredRows.forEach((row, index) => {
         row.querySelector(".slno").innerText = filteredRows.length - index;
     });
@@ -454,10 +484,11 @@ async function toggleAudit() {
     const res = await fetch(`${baseUrl}/audit_all`);
     const logs = await res.json();
     content.innerHTML = logs.map(l => `
-        <div style="border-left:2px solid var(--accent); margin-bottom:5px; background:#fff; padding:8px; font-size:10px;">
-            <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
-            ${l.action}: ${l.details}<br>
-            <small>By: ${l.user}</small>
+        <div style="border-left:3px solid var(--accent); margin-bottom:8px; background:#fff; padding:10px; font-size:10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <b style="color:var(--primary)">${l.timestamp}</b><br>
+            <span style="color:var(--accent)">${l.action}</span> | Batch: ${l.batch}<br>
+            <p style="margin:4px 0; color:var(--text-muted)">${l.details}</p>
+            <small style="color:var(--primary)">User: ${l.user}</small>
         </div>`).join('');
 }
 

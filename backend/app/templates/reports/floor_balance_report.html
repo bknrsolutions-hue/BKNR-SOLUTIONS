@@ -25,13 +25,9 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
- background: var(--slate-bg); 
- height: 100vh;
- display: flex; 
- flex-direction: column;
- overflow: hidden; 
- color: var(--text-main);
- font-family: 'Plus Jakarta Sans', sans-serif;
+ background: var(--slate-bg); height: 100vh;
+ display: flex; flex-direction: column; overflow: hidden; 
+ color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;
  -webkit-font-smoothing: antialiased;
 }
 
@@ -70,65 +66,46 @@ select:focus, input:focus { border-color: var(--accent-blue); background: #fff; 
 
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-/* Ultra Tight Fixed Column Widths Optimization */
-/* Mobile First Layout Specs */
-.w-sl { width: 24px; } 
-.w-bt { width: 55px; } 
-.w-ty { width: 42px; } 
-.w-vr { width: 110px; }
-.w-ct { width: 45px; } 
-.w-sp { width: 50px; } 
-.w-pf { width: 85px; } 
-.w-qt { width: 65px; }
+/* Fixed Column Widths (Mobile Optimization) */
+.w-sl { width: 24px; } .w-bt { width: 55px; } .w-ty { width: 42px; } .w-vr { width: 110px; }
+.w-ct { width: 45px; } .w-sp { width: 50px; } .w-pf { width: 85px; } .w-qt { width: 65px; }
 
-/* Responsive adjustments for Desktop Screens */
 @media(min-width: 768px) {
     .w-sl { width: 35px; } .w-bt { width: 100px; } .w-ty { width: 80px; } .w-vr { width: 150px; }
     .w-ct { width: 80px; } .w-sp { width: 100px; } .w-pf { width: 140px; } .w-qt { width: 105px; }
 }
 
-/* Header Cells Config */
 thead th {
     background: var(--slate-bg); padding: 6px 2px; font-size: 8px; font-weight: 700;
     text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
     border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
-    letter-spacing: 0.02em;
 }
 @media(min-width: 768px) { thead th { font-size: 9px; padding: 8px 4px; } }
 
-/* Body Rows Data Config */
 tbody td {
     padding: 6px 3px; font-size: 8.5px; border-bottom: 1px solid var(--border-ultra-light);
     border-right: 1px solid var(--border-ultra-light); text-align: center;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
-    color: #1e293b;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #1e293b;
 }
 @media(min-width: 768px) { tbody td { font-size: 10.5px; padding: 8px 6px; } }
 
 tbody tr:hover:not(.row-location):not(.row-batch-total) { background: #f8fafc; cursor: pointer; }
 tr.selected { background: #eff6ff !important; }
 
-/* Group Row Header Structure */
-.row-location { background: #f1f5f9 !important; color: var(--primary-dark) !important; font-weight: 800; text-align: left !important; }
-.row-location td { color: var(--primary-dark) !important; padding: 6px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.03em; border-left: 3px solid var(--primary-dark); text-align: left !important; }
+.row-location { background: #f1f5f9 !important; font-weight: 800; }
+.row-location td { color: var(--primary-dark) !important; padding: 6px 8px; font-size: 9px; text-transform: uppercase; border-left: 3px solid var(--primary-dark); text-align: left !important; }
 @media(min-width: 768px) { .row-location td { font-size: 11px; padding: 8px 12px; } }
 
-/* Subtotals Row Settings */
 .row-batch-total { background: #ffffff !important; color: var(--text-muted) !important; font-weight: 700; }
 .row-batch-total td { border-bottom: 1px solid var(--border-color) !important; }
-.subtotal-label { text-align: right !important; padding-right: 8px !important; text-transform: uppercase; font-size: 7.5px; }
+.subtotal-label { text-align: right !important; padding-right: 8px !important; text-transform: uppercase; font-size: 7.5px; color: var(--text-muted); }
 @media(min-width: 768px) { .subtotal-label { font-size: 8.5px; padding-right: 16px !important; } }
 .qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 4px !important; }
 @media(min-width: 768px) { .qty-bold { padding-right: 12px !important; } }
 
-/* Badges Component */
 .badge { padding: 1px 3px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); }
 
-/* ================= FOOTER CONTROL PANEL ================= */
-tfoot td { 
-    background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); 
-    position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); 
-}
+tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); }
 @media(min-width: 768px) { tfoot td { font-size: 11.5px; padding: 12px; } }
 </style>
 </head>
@@ -197,57 +174,45 @@ tfoot td {
                         </tr>
                     </thead>
                     <tbody id="tbody">
-                        {% set ns = namespace(cur_loc="", cur_batch="", sl=1, grand_total=0, batch_total=0) %}
+                        {% set ns = namespace(sl=1, grand_total=0) %}
                         
-                        {% for r in rows_batch %}
-                            
-                            {# 1. Location Separator Node #}
-                            {% if r.location != ns.cur_loc %}
-                                <tr class="row-location" data-loc="{{ r.location }}">
-                                    <td colspan="8">{{ r.location | upper }}</td>
-                                </tr>
-                                {% set ns.cur_loc = r.location %}
-                            {% endif %}
-
-                            {# 2. Batch Total Record Line #}
-                            {% if loop.index0 > 0 and r.batch != ns.cur_batch %}
-                                <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-batch="{{ ns.cur_batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ ns.cur_batch }}]:</td>
-                                    <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
-                                </tr>
-                                {% set ns.batch_total = 0 %}
-                            {% endif %}
-
-                            {% set ns.cur_batch = r.batch %}
-
-                            {# 3. Standard Matrix Data Row #}
-                            <tr class="data-row" onclick="selectRow(this)"
-                                data-loc="{{ r.location }}" 
-                                data-prod="{{ r.production_for }}" 
-                                data-batch="{{ r.batch }}" 
-                                data-spec="{{ r.species }}"
-                                data-source="{{ r.source }}">
-                                <td>{{ ns.sl }}</td>
-                                <td style="color: var(--accent-blue); text-align:left;">{{ r.batch }}</td>
-                                <td><span class="badge">{{ r.source }}</span></td>
-                                <td style="text-align:left;">{{ r.variety }}</td>
-                                <td>{{ r.count }}</td>
-                                <td style="color: var(--text-muted);">{{ r.species }}</td>
-                                <td style="text-align:left;">{{ r.production_for }}</td>
-                                <td style="text-align:right; font-weight:700; padding-right:4px;">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                        {# Advanced Pure UI Grouping Engine: Group by Location first, then by Batch #}
+                        {% for loc, loc_group in rows_batch|groupby('location') %}
+                            <tr class="row-location" data-loc="{{ loc }}">
+                                <td colspan="8">{{ loc | upper }}</td>
                             </tr>
-
-                            {% set ns.sl = ns.sl + 1 %}
-                            {% set ns.batch_total = ns.batch_total + r.available_qty %}
-                            {% set ns.grand_total = ns.grand_total + r.available_qty %}
-
-                            {# 4. Closing Loop Batch Total Trigger #}
-                            {% if loop.last %}
-                                <tr class="row-batch-total" data-loc="{{ r.location }}" data-batch="{{ r.batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ r.batch }}]:</td>
-                                    <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
+                            
+                            {% for batch, batch_group in loc_group|groupby('batch') %}
+                                {% set batch_ns = namespace(subtotal=0) %}
+                                
+                                {# Inside this exact location, print all matching batch rows #}
+                                {% for r in batch_group %}
+                                    <tr class="data-row" onclick="selectRow(this)"
+                                        data-loc="{{ loc }}" 
+                                        data-prod="{{ r.production_for }}" 
+                                        data-batch="{{ batch }}" 
+                                        data-spec="{{ r.species }}"
+                                        data-source="{{ r.source }}">
+                                        <td>{{ ns.sl }}</td>
+                                        <td style="color: var(--accent-blue); text-align:left;">{{ batch }}</td>
+                                        <td><span class="badge">{{ r.source }}</span></td>
+                                        <td style="text-align:left;">{{ r.variety }}</td>
+                                        <td>{{ r.count }}</td>
+                                        <td style="color: var(--text-muted);">{{ r.species }}</td>
+                                        <td style="text-align:left;">{{ r.production_for }}</td>
+                                        <td style="text-align:right; font-weight:700; padding-right:4px;">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                                    </tr>
+                                    {% set ns.sl = ns.sl + 1 %}
+                                    {% set batch_ns.subtotal = batch_ns.subtotal + r.available_qty %}
+                                    {% set ns.grand_total = ns.grand_total + r.available_qty %}
+                                {% endfor %}
+                                
+                                {# Print Subtotal precisely directly below this batch cluster inside this location #}
+                                <tr class="row-batch-total" data-loc="{{ loc }}" data-batch="{{ batch }}">
+                                    <td colspan="7" class="subtotal-label">Batch [{{ batch }}] Total:</td>
+                                    <td class="qty-bold">{{ "{:,.2f}".format(batch_ns.subtotal) }}</td>
                                 </tr>
-                            {% endif %}
+                            {% endfor %}
                         {% endfor %}
                     </tbody>
                     <tfoot>
@@ -278,6 +243,7 @@ function filterTable() {
     const rows = document.querySelectorAll(".data-row");
     let net = 0, visibleCount = 0;
 
+    // Evaluate main items rows visibility matrix
     rows.forEach(r => {
         const match = (!locF || r.dataset.loc.toLowerCase() === locF) &&
                       (!typeF || r.dataset.source.toLowerCase() === typeF) &&
@@ -292,13 +258,33 @@ function filterTable() {
         }
     });
 
-    document.querySelectorAll(".row-batch-total, .row-location").forEach(tr => {
-        const isLoc = tr.classList.contains("row-location");
-        const hasVisible = [...rows].some(r => 
-            r.dataset.loc === tr.dataset.loc && 
-            (isLoc || r.dataset.batch === tr.dataset.batch) &&
-            r.style.display !== "none"
-        );
+    // Dynamic Client-side recalculation of specific location's nested batch sub-totals
+    const batchTotals = document.querySelectorAll(".row-batch-total");
+    batchTotals.forEach(tr => {
+        const currentLoc = tr.dataset.loc;
+        const currentBatch = tr.dataset.batch;
+        
+        let batchSum = 0;
+        let hasVisibleRows = false;
+
+        rows.forEach(r => {
+            if (r.dataset.loc === currentLoc && r.dataset.batch === currentBatch && r.style.display !== "none") {
+                batchSum += parseFloat(r.cells[7].innerText.replace(/,/g,''));
+                hasVisibleRows = true;
+            }
+        });
+
+        if (hasVisibleRows) {
+            tr.style.display = "";
+            tr.cells[1].innerText = batchSum.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        } else {
+            tr.style.display = "none";
+        }
+    });
+
+    // Toggle parent location nodes visibility based on active children nodes state
+    document.querySelectorAll(".row-location").forEach(tr => {
+        const hasVisible = [...rows].some(r => r.dataset.loc === tr.dataset.loc && r.style.display !== "none");
         tr.style.display = hasVisible ? "" : "none";
     });
 
@@ -306,6 +292,7 @@ function filterTable() {
     document.getElementById("rowCount").innerText = visibleCount + " Items Displayed";
 }
 
+// Boot process initialization
 filterTable();
 </script>
 
