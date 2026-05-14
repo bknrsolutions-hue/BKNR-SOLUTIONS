@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -38,139 +38,98 @@ body {
 .dashboard-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100%; }
 @media(min-width: 992px) { .dashboard-wrapper { flex-direction: row; } }
 
-/* ================= FILTERS PANEL ================= */
+/* ================= COMPACT FILTERS SIDEBAR / TOPBAR ================= */
 .sidebar { 
     width: 100%; background: var(--card-bg); border-bottom: 1px solid var(--border-color); 
-    display: flex; flex-direction: column; padding: 10px; flex-shrink: 0; z-index: 100;
+    display: flex; flex-direction: column; padding: 8px 10px; flex-shrink: 0; z-index: 100;
 }
-@media(min-width: 992px) { .sidebar { width: 230px; height: 100vh; border-right: 1px solid var(--border-color); border-bottom: none; padding: 20px 14px; } }
+@media(min-width: 992px) { .sidebar { width: 220px; height: 100vh; border-right: 1px solid var(--border-color); border-bottom: none; padding: 18px 14px; } }
 
-.sidebar h2 { margin: 0 0 8px 0; font-size: 8.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-.filters { display: flex; flex-direction: row; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.sidebar h2 { margin: 0 0 6px 0; font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.filters { display: flex; flex-direction: row; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .filters::-webkit-scrollbar { display: none; }
-@media(min-width: 992px) { .filters { flex-direction: column; gap: 12px; overflow-x: visible; padding-bottom: 0; } }
+@media(min-width: 992px) { .filters { flex-direction: column; gap: 10px; overflow-x: visible; padding-bottom: 0; } }
 
-.fbox { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; width: 130px; }
+.fbox { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; width: 115px; }
 @media(min-width: 992px) { .fbox { width: 100%; } }
-.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+.fbox label { font-size: 7.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
-select, input { padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--primary-dark); border: 1px solid var(--border-color); border-radius: 6px; outline: none; background: var(--slate-bg); width: 100%; }
+select, input { padding: 5px 6px; font-size: 10.5px; font-weight: 600; color: var(--primary-dark); border: 1px solid var(--border-color); border-radius: 4px; outline: none; background: var(--slate-bg); width: 100%; }
 select:focus, input:focus { border-color: var(--accent-blue); background: #fff; }
-#searchBox { border-left: 3px solid var(--accent-blue); background: #fff; }
+#searchBox { border-left: 2px solid var(--accent-blue); background: #fff; }
 
-/* ================= MAIN CONTENT ================= */
+/* ================= MAIN CONTENT AREA ================= */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.header-top { background: var(--card-bg); padding: 10px; border-bottom: 1px solid var(--border-ultra-light); display: flex; justify-content: space-between; align-items: center; }
-.header-top h2 { margin: 0; font-size: 11px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.05em; }
-#rowCount { font-size: 8.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
+.header-top { background: var(--card-bg); padding: 8px 10px; border-bottom: 1px solid var(--border-ultra-light); display: flex; justify-content: space-between; align-items: center; }
+.header-top h2 { margin: 0; font-size: 10px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.04em; }
+#rowCount { font-size: 8px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
 
-/* ================= TABLE WRAPPER ================= */
-.section { flex: 1; margin: 6px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-.table-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; width: 100%; padding: 4px; } 
+/* ================= ULTRA COMPACT TABLE SYSTEMS ================= */
+.section { flex: 1; margin: 4px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+.table-wrap { flex: 1; overflow: auto; width: 100%; } 
 
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-/* Desktop view adjustments */
+/* Ultra Tight Fixed Column Widths Optimization */
+/* Mobile First Layout Specs */
+.w-sl { width: 24px; } 
+.w-bt { width: 55px; } 
+.w-ty { width: 42px; } 
+.w-vr { width: 110px; }
+.w-ct { width: 45px; } 
+.w-sp { width: 50px; } 
+.w-pf { width: 85px; } 
+.w-qt { width: 65px; }
+
+/* Responsive adjustments for Desktop Screens */
 @media(min-width: 768px) {
-    table { table-layout: fixed; min-width: 700px; }
-    .w-sl { width: 35px; } .w-bt { width: 100px; } .w-ty { width: 85px; } .w-vr { width: 140px; }
+    .w-sl { width: 35px; } .w-bt { width: 100px; } .w-ty { width: 80px; } .w-vr { width: 150px; }
     .w-ct { width: 80px; } .w-sp { width: 100px; } .w-pf { width: 140px; } .w-qt { width: 105px; }
 }
 
-/* ================= RESPONSIVE MOBILE BLOCK TABLE ENGINE ================= */
-@media (max-width: 767px) {
-    thead { display: none; } /* Hide heavy columns on mobile */
-    
-    tbody, tr, td { display: block; width: 100% !important; text-align: left !important; }
-    
-    /* Elegant Row Cards */
-    .data-row {
-        background: #fff;
-        border: 1px solid var(--border-ultra-light);
-        border-radius: 6px;
-        margin-bottom: 6px;
-        padding: 8px 10px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* 2 Column internal layout for data */
-        gap: 4px 8px;
-    }
-    
-    /* Micro Size Text Config */
-    .data-row td {
-        font-size: 9px;
-        padding: 0;
-        border: none !important;
-        white-space: normal;
-        text-overflow: unset;
-        overflow: visible;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    /* Embed Pseudo Labels for Field Identification */
-    .data-row td::before {
-        content: attr(data-label);
-        font-size: 7.5px;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        font-weight: 700;
-        margin-bottom: 1px;
-        letter-spacing: 0.02em;
-    }
-
-    /* Target specific structural lines to expand full-width inside block card */
-    .data-row td:nth-child(4), /* Variety Description */
-    .data-row td:nth-child(7)  /* Production Company */ {
-        grid-column: span 2;
-    }
-    
-    /* Make Quantities Pop Boldly */
-    .data-row td:last-child {
-        align-items: flex-end;
-        text-align: right !important;
-    }
-    .data-row td:last-child::before { align-self: flex-end; }
-    
-    /* Header & Total Formatting on Mobile */
-    .row-location td { padding: 6px 8px !important; font-size: 9.5px !important; border-radius: 4px; margin: 4px 0 2px 0; border-left: 3px solid var(--primary-dark) !important; }
-    .row-batch-total { display: flex; justify-content: space-between; padding: 6px 8px; background: var(--slate-bg) !important; border-radius: 4px; margin-bottom: 6px; border: 1px dashed var(--border-color); }
-    .row-batch-total td { display: inline-block; width: auto !important; font-size: 9px !important; padding: 0 !important; border: none !important; }
-    .subtotal-label { text-align: left !important; }
+/* Header Cells Config */
+thead th {
+    background: var(--slate-bg); padding: 6px 2px; font-size: 8px; font-weight: 700;
+    text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
+    letter-spacing: 0.02em;
 }
+@media(min-width: 768px) { thead th { font-size: 9px; padding: 8px 4px; } }
 
-/* ================= DESKTOP TABLE SPECIFICS ================= */
-@media(min-width: 768px) {
-    thead th {
-        background: var(--slate-bg); padding: 8px 4px; font-size: 8.5px; font-weight: 700;
-        text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
-        border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
-    }
-    tbody td {
-        padding: 8px 6px; font-size: 10.5px; border-bottom: 1px solid var(--border-ultra-light);
-        border-right: 1px solid var(--border-ultra-light); text-align: center;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
-    }
-    .row-location td { padding: 8px 12px; font-size: 10.5px; text-transform: uppercase; border-left: 3px solid var(--primary-dark); }
-    .subtotal-label { text-align: right !important; padding-right: 16px !important; text-transform: uppercase; font-size: 8.5px; font-weight: 700; }
-    .qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 12px !important; }
+/* Body Rows Data Config */
+tbody td {
+    padding: 6px 3px; font-size: 8.5px; border-bottom: 1px solid var(--border-ultra-light);
+    border-right: 1px solid var(--border-ultra-light); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+    color: #1e293b;
 }
+@media(min-width: 768px) { tbody td { font-size: 10.5px; padding: 8px 6px; } }
 
 tbody tr:hover:not(.row-location):not(.row-batch-total) { background: #f8fafc; cursor: pointer; }
-tr.selected { background: #eff6ff !important; border-color: var(--accent-blue) !important; }
+tr.selected { background: #eff6ff !important; }
+
+/* Group Row Header Structure */
 .row-location { background: #f1f5f9 !important; color: var(--primary-dark) !important; font-weight: 800; text-align: left !important; }
-.row-batch-total { background: #fff !important; color: var(--text-muted) !important; font-weight: 700; }
+.row-location td { color: var(--primary-dark) !important; padding: 6px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.03em; border-left: 3px solid var(--primary-dark); text-align: left !important; }
+@media(min-width: 768px) { .row-location td { font-size: 11px; padding: 8px 12px; } }
 
-.badge { padding: 2px 4px; border-radius: 4px; font-size: 8px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); }
+/* Subtotals Row Settings */
+.row-batch-total { background: #ffffff !important; color: var(--text-muted) !important; font-weight: 700; }
+.row-batch-total td { border-bottom: 1px solid var(--border-color) !important; }
+.subtotal-label { text-align: right !important; padding-right: 8px !important; text-transform: uppercase; font-size: 7.5px; }
+@media(min-width: 768px) { .subtotal-label { font-size: 8.5px; padding-right: 16px !important; } }
+.qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 4px !important; }
+@media(min-width: 768px) { .qty-bold { padding-right: 12px !important; } }
 
-/* ================= FOOTER ================= */
+/* Badges Component */
+.badge { padding: 1px 3px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); }
+
+/* ================= FOOTER CONTROL PANEL ================= */
 tfoot td { 
-    background: var(--slate-bg); font-weight: 800; font-size: 11px; border-top: 1px solid var(--border-color); 
-    position: sticky; bottom: 0; z-index: 10; padding: 10px; color: var(--primary-dark); 
+    background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); 
+    position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); 
 }
-@media(max-width: 767px) {
-    tfoot tr { display: flex; justify-content: space-between; }
-    tfoot td { display: inline-block; width: auto !important; padding: 8px !important; border: none; font-size: 10px !important; }
-}
+@media(min-width: 768px) { tfoot td { font-size: 11.5px; padding: 12px; } }
 </style>
 </head>
 
@@ -181,13 +140,13 @@ tfoot td {
         <h2>Report Filters</h2>
         <div class="filters">
             <div class="fbox">
-                <label>Search Parameters</label>
-                <input id="searchBox" oninput="filterTable()" placeholder="Batch / Variety...">
+                <label>Search Box</label>
+                <input id="searchBox" oninput="filterTable()" placeholder="Batch/Variety...">
             </div>
             <div class="fbox">
-                <label>Location Area</label>
+                <label>Location</label>
                 <select id="f_loc" onchange="filterTable()">
-                    <option value="">All Locations</option>
+                    <option value="">All Loc</option>
                     {% for loc in rows_batch|map(attribute='location')|unique %}<option value="{{ loc }}">{{ loc }}</option>{% endfor %}
                 </select>
             </div>
@@ -202,14 +161,14 @@ tfoot td {
             <div class="fbox">
                 <label>Production For</label>
                 <select id="f_prod" onchange="filterTable()">
-                    <option value="">All Companies</option>
+                    <option value="">All Co</option>
                     {% for pf in rows_batch|map(attribute='production_for')|unique %}<option value="{{ pf }}">{{ pf }}</option>{% endfor %}
                 </select>
             </div>
             <div class="fbox">
                 <label>Species Type</label>
                 <select id="f_spec" onchange="filterTable()">
-                    <option value="">All Species</option>
+                    <option value="">All Spec</option>
                     {% for sp in rows_batch|map(attribute='species')|unique %}<option value="{{ sp }}">{{ sp }}</option>{% endfor %}
                 </select>
             </div>
@@ -228,13 +187,13 @@ tfoot td {
                     <thead>
                         <tr>
                             <th class="w-sl">#</th>
-                            <th class="w-bt">Batch ID</th>
-                            <th class="w-ty">Source</th>
+                            <th class="w-bt">Batch</th>
+                            <th class="w-ty">Src</th>
                             <th class="w-vr">Variety Description</th>
                             <th class="w-ct">Count</th>
-                            <th class="w-sp">Species</th>
-                            <th class="w-pf">Production For</th>
-                            <th class="w-qt" style="text-align:right; padding-right:12px;">Available (KG)</th>
+                            <th class="w-sp">Spec</th>
+                            <th class="w-pf">Prod For</th>
+                            <th class="w-qt" style="text-align:right; padding-right:4px;">Avail (KG)</th>
                         </tr>
                     </thead>
                     <tbody id="tbody">
@@ -242,7 +201,7 @@ tfoot td {
                         
                         {% for r in rows_batch %}
                             
-                            {# 1. Location Header Row #}
+                            {# 1. Location Separator Node #}
                             {% if r.location != ns.cur_loc %}
                                 <tr class="row-location" data-loc="{{ r.location }}">
                                     <td colspan="8">{{ r.location | upper }}</td>
@@ -250,10 +209,10 @@ tfoot td {
                                 {% set ns.cur_loc = r.location %}
                             {% endif %}
 
-                            {# 2. Batch Subtotal Row #}
+                            {# 2. Batch Total Record Line #}
                             {% if loop.index0 > 0 and r.batch != ns.cur_batch %}
                                 <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-batch="{{ ns.cur_batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ ns.cur_batch }}] Total:</td>
+                                    <td colspan="7" class="subtotal-label">Batch [{{ ns.cur_batch }}]:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                                 </tr>
                                 {% set ns.batch_total = 0 %}
@@ -261,31 +220,31 @@ tfoot td {
 
                             {% set ns.cur_batch = r.batch %}
 
-                            {# 3. Fluid Micro Data Row Cards #}
+                            {# 3. Standard Matrix Data Row #}
                             <tr class="data-row" onclick="selectRow(this)"
                                 data-loc="{{ r.location }}" 
                                 data-prod="{{ r.production_for }}" 
                                 data-batch="{{ r.batch }}" 
                                 data-spec="{{ r.species }}"
                                 data-source="{{ r.source }}">
-                                <td data-label="Sl No">{{ ns.sl }}</td>
-                                <td data-label="Batch ID" style="color: var(--accent-blue); font-weight:700;">{{ r.batch }}</td>
-                                <td data-label="Source"><span class="badge">{{ r.source }}</span></td>
-                                <td data-label="Variety">{{ r.variety }}</td>
-                                <td data-label="Count/Grade">{{ r.count }}</td>
-                                <td data-label="Species" style="color: var(--text-muted);">{{ r.species }}</td>
-                                <td data-label="Company">{{ r.production_for }}</td>
-                                <td data-label="Available Balance" style="font-weight:700;">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                                <td>{{ ns.sl }}</td>
+                                <td style="color: var(--accent-blue); text-align:left;">{{ r.batch }}</td>
+                                <td><span class="badge">{{ r.source }}</span></td>
+                                <td style="text-align:left;">{{ r.variety }}</td>
+                                <td>{{ r.count }}</td>
+                                <td style="color: var(--text-muted);">{{ r.species }}</td>
+                                <td style="text-align:left;">{{ r.production_for }}</td>
+                                <td style="text-align:right; font-weight:700; padding-right:4px;">{{ "{:,.2f}".format(r.available_qty) }}</td>
                             </tr>
 
                             {% set ns.sl = ns.sl + 1 %}
                             {% set ns.batch_total = ns.batch_total + r.available_qty %}
                             {% set ns.grand_total = ns.grand_total + r.available_qty %}
 
-                            {# 4. Final Batch Subtotal #}
+                            {# 4. Closing Loop Batch Total Trigger #}
                             {% if loop.last %}
                                 <tr class="row-batch-total" data-loc="{{ r.location }}" data-batch="{{ r.batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ r.batch }}] Total:</td>
+                                    <td colspan="7" class="subtotal-label">Batch [{{ r.batch }}]:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                                 </tr>
                             {% endif %}
@@ -293,8 +252,8 @@ tfoot td {
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="7" style="text-align:right; font-weight:700; color:var(--text-muted); font-size:9px;">GRAND NET BALANCE:</td>
-                            <td id="grandTotal" style="text-align:right; color:var(--accent-blue); font-weight:800;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
+                            <td colspan="7" style="text-align:right; padding-right:8px; font-weight:700; color:var(--text-muted); font-size:8px;">GRAND NET BALANCE:</td>
+                            <td id="grandTotal" style="text-align:right; color:var(--accent-blue); font-weight:800; padding-right:4px;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
                         </tr>
                     </tfoot>
                 </table>
