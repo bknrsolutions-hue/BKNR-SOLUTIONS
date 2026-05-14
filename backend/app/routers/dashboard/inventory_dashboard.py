@@ -74,7 +74,7 @@ async def get_inventory_dashboard(
     stocks = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
     cs_holds = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
 
-    # KPI Quantity Counters
+    # KPI Counters initialized to 0.0
     opening_stock_qty = 0.0
     opening_stock_mc = 0
     grand_opening_loose = 0
@@ -86,14 +86,6 @@ async def get_inventory_dashboard(
     current_fy_stock_qty = 0.0
     total_in_qty = 0.0
     total_out_qty = 0.0
-    
-    # KPI Value Counters (NEWLY ADDED)
-    opening_stock_value = 0.0
-    total_in_value = 0.0
-    total_out_value = 0.0
-    total_inventory_value = 0.0
-
-    # Aging Counters
     age_30, age_90, age_700, dead_stock_qty = 0.0, 0.0, 0.0, 0.0
 
     table_grouping = defaultdict(lambda: {
@@ -119,71 +111,51 @@ async def get_inventory_dashboard(
     for s in stocks: all_raw_data.append((s, s.production_at or "PLANT", s.date))
     for c in cs_holds: all_raw_data.append((c, c.cold_storage_name or "CS", c.in_date))
 
-    # PRE-CALCULATE RATES (For accurate value calculation)
-    global_item_rates_helper = defaultdict(lambda: {"sum_val": 0.0, "sum_qty": 0.0})
-    for item, loc, s_date in all_raw_data:
-        qty = float(getattr(item, "quantity", 0) or 0)
-        rate = float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0)
-        move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
-        if move == "IN" and qty > 0:
-            g_key = (item.species or "N/A", item.variety or "N/A", item.packing_style or "N/A", item.glaze or "NW", item.grade or "N/A")
-            global_item_rates_helper[g_key]["sum_val"] += (qty * rate)
-            global_item_rates_helper[g_key]["sum_qty"] += qty
-
-    rate_map = {gk: (v["sum_val"] / v["sum_qty"] if abs(v["sum_qty"]) > 0.01 else 0.0) for gk, v in global_item_rates_helper.items()}
-
-    # MAIN LOOP
     for item, loc, s_date in all_raw_data:
         if not s_date or is_filtered(item, loc): continue
 
+        # KPI Fix: Ensure all values are handled even if they are None
         move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
         qty = float(getattr(item, "quantity", 0) or 0)
+        rate = float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0)
         mc = int(getattr(item, "no_of_mc", 0) or 0)
         loose = int(getattr(item, "loose", 0) or 0)
         
-        # Get rate from rate_map or fallback to item rate
-        g_key = (item.species or "N/A", item.variety or "N/A", item.packing_style or "N/A", item.glaze or "NW", item.grade or "N/A")
-        avg_rate = rate_map.get(g_key, float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0))
-        
         sign = 1 if move == "IN" else -1
         net = qty * sign
-        val_net = net * avg_rate
         mc_net = mc * sign
         loose_net = loose * sign
 
         ageing_days = (today - s_date).days
 
-        # Opening Stock KPIs
+        # Opening Stock Logic (Before FY Start)
         if s_date < fy_start:
             opening_stock_qty += net
-            opening_stock_value += val_net
             opening_stock_mc += mc_net
             grand_opening_loose += loose_net
         
-        # Current FY KPIs
+        # Current FY Transactions
         if fy_start <= s_date <= fy_end:
             current_fy_stock_qty += net
             if move == "IN": 
                 total_in_qty += qty
-                total_in_value += (qty * avg_rate)
             elif move == "OUT":
                 total_out_qty += qty
-                total_out_value += (qty * avg_rate)
 
-        # Closing Stock KPIs
+        # Closing Stock Logic (Up to FY End)
         if s_date <= fy_end:
             closing_stock_qty += net
-            total_inventory_value += val_net
             closing_stock_mc += mc_net
             grand_loose += loose_net
             
+            # Aging only for 'IN' movements that are still in stock (Logic approximation)
             if move == "IN":
                 if ageing_days <= 30: age_30 += qty
                 elif ageing_days <= 90: age_90 += qty
                 elif ageing_days <= 700: age_700 += qty
                 else: dead_stock_qty += qty
 
-        # Sales & Reprocess
+        # Sales & Reprocess KPI Fix
         purpose = str(getattr(item, "purpose", "") or "").upper()
         if move == "OUT" and "SALE" in purpose:
             total_sales_qty += qty
@@ -209,20 +181,31 @@ async def get_inventory_dashboard(
             table_grouping[t_key]["qty"] += net
             table_grouping[t_key]["mc"] += mc_net
             table_grouping[t_key]["loose"] += loose_net
-            table_grouping[t_key]["total_val_sum"] += val_net
+            table_grouping[t_key]["total_val_sum"] += (net * rate)
 
         table_grouping[t_key].update({"ageing_days": ageing_days, "production_for": item.production_for or "N/A", "sp": item.species or "N/A"})
         variety_stats[item.variety or "N/A"] += net
         grade_stats[item.grade or "N/A"] += net
         daily_flow[s_date.strftime("%Y-%m-%d")][move] += qty
 
-    # Table Generation
+    # Global Weighted Average Rate Calculation
+    global_item_rates = defaultdict(lambda: {"sum_val": 0.0, "sum_qty": 0.0})
+    for (loc, fr, vr, pk, gl, gr, p_for), data in table_grouping.items():
+        g_key = (data["sp"], vr, pk, gl, gr, p_for)
+        global_item_rates[g_key]["sum_val"] += data["total_val_sum"]
+        global_item_rates[g_key]["sum_qty"] += data["qty"]
+
+    rate_map = {gk: (v["sum_val"] / v["sum_qty"] if abs(v["sum_qty"]) > 0.01 else 0.0) for gk, v in global_item_rates.items()}
+
+    # Final Table Data
     stock_table_data = []
+    total_inventory_value = 0.0
     for (loc, fr, vr, pk, gl, gr, p_for), data in table_grouping.items():
         if abs(data["qty"]) > 0.01 or abs(data["opening_qty"]) > 0.01:
-            g_key = (data["sp"], vr, pk, gl, gr)
-            final_rate = rate_map.get(g_key, 0.0)
-            inv_value = data["qty"] * final_rate
+            g_key = (data["sp"], vr, pk, gl, gr, p_for)
+            avg_rate = rate_map.get(g_key, 0.0)
+            inv_value = data["qty"] * avg_rate
+            total_inventory_value += inv_value
 
             stock_table_data.append({
                 "loc": loc, "fr": fr, "sp": data["sp"], "vr": vr, "pk": pk, "gl": gl, "gr": gr,
@@ -230,13 +213,13 @@ async def get_inventory_dashboard(
                 "opening_mc": data["opening_mc"], "opening_loose": data["opening_loose"],
                 "in_qty": round(data["in_qty"], 2), "out_qty": round(data["out_qty"], 2),
                 "qty": round(data["qty"], 2), "mc": data["mc"], "loose": data["loose"],
-                "avg_rate": round(abs(final_rate), 2), "value": round(inv_value, 2),
+                "avg_rate": round(abs(avg_rate), 2), "value": round(inv_value, 2),
                 "ageing_days": data["ageing_days"]
             })
 
     stock_table_data.sort(key=lambda x: (x["loc"], x["sp"], x["vr"], x["gr"]))
 
-    # Charts & Options
+    # FY Comparison Chart
     fy_labels, fy_opening, fy_closing = [], [], []
     start_year = 2023
     for yr in range(start_year, today.year + 1):
@@ -261,7 +244,6 @@ async def get_inventory_dashboard(
         "reprocess_qty": round(reprocess_qty, 2),
         "total_mc_count": closing_stock_mc,
         "opening_stock_qty": round(opening_stock_qty, 2),
-        "opening_stock_value": round(opening_stock_value, 2), # NEW
         "current_fy_stock_qty": round(current_fy_stock_qty, 2),
         "closing_stock_qty": round(closing_stock_qty, 2),
         "grand_opening_mc": opening_stock_mc,
@@ -269,9 +251,7 @@ async def get_inventory_dashboard(
         "closing_stock_mc": closing_stock_mc,
         "grand_loose": grand_loose,
         "total_in_qty": round(total_in_qty, 2),
-        "total_in_value": round(total_in_value, 2), # NEW
         "total_out_qty": round(total_out_qty, 2),
-        "total_out_value": round(total_out_value, 2), # NEW
         "total_inventory_value": round(total_inventory_value, 2),
         "dead_stock_qty": round(dead_stock_qty, 2),
         "age_30": round(age_30, 2), "age_90": round(age_90, 2), "age_700": round(age_700, 2),

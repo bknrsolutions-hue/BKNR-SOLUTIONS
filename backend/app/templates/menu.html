@@ -2,326 +2,507 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP – Full Enterprise Portal</title>
+<title>BKNR ERP – Company Centric Suite</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- PWA & Mobile Meta -->
 <link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root {
-    --primary: #0f172a; 
-    --accent: #2563eb;
-    --text: #1e293b;
-    --header-h: 52px;
-    --nav-h: 48px;
+    --primary-dark: #0f172a;
+    --sidebar-bg: #1e293b;
+    --accent-blue: #3b82f6;
+    --accent-glow: #60a5fa;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --bg-light: #f1f5f9;
+    --header-h: 60px;
+    --sidebar-w: 290px;
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    margin: 0; padding: 0;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: #f1f5f9;
-    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg-light);
+    color: var(--primary-dark);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
 
-/* TOP MNC HEADER */
-.main-header {
-    background: var(--primary);
-    height: var(--header-h);
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 24px; color: white; z-index: 2000;
+/* OVERLAY FOR BACKGROUND CLICK CLOSING */
+.sidebar-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 998;
+    display: none;
+    backdrop-filter: blur(4px);
 }
-.brand { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
-.header-actions { display: flex; align-items: center; gap: 15px; }
+.sidebar-overlay.show { display: block; }
+
+/* COMPLETELY COLLAPSIBLE SIDEBAR */
+.sidebar {
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--sidebar-bg) 100%);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; bottom: 0; left: calc(-1 * var(--sidebar-w)); 
+    z-index: 999;
+    box-shadow: 4px 0 25px rgba(0,0,0,0.25);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.open { left: 0; }
+
+.sidebar-brand {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.brand-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* COMPANY CODE DYNAMIC MAIN BRAND */
+.brand-title {
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #fff, var(--accent-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.brand-subtitle {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.close-sidebar-btn {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 18px; cursor: pointer; transition: color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.close-sidebar-btn:hover { color: #ef4444; }
+
+/* ORGANISED PILLARS MENU */
+.sidebar-menu {
+    flex: 1; overflow-y: auto; padding: 15px 0; scrollbar-width: none;
+}
+.sidebar-menu::-webkit-scrollbar { display: none; }
+
+.pillar-block {
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding-bottom: 10px;
+}
+.pillar-block:last-child { border: none; }
+
+.pillar-title {
+    padding: 0 24px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* MENU ITEMS */
+.menu-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; color: var(--text-muted); cursor: pointer;
+    transition: all 0.2s ease; border-left: 4px solid transparent;
+}
+.menu-item:hover, .menu-item.active {
+    background: rgba(255, 255, 255, 0.04); color: var(--text-main);
+    border-left-color: var(--accent-blue);
+}
+
+.menu-item-left { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+.menu-item-left i { font-size: 16px; width: 24px; text-align: center; }
+.menu-item-label { font-size: 13.5px; font-weight: 600; }
+
+.chevron-icon { font-size: 11px; transition: transform 0.3s; color: rgba(255,255,255,0.2); }
+.menu-item.open .chevron-icon { transform: rotate(90deg); }
+
+/* COLLAPSIBLE SUBMENU */
+.submenu {
+    max-height: 0; overflow: hidden; background: rgba(0, 0, 0, 0.12);
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.menu-item.open + .submenu { max-height: 1200px; }
+
+.submenu-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px 10px 58px; color: var(--text-muted);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; text-decoration: none; white-space: nowrap;
+}
+.submenu-item:hover, .submenu-item.active {
+    color: var(--accent-glow); background: rgba(255,255,255,0.02); padding-left: 64px;
+}
+
+/* COUNTER BADGES */
+.kpi-badge {
+    background: rgba(255, 255, 255, 0.06); color: var(--text-muted);
+    padding: 1px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 700;
+}
+.submenu-item:hover .kpi-badge { background: rgba(59, 130, 246, 0.2); color: var(--accent-glow); }
+
+/* WORKSPACE CONTAINERS */
+.app-container {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    width: 100%; margin-left: 0; 
+}
+
+.app-header {
+    height: var(--header-h); background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    z-index: 90;
+}
+
+.header-left-meta { display: flex; align-items: center; gap: 16px; }
+
+.hamburger-trigger-btn {
+    background: #f1f5f9; border: 1px solid #cbd5e1;
+    color: var(--primary-dark); font-size: 18px; padding: 8px 12px;
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
+}
+.hamburger-trigger-btn:hover {
+    background: var(--primary-dark); color: white; border-color: var(--primary-dark);
+}
+
+.header-right-actions { display: flex; align-items: center; gap: 16px; }
 
 #installBtn {
-    background: var(--accent); color: white; border: none; padding: 6px 12px;
-    border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; display: none;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; 
+    padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    cursor: pointer; display: none; align-items: center; gap: 6px;
 }
+.user-profile { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; }
 
 .logout-btn {
-    border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px;
-    border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.3s;
+    border: 1px solid #fee2e2; background: #fef2f2; color: #ef4444;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s;
 }
-.logout-btn:hover { background: #ef4444; color: white; }
+.logout-btn:hover { background: #ef4444; color: white; border-color: #ef4444; }
 
-/* NAVIGATION BAR */
-.nav-bar {
-    background: #ffffff;
-    height: var(--nav-h);
-    display: flex; padding: 0 10px;
-    border-bottom: 1px solid #e2e8f0;
-    z-index: 1001; position: relative;
-    overflow-x: auto; scrollbar-width: none;
-}
-.nav-bar::-webkit-scrollbar { display: none; }
-
-.nav-item {
-    background: none; border: none; padding: 0 18px; height: 100%;
-    font-size: 13px; font-weight: 600; color: #64748b;
-    cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: 0.2s; position: relative; white-space: nowrap;
-}
-.nav-item:hover, .nav-item.active { color: var(--accent); background: #f8fafc; }
-.nav-item.active::after {
-    content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--accent);
-}
-
-/* THE PREMIUM DROPDOWN - ZERO GAP */
-.dropdown-menu {
-    position: fixed;
-    width: 290px;
-    background: #ffffff;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-    border: 1px solid #e2e8f0;
-    border-top: none; 
-    display: none;
-    flex-direction: column;
-    z-index: 9999;
-    padding: 8px 0;
-    max-height: 85vh;
-    overflow-y: auto;
-}
-.dropdown-menu.show { display: flex; }
-
-.dropdown-header {
-    padding: 10px 18px 5px; font-size: 10px; color: #94a3b8;
-    text-transform: uppercase; font-weight: 800; letter-spacing: 1px;
-}
-
-.dropdown-item {
-    padding: 10px 18px; display: flex; align-items: center; gap: 12px;
-    color: var(--text); font-size: 13px; font-weight: 500;
-    transition: 0.2s; cursor: pointer; text-decoration: none;
-}
-.dropdown-item i { width: 18px; text-align: center; color: #94a3b8; font-size: 14px; }
-.dropdown-item:hover { background: #eff6ff; color: var(--accent); padding-left: 24px; }
-.dropdown-item:hover i { color: var(--accent); }
-
-/* CONTENT AREA */
-.main-container { flex: 1; position: relative; z-index: 1; }
+.view-viewport { flex: 1; background: #ffffff; position: relative; }
 iframe { width: 100%; height: 100%; border: none; background: white; }
 </style>
 </head>
 <body>
 
-<div class="main-header">
-    <div class="brand"><i class="fa-solid fa-cube"></i> {{ request.session.get('company_code') }}</div>
-    <div class="header-actions">
-        <button id="installBtn"><i class="fa-solid fa-download"></i> INSTALL</button>
-        <span style="font-size:13px; font-weight:500;"><i class="fa-regular fa-circle-user"></i> {{ request.session.get('name') }}</span>
-        <div class="logout-btn" onclick="logout()">LOGOUT</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-wrapper">
+            <div class="brand-title">
+                <i class="fa-solid fa-building-circle-check" style="color:var(--accent-glow)"></i> 
+                {{ request.session.get('company_code') }}
+            </div>
+            <div class="brand-subtitle">Enterprise Resource Planning</div>
+        </div>
+        <button class="close-sidebar-btn" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    
+    <div class="sidebar-menu" id="sidebarMenu">
+        </div>
 </div>
 
-<div class="nav-bar" id="topNav">
-    <button class="nav-item active" onmouseover="showMenu(this, 'dash')"><i class="fa-solid fa-gauge"></i> Dashboards</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'ops')"><i class="fa-solid fa-gears"></i> Operations</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'reports')"><i class="fa-solid fa-file-invoice"></i> Reports</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'criteria')"><i class="fa-solid fa-list-check"></i> Criteria</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'summaries')"><i class="fa-solid fa-clipboard-list"></i> Summaries</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'bills')"><i class="fa-solid fa-wallet"></i> Bills & Accounts</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'attendance')"><i class="fa-solid fa-calendar-day"></i> Attendance</button>
-    <button class="nav-item" onmouseover="showMenu(this, 'admin')"><i class="fa-solid fa-user-shield"></i> Admin</button>
-</div>
+<div class="app-container">
+    <div class="app-header">
+        <div class="header-left-meta">
+            <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="header-right-actions">
+            <button id="installBtn"><i class="fa-solid fa-cloud-arrow-down"></i> INSTALL</button>
+            <div class="user-profile">
+                <i class="fa-regular fa-user" style="color:var(--accent-blue)"></i>
+                <span>{{ request.session.get('name') }}</span>
+            </div>
+            <div class="logout-btn" onclick="logout()">LOGOUT</div>
+        </div>
+    </div>
 
-<div id="dropMenu" class="dropdown-menu" onmouseleave="hideMenu()" onmouseenter="clearHideTimer()">
-    <!-- Menu generated by JS -->
-</div>
-
-<div class="main-container">
-    <iframe id="frame" name="frame" onmouseenter="hideMenu()"></iframe>
+    <div class="view-viewport">
+        <iframe id="frame" name="frame"></iframe>
+    </div>
 </div>
 
 <script>
 const permissions = {{ request.session.get('permissions')|tojson }};
 function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
 
-// --- COMPLETE DATA OBJECT (NO MISSING LINKS) ---
-const menuData = {
-    dash: {
-        title: "Dashboards",
-        items: [
-            ['/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard'],
-            ['/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory Dashboard'],
-            ['/dashboard/hr_dashboard', 'fa-user-tie', 'HR Dashboard'],
-            ['/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing Dashboard']
+// --- THE 4 PILLARS STRATEGIC DATA TREE REGISTER ---
+const organizedMenu = [
+    {
+        pillarName: "Core ERP Operations",
+        categories: [
+            {
+                title: "Live Dashboards",
+                icon: "fa-chart-pie",
+                items: [
+                    ['/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard', 'Live'],
+                    ['/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory Dashboard', 'MNC'],
+                    ['/dashboard/hr_dashboard', 'fa-user-tie', 'HR Dashboard', 'Staff'],
+                    ['/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing Dashboard', 'Fin']
+                ]
+            },
+            {
+                title: "Processing & Warehousing",
+                icon: "fa-gears",
+                items: [
+                    ['gate_entry', '/processing/gate_entry', 'fa-door-open', 'Gate Entry', 'Ops-1'],
+                    ['raw_material_purchasing', '/processing/raw_material_purchasing', 'fa-truck-ramp-box', 'RM Purchasing', 'Ops-2'],
+                    ['de_heading', '/processing/de_heading', 'fa-scissors', 'De-Heading', 'WIP'],
+                    ['grading', '/processing/grading', 'fa-filter', 'Grading', 'WIP'],
+                    ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling', 'WIP'],
+                    ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking', 'WIP'],
+                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP'],
+                    ['stock_entry', '/inventory/stock_entry', 'fa-boxes-stacked', 'Stock Entry', 'Stock'],
+                    ['pending_orders', '/inventory/pending_orders', 'fa-clock-rotate-left', 'Pending Orders', 'Orders'],
+                    ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store'],
+                    ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding', 'Cold']
+                ]
+            }
         ]
     },
-    ops: {
-        title: "Operations",
-        items: [
-            ['gate_entry', '/processing/gate_entry', 'fa-door-open', 'Gate Entry'],
-            ['raw_material_purchasing', '/processing/raw_material_purchasing', 'fa-truck-ramp-box', 'RM Purchasing'],
-            ['de_heading', '/processing/de_heading', 'fa-scissors', 'De-Heading'],
-            ['grading', '/processing/grading', 'fa-filter', 'Grading'],
-            ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling'],
-            ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking'],
-            ['production', '/processing/production', 'fa-industry', 'Production'],
-            ['stock_entry', '/inventory/stock_entry', 'fa-boxes-stacked', 'Stock Entry'],
-            ['pending_orders', '/inventory/pending_orders', 'fa-clock-rotate-left', 'Pending Orders'],
-            ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry'],
-            ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding']
+    {
+        pillarName: "Data & Intelligence",
+        categories: [
+            {
+                title: "Operation Reports",
+                icon: "fa-file-chart-column",
+                items: [
+                    ['gate_entry_report', '/reports/gate_entry', 'fa-file-lines', 'Gate Entry Report', 'Logs'],
+                    ['rmp_report', '/reports/raw_material_purchasing', 'fa-file-invoice', 'RM Purchase Report', 'Data'],
+                    ['de_heading_report', '/reports/de_heading', 'fa-file-medical', 'De-Heading Report', 'Data'],
+                    ['grading_report', '/reports/grading_report', 'fa-file-shield', 'Grading Report', 'Data'],
+                    ['peeling_report', '/reports/peeling_report', 'fa-file-import', 'Peeling Report', 'Data'],
+                    ['soaking_report', '/reports/soaking_report', 'fa-file-word', 'Soaking Report', 'Data'],
+                    ['production_report', '/reports/production_report', 'fa-file-export', 'Production Report', 'Data'],
+                    ['floor_balance_report', '/reports/floor_balance_report', 'fa-scale-balanced', 'Floor Balance Report', 'Stock'],
+                    ['reprocess_report', '/reports/re-process', 'fa-arrows-rotate', 'Re-Process Report', 'Logs'],
+                    ['inventory_report', '/inventory/stock_report', 'fa-boxes-packing', 'Stock Status Report', 'Inv'],
+                    ['storage_cost_report', '/reports/storage_cost_report', 'fa-coins', 'Storage & Cost Report', 'Val'],
+                    ['pending_orders_report', '/reports/pending_orders_report', 'fa-clock', 'Pending Orders Report', 'Hold'],
+                    ['sales_report', '/inventory/sales_report', 'fa-receipt', 'Sales Report', 'Out'],
+                    ['gs_report', '/general_stock/report', 'fa-file-zipper', 'General Store Report', 'Store'],
+                    ['cold_storage_holding_report', '/inventory/cold_storage_holding_report', 'fa-warehouse', 'Cold Storage Report', 'Cold']
+                ]
+            },
+            {
+                title: "Executive Summaries",
+                icon: "fa-chart-line",
+                items: [
+                    ['processing_summary', '/summary/processing', 'fa-rectangle-list', 'Batch Summary', 'Run'],
+                    ['processing_summary', '/summary/periodic-report', 'fa-calendar-days', 'Periodic Summary', 'Time'],
+                    ['inventory_costing', '/summary/inventory_costing', 'fa-calculator', 'Inventory Costing', 'Fin'],
+                    ['floor_balance_value', '/summary/floor_balance_value', 'fa-scale-balanced', 'Floor Balance Value', 'Val']
+                ]
+            }
         ]
     },
-    reports: {
-        title: "Processing Reports",
-        items: [
-            ['gate_entry_report', '/reports/gate_entry', 'fa-file-lines', 'Gate Entry Report'],
-            ['rmp_report', '/reports/raw_material_purchasing', 'fa-file-invoice', 'RM Purchase Report'],
-            ['de_heading_report', '/reports/de_heading', 'fa-file-medical', 'De-Heading Report'],
-            ['grading_report', '/reports/grading_report', 'fa-file-shield', 'Grading Report'],
-            ['peeling_report', '/reports/peeling_report', 'fa-file-import', 'Peeling Report'],
-            ['soaking_report', '/reports/soaking_report', 'fa-file-word', 'Soaking Report'],
-            ['production_report', '/reports/production_report', 'fa-file-export', 'Production Report'],
-            ['floor_balance_report', '/reports/floor_balance_report', 'fa-scale-balanced', 'Floor Balance Report'],
-            ['reprocess_report', '/reports/re-process', 'fa-arrows-rotate', 'Re-Process Report'],
-            ['inventory_report', '/inventory/stock_report', 'fa-boxes-packing', 'Stock Status Report'],
-            ['storage_cost_report', '/reports/storage_cost_report', 'fa-coins', 'Storage & Cost Report'],
-            ['pending_orders_report', '/reports/pending_orders_report', 'fa-clock', 'Pending Orders Report'],
-            ['sales_report', '/inventory/sales_report', 'fa-receipt', 'Sales Report'],
-            ['gs_report', '/general_stock/report', 'fa-file-zipper', 'General Store Report'],
-            ['cold_storage_holding_report', '/inventory/cold_storage_holding_report', 'fa-warehouse', 'Cold Storage Report']
+    {
+        pillarName: "Corporate Finance & HR",
+        categories: [
+            {
+                title: "Bills & Operations",
+                icon: "fa-receipt",
+                items: [
+                    ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills', 'Exp'],
+                    ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption', 'Exp'],
+                    ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging', 'Exp'],
+                    ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight', 'Exp'],
+                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
+                    ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
+                ]
+            },
+            {
+                title: "HRMS Portal",
+                icon: "fa-users-gear",
+                items: [
+                    ['employee_registration', '/attendance/employee/register', 'fa-id-card', 'Staff Registration', 'HR'],
+                    ['employee_increment', '/attendance/employee-increment', 'fa-arrow-trend-up', 'Increment Details', 'HR'],
+                    ['daily_attendance', '/attendance/daily', 'fa-calendar-check', 'Daily Attendance', 'HR'],
+                    ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet', 'HR'],
+                    ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
+                    ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR']
+                ]
+            }
         ]
     },
-    criteria: {
-        title: "Master Data",
-        items: [
-            ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers'],
-            ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers'],
-            ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents'],
-            ['species', '/criteria/species', 'fa-caret-right', 'Species'],
-            ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties'],
-            ['grades', '/criteria/grades', 'fa-caret-right', 'Grades'],
-            ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes'],
-            ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles'],
-            ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals'],
-            ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers'],
-            ['countries', '/criteria/countries', 'fa-caret-right', 'Countries'],
-            ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers'],
-            ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At'],
-            ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At'],
-            ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types'],
-            ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes'],
-            ['purchasing_locations', '/criteria/purchasing_locations', 'fa-caret-right', 'Purchasing Locations'],
-            ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO'],
-            ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO'],
-            ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates'],
-            ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors'],
-            ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations'],
-            ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For'],
-            ['brands', '/criteria/brands', 'fa-caret-right', 'Brands'],
-            ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors'],
-            ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes'],
-            ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master']
-        ]
-    },
-    summaries: {
-        title: "Summaries",
-        items: [
-            ['processing_summary', '/summary/processing', 'fa-rectangle-list', 'Batch Summary'],
-            ['processing_summary', '/summary/periodic-report', 'fa-calendar-days', 'Periodic Summary'],
-            ['inventory_costing', '/summary/inventory_costing', 'fa-calculator', 'Inventory Costing'],
-            ['floor_balance_value', '/summary/floor_balance_value', 'fa-scale-balanced', 'Floor Balance Value']
-        ]
-    },
-    bills: {
-        title: "Finance & Operations",
-        items: [
-            ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills'],
-            ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption'],
-            ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging'],
-            ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight'],
-            ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges'],
-            ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses']
-        ]
-    },
-    attendance: {
-        title: "HRMS",
-        items: [
-            ['employee_registration', '/attendance/employee/register', 'fa-id-card', 'Staff Registration'],
-            ['employee_increment', '/attendance/employee-increment', 'fa-arrow-trend-up', 'Increment Details'],
-            ['daily_attendance', '/attendance/daily', 'fa-calendar-check', 'Daily Attendance'],
-            ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet'],
-            ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master'],
-            ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance']
-        ]
-    },
-    admin: {
-        title: "Administration",
-        items: [
-            ['add_user', '/admin/add_user', 'fa-user-plus', 'User Management']
+    {
+        pillarName: "Master Setup & Admin",
+        categories: [
+            {
+                title: "Criteria Masters",
+                icon: "fa-folder-tree",
+                items: [
+                    ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers', 'Config'],
+                    ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers', 'Config'],
+                    ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents', 'Config'],
+                    ['species', '/criteria/species', 'fa-caret-right', 'Species', 'Config'],
+                    ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties', 'Config'],
+                    ['grades', '/criteria/grades', 'fa-caret-right', 'Grades', 'Config'],
+                    ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes', 'Config'],
+                    ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles', 'Config'],
+                    ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals', 'Config'],
+                    ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers', 'Config'],
+                    ['countries', '/criteria/countries', 'fa-caret-right', 'Countries', 'Config'],
+                    ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers', 'Config'],
+                    ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At', 'Config'],
+                    ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At', 'Config'],
+                    ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types', 'Config'],
+                    ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes', 'Config'],
+                    ['purchasing_locations', '/criteria/purchasing_locations', 'fa-caret-right', 'Purchasing Locations', 'Config'],
+                    ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO', 'Config'],
+                    ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO', 'Config'],
+                    ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates', 'Config'],
+                    ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors', 'Config'],
+                    ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations', 'Config'],
+                    ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For', 'Config'],
+                    ['brands', '/criteria/brands', 'fa-caret-right', 'Brands', 'Config'],
+                    ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors', 'Config'],
+                    ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes', 'Config'],
+                    ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master', 'Config']
+                ]
+            },
+            {
+                title: "Administration",
+                icon: "fa-user-lock",
+                items: [
+                    ['add_user', '/admin/add_user', 'fa-user-plus', 'User Management', 'Admin']
+                ]
+            }
         ]
     }
-};
+];
 
-let hideTimer;
-const dropMenu = document.getElementById('dropMenu');
+const sidebarMenu = document.getElementById('sidebarMenu');
 const frame = document.getElementById('frame');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-function showMenu(btn, key) {
-    clearHideTimer();
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    btn.classList.add('active');
+function renderOrganizedMenu() {
+    let html = "";
+    
+    organizedMenu.forEach(pillar => {
+        let pillarHtml = `<div class="pillar-block">
+                            <div class="pillar-title">${pillar.pillarName}</div>`;
+        let hasVisibleCategory = false;
 
-    const data = menuData[key];
-    if (!data) return;
+        pillar.categories.forEach(cat => {
+            let allowedItems = cat.items.filter(item => {
+                if(item.length === 5) return allow(item[0]);
+                return true; 
+            });
 
-    let html = `<div class="dropdown-header">${data.title}</div>`;
-    data.items.forEach(item => {
-        let route, icon, label, permKey;
-        if(item.length === 4) { [permKey, route, icon, label] = item; }
-        else { [route, icon, label] = item; permKey = null; }
+            if (allowedItems.length === 0) return;
+            hasVisibleCategory = true;
 
-        if(!permKey || allow(permKey)) {
-            html += `<div class="dropdown-item" onclick="loadPage('${route}')">
-                        <i class="fa-solid ${icon}"></i> ${label}
-                     </div>`;
-        }
+            pillarHtml += `<div class="menu-wrapper">
+                            <div class="menu-item" onclick="handleMenuClick(this)">
+                                <div class="menu-item-left">
+                                    <i class="fa-solid ${cat.icon}"></i>
+                                    <span class="menu-item-label">${cat.title}</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-right chevron-icon"></i>
+                             </div>
+                             <div class="submenu">`;
+
+            allowedItems.forEach(item => {
+                let route, icon, label, badge;
+                if(item.length === 5) [, route, icon, label, badge] = item;
+                else [route, icon, label, badge] = item;
+
+                pillarHtml += `<a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                                <span><i class="fa-solid ${icon}" style="margin-right:8px; font-size:12px; opacity:0.6;"></i> ${label}</span>
+                                <span class="kpi-badge">${badge}</span>
+                               </a>`;
+            });
+
+            pillarHtml += `</div></div>`;
+        });
+
+        pillarHtml += `</div>`;
+        if(hasVisibleCategory) html += pillarHtml;
     });
 
-    const rect = btn.getBoundingClientRect();
-    dropMenu.style.left = rect.left + 'px';
-    dropMenu.style.top = rect.bottom + 'px';
-    dropMenu.innerHTML = html;
-    dropMenu.classList.add('show');
+    sidebarMenu.innerHTML = html;
 }
 
-function hideMenu() {
-    hideTimer = setTimeout(() => {
-        dropMenu.classList.remove('show');
-    }, 150);
+function handleMenuClick(element) {
+    const isOpen = element.classList.contains('open');
+    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('open'));
+    if(!isOpen) element.classList.add('open');
 }
 
-function clearHideTimer() { clearTimeout(hideTimer); }
+function toggleSidebar(shouldOpen) {
+    if (shouldOpen) {
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('show');
+    } else {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    }
+}
 
-function loadPage(url) {
+function loadPage(url, element) {
     frame.src = url;
-    dropMenu.classList.remove('show');
+    document.querySelectorAll('.submenu-item').forEach(el => el.classList.remove('active'));
+    if(element) element.classList.add('active');
+    toggleSidebar(false);
 }
 
 async function logout(){
-    if(confirm("Secure Logout?")) { await fetch("/auth/logout"); window.location.href="/"; }
+    if(confirm("Confirm Secure Systems Logout?")) { 
+        await fetch("/auth/logout"); 
+        window.location.href="/"; 
+    }
 }
 
-// Initial Load
 window.onload = () => {
+    renderOrganizedMenu();
     if(allow("processing_dashboard")) {
         loadPage('/dashboard/processing_dashboard');
     } else {
-        const ops = menuData.ops.items;
-        for(let item of ops) {
-            if(allow(item[0])) { loadPage(item[1]); break; }
-        }
+        loadPage('/dashboard/inventory_dashboard');
     }
 };
 
-// PWA
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
