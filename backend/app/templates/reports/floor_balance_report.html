@@ -20,7 +20,7 @@
  --card-bg: #ffffff;
  --text-main: #334155;
  --text-muted: #64748b;
- --radius-premium: 10px;
+ --radius-premium: 8px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,165 +35,141 @@ body {
  -webkit-font-smoothing: antialiased;
 }
 
-/* ================= CONTAINER & STRUCTURE ================= */
-.dashboard-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-}
-@media(min-width: 992px) {
-    .dashboard-wrapper { flex-direction: row; }
-}
+.dashboard-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100%; }
+@media(min-width: 992px) { .dashboard-wrapper { flex-direction: row; } }
 
-/* ================= MODERN SIDEBAR / TOPBAR FILTERS ================= */
+/* ================= FILTERS PANEL ================= */
 .sidebar { 
-    width: 100%; 
-    background: var(--card-bg); 
-    border-bottom: 1px solid var(--border-color); 
-    display: flex; 
-    flex-direction: column; 
-    padding: 12px; 
-    flex-shrink: 0;
-    z-index: 100;
+    width: 100%; background: var(--card-bg); border-bottom: 1px solid var(--border-color); 
+    display: flex; flex-direction: column; padding: 10px; flex-shrink: 0; z-index: 100;
 }
-@media(min-width: 992px) {
-    .sidebar { width: 240px; height: 100vh; border-right: 1px solid var(--border-color); border-bottom: none; padding: 20px 16px; }
-}
+@media(min-width: 992px) { .sidebar { width: 230px; height: 100vh; border-right: 1px solid var(--border-color); border-bottom: none; padding: 20px 14px; } }
 
-.sidebar h2 { 
-    margin: 0 0 10px 0; 
-    font-size: 10px; 
-    font-weight: 800; 
-    color: var(--text-muted); 
-    text-transform: uppercase; 
-    letter-spacing: 0.1em;
-}
-@media(min-width: 992px) { .sidebar h2 { margin-bottom: 18px; font-size: 11px; } }
-
-/* Horizontal scrolling controls layout on Mobile, stack vertical on Desktop */
-.filters { 
-    display: flex; 
-    flex-direction: row; 
-    gap: 8px; 
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-}
+.sidebar h2 { margin: 0 0 8px 0; font-size: 8.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.filters { display: flex; flex-direction: row; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .filters::-webkit-scrollbar { display: none; }
-@media(min-width: 992px) { .filters { flex-direction: column; gap: 14px; overflow-x: visible; padding-bottom: 0; } }
+@media(min-width: 992px) { .filters { flex-direction: column; gap: 12px; overflow-x: visible; padding-bottom: 0; } }
 
-.fbox { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px; 
-    flex-shrink: 0;
-    width: 140px; /* Uniform width on swipe view for mobile */
-}
+.fbox { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; width: 130px; }
 @media(min-width: 992px) { .fbox { width: 100%; } }
-.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
-/* Executive Inputs Styling */
-select, input { 
-    padding: 8px 10px; 
-    font-size: 11.5px; 
-    font-weight: 600;
-    color: var(--primary-dark);
-    border: 1px solid var(--border-color); 
-    border-radius: var(--radius-premium);
-    outline: none; 
-    background: var(--slate-bg); 
-    width: 100%;
-    transition: border-color 0.15s ease;
-}
+select, input { padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--primary-dark); border: 1px solid var(--border-color); border-radius: 6px; outline: none; background: var(--slate-bg); width: 100%; }
 select:focus, input:focus { border-color: var(--accent-blue); background: #fff; }
 #searchBox { border-left: 3px solid var(--accent-blue); background: #fff; }
 
-/* ================= MAIN REPORT VIEW CONTENT ================= */
+/* ================= MAIN CONTENT ================= */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.header-top { background: var(--card-bg); padding: 10px; border-bottom: 1px solid var(--border-ultra-light); display: flex; justify-content: space-between; align-items: center; }
+.header-top h2 { margin: 0; font-size: 11px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.05em; }
+#rowCount { font-size: 8.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
 
-.header-top { 
-    background: var(--card-bg); 
-    padding: 10px 14px; 
-    border-bottom: 1px solid var(--border-ultra-light); 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-}
-@media(min-width: 992px) { .header-top { padding: 14px 24px; } }
-.header-top h2 { margin: 0; font-size: 12px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.05em; }
-#rowCount { font-size: 9px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.03em; }
+/* ================= TABLE WRAPPER ================= */
+.section { flex: 1; margin: 6px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+.table-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; width: 100%; padding: 4px; } 
 
-/* ================= REFINED TABLE ZONE ================= */
-.section { 
-    flex: 1; 
-    margin: 10px; 
-    background: var(--card-bg); 
-    border-radius: var(--radius-premium);
-    border: 1px solid var(--border-color); 
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden; 
-}
-@media(min-width: 992px) { .section { margin: 16px; } }
-.table-wrap { flex: 1; overflow: auto; width: 100%; } 
+table { width: 100%; border-collapse: collapse; }
 
-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 750px; } 
-
-thead th {
-    background: var(--slate-bg); 
-    padding: 10px 4px; 
-    font-size: 8.5px; 
-    font-weight: 700;
-    text-transform: uppercase; 
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-ultra-light); 
-    position: sticky; top: 0; z-index: 10;
+/* Desktop view adjustments */
+@media(min-width: 768px) {
+    table { table-layout: fixed; min-width: 700px; }
+    .w-sl { width: 35px; } .w-bt { width: 100px; } .w-ty { width: 85px; } .w-vr { width: 140px; }
+    .w-ct { width: 80px; } .w-sp { width: 100px; } .w-pf { width: 140px; } .w-qt { width: 105px; }
 }
 
-tbody td {
-    padding: 10px 6px; 
-    font-size: 11px; 
-    border-bottom: 1px solid var(--border-ultra-light);
-    border-right: 1px solid var(--border-ultra-light); 
-    text-align: center;
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis;
-    font-weight: 600;
-    color: #1e293b;
+/* ================= RESPONSIVE MOBILE BLOCK TABLE ENGINE ================= */
+@media (max-width: 767px) {
+    thead { display: none; } /* Hide heavy columns on mobile */
+    
+    tbody, tr, td { display: block; width: 100% !important; text-align: left !important; }
+    
+    /* Elegant Row Cards */
+    .data-row {
+        background: #fff;
+        border: 1px solid var(--border-ultra-light);
+        border-radius: 6px;
+        margin-bottom: 6px;
+        padding: 8px 10px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 2 Column internal layout for data */
+        gap: 4px 8px;
+    }
+    
+    /* Micro Size Text Config */
+    .data-row td {
+        font-size: 9px;
+        padding: 0;
+        border: none !important;
+        white-space: normal;
+        text-overflow: unset;
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Embed Pseudo Labels for Field Identification */
+    .data-row td::before {
+        content: attr(data-label);
+        font-size: 7.5px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-bottom: 1px;
+        letter-spacing: 0.02em;
+    }
+
+    /* Target specific structural lines to expand full-width inside block card */
+    .data-row td:nth-child(4), /* Variety Description */
+    .data-row td:nth-child(7)  /* Production Company */ {
+        grid-column: span 2;
+    }
+    
+    /* Make Quantities Pop Boldly */
+    .data-row td:last-child {
+        align-items: flex-end;
+        text-align: right !important;
+    }
+    .data-row td:last-child::before { align-self: flex-end; }
+    
+    /* Header & Total Formatting on Mobile */
+    .row-location td { padding: 6px 8px !important; font-size: 9.5px !important; border-radius: 4px; margin: 4px 0 2px 0; border-left: 3px solid var(--primary-dark) !important; }
+    .row-batch-total { display: flex; justify-content: space-between; padding: 6px 8px; background: var(--slate-bg) !important; border-radius: 4px; margin-bottom: 6px; border: 1px dashed var(--border-color); }
+    .row-batch-total td { display: inline-block; width: auto !important; font-size: 9px !important; padding: 0 !important; border: none !important; }
+    .subtotal-label { text-align: left !important; }
+}
+
+/* ================= DESKTOP TABLE SPECIFICS ================= */
+@media(min-width: 768px) {
+    thead th {
+        background: var(--slate-bg); padding: 8px 4px; font-size: 8.5px; font-weight: 700;
+        text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
+    }
+    tbody td {
+        padding: 8px 6px; font-size: 10.5px; border-bottom: 1px solid var(--border-ultra-light);
+        border-right: 1px solid var(--border-ultra-light); text-align: center;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+    }
+    .row-location td { padding: 8px 12px; font-size: 10.5px; text-transform: uppercase; border-left: 3px solid var(--primary-dark); }
+    .subtotal-label { text-align: right !important; padding-right: 16px !important; text-transform: uppercase; font-size: 8.5px; font-weight: 700; }
+    .qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 12px !important; }
 }
 
 tbody tr:hover:not(.row-location):not(.row-batch-total) { background: #f8fafc; cursor: pointer; }
-tr.selected { background: #eff6ff !important; }
-
-/* Explicit Column Width Proportions */
-.w-sl { width: 40px; } .w-bt { width: 110px; } .w-ty { width: 95px; } .w-vr { width: 150px; }
-.w-ct { width: 85px; } .w-sp { width: 110px; } .w-pf { width: 160px; } .w-qt { width: 115px; }
-
-/* High-End Hierarchy Styling */
+tr.selected { background: #eff6ff !important; border-color: var(--accent-blue) !important; }
 .row-location { background: #f1f5f9 !important; color: var(--primary-dark) !important; font-weight: 800; text-align: left !important; }
-.row-location td { color: var(--primary-dark) !important; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-left: 3px solid var(--primary-dark); }
+.row-batch-total { background: #fff !important; color: var(--text-muted) !important; font-weight: 700; }
 
-.row-batch-total { background: #fff !important; color: var(--text-muted) !important; }
-.row-batch-total td { border-bottom: 1px solid var(--border-color) !important; }
-.subtotal-label { text-align: right !important; padding-right: 20px !important; text-transform: uppercase; font-size: 9px; font-weight: 700; letter-spacing: 0.03em; }
-.qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 12px !important; }
-
-.badge { padding: 3px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); border: none; }
+.badge { padding: 2px 4px; border-radius: 4px; font-size: 8px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); }
 
 /* ================= FOOTER ================= */
 tfoot td { 
-    background: var(--slate-bg); 
-    font-weight: 800; 
-    font-size: 13px; 
-    border-top: 1px solid var(--border-color); 
-    position: sticky; bottom: 0; z-index: 10; 
-    padding: 14px; 
-    color: var(--primary-dark); 
-    letter-spacing: -0.01em;
+    background: var(--slate-bg); font-weight: 800; font-size: 11px; border-top: 1px solid var(--border-color); 
+    position: sticky; bottom: 0; z-index: 10; padding: 10px; color: var(--primary-dark); 
+}
+@media(max-width: 767px) {
+    tfoot tr { display: flex; justify-content: space-between; }
+    tfoot td { display: inline-block; width: auto !important; padding: 8px !important; border: none; font-size: 10px !important; }
 }
 </style>
 </head>
@@ -206,7 +182,7 @@ tfoot td {
         <div class="filters">
             <div class="fbox">
                 <label>Search Parameters</label>
-                <input id="searchBox" oninput="filterTable()" placeholder="Batch / Variety / Code...">
+                <input id="searchBox" oninput="filterTable()" placeholder="Batch / Variety...">
             </div>
             <div class="fbox">
                 <label>Location Area</label>
@@ -266,7 +242,7 @@ tfoot td {
                         
                         {% for r in rows_batch %}
                             
-                            {# 1. Location Row #}
+                            {# 1. Location Header Row #}
                             {% if r.location != ns.cur_loc %}
                                 <tr class="row-location" data-loc="{{ r.location }}">
                                     <td colspan="8">{{ r.location | upper }}</td>
@@ -274,10 +250,10 @@ tfoot td {
                                 {% set ns.cur_loc = r.location %}
                             {% endif %}
 
-                            {# 2. Batch Total Row (if batch changes) #}
+                            {# 2. Batch Subtotal Row #}
                             {% if loop.index0 > 0 and r.batch != ns.cur_batch %}
                                 <tr class="row-batch-total" data-loc="{{ ns.cur_loc }}" data-batch="{{ ns.cur_batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ ns.cur_batch }}] Balance:</td>
+                                    <td colspan="7" class="subtotal-label">Batch [{{ ns.cur_batch }}] Total:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                                 </tr>
                                 {% set ns.batch_total = 0 %}
@@ -285,31 +261,31 @@ tfoot td {
 
                             {% set ns.cur_batch = r.batch %}
 
-                            {# 3. Data Row #}
+                            {# 3. Fluid Micro Data Row Cards #}
                             <tr class="data-row" onclick="selectRow(this)"
                                 data-loc="{{ r.location }}" 
                                 data-prod="{{ r.production_for }}" 
                                 data-batch="{{ r.batch }}" 
                                 data-spec="{{ r.species }}"
                                 data-source="{{ r.source }}">
-                                <td>{{ ns.sl }}</td>
-                                <td style="color: var(--accent-blue);">{{ r.batch }}</td>
-                                <td><span class="badge">{{ r.source }}</span></td>
-                                <td style="text-align:left;">{{ r.variety }}</td>
-                                <td>{{ r.count }}</td>
-                                <td style="color: var(--text-muted);">{{ r.species }}</td>
-                                <td>{{ r.production_for }}</td>
-                                <td style="text-align:right; font-weight:700; padding-right:12px;">{{ "{:,.2f}".format(r.available_qty) }}</td>
+                                <td data-label="Sl No">{{ ns.sl }}</td>
+                                <td data-label="Batch ID" style="color: var(--accent-blue); font-weight:700;">{{ r.batch }}</td>
+                                <td data-label="Source"><span class="badge">{{ r.source }}</span></td>
+                                <td data-label="Variety">{{ r.variety }}</td>
+                                <td data-label="Count/Grade">{{ r.count }}</td>
+                                <td data-label="Species" style="color: var(--text-muted);">{{ r.species }}</td>
+                                <td data-label="Company">{{ r.production_for }}</td>
+                                <td data-label="Available Balance" style="font-weight:700;">{{ "{:,.2f}".format(r.available_qty) }}</td>
                             </tr>
 
                             {% set ns.sl = ns.sl + 1 %}
                             {% set ns.batch_total = ns.batch_total + r.available_qty %}
                             {% set ns.grand_total = ns.grand_total + r.available_qty %}
 
-                            {# 4. Final Batch Total #}
+                            {# 4. Final Batch Subtotal #}
                             {% if loop.last %}
                                 <tr class="row-batch-total" data-loc="{{ r.location }}" data-batch="{{ r.batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ r.batch }}] Balance:</td>
+                                    <td colspan="7" class="subtotal-label">Batch [{{ r.batch }}] Total:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(ns.batch_total) }}</td>
                                 </tr>
                             {% endif %}
@@ -317,8 +293,8 @@ tfoot td {
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="7" style="text-align:right; padding-right:20px; font-weight:700; color:var(--text-muted); font-size:10px; letter-spacing:0.05em;">GRAND NET TOTAL BALANCE:</td>
-                            <td id="grandTotal" style="text-align:right; padding-right:12px; color:var(--accent-blue);">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
+                            <td colspan="7" style="text-align:right; font-weight:700; color:var(--text-muted); font-size:9px;">GRAND NET BALANCE:</td>
+                            <td id="grandTotal" style="text-align:right; color:var(--accent-blue); font-weight:800;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -357,7 +333,6 @@ function filterTable() {
         }
     });
 
-    // Smart visibility engine for headers and batch totals
     document.querySelectorAll(".row-batch-total, .row-location").forEach(tr => {
         const isLoc = tr.classList.contains("row-location");
         const hasVisible = [...rows].some(r => 
@@ -372,7 +347,6 @@ function filterTable() {
     document.getElementById("rowCount").innerText = visibleCount + " Items Displayed";
 }
 
-// System Trigger Boot
 filterTable();
 </script>
 
