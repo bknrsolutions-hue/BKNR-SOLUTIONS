@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Gate Entry – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -22,7 +22,7 @@
 }
 
 *{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-body{margin:0;background:var(--bg);color:var(--text)}
+body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: antialiased;}
 
 /* HEADER */
 .header{
@@ -36,6 +36,12 @@ body{margin:0;background:var(--bg);color:var(--text)}
 }
 .header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+
+@media(max-width: 600px) {
+  .header { padding: 12px 15px; }
+  .header-titles h2 { font-size: 16px; }
+  .header-titles p { font-size: 11px; }
+}
 
 /* ALERT */
 #statusAlert {
@@ -51,6 +57,9 @@ body{margin:0;background:var(--bg);color:var(--text)}
     display: none;
     box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
     animation: slideDown 0.3s ease-out;
+    width: 90%;
+    max-width: 320px;
+    text-align: center;
 }
 @keyframes slideDown { from { top: -50px; } to { top: 20px; } }
 
@@ -64,19 +73,24 @@ body{margin:0;background:var(--bg);color:var(--text)}
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
+@media(max-width: 600px) {
+  .section { margin: 10px; padding: 15px; border-radius: 12px; }
+}
+
 .section-title {
     font-size: 13px; font-weight: 800; color: var(--accent);
     text-transform: uppercase; margin-bottom: 20px; 
     display: flex; align-items: center; gap: 8px;
 }
 
+/* 🔹 FORM GRID - STRICT ONE BELOW ANOTHER FOR MOBILE */
 .form-grid{
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns: 1fr; /* Default: One column for mobile view */
   gap:16px;
 }
-@media(max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
-@media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+@media(min-width:701px) and (max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
+@media(min-width:1201px){ .form-grid{grid-template-columns:repeat(5,1fr);} }
 
 .field{display:flex;flex-direction:column; gap: 5px;}
 .field label{
@@ -93,6 +107,8 @@ body{margin:0;background:var(--bg);color:var(--text)}
   background:#fff;
   outline: none;
   transition: 0.2s;
+  height: 40px;
+  width: 100%;
 }
 .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
@@ -103,6 +119,11 @@ body{margin:0;background:var(--bg);color:var(--text)}
   justify-content:flex-end;
   gap:12px;
 }
+@media(max-width: 600px) {
+  .actions { flex-direction: column-reverse; gap: 8px; }
+  .actions .btn { width: 100%; justify-content: center; height: 40px; }
+}
+
 .btn{
   padding:10px 22px;
   border-radius:8px;
@@ -129,13 +150,23 @@ body{margin:0;background:var(--bg);color:var(--text)}
     align-items: center;
     margin-top: 20px;
 }
+@media(max-width: 600px) {
+    .table-header-tool { padding: 0 12px; margin-top: 15px; }
+    .table-header-tool h3 { font-size: 13px !important; }
+}
+
 .table-wrap{
   margin:12px 18px 30px;
   background:var(--card);
   border-radius:16px;
   border:1px solid var(--border);
   overflow-x:auto;
+  -webkit-overflow-scrolling: touch;
 }
+@media(max-width: 600px) {
+  .table-wrap { margin: 10px; border-radius: 12px; }
+}
+
 table{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1200px;}
 thead th{
   background:#f8fafc;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>De-Heading & Floor Balance – BKNR ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,7 +18,7 @@
         }
 
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
         /* --- DASHBOARD STYLES --- */
         .header-dash {
@@ -26,6 +26,12 @@
             display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 100;
         }
+        @media(max-width: 600px) {
+            .header-dash { padding: 12px 15px; flex-direction: column; gap: 10px; align-items: flex-start; }
+            .header-dash h2 { font-size: 16px !important; }
+            .grand-total { width: 100%; text-align: center; font-size: 13px !important; }
+        }
+
         .grand-total {
             background: var(--primary); color: #fff; padding: 10px 20px;
             border-radius: 12px; font-size: 15px; font-weight: 800;
@@ -34,8 +40,15 @@
         /* FILTER BAR */
         .filter-section {
             background: #fff; padding: 10px 25px; display: flex; align-items: center; gap: 15px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border); flex-wrap: wrap;
         }
+        @media(max-width: 600px) {
+            .filter-section { padding: 10px 15px; gap: 10px; }
+            .filter-item { width: 100%; display: flex; flex-direction: column; align-items: flex-start !important; }
+            .filter-item label { margin-bottom: 4px; }
+            .filter-section input { width: 100%; min-width: 100% !important; height: 40px; }
+        }
+
         .filter-item { display: flex; align-items: center; gap: 8px; }
         .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
         
@@ -45,25 +58,27 @@
         }
 
         .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; min-height: 250px; }
+        @media(max-width: 1024px) {
+            .main-dashboard { flex-direction: column; padding: 10px; }
+            .dashboard-grid { width: 100% !important; grid-template-columns: 1fr !important; }
+            .panel { width: 100% !important; margin-bottom: 10px; }
+        }
+
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; width: 65%; }
         .panel { background: #fff; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .table-container { overflow-y: auto; flex-grow: 1; max-height: 250px; }
+        .table-container { overflow-y: auto; flex-grow: 1; max-height: 300px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th { position: sticky; top: 0; background: #fff; padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
-        td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
 
         .company-row { cursor: pointer; background: #f8fafc; font-weight: 800; color: var(--primary); }
         .location-row { cursor: pointer; background: #fff; font-weight: 700; color: var(--accent); padding-left: 20px !important; }
         .drill-row { display: none; background: #fff; }
         
-        .drill-container { padding: 0px 10px 10px 40px; }
-        .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .drill-table th { background: #f8fafc; font-size: 10px; color: var(--muted); padding: 6px; }
-        .drill-table td { background: #fff; border-bottom: 1px solid #eee; padding: 6px; }
-
-        .subtotal-row { background: #f0f9ff !important; font-weight: 800; color: var(--primary); }
+        .drill-container { padding: 0px 5px 10px 15px; overflow-x: auto; }
+        .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); min-width: 300px; }
 
         /* --- FORM MODAL --- */
         .modal {
@@ -72,20 +87,34 @@
         }
         .modal-content {
             background: #fff; padding: 25px; border-radius: 16px; width: 85%; max-width: 1000px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto;
         }
+        @media(max-width: 600px) {
+            .modal-content { width: 95%; padding: 15px; }
+            .form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+            .btn-add { width: 100%; justify-content: center; }
+        }
+
         .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-        .field input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; }
+        .field input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; height: 40px; }
         .field input[readonly] { background: #f8fafc; cursor: not-allowed; font-weight: 600; }
 
         .btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        #mainTable { min-width: 900px; }
+        @media(max-width: 600px) {
+            .section-header { padding: 15px !important; flex-direction: column; align-items: flex-start !important; gap: 15px; }
+            .section-header div { width: 100%; justify-content: space-between; }
+            .table-wrap { margin: 10px !important; border-radius: 8px !important; }
+        }
+
         .selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
         
         #dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .menu-item { padding: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .menu-item:hover { background: #fef2f2; color: #ef4444; }
+        .menu-item { padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -139,19 +168,19 @@
 
         <div class="panel">
             <div class="panel-title">Live Statistics</div>
-            <div style="padding:30px 20px; text-align:center;">
+            <div style="padding:20px; text-align:center;">
                 <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Filtered Batches</div>
-                <div style="font-size:36px; font-weight:800; color:var(--primary);" id="stat_batches">0</div>
-                <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+                <div style="font-size:32px; font-weight:800; color:var(--primary);" id="stat_batches">0</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
                 <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Unique Counts</div>
-                <div style="font-size:36px; font-weight:800; color:var(--accent);" id="stat_counts">0</div>
+                <div style="font-size:32px; font-weight:800; color:var(--accent);" id="stat_counts">0</div>
             </div>
         </div>
     </div>
     
-    <div class="panel" style="width:35%;">
+    <div class="panel" id="chartPanel">
         <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
-        <div style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding:15px;">
+        <div style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding:15px; min-height: 250px;">
             <canvas id="countStackedBar"></canvas>
         </div>
     </div>
@@ -159,7 +188,7 @@
 
 <div class="section-header" style="padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; background: #fff; border-top: 1px solid var(--border);">
     <h3 style="font-size:15px; font-weight:800; color:var(--primary); margin:0;"><i class="fa-solid fa-history"></i> Today's De-Heading Entries</h3>
-    <div style="display:flex; gap:10px; position: relative;">
+    <div style="display:flex; gap:10px; position: relative; align-items: center;">
         <button class="menu-trigger" id="menuBtn" style="background:#fff; border:1px solid var(--border); width:35px; height:35px; border-radius:8px; cursor:pointer; display:none;"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash"></i> Delete Entry</div></div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> New Entry</button>
@@ -248,7 +277,7 @@
                 <div class="field"><label>Rate / Kg</label><input type="number" name="rate_per_kg" id="f_rate" readonly></div>
                 <div class="field"><label>Total Amount</label><input type="number" name="amount" id="f_amount" readonly style="color:var(--accent); font-size:16px;"></div>
             </div>
-            <div style="margin-top:30px; text-align:right; border-top:1px solid #eee; padding-top:20px;">
+            <div style="margin-top:20px; text-align:right; border-top:1px solid #eee; padding-top:20px;">
                 <button type="button" onclick="closeModal()" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:10px;">Cancel</button>
                 <button type="submit" class="btn-add" id="submitBtn">Save Entry</button>
             </div>
@@ -402,19 +431,23 @@ function updateTodayTableSubtotals() {
     rows.forEach(r => {
         const loc = r.dataset.loc || "Unknown";
         if(!locGroup[loc]) locGroup[loc] = { hoso:0, hlso:0, amt:0, lastRow: null };
-        locGroup[loc].hoso += parseFloat(r.querySelector('.qty-hoso').innerText) || 0;
-        locGroup[loc].hlso += parseFloat(r.querySelector('.qty-hlso').innerText) || 0;
-        locGroup[loc].amt += parseFloat(r.querySelector('.amt-val').innerText) || 0;
+        const hosoVal = parseFloat(r.querySelector('.qty-in').innerText) || 0;
+        const hlsoVal = parseFloat(r.querySelector('.qty-out').innerText) || 0;
+        const amtVal = parseFloat(r.querySelector('.amt').innerText.replace(/,/g, '')) || 0;
+        
+        locGroup[loc].hoso += hosoVal;
+        locGroup[loc].hlso += hlsoVal;
+        locGroup[loc].amt += amtVal;
         locGroup[loc].lastRow = r;
     });
     Object.keys(locGroup).forEach(loc => {
         locGroup[loc].lastRow.insertAdjacentHTML('afterend', `
             <tr class="subtotal-row" style="background:#f8fafc; font-weight:bold;">
-                <td colspan="4" style="text-align:right;">Sub-Total (${loc}):</td>
+                <td colspan="4" style="text-align:right; padding-right:10px;">Sub-Total (${loc}):</td>
                 <td>${locGroup[loc].hoso.toFixed(2)}</td>
                 <td>${locGroup[loc].hlso.toFixed(2)}</td>
                 <td colspan="2"></td>
-                <td style="text-align:right;">${locGroup[loc].amt.toFixed(2)}</td>
+                <td style="text-align:right; padding-right:10px;">${locGroup[loc].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
             </tr>`);
     });
 }
@@ -455,7 +488,6 @@ async function loadCounts() {
     });
 }
 
-// FIXED: Uses Query Parameters to avoid 404 error with '/' in counts
 async function checkFloor() {
     const loc = document.getElementById('form_loc').value;
     const b = document.getElementById('form_batch').value;
@@ -549,7 +581,7 @@ document.getElementById('deHeadingForm').onsubmit = async function(e) {
     } catch (err) { 
         Swal.fire('Error', err.message, 'error'); 
         btn.disabled = false; 
-        btn.innerText = 'Save Entry'; 
+        btn.innerHTML = 'Save Entry'; 
     }
 };
 
