@@ -39,7 +39,7 @@ body{
 .header{
     background:#fff;
     border-bottom:1px solid var(--border);
-    padding:14px 18px;
+    padding:10px 14px;
     position:sticky;
     top:0;
     z-index:999;
@@ -49,48 +49,46 @@ body{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:10px;
+    margin-bottom:8px;
     gap:10px;
-    flex-wrap:wrap;
 }
 
 .header-title h1{
-    font-size:18px;
+    font-size:16px;
     font-weight:800;
     color:var(--primary);
 }
 
 .company-box{
     display:flex;
-    gap:8px;
-    flex-wrap:wrap;
+    gap:5px;
 }
 
 .badge{
-    padding:6px 10px;
-    border-radius:6px;
+    padding:4px 8px;
+    border-radius:4px;
     background:#eff6ff;
     color:var(--accent);
     font-weight:700;
     border:1px solid #bfdbfe;
-    font-size:10px;
+    font-size:9px;
+    white-space: nowrap;
 }
 
 .filters{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
-    gap:8px;
-    align-items:flex-end;
+    grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
+    gap:6px;
 }
 
 .filter-group{
     display:flex;
     flex-direction:column;
-    gap:4px;
+    gap:3px;
 }
 
 .filter-group label{
-    font-size:9px;
+    font-size:8px;
     text-transform:uppercase;
     font-weight:800;
     color:var(--sub);
@@ -99,70 +97,67 @@ body{
 .filter-group select,
 .filter-group input{
     border:1px solid var(--border);
-    border-radius:6px;
-    padding:8px;
+    border-radius:4px;
+    padding:6px;
     font-size:10px;
     background:#fff;
     outline:none;
+    width: 100%;
 }
 
 .kpi-grid{
-    padding:14px;
+    padding:10px;
     display:grid;
-    grid-template-columns:repeat(7,1fr);
-    gap:10px;
+    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+    gap:8px;
 }
 
 .kpi-card{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px;
-    border-left:4px solid var(--accent);
-    transition:0.3s;
-}
-
-.kpi-card:hover{
-    transform:translateY(-3px);
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    border-radius:8px;
+    padding:10px;
+    border-left:3px solid var(--accent);
 }
 
 .kpi-card h4{
     font-size:8px;
     text-transform:uppercase;
     color:var(--sub);
-    margin-bottom:6px;
+    margin-bottom:4px;
 }
 
 .kpi-card .value{
-    font-size:18px;
+    font-size:14px;
     font-weight:800;
     color:var(--primary);
 }
 
 .kpi-card .amt-sub{
-    font-size:10px;
+    font-size:9px;
     font-weight:700;
     color:var(--accent);
-    margin-top:4px;
+    margin-top:2px;
 }
 
 .tabs{
     display:flex;
-    gap:8px;
-    padding:0 14px 14px;
-    flex-wrap:wrap;
+    gap:5px;
+    padding:0 10px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
 
 .tab-btn{
     border:none;
     background:#fff;
     border:1px solid var(--border);
-    border-radius:8px;
-    padding:10px 16px;
+    border-radius:6px;
+    padding:8px 12px;
     cursor:pointer;
     font-weight:700;
-    transition:0.2s;
+    white-space: nowrap;
+    font-size: 10px;
 }
 
 .tab-btn.active{
@@ -172,7 +167,7 @@ body{
 
 .tab-content{
     display:none;
-    padding:0 14px 18px;
+    padding:0 10px 15px;
 }
 
 .tab-content.active{
@@ -182,13 +177,13 @@ body{
 .panel{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:10px;
+    border-radius:8px;
     overflow:hidden;
-    margin-bottom:14px;
+    margin-bottom:10px;
 }
 
 .panel-header{
-    padding:12px 14px;
+    padding:10px;
     border-bottom:1px solid var(--border);
     background:#f8fafc;
     display:flex;
@@ -197,35 +192,34 @@ body{
 }
 
 .panel-header h3{
-    font-size:12px;
+    font-size:11px;
     font-weight:800;
 }
 
 .footer-actions{
     display:flex;
-    gap:10px;
+    gap:5px;
 }
 
 .action-btn{
     border:none;
-    padding:8px 14px;
-    border-radius:6px;
+    padding:6px 10px;
+    border-radius:4px;
     background:var(--primary);
     color:#fff;
     font-weight:700;
     cursor:pointer;
     display:flex;
     align-items:center;
-    gap:6px;
+    gap:4px;
+    font-size: 9px;
 }
 
-.excel-btn{
-    background:var(--success);
-}
+.excel-btn{ background:var(--success); }
 
 .table-wrap{
     overflow:auto;
-    max-height:650px;
+    max-height:600px;
 }
 
 .compact-table{
@@ -253,98 +247,62 @@ body{
     border-bottom:1px solid #f1f5f9;
 }
 
-.compact-table tbody tr:hover{
-    background:#f8fbff;
+/* Mobile sticky logic for Species & Grade */
+@media(max-width:768px) {
+    .compact-table thead th:nth-child(4),
+    .compact-table tbody td:nth-child(4) {
+        position: sticky;
+        left: 0;
+        z-index: 25;
+        background: #fff;
+        border-right: 1px solid var(--border);
+    }
 }
 
 .grand-total-row{
     background:#dbeafe !important;
     font-weight:800;
-    color:#0f172a;
     position:sticky;
     bottom:0;
 }
 
-.dead-row{
-    background:#fff1f2 !important;
-}
+.dead-row{ background:#fff1f2 !important; }
 
 .chart-grid{
     display:grid;
-    grid-template-columns:2fr 1fr 1fr;
-    gap:14px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap:10px;
 }
 
 .chart-box{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:10px;
-    padding:14px;
-    height:320px;
-}
-
-.chart-box h3{
-    margin-bottom:10px;
-    font-size:12px;
+    border-radius:8px;
+    padding:10px;
+    height:300px;
 }
 
 .age-boxes{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:12px;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
 }
 
 .age-card{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:10px;
-    padding:16px;
+    border-radius:8px;
+    padding:14px;
     text-align:center;
-    border-bottom:4px solid var(--border);
+    border-bottom:3px solid var(--border);
 }
 
-.age-card h2{
-    font-size:24px;
-    margin:8px 0;
-}
+.age-card h2{ font-size:18px; margin:5px 0; }
 
-.age-green{
-    background:#dcfce7;
-    color:#166534;
-    padding:2px 8px;
-    border-radius:20px;
-    font-weight:700;
-}
-
-.age-yellow{
-    background:#fef9c3;
-    color:#854d0e;
-    padding:2px 8px;
-    border-radius:20px;
-    font-weight:700;
-}
-
-.age-orange{
-    background:#ffedd5;
-    color:#c2410c;
-    padding:2px 8px;
-    border-radius:20px;
-    font-weight:700;
-}
-
-.age-red{
-    background:#fee2e2;
-    color:#b91c1c;
-    padding:2px 8px;
-    border-radius:20px;
-    font-weight:700;
-}
-
-@media(max-width:1200px){
-    .kpi-grid{ grid-template-columns:repeat(3,1fr); }
-    .chart-grid{ grid-template-columns:1fr; }
-    .age-boxes{ grid-template-columns:repeat(2,1fr); }
-}
+.age-green{ background:#dcfce7; color:#166534; padding:2px 6px; border-radius:10px; font-weight:700; }
+.age-yellow{ background:#fef9c3; color:#854d0e; padding:2px 6px; border-radius:10px; font-weight:700; }
+.age-orange{ background:#ffedd5; color:#c2410c; padding:2px 6px; border-radius:10px; font-weight:700; }
+.age-red{ background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:10px; font-weight:700; }
 </style>
 </head>
 
@@ -357,205 +315,97 @@ body{
         </div>
         <div class="company-box">
             <div class="badge">{{ request.session.get('company_code') }}</div>
-            <div class="badge">FY : {{ current_fy_name }}</div>
+            <div class="badge">FY: {{ current_fy_name }}</div>
         </div>
     </div>
 
     <form method="get" class="filters">
         <div class="filter-group">
-            <label>Financial Year</label>
+            <label>FY</label>
             <select name="sel_fy" onchange="this.form.submit()">
-                {% for fy in fy_options %}
-                <option value="{{ fy }}" {{ 'selected' if sel_fy == fy else '' }}>{{ fy }}</option>
-                {% endfor %}
+                {% for fy in fy_options %}<option value="{{ fy }}" {{ 'selected' if sel_fy == fy else '' }}>{{ fy }}</option>{% endfor %}
             </select>
         </div>
-
-        <div class="filter-group">
-            <label>Species</label>
-            <select name="sel_species" onchange="this.form.submit()">
-                <option value="ALL">ALL</option>
-                {% for s in species_list %}
-                <option value="{{ s }}" {{ 'selected' if sel_species == s else '' }}>{{ s }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-group"><label>Species</label>
+            <select name="sel_species" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for s in species_list %}<option value="{{ s }}" {{ 'selected' if sel_species == s else '' }}>{{ s }}</option>{% endfor %}</select>
         </div>
-
-        <div class="filter-group">
-            <label>Variety</label>
-            <select name="sel_variety" onchange="this.form.submit()">
-                <option value="ALL">ALL</option>
-                {% for v in varieties_list %}
-                <option value="{{ v }}" {{ 'selected' if sel_variety == v else '' }}>{{ v }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-group"><label>Variety</label>
+            <select name="sel_variety" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for v in varieties_list %}<option value="{{ v }}" {{ 'selected' if sel_variety == v else '' }}>{{ v }}</option>{% endfor %}</select>
         </div>
-
-        <div class="filter-group">
-            <label>Grade</label>
-            <select name="sel_grade" onchange="this.form.submit()">
-                <option value="ALL">ALL</option>
-                {% for g in grades_list %}
-                <option value="{{ g }}" {{ 'selected' if sel_grade == g else '' }}>{{ g }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-group"><label>Grade</label>
+            <select name="sel_grade" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for g in grades_list %}<option value="{{ g }}" {{ 'selected' if sel_grade == g else '' }}>{{ g }}</option>{% endfor %}</select>
         </div>
-
-        <div class="filter-group">
-            <label>Client</label>
-            <select name="sel_prod_for" onchange="this.form.submit()">
-                <option value="ALL">ALL</option>
-                {% for p in prod_for_list %}
-                <option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>
-                {% endfor %}
-            </select>
+        <div class="filter-group"><label>Client</label>
+            <select name="sel_prod_for" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for p in prod_for_list %}<option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>{% endfor %}</select>
         </div>
-
-        <div class="filter-group">
-            <label>Search Inventory</label>
-            <input type="text" id="tableSearch" placeholder="Search Species, Grade, Client..." onkeyup="searchTable()">
+        <div class="filter-group"><label>Search</label>
+            <input type="text" id="tableSearch" placeholder="..." onkeyup="searchTable()">
         </div>
     </form>
 </div>
 
-<!-- Updated KPI Grid with Value Subtexts -->
 <div class="kpi-grid">
-    <div class="kpi-card">
-        <h4>Opening Stock</h4>
-        <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:var(--success)">
-        <h4>Closing Stock</h4>
-        <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:var(--danger)">
-        <h4>Sales ({{ sel_fy }})</h4>
-        <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:var(--warning)">
-        <h4>Reprocess ({{ sel_fy }})</h4>
-        <div class="value">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:#7c3aed">
-        <h4>Fresh Stock ({{ sel_fy }})</h4>
-        <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:#dc2626">
-        <h4>Dead Stock</h4>
-        <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
-    </div>
-    <div class="kpi-card" style="border-left-color:#0891b2">
-        <h4>Total MC</h4>
-        <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
-        <div class="amt-sub">Master Cartons</div>
-    </div>
+    <div class="kpi-card"><h4>Opening</h4><div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:var(--success)"><h4>Closing</h4><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:var(--danger)"><h4>Sales</h4><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:var(--warning)"><h4>Reprocess</h4><div class="value">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:#7c3aed"><h4>Fresh</h4><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:#dc2626"><h4>Dead Stock</h4><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
+    <div class="kpi-card" style="border-left-color:#0891b2"><h4>Total MC</h4><div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div><div class="amt-sub">MC</div></div>
 </div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event,'live_tab')">Live Inventory</button>
     <button class="tab-btn" onclick="openTab(event,'opening_tab')">Opening Stock</button>
-    <button class="tab-btn" onclick="openTab(event,'comparison_tab')">FY Comparison</button>
-    <button class="tab-btn" onclick="openTab(event,'aging_tab')">Aging Analysis</button>
+    <button class="tab-btn" onclick="openTab(event,'comparison_tab')">Comparison</button>
+    <button class="tab-btn" onclick="openTab(event,'aging_tab')">Aging</button>
 </div>
 
-<!-- LIVE TAB -->
 <div id="live_tab" class="tab-content active">
     <div class="panel">
         <div class="panel-header">
-            <h3><i class="fas fa-warehouse"></i> Live Closing Inventory</h3>
+            <h3>Live Closing Inventory</h3>
             <div class="footer-actions">
-                <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')">
-                    <i class="fas fa-file-excel"></i> Export Excel
-                </button>
-                <button class="action-btn" onclick="window.print()">
-                    <i class="fas fa-print"></i> Print
-                </button>
+                <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')"><i class="fas fa-file-excel"></i></button>
+                <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i></button>
             </div>
         </div>
-
         <div class="table-wrap">
             <table class="compact-table" id="liveInventoryTable">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Location</th>
-                        <th>Storage</th>
-                        <th>Species</th>
-                        <th>Variety</th>
-                        <th>Packing</th>
-                        <th>Glaze</th>
-                        <th>Grade</th>
-                        <th>Client</th>
-                        <th align="right">Opening MC</th>
-                        <th align="right">Opening Loose</th>
-                        <th align="right">Opening Qty</th>
-                        <th align="right">IN Qty</th>
-                        <th align="right">OUT Qty</th>
-                        <th align="right">Closing MC</th>
-                        <th align="right">Closing Loose</th>
-                        <th align="right">Closing Qty</th>
-                        <th align="right" style="background:#fef9c3">Avg Rate</th>
-                        <th align="right" style="background:#dcfce7">Inv Value</th>
-                        <th>Ageing</th>
+                        <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
+                        <th align="right">Op MC</th><th align="right">Op Loose</th><th align="right">Op Qty</th>
+                        <th align="right">IN</th><th align="right">OUT</th>
+                        <th align="right">Cl MC</th><th align="right">Loose</th><th align="right">Cl Qty</th>
+                        <th align="right">Avg Rate</th><th align="right">Inv Value</th><th>Ageing</th>
                     </tr>
                 </thead>
                 <tbody id="inventoryBody">
                     {% for row in stock_table_data %}
                     {% set age = row.ageing_days|default(0) %}
-                    <tr class="{{ 'dead-row' if age > 700 else '' }}" 
-                        data-opening-qty="{{ row.opening_qty|default(0) }}" 
-                        data-closing-qty="{{ row.qty|default(0) }}" 
-                        data-opening-mc="{{ row.opening_mc|default(0) }}" 
-                        data-closing-mc="{{ row.mc|default(0) }}" 
-                        data-inv-val="{{ row.value|default(0) }}">
-                        <td>{{ loop.index }}</td>
-                        <td>{{ row.loc }}</td>
-                        <td>{{ row.fr }}</td>
-                        <td><strong>{{ row.sp }}</strong></td>
-                        <td>{{ row.vr }}</td>
-                        <td>{{ row.pk }}</td>
-                        <td>{{ row.gl }}</td>
-                        <td>{{ row.gr }}</td>
-                        <td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc }}</td>
-                        <td align="right">{{ row.opening_loose }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
-                        <td align="right" style="color:#16a34a;font-weight:700;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td>
-                        <td align="right" style="color:#dc2626;font-weight:700;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc }}</td>
-                        <td align="right">{{ row.loose }}</td>
-                        <td align="right" style="font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
-                        <td align="right" style="font-weight:600;">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td>
-                        <td align="right" style="font-weight:800; color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
+                    <tr class="{{ 'dead-row' if age > 700 else '' }}" data-opening-qty="{{ row.opening_qty|default(0) }}" data-closing-qty="{{ row.qty|default(0) }}" data-opening-mc="{{ row.opening_mc|default(0) }}" data-closing-mc="{{ row.mc|default(0) }}" data-inv-val="{{ row.value|default(0) }}">
+                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
+                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
+                        <td align="right" style="color:#16a34a;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:#dc2626;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
+                        <td align="right">{{ row.mc }}</td><td align="right">{{ row.loose }}</td><td align="right" style="font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="font-weight:800; color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
                         <td>
-                            {% if age <= 30 %} <span class="age-green">{{ age }} D</span>
-                            {% elif age <= 90 %} <span class="age-yellow">{{ age }} D</span>
-                            {% elif age <= 700 %} <span class="age-orange">{{ age }} D</span>
-                            {% else %} <span class="age-red">{{ age }} D</span> {% endif %}
+                            {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
+                            {% elif age <= 90 %}<span class="age-yellow">{{ age }}D</span>
+                            {% elif age <= 700 %}<span class="age-orange">{{ age }}D</span>
+                            {% else %}<span class="age-red">{{ age }}D</span>{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr class="grand-total-row">
-                        <td colspan="9" align="right">GRAND TOTAL</td>
-                        <td align="right" id="foot_op_mc">{{ grand_opening_mc|default(0) }}</td>
-                        <td align="right">{{ grand_opening_loose|default(0) }}</td>
-                        <td align="right" id="foot_op_qty">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</td>
-                        <td align="right" id="foot_cl_mc">{{ closing_stock_mc|default(0) }}</td>
-                        <td align="right">{{ grand_loose|default(0) }}</td>
-                        <td align="right" id="foot_cl_qty">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</td>
-                        <td></td>
-                        <td align="right" id="foot_cl_val">{{ "{:,.0f}".format(total_inventory_value|default(0)) }}</td>
-                        <td></td>
+                        <td colspan="9" align="right">TOTAL</td>
+                        <td align="right" id="foot_op_mc">{{ grand_opening_mc|default(0) }}</td><td></td><td align="right" id="foot_op_qty">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</td>
+                        <td></td><td></td>
+                        <td align="right" id="foot_cl_mc">{{ closing_stock_mc|default(0) }}</td><td></td><td align="right" id="foot_cl_qty">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</td>
+                        <td></td><td align="right" id="foot_cl_val">{{ "{:,.0f}".format(total_inventory_value|default(0)) }}</td><td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -563,34 +413,15 @@ body{
     </div>
 </div>
 
-<!-- OPENING TAB -->
 <div id="opening_tab" class="tab-content">
     <div class="panel">
-        <div class="panel-header">
-            <h3>Opening Stock Summary</h3>
-            <button class="action-btn excel-btn" onclick="exportToExcel('openingTable','Opening_Stock')">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-        </div>
+        <div class="panel-header"><h3>Opening Stock Summary</h3></div>
         <div class="table-wrap">
             <table class="compact-table" id="openingTable">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Location</th>
-                        <th>Storage</th>
-                        <th>Species</th>
-                        <th>Variety</th>
-                        <th>Packing</th>
-                        <th>Glaze</th>
-                        <th>Grade</th>
-                        <th>Client</th>
-                        <th align="right">Opening MC</th>
-                        <th align="right">Opening Loose</th>
-                        <th align="right">Opening Qty</th>
-                        <th align="right" style="background:#fef9c3">Avg Rate</th>
-                        <th align="right" style="background:#dcfce7">Opening Value</th>
-                        <th>Ageing</th>
+                        <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
+                        <th align="right">Op MC</th><th align="right">Op Loose</th><th align="right">Op Qty</th><th align="right">Avg Rate</th><th align="right">Value</th><th>Age</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -598,83 +429,32 @@ body{
                     {% for row in stock_table_data %}
                     {% if row.opening_qty != 0 %}
                     {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
-                    {% set ns.op_mc = ns.op_mc + (row.opening_mc|default(0)) %}
-                    {% set ns.op_loose = ns.op_loose + (row.opening_loose|default(0)) %}
-                    {% set ns.op_qty = ns.op_qty + (row.opening_qty|default(0)) %}
-                    {% set ns.op_val = ns.op_val + row_op_val %}
+                    {% set ns.op_mc = ns.op_mc + (row.opening_mc|default(0)) %}{% set ns.op_loose = ns.op_loose + (row.opening_loose|default(0)) %}{% set ns.op_qty = ns.op_qty + (row.opening_qty|default(0)) %}{% set ns.op_val = ns.op_val + row_op_val %}
                     <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ row.loc }}</td>
-                        <td>{{ row.fr }}</td>
-                        <td>{{ row.sp }}</td>
-                        <td>{{ row.vr }}</td>
-                        <td>{{ row.pk }}</td>
-                        <td>{{ row.gl }}</td>
-                        <td>{{ row.gr }}</td>
-                        <td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc }}</td>
-                        <td align="right">{{ row.opening_loose }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td>
-                        <td align="right" style="font-weight:700; color:var(--accent);">{{ "{:,.0f}".format(row_op_val) }}</td>
-                        <td>{{ row.ageing_days|default(0) }} D</td>
+                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td>{{ row.sp }}</td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
+                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days }}D</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr class="grand-total-row">
-                        <td colspan="9" align="right">TOTAL OPENING</td>
-                        <td align="right">{{ ns.op_mc }}</td>
-                        <td align="right">{{ ns.op_loose }}</td>
-                        <td align="right">{{ "{:,.2f}".format(ns.op_qty) }}</td>
-                        <td></td>
-                        <td align="right">₹ {{ "{:,.0f}".format(ns.op_val) }}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
 </div>
 
-<!-- FY COMPARISON -->
 <div id="comparison_tab" class="tab-content">
     <div class="chart-grid">
-        <div class="chart-box">
-            <h3>Financial Year Comparison</h3>
-            <canvas id="fyChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <h3>Variety Mix</h3>
-            <canvas id="varietyChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <h3>Grade Mix</h3>
-            <canvas id="gradeChart"></canvas>
-        </div>
+        <div class="chart-box"><h3>FY Comparison</h3><canvas id="fyChart"></canvas></div>
+        <div class="chart-box"><h3>Variety Mix</h3><canvas id="varietyChart"></canvas></div>
     </div>
 </div>
 
-<!-- AGING -->
 <div id="aging_tab" class="tab-content">
     <div class="age-boxes">
-        <div class="age-card" style="border-bottom-color:var(--success);">
-            <h4>0-30 Days</h4>
-            <h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2>
-        </div>
-        <div class="age-card" style="border-bottom-color:var(--warning);">
-            <h4>31-90 Days</h4>
-            <h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2>
-        </div>
-        <div class="age-card" style="border-bottom-color:#f97316;">
-            <h4>91-700 Days</h4>
-            <h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2>
-        </div>
-        <div class="age-card" style="border-bottom-color:var(--danger);">
-            <h4>700+ Days</h4>
-            <h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2>
-        </div>
+        <div class="age-card" style="border-bottom-color:var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
+        <div class="age-card" style="border-bottom-color:var(--warning);"><h4>31-90 D</h4><h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2></div>
+        <div class="age-card" style="border-bottom-color:#f97316;"><h4>91-700 D</h4><h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2></div>
+        <div class="age-card" style="border-bottom-color:var(--danger);"><h4>700+ D</h4><h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2></div>
     </div>
 </div>
 
@@ -685,7 +465,6 @@ function openTab(evt, tabId){
     document.getElementById(tabId).classList.add('active');
     evt.currentTarget.classList.add('active');
 }
-
 const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fmtVal = new Intl.NumberFormat('en-IN', { minimumFractionDigits:0, maximumFractionDigits:0 });
 
@@ -694,7 +473,6 @@ function searchTable(){
     let filter = input.value.toUpperCase();
     let rows = document.querySelectorAll("#inventoryBody tr");
     let sumOpQty = 0, sumClQty = 0, sumOpMC = 0, sumClMC = 0, sumClVal = 0;
-
     rows.forEach(tr => {
         let text = tr.innerText.toUpperCase();
         if(text.indexOf(filter) > -1){
@@ -704,11 +482,8 @@ function searchTable(){
             sumOpMC += parseInt(tr.dataset.openingMc || 0);
             sumClMC += parseInt(tr.dataset.closingMc || 0);
             sumClVal += parseFloat(tr.dataset.invVal || 0);
-        } else {
-            tr.style.display = "none";
-        }
+        } else { tr.style.display = "none"; }
     });
-
     document.getElementById('foot_op_qty').innerText = fmt.format(sumOpQty);
     document.getElementById('foot_cl_qty').innerText = fmt.format(sumClQty);
     document.getElementById('foot_op_mc').innerText = sumOpMC.toLocaleString();
@@ -725,37 +500,12 @@ function exportToExcel(tableID, fileName){
 window.onload = function(){
     new Chart(document.getElementById('fyChart'), {
         type:'bar',
-        data:{
-            labels: {{ fy_labels|tojson }},
-            datasets:[
-                { label:'Opening', data: {{ fy_opening|tojson }}, backgroundColor:'#2563eb' },
-                { label:'Closing', data: {{ fy_closing|tojson }}, backgroundColor:'#10b981' }
-            ]
-        },
+        data:{ labels: {{ fy_labels|tojson }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson }}, backgroundColor:'#2563eb' },{ label:'Closing', data: {{ fy_closing|tojson }}, backgroundColor:'#10b981' }] },
         options:{ responsive:true, maintainAspectRatio:false }
     });
-
     new Chart(document.getElementById('varietyChart'), {
         type:'doughnut',
-        data:{
-            labels: {{ variety_labels|tojson }},
-            datasets:[{
-                data: {{ variety_values|tojson }},
-                backgroundColor:['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed']
-            }]
-        },
-        options:{ responsive:true, maintainAspectRatio:false }
-    });
-
-    new Chart(document.getElementById('gradeChart'), {
-        type:'pie',
-        data:{
-            labels: {{ grade_labels|tojson }},
-            datasets:[{
-                data: {{ grade_values|tojson }},
-                backgroundColor:['#2563eb','#0f172a','#10b981','#f59e0b','#ef4444','#7c3aed']
-            }]
-        },
+        data:{ labels: {{ variety_labels|tojson }}, datasets:[{ data: {{ variety_values|tojson }}, backgroundColor:['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed'] }] },
         options:{ responsive:true, maintainAspectRatio:false }
     });
 }

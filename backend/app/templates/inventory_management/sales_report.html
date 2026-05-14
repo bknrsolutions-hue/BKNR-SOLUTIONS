@@ -2,159 +2,160 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ultimate Sales Intelligence – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BKNR ERP | Premium Sales Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <style>
 :root {
-    --bg: #f4f7fa; --panel: #ffffff; --text-main: #1e293b; --text-sub: #64748b;
-    --primary: #4f46e5; --secondary: #0ea5e9; --success: #10b981; --danger: #f43f5e;
-    --warning: #f59e0b; --border: #e2e8f0; --accent: #6366f1;
+    --primary: #4338ca; --primary-light: #eef2ff; --secondary: #0ea5e9;
+    --success: #059669; --danger: #dc2626; --warning: #d97706;
+    --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+    --text-main: #0f172a; --text-sub: #64748b;
 }
-* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; overflow-y: auto; }
 
-/* LAYOUT */
-.dashboard { display: flex; flex-direction: column; min-height: 100vh; }
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.5; }
+
+/* STICKY HEADER & DYNAMIC FILTERS */
 .header { 
-    background: white; padding: 12px 20px; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 1000;
 }
-.header h1 { font-size: 15px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.header h1 { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
 
-/* NEW FILTERS STYLE */
-.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.fbox { display: flex; flex-direction: column; gap: 4px; }
-.fbox label { font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.filters-wrapper { overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.filters-wrapper::-webkit-scrollbar { display: none; }
+.filters { display: flex; gap: 8px; white-space: nowrap; }
 
-/* KPI STRIP */
-.kpi-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding: 15px 20px; }
-.kpi-box { 
-    background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.2s;
+.fbox { display: flex; flex-direction: column; gap: 3px; min-width: 100px; }
+.fbox label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-sub); padding-left: 2px; }
+
+.filter-select, .search-input { 
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); 
+    font-size: 10px; font-weight: 700; background: #fff; outline: none; transition: 0.2s;
 }
-.kpi-box:hover { transform: translateY(-2px); border-color: var(--primary); }
-.kpi-title { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
-.kpi-val { font-size: 16px; font-weight: 800; display: block; }
-.kpi-meta { font-size: 9px; font-weight: 600; margin-top: 4px; }
+.filter-select:focus { border-color: var(--primary); ring: 2px var(--primary-light); }
 
-/* CHARTS SECTION */
-.charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 0 20px 15px; }
-.chart-box { background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
-.chart-header { font-size: 10px; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; color: var(--text-sub); }
+/* KPI CARDS - SCROLLABLE ON MOBILE */
+.kpi-container { 
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+    gap: 10px; padding: 12px 16px; 
+}
+.kpi-box { 
+    background: var(--panel); padding: 12px; border-radius: 12px; 
+    border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.kpi-title { font-size: 8.5px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 6px; }
+.kpi-val { font-size: 15px; font-weight: 800; color: var(--text-main); }
+.kpi-meta { font-size: 9px; font-weight: 600; margin-top: 4px; display: block; }
+
+/* CHARTS */
+.charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 16px 16px; }
+.chart-box { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); height: 220px; }
+.chart-header { font-size: 10px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); border-left: 3px solid var(--primary); padding-left: 8px; }
 .canvas-container { height: 160px; position: relative; }
 
-/* TABLE SECTION */
-.data-container { padding: 0 20px 20px; display: flex; flex-direction: column; }
-.table-panel { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-.table-scroll { overflow: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 2800px; } 
+/* COMPACT DATA TABLE */
+.data-container { padding: 0 16px 20px; }
+.table-panel { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.table-scroll { overflow: auto; max-height: 600px; }
+table { width: 100%; border-collapse: collapse; min-width: 2400px; } 
+
 thead th { 
-    background: #f8fafc; color: var(--text-sub); font-size: 9px; text-transform: uppercase;
-    padding: 10px; text-align: center; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100;
+    background: #f1f5f9; color: var(--text-sub); font-size: 9px; font-weight: 800;
+    padding: 12px 8px; text-align: center; border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
 }
-tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: center; font-weight: 500; }
 
-.status-pill { padding: 3px 8px; border-radius: 20px; font-weight: 800; font-size: 8px; border: none; }
-.pill-received { background: #dcfce7; color: #15803d; }
-.pill-unpaid { background: #fee2e2; color: #b91c1c; }
-.inp-edit { width: 55px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; text-align: center; font-weight: 700; }
-.subtotal-row { background: #fdfdfd; font-weight: 800; border-top: 1px solid #eee; }
-#msg { font-weight: 700; color: var(--success); }
-.filter-select { padding:5px; border-radius:4px; font-weight:700; border:1px solid #ddd; font-size: 10px; min-width: 90px; }
+.inp-edit { width: 60px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: center; font-weight: 800; background: var(--bg); }
 
-@media print { .header, .kpi-container, .charts-grid { display: none !important; } }
+.status-pill { padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 9px; border: none; cursor: pointer; }
+.pill-received { background: #ecfdf5; color: #065f46; }
+.pill-unpaid { background: #fff1f2; color: #9f1239; }
+
+#msg { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: none; z-index: 2000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 1024px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .kpi-container { grid-template-columns: repeat(2, 1fr); }
+    .header h1 { font-size: 14px; }
+    .header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
 </style>
 </head>
 <body>
 
+<div id="msg">Changes Saved!</div>
+
 <div class="dashboard">
     <div class="header">
-        <h1><i class="fas fa-gem"></i> SALES REALIZATION & ANALYTICS</h1>
+        <div class="header-top">
+            <h1><i class="fas fa-chart-line"></i> SALES INTELLIGENCE</h1>
+            <div style="display:flex; gap:8px;">
+                <button onclick="location.reload()" class="filter-select" style="background:var(--primary-light); color:var(--primary); border:none;"><i class="fas fa-sync"></i></button>
+                <button onclick="window.print()" class="filter-select" style="background:var(--primary); color:white; border:none;">EXPORT PDF</button>
+            </div>
+        </div>
         
-        <div class="filters">
-            <span id="msg"></span>
-            
-            <!-- Financial Year Filter START -->
-            <div class="fbox">
-                <label style="color:var(--accent)">Financial Year *</label>
-                <select id="f_fy" class="filter-select" onchange="changeFY(this.value)" style="border: 2px solid var(--primary); background: #eef2ff;">
-                    <option value="">-- SELECT FY --</option>
-                    {% set start_yr = 2024 %}
-                    {% set end_yr = 2027 %}
-                    {% for y in range(start_yr, end_yr) %}
-                    <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <!-- Financial Year Filter END -->
-
-            <div class="fbox">
-                <label>Search</label>
-                <input type="text" id="buyer_search" placeholder="Search..." onkeyup="runAnalytics()" style="padding:5px; border:1px solid #ddd; border-radius:4px; font-size:10px;">
-            </div>
-
-            <div class="fbox">
-                <label>Invoice</label>
-                <select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Invoices</option></select>
-            </div>
-
-            <div class="fbox">
-                <label>PO No</label>
-                <select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All POs</option></select>
-            </div>
-
-            <div class="fbox">
-                <label>Variety</label>
-                <select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select>
-            </div>
-
-            <div class="fbox">
-                <label>Grade</label>
-                <select id="sel_grade" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Grades</option></select>
-            </div>
-
-            <div class="fbox">
-                <label>Month</label>
-                <select id="sel_m" onchange="runAnalytics()" class="filter-select">
-                    <option value="ALL">All Months</option>
-                    <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
-                    <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
-                    <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
-                    <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-                </select>
-            </div>
-
-            <div class="fbox">
-                <label>&nbsp;</label>
-                <button onclick="window.print()" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:700; font-size:10px; cursor:pointer;">EXPORT</button>
+        <div class="filters-wrapper">
+            <div class="filters">
+                <div class="fbox">
+                    <label>Fin. Year</label>
+                    <select id="f_fy" class="filter-select" onchange="changeFY(this.value)" style="border-color: var(--primary);">
+                        <option value="">Select FY</option>
+                        {% set start_yr = 2024 %}
+                        {% set end_yr = 2027 %}
+                        {% for y in range(start_yr, end_yr) %}
+                        <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="fbox"><label>Buyer / Country</label><input type="text" id="buyer_search" class="search-input" placeholder="Search..." onkeyup="runAnalytics()"></div>
+                <div class="fbox"><label>Invoice</label><select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Inv</option></select></div>
+                <div class="fbox"><label>PO No</label><select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All PO</option></select></div>
+                <div class="fbox"><label>Variety</label><select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select></div>
+                <div class="fbox"><label>Grade</label><select id="sel_grade" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Grades</option></select></div>
+                <div class="fbox">
+                    <label>Month</label>
+                    <select id="sel_m" onchange="runAnalytics()" class="filter-select">
+                        <option value="ALL">All Months</option>
+                        <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+                        <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+                        <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+                        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="kpi-container">
-        <div class="kpi-box"><span class="kpi-title">Gross Revenue</span><span class="kpi-val" id="k_rev">₹ 0</span><span class="kpi-meta" id="k_usd_total">$ 0 Total</span></div>
-        <div class="kpi-box"><span class="kpi-title">Net Profit</span><span class="kpi-val" id="k_pl" style="color:var(--success)">₹ 0</span><span class="kpi-meta" id="k_margin">0% Margin</span></div>
-        <div class="kpi-box"><span class="kpi-title">Pending</span><span class="kpi-val" id="k_debt" style="color:var(--danger)">₹ 0</span><span class="kpi-meta" id="k_cei">0% Collected</span></div>
-        <div class="kpi-box"><span class="kpi-title">Total Invoices</span><span class="kpi-val" id="k_inv_count">0</span><span class="kpi-meta">exported</span></div>
+        <div class="kpi-box" style="border-top: 4px solid var(--primary);"><span class="kpi-title">Gross Revenue</span><span class="kpi-val" id="k_rev">₹ 0</span><span class="kpi-meta" id="k_usd_total">$ 0</span></div>
+        <div class="kpi-box" style="border-top: 4px solid var(--success);"><span class="kpi-title">Net Profit</span><span class="kpi-val" id="k_pl" style="color:var(--success)">₹ 0</span><span class="kpi-meta" id="k_margin">0% Margin</span></div>
+        <div class="kpi-box" style="border-top: 4px solid var(--danger);"><span class="kpi-title">Pending Due</span><span class="kpi-val" id="k_debt" style="color:var(--danger)">₹ 0</span><span class="kpi-meta" id="k_cei">0% Collected</span></div>
+        <div class="kpi-box" style="border-top: 4px solid var(--secondary);"><span class="kpi-title">Profit / KG</span><span class="kpi-val" id="k_yield">₹ 0.00</span><span class="kpi-meta">Realization</span></div>
         <div class="kpi-box"><span class="kpi-title">Landed Logistics</span><span class="kpi-val" id="k_cost">₹ 0</span><span class="kpi-meta" id="k_cost_ratio">0% Ratio</span></div>
-        <div class="kpi-box"><span class="kpi-title">Packing Cost</span><span class="kpi-val" id="k_pk_total">₹ 0</span><span class="kpi-meta" id="k_pk_ratio">0% of Rev</span></div>
-        <div class="kpi-box"><span class="kpi-title">Volume</span><span class="kpi-val" id="k_qty">0 KG</span><span class="kpi-meta" id="k_mc">0 MC</span></div>
-        <div class="kpi-box"><span class="kpi-title">Profit / KG</span><span class="kpi-val" id="k_yield">₹ 0.00</span><span class="kpi-meta">Realization</span></div>
+        <div class="kpi-box"><span class="kpi-title">Packing Cost</span><span class="kpi-val" id="k_pk_total">₹ 0</span><span class="kpi-meta" id="k_pk_ratio">0% Rev</span></div>
+        <div class="kpi-box"><span class="kpi-title">Volume (KG)</span><span class="kpi-val" id="k_qty">0</span><span class="kpi-meta" id="k_mc">0 MC</span></div>
+        <div class="kpi-box"><span class="kpi-title">Invoice Count</span><span class="kpi-val" id="k_inv_count">0</span><span class="kpi-meta">Transacted</span></div>
     </div>
 
     <div class="charts-grid">
-        <div class="chart-box"><div class="chart-header">Daily Revenue Trend</div><div class="canvas-container"><canvas id="c_day_trend"></canvas></div></div>
-        <div class="chart-box"><div class="chart-header">Country Share</div><div class="canvas-container"><canvas id="c_country"></canvas></div></div>
-        <div class="chart-box"><div class="chart-header">Revenue vs Profit</div><div class="canvas-container"><canvas id="c_line"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Revenue Trend</div><div class="canvas-container"><canvas id="c_day_trend"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Market Share (Country)</div><div class="canvas-container"><canvas id="c_country"></canvas></div></div>
         <div class="chart-box"><div class="chart-header">Variety Performance</div><div class="canvas-container"><canvas id="c_variety"></canvas></div></div>
         <div class="chart-box"><div class="chart-header">Top Grades (MT)</div><div class="canvas-container"><canvas id="c_bar_grade"></canvas></div></div>
-        <div class="chart-box"><div class="chart-header">Buyer Share</div><div class="canvas-container"><canvas id="c_buyer"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Top 5 Buyers</div><div class="canvas-container"><canvas id="c_buyer"></canvas></div></div>
+        <div class="chart-box"><div class="chart-header">Revenue vs Profit</div><div class="canvas-container"><canvas id="c_line"></canvas></div></div>
     </div>
 
     <div class="data-container">
@@ -163,7 +164,7 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
                 <table>
                     <thead>
                         <tr>
-                            <th>SL</th><th>Invoice No</th><th>Date</th><th>Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO Number</th><th>Container No</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing Style</th><th>MC</th><th>KG</th><th style="background:#eef2ff">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:#fff1f2">Net Profit</th><th>Status</th><th>Company</th>
+                            <th>#</th><th>Invoice No</th><th>Date</th><th>Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO No</th><th>Container</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing</th><th>MC</th><th>KG</th><th style="background:#eef2ff">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:#fff1f2">Profit/Loss</th><th>Status</th><th>Company</th>
                         </tr>
                     </thead>
                     <tbody id="tbody">
@@ -171,19 +172,13 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
                         {% for item in sales_data %}
                             {% set s = item.obj %}
                             <tr class="data-row" 
-                                data-dt="{{ s.invoice_date }}"
-                                data-m="{{ s.invoice_date[5:7] }}" 
-                                data-y="{{ s.invoice_date[0:4] }}" 
-                                data-st="{{ s.status }}" 
-                                data-buyer="{{ s.buyer_name | lower }}" 
-                                data-country="{{ s.country | lower }}" 
-                                data-countryname="{{ s.country }}"
-                                data-grade="{{ s.grade }}" 
-                                data-variety="{{ s.variety }}" 
-                                data-inv="{{ s.invoice_no }}" 
-                                data-po="{{ s.po_number }}">
+                                data-dt="{{ s.invoice_date }}" data-m="{{ s.invoice_date[5:7] }}" 
+                                data-y="{{ s.invoice_date[0:4] }}" data-st="{{ s.status }}" 
+                                data-buyer="{{ s.buyer_name | lower }}" data-country="{{ s.country | lower }}" 
+                                data-countryname="{{ s.country }}" data-grade="{{ s.grade }}" 
+                                data-variety="{{ s.variety }}" data-inv="{{ s.invoice_no }}" data-po="{{ s.po_number }}">
                                 <td>{{ loop.index }}</td>
-                                <td><b>{{ s.invoice_no }}</b></td>
+                                <td><strong>{{ s.invoice_no }}</strong></td>
                                 <td>{{ s.invoice_date }}</td>
                                 <td style="text-align:left;">{{ s.buyer_name }}</td>
                                 <td>{{ s.country }}</td>
@@ -196,10 +191,10 @@ tbody td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: cent
                                 <td>{{ s.count_glaze }} / {{ s.weight_glaze }}</td>
                                 <td>{{ s.packing_style }}</td>
                                 <td class="v-mc">{{ s.no_of_mc }}</td>
-                                <td class="v-kg">{{ "{:,.2f}".format(item.total_qty_kg) }}</td>
+                                <td class="v-kg" style="font-weight:700;">{{ "{:,.2f}".format(item.total_qty_kg) }}</td>
                                 <td><input type="number" step="0.01" class="inp-edit" value="{{ s.exchange_rate }}" onchange="updateRow('{{ s.id }}', 'rate', this.value)"></td>
                                 <td class="v-usd">$ {{ "{:,.2f}".format(item.total_usd) }}</td>
-                                <td class="v-inr">₹ {{ "{:,.2f}".format(item.total_inr) }}</td>
+                                <td class="v-inr" style="font-weight:700;">₹ {{ "{:,.2f}".format(item.total_inr) }}</td>
                                 <td class="v-st">₹ {{ "{:,.2f}".format(s.stock_value) }}</td>
                                 <td class="v-fr">₹ {{ "{:,.2f}".format(s.freight_cost) }}</td>
                                 <td class="v-pk">₹ {{ "{:,.2f}".format(s.packing_cost) }}</td>
@@ -237,8 +232,12 @@ async function updateRow(id, type, val) {
     const payload = type === 'rate' ? { id: id, exchange_rate: val } : { id: id, status: val };
     try {
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if(res.ok) { document.getElementById('msg').innerText = "✓ Saved"; setTimeout(() => location.reload(), 700); }
-    } catch(e) { alert("Error!"); }
+        if(res.ok) { 
+            const msg = document.getElementById('msg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; location.reload(); }, 800);
+        }
+    } catch(e) { alert("Error updating data!"); }
 }
 
 function populateFilters() {
@@ -255,15 +254,13 @@ function populateFilters() {
 }
 
 function runAnalytics() {
-    const m = document.getElementById('sel_m').value;
-    const invF = document.getElementById('sel_inv').value, poF = document.getElementById('sel_po').value;
-    const varF = document.getElementById('sel_variety').value, grdF = document.getElementById('sel_grade').value;
-    const q = document.getElementById('buyer_search').value.toLowerCase();
+    const m = document.getElementById('sel_m').value, invF = document.getElementById('sel_inv').value;
+    const poF = document.getElementById('sel_po').value, varF = document.getElementById('sel_variety').value;
+    const grdF = document.getElementById('sel_grade').value, q = document.getElementById('buyer_search').value.toLowerCase();
     
     let d = { 
         rev:0, usd:0, pl:0, paid:0, unpaid:0, cost:0, pk:0, kg:0, mc:0, invs: new Set(), 
-        grades:{}, buyers:{}, varieties:{}, countries:{}, 
-        dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } 
+        grades:{}, buyers:{}, varieties:{}, countries:{}, dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } 
     };
 
     document.querySelectorAll('.data-row').forEach(tr => {
@@ -287,14 +284,12 @@ function runAnalytics() {
             
             d.grades[tr.dataset.grade] = (d.grades[tr.dataset.grade] || 0) + kg;
             d.varieties[tr.dataset.variety] = (d.varieties[tr.dataset.variety] || 0) + rev;
-            d.buyers[tr.dataset.buyer] = (d.buyers[tr.dataset.buyer] || 0) + rev;
+            d.buyers[tr.dataset.buyer.toUpperCase()] = (d.buyers[tr.dataset.buyer.toUpperCase()] || 0) + rev;
             d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
-            
             d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
             d.timeline.labels.push(tr.querySelector('td:nth-child(2)').innerText); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
         } else tr.style.display = "none";
     });
-
     updateKPIs(d); renderCharts(d);
 }
 
@@ -307,7 +302,7 @@ function updateKPIs(d) {
     document.getElementById('k_inv_count').innerText = d.invs.size;
     document.getElementById('k_cost').innerText = fL(d.cost);
     document.getElementById('k_pk_total').innerText = fL(d.pk);
-    document.getElementById('k_qty').innerText = d.kg.toLocaleString() + " KG";
+    document.getElementById('k_qty').innerText = d.kg.toLocaleString();
     document.getElementById('k_mc').innerText = d.mc + " MC";
     document.getElementById('k_margin').innerText = d.rev > 0 ? ((d.pl/d.rev)*100).toFixed(1) + "% Margin" : "0%";
     document.getElementById('k_cei').innerText = d.rev > 0 ? ((d.paid/d.rev)*100).toFixed(1) + "% Paid" : "0%";
@@ -315,46 +310,46 @@ function updateKPIs(d) {
 }
 
 function renderCharts(d) {
-    const cp = { datalabels: { display: true, color: '#475569', font: { weight: 'bold', size: 8 }, formatter: (v) => v > 1000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
-    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 8, font: { size: 9 } } } };
+    const cp = { datalabels: { display: true, color: '#475569', font: { weight: '800', size: 9 }, formatter: (v) => v > 10000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
+    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } };
 
     if(charts.cDay) charts.cDay.destroy();
     const sortedDates = Object.keys(d.dayTrend).sort();
     charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
-        type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Daily Rev', data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#0ea5e9', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: '#0ea5e911' }] }, 
-        options: { maintainAspectRatio: false, plugins: cp } 
+        type: 'line', data: { labels: sortedDates, datasets: [{ data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#4338ca', borderWidth: 3, tension: 0.4, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.05)' }] }, 
+        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false } } } } 
     });
 
     if(charts.cCountry) charts.cCountry.destroy();
     charts.cCountry = new Chart(document.getElementById('c_country'), { 
-        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#f43f5e', '#0ea5e9'] }] }, 
-        options: { maintainAspectRatio: false, cutout: '60%', plugins: dp } 
-    });
-
-    if(charts.c1) charts.c1.destroy();
-    charts.c1 = new Chart(document.getElementById('c_line'), { 
-        type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#4f46e5', tension: 0.3 }, { label: 'P/L', data: d.timeline.pl, borderColor: '#10b981', tension: 0.3 }] }, 
-        options: { maintainAspectRatio: false, plugins: cp } 
+        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4338ca', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'] }] }, 
+        options: { maintainAspectRatio: false, cutout: '70%', plugins: dp } 
     });
 
     if(charts.c2) charts.c2.destroy();
     charts.c2 = new Chart(document.getElementById('c_variety'), { 
-        type: 'doughnut', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'] }] }, 
-        options: { maintainAspectRatio: false, cutout: '65%', plugins: dp } 
+        type: 'pie', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'] }] }, 
+        options: { maintainAspectRatio: false, plugins: dp } 
     });
 
     if(charts.c3) charts.c3.destroy();
     const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
-        type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9' }] }, 
-        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } } } 
+        type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9', borderRadius: 5 }] }, 
+        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false } } } 
     });
 
     if(charts.c4) charts.c4.destroy();
     const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c4 = new Chart(document.getElementById('c_buyer'), { 
-        type: 'pie', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: ['#4f46e588', '#0ea5e988', '#10b98188', '#f59e0b88', '#f43f5e88'] }] }, 
-        options: { maintainAspectRatio: false, plugins: dp } 
+        type: 'bar', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: '#4338ca', borderRadius: 5 }] }, 
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: cp, scales: { x: { display: false } } } 
+    });
+
+    if(charts.c1) charts.c1.destroy();
+    charts.c1 = new Chart(document.getElementById('c_line'), { 
+        type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#4338ca', tension: 0.3 }, { label: 'P/L', data: d.timeline.pl, borderColor: '#10b981', tension: 0.3 }] }, 
+        options: { maintainAspectRatio: false, plugins: { legend: { display: true } } } 
     });
 }
 
