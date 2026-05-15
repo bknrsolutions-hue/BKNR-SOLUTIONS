@@ -357,7 +357,18 @@ def production_page(
             Production.company_id == company_code
         ).first()
 
-    # ========== 10. BUILD RESPONSE (Fixed TemplateResponse) ==========
+    # ========== 10. POP SESSION MESSAGE & MAP FOR SWEETALERT ==========
+    session_msg = request.session.pop("message", None)
+    success_msg = None
+    error_msg = None
+    
+    if session_msg:
+        if "✔" in session_msg or "Successfully" in session_msg or "ok" in session_msg:
+            success_msg = session_msg
+        else:
+            error_msg = session_msg
+
+    # ========== 11. BUILD RESPONSE (Fixed TemplateResponse) ==========
     common_data = get_common_data(db, company_code)
     
     return templates.TemplateResponse(
@@ -373,7 +384,9 @@ def production_page(
             "from_date": from_date or "",
             "to_date": to_date or "",
             "edit_data": edit_data,
-            "message": request.session.pop("message", None)
+            "message": session_msg,
+            "success_msg": success_msg,
+            "error_msg": error_msg
         }
     )
 

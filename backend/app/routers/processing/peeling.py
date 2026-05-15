@@ -245,7 +245,7 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
             continue
         
         location = loc if loc else "Floor"
-        qty = get_floor_balance(db, company_id, location, batch, count, spc, "HLSO")
+        qty = get_floor_balance(db, company_id, location, batch, count, spc, var)
         
         if qty > 0.01:
             count_str = str(count).strip()

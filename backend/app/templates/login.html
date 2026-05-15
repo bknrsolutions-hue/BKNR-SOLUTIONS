@@ -2,202 +2,812 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP – Secure Login</title>
+<title>BKNR ERP – Enterprise Resource Planning Platform</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+:root {
+  --primary-color: #0056b3; /* Premium MNC Royal Blue Accent */
+  --btn-bg: #003366; /* Deep Navy Blue Button */
+  --btn-hover: #002244;
+  --bg-gradient: linear-gradient(135deg, #f4f7fc 0%, #eef2f7 50%, #e3e9f1 100%); /* Light Blue & White Corporate Shading */
+  --card-bg: rgba(255, 255, 255, 0.98);
+  --text-main: #001f3f; /* Deep Dark Blue Text */
+  --text-muted: #4a5568; /* Slate Blue Gray for Subtext */
+  --border-color: rgba(0, 51, 102, 0.12);
+  --success-bg: #e6fdf5;
+  --success-text: #059669;
+  --error-bg: #fef2f2;
+  --error-text: #dc2626;
+}
+
+*{
+  box-sizing: border-box;
+}
+
 body{
-  margin:0;
-  background:linear-gradient(135deg,#0a3c7c,#0b578c);
-  font-family:Arial,sans-serif
+  margin: 0;
+  background: var(--bg-gradient);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* Full screen edge-to-edge layout utilization */
+  color: var(--text-main);
+  overflow-x: hidden;
 }
+
+/* Full Screen Edge-to-Edge Container Integration */
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+/* Left Column: Premium Executive Value Proposition (CEO Facing) */
+.disclaimer-side {
+  flex: 1.4;
+  background: rgba(0, 51, 102, 0.015);
+  padding: 35px 45px;
+  overflow-y: auto;
+  height: 100vh;
+  border-right: 1px solid var(--border-color);
+}
+
+/* Right Column: Authentication Card Processing Matrix */
+.form-side {
+  flex: 1;
+  padding: 35px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--card-bg);
+  height: 100vh;
+  border-left: 1px solid rgba(0, 51, 102, 0.03);
+  box-shadow: -10px 0 30px rgba(0, 51, 102, 0.03);
+}
+
+/* Typography Specifications for Premium Executive Pitch */
+.disc-title-main {
+  color: var(--text-main);
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 0;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.disc-subtitle-main {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.disc-paragraph {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 18px;
+  text-align: justify;
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0, 86, 179, 0.2) 0%, rgba(0, 86, 179, 0) 100%);
+  margin: 20px 0;
+}
+
+.feature-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 18px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-left: 3px solid var(--primary-color);
+  padding-left: 8px;
+}
+
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 16px 0;
+}
+
+.feature-list li {
+  font-size: 12px;
+  color: #2d3748;
+  margin-bottom: 7px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.feature-list li::before {
+  content: "✦";
+  color: var(--primary-color);
+  font-weight: bold;
+  margin-right: 8px;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+/* Strategic Value Matrix Grid for Quick Executive Scan */
+.executive-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.grid-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 12px 15px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 51, 102, 0.01);
+}
+
+.grid-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+}
+
+.grid-card p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Human Touch Growth Statement Commitment Banner */
+.growth-statement {
+  background: linear-gradient(135deg, #002244 0%, #003366 100%);
+  color: #ffffff;
+  padding: 16px;
+  border-radius: 6px;
+  margin-top: 25px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.1);
+}
+
+.growth-statement h4 {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #00e5ff;
+}
+
+.growth-statement p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+.disc-footer {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 30px;
+  text-align: center;
+  padding-top: 15px;
+  border-top: 1px dashed var(--border-color);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Form Structural Core Definitions */
 .card{
-  width:420px;
-  margin:70px auto;
-  background:#fff;
-  padding:26px;
-  border-radius:14px;
-  box-shadow:0 4px 16px rgba(0,0,0,.2);
-  display:none;
-  animation:fade .4s ease
+  width: 100%;
+  display: none;
+  animation: fade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 @keyframes fade{
-  from{opacity:0;transform:translateY(20px)}
+  from{opacity:0;transform:translateY(8px)}
   to{opacity:1;transform:translateY(0)}
 }
+
 h2{
-  text-align:center;
-  font-size:20px;
-  font-weight:700;
-  color:#003366;
-  margin-top:0
+  text-align: left;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-top: 0;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
 }
+
+.card-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
 label{
-  font-size:13px;
-  color:#003366;
-  font-weight:700
+  display: block;
+  font-size: 11px;
+  color: var(--text-main);
+  font-weight: 700;
+  margin-top: 12px;
+  letter-spacing: 0.3px;
 }
-input,textarea{
-  width:100%;
-  padding:11px;
-  margin-top:8px;
-  border-radius:6px;
-  border:1px solid #bcc7dd;
-  font-size:14px
+
+input, textarea{
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 4px;
+  border-radius: 5px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-main);
+  transition: all 0.2s ease;
 }
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  height: 65px;
+}
+
+/* Action Items Layout Configuration */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+
 button{
-  background:#003366;
-  color:#fff;
-  width:100%;
-  margin-top:15px;
-  padding:12px;
-  border:none;
-  border-radius:6px;
-  font-size:15px;
-  cursor:pointer;
-  font-weight:700
+  background: var(--btn-bg);
+  color: #ffffff;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  order: 1; /* Dynamic UI constraint: Activation button pushed to top of action queue */
+  letter-spacing: 0.3px;
 }
-button:hover{background:#064a90}
+
+button:hover{
+  background: var(--btn-hover);
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.12);
+}
+
 .link{
-  margin-top:12px;
-  text-align:center;
-  font-size:13px
+  margin-top: 14px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  order: 2; /* Informational routing element paths structural placement lower */
 }
+
 .link span{
-  cursor:pointer;
-  color:#064a90;
-  font-weight:700
+  cursor: pointer;
+  color: var(--primary-color);
+  font-weight: 600;
+  transition: color 0.2s;
 }
+
+.link span:hover {
+  text-decoration: underline;
+}
+
 .msg{
-  display:none;
-  padding:10px;
-  margin-top:10px;
-  border-radius:6px;
-  text-align:center;
-  font-size:13px
+  display: none;
+  padding: 10px;
+  margin-top: 14px;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  order: 3; /* System diagnostic status output layer assigned to lowest stack segment */
 }
-.error{background:#ffd3d3;color:#ae0000;border:1px solid red}
-.success{background:#d2ffe1;color:#005524;border:1px solid green}
+
+.error{
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+}
+
+.success{
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid rgba(5, 150, 105, 0.12);
+}
+
+/* ================= ULTRA COMPACT & PREMIUM MOBILE COMPRESSION ================= */
+@media (max-width: 900px) {
+  body {
+    background: #f4f7fc;
+    height: auto;
+    min-height: 100vh;
+  }
+  .container {
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+  }
+  .form-side {
+    width: 100%;
+    height: auto;
+    padding: 22px 16px; /* Reduced padding for tighter alignment */
+    background: #ffffff;
+    border-left: none;
+    box-shadow: none;
+    order: 1; /* Prioritize interactive matrix on viewport reduction */
+  }
+  .disclaimer-side {
+    width: 100%;
+    height: auto;
+    padding: 22px 16px; /* Ultra-sleek padding execution */
+    border-right: none;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0, 51, 102, 0.01);
+    order: 2;
+  }
+  .executive-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .grid-card {
+    padding: 10px 12px;
+  }
+  h2 {
+    font-size: 18px; /* Tighter typography bounds */
+    margin-bottom: 2px;
+  }
+  .card-subtitle {
+    font-size: 11px;
+    margin-bottom: 14px;
+  }
+  .disc-title-main {
+    font-size: 19px;
+  }
+  .disc-subtitle-main {
+    font-size: 11.5px;
+    margin-bottom: 14px;
+  }
+  .disc-paragraph {
+    font-size: 11.5px;
+    margin-bottom: 12px;
+  }
+  .feature-title {
+    font-size: 12px;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+  .feature-list li {
+    font-size: 11px;
+    margin-bottom: 5px;
+  }
+  label {
+    font-size: 10.5px;
+    margin-top: 8px;
+  }
+  input, textarea {
+    padding: 7px 10px; /* Reduced column size and height dimensions */
+    font-size: 12px;
+    margin-top: 2px;
+    border-radius: 4px;
+  }
+  textarea {
+    height: 50px;
+  }
+  .form-actions {
+    margin-top: 14px;
+  }
+  button {
+    padding: 9px; /* Tighter button interface block footprint */
+    font-size: 12px;
+    border-radius: 4px;
+  }
+  .link {
+    margin-top: 10px;
+    font-size: 11px;
+  }
+  .msg {
+    padding: 8px;
+    margin-top: 10px;
+    font-size: 11px;
+  }
+  .growth-statement {
+    padding: 12px;
+    margin-top: 18px;
+  }
+  .growth-statement h4 {
+    font-size: 11.5px;
+  }
+  .growth-statement p {
+    font-size: 11px;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<!-- ================= REGISTER ================= -->
-<div id="registerBox" class="card">
-<h2>Company Registration</h2>
+<div class="container">
+  
+  <!-- ================= LEFT SIDE: EXECUTIVE VALUE PROPOSITION (CEO FACING) ================= -->
+  <div class="disclaimer-side">
+    <h1 class="disc-title-main">BKNR ERP</h1>
+    <div class="disc-subtitle-main">Next-Gen Operational Intelligence for Seafood Enterprises</div>
+    
+    <p class="disc-paragraph">BKNR ERP transforms traditional seafood processing facilities into data-driven, highly optimized enterprise ecosystems [cite: BKNR ERP]. Engineered specifically to meet the high-stakes demands of enterprise executives and CEOs, the platform unifies production tracking, integrated HRMS protocols, cold storage metrics, and deep economic analytics into a single pane of glass [cite: BKNR ERP].</p>
 
-<label>Company Name</label>
-<input id="company_name">
+    <!-- Strategic Highlights Box Grid -->
+    <div class="executive-grid">
+      <div class="grid-card">
+        <h4>Centralized Oversight</h4>
+        <p>Monitor multi-plant performance, live floor balances, and inventory margins in real-time [cite: BKNR ERP].</p>
+      </div>
+      <div class="grid-card">
+        <h4>Leakage Elimination</h4>
+        <p>Enforce end-to-end auditability over grading yields, workforce overheads, and process conversions [cite: BKNR ERP].</p>
+      </div>
+      <div class="grid-card">
+        <h4>Manpower Intelligence</h4>
+        <p>Track floor operations dynamically with integrated live-workforce attendance metrics [cite: BKNR ERP].</p>
+      </div>
+      <div class="grid-card">
+        <h4>Enterprise Control</h4>
+        <p>Scale effortlessly with automated multi-company filters and rigorous asset security models [cite: Saved Information, BKNR ERP].</p>
+      </div>
+    </div>
 
-<label>Your Name</label>
-<input id="user_name">
+    <div class="section-divider"></div>
 
-<label>Designation</label>
-<input id="designation">
+    <div class="feature-title">1. Multi-Company Command Architecture</div>
+    <p class="disc-paragraph">Manage your entire corporate footprint from a single centralized database environment [cite: BKNR ERP]. Perfect for enterprise groups operating across multiple processing facilities or geographical branches.</p>
+    <ul class="feature-list">
+      <li><strong>Company-Wise Data Insulation:</strong> Global backend filtering layers automatically scope and restrict data matrices by authenticated firm payload, ensuring total multi-tenant security [cite: Saved Information, BKNR ERP].</li>
+      <li><strong>Isolated Enterprise Routing:</strong> Secure structural separation maps specific database queries dynamically per enterprise entity to avoid visibility overlap [cite: BKNR ERP].</li>
+      <li><strong>Role-Based Delegation:</strong> Empower managers with plant-specific credentials while maintaining complete executive access at the group level.</li>
+    </ul>
 
-<label>Phone Number</label>
-<input id="mobile">
+    <div class="feature-title">2. Real-Time Production & Transformation Intelligence</div>
+    <p class="disc-paragraph">Gain absolute visibility into factory floor activities. The platform traces raw material transformations dynamically, leaving no space for unaccounted inventory leakage [cite: BKNR ERP].</p>
+    <ul class="feature-list">
+      <li><strong>Dynamic Floor Balance Engines:</strong> Automated tracking arrays compute exact remaining floor balances continuously as stocks advance through processing lines [cite: BKNR ERP].</li>
+      <li><strong>HOSO to HLSO Conversion Analytics:</strong> Algorithmic transformation loops trace exact yield extractions, weight fluctuations, and de-heading metrics (e.g., Vannamei sizing) [cite: User Summary, BKNR ERP].</li>
+      <li><strong>Phase Optimization Metrics:</strong> Track efficiency rates across specialized processing stages including De-heading, Peeling, Soaking, and final Packing [cite: BKNR ERP].</li>
+    </ul>
 
-<label>Email Address</label>
-<input id="email">
+    <div class="feature-title">3. Smart Inventory & Cold Storage Asset Tracking</div>
+    <p class="disc-paragraph">Protect your margins where it matters most. BKNR ERP provides deep visibility into cold holding spaces to ensure high turnover and asset security [cite: BKNR ERP].</p>
+    <ul class="feature-list">
+      <li><strong>Holding Tables Integrity:</strong> Deep physical data architecture tracks batch allocations down to individual room placements and freezer maps [cite: User Summary, BKNR ERP].</li>
+      <li><strong>Partial Dispatch Resolution:</strong> Sophisticated tracking models automatically manage partial dispatches, maintaining accurate continuous FIFO billing variables [cite: User Summary, BKNR ERP].</li>
+      <li><strong>Aging Analysis:</strong> Monitor stock rotation timelines and automated storage expiration metrics to avoid product degradation.</li>
+    </ul>
 
-<label>Company Address</label>
-<textarea id="address"></textarea>
+    <div class="feature-title">4. Financial Costing & Profitability Engine</div>
+    <p class="disc-paragraph">Eliminate estimation from your accounting. Our granular costing algorithms track the exact cost build-up for every processing batch [cite: BKNR ERP].</p>
+    <ul class="feature-list">
+      <li><strong>Granular Process Billing:</strong> Automatically links raw material purchasing data, processing overheads, and contractor costs to calculate true net cost-per-kilogram [cite: User Summary, BKNR ERP].</li>
+      <li><strong>Dual-Mode Storage Costing:</strong> Supports transitions between daily storage calculations and complex monthly bulk configurations [cite: User Summary].</li>
+      <li><strong>Executive Performance Dashboards:</strong> Access real-time margin evaluations, pending sales requirements, and plant efficiency benchmarks instantaneously on page opening [cite: User Summary, User Correction Ledger, BKNR ERP].</li>
+    </ul>
 
-<button onclick="sendOTP()">Send OTP</button>
-<div id="regErr" class="msg error"></div>
+    <div class="feature-title">5. Real-Time HRMS & Manpower Intelligence</div>
+    <p class="disc-paragraph">Maximize labor efficiency and control contractor costs with unified workforce intelligence explicitly integrated into production lines [cite: BKNR ERP].</p>
+    <ul class="feature-list">
+      <li><strong>Live Manpower Tracking:</strong> Monitor active worker distribution and real-time headcounts directly on the production floor dynamically [cite: BKNR ERP].</li>
+      <li><strong>Contractor Billing Reconciliation:</strong> Automate contractor cost calculations by mapping piece-rate or shift attendance metrics directly against batch processing outputs [cite: BKNR ERP].</li>
+      <li><strong>Shift and Yield Correlation:</strong> Evaluate shift-wise productivity and labor expense parameters to pinpoint optimization opportunities.</li>
+    </ul>
 
-<div class="link">
-Already Registered?
-<span onclick="showBox('loginBox')">Login</span>
-</div>
-</div>
+    <div class="feature-title">6. High-Velocity Enterprise Interface</div>
+    <p class="disc-paragraph">Engineered for corporate efficiency, minimizing operational friction and maximizing administrative entry speeds [cite: BKNR ERP].</p>
+    <ul class="feature-list">
+      <li>Intelligent searchable column mechanics across all dropdown tables for ultra-fast data selection [cite: Saved Information, BKNR ERP].</li>
+      <li>Streamlined data-entry formats optimized for rapid corporate operational input [cite: BKNR ERP].</li>
+      <li>Universal multi-device accessibility providing responsive interface performance across tablet, mobile, and desktop environments [cite: BKNR ERP].</li>
+    </ul>
 
-<!-- ================= OTP ================= -->
-<div id="otpBox" class="card">
-<h2>OTP Verification</h2>
+    <!-- ================= HUMAN-CENTRIC COMMITMENT FLAG ================= -->
+    <div class="growth-statement">
+      <h4>Our Core Commitment</h4>
+      <p>"visualising a shared path of technological progress and collective operational excellence."</p>
+    </div>
 
-<label>Enter OTP</label>
-<input id="otp" maxlength="4">
+    <div class="disc-footer">BKNR ERP – Enterprise Security Ecosystem</div>
+  </div>
 
-<button onclick="verifyOTP()">Verify OTP</button>
-<div id="otpErr" class="msg error"></div>
-</div>
+  <!-- ================= RIGHT SIDE: AUTHENTICATION CARDS ================= -->
+  <div class="form-side">
 
-<!-- ================= PASSWORD ================= -->
-<div id="passBox" class="card">
-<h2>Set Login Password</h2>
+    <!-- ================= LOGIN ================= -->
+    <div id="loginBox" class="card">
+      <h2>Login</h2>
+      <div class="card-subtitle">Sign in to your corporate dashboard environment.</div>
 
-<label>Password (max 20 chars)</label>
-<input id="pass1" type="password" maxlength="20">
+      <!-- Clean Input with NO default text/placeholder -->
+      <label>Company ID</label>
+      <input id="login_company_id">
 
-<label>Confirm Password</label>
-<input id="pass2" type="password" maxlength="20">
+      <label>Email</label>
+      <input id="login_email">
 
-<button onclick="savePassword()">Save Password</button>
+      <label>Password</label>
+      <input id="login_pwd" type="password" maxlength="20">
 
-<div id="passErr" class="msg error"></div>
-<div id="passOk" class="msg success"></div>
-</div>
+      <div class="form-actions">
+        <button onclick="doLogin()">Login</button>
+        <div class="link">
+          <span onclick="showBox('registerBox')">Register</span> | 
+          <span onclick="showBox('forgotBox')">Forgot Password?</span>
+        </div>
+        <div id="loginErr" class="msg error"></div>
+      </div>
+    </div>
 
-<!-- ================= LOGIN ================= -->
-<div id="loginBox" class="card">
-<h2>Login</h2>
+    <!-- ================= REGISTER ================= -->
+    <div id="registerBox" class="card">
+      <h2>Company Registration</h2>
+      <div class="card-subtitle">Register enterprise infrastructure endpoints below.</div>
 
-<label>Company ID</label>
-<input id="login_company_id">
+      <label>Company Name</label>
+      <input id="company_name">
 
-<label>Email</label>
-<input id="login_email">
+      <label>Your Name</label>
+      <input id="user_name">
 
-<label>Password</label>
-<input id="login_pwd" type="password" maxlength="20">
+      <label>Designation</label>
+      <input id="designation">
 
-<button onclick="doLogin()">Login</button>
+      <label>Phone Number</label>
+      <input id="mobile">
 
-<div id="loginErr" class="msg error"></div>
+      <label>Email Address</label>
+      <input id="email">
 
-<div class="link">
-<span onclick="showBox('registerBox')">Register</span> |
-<span onclick="showBox('forgotBox')">Forgot Password?</span>
-</div>
-</div>
+      <label>Company Address</label>
+      <textarea id="address"></textarea>
 
-<!-- ================= FORGOT ================= -->
-<div id="forgotBox" class="card">
-<h2>Password Recovery</h2>
+      <div class="form-actions">
+        <button onclick="sendOTP()">Send OTP</button>
+        <div class="link">
+          Already Registered? <span onclick="showBox('loginBox')">Login</span>
+        </div>
+        <div id="regErr" class="msg error"></div>
+      </div>
+    </div>
 
-<label>Registered Email</label>
-<input id="forgot_email">
+    <!-- ================= OTP ================= -->
+    <div id="otpBox" class="card">
+      <h2>OTP Verification</h2>
+      <div class="card-subtitle">Security verification sequence required.</div>
 
-<button onclick="sendResetLink()">Send Reset Link</button>
+      <label>Enter OTP</label>
+      <input id="otp" maxlength="4">
 
-<div id="forgotErr" class="msg error"></div>
-<div id="forgotOk" class="msg success"></div>
+      <div class="form-actions">
+        <button onclick="verifyOTP()">Verify OTP</button>
+        <div id="otpErr" class="msg error"></div>
+      </div>
+    </div>
 
-<div class="link">
-<span onclick="showBox('loginBox')">Back to Login</span>
-</div>
+    <!-- ================= PASSWORD ================= -->
+    <div id="passBox" class="card">
+      <h2>Set Login Password</h2>
+      <div class="card-subtitle">Establish structural encryption keys for system access.</div>
+
+      <label>Password (max 20 chars)</label>
+      <input id="pass1" type="password" maxlength="20">
+
+      <label>Confirm Password</label>
+      <input id="pass2" type="password" maxlength="20">
+
+      <div class="form-actions">
+        <button onclick="savePassword()">Save Password</button>
+        <div id="passErr" class="msg error"></div>
+        <div id="passOk" class="msg success"></div>
+      </div>
+    </div>
+
+    <!-- ================= FORGOT ================= -->
+    <div id="forgotBox" class="card">
+      <h2>Password Recovery</h2>
+      <div class="card-subtitle">Initialize structural identity confirmation routing.</div>
+
+      <label>Registered Email</label>
+      <input id="forgot_email">
+
+      <div class="form-actions">
+        <button onclick="sendResetLink()">Send Reset Link</button>
+        <div class="link">
+          <span onclick="showBox('loginBox')">Back to Login</span>
+        </div>
+        <div id="forgotErr" class="msg error"></div>
+        <div id="forgotOk" class="msg success"></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-const BASE="/auth";
-let regEmail="";
+const BASE = "/auth";
+let regEmail = "";
 
 /* ================= SWITCH UI ================= */
 function showBox(id){
-  document.querySelectorAll(".card").forEach(x=>x.style.display="none");
-  document.getElementById(id).style.display="block";
+  document.querySelectorAll(".card").forEach(x => x.style.display = "none");
+  document.getElementById(id).style.display = "block";
 }
 
-/* DEFAULT SCREEN */
+/* DEFAULT BOX INITIATION */
 showBox("loginBox");
 
 
-/* ================= LOGIN ================= */
+/* ================= BROWSER BACK RESTRICTION LOGIC ================= */
+if (localStorage.getItem("isLoggedIn") === "true") {
+  window.location.href = "/home";
+}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+    if (localStorage.getItem("isLoggedIn") === "true") {
+      window.location.href = "/home";
+    }
+  }
+});
+
+
+/* ================= 30-MINUTES AUTO-LOGOUT FRAMEWORK ================= */
+let idleTimeout;
+const IDLE_LIMIT = 30 * 60 * 1000; 
+
+function resetIdleTimer() {
+  clearTimeout(idleTimeout);
+  idleTimeout = setTimeout(executeAutoLogout, IDLE_LIMIT);
+}
+
+function executeAutoLogout() {
+  localStorage.removeItem("isLoggedIn");
+  alert("Session expired due to 30 minutes of inactivity. Redirecting to login page.");
+  window.location.href = "/auth/login";
+}
+
+window.onload = resetIdleTimer;
+document.onmousemove = resetIdleTimer;
+document.onkeydown = resetIdleTimer;
+document.onscroll = resetIdleTimer;
+document.onclick = resetIdleTimer;
+
+
+/* ================= REGISTER OTP INITIATION ================= */
+async function sendOTP(){
+  const regErr = document.getElementById("regErr");
+  regErr.style.display = "none";
+  regEmail = document.getElementById("email").value.trim().toLowerCase();
+
+  try {
+    let res = await fetch(`${BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: document.getElementById("company_name").value.trim(),
+        user_name: document.getElementById("user_name").value.trim(),
+        designation: document.getElementById("designation").value.trim(),
+        mobile: document.getElementById("mobile").value.trim(),
+        email: regEmail,
+        address: document.getElementById("address").value.trim()
+      })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      showBox("otpBox");
+    } else {
+      regErr.innerHTML = data.detail || "Registration processing error.";
+      regErr.style.display = "block";
+    }
+  } catch (e) {
+    regErr.innerHTML = "Network connection failed.";
+    regErr.style.display = "block";
+  }
+}
+
+/* ================= OTP VERIFICATION ================= */
+async function verifyOTP(){
+  const otpErr = document.getElementById("otpErr");
+  otpErr.style.display = "none";
+
+  try {
+    let res = await fetch(`${BASE}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: regEmail, otp: document.getElementById("otp").value.trim() })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      showBox("passBox");
+    } else {
+      otpErr.innerHTML = data.detail || "Invalid verification code.";
+      otpErr.style.display = "block";
+    }
+  } catch (e) {
+    otpErr.innerHTML = "Verification transmission failed.";
+    otpErr.style.display = "block";
+  }
+}
+
+/* ================= PASSWORD ASSIGNMENT ================= */
+async function savePassword(){
+  const passErr = document.getElementById("passErr");
+  const passOk = document.getElementById("passOk");
+  const p1 = document.getElementById("pass1").value;
+  const p2 = document.getElementById("pass2").value;
+  
+  passErr.style.display = "none";
+  passOk.style.display = "none";
+
+  if (p1 !== p2) {
+    passErr.innerHTML = "Passwords do not match";
+    passErr.style.display = "block";
+    return;
+  }
+
+  try {
+    let res = await fetch(`${BASE}/set-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail,
+        password: p1.substring(0, 20)
+      })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      passOk.innerHTML = "Account created. Company ID: <b>" + data.company_id + "</b>";
+      passOk.style.display = "block";
+      setTimeout(() => showBox("loginBox"), 2500);
+    } else {
+      passErr.innerHTML = data.detail || "Error saving infrastructure metrics.";
+      passErr.style.display = "block";
+    }
+  } catch (e) {
+    passErr.innerHTML = "Data operations failure.";
+    passErr.style.display = "block";
+  }
+}
+
+/* ================= SYSTEM AUTHENTICATION LOGIN ================= */
 async function doLogin(){
-  // పాత ఎర్రర్ మెసేజ్‌లను దాచిపెట్టు
+  const loginErr = document.getElementById("loginErr");
   loginErr.style.display = "none";
 
   try {
@@ -205,121 +815,51 @@ async function doLogin(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        company_id: login_company_id.value.trim(),
-        email: login_email.value.trim().toLowerCase(),
-        password: login_pwd.value.substring(0,20)
+        company_id: document.getElementById("login_company_id").value.trim(),
+        email: document.getElementById("login_email").value.trim().toLowerCase(),
+        password: document.getElementById("login_pwd").value.substring(0, 20)
       })
     });
 
     let data = await res.json();
-
     if (res.ok) {
-      // ✅ బ్యాకెండ్ నుండి సక్సెస్ రాగానే ఇక్కడ హోమ్ కి రిడైరెక్ట్ చేస్తున్నాం
-      console.log("Login Success:", data.message);
-      window.location.href = "/home"; 
+      localStorage.setItem("isLoggedIn", "true");
+      window.location.href = "/home";
     } else {
-      // ❌ ఏదైనా తప్పు జరిగితే ఎర్రర్ మెసేజ్ చూపిస్తాం
-      loginErr.innerHTML = data.detail || "Invalid Credentials";
+      loginErr.innerHTML = data.detail || "Access Denied: Invalid Credentials";
       loginErr.style.display = "block";
     }
-  } catch (error) {
-    console.error("Login Error:", error);
-    loginErr.innerHTML = "Server connection failed. Please try again.";
+  } catch (e) {
+    loginErr.innerHTML = "Server connection infrastructure offline.";
     loginErr.style.display = "block";
   }
 }
 
-/* ================= OTP ================= */
-async function verifyOTP(){
-  otpErr.style.display="none";
-
-  let res=await fetch(`${BASE}/verify-otp`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({email:regEmail,otp:otp.value})
-  });
-
-  let data=await res.json();
-  if(res.ok){
-    showBox("passBox");
-  }else{
-    otpErr.innerHTML=data.detail;
-    otpErr.style.display="block";
-  }
-}
-
-/* ================= PASSWORD ================= */
-async function savePassword(){
-  passErr.style.display="none";
-  passOk.style.display="none";
-
-  if(pass1.value!==pass2.value){
-    passErr.innerHTML="Passwords do not match";
-    passErr.style.display="block";
-    return;
-  }
-
-  let res=await fetch(`${BASE}/set-password`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      email:regEmail,
-      password:pass1.value.substring(0,20)
-    })
-  });
-
-  let data=await res.json();
-  if(res.ok){
-    passOk.innerHTML="Account created. Company ID: <b>"+data.company_id+"</b>";
-    passOk.style.display="block";
-    setTimeout(()=>showBox("loginBox"),2500);
-  }else{
-    passErr.innerHTML=data.detail;
-    passErr.style.display="block";
-  }
-}
-
-/* ================= LOGIN ================= */
-async function doLogin(){
-  loginErr.style.display="none";
-
-  let res=await fetch(`${BASE}/login`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      company_id:login_company_id.value.trim(),
-      email:login_email.value.trim().toLowerCase(),
-      password:login_pwd.value.substring(0,20)
-    })
-  });
-
-  let data=await res.json();
-  if(res.ok){
-    window.location.href="/home";
-  }else{
-    loginErr.innerHTML=data.detail;
-    loginErr.style.display="block";
-  }
-}
-
-/* ================= FORGOT ================= */
+/* ================= FORGOT PASSWORD METRICS ================= */
 async function sendResetLink(){
-  forgotErr.style.display="none";
-  forgotOk.style.display="none";
+  const forgotErr = document.getElementById("forgotErr");
+  const forgotOk = document.getElementById("forgotOk");
+  forgotErr.style.display = "none";
+  forgotOk.style.display = "none";
 
-  let res=await fetch(`${BASE}/forgot-password`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({email:forgot_email.value.trim().toLowerCase()})
-  });
+  try {
+    let res = await fetch(`${BASE}/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: document.getElementById("forgot_email").value.trim().toLowerCase() })
+    });
 
-  let data=await res.json();
-  if(res.ok){
-    forgotOk.innerHTML="Reset link sent to your email";
-    forgotOk.style.display="block";
-  }else{
-    forgotErr.innerHTML=data.detail;
-    forgotErr.style.display="block";
+    let data = await res.json();
+    if (res.ok) {
+      forgotOk.innerHTML = "Reset link sent to your registered email";
+      forgotOk.style.display = "block";
+    } else {
+      forgotErr.innerHTML = data.detail || "Email target matching error.";
+      forgotErr.style.display = "block";
+    }
+  } catch (e) {
+    forgotErr.innerHTML = "Transmission dispatch architecture fault.";
+    forgotErr.style.display = "block";
   }
 }
 </script>
