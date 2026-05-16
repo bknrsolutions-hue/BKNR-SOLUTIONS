@@ -219,11 +219,11 @@ body{
 .card{
   width: 100%;
   display: none;
-  animation: fade .4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fade .3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fade{
-  from{opacity:0;transform:translateY(8px)}
+  from{opacity:0;transform:translateY(4px)}
   to{opacity:1;transform:translateY(0)}
 }
 
@@ -451,6 +451,14 @@ button:hover{
   }
 }
 </style>
+
+<script>
+/* ================= IMMEDIATE AUTH INTERCEPTION LOOP ================= 
+   HTML బాడీ ఇంకా లోడ్ అవ్వకముందే ఇక్కడే చెక్ చేయడం వల్ల పేజీ అస్సలు బ్లింక్ అవ్వదు */
+if (localStorage.getItem("isLoggedIn") === "true") {
+  window.location.replace("/home");
+}
+</script>
 </head>
 
 <body>
@@ -462,82 +470,82 @@ button:hover{
     <h1 class="disc-title-main">BKNR ERP</h1>
     <div class="disc-subtitle-main">Next-Gen Operational Intelligence for Seafood Enterprises</div>
     
-    <p class="disc-paragraph">BKNR ERP transforms traditional seafood processing facilities into data-driven, highly optimized enterprise ecosystems [cite: BKNR ERP]. Engineered specifically to meet the high-stakes demands of enterprise executives and CEOs, the platform unifies production tracking, integrated HRMS protocols, cold storage metrics, and deep economic analytics into a single pane of glass [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">BKNR ERP transforms traditional seafood processing facilities into data-driven, highly optimized enterprise ecosystems. Engineered specifically to meet the high-stakes demands of enterprise executives and CEOs, the platform unifies production tracking, integrated HRMS protocols, cold storage metrics, and deep economic analytics into a single pane of glass.</p>
 
     <!-- Strategic Highlights Box Grid -->
     <div class="executive-grid">
       <div class="grid-card">
         <h4>Centralized Oversight</h4>
-        <p>Monitor multi-plant performance, live floor balances, and inventory margins in real-time [cite: BKNR ERP].</p>
+        <p>Monitor multi-plant performance, live floor balances, and inventory margins in real-time.</p>
       </div>
       <div class="grid-card">
         <h4>Leakage Elimination</h4>
-        <p>Enforce end-to-end auditability over grading yields, workforce overheads, and process conversions [cite: BKNR ERP].</p>
+        <p>Enforce end-to-end auditability over grading yields, workforce overheads, and process conversions.</p>
       </div>
       <div class="grid-card">
         <h4>Manpower Intelligence</h4>
-        <p>Track floor operations dynamically with integrated live-workforce attendance metrics [cite: BKNR ERP].</p>
+        <p>Track floor operations dynamically with integrated live-workforce attendance metrics.</p>
       </div>
       <div class="grid-card">
         <h4>Enterprise Control</h4>
-        <p>Scale effortlessly with automated multi-company filters and rigorous asset security models [cite: Saved Information, BKNR ERP].</p>
+        <p>Scale effortlessly with automated multi-company filters and rigorous asset security models.</p>
       </div>
     </div>
 
     <div class="section-divider"></div>
 
     <div class="feature-title">1. Multi-Company Command Architecture</div>
-    <p class="disc-paragraph">Manage your entire corporate footprint from a single centralized database environment [cite: BKNR ERP]. Perfect for enterprise groups operating across multiple processing facilities or geographical branches.</p>
+    <p class="disc-paragraph">Manage your entire corporate footprint from a single centralized database environment. Perfect for enterprise groups operating across multiple processing facilities or geographical branches.</p>
     <ul class="feature-list">
-      <li><strong>Company-Wise Data Insulation:</strong> Global backend filtering layers automatically scope and restrict data matrices by authenticated firm payload, ensuring total multi-tenant security [cite: Saved Information, BKNR ERP].</li>
-      <li><strong>Isolated Enterprise Routing:</strong> Secure structural separation maps specific database queries dynamically per enterprise entity to avoid visibility overlap [cite: BKNR ERP].</li>
+      <li><strong>Company-Wise Data Insulation:</strong> Global backend filtering layers automatically scope and restrict data matrices by authenticated firm payload, ensuring total multi-tenant security.</li>
+      <li><strong>Isolated Enterprise Routing:</strong> Secure structural separation maps specific database queries dynamically per enterprise entity to avoid visibility overlap.</li>
       <li><strong>Role-Based Delegation:</strong> Empower managers with plant-specific credentials while maintaining complete executive access at the group level.</li>
     </ul>
 
     <div class="feature-title">2. Real-Time Production & Transformation Intelligence</div>
-    <p class="disc-paragraph">Gain absolute visibility into factory floor activities. The platform traces raw material transformations dynamically, leaving no space for unaccounted inventory leakage [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">Gain absolute visibility into factory floor activities. The platform traces raw material transformations dynamically, leaving no space for unaccounted inventory leakage.</p>
     <ul class="feature-list">
-      <li><strong>Dynamic Floor Balance Engines:</strong> Automated tracking arrays compute exact remaining floor balances continuously as stocks advance through processing lines [cite: BKNR ERP].</li>
-      <li><strong>HOSO to HLSO Conversion Analytics:</strong> Algorithmic transformation loops trace exact yield extractions, weight fluctuations, and de-heading metrics (e.g., Vannamei sizing) [cite: User Summary, BKNR ERP].</li>
-      <li><strong>Phase Optimization Metrics:</strong> Track efficiency rates across specialized processing stages including De-heading, Peeling, Soaking, and final Packing [cite: BKNR ERP].</li>
+      <li><strong>Dynamic Floor Balance Engines:</strong> Automated tracking arrays compute exact remaining floor balances continuously as stocks advance through processing lines.</li>
+      <li><strong>HOSO to HLSO Conversion Analytics:</strong> Algorithmic transformation loops trace exact yield extractions, weight fluctuations, and de-heading metrics (e.g., Vannamei sizing).</li>
+      <li><strong>Phase Optimization Metrics:</strong> Track efficiency rates across specialized processing stages including De-heading, Peeling, Soaking, and final Packing.</li>
     </ul>
 
     <div class="feature-title">3. Smart Inventory & Cold Storage Asset Tracking</div>
-    <p class="disc-paragraph">Protect your margins where it matters most. BKNR ERP provides deep visibility into cold holding spaces to ensure high turnover and asset security [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">Protect your margins where it matters most. BKNR ERP provides deep visibility into cold holding spaces to ensure high turnover and asset security.</p>
     <ul class="feature-list">
-      <li><strong>Holding Tables Integrity:</strong> Deep physical data architecture tracks batch allocations down to individual room placements and freezer maps [cite: User Summary, BKNR ERP].</li>
-      <li><strong>Partial Dispatch Resolution:</strong> Sophisticated tracking models automatically manage partial dispatches, maintaining accurate continuous FIFO billing variables [cite: User Summary, BKNR ERP].</li>
+      <li><strong>Holding Tables Integrity:</strong> Deep physical data architecture tracks batch allocations down to individual room placements and freezer maps.</li>
+      <li><strong>Partial Dispatch Resolution:</strong> Sophisticated tracking models automatically manage partial dispatches, maintaining accurate continuous FIFO billing variables.</li>
       <li><strong>Aging Analysis:</strong> Monitor stock rotation timelines and automated storage expiration metrics to avoid product degradation.</li>
     </ul>
 
     <div class="feature-title">4. Financial Costing & Profitability Engine</div>
-    <p class="disc-paragraph">Eliminate estimation from your accounting. Our granular costing algorithms track the exact cost build-up for every processing batch [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">Eliminate estimation from your accounting. Our granular costing algorithms track the exact cost build-up for every processing batch.</p>
     <ul class="feature-list">
-      <li><strong>Granular Process Billing:</strong> Automatically links raw material purchasing data, processing overheads, and contractor costs to calculate true net cost-per-kilogram [cite: User Summary, BKNR ERP].</li>
-      <li><strong>Dual-Mode Storage Costing:</strong> Supports transitions between daily storage calculations and complex monthly bulk configurations [cite: User Summary].</li>
-      <li><strong>Executive Performance Dashboards:</strong> Access real-time margin evaluations, pending sales requirements, and plant efficiency benchmarks instantaneously on page opening [cite: User Summary, User Correction Ledger, BKNR ERP].</li>
+      <li><strong>Granular Process Billing:</strong> Automatically links raw material purchasing data, processing overheads, and contractor costs to calculate true net cost-per-kilogram.</li>
+      <li><strong>Dual-Mode Storage Costing:</strong> Supports transitions between daily storage calculations and complex monthly bulk configurations.</li>
+      <li><strong>Executive Performance Dashboards:</strong> Access real-time margin evaluations, pending sales requirements, and plant efficiency benchmarks instantaneously on page opening.</li>
     </ul>
 
     <div class="feature-title">5. Real-Time HRMS & Manpower Intelligence</div>
-    <p class="disc-paragraph">Maximize labor efficiency and control contractor costs with unified workforce intelligence explicitly integrated into production lines [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">Maximize labor efficiency and control contractor costs with unified workforce intelligence explicitly integrated into production lines.</p>
     <ul class="feature-list">
-      <li><strong>Live Manpower Tracking:</strong> Monitor active worker distribution and real-time headcounts directly on the production floor dynamically [cite: BKNR ERP].</li>
-      <li><strong>Contractor Billing Reconciliation:</strong> Automate contractor cost calculations by mapping piece-rate or shift attendance metrics directly against batch processing outputs [cite: BKNR ERP].</li>
+      <li><strong>Live Manpower Tracking:</strong> Monitor active worker distribution and real-time headcounts directly on the production floor dynamically.</li>
+      <li><strong>Contractor Billing Reconciliation:</strong> Automate contractor cost calculations by mapping piece-rate or shift attendance metrics directly against batch processing outputs.</li>
       <li><strong>Shift and Yield Correlation:</strong> Evaluate shift-wise productivity and labor expense parameters to pinpoint optimization opportunities.</li>
     </ul>
 
     <div class="feature-title">6. High-Velocity Enterprise Interface</div>
-    <p class="disc-paragraph">Engineered for corporate efficiency, minimizing operational friction and maximizing administrative entry speeds [cite: BKNR ERP].</p>
+    <p class="disc-paragraph">Engineered for corporate efficiency, minimizing operational friction and maximizing administrative entry speeds.</p>
     <ul class="feature-list">
-      <li>Intelligent searchable column mechanics across all dropdown tables for ultra-fast data selection [cite: Saved Information, BKNR ERP].</li>
-      <li>Streamlined data-entry formats optimized for rapid corporate operational input [cite: BKNR ERP].</li>
-      <li>Universal multi-device accessibility providing responsive interface performance across tablet, mobile, and desktop environments [cite: BKNR ERP].</li>
+      <li>Intelligent searchable column mechanics across all dropdown tables for ultra-fast data selection.</li>
+      <li>Streamlined data-entry formats optimized for rapid corporate operational input.</li>
+      <li>Universal multi-device accessibility providing responsive interface performance across tablet, mobile, and desktop environments.</li>
     </ul>
 
     <!-- ================= HUMAN-CENTRIC COMMITMENT FLAG ================= -->
     <div class="growth-statement">
       <h4>Our Core Commitment</h4>
-      <p>"visualising a shared path of technological progress and collective operational excellence."</p>
+      <p>"Ma target mee andari growth... visualising a shared path of technological progress and collective operational excellence."</p>
     </div>
 
     <div class="disc-footer">BKNR ERP – Enterprise Security Ecosystem</div>
@@ -666,20 +674,14 @@ function showBox(id){
   document.getElementById(id).style.display = "block";
 }
 
-/* DEFAULT BOX INITIATION */
+/* DEFAULT BOX INITIATION - DOM కంప్లీట్ అవ్వగానే బ్లింక్ అవ్వకుండా చూపిస్తుంది */
 showBox("loginBox");
 
 
-/* ================= BROWSER BACK RESTRICTION LOGIC ================= */
-if (localStorage.getItem("isLoggedIn") === "true") {
-  window.location.href = "/home";
-}
-
+/* ================= BROWSER BACK RESTRICTION & SYNC LOGIC ================= */
 window.addEventListener('pageshow', function(event) {
-  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-    if (localStorage.getItem("isLoggedIn") === "true") {
-      window.location.href = "/home";
-    }
+  if (localStorage.getItem("isLoggedIn") === "true") {
+    window.location.replace("/home");
   }
 });
 
@@ -696,7 +698,7 @@ function resetIdleTimer() {
 function executeAutoLogout() {
   localStorage.removeItem("isLoggedIn");
   alert("Session expired due to 30 minutes of inactivity. Redirecting to login page.");
-  window.location.href = "/auth/login";
+  window.location.replace("/auth/login");
 }
 
 window.onload = resetIdleTimer;
@@ -824,7 +826,7 @@ async function doLogin(){
     let data = await res.json();
     if (res.ok) {
       localStorage.setItem("isLoggedIn", "true");
-      window.location.href = "/home";
+      window.location.replace("/home");
     } else {
       loginErr.innerHTML = data.detail || "Access Denied: Invalid Credentials";
       loginErr.style.display = "block";
