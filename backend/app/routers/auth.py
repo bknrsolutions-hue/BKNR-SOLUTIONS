@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import random, json, os, requests, secrets
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -83,7 +84,7 @@ class ForgotReq(BaseModel):
 
 
 # =====================================================
-# REGISTER → SEND OTP (UPDATED TO 6-DIGIT OTP)
+# REGISTER → SEND OTP
 # =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
@@ -91,8 +92,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "Email already registered")
 
-    # HTML ఫ్రంట్-ఎండ్‌తో సింక్ అవ్వడానికి 6-డిజిట్ OTP ని జనరేట్ చేస్తున్నాం
-    otp = str(random.randint(100000, 999999))
+    otp = str(random.randint(1000, 9999))
 
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
     db.add(OTPTable(
@@ -184,6 +184,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 # =====================================================
 # LOGIN
 # =====================================================
+
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
@@ -220,13 +221,10 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     response.set_cookie(
         key="session",
         value="active",
-        httponly=True,
-        samesite="lax",
-        secure=True  # Production ఎన్విరాన్‌మెంట్‌లో True ఉంచడం రికమండెడ్
+        httponly=True
     )
 
     return response
-
 
 # =====================================================
 # FORGOT PASSWORD
@@ -312,14 +310,9 @@ def reset_password(
 
 
 # =====================================================
-# LOGOUT (UPDATED TO DELETE COOKIES SAFELY)
+# LOGOUT
 # =====================================================
 @router.get("/logout")
 def logout(request: Request):
-    # Session డేటాను క్లియర్ చేయడం
     request.session.clear()
-    
-    # RedirectResponse ని ఇనిషియలైజ్ చేసి బ్రౌజర్ లోని సెషన్ కుకీస్ ని ఎక్స్‌పైర్ చేయడం
-    response = RedirectResponse("/", status_code=303)
-    response.delete_cookie(key="session", path="/")
-    return response
+    return RedirectResponse("/", status_code=303)

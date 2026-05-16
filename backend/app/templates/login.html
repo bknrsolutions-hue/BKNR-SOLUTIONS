@@ -1,528 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>BKNR ERP – Corporate Authentication Architecture</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Injection endpoint for Backend CSRF Tokens -->
-  <meta name="csrf-token" content="{{ csrf_token }}">
+<meta charset="UTF-8">
+<title>BKNR ERP – Secure Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    :root {
-      --primary-color: #0056b3; 
-      --btn-bg: #003366; 
-      --btn-hover: #002244;
-      --bg-gradient: linear-gradient(135deg, #f4f7fc 0%, #eef2f7 50%, #e3e9f1 100%); 
-      --card-bg: rgba(255, 255, 255, 0.98);
-      --text-main: #001f3f; 
-      --text-muted: #4a5568; 
-      --border-color: rgba(0, 51, 102, 0.12);
-      --success-bg: #e6fdf5;
-      --success-text: #059669;
-      --error-bg: #fef2f2;
-      --error-text: #dc2626;
-    }
+<style>
+:root {
+  --primary-color: #00e5ff; /* Premium Neon Cyan Accents */
+  --btn-bg: #111111;
+  --btn-hover: #1f2937;
+  --bg-gradient: linear-gradient(135deg, #090a0f 0%, #121520 50%, #1a1d29 100%); /* Ultra Premium Dark Black with Light Shade */
+  --card-bg: rgba(18, 22, 35, 0.85);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --success-text: #34d399;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --error-text: #f87171;
+}
 
-    * {
-      box-sizing: border-box;
-    }
+*{
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      background: var(--bg-gradient);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0; 
-      color: var(--text-main);
-      overflow-x: hidden;
-    }
+body{
+  margin: 0;
+  background: var(--bg-gradient);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text-main);
+}
 
-    .container {
-      display: flex;
-      width: 100vw;
-      height: 100vh;
-      background: transparent;
-    }
+/* Main Container Layout */
+.container {
+  display: flex;
+  max-width: 1200px;
+  width: 100%;
+  background: rgba(10, 12, 18, 0.6);
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
 
-    .disclaimer-side {
-      flex: 1.3;
-      background: rgba(0, 51, 102, 0.015);
-      padding: 35px 45px;
-      overflow-y: auto;
-      height: 100vh;
-      border-right: 1px solid var(--border-color);
-    }
+/* Left Column: Corporate Disclaimer Section */
+.disclaimer-side {
+  flex: 1.3;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 48px;
+  overflow-y: auto;
+  max-height: 85vh;
+  border-right: 1px solid var(--border-color);
+}
 
-    .form-side {
-      flex: 1;
-      padding: 35px 50px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      background: var(--card-bg);
-      height: 100vh;
-      border-left: 1px solid rgba(0, 51, 102, 0.03);
-      box-shadow: -10px 0 30px rgba(0, 51, 102, 0.03);
-    }
+/* Right Column: Authentication Forms */
+.form-side {
+  flex: 1;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--card-bg);
+}
 
-    .disc-title-main {
-      color: var(--text-main);
-      font-size: 26px;
-      font-weight: 800;
-      margin: 0 0 4px 0;
-      line-height: 1.2;
-    }
+/* Premium Typography Styling */
+.disc-header {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 0;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+}
 
-    .disc-subtitle-main {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--primary-color);
-      margin-bottom: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+.disc-subheader {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
 
-    .disc-paragraph {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 18px;
-      text-align: justify;
-    }
+.feature-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
-    .section-divider {
-      height: 1px;
-      background: linear-gradient(90deg, rgba(0, 86, 179, 0.2) 0%, rgba(0, 86, 179, 0) 100%);
-      margin: 20px 0;
-    }
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 20px 0;
+}
 
-    .feature-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-top: 18px;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-left: 3px solid var(--primary-color);
-      padding-left: 8px;
-    }
+.feature-list li {
+  font-size: 13.5px;
+  color: #d1d5db;
+  margin-bottom: 10px;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+}
 
-    .feature-list {
-      list-style: none;
-      padding-left: 0;
-      margin: 0 0 20px 0;
-    }
+.feature-list li::before {
+  content: "➔";
+  color: var(--primary-color);
+  font-weight: bold;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
 
-    .feature-list li {
-      font-size: 12px;
-      color: #2d3748;
-      margin-bottom: 9px;
-      line-height: 1.6;
-      display: flex;
-      align-items: flex-start;
-    }
+.disc-footer {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 36px;
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
 
-    .feature-list li::before {
-      content: "✓";
-      color: #0056b3;
-      font-weight: bold;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
+/* Unified Authentication Card Layout */
+.card{
+  width: 100%;
+  display: none;
+  animation: fade .5s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-    .executive-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin: 15px 0;
-    }
+@keyframes fade{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
 
-    .grid-card {
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      padding: 12px 15px;
-      border-radius: 6px;
-    }
+h2{
+  text-align: left;
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
 
-    .grid-card h4 {
-      margin: 0 0 4px 0;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--primary-color);
-      text-transform: uppercase;
-    }
+.card-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
 
-    .grid-card p {
-      margin: 0;
-      font-size: 11.5px;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
+label{
+  display: block;
+  font-size: 12.5px;
+  color: #e5e7eb;
+  font-weight: 600;
+  margin-top: 16px;
+  letter-spacing: 0.3px;
+}
 
-    .growth-statement {
-      background: linear-gradient(135deg, #002244 0%, #003366 100%);
-      color: #ffffff;
-      padding: 16px;
-      border-radius: 6px;
-      margin-top: 25px;
-      text-align: center;
-    }
+input, textarea{
+  width: 100%;
+  padding: 13px;
+  margin-top: 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
 
-    .growth-statement h4 {
-      margin: 0 0 4px 0;
-      font-size: 13px;
-      font-weight: 700;
-      color: #00e5ff;
-      text-transform: uppercase;
-    }
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.15);
+}
 
-    .growth-statement p {
-      margin: 0;
-      font-size: 12px;
-      color: #e2e8f0;
-      font-style: italic;
-    }
+textarea {
+  resize: vertical;
+  height: 75px;
+}
 
-    .disc-footer {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-top: 30px;
-      text-align: center;
-      padding-top: 15px;
-      border-top: 1px dashed var(--border-color);
-      text-transform: uppercase;
-    }
+/* Reordered Form Actions: Button FIRST, Links/Texts LAST */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  margin-top: 24px;
+}
 
-    /* ================= LAYOUT ENGINE (ANTI-BLINK SYSTEM) ================= */
-    .card {
-      width: 100%;
-    }
+button{
+  background: #ffffff;
+  color: #000000;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  order: 1; /* Force button to stand at the top inside form-actions */
+}
 
-    .card.hidden-state {
-      display: none;
-      opacity: 0;
-    }
+button:hover{
+  background: var(--primary-color);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+}
 
-    .card.visible-state {
-      display: block;
-      opacity: 1;
-    }
+.link{
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  order: 2; /* Put navigation elements/links under buttons */
+}
 
-    h2 {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--text-main);
-      margin: 0 0 4px 0;
-    }
+.link span{
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 600;
+  transition: color 0.2s;
+}
 
-    .card-subtitle {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-    }
+.link span:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
 
-    label {
-      display: block;
-      font-size: 11px;
-      color: var(--text-main);
-      font-weight: 700;
-      margin-top: 12px;
-    }
+.msg{
+  display: none;
+  padding: 12px;
+  margin-top: 20px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  order: 3; /* Status responses load at the bottom layer */
+}
 
-    input, textarea {
-      width: 100%;
-      padding: 10px 12px;
-      margin-top: 4px;
-      border-radius: 5px;
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      font-size: 13px;
-      color: var(--text-main);
-    }
+.error{
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
 
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.1);
-    }
+.success{
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
 
-    textarea {
-      resize: vertical;
-      height: 65px;
-    }
-
-    .form-actions {
-      display: flex;
-      flex-direction: column;
-      margin-top: 20px;
-    }
-
-    button {
-      background: var(--btn-bg);
-      color: #ffffff;
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 5px;
-      font-size: 13px;
-      cursor: pointer;
-      font-weight: 700;
-      order: 1;
-    }
-
-    button:hover {
-      background: var(--btn-hover);
-    }
-
-    button:disabled {
-      background: #a0aec0;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .link {
-      margin-top: 14px;
-      text-align: center;
-      font-size: 11.5px;
-      color: var(--text-muted);
-      order: 2;
-    }
-
-    .link span {
-      cursor: pointer;
-      color: var(--primary-color);
-      font-weight: 600;
-    }
-
-    .link span:hover {
-      text-decoration: underline;
-    }
-
-    .msg {
-      display: none;
-      padding: 10px;
-      margin-top: 14px;
-      border-radius: 5px;
-      text-align: center;
-      font-size: 11.5px;
-      font-weight: 600;
-      order: 3;
-    }
-
-    .msg.show-msg {
-      display: block;
-    }
-
-    .error {
-      background: var(--error-bg);
-      color: var(--error-text);
-      border: 1px solid rgba(220, 38, 38, 0.12);
-    }
-
-    .success {
-      background: var(--success-bg);
-      color: var(--success-text);
-      border: 1px solid rgba(5, 150, 105, 0.12);
-    }
-
-    /* ================= MOBILE ADAPTATION MATRIX ================= */
-    @media (max-width: 900px) {
-      body {
-        background: #f4f7fc;
-        display: block;
-      }
-      .container {
-        flex-direction: column;
-        height: auto;
-        display: block;
-      }
-      .form-side {
-        width: 100%;
-        height: auto;
-        min-height: 100vh;
-        padding: 30px 20px;
-        background: #ffffff;
-        box-shadow: none;
-        border-left: none;
-      }
-      .disclaimer-side {
-        width: 100%;
-        height: auto;
-        padding: 30px 20px;
-        border-right: none;
-        border-top: 1px solid var(--border-color);
-      }
-      .executive-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+/* ================= COMPACT & ULTRA-PROFESSIONAL MOBILE ADAPTATION ================= */
+@media (max-width: 850px) {
+  body {
+    padding: 12px;
+    background: #090a0f; /* Pure deep solid structure for dark dynamic balance */
+  }
+  .container {
+    flex-direction: column;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+  }
+  .form-side {
+    padding: 24px 16px;
+    background: rgba(18, 22, 35, 0.95);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    order: 1; /* Authentication priority structural shift */
+  }
+  .disclaimer-side {
+    padding: 24px 16px;
+    max-height: none;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    order: 2;
+  }
+  h2 {
+    font-size: 22px;
+  }
+  input, textarea {
+    padding: 11px; /* Highly integrated UI margins */
+  }
+  button {
+    padding: 12px;
+  }
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
   
-  <!-- LEFT SIDE: FULL PROFESSIONAL EXECUTIVE BUSINESS ARCHITECTURE OVERVIEW -->
+  <!-- ================= LEFT SIDE: CORPORATE DISCLAIMER ================= -->
   <div class="disclaimer-side">
-    <h1 class="disc-title-main">BKNR ERP</h1>
-    <div class="disc-subtitle-main">Next-Gen Intelligent Seafood Processing & Enterprise Ecosystem</div>
+    <h1 class="disc-header">BKNR ERP – Smart Seafood Processing Management System</h1>
+    <p class="disc-subheader">BKNR ERP is designed specifically for seafood processing industries to simplify daily operations, improve production tracking, reduce stock mismatches, and increase operational efficiency.</p>
+
+    <div class="feature-title">Why Choose BKNR ERP?</div>
     
-    <p class="disc-paragraph">BKNR ERP is a high-performance, industry-specific enterprise infrastructure engineered exclusively to automate and optimize seafood processing plants. By dissolving manual blind spots, the platform synchronizes complex factory-floor dynamics, supply chains, and fiscal metrics into a singular node of operational intelligence.</p>
-
-    <div class="section-divider"></div>
-
-    <div class="feature-title">Operational Automation Matrix</div>
+    <div class="feature-title" style="font-size:13.5px; margin-top:12px; color: #ffffff;">Industry-Specific ERP</div>
     <ul class="feature-list">
-      <li><strong>Automated Gate Entry & Communications:</strong> Instant inbound weight logging integrated with real-time automated email alerts dispatched straight to management stacks upon vehicle entry.</li>
-      <li><strong>Advanced HRMS & Smart Task Allocation:</strong> End-to-end workforce governance tracking attendance, shifts, and productivity with intelligent, constraint-based auto-work assignment to processing lines.</li>
-      <li><strong>Live Inventory & Cold Storage Ecosystem:</strong> Dynamic balancing of floor stock, raw count variables, reprocess states, and automated lot positioning inside sub-zero bays to prevent batch mismatches.</li>
-      <li><strong>Predictive Demand & Tracking:</strong> Real-time pending order tracking tied to factory capacities, showing raw material requirements automatically on the floor when a new trade order initializes.</li>
-      <li><strong>Contractor Auditing & Billing:</strong> Algorithmic calculation of piece-rate peeling, de-heading, and sorting costs against contractor logs to generate finalized, audit-ready bills instantly.</li>
+      <li>Raw Material Purchasing & Gate Entry Verification</li>
+      <li>Production Floor Management (Grading, Peeling, De-heading, Soaking)</li>
+      <li>Inventory Control & Advanced Cold Storage Infrastructure</li>
+      <li>Comprehensive Costing, Real-time Yield Analysis & Dispatch Tracking</li>
     </ul>
 
-    <div class="section-divider"></div>
-
-    <div class="feature-title">Financial Governance & Analytics Intelligence</div>
+    <div class="feature-title" style="font-size:13.5px; color: #ffffff;">Real-Time Floor Balance Tracking</div>
     <ul class="feature-list">
-      <li><strong>Running Balance Sheet & Ledger Streams:</strong> Unified chart of accounts tracking real-time operations with immediate ledger posting and deep debit/credit analysis for effortless funds-flow visibility.</li>
-      <li><strong>Executive Performance Summery Nodes:</strong> Granular granular filters tracking yields, glaze distributions, and factory margins compiled into automated daily and monthly summary packets.</li>
-      <li><strong>Multi-Dimensional Chart Analytics:</strong> Comprehensive visual intelligence reporting pipelines using structured analytical charts for tracking production cost variances at a single glance.</li>
-      <li><strong>Isolation & Session Guardrails:</strong> Air-gapped multi-tenant architecture secured via strict session-wise data restrictions, guaranteeing distinct cross-company privacy boundaries.</li>
+      <li>Instant tracking of live stock movements across processing units</li>
+      <li>Dynamic verification of floor balance, reprocess stock, and cold storage counts</li>
+      <li>Batch-wise inventory authentication to eliminate discrepancies and over-usage</li>
     </ul>
 
-    <div class="section-divider"></div>
+    <div class="feature-title" style="font-size:13.5px; color: #ffffff;">Accurate Yield & Costing Analysis</div>
+    <ul class="feature-list">
+      <li>Automated calculations of yield percentages and processing efficiency metrics</li>
+      <li>Granular visibility into contractor performance and operational material consumption</li>
+      <li>Robust financial tracking to assist data-driven management decisions</li>
+    </ul>
 
-    <div class="executive-grid">
-      <div class="grid-card">
-        <h4>Yield Optimization</h4>
-        <p>Enforce data-driven oversight across raw sorting metrics, contractor performance tabs, and dispatch variances.</p>
-      </div>
-      <div class="grid-card">
-        <h4>Fiscal Transparency</h4>
-        <p>Monitor real-time operational costs, pending cash flows, and automated factory inventory valuations securely.</p>
-      </div>
-    </div>
+    <div class="feature-title" style="font-size:13.5px; color: #ffffff;">Enterprise Architecture & Security</div>
+    <ul class="feature-list">
+      <li>Multi-Company and Multi-Location centralized operational configuration</li>
+      <li>Secure cloud framework with granular role-based access configurations</li>
+      <li>Automated smart monitoring analytical tools, reporting structures, and dashboards</li>
+    </ul>
 
-    <div class="growth-statement">
-      <h4>Our Core Commitment</h4>
-      <p>"Ma target mee andari growth... visualising a shared path of technological progress and collective operational excellence."</p>
-    </div>
+    <div class="feature-title" style="font-size:13.5px; color: #ffffff;">Interface Optimization</div>
+    <ul class="feature-list">
+      <li>Highly structured, streamlined corporate user interface designed for efficiency</li>
+      <li>Fully scalable components customized to specific manufacturing facility workflows</li>
+    </ul>
 
-    <div class="disc-footer">BKNR ERP – Enterprise Security & Automation Ecosystem</div>
+    <div class="disc-footer">BKNR ERP – Built for Seafood Industry Excellence</div>
   </div>
 
-  <!-- RIGHT SIDE: INTERACTIVE CARDS -->
+  <!-- ================= RIGHT SIDE: AUTHENTICATION CARDS ================= -->
   <div class="form-side">
 
-    <!-- LOGIN CARD (VISIBLE BY DEFAULT - PREVENTS SCREEN FLICKERING) -->
-    <div id="loginBox" class="card visible-state"> 
-      <h2>Login</h2>
-      <div class="card-subtitle">Sign in to your corporate dashboard environment.</div>
-
-      <label for="login_company_id">Company ID</label>
-      <input id="login_company_id" aria-label="Company ID" autocomplete="organization">
-
-      <label for="login_email">Email</label>
-      <input id="login_email" type="email" aria-label="Email Address" autocomplete="username">
-
-      <label for="login_pwd">Password</label>
-      <input id="login_pwd" type="password" aria-label="Password" autocomplete="current-password">
-
-      <div class="form-actions">
-        <button id="btnLogin" onclick="AuthApp.doLogin()">Login</button>
-        <div class="link">
-          <span onclick="AuthApp.showBox('registerBox')">Register</span> | 
-          <span onclick="AuthApp.showBox('forgotBox')">Forgot Password?</span>
-        </div>
-        <div id="loginErr" class="msg error"></div>
-      </div>
-    </div>
-
-    <!-- REGISTER CARD (HIDDEN BY DEFAULT) -->
-    <div id="registerBox" class="card hidden-state">
+    <!-- ================= REGISTER ================= -->
+    <div id="registerBox" class="card">
       <h2>Company Registration</h2>
       <div class="card-subtitle">Register enterprise infrastructure endpoints below.</div>
 
-      <label for="company_name">Company Name</label>
-      <input id="company_name" aria-label="Company Name">
+      <label>Company Name</label>
+      <input id="company_name">
 
-      <label for="user_name">Your Name</label>
-      <input id="user_name" aria-label="Your Name" autocomplete="name">
+      <label>Your Name</label>
+      <input id="user_name">
 
-      <label for="designation">Designation</label>
-      <input id="designation" aria-label="Designation">
+      <label>Designation</label>
+      <input id="designation">
 
-      <label for="mobile">Phone Number</label>
-      <input id="mobile" type="tel" aria-label="Phone Number" autocomplete="tel">
+      <label>Phone Number</label>
+      <input id="mobile">
 
-      <label for="email">Email Address</label>
-      <input id="email" type="email" aria-label="Email Address" autocomplete="email">
+      <label>Email Address</label>
+      <input id="email">
 
-      <label for="address">Company Address</label>
-      <textarea id="address" aria-label="Company Address"></textarea>
+      <label>Company Address</label>
+      <textarea id="address"></textarea>
 
       <div class="form-actions">
-        <button id="btnRegister" onclick="AuthApp.sendOTP()">Send OTP</button>
+        <button onclick="sendOTP()">Send OTP</button>
         <div class="link">
-          Already Registered? <span onclick="AuthApp.showBox('loginBox')">Login</span>
+          Already Registered? <span onclick="showBox('loginBox')">Login</span>
         </div>
         <div id="regErr" class="msg error"></div>
       </div>
     </div>
 
-    <!-- OTP CARD (HIDDEN BY DEFAULT) -->
-    <div id="otpBox" class="card hidden-state">
+    <!-- ================= OTP ================= -->
+    <div id="otpBox" class="card">
       <h2>OTP Verification</h2>
-      <div class="card-subtitle">Security verification sequence required. (6-Digit OTP)</div>
+      <div class="card-subtitle">Security verification sequence required.</div>
 
-      <label for="otp">Enter OTP</label>
-      <input id="otp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" aria-label="One Time Password">
+      <label>Enter OTP</label>
+      <input id="otp" maxlength="4">
 
       <div class="form-actions">
-        <button id="btnOtp" onclick="AuthApp.verifyOTP()">Verify OTP</button>
-        <div class="link">
-          <span id="cooldownTimer" style="color: var(--text-muted); cursor: not-allowed;"></span>
-        </div>
+        <button onclick="verifyOTP()">Verify OTP</button>
         <div id="otpErr" class="msg error"></div>
       </div>
     </div>
 
-    <!-- SET PASSWORD CARD (HIDDEN BY DEFAULT) -->
-    <div id="passBox" class="card hidden-state">
+    <!-- ================= PASSWORD ================= -->
+    <div id="passBox" class="card">
       <h2>Set Login Password</h2>
-      <div class="card-subtitle">Establish structural keys for system access (8-64 chars).</div>
+      <div class="card-subtitle">Establish structural encryption keys for system access.</div>
 
-      <label for="pass1">Password</label>
-      <input id="pass1" type="password" aria-label="New Password" autocomplete="new-password">
+      <label>Password (max 20 chars)</label>
+      <input id="pass1" type="password" maxlength="20">
 
-      <label for="pass2">Confirm Password</label>
-      <input id="pass2" type="password" aria-label="Confirm New Password" autocomplete="new-password">
+      <label>Confirm Password</label>
+      <input id="pass2" type="password" maxlength="20">
 
       <div class="form-actions">
-        <button id="btnPass" onclick="AuthApp.savePassword()">Save Password</button>
+        <button onclick="savePassword()">Save Password</button>
         <div id="passErr" class="msg error"></div>
         <div id="passOk" class="msg success"></div>
       </div>
     </div>
 
-    <!-- FORGOT PASSWORD CARD (HIDDEN BY DEFAULT) -->
-    <div id="forgotBox" class="card hidden-state">
-      <h2>Password Recovery</h2>
-      <div class="card-subtitle">Initialize identity confirmation routing.</div>
+    <!-- ================= LOGIN ================= -->
+    <div id="loginBox" class="card">
+      <h2>Login</h2>
+      <div class="card-subtitle">Sign in to your corporate dashboard environment.</div>
 
-      <label for="forgot_email">Registered Email</label>
-      <input id="forgot_email" type="email" aria-label="Registered Email" autocomplete="email">
+      <label>Company ID</label>
+      <input id="login_company_id">
+
+      <label>Email</label>
+      <input id="login_email">
+
+      <label>Password</label>
+      <input id="login_pwd" type="password" maxlength="20">
 
       <div class="form-actions">
-        <button id="btnForgot" onclick="AuthApp.sendResetLink()">Send Reset Link</button>
+        <button onclick="doLogin()">Login</button>
         <div class="link">
-          <span onclick="AuthApp.showBox('loginBox')">Back to Login</span>
+          <span onclick="showBox('registerBox')">Register</span> | 
+          <span onclick="showBox('forgotBox')">Forgot Password?</span>
+        </div>
+        <div id="loginErr" class="msg error"></div>
+      </div>
+    </div>
+
+    <!-- ================= FORGOT ================= -->
+    <div id="forgotBox" class="card">
+      <h2>Password Recovery</h2>
+      <div class="card-subtitle">Initialize structural identity confirmation routing.</div>
+
+      <label>Registered Email</label>
+      <input id="forgot_email">
+
+      <div class="form-actions">
+        <button onclick="sendResetLink()">Send Reset Link</button>
+        <div class="link">
+          <span onclick="showBox('loginBox')">Back to Login</span>
         </div>
         <div id="forgotErr" class="msg error"></div>
         <div id="forgotOk" class="msg success"></div>
@@ -533,274 +467,202 @@
 </div>
 
 <script>
-const AuthApp = (() => {
-  const BASE = "/auth";
-  let regEmail = "";
-  let cooldownInterval = null;
+const BASE = "/auth";
+let regEmail = "";
 
-  const getCsrfToken = () => {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.getAttribute('content') : '';
-  };
+/* ================= SWITCH UI ================= */
+function showBox(id){
+  document.querySelectorAll(".card").forEach(x => x.style.display = "none");
+  document.getElementById(id).style.display = "block";
+}
 
-  const sanitize = (str) => {
-    if (!str) return '';
-    return str.trim()
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#x27;");
-  };
+/* DEFAULT SCREEN SETTING */
+showBox("loginBox");
 
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
 
-  const setButtonState = (btnId, isLoading) => {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    if (isLoading) {
-      btn.disabled = true;
-      btn.dataset.originalText = btn.innerHTML;
-      btn.innerHTML = "Processing...";
-    } else {
-      btn.disabled = false;
-      btn.innerHTML = btn.dataset.originalText || "Submit";
+/* ================= BROWSER BACK RESTRICTION LOGIC ================= */
+if (localStorage.getItem("isLoggedIn") === "true") {
+  window.location.href = "/home";
+}
+
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+    if (localStorage.getItem("isLoggedIn") === "true") {
+      window.location.href = "/home";
     }
-  };
+  }
+});
 
-  const showMsg = (elementId, text, isSuccess = false) => {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    el.innerHTML = text;
-    el.className = isSuccess ? "msg success show-msg" : "msg error show-msg";
-  };
 
-  const clearMessages = () => {
-    document.querySelectorAll('.msg').forEach(m => {
-      m.innerHTML = "";
-      m.className = "msg";
+/* ================= 30-MINUTES AUTO-LOGOUT FRAMEWORK ================= */
+let idleTimeout;
+const IDLE_LIMIT = 30 * 60 * 1000; 
+
+function resetIdleTimer() {
+  clearTimeout(idleTimeout);
+  idleTimeout = setTimeout(executeAutoLogout, IDLE_LIMIT);
+}
+
+function executeAutoLogout() {
+  localStorage.removeItem("isLoggedIn");
+  alert("Session expired due to 30 minutes of inactivity. Redirecting to login page.");
+  window.location.href = "/auth/login";
+}
+
+window.onload = resetIdleTimer;
+document.onmousemove = resetIdleTimer;
+document.onkeydown = resetIdleTimer;
+document.onscroll = resetIdleTimer;
+document.onclick = resetIdleTimer;
+
+
+/* ================= REGISTER OTP INITIATION ================= */
+async function sendOTP(){
+  regErr.style.display = "none";
+  regEmail = email.value.trim().toLowerCase();
+
+  try {
+    let res = await fetch(`${BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: company_name.value.trim(),
+        user_name: user_name.value.trim(),
+        designation: designation.value.trim(),
+        mobile: mobile.value.trim(),
+        email: regEmail,
+        address: address.value.trim()
+      })
     });
-  };
 
-  const startOtpCooldown = () => {
-    const timerEl = document.getElementById("cooldownTimer");
-    if (!timerEl) return;
-    let secondsLeft = 60;
-    
-    timerEl.innerHTML = `Resend OTP in ${secondsLeft}s`;
-    timerEl.style.pointerEvents = "none";
-
-    clearInterval(cooldownInterval);
-    cooldownInterval = setInterval(() => {
-      secondsLeft--;
-      if (secondsLeft <= 0) {
-        clearInterval(cooldownInterval);
-        timerEl.innerHTML = `<span onclick="AuthApp.sendOTP()">Resend OTP</span>`;
-        timerEl.style.pointerEvents = "auto";
-      } else {
-        timerEl.innerHTML = `Resend OTP in ${secondsLeft}s`;
-      }
-    }, 1000);
-  };
-
-  return {
-    showBox: (id) => {
-      clearMessages();
-      document.querySelectorAll(".card").forEach(x => {
-        x.classList.remove("visible-state");
-        x.classList.add("hidden-state");
-      });
-      const target = document.getElementById(id);
-      if (target) {
-        target.classList.remove("hidden-state");
-        target.classList.add("visible-state");
-      }
-    },
-
-    sendOTP: async () => {
-      clearMessages();
-      const emailInput = sanitize(document.getElementById("email").value);
-      
-      if (!validateEmail(emailInput)) {
-        showMsg("regErr", "Please enter a valid email address.");
-        return;
-      }
-      regEmail = emailInput.toLowerCase();
-      setButtonState("btnRegister", true);
-
-      try {
-        let res = await fetch(`${BASE}/register`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken()
-          },
-          body: JSON.stringify({
-            company_name: sanitize(document.getElementById("company_name").value),
-            user_name: sanitize(document.getElementById("user_name").value),
-            designation: sanitize(document.getElementById("designation").value),
-            mobile: sanitize(document.getElementById("mobile").value),
-            email: regEmail,
-            address: sanitize(document.getElementById("address").value)
-          })
-        });
-
-        let data = await res.json();
-        if (res.ok) {
-          AuthApp.showBox("otpBox");
-          startOtpCooldown();
-        } else {
-          showMsg("regErr", data.detail || "Registration failed. Please check inputs.");
-        }
-      } catch (e) {
-        showMsg("regErr", "Unable to send request. Please try again.");
-      } fill {
-        setButtonState("btnRegister", false);
-      }
-    },
-
-    verifyOTP: async () => {
-      clearMessages();
-      const otpVal = sanitize(document.getElementById("otp").value);
-      if (otpVal.length !== 6) {
-        showMsg("otpErr", "Please enter a valid 6-digit OTP.");
-        return;
-      }
-      setButtonState("btnOtp", true);
-
-      try {
-        let res = await fetch(`${BASE}/verify-otp`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken()
-          },
-          body: JSON.stringify({ email: regEmail, otp: otpVal })
-        });
-
-        let data = await res.json();
-        if (res.ok) {
-          AuthApp.showBox("passBox");
-        } else {
-          showMsg("otpErr", data.detail || "Invalid or expired OTP.");
-        }
-      } catch (e) {
-        showMsg("otpErr", "Unable to verify. Please try again.");
-      } finally {
-        setButtonState("btnOtp", false);
-      }
-    },
-
-    savePassword: async () => {
-      clearMessages();
-      const p1 = document.getElementById("pass1").value;
-      const p2 = document.getElementById("pass2").value;
-
-      if (p1.length < 8 || p1.length > 64) {
-        showMsg("passErr", "Password must be between 8 and 64 characters.");
-        return;
-      }
-      if (p1 !== p2) {
-        showMsg("passErr", "Passwords do not match.");
-        return;
-      }
-      setButtonState("btnPass", true);
-
-      try {
-        let res = await fetch(`${BASE}/set-password`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken()
-          },
-          body: JSON.stringify({ email: regEmail, password: p1 })
-        });
-
-        let data = await res.json();
-        if (res.ok) {
-          showMsg("passOk", `Account configured! Company ID: <strong>${data.company_id}</strong>`, true);
-          setTimeout(() => AuthApp.showBox("loginBox"), 3000);
-        } else {
-          showMsg("passErr", data.detail || "Could not save password.");
-        }
-      } catch (e) {
-        showMsg("passErr", "Operation failed. Please try again.");
-      } finally {
-        setButtonState("btnPass", false);
-      }
-    },
-
-    doLogin: async () => {
-      clearMessages();
-      const emailInput = sanitize(document.getElementById("login_email").value);
-      if (!validateEmail(emailInput)) {
-        showMsg("loginErr", "Please enter a valid email address.");
-        return;
-      }
-      setButtonState("btnLogin", true);
-
-      try {
-        let res = await fetch(`${BASE}/login`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken()
-          },
-          body: JSON.stringify({
-            company_id: sanitize(document.getElementById("login_company_id").value),
-            email: emailInput.toLowerCase(),
-            password: document.getElementById("login_pwd").value
-          })
-        });
-
-        let data = await res.json();
-        if (res.ok) {
-          window.location.replace("/home");
-        } else {
-          showMsg("loginErr", data.detail || "Invalid Credentials.");
-        }
-      } catch (e) {
-        showMsg("loginErr", "Server connection lost. Please try again.");
-      } finally {
-        setButtonState("btnLogin", false);
-      }
-    },
-
-    sendResetLink: async () => {
-      clearMessages();
-      const fEmail = sanitize(document.getElementById("forgot_email").value);
-      if (!validateEmail(fEmail)) {
-        showMsg("forgotErr", "Please enter a valid email address.");
-        return;
-      }
-      setButtonState("btnForgot", true);
-
-      try {
-        let res = await fetch(`${BASE}/forgot-password`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRF-Token": getCsrfToken()
-          },
-          body: JSON.stringify({ email: fEmail.toLowerCase() })
-        });
-
-        let data = await res.json();
-        if (res.ok) {
-          showMsg("forgotOk", "If the email exists, a recovery link has been dispatched.", true);
-        } else {
-          showMsg("forgotErr", data.detail || "Request failed.");
-        }
-      } catch (e) {
-        showMsg("forgotErr", "Unable to process request. Please try again.");
-      } finally {
-        setButtonState("btnForgot", false);
-      }
+    let data = await res.json();
+    if (res.ok) {
+      showBox("otpBox");
+    } else {
+      regErr.innerHTML = data.detail || "Registration processing error.";
+      regErr.style.display = "block";
     }
-  };
-})();
+  } catch (e) {
+    regErr.innerHTML = "Network connection failed.";
+    regErr.style.display = "block";
+  }
+}
+
+/* ================= OTP VERIFICATION ================= */
+async function verifyOTP(){
+  otpErr.style.display = "none";
+
+  try {
+    let res = await fetch(`${BASE}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: regEmail, otp: otp.value.trim() })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      showBox("passBox");
+    } else {
+      otpErr.innerHTML = data.detail || "Invalid verification code.";
+      otpErr.style.display = "block";
+    }
+  } catch (e) {
+    otpErr.innerHTML = "Verification transmission failed.";
+    otpErr.style.display = "block";
+  }
+}
+
+/* ================= PASSWORD ASSIGNMENT ================= */
+async function savePassword(){
+  passErr.style.display = "none";
+  passOk.style.display = "none";
+
+  if (pass1.value !== pass2.value) {
+    passErr.innerHTML = "Passwords do not match";
+    passErr.style.display = "block";
+    return;
+  }
+
+  try {
+    let res = await fetch(`${BASE}/set-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail,
+        password: pass1.value.substring(0, 20)
+      })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      passOk.innerHTML = "Account created. Company ID: <b>" + data.company_id + "</b>";
+      passOk.style.display = "block";
+      setTimeout(() => showBox("loginBox"), 2500);
+    } else {
+      passErr.innerHTML = data.detail || "Error saving infrastructure metrics.";
+      passErr.style.display = "block";
+    }
+  } catch (e) {
+    passErr.innerHTML = "Data operations failure.";
+    passErr.style.display = "block";
+  }
+}
+
+/* ================= SYSTEM AUTHENTICATION LOGIN ================= */
+async function doLogin(){
+  loginErr.style.display = "none";
+
+  try {
+    let res = await fetch(`${BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_id: login_company_id.value.trim(),
+        email: login_email.value.trim().toLowerCase(),
+        password: login_pwd.value.substring(0, 20)
+      })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      localStorage.setItem("isLoggedIn", "true");
+      window.location.href = "/home";
+    } else {
+      loginErr.innerHTML = data.detail || "Access Denied: Invalid Credentials";
+      loginErr.style.display = "block";
+    }
+  } catch (e) {
+    loginErr.innerHTML = "Server connection infrastructure offline.";
+    loginErr.style.display = "block";
+  }
+}
+
+/* ================= FORGOT PASSWORD METRICS ================= */
+async function sendResetLink(){
+  forgotErr.style.display = "none";
+  forgotOk.style.display = "none";
+
+  try {
+    let res = await fetch(`${BASE}/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: forgot_email.value.trim().toLowerCase() })
+    });
+
+    let data = await res.json();
+    if (res.ok) {
+      forgotOk.innerHTML = "Reset link sent to your registered email";
+      forgotOk.style.display = "block";
+    } else {
+      forgotErr.innerHTML = data.detail || "Email target matching error.";
+      forgotErr.style.display = "block";
+    }
+  } catch (e) {
+    forgotErr.innerHTML = "Transmission dispatch architecture fault.";
+    forgotErr.style.display = "block";
+  }
+}
 </script>
+
 </body>
 </html>
