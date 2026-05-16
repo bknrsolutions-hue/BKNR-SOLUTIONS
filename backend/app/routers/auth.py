@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import random, json, os, requests, secrets
-from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from app.database import get_db
@@ -27,6 +27,7 @@ SENDER_NAME = "BKNR ERP"
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
+SESSION_EXPIRY_MIN = 30  # ⏱️ 30 నిమిషాల సెషన్ టైమ్‌అవుట్ లిమిట్
 
 
 # ================= EMAIL FUNCTION =================
@@ -81,6 +82,36 @@ class LoginReq(BaseModel):
 
 class ForgotReq(BaseModel):
     email: str
+
+
+# ================= 🛡️ NO-CACHE RESPONSES HELPER =================
+# బ్రౌజర్ బ్యాక్/ఫార్వర్డ్ బటన్స్ హిస్టరీ నుండి పాత పేజీల డేటాను లోడ్ చేయకుండా ఆపే హెడర్స్
+def apply_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+# ================= SESSION EXPIRY DEPENDENCY =================
+# ఇతర ప్రొటెక్టెడ్ రూట్స్ (eg: /home, /dashboard) దగ్గర దీనిని Dependency గా వాడాలి.
+def get_current_user(request: Request):
+    session_data = request.session
+    if not session_data or "last_activity" not in session_data:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Session expired or invalid. Please login again.")
+    
+    last_activity_str = session_data.get("last_activity")
+    last_activity = datetime.fromisoformat(last_activity_str)
+    
+    # 30 నిమిషాల ఇన్-యాక్టివిటీ టైమ్ వెరిఫికేషన్
+    if datetime.now() > last_activity + timedelta(minutes=SESSION_EXPIRY_MIN):
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Session expired due to inactivity.")
+    
+    # సెషన్ యాక్టివ్‌గా ఉంటే టైమ్‌స్టాంప్‌ను అప్‌డేట్ చేస్తుంది (Sliding Expiry)
+    request.session["last_activity"] = datetime.now().isoformat()
+    return session_data
 
 
 # =====================================================
@@ -182,9 +213,8 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# LOGIN
+# LOGIN (WITH CACHE SECURITY)
 # =====================================================
-
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
@@ -202,17 +232,18 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
-    # ✅ SESSION SET
+    # ✅ SESSION SET & TIME TRACKING
     request.session.update({
         "email": user.email,
         "company_id": company.id,
         "company_code": company.company_code,
         "name": user.name,
         "role": user.role,
-        "permissions": user.permissions
+        "permissions": user.permissions,
+        "last_activity": datetime.now().isoformat()
     })
 
-    # ✅ COOKIE RESPONSE (VERY IMPORTANT 🔥)
+    # ✅ COOKIE RESPONSE WITH CACHE CONTROL
     response = JSONResponse({
         "status": "success",
         "message": "Login Successful"
@@ -224,7 +255,18 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         httponly=True
     )
 
-    return response
+    # 🛡️ లాగిన్ రెస్పాన్స్‌కు నో-క్యాచీ హెడర్స్ అప్లై చేస్తున్నాం
+    return apply_no_cache_headers(response)
+
+
+# =====================================================
+# 🔍 LIVE SESSION CHECK ENDPOINT FOR FRONTEND
+# =====================================================
+# మెనూ/హోమ్ పేజీ లోడ్ అవ్వగానే క్లయింట్ సైడ్ నుండి ఈ ఎండ్‌పాయింట్‌ని కాల్ చేసి వెరిఫై చేసుకోవచ్చు.
+@router.get("/check-session")
+def check_session(session: dict = Depends(get_current_user)):
+    return {"status": "authenticated", "company_code": session.get("company_code")}
+
 
 # =====================================================
 # FORGOT PASSWORD
@@ -272,11 +314,12 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
     if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
         return HTMLResponse("<h3>Link expired</h3>")
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request,
         name="reset_password.html",
         context={"token": token}
     )
+    return apply_no_cache_headers(response)
 
 
 # =====================================================
@@ -306,13 +349,16 @@ def reset_password(
 
     db.commit()
 
-    return RedirectResponse("/", status_code=303)
+    response = RedirectResponse("/", status_code=303)
+    return apply_no_cache_headers(response)
 
 
 # =====================================================
-# LOGOUT
+# LOGOUT (FORCE CLEAR & REDIRECT)
 # =====================================================
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
-    return RedirectResponse("/", status_code=303)
+    response = RedirectResponse("/", status_code=303)
+    # లాగ్‌అవుట్ అయ్యాక బ్రౌజర్ ఫార్వర్డ్ బటన్ నొక్కినా మెనూ పేజీ రాకుండా హెడర్స్ క్లియర్ చేస్తుంది
+    return apply_no_cache_headers(response)
