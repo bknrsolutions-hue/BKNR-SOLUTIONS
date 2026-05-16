@@ -1,5 +1,3 @@
-# app/routers/admin.py
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -15,11 +13,10 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ==========================================================
-# PAGE VIEW – ADD USER PAGE
+# PAGE VIEW – USER MANAGEMENT ENGINE (ADD/EDIT IN ONE PAGE)
 # ==========================================================
 @router.get("/add_user", response_class=HTMLResponse)
 def add_user_page(request: Request, db: Session = Depends(get_db)):
-
     logged_email = request.session.get("email")
     company_code = request.session.get("company_code")   # example: BKNR5647
 
@@ -30,6 +27,9 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
         Company.company_code == company_code
     ).first()
 
+    if not company:
+        return RedirectResponse("/", status_code=302)
+
     users = (
         db.query(User)
         .filter(User.company_id == company.id)
@@ -37,15 +37,15 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 🚩 ఇక్కడ గమనించు: ఈ return కచ్చితంగా 4 spaces లోపలికి ఉండాలి
     return templates.TemplateResponse(
         request=request, 
         name="admin/add_user.html", 
         context={"existing_users": users, "company_code": company_code}
     )
 
+
 # ==========================================================
-# SAVE USER (CREATE)
+# SAVE USER (CREATE ACTION)
 # ==========================================================
 @router.post("/add_user")
 def save_user(
@@ -59,14 +59,13 @@ def save_user(
     access: list[str] = Form([]),
     db: Session = Depends(get_db)
 ):
-
     company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
 
-    company = db.query(Company).filter(
-        Company.company_code == company_code
-    ).first()
+    company = db.query(Company).filter(Company.company_code == company_code).first()
 
-    # Duplicate checks
+    # Unique parameters verification within the enterprise domain
     if db.query(User).filter(User.email == email, User.company_id == company.id).first():
         return RedirectResponse("/admin/add_user?msg=Email Exists", status_code=302)
 
@@ -81,7 +80,7 @@ def save_user(
         designation=designation,
         email=email,
         mobile=mobile,
-        password=hash_password(password),
+        password=hash_password(password if password else "123456"),
         role=role,
         permissions=permissions_csv,
         is_verified=True,
@@ -95,17 +94,28 @@ def save_user(
 
 
 # ==========================================================
-# EDIT USER PAGE
+# COMMIT MODIFY USER (EDIT ACTION MATCHED WITH FRONTEND)
 # ==========================================================
-@router.get("/edit_user/{uid}", response_class=HTMLResponse)
-def edit_user_page(uid: int, request: Request, db: Session = Depends(get_db)):
-
+@router.post("/edit_user/{uid}")
+def edit_user(
+    uid: int, 
+    request: Request,
+    full_name: str = Form(...),
+    designation: str = Form(...),
+    email: str = Form(...),
+    mobile: str = Form(...),
+    password: str = Form(None), # Optional field in frontend UI
+    role: str = Form(...),
+    access: list[str] = Form([]),
+    db: Session = Depends(get_db)
+):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/", status_code=302)
 
     company = db.query(Company).filter(Company.company_code == company_code).first()
 
+    # Find target profile
     user = db.query(User).filter(
         User.id == uid,
         User.company_id == company.id
@@ -114,56 +124,48 @@ def edit_user_page(uid: int, request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
 
-    return templates.TemplateResponse(
-        "admin/edit_user.html",
-        {"request": request, "user": user}
-    )
-
-
-# ==========================================================
-# UPDATE USER
-# ==========================================================
-@router.post("/update_user/{uid}")
-def update_user(
-    uid: int, request: Request,
-    full_name: str = Form(...),
-    designation: str = Form(...),
-    mobile: str = Form(...),
-    role: str = Form(...),
-    access: list[str] = Form([]),
-    db: Session = Depends(get_db)
-):
-
-    company_code = request.session.get("company_code")
-
-    company = db.query(Company).filter(Company.company_code == company_code).first()
-
-    user = db.query(User).filter(
-        User.id == uid,
-        User.company_id == company.id
+    # Cross-validation validation to avoid email overlapping duplicates
+    email_check = db.query(User).filter(
+        User.email == email, 
+        User.company_id == company.id,
+        User.id != uid
     ).first()
+    if email_check:
+        return RedirectResponse("/admin/add_user?msg=Email Already Assigned", status_code=302)
 
-    if not user:
-        return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
+    # Cross-validation validation to avoid mobile overlapping duplicates
+    mobile_check = db.query(User).filter(
+        User.mobile == mobile, 
+        User.company_id == company.id,
+        User.id != uid
+    ).first()
+    if mobile_check:
+        return RedirectResponse("/admin/add_user?msg=Mobile Already Assigned", status_code=302)
 
+    # Bind request stream objects to data structures
     user.name = full_name
     user.designation = designation
+    user.email = email
     user.mobile = mobile
     user.role = role
     user.permissions = ",".join(access)
 
-    db.commit()
+    # If the operator specified a new pass string, inject security layer overhead
+    if password and password.strip() != "":
+        user.password = hash_password(password.strip())
 
+    db.commit()
     return RedirectResponse("/admin/add_user?msg=Updated Successfully", status_code=302)
 
 
 # ==========================================================
-# DELETE USER
+# DELETE USER TERMINATION
 # ==========================================================
 @router.post("/delete_user/{uid}")
 def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
-
     company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
 
     company = db.query(Company).filter(Company.company_code == company_code).first()
 
