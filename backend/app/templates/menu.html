@@ -17,8 +17,8 @@
 
 <style>
 :root {
-    --primary-dark: #0f172a; /* Navy Dark Blue */
-    --sidebar-bg: #ffffff;   /* Corporate White */
+    --primary-dark: #0f172a;
+    --sidebar-bg: #ffffff;
     --accent-blue: #2563eb;
     --accent-glow: #3b82f6;
     --text-main: #1e293b;
@@ -40,7 +40,6 @@ body {
     overflow: hidden;
 }
 
-/* OVERLAY */
 .sidebar-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -53,7 +52,6 @@ body {
 }
 .sidebar-overlay.show { display: block; }
 
-/* CORPORATE WHITE SIDEBAR */
 .sidebar {
     width: var(--sidebar-w);
     background: var(--sidebar-bg);
@@ -110,7 +108,6 @@ body {
 }
 .close-sidebar-btn:hover { color: #ef4444; background: #fee2e2; border-color: #fecaca; }
 
-/* MENU STYLING - LIGHT THEME */
 .sidebar-menu {
     flex: 1; overflow-y: auto; padding: 15px 0; scrollbar-width: none;
 }
@@ -145,7 +142,6 @@ body {
 .chevron-icon { font-size: 10px; opacity: 0.3; transition: transform 0.3s; }
 .menu-item.open .chevron-icon { transform: rotate(90deg); opacity: 1; }
 
-/* SUBMENU */
 .submenu {
     max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
     background: #fcfdfe; margin: 0 12px; border-radius: 8px;
@@ -168,7 +164,6 @@ body {
 }
 .submenu-item:hover .kpi-badge { background: var(--accent-blue); color: #fff; }
 
-/* FOOTER LOGO/QUOTE */
 .sidebar-footer {
     padding: 15px 20px;
     border-top: 1px solid var(--border-color);
@@ -190,7 +185,6 @@ body {
     text-transform: uppercase;
 }
 
-/* APP LAYOUT */
 .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 .app-header {
@@ -238,7 +232,6 @@ body {
 .view-viewport { flex: 1; background: #fff; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 iframe { flex: 1; border: none; width: 100%; height: 100%; }
 
-/* MAIN PAGE FOOTER - OPTIMIZED FOR MOBILE STABILITY */
 .main-page-footer {
     height: 34px;
     min-height: 34px;
@@ -257,7 +250,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
     white-space: nowrap;
 }
 
-/* Responsive Overrides to Guarantee Bottom Tag Visibility on Mobile Screens */
 @media (max-width: 600px) {
     .main-page-footer {
         font-size: 9px;
@@ -331,7 +323,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
 const permissions = {{ request.session.get('permissions')|tojson }};
 function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
 
-// Searchable Dropdown Columns Injection Logic [cite: 1]
+// Searchable Dropdown Columns Injection Logic
 function initializeSearchableColumns(doc) {
     const selects = doc.querySelectorAll('select');
     selects.forEach(select => {
@@ -341,6 +333,7 @@ function initializeSearchableColumns(doc) {
     });
 }
 
+// Fixed Matrix Data Configuration Mapping With Clean Format Keys
 const organizedMenu = [
     {
         pillarName: "Core ERP Operations",
@@ -349,10 +342,10 @@ const organizedMenu = [
                 title: "Live Dashboards",
                 icon: "fa-chart-pie",
                 items: [
-                    ['/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard', 'Live'],
-                    ['/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory Dashboard', 'MNC'],
-                    ['/dashboard/hr_dashboard', 'fa-user-tie', 'HR Dashboard', 'Staff'],
-                    ['/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing Dashboard', 'Fin']
+                    ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard', 'Live'],
+                    ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory Dashboard', 'MNC'],
+                    ['hr_dashboard', '/dashboard/hr_dashboard', 'fa-user-tie', 'HR Dashboard', 'Staff'],
+                    ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing Dashboard', 'Fin']
                 ]
             },
             {
@@ -491,7 +484,6 @@ const frame = document.getElementById('frame');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-// Dropdown initialization monitor inside iframe [cite: 1]
 frame.addEventListener('load', () => {
     try {
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
@@ -507,10 +499,8 @@ function renderOrganizedMenu() {
         let pillarHtml = `<div class="pillar-block"><div class="pillar-title">${pillar.pillarName}</div>`;
         let hasVisibleCategory = false;
         pillar.categories.forEach(cat => {
-            let allowedItems = cat.items.filter(item => {
-                if(item.length === 5) return allow(item[0]);
-                return true; 
-            });
+            // Evaluates permissions consistently since all elements now match the 5-item signature structure mapping
+            let allowedItems = cat.items.filter(item => allow(item[0]));
             if (allowedItems.length === 0) return;
             hasVisibleCategory = true;
             pillarHtml += `<div class="menu-wrapper">
@@ -523,9 +513,7 @@ function renderOrganizedMenu() {
                              </div>
                              <div class="submenu">`;
             allowedItems.forEach(item => {
-                let route, icon, label, badge;
-                if(item.length === 5) [, route, icon, label, badge] = item;
-                else [route, icon, label, badge] = item;
+                const [permissionKey, route, icon, label, badge] = item;
                 pillarHtml += `<a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                 <span><i class="fa-solid ${icon}" style="margin-right:8px; font-size:11px; opacity:0.5;"></i> ${label}</span>
                                 <span class="kpi-badge">${badge}</span>
@@ -571,8 +559,22 @@ async function logout(){
 
 window.onload = () => {
     renderOrganizedMenu();
-    if(allow("processing_dashboard")) loadPage('/dashboard/processing_dashboard');
-    else loadPage('/dashboard/inventory_dashboard');
+    // Safe sequential evaluation matching correct operational layouts maps
+    if(allow("processing_dashboard")) {
+        loadPage('/dashboard/processing_dashboard');
+    } else if(allow("inventory_dashboard")) {
+        loadPage('/dashboard/inventory_dashboard');
+    } else if(allow("hr_dashboard")) {
+        loadPage('/dashboard/hr_dashboard');
+    } else if(allow("costing_dashboard")) {
+        loadPage('/dashboard/costing_dashboard');
+    } else {
+        // Fallback trace sequence if no dashboard permissions match
+        const firstSubmenuItem = document.querySelector('.submenu-item');
+        if(firstSubmenuItem) {
+            firstSubmenuItem.click();
+        }
+    }
 };
 
 if ("serviceWorker" in navigator) {

@@ -123,7 +123,15 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
         </div>
         <div class="form-group">
           <label>Access Password</label>
-          <input id="f_password" name="password" type="password" value="123456" placeholder="Leave empty to keep current">
+          <input 
+  id="f_password"
+  name="password"
+  type="password"
+  minlength="8"
+  maxlength="64"
+  autocomplete="new-password"
+  placeholder="Leave empty to keep current password"
+>
         </div>
       </div>
 
@@ -137,7 +145,7 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
         </div>
         <div class="form-group">
           <label>Corporate Company ID</label>
-          <input value="{{ company_code }}" disabled>
+          <input value="{{ company_code }}" readonly>
         </div>
         
        <!-- ================= MATRIX SEARCHABLE PERMISSION DROPDOWN ================= -->
@@ -365,7 +373,12 @@ document.addEventListener("click", function(e) {
   document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
   const permMenu = document.getElementById("permMenu");
   const permBox = document.querySelector(".perm-box");
-  if (permMenu && !permBox.contains(e.target) && !permMenu.contains(e.target)) {
+  if (
+    permMenu &&
+    permBox &&
+    !permBox.contains(e.target) &&
+    !permMenu.contains(e.target)
+) {
     permMenu.style.display = "none";
   }
 });
@@ -374,7 +387,10 @@ function openActionMenu(event, id) {
   event.stopPropagation();
   document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
   const activeMenu = document.getElementById("menu-" + id);
-  if(activeMenu) activeMenu.style.display = "block";
+  if (activeMenu) {
+
+    activeMenu.style.display = "block";
+}
 }
 
 /* FORM STATES MECHANISM (ADD VS EDIT) */
@@ -388,11 +404,16 @@ function openCreateMode() {
   
   // Reset fields to default behavior
   document.getElementById("f_password").placeholder = "";
-  document.getElementById("f_password").value = "123456";
+  document.getElementById("f_password").value = "";
   
   // Uncheck all permissions
   document.querySelectorAll('.items-grid input[type="checkbox"]').forEach(cb => cb.checked = false);
-  document.querySelectorAll('.pillar-header input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll(
+    '.pillar-header input[type="checkbox"]'
+).forEach(cb => {
+
+    cb.checked = false;
+});
   updateSelectedCount();
   
   showFormCard();
@@ -428,7 +449,10 @@ function triggerEditMode(id) {
   document.getElementById("submitFormBtn").innerText = "Update Matrix Permissions";
 
   // Build matrix alignment structures
-  const permList = permissionsStr.split(",").map(p => p.trim());
+  const permList =
+    permissionsStr
+    ? permissionsStr.split(",").map(p => p.trim())
+    : [];
   document.querySelectorAll('.items-grid input[name="access"]').forEach(cb => {
     cb.checked = permList.includes(cb.value);
   });
@@ -438,7 +462,14 @@ function triggerEditMode(id) {
     const totalKids = section.querySelectorAll('.items-grid input[name="access"]').length;
     const checkedKids = section.querySelectorAll('.items-grid input[name="access"]:checked').length;
     const masterCb = section.querySelector('.pillar-header input[type="checkbox"]');
-    if(masterCb) masterCb.checked = (totalKids === checkedKids && totalKids > 0);
+    if (masterCb) {
+
+    masterCb.checked =
+        (
+            totalKids === checkedKids &&
+            totalKids > 0
+        );
+}
   });
   
   updateSelectedCount();
@@ -468,7 +499,11 @@ function togglePillarCollapse(header) {
   const icon = header.querySelector('i.fa-solid');
   if(block.style.display === "none" || !block.style.display) {
     block.style.display = "block";
-    if(icon) icon.className = "fa-solid fa-angle-down";
+    if (icon) {
+
+    icon.className =
+        "fa-solid fa-angle-down";
+}
   } else {
     block.style.display = "none";
     if(icon) icon.className = "fa-solid fa-angle-right";
@@ -517,7 +552,11 @@ function filterPermissions() {
       if(pillarMatchCount > 0) {
         section.style.display = "block";
         if(categoryBlock) categoryBlock.style.display = "block";
-        if(icon) icon.className = "fa-solid fa-angle-down";
+        if (icon) {
+
+    icon.className =
+        "fa-solid fa-angle-down";
+}
       } else {
         section.style.display = "none";
       }
