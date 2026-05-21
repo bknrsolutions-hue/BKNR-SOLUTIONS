@@ -2,197 +2,528 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Container Logistics - BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<title>CONTAINER LOGISTICS MANAGEMENT - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 :root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
-  --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
-  --muted:#64748b; --success: #166534; --danger: #dc2626;
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 80px; overflow-x: hidden;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
-/* HEADER */
-.header{
-  position:sticky; top:0; z-index:100; background:#fff; padding:12px 15px;
-  border-bottom:1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+/* --- HEADER --- */
+.header-dash {
+  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800;}
-.header-titles p{margin:2px 0 0; font-size:10px; color:var(--muted); font-weight: 500;}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
 
-/* FORM SECTION */
-.section{
-  margin:10px; background:var(--card); padding:15px;
-  border-radius:12px; border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: none;
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+    .grand-total { width: 100%; padding: 8px 15px; } 
 }
-.section-title { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
-.form-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
-@media(min-width:768px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
-@media(min-width:1200px){ .form-grid{grid-template-columns:repeat(6,1fr);} }
 
-.field{display:flex; flex-direction:column; gap: 4px;}
-.field label{ font-size:10px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+/* --- FILTERS --- */
+.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
 
-input, select{
-  padding:10px; border-radius:8px; border:1px solid var(--border);
-  font-size:13px; background:#fff; outline: none; transition: 0.2s; width: 100%;
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- MAIN TABLE (COMPACT) --- */
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+
+/* Empty Table State */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+
+/* --- MODAL MANAGEMENT (4-COLUMN GRID) --- */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* --- AUDIT PANEL --- */
+.audit-panel { 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
 }
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-
-/* TABLE CONTROLS & TABLE */
-.table-controls { padding: 15px 18px 5px; display: flex; gap: 10px; }
-.search-input { width: 100%; max-width: 300px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
-
-.table-wrap { margin: 5px 18px 12px; background:var(--card); border-radius:12px; border:1px solid var(--border); overflow-x:auto; }
-#dataTable{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1000px; }
-#dataTable thead th{ background:#f8fafc; padding:10px 6px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; text-align: center; }
-#dataTable tbody td{ padding:8px 6px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-
-.top-actions { margin: 10px 15px; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 13px; }
-.btn-post{ background:var(--accent); color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer; width:100%; }
+@media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="header-titles">
-      <h2>Container Logistics</h2>
-      <p><i class="fa-solid fa-ship"></i> {{ comp_code }}</p>
-  </div>
-  <div style="font-size: 10px; color: var(--accent); font-weight: 800;">LIVE</div>
+<div class="header-dash">
+    <div class="header-titles"><h2>Container Logistics Dashboard</h2></div>
+    <div class="grand-total" id="gt_display">TOTAL FREIGHT: ₹ 0.00</div>
 </div>
 
-<div class="top-actions">
-    <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> ADD NEW ENTRY</button>
-</div>
-
-<form id="containerForm" method="POST" action="/api/container/save">
-<div class="section" id="formSection">
-    <div class="section-title"><i class="fa-solid fa-file-invoice"></i> Logistics Details</div>
-    <div class="form-grid">
-        <div class="field">
-            <label>PO Number</label>
-            <select name="po_number" required>
-                <option value="N/A">N/A</option>
-                {% for po in po_list %}<option value="{{ po }}">{{ po }}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="field">
-            <label>Container Number</label>
-            <input type="text" name="container_no" required>
-        </div>
-        <div class="field">
-            <label>Size</label>
-            <select name="container_size">
-                <option value="20FT">20 FT</option>
-                <option value="40FT" selected>40 FT HC</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Vendor</label>
-            <select name="shipping_line_id" required>
-                {% for v in shipping_vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="field"><label>Ocean Freight</label><input type="number" id="ocean_freight" oninput="calcTotal()" value="0"></div>
-        <div class="field"><label>Local Transport</label><input type="number" id="local_transport" oninput="calcTotal()" value="0"></div>
-        <div class="field"><label>Handling</label><input type="number" id="handling_charges" oninput="calcTotal()" value="0"></div>
-        <div class="field"><label>Detention</label><input type="number" id="detention_charges" oninput="calcTotal()" value="0"></div>
-        <div class="field">
-            <label>GST %</label>
-            <select id="gst_per" onchange="calcTotal()">
-                <option value="0">0%</option><option value="5">5%</option>
-                <option value="12">12%</option><option value="18" selected>18%</option>
-            </select>
-        </div>
-        <div class="field"><label>Tax Amount</label><input type="text" id="tax_amount" readonly></div>
-        <div class="field">
-            <label>Total</label>
-            <input type="text" id="display_total" readonly>
-            <input type="hidden" name="grand_total" id="hidden_total">
-        </div>
-    </div>
-    <div style="margin-top:20px;">
-        <button type="submit" class="btn-post"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE LOGISTICS</button>
-    </div>
-</div>
-</form>
-
-<div class="table-controls">
-    <input type="text" id="searchTable" class="search-input" onkeyup="filterTable()" placeholder="🔍 Search PO, Container, or Vendor...">
-</div>
-
-<div class="table-wrap">
-    <table id="dataTable">
-        <thead>
-            <tr><th>SL</th><th>PO</th><th>Container</th><th>Size</th><th>Vendor</th><th>Ocean</th><th>Local</th><th>Handling</th><th>Detention</th><th>Total</th></tr>
-        </thead>
-        <tbody>
-            {% for log, v_name in container_history %}
-            <tr>
-                <td>{{ loop.revindex }}</td>
-                <td>{{ log.po_number }}</td>
-                <td>{{ log.container_no }}</td>
-                <td>{{ log.size }}</td>
-                <td>{{ v_name }}</td>
-                <td>{{ log.ocean_cost }}</td>
-                <td>{{ log.local_cost }}</td>
-                <td>{{ log.handling }}</td>
-                <td>{{ log.detention }}</td>
-                <td style="font-weight:700; color:var(--success);">₹ {{ log.lended_total }}</td>
-            </tr>
+<!-- 📊 FILTERS GRID BAR -->
+<div class="filter-bar">
+    <div class="filter-item">
+        <label style="color:var(--accent)">Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- SELECT FY --</option>
+            {% set start_yr = 2024 %}
+            {% set end_yr = 2027 %}
+            {% for y in range(start_yr, end_yr) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
             {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Search PO, Container, Vendor...">
+    </div>
+</div>
+
+<!-- 🧾 ACTIONS HEADER -->
+<div class="section-header">
+    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="editSelectedRow()"><i class="fa-solid fa-pen-to-square" style="color:var(--accent)"></i> Edit Entry</div>
+                <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Audit History</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+                <div class="menu-item" onclick="executePdfExport()"><i class="fa-solid fa-file-pdf" style="color:var(--danger)"></i> Export PDF</div>
+                <div class="menu-item" onclick="executePrint()"><i class="fa-solid fa-print" style="color:var(--primary)"></i> Print Report</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW LOGISTICS ENTRY</button>
+    </div>
+</div>
+
+<!-- 📋 COMPACT DATA TABLE -->
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>PO Number</th>
+                <th>Container No</th>
+                <th>Size</th>
+                <th>Vendor (Shipping Line)</th>
+                <th class="text-right">Ocean Freight</th>
+                <th class="text-right">Local Transport</th>
+                <th class="text-right">Handling</th>
+                <th class="text-right">Detention</th>
+                <th>GST %</th>
+                <th class="text-right">Grand Total</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not container_history %}
+            <tr>
+                <td colspan="11" class="empty-state">
+                    <i class="fa-solid fa-anchor"></i><br>
+                    <b>Financial Year Not Selected</b><br>
+                    <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to load active logistics data ledger.</span>
+                </td>
+            </tr>
+            {% else %}
+                {% for log, v_name in container_history %}
+                <tr class="data-row" 
+                    data-id="{{ log.id }}" 
+                    data-po="{{ log.po_number }}"
+                    data-vendor-id="{{ log.shipping_line_id }}"
+                    data-total="{{ log.lended_total }}"
+                    onclick="selectRow(this, '{{ log.id }}')">
+                    
+                    <td class="slno">0</td>
+                    <td style="font-weight:700;">{{ log.po_number }}</td>
+                    <td>{{ log.container_no }}</td>
+                    <td>{{ log.size }}</td>
+                    <td class="text-left">{{ v_name }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(log.ocean_cost or 0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(log.local_cost or 0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(log.handling or 0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(log.detention or 0) }}</td>
+                    <td>{{ log.gst_percent or 18 }}%</td>
+                    <td class="text-right" style="font-weight:800; color:var(--success);">₹{{ "{:,.2f}".format(log.lended_total or 0) }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
         </tbody>
     </table>
 </div>
 
+<!-- 📦 ENTRY FORM OVERLAY MODAL -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;" id="modalTitle">New Logistics Entry</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="containerForm" onsubmit="saveContainerLogistics(event)">
+            <input type="hidden" id="modalEntryId">
+            
+            <div id="modalBodyContainer" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>PO Number</label>
+                        <select id="modalPoNumber" required>
+                            <option value="N/A">N/A</option>
+                            {% for po in po_list %}<option value="{{ po }}">{{ po }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Container Number</label>
+                        <input type="text" id="modalContainerNo" required placeholder="MSKU1234567" style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="field">
+                        <label>Container Size</label>
+                        <select id="modalSize">
+                            <option value="20FT">20 FT</option>
+                            <option value="40FT" selected>40 FT HC</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Shipping Line Vendor</label>
+                        <select id="modalVendorId" required>
+                            {% for v in shipping_vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Ocean Freight</label>
+                        <input type="number" step="any" id="modalOceanCost" value="0" oninput="calculateModalTotals()">
+                    </div>
+
+                    <div class="field">
+                        <label>Local Transport</label>
+                        <input type="number" step="any" id="modalLocalCost" value="0" oninput="calculateModalTotals()">
+                    </div>
+
+                    <div class="field">
+                        <label>Handling Charges</label>
+                        <input type="number" step="any" id="modalHandling" value="0" oninput="calculateModalTotals()">
+                    </div>
+
+                    <div class="field">
+                        <label>Detention Charges</label>
+                        <input type="number" step="any" id="modalDetention" value="0" oninput="calculateModalTotals()">
+                    </div>
+
+                    <div class="field">
+                        <label>GST Tax Tier (%)</label>
+                        <select id="modalGstPercent" onchange="calculateModalTotals()">
+                            <option value="0">0%</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18" selected>18%</option>
+                        </select>
+                    </div>
+
+                    <div class="field" id="scollTargetField">
+                        <label>Tax Calculated</label>
+                        <input type="text" id="modalTaxAmount" style="background: #f9fafb;" readonly value="₹ 0.00">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; background: #f0fdf4; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
+                    <span style="font-weight: 700; color: #166534; font-size: 13px;">Lended Total Amount:</span>
+                    <span style="font-size: 18px; font-weight: 800; color: #166534;"><span id="modalGrandTotal">₹ 0.00</span></span>
+                </div>
+            </div>
+            
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1;">Save Logistics</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= AUDIT PANEL ================= -->
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">LOGISTICS EDIT HISTORY LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+</div>
+
 <script>
-function calcTotal(){
-    const ocean = parseFloat(document.getElementById('ocean_freight').value)||0;
-    const local = parseFloat(document.getElementById('local_transport').value)||0;
-    const handling = parseFloat(document.getElementById('handling_charges').value)||0;
-    const detention = parseFloat(document.getElementById('detention_charges').value)||0;
-    const gst = parseFloat(document.getElementById('gst_per').value)||0;
-    const subtotal = ocean+local+handling+detention;
-    const tax = subtotal * gst / 100;
-    const total = subtotal + tax;
-    document.getElementById('tax_amount').value = "₹ "+tax.toFixed(2);
-    document.getElementById('display_total').value = "₹ "+total.toFixed(2);
-    document.getElementById('hidden_total').value = total.toFixed(2);
-}
+    const API_BASE = "/api/container"; // Updated back-end framework API prefix location context
 
-function toggleForm() {
-    const f = document.getElementById("formSection");
-    f.style.display = (f.style.display === "none" || f.style.display === "") ? "block" : "none";
-}
+    let globalSelectedId = null;
 
-function filterTable() {
-    const input = document.getElementById("searchTable");
-    const filter = input.value.toUpperCase();
-    const table = document.getElementById("dataTable");
-    const tr = table.getElementsByTagName("tr");
-    for (let i = 1; i < tr.length; i++) {
-        const tds = tr[i].getElementsByTagName("td");
-        let found = false;
-        for (let j = 0; j < tds.length; j++) {
-            if (tds[j].innerText.toUpperCase().indexOf(filter) > -1) {
-                found = true;
-                break;
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+        
+        document.getElementById("dotsBtn").onclick = (e) => { 
+            e.stopPropagation(); 
+            const m = document.getElementById("dropdownMenu"); 
+            m.style.display = (m.style.display === "block") ? "none" : "block"; 
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.menu-trigger')) {
+                const m = document.getElementById("dropdownMenu");
+                if(m) m.style.display = 'none';
+            }
+        });
+
+        const searchBox = document.getElementById('searchBox');
+        if(searchBox) {
+            searchBox.addEventListener('keyup', debounce(applyFilters, 250));
+        }
+    });
+
+    function changeFY(val) {
+        if(!val) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('fy', val);
+        window.location.href = url.toString();
+    }
+
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    function applyFilters() {
+        const tableBody = document.getElementById("tableBody");
+        if (!tableBody || tableBody.querySelector(".empty-state")) return;
+
+        const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let visibleRows = [];
+        let subtotal = 0;
+
+        rows.forEach(r => {
+            const t = parseFloat(r.getAttribute("data-total")) || 0;
+            let match = true;
+            if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
+
+            if(match) {
+                r.style.display = "";
+                subtotal += t;
+                visibleRows.push(r);
+            } else {
+                r.style.display = "none";
+            }
+        });
+
+        // Sl No Descending allocation framework injection
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".slno").innerText = visibleRows.length - index;
+        });
+
+        document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
+        document.getElementById("gt_display").innerText = "TOTAL FREIGHT: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
+    }
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    function calculateModalTotals() {
+        const ocean = parseFloat(document.getElementById('modalOceanCost').value) || 0;
+        const local = parseFloat(document.getElementById('modalLocalCost').value) || 0;
+        const handling = parseFloat(document.getElementById('modalHandling').value) || 0;
+        const detention = parseFloat(document.getElementById('modalDetention').value) || 0;
+        const gst = parseFloat(document.getElementById('modalGstPercent').value) || 0;
+
+        const subtotal = ocean + local + handling + detention;
+        const tax = (subtotal * gst) / 100;
+        const grand = subtotal + tax;
+
+        document.getElementById('modalTaxAmount').value = "₹ " + tax.toFixed(2);
+        document.getElementById('modalGrandTotal').innerText = "₹ " + grand.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    }
+
+    function openModal() {
+        if(!document.getElementById("f_fy").value) {
+            Swal.fire("FY Required", "Please select a Financial Year first before writing container data elements ledger entry.", "warning");
+            return;
+        }
+        document.getElementById("containerForm").reset();
+        document.getElementById("modalTitle").innerText = "New Logistics Entry";
+        document.getElementById("modalEntryId").value = "";
+        calculateModalTotals();
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
+    }
+
+    function closeModal() { 
+        document.getElementById('entryModal').style.display = 'none'; 
+        document.getElementById('containerForm').reset(); 
+    }
+
+    function toggleAuditPanel(show) {
+        const panel = document.getElementById("auditPanel");
+        panel.style.display = show ? "flex" : "none";
+    }
+
+    async function showAllAuditLogs() {
+        toggleAuditPanel(true);
+        const content = document.getElementById("auditContent");
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Logs Archive...</div>`;
+
+        try {
+            const res = await fetch(`${API_BASE}/audit_all`);
+            const logs = await res.json();
+            
+            if(Array.isArray(logs) && logs.length > 0) {
+                content.innerHTML = logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp}</b> | Container: ${l.container_no || 'N/A'}<br>
+                        ${l.action}: ${l.details}<br>
+                        <small>User Operator: ${l.user}</small>
+                    </div>`).join('');
+            } else {
+                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No operational audit history lines found inside table stack.</div>`;
+            }
+        } catch (e) {
+            content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:10px;">Failed execution link sync tracking metadata stack.</div>`;
+        }
+    }
+
+    async function saveContainerLogistics(event) {
+        event.preventDefault();
+        
+        const payload = {
+            po_number: document.getElementById("modalPoNumber").value,
+            container_no: document.getElementById("modalContainerNo").value.trim().toUpperCase(),
+            size: document.getElementById("modalSize").value,
+            shipping_line_id: parseInt(document.getElementById("modalVendorId").value),
+            ocean_cost: parseFloat(document.getElementById("modalOceanCost").value) || 0,
+            local_cost: parseFloat(document.getElementById("modalLocalCost").value) || 0,
+            handling: parseFloat(document.getElementById("modalHandling").value) || 0,
+            detention: parseFloat(document.getElementById("modalDetention").value) || 0,
+            gst_percent: parseFloat(document.getElementById("modalGstPercent").value) || 0
+        };
+
+        const editId = document.getElementById("modalEntryId").value;
+        const apiPath = editId ? `${API_BASE}/update/${editId}` : `${API_BASE}/save`;
+        const methodType = editId ? 'PUT' : 'POST';
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(apiPath, {
+                method: methodType,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                Swal.fire({ icon: 'success', title: 'Data Committed!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
+            } else {
+                Swal.fire("Refused", "Data model schema rules rejection validation failed.", "error");
+            }
+        } catch(e) {
+            Swal.fire("Error", "Server payload post connection dropped exception.", "error");
+        }
+    }
+
+    function editSelectedRow() {
+        if (!globalSelectedId) return;
+        
+        const row = document.querySelector(`tr[data-id="${globalSelectedId}"]`);
+        if(!row) return;
+
+        document.getElementById("modalEntryId").value = globalSelectedId;
+        document.getElementById("modalPoNumber").value = row.getAttribute("data-po");
+        document.getElementById("modalContainerNo").value = row.cells[2].innerText;
+        document.getElementById("modalSize").value = row.cells[3].innerText;
+        document.getElementById("modalVendorId").value = row.getAttribute("data-vendor-id");
+        
+        document.getElementById("modalOceanCost").value = parseFloat(row.cells[5].innerText.replace(/,/g, ''));
+        document.getElementById("modalLocalCost").value = parseFloat(row.cells[6].innerText.replace(/,/g, ''));
+        document.getElementById("modalHandling").value = parseFloat(row.cells[7].innerText.replace(/,/g, ''));
+        document.getElementById("modalDetention").value = parseFloat(row.cells[8].innerText.replace(/,/g, ''));
+        
+        const gstVal = row.cells[9].innerText.replace('%','').trim();
+        document.getElementById("modalGstPercent").value = gstVal;
+
+        calculateModalTotals();
+        document.getElementById("modalTitle").innerText = "Edit Logistics Entry";
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+
+        const decision = await Swal.fire({
+            title: "Are you sure?",
+            text: "This logistics entry transaction trace will be deleted from system schema storage stack.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "Yes, Delete"
+        });
+
+        if (decision.isConfirmed) {
+            try {
+                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
+                if (res.ok) {
+                    Swal.fire({ icon: 'success', title: 'Removed!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
+                }
+            } catch (err) {
+                Swal.fire("Error", "Execution intercept fault dropping storage node trace row.", "error");
             }
         }
-        tr[i].style.display = found ? "" : "none";
     }
-}
 
-window.onload = calcTotal;
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
+    function executePdfExport() { if(globalSelectedId) window.location.href = `${API_BASE}/export/pdf/${globalSelectedId}`; }
+    function executePrint() { if(globalSelectedId) window.open(`${API_BASE}/print/${globalSelectedId}`, '_blank'); }
 </script>
 
 </body>

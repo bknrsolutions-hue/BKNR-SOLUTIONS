@@ -1,144 +1,479 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Consumption - BKNR ERP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary: #0f172a; --border: #cbd5e1; --bg: #f8fafc; --success: #166534; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 15px; color: var(--primary); margin: 0; }
-        
-        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h2 { font-size: 16px; font-weight: 800; margin: 0; }
-        
-        .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-        .field-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        input, select { padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
-        
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 10px; }
-        .filter-bar input { padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; flex: 1; }
+<meta charset="utf-8">
+<title>ELECTRICITY CONSUMPTION MANAGEMENT - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .table-container { background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        .scroll-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { background: #f1f5f9; padding: 10px 8px; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border); text-align: center; color: #475569; }
-        td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; font-size: 11px; text-align: center; }
-        .total-row { background: #f8fafc; font-weight: 700; }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+:root{
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+}
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
+
+/* --- HEADER --- */
+.header-dash {
+  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+    .grand-total { width: 100%; padding: 8px 15px; } 
+}
+
+/* --- FILTERS --- */
+.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- MAIN TABLE (COMPACT) --- */
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1000px; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+
+/* Empty State */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+
+/* --- MODAL MANAGEMENT (SINGLE COLUMN FOR MOBILE VIEW) --- */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* --- AUDIT PANEL --- */
+.audit-panel { 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+}
+@media(max-width:400px){ .audit-panel { width: 100%; } }
+</style>
 </head>
+
 <body>
 
-<div class="header-section">
-    <h2><i class="fas fa-bolt" style="color:#eab308;"></i> Electricity</h2>
-    <button onclick="toggleForm()" style="background:#2563eb; color:white; border:none; padding:8px 15px; border-radius:4px; font-size:11px; cursor:pointer;">+ Add New</button>
+<div class="header-dash">
+    <div class="header-titles"><h2>Electricity Consumption Ledger</h2></div>
+    <div class="grand-total" id="gt_display">TOTAL COST: ₹ 0.00</div>
 </div>
 
-<div id="formWrapper" class="card" style="display: none;">
-    <form id="elecEntryForm">
-        <div class="form-grid">
-            <div class="field-group">
-                <label>Unit</label>
-                <select name="unit_id" id="unit_id" onchange="fetchMasterData()" required>
-                    <option value="">-- Select --</option>
-                    {% for u in units %}<option value="{{ u.id }}">{{ u.production_at }}</option>{% endfor %}
-                </select>
-            </div>
-            <div class="field-group"><label>Date</label><input type="date" name="reading_date" id="reading_date" required></div>
-            <div class="field-group"><label>Opening</label><input type="number" name="opening_kwh" id="opening_kwh" step="0.01" oninput="doCalc()" required></div>
-            <div class="field-group"><label>Closing</label><input type="number" name="closing_kwh" id="closing_kwh" step="0.01" oninput="doCalc()" required></div>
-            <div class="field-group"><label>Rate</label><input type="number" name="unit_rate" id="unit_rate" step="0.01" oninput="doCalc()" required></div>
-        </div>
-        <button type="submit" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:4px; font-size:11px; margin-top:10px; cursor:pointer;">POST ENTRY</button>
-    </form>
-</div>
-
+<!-- 📊 FILTERS GRID BAR -->
 <div class="filter-bar">
-    <input type="month" id="monthFilter" onchange="applyFilters()" title="Filter by Month">
-    <input type="text" id="searchFilter" onkeyup="applyFilters()" placeholder="Search Unit/Date...">
+    <div class="filter-item">
+        <label style="color:var(--accent)">Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- SELECT FY --</option>
+            {% set start_yr = 2024 %}
+            {% set end_yr = 2027 %}
+            {% for y in range(start_yr, end_yr) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-item">
+        <label>Period (Month)</label>
+        <input type="month" id="monthFilter" onchange="applyFilters()">
+    </div>
+
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Search Location Unit or Date...">
+    </div>
+    
+    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
 </div>
 
-<div class="table-container">
-    <div class="scroll-container">
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>Date</th><th>Unit</th><th>Opening</th><th>Closing</th><th>Consumed</th><th>Cost (₹)</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                {% for row in history %}
-                <tr class="data-row" data-date="{{ row.reading_date }}">
-                    <td>{{ row.reading_date }}</td>
-                    <td style="font-weight:600;">{{ row.unit_id }}</td>
-                    <td>{{ row.opening_kwh }}</td>
-                    <td>{{ row.closing_kwh }}</td>
-                    <td style="color:#166534; font-weight:700;">{{ row.closing_kwh - row.opening_kwh }}</td>
-                    <td class="cost-val" style="font-weight:700;">{{ row.total_cost }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="5" style="text-align:right;">SUBTOTAL: </td>
-                    <td id="subTotal">0.00</td>
-                </tr>
-            </tfoot>
-        </table>
+<!-- 🧾 ACTIONS HEADER -->
+<div class="section-header">
+    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Audit History</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW LOG ENTRY</button>
     </div>
 </div>
 
+<!-- 📋 COMPACT DATA TABLE -->
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Reading Date</th>
+                <th>Location Unit</th>
+                <th class="text-right">Opening KWH</th>
+                <th class="text-right">Closing KWH</th>
+                <th class="text-right">Consumed Units</th>
+                <th class="text-right">Unit Rate</th>
+                <th class="text-right">Total Cost (₹)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not history %}
+            <tr>
+                <td colspan="8" class="empty-state">
+                    <i class="fa-solid fa-bolt" style="color:#eab308;"></i><br>
+                    <b>Financial Year Not Selected</b><br>
+                    <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render active electricity metrics ledger.</span>
+                </td>
+            </tr>
+            {% else %}
+                {% for row in history %}
+                <tr class="data-row" 
+                    data-id="{{ row.id }}" 
+                    data-date="{{ row.reading_date }}"
+                    data-total="{{ row.total_cost }}"
+                    onclick="selectRow(this, '{{ row.id }}')">
+                    
+                    <td class="slno">0</td>
+                    <td>{{ row.reading_date }}</td>
+                    <td style="font-weight:700;">{{ row.location_name or row.unit_id }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.opening_kwh or 0) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.closing_kwh or 0) }}</td>
+                    <td class="text-right" style="color:var(--success); font-weight:700;">{{ "{:,.2f}".format(row.closing_kwh - row.opening_kwh) }}</td>
+                    <td class="text-right">₹{{ "{:,.2f}".format(row.unit_rate or 0) }}</td>
+                    <td class="text-right cost-val" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(row.total_cost or 0) }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 📦 ENTRY FORM OVERLAY MODAL -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;" id="modalTitle">New Electricity Entry</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="elecEntryForm" onsubmit="saveElectricityLog(event)">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Location Unit</label>
+                    <select id="modalUnitId" onchange="lookupLastReading(this.value)" required>
+                        <option value="">-- SELECT LOCATION --</option>
+                        {% for u in units %}<option value="{{ u.id }}">{{ u.production_at }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Reading Log Date</label>
+                    <input type="date" id="modalReadingDate" required>
+                </div>
+
+                <div class="field">
+                    <label>Opening KWH</label>
+                    <input type="number" step="any" id="modalOpeningKwh" value="0.00" oninput="calculateModalCost()" required>
+                </div>
+
+                <div class="field">
+                    <label>Closing KWH</label>
+                    <input type="number" step="any" id="modalClosingKwh" value="0.00" oninput="calculateModalCost()" required>
+                </div>
+
+                <div class="field" id="scollTargetField">
+                    <label>Unit Rate / KWH</label>
+                    <input type="number" step="any" id="modalUnitRate" value="0.00" oninput="calculateModalTotals()" required>
+                </div>
+
+                <div class="field">
+                    <label>Consumed Units</label>
+                    <input type="text" id="modalConsumedDisplay" style="background:#f1f5f9; font-weight:700;" readonly value="0.00">
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; background: #f0fdf4; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
+                <span style="font-weight: 700; color: #166534; font-size: 13px;">Calculated Total Cost:</span>
+                <span style="font-size: 18px; font-weight: 800; color: #166534;"><span id="modalGrandTotal">₹ 0.00</span></span>
+            </div>
+            
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1;">Post Log Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= AUDIT PANEL ================= -->
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">ELECTRICITY RECORID HISTORY LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+</div>
+
 <script>
-    document.getElementById('reading_date').valueAsDate = new Date();
-    
-    function toggleForm() {
-        const fw = document.getElementById('formWrapper');
-        fw.style.display = fw.style.display === "none" ? "block" : "none";
+    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR (Fixes 404 Not Found error instantly)
+    const API_BASE = window.location.pathname.includes('/api/') ? '/api/electricity' : '/electricity';
+    let globalSelectedId = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+        
+        document.getElementById("dotsBtn").onclick = (e) => { 
+            e.stopPropagation(); 
+            const m = document.getElementById("dropdownMenu"); 
+            m.style.display = (m.style.display === "block") ? "none" : "block"; 
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.menu-trigger')) {
+                const m = document.getElementById("dropdownMenu");
+                if(m) m.style.display = 'none';
+            }
+        });
+
+        const searchBox = document.getElementById('searchBox');
+        if(searchBox) {
+            searchBox.addEventListener('keyup', debounce(applyFilters, 250));
+        }
+    });
+
+    function changeFY(val) {
+        if(!val) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('fy', val);
+        window.location.href = url.toString();
+    }
+
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
     }
 
     function applyFilters() {
-        const monthVal = document.getElementById('monthFilter').value;
-        const searchVal = document.getElementById('searchFilter').value.toLowerCase();
-        const rows = document.querySelectorAll('.data-row');
-        let total = 0;
+        const tableBody = document.getElementById("tableBody");
+        if (!tableBody || tableBody.querySelector(".empty-state")) return;
 
-        rows.forEach(row => {
-            const date = row.getAttribute('data-date');
-            const text = row.textContent.toLowerCase();
-            const matchMonth = !monthVal || date.startsWith(monthVal);
-            const matchSearch = text.includes(searchVal);
+        const mVal = document.getElementById("monthFilter").value;
+        const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let visibleRows = [];
+        let subtotal = 0;
 
-            if (matchMonth && matchSearch) {
-                row.style.display = '';
-                total += parseFloat(row.querySelector('.cost-val').textContent) || 0;
+        rows.forEach(r => {
+            const d = r.getAttribute("data-date") || "";
+            const t = parseFloat(r.getAttribute("data-total")) || 0;
+
+            let match = true;
+            if (mVal && !d.startsWith(mVal)) match = false;
+            if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
+
+            if(match) {
+                r.style.display = "";
+                subtotal += t;
+                visibleRows.push(r);
             } else {
-                row.style.display = 'none';
+                r.style.display = "none";
             }
         });
-        document.getElementById('subTotal').textContent = total.toFixed(2);
+
+        // Decrementing Sl No arrangement engine assignment
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".slno").innerText = visibleRows.length - index;
+        });
+
+        document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
+        document.getElementById("gt_display").innerText = "TOTAL COST: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
     }
 
-    async function fetchMasterData() {
-        const unitId = document.getElementById('unit_id').value;
-        if(!unitId) return;
-        const res = await fetch(`/api/electricity/lookup/${unitId}`);
-        const data = await res.json();
-        if(data) {
-            document.getElementById('opening_kwh').value = data.last_closing || 0;
-            document.getElementById('unit_rate').value = data.unit_rate || 0;
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    // ⚡ AUTOMATIC OPENING READING & RATE LOOKUP ENGINE
+    async function lookupLastReading(unitId) {
+        if(!unitId) {
+            document.getElementById('modalOpeningKwh').value = "0.00";
+            document.getElementById('modalUnitRate').value = "0.00";
+            calculateModalCost();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/lookup/${unitId}`);
+            if (!res.ok) throw new Error("Lookup response channel error");
+            const data = await res.json();
+            
+            document.getElementById('modalOpeningKwh').value = parseFloat(data.last_closing || 0).toFixed(2);
+            document.getElementById('modalUnitRate').value = parseFloat(data.unit_rate || 0).toFixed(2);
+            calculateModalCost();
+        } catch (e) { 
+            console.error("Error executing last reading status sync:", e); 
         }
     }
 
-    document.getElementById('elecEntryForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const res = await fetch('/api/electricity/save', { method: 'POST', body: new FormData(e.target) });
-        if((await res.json()).status === 'success') location.reload();
-    });
+    function calculateModalCost() {
+        const op = parseFloat(document.getElementById('modalOpeningKwh').value) || 0;
+        const cl = parseFloat(document.getElementById('modalClosingKwh').value) || 0;
+        const rate = parseFloat(document.getElementById('modalUnitRate').value) || 0;
 
-    window.onload = applyFilters;
+        const consumed = cl - op;
+        const finalConsumed = consumed >= 0 ? consumed : 0;
+        const cost = finalConsumed * rate;
+
+        document.getElementById('modalConsumedDisplay').value = finalConsumed.toFixed(2);
+        document.getElementById('modalGrandTotal').innerText = "₹ " + cost.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    }
+
+    function openModal() {
+        if(!document.getElementById("f_fy").value) {
+            Swal.fire("FY Required", "Please select a Financial Year first before creating new electricity entries.", "warning");
+            return;
+        }
+        document.getElementById("elecEntryForm").reset();
+        document.getElementById("modalReadingDate").value = new Date().toISOString().substring(0, 10);
+        document.getElementById('modalOpeningKwh').value = "0.00";
+        document.getElementById('modalClosingKwh').value = "0.00";
+        document.getElementById('modalUnitRate').value = "0.00";
+        document.getElementById('modalConsumedDisplay').value = "0.00";
+        document.getElementById('modalGrandTotal').innerText = "₹ 0.00";
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
+    }
+
+    function closeModal() { 
+        document.getElementById('entryModal').style.display = 'none'; 
+        document.getElementById('elecEntryForm').reset(); 
+    }
+
+    function resetFilters() { 
+        document.getElementById('monthFilter').value = "";
+        document.getElementById('searchBox').value = "";
+        applyFilters(); 
+    }
+
+    function toggleAuditPanel(show) {
+        const panel = document.getElementById("auditPanel");
+        panel.style.display = show ? "flex" : "none";
+    }
+
+    async function showAllAuditLogs() {
+        toggleAuditPanel(true);
+        const content = document.getElementById("auditContent");
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Archive Line Items...</div>`;
+        try {
+            const res = await fetch(`${API_BASE}/audit_all`);
+            const logs = await res.json();
+            if(Array.isArray(logs) && logs.length > 0) {
+                content.innerHTML = logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp}</b> | Unit Location: ${l.invoice_no}<br>
+                        Action Description: ${l.action}<br>
+                        <small>Trace Data: ${l.details}</small><br>
+                        <small style="color:var(--muted)">Op: ${l.user}</small>
+                    </div>`).join('');
+            } else {
+                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No operational logs found inside stack table.</div>`;
+            }
+        } catch (e) { content.innerHTML = `Fault fetching tracking metadata archive.`; }
+    }
+
+    async function saveElectricityLog(event) {
+        event.preventDefault();
+        
+        const op = parseFloat(document.getElementById("modalOpeningKwh").value) || 0;
+        const cl = parseFloat(document.getElementById("modalClosingKwh").value) || 0;
+        if(cl < op) {
+            Swal.fire("Calculation Error", "Closing KWH reading values cannot drop lower than opening balance criteria!", "error");
+            return;
+        }
+
+        const payload = {
+            unit_id: parseInt(document.getElementById("modalUnitId").value),
+            reading_date: document.getElementById("modalReadingDate").value,
+            opening_kwh: op,
+            closing_kwh: cl,
+            unit_rate: parseFloat(document.getElementById("modalUnitRate").value) || 0
+        };
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(`${API_BASE}/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success || out.status === 'success') {
+                Swal.fire({ icon:'success', title:'Log Entry Posted!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } else { Swal.fire("Error", out.message || "Save rejection", "error"); }
+        } catch(e) { Swal.fire("Error", "Server network stack failure", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const resDecision = await Swal.fire({
+            title: "Destroy record item?", text: "This operation will completely drop the entry trace node node node.", icon: "warning", showCancelButton: true
+        });
+        if(resDecision.isConfirmed) {
+            try {
+                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire({ icon:'success', title:'Deleted successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Interceptor execution fault dropping node node.", "error"); }
+        }
+    }
+
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
 </body>
 </html>

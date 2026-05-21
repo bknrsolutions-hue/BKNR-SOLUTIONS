@@ -1,644 +1,752 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Purchase Invoice Ledger | BKNR ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SweetAlert2 for Professional Popups -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta charset="utf-8">
+<title>PURCHASE INVOICE MANAGEMENT - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        :root { 
-            --primary: #0f172a; 
-            --accent: #2563eb; 
-            --border: #e2e8f0; 
-            --bg: #f1f5f9; 
-            --header: #ffffff; 
-            --text: #1e293b; 
-            --danger: #ef4444; 
-        }
-        * { box-sizing: border-box; font-family: 'Inter', Arial, sans-serif; }
-        body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; color: var(--text); overflow: hidden; }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        /* Header Section */
-        .header { background: var(--header); padding: 10px 15px; border-bottom: 2px solid var(--primary); }
-        .header h2 { margin: 0; font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-        
-        /* Searchable Filters Layout */
-        .filters { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
-        .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; }
-        .fbox label { font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        /* Inputs & Searchable Dropdowns */
-        select, input[type=date], input[type=month], .search-input { padding: 6px 10px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; background: #fff; outline: none; color: var(--text); width: 100%; font-weight: 500; height: 32px; }
-        select:focus, input:focus, .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
-        
-        /* Master Search Bar */
-        #searchBox { border-left: 4px solid var(--accent); }
+<style>
+:root{
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+}
 
-        /* Searchable Dropdown Container */
-        .dropdown-container { position: relative; width: 100%; }
-        .dropdown-menu { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 4px; max-height: 180px; overflow-y: auto; z-index: 200; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .dropdown-item { padding: 6px 10px; font-size: 11px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
-        .dropdown-item:hover { background: #eff6ff; color: var(--accent); }
-        .dropdown-item.selected { background: var(--accent); color: #fff; }
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
-        /* Actions Bar */
-        .actions { background: #fff; padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); margin-top: 5px; position: relative; }
-        #rowCount { font-size: 10px; font-weight: 700; color: var(--accent); }
-        .action-buttons { display: flex; align-items: center; gap: 8px; }
-        .dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: #fff; font-size: 14px; font-weight: bold; }
-        .dots:hover { background: #f1f5f9; }
-        
-        /* Dropdown Actions Menu */
-        .menu-list { position: absolute; right: 15px; top: 100%; width: 180px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .menu-list div { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; text-align: left; }
-        .menu-list div:last-child { border-bottom: none; }
-        .menu-list div:hover { background: #eff6ff; color: var(--accent); }
+/* --- HEADER --- */
+.header-dash {
+  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
 
-        /* Table & Layout Grid Styles */
-        .section { flex: 1; margin: 5px; background: #fff; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
-        .table-wrap { flex: 1; overflow: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1300px; }
-        
-        thead th { background: #f1f5f9; padding: 8px 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); color: #475569; position: sticky; top: 0; z-index: 10; text-align: center; }
-        tbody tr { cursor: pointer; }
-        tbody tr:hover { background: #f8fafc; }
-        tbody td { padding: 7px 4px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
-        
-        tr.selected { background: #dbeafe !important; }
-        tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary); }
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+    .grand-total { width: 100%; padding: 8px 15px; } 
+}
 
-        /* Add New Invoice Modal Styles */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-        .modal-box { background: #fff; width: 100%; max-width: 650px; border-radius: 6px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 90vh; animation: fadeIn 0.2s ease-out; border-top: 4px solid var(--accent); }
-        .modal-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
-        .modal-header h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
-        .modal-close:hover { color: var(--danger); }
-        .modal-body { padding: 20px; overflow-y: auto; }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; position: relative; }
-        .form-group.full-width { grid-column: span 2; }
-        .form-group label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc; }
-        .btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); padding: 7px 14px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; }
-        .btn-secondary:hover { background: #f1f5f9; }
-        .btn-primary { background: var(--accent); border: none; color: #fff; padding: 7px 14px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; }
-        .btn-primary:hover { background: #1d4ed8; }
+/* --- FILTERS --- */
+.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
 
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
-        /* 📱 MOBILE RESPONSIVE BLOCK - COMPACT ROW/COLUMN TABLE VIEW */
-        @media (max-width: 768px) {
-            body { overflow: auto; height: auto; }
-            .header { padding: 8px 10px; }
-            .filters { grid-template-columns: 1fr 1fr; padding: 6px; gap: 6px; }
-            .actions { padding: 6px 10px; }
-            
-            .section { margin: 2px; overflow: visible; border: 1px solid var(--border); background: #fff; }
-            .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            
-            /* Table structure constraints for grid rows */
-            table { display: table; min-width: 700px; table-layout: fixed; width: 100%; }
-            thead { display: table-header-group; }
-            tbody { display: table-row-group; }
-            tfoot { display: table-footer-group; }
-            
-            /* Compact table widths for mobile columns */
-            table tr { display: table-row; }
-            thead th, tbody td { display: table-cell; padding: 6px 3px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            
-            /* Specific structural widths for strict mobile layout grid */
-            table th:nth-child(1), table td:nth-child(1) { width: 35px; } /* Sl.No */
-            table th:nth-child(2), table td:nth-child(2) { width: 65px; } /* Date */
-            table th:nth-child(3), table td:nth-child(3) { width: 75px; } /* Invoice No */
-            table th:nth-child(4), table td:nth-child(4) { width: 50px; } /* Loc Code */
-            table th:nth-child(5), table td:nth-child(5) { width: 60px; } /* PO No */
-            table th:nth-child(6), table td:nth-child(6) { width: 120px; text-align: left; } /* Vendor Details */
-            table th:nth-child(7), table td:nth-child(7) { width: 120px; text-align: left; } /* Product Description */
-            table th:nth-child(8), table td:nth-child(8) { width: 45px; text-align: right; } /* Qty */
-            table th:nth-child(9), table td:nth-child(9) { width: 50px; text-align: right; } /* Rate */
-            table th:nth-child(10), table td:nth-child(10) { width: 80px; text-align: right; } /* Tax */
-            table th:nth-child(11), table td:nth-child(11) { width: 80px; text-align: right; font-weight: 700; } /* Total */
+/* --- SEARCHABLE DROPDOWN STYLE --- */
+.dropdown-container { position: relative; }
+.dropdown-menu {
+    position: absolute; top: 100%; left: 0; width: 100%; background: #fff;
+    border: 1px solid var(--border); border-radius: 8px; margin-top: 4px;
+    max-height: 180px; overflow-y: auto; z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none;
+}
+.dropdown-item { padding: 10px; font-size: 12px; cursor: pointer; color: var(--primary); font-weight: 600; }
+.dropdown-item:hover { background: #f8fafc; color: var(--accent); }
 
-            /* Hide pseudo labels to stop card formatting injection */
-            tbody td::before { content: none !important; }
-            tbody td.total-val { background: transparent; padding-top: 6px; margin-top: 0; }
-            tbody td.total-val font { font-size: 10px; font-weight: 700; }
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 
-            .modal-form-grid { grid-template-columns: 1fr; gap: 8px; }
-            .form-group.full-width { grid-column: span 1; }
-        }
-    </style>
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- MAIN TABLE --- */
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+
+/* Empty Table State Styling */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+
+/* --- MODAL SYSTEM --- */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input:focus { border-color: var(--accent); }
+
+/* --- AUDIT PANEL --- */
+.audit-panel { 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+}
+@media(max-width:400px){ .audit-panel { width: 100%; } }
+</style>
 </head>
+
 <body>
 
-
-<!-- Header + Searchable Filters -->
-<div class="header">
-    <h2><i class="fas fa-list-alt" style="color:var(--accent);"></i> Purchase Invoice Ledger</h2>
-    <div class="filters">
-        <!-- Month Filter -->
-        <div class="fbox">
-            <label>Month</label>
-            <input type="month" id="monthFilter" onchange="applyFilters()">
-        </div>
-        
-        <!-- Searchable Company Filter -->
-        <div class="fbox">
-            <label>Company</label>
-            <div class="dropdown-container">
-                <input type="text" class="search-input" id="companySearch" placeholder="Search Company..." onfocus="showDropdown('companyDropdown')" onkeyup="filterDropdown('companySearch', 'companyDropdown')">
-                <input type="hidden" id="companySearchHidden" value="">
-                <div class="dropdown-menu" id="companyDropdown">
-                    <div class="dropdown-item" data-value="" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '', 'All Companies')">All Companies</div>
-                    {% for comp_id, comp_name in company_map.items() %}
-                    <div class="dropdown-item" data-value="{{ comp_id }}" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '{{ comp_id }}', '{{ comp_name }}')">{{ comp_name }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Searchable Vendor Filter -->
-        <div class="fbox">
-            <label>Vendor</label>
-            <div class="dropdown-container">
-                <input type="text" class="search-input" id="vendorSearch" placeholder="Search Vendor..." onfocus="showDropdown('vendorDropdown')" onkeyup="filterDropdown('vendorSearch', 'vendorDropdown')">
-                <input type="hidden" id="vendorSearchHidden" value="">
-                <div class="dropdown-menu" id="vendorDropdown">
-                    <div class="dropdown-item" data-value="" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '', 'All Vendors')">All Vendors</div>
-                    {% for v_id, v_name in vendor_map.items() %}
-                    <div class="dropdown-item" data-value="{{ v_id }}" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '{{ v_id }}', '{{ v_name }}')">{{ v_name }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Master Search Box -->
-        <div class="fbox">
-            <label>Search Bar</label>
-            <input id="searchBox" class="search-input" placeholder="Search Invoice, PO, or GSTIN..." onkeyup="applyFilters()">
-        </div>
-    </div>
+<div class="header-dash">
+    <div class="header-titles"><h2>Purchase Invoice Ledger</h2></div>
+    <div class="grand-total" id="gt_display">TOTAL AMOUNT: ₹ 0.00</div>
 </div>
 
-<!-- Actions Controls Bar -->
-<div class="actions">
-    <div id="rowCount">0 rows found</div>
-    <div class="action-buttons">
-        <button onclick="openAddModal()" style="background: var(--accent); color: #fff; border: none; padding: 6px 12px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <i class="fas fa-plus"></i> Add New Invoice
-        </button>
-        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+<!-- 📊 FILTERS GRID BAR -->
+<div class="filter-bar">
+    <div class="filter-item">
+        <label style="color:var(--accent)">Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- SELECT FY --</option>
+            {% set start_yr = 2024 %}
+            {% set end_yr = 2027 %}
+            {% for y in range(start_yr, end_yr) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-item">
+        <label>Period (Month)</label>
+        <input type="month" id="monthFilter" onchange="applyFilters()">
+    </div>
+
+    <div class="filter-item dropdown-container">
+        <label>Location Unit</label>
+        <input type="text" id="companySearch" placeholder="Search Location..." autocomplete="off">
+        <input type="hidden" id="companySearchHidden">
+        <div id="companyDropdown" class="dropdown-menu">
+            <div class="dropdown-item" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '', 'All Locations')"><b>All Locations</b></div>
+            {% for loc in locations %}
+            <div class="dropdown-item" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '{{ loc.id }}', '{{ loc.production_at }}')">{{ loc.production_at }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="filter-item dropdown-container">
+        <label>Vendor Entity</label>
+        <input type="text" id="vendorSearch" placeholder="Search Vendor..." autocomplete="off">
+        <input type="hidden" id="vendorSearchHidden">
+        <div id="vendorDropdown" class="dropdown-menu">
+            <div class="dropdown-item" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '', 'All Vendors')"><b>All Vendors</b></div>
+            {% for v in vendors %}
+            <div class="dropdown-item" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '{{ v.id }}', '{{ v.name }}')">{{ v.name }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Type to filter...">
     </div>
     
-    <div class="menu-list" id="mainMenu">
-        <div onclick="deleteSelected()" style="color:var(--danger);"><i class="fas fa-trash-alt"></i> Delete Record</div>
-        <div onclick="showAudit()"><i class="fas fa-history" style="color:#475569;"></i> Audit History</div>
-        <hr style="margin:2px 0; border:0; border-top:1px solid var(--border);">
-        <div onclick="executeExcelExport()"><i class="fas fa-file-excel" style="color:#16a34a;"></i> Export Excel</div>
-        <div onclick="executePrintView()"><i class="fas fa-print" style="color:#6d28d9;"></i> Print Report</div>
+    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
+</div>
+
+<!-- 🧾 ACTIONS & CONTROL HEADER -->
+<div class="section-header">
+    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="editSelectedRow()"><i class="fa-solid fa-pen-to-square" style="color:var(--accent)"></i> Edit Entry</div>
+                <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Audit History</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+                <div class="menu-item" onclick="executePdfExport()"><i class="fa-solid fa-file-pdf" style="color:var(--danger)"></i> Export PDF</div>
+                <div class="menu-item" onclick="executePrint()"><i class="fa-solid fa-print" style="color:var(--primary)"></i> Print Invoice</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW INVOICE</button>
     </div>
 </div>
 
-<!-- Ledger Table Container -->
-<div class="section">
-    <div class="table-wrap">
-        <table id="mainTable">
-            <thead>
-                <tr>
-                    <th style="width:45px;">Sl.No</th>
-                    <th style="width:85px;">Date</th>
-                    <th style="width:100px;">Invoice No</th>
-                    <th style="width:75px;">Loc Code</th>
-                    <th style="width:90px;">PO No</th>
-                    <th style="width:180px;">Vendor Details</th>
-                    <th style="width:180px;">Product Description</th>
-                    <th style="width:65px;">Qty</th>
-                    <th style="width:75px;">Rate</th>
-                    <th style="width:130px;">Tax (GST)</th>
-                    <th style="width:105px;">Total</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                {% for i in invoice_history %}
-                <tr class="data-row" data-id="{{ i.id }}" data-date="{{ i.invoice_date }}" data-total="{{ i.grand_total }}" data-company="{{ i.company_id }}" data-vendor="{{ i.vendor_id }}" onclick="selectRow(this)">
-                    <td class="slno">{{ loop.index }}</td>
-                    <td>{{ i.invoice_date }}</td>
-                    <td style="font-weight:600;">{{ i.invoice_no }}</td>
-                    <td>{{ location_code_map.get(i.unit_id|string) or location_code_map.get(i.unit_id) }}</td>
-                    <td>{{ i.po_number or 'N/A' }}</td>
-                    <td style="text-align:left; padding-left:5px;">
-                        <div style="font-weight:600;">{{ vendor_map.get(i.vendor_id|string) or vendor_map.get(i.vendor_id) }}</div>
-                        <div style="font-size:9px; color:#64748b;">GSTIN: {{ vendor_gstin_map.get(i.vendor_id|string) or vendor_gstin_map.get(i.vendor_id) }}</div>
-                    </td>
-                    <td style="text-align:left; padding-left:5px;">
-                        <div>{{ i.product_name }}</div>
-                        <div style="font-size:9px; color:#64748b;">HSN: {{ i.hsn_code }}</div>
-                    </td>
-                    <td style="text-align:right; padding-right:5px;">{{ i.qty }}</td>
-                    <td style="text-align:right; padding-right:5px;">{{ i.base_price }}</td>
-                    <td style="text-align:right; padding-right:5px; color:#64748b;">₹ {{ i.tax_amount }} ({{ i.gst_percent }}%)</td>
-                    <td style="text-align:right; padding-right:5px; font-weight:600; color: var(--primary);">₹ {{ i.grand_total }}</td>
+<!-- 📋 COMPACT TABLE LAYOUT -->
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Date</th>
+                <th>Invoice No</th>
+                <th>Location</th>
+                <th>PO Number</th>
+                <th>Vendor Name</th>
+                <th>Product Description</th>
+                <th>HSN Code</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Grand Total</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not invoice_history %}
+            <tr>
+                <td colspan="11" class="empty-state">
+                    <i class="fa-solid fa-calendar-xmark"></i><br>
+                    <b>Financial Year Not Selected</b><br>
+                    <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to view and manage purchase records ledger.</span>
+                </td>
+            </tr>
+            {% else %}
+                {% for row in invoice_history %}
+                <tr class="data-row" 
+                    data-id="{{ row.id }}" 
+                    data-date="{{ row.invoice_date }}" 
+                    data-company="{{ row.unit_id }}" 
+                    data-vendor="{{ row.vendor_id }}"
+                    data-total="{{ row.grand_total }}"
+                    onclick="selectRow(this, '{{ row.id }}')">
+                    
+                    <td class="slno">0</td> <!-- JavaScript inside applyFilters will calculate descending Sl No dynamically -->
+                    <td>{{ row.invoice_date }}</td>
+                    <td style="font-weight:700;">{{ row.invoice_no }}</td>
+                    <td>{% for loc in locations %}{% if loc.id == row.unit_id %}{{ loc.production_at }}{% endif %}{% endfor %}</td>
+                    <td style="color: var(--muted);">{{ row.po_number or 'N/A' }}</td>
+                    <td class="text-left">{{ vendor_map[row.vendor_id] or 'Unknown Vendor' }}</td>
+                    <td class="text-left">{{ row.product_name }}</td>
+                    <td>{{ row.hsn_code }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.qty) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(row.base_price) }}</td>
+                    <td class="text-right" style="font-weight:800; color:var(--success);">₹{{ "{:,.2f}".format(row.grand_total) }}</td>
                 </tr>
                 {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <!-- Adjusted spans perfectly for mobile alignment grid matrix -->
-                    <td colspan="10" style="text-align:right; padding-right:15px; font-weight:800;">SUBTOTAL:</td>
-                    <td id="subTotalDisplay" style="text-align:right; padding-right:5px; font-weight:800; color:var(--accent);">₹ 0.00</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+            {% endif %}
+        </tbody>
+    </table>
 </div>
 
-<!-- Add New Invoice Modal Container -->
-<div class="modal-overlay" id="addInvoiceModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h3><i class="fas fa-file-invoice" style="color:var(--accent); margin-right:5px;"></i> Create New Purchase Invoice</h3>
-            <button class="modal-close" onclick="closeAddModal()"><i class="fas fa-times"></i></button>
+<!-- 📦 ENTRY FORM OVERLAY MODAL -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;" id="modalTitle">New Purchase Entry</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
         <form id="invoiceForm" onsubmit="saveInvoice(event)">
-            <div class="modal-body">
-                <div class="modal-form-grid">
-                    
-                    <!-- Searchable Vendor Dropdown (Modal Column) -->
-                    <div class="form-group">
-                        <label>Vendor *</label>
-                        <div class="dropdown-container">
-                            <input type="text" class="search-input" id="modalVendorSearch" placeholder="Select Vendor..." onfocus="showDropdown('modalVendorDropdown')" onkeyup="filterDropdown('modalVendorSearch', 'modalVendorDropdown')" required autocomplete="off">
-                            <input type="hidden" id="modalVendorId" name="vendor_id" required>
-                            <div class="dropdown-menu" id="modalVendorDropdown">
-                                {% for v_id, v_name in vendor_map.items() %}
-                                <div class="dropdown-item" data-value="{{ v_id }}" onclick="selectModalDropdownValue('modalVendorSearch', 'modalVendorId', 'modalVendorDropdown', '{{ v_id }}', '{{ v_name }}')">{{ v_name }}</div>
-                                {% endfor %}
-                            </div>
+            <input type="hidden" id="modalInvoiceId">
+            
+            <div id="modalBodyContainer" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Invoice Date</label>
+                        <input type="date" id="modalInvoiceDate" required>
+                    </div>
+
+                    <div class="field">
+                        <label>Invoice Number</label>
+                        <input type="text" id="modalInvoiceNo" required placeholder="PUR-2026-001" style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="field dropdown-container">
+                        <label>Location Unit</label>
+                        <input type="text" id="modalLocationSearch" placeholder="Select Unit..." autocomplete="off" required>
+                        <input type="hidden" id="modalLocationId">
+                        <div id="modalLocationDropdown" class="dropdown-menu">
+                            {% for loc in locations %}
+                            <div class="dropdown-item" onclick="selectModalDropdownValue('modalLocationSearch', 'modalLocationId', 'modalLocationDropdown', '{{ loc.id }}', '{{ loc.production_at }}')">{{ loc.production_at }}</div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <!-- Searchable Location Dropdown (Modal Column) -->
-                    <div class="form-group">
-                        <label>Location (Unit) *</label>
-                        <div class="dropdown-container">
-                            <input type="text" class="search-input" id="modalLocationSearch" placeholder="Select Location Code..." onfocus="showDropdown('modalLocationDropdown')" onkeyup="filterDropdown('modalLocationSearch', 'modalLocationDropdown')" required autocomplete="off">
-                            <input type="hidden" id="modalLocationId" name="unit_id" required>
-                            <div class="dropdown-menu" id="modalLocationDropdown">
-                                {% for u_id, u_code in location_code_map.items() %}
-                                <div class="dropdown-item" data-value="{{ u_id }}" onclick="selectModalDropdownValue('modalLocationSearch', 'modalLocationId', 'modalLocationDropdown', '{{ u_id }}', '{{ u_code }}')">{{ u_code }}</div>
-                                {% endfor %}
-                            </div>
+                    <div class="field dropdown-container">
+                        <label>Vendor Entity</label>
+                        <input type="text" id="modalVendorSearch" placeholder="Search Vendor..." autocomplete="off" required>
+                        <input type="hidden" id="modalVendorId">
+                        <div id="modalVendorDropdown" class="dropdown-menu">
+                            {% for v in vendors %}
+                            <div class="dropdown-item" onclick="selectModalDropdownValue('modalVendorSearch', 'modalVendorId', 'modalVendorDropdown', '{{ v.id }}', '{{ v.name }}')">{{ v.name }}</div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Invoice Date *</label>
-                        <input type="date" name="invoice_date" id="modalInvoiceDate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Invoice Number *</label>
-                        <input type="text" class="search-input" name="invoice_no" placeholder="Enter Invoice Number" required autocomplete="off">
-                    </div>
-
-                    <!-- Searchable PO Number Dropdown (Modal Column) -->
-                    <div class="form-group">
+                    <div class="field dropdown-container">
                         <label>PO Number</label>
-                        <div class="dropdown-container">
-                            <input type="text" class="search-input" id="modalPoSearch" placeholder="Select PO Number..." onfocus="showDropdown('modalPoDropdown')" onkeyup="filterDropdown('modalPoSearch', 'modalPoDropdown')" autocomplete="off">
-                            <input type="hidden" id="modalPoId" name="po_number" value="N/A">
-                            <div class="dropdown-menu" id="modalPoDropdown">
-                                {% for po in po_list %}
-                                <div class="dropdown-item" data-value="{{ po }}" onclick="selectModalDropdownValue('modalPoSearch', 'modalPoId', 'modalPoDropdown', '{{ po }}', '{{ po }}')">{{ po }}</div>
-                                {% endfor %}
-                            </div>
+                        <input type="text" id="modalPoSearch" placeholder="Select PO Reference..." autocomplete="off">
+                        <div id="modalPoDropdown" class="dropdown-menu">
+                            {% for po in po_list %}
+                            <div class="dropdown-item" onclick="selectModalDropdownValue('modalPoSearch', null, 'modalPoDropdown', '{{ po }}', '{{ po }}')">{{ po }}</div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <!-- Searchable HSN Code Dropdown (Modal Column) -->
-                    <div class="form-group">
-                        <label>HSN Code</label>
-                        <div class="dropdown-container">
-                            <input type="text" class="search-input" id="modalHsnSearch" placeholder="Select HSN..." onfocus="showDropdown('modalHsnDropdown')" onkeyup="filterDropdown('modalHsnSearch', 'modalHsnDropdown')" autocomplete="off">
-                            <input type="hidden" id="modalHsnId" name="hsn_code" value="">
-                            <div class="dropdown-menu" id="modalHsnDropdown">
-                                <div class="dropdown-item" data-value="" onclick="selectModalDropdownValue('modalHsnSearch', 'modalHsnId', 'modalHsnDropdown', '', 'Select HSN')">Select HSN</div>
-                                {% for h in hsn_list %}
-                                <div class="dropdown-item" data-value="{{ h.hsn_code }}" onclick="selectModalDropdownValue('modalHsnSearch', 'modalHsnId', 'modalHsnDropdown', '{{ h.hsn_code }}', '{{ h.hsn_code }} - {{ h.description }}')">{{ h.hsn_code }} - {{ h.description }}</div>
-                                {% endfor %}
+                    <div class="field dropdown-container">
+                        <label>HSN System Code</label>
+                        <input type="text" id="modalHsnSearch" placeholder="Select HSN..." autocomplete="off" required>
+                        <div id="modalHsnDropdown" class="dropdown-menu">
+                            {% for h in hsn_list %}
+                            <div class="dropdown-item" onclick="selectHsnAndGst('{{ h.hsn_code }}', '{{ h.gst_percent }}')">
+                                <b>{{ h.hsn_code }}</b> - ({{ h.gst_percent }}%)
                             </div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <div class="form-group full-width">
-                        <label>Product Description *</label>
-                        <input type="text" class="search-input" name="product_name" placeholder="Item description details..." required autocomplete="off">
+                    <div class="field">
+                        <label>Quantity</label>
+                        <input type="number" step="any" id="modalQty" placeholder="0.00" oninput="calculateModalTotals()" required>
                     </div>
 
-                    <div class="form-group">
-                        <label>Quantity *</label>
-                        <input type="number" class="search-input" step="any" name="qty" id="modalQty" onkeyup="calculateModalTotals()" required>
+                    <div class="field">
+                        <label>Base Price</label>
+                        <input type="number" step="any" id="modalRate" placeholder="₹ 0.00" oninput="calculateModalTotals()" required>
                     </div>
 
-                    <div class="form-group">
-                        <label>Base Rate (₹) *</label>
-                        <input type="number" class="search-input" step="any" name="base_price" id="modalRate" onkeyup="calculateModalTotals()" required>
-                    </div>
-
-                    <!-- Searchable GST Dropdown (Modal Column) -->
-                    <div class="form-group">
-                        <label>GST Percent (%)</label>
-                        <div class="dropdown-container">
-                            <input type="text" class="search-input" id="modalGstSearch" value="18%" onfocus="showDropdown('modalGstDropdown')" onkeyup="filterDropdown('modalGstSearch', 'modalGstDropdown')" autocomplete="off">
-                            <input type="hidden" id="modalGstId" name="gst_percent" value="18">
-                            <div class="dropdown-menu" id="modalGstDropdown">
-                                <div class="dropdown-item" data-value="0" onclick="selectGstDropdownValue('0', '0%')">0%</div>
-                                <div class="dropdown-item" data-value="5" onclick="selectGstDropdownValue('5', '5%')">5%</div>
-                                <div class="dropdown-item" data-value="12" onclick="selectGstDropdownValue('12', '12%')">12%</div>
-                                <div class="dropdown-item" data-value="18" onclick="selectGstDropdownValue('18', '18%')">18%</div>
-                                <div class="dropdown-item" data-value="28" onclick="selectGstDropdownValue('28', '28%')">28%</div>
-                            </div>
+                    <div class="field dropdown-container">
+                        <label>GST Tax Tier (%)</label>
+                        <input type="text" id="modalGstSearch" placeholder="18%" autocomplete="off" readonly style="cursor: pointer;">
+                        <input type="hidden" id="modalGstId" value="18">
+                        <div id="modalGstDropdown" class="dropdown-menu">
+                            <div class="dropdown-item" onclick="selectGstDropdownValue('0', '0%')">0%</div>
+                            <div class="dropdown-item" onclick="selectGstDropdownValue('5', '5%')">5%</div>
+                            <div class="dropdown-item" onclick="selectGstDropdownValue('12', '12%')">12%</div>
+                            <div class="dropdown-item" onclick="selectGstDropdownValue('18', '18%')">18%</div>
+                            <div class="dropdown-item" onclick="selectGstDropdownValue('28', '28%')">28%</div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Tax Amount (GST ₹)</label>
-                        <input type="text" class="search-input" id="modalTaxAmount" readonly style="background:#f1f5f9; font-weight:600;">
+                    <div class="field">
+                        <label>Tax Value</label>
+                        <input type="text" id="modalTaxAmount" style="background: #f9fafb;" readonly>
                     </div>
 
-                    <div class="form-group">
-                        <label>Grand Total (₹)</label>
-                        <input type="text" class="search-input" id="modalGrandTotal" readonly style="background:#f8fafc; font-weight:700; color:var(--accent);">
+                    <div class="field" style="grid-column: span 2;" id="scollTargetField">
+                        <label>Product Nomenclature / Description</label>
+                        <input type="text" id="modalProductName" required placeholder="FULL ITEM DESCRIPTION SPEC" style="text-transform: uppercase;">
                     </div>
+                </div>
 
+                <div style="margin-top: 20px; background: #f0fdf4; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
+                    <span style="font-weight: 700; color: #166534; font-size: 13px;">Grand Total:</span>
+                    <span style="font-size: 18px; font-weight: 800; color: #166534;">₹<span id="modalGrandTotal">0.00</span></span>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
-                <button type="submit" class="btn-primary">Save Invoice</button>
+            
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1;">Save Invoice</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- ================= AUDIT PANEL ================= -->
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">EDIT HISTORY LOGS (ALL RECORDS)</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+</div>
+
 <script>
-    let selectedRow = null;
+    const API_BASE = window.location.pathname.includes('/api/') ? '/api/purchase' : '/purchase';
 
-    // Searchable Dropdown Layout Engines
-    function showDropdown(menuId) {
-        document.querySelectorAll('.dropdown-menu').forEach(m => {
-            if(m.id !== menuId) m.style.display = 'none';
-        });
-        const targetMenu = document.getElementById(menuId);
-        if (targetMenu) targetMenu.style.display = 'block';
-    }
+    let globalSelectedId = null;
+    let locationMap = {{ location_code_map | tojson | safe if location_code_map else '{}' }};
+    let vendorMap = {{ vendor_map | tojson | safe if vendor_map else '{}' }};
 
-    function filterDropdown(inputId, menuId) {
-        const input = document.getElementById(inputId);
-        const filter = input.value.toLowerCase();
-        const menu = document.getElementById(menuId);
-        if (!menu) return;
-        const items = menu.querySelectorAll('.dropdown-item');
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+        initializeSearchableDropdowns();
         
-        items.forEach(item => {
-            const txtValue = item.textContent || item.innerText;
-            if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
+        document.addEventListener("click", function(event) {
+            if (!event.target.closest('.dropdown-container')) {
+                closeAllDropdowns();
             }
         });
+        
+        document.getElementById("dotsBtn").onclick = (e) => { 
+            e.stopPropagation(); 
+            const m = document.getElementById("dropdownMenu"); 
+            m.style.display = (m.style.display === "block") ? "none" : "block"; 
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.menu-trigger')) {
+                const m = document.getElementById("dropdownMenu");
+                if(m) m.style.display = 'none';
+            }
+        });
+    });
+
+    function changeFY(val) {
+        if(!val) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('fy', val);
+        window.location.href = url.toString();
     }
 
-    function selectDropdownValue(inputId, hiddenId, menuId, value, label) {
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    function initializeSearchableDropdowns() {
+        const menus = [
+            { input: 'companySearch', dropdown: 'companyDropdown' },
+            { input: 'vendorSearch', dropdown: 'vendorDropdown' },
+            { input: 'modalLocationSearch', dropdown: 'modalLocationDropdown' },
+            { input: 'modalVendorSearch', dropdown: 'modalVendorDropdown' },
+            { input: 'modalPoSearch', dropdown: 'modalPoDropdown' },
+            { input: 'modalHsnSearch', dropdown: 'modalHsnDropdown' }
+        ];
+        menus.forEach(node => {
+            const el = document.getElementById(node.input);
+            if (el) {
+                el.addEventListener('focus', function() { openDropdownMenu(node.dropdown); });
+                el.addEventListener('keyup', debounce(function() { filterDropdownMenu(node.input, node.dropdown); }, 150));
+            }
+        });
+        document.getElementById('modalGstSearch').addEventListener('click', function() { openDropdownMenu('modalGstDropdown'); });
+        
+        const searchBox = document.getElementById('searchBox');
+        if(searchBox) {
+            searchBox.addEventListener('keyup', debounce(applyFilters, 250));
+        }
+    }
+
+    function openDropdownMenu(id) {
+        closeAllDropdowns();
+        document.getElementById(id).style.display = "block";
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+    }
+
+    function filterDropdownMenu(inputId, dropdownId) {
+        const val = document.getElementById(inputId).value.toUpperCase();
+        const items = document.getElementById(dropdownId).getElementsByClassName("dropdown-item");
+        for (let i = 0; i < items.length; i++) {
+            let txt = items[i].textContent || items[i].innerText;
+            items[i].style.display = (txt.toUpperCase().indexOf(val) > -1) ? "" : "none";
+        }
+    }
+
+    function selectDropdownValue(inputId, hiddenId, dropdownId, value, label) {
         document.getElementById(inputId).value = label;
         document.getElementById(hiddenId).value = value;
-        document.getElementById(menuId).style.display = 'none';
+        document.getElementById(dropdownId).style.display = "none";
         applyFilters();
     }
 
-    function selectModalDropdownValue(inputId, hiddenId, menuId, value, label) {
+    function selectModalDropdownValue(inputId, hiddenId, dropdownId, value, label) {
         document.getElementById(inputId).value = label;
-        document.getElementById(hiddenId).value = value;
-        document.getElementById(menuId).style.display = 'none';
+        if(hiddenId) document.getElementById(hiddenId).value = value;
+        document.getElementById(dropdownId).style.display = "none";
+        triggerFormScrollDown();
     }
 
-    function selectGstDropdownValue(value, label) {
-        document.getElementById('modalGstSearch').value = label;
-        document.getElementById('modalGstId').value = value;
-        document.getElementById('modalGstDropdown').style.display = 'none';
+    function selectHsnAndGst(hsn, gst) {
+        document.getElementById('modalHsnSearch').value = hsn;
+        document.getElementById('modalGstSearch').value = gst + "%";
+        document.getElementById('modalGstId').value = gst;
+        document.getElementById('modalHsnDropdown').style.display = "none";
+        calculateModalTotals();
+        triggerFormScrollDown();
+    }
+
+    function selectGstDropdownValue(val, txt) {
+        document.getElementById('modalGstSearch').value = txt;
+        document.getElementById('modalGstId').value = val;
+        document.getElementById('modalGstDropdown').style.display = "none";
         calculateModalTotals();
     }
 
-    // Close Dropdowns globally on outside click actions
-    window.addEventListener('click', function(e) {
-        if (!e.target.matches('.search-input')) {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
-        }
-        if (!e.target.matches('.dots') && !e.target.matches('.dots *')) {
-            const mainMenu = document.getElementById("mainMenu");
-            if (mainMenu) mainMenu.style.display = "none";
-        }
-    });
-
-    function toggleMenu(e) { 
-        e.stopPropagation(); 
-        const m = document.getElementById("mainMenu"); 
-        if (m) m.style.display = m.style.display === "block" ? "none" : "block"; 
+    function triggerFormScrollDown() {
+        setTimeout(() => {
+            const container = document.getElementById("modalBodyContainer");
+            const targetField = document.getElementById("scollTargetField");
+            if(container && targetField) {
+                container.scrollTop = targetField.offsetTop;
+            }
+        }, 50);
     }
 
-    function selectRow(tr) { 
-        document.querySelectorAll(".data-row").forEach(r => r.classList.remove("selected")); 
-        tr.classList.add("selected"); 
-        selectedRow = tr; 
-    }
-
-    // Company Wise & Advanced Multi-Filter Logic Engine
     function applyFilters() {
-        const monthVal = document.getElementById('monthFilter').value;
-        const compVal = document.getElementById('companySearchHidden').value;
-        const vendorVal = document.getElementById('vendorSearchHidden').value;
-        const searchVal = document.getElementById('searchBox').value.toLowerCase();
-        
-        const rows = document.querySelectorAll('.data-row');
+        const tableBody = document.getElementById("tableBody");
+        if (!tableBody || tableBody.querySelector(".empty-state")) return;
+
+        const mVal = document.getElementById("monthFilter").value;
+        const cVal = document.getElementById("companySearchHidden").value;
+        const vVal = document.getElementById("vendorSearchHidden").value;
+        const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let visibleRows = [];
         let subtotal = 0;
-        let visibleCount = 0;
 
-        rows.forEach(row => {
-            const date = row.getAttribute('data-date');
-            const rowCompany = row.getAttribute('data-company');
-            const rowVendor = row.getAttribute('data-vendor');
-            const rowTotal = parseFloat(row.getAttribute('data-total')) || 0;
-            const text = row.textContent.toLowerCase();
-            
-            const matchMonth = !monthVal || date.startsWith(monthVal);
-            const matchCompany = !compVal || rowCompany === compVal;
-            const matchVendor = !vendorVal || rowVendor === vendorVal;
-            const matchSearch = text.includes(searchVal);
+        // Step 1: Filter and extract matched rows
+        rows.forEach(r => {
+            const d = r.getAttribute("data-date") || "";
+            const c = r.getAttribute("data-company") || "";
+            const v = r.getAttribute("data-vendor") || "";
+            const t = parseFloat(r.getAttribute("data-total")) || 0;
 
-            if (matchMonth && matchCompany && matchVendor && matchSearch) {
-                row.style.display = '';
-                subtotal += rowTotal;
-                visibleCount++;
-                const slnoEl = row.querySelector('.slno');
-                if (slnoEl) slnoEl.innerText = visibleCount;
+            let match = true;
+            if (mVal && !d.startsWith(mVal)) match = false;
+            if (cVal && c !== cVal) match = false;
+            if (vVal && v !== vVal) match = false;
+            if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
+
+            if(match) {
+                r.style.display = "";
+                subtotal += t;
+                visibleRows.push(r);
             } else {
-                row.style.display = 'none';
+                r.style.display = "none";
             }
         });
-        
-        document.getElementById('rowCount').innerText = visibleCount + " rows found";
-        document.getElementById('subTotalDisplay').innerText = "₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Step 2: ⚡ REFFERENCE LOGIC MATCH - Sl No Descending Order Layout Allocation
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".slno").innerText = visibleRows.length - index;
+        });
+
+        document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
+        document.getElementById("gt_display").innerText = "TOTAL AMOUNT: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
     }
 
-    // Create Modal Controller Operations
-    function openAddModal() {
-        document.getElementById("invoiceForm").reset();
-        document.getElementById("modalVendorId").value = "";
-        document.getElementById("modalLocationId").value = "";
-        document.getElementById("modalPoId").value = "N/A";
-        document.getElementById("modalHsnId").value = "";
-        document.getElementById("modalGstId").value = "18";
-        
-        document.getElementById("modalVendorSearch").value = "";
-        document.getElementById("modalLocationSearch").value = "";
-        document.getElementById("modalPoSearch").value = "";
-        document.getElementById("modalHsnSearch").value = "";
-        document.getElementById("modalGstSearch").value = "18%";
-
-        document.getElementById("modalInvoiceDate").value = new Date().toISOString().split('T')[0];
-        document.getElementById("modalTaxAmount").value = "₹ 0.00";
-        document.getElementById("modalGrandTotal").value = "₹ 0.00";
-        document.getElementById("addInvoiceModal").style.display = "flex";
-    }
-
-    function closeAddModal() {
-        document.getElementById("addInvoiceModal").style.display = "none";
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
     }
 
     function calculateModalTotals() {
-        const qty = parseFloat(document.getElementById("modalQty").value) || 0;
-        const rate = parseFloat(document.getElementById("modalRate").value) || 0;
-        const gstPercent = parseFloat(document.getElementById("modalGstId").value) || 0;
+        const q = parseFloat(document.getElementById("modalQty").value) || 0;
+        const r = parseFloat(document.getElementById("modalRate").value) || 0;
+        const tax = parseFloat(document.getElementById("modalGstId").value) || 0;
 
-        const subtotal = qty * rate;
-        const taxAmount = (subtotal * gstPercent) / 100;
-        const grandTotal = subtotal + taxAmount;
+        const taxable = q * r;
+        const gstVal = (taxable * tax) / 100;
+        const finalGrand = taxable + gstVal;
 
-        document.getElementById("modalTaxAmount").value = "₹ " + taxAmount.toFixed(2);
-        document.getElementById("modalGrandTotal").value = "₹ " + grandTotal.toFixed(2);
+        document.getElementById("modalTaxAmount").value = gstVal.toFixed(2);
+        document.getElementById("modalGrandTotal").innerText = finalGrand.toLocaleString('en-IN', {minimumFractionDigits: 2});
     }
 
-    // 🎯 FastAPI Router API Endpoints ('/api' prefix standard integrated)
-    async function saveInvoice(event) {
-        event.preventDefault();
-        
-        if(!document.getElementById("modalVendorId").value) {
-            return Swal.fire("Required", "Please select a valid Vendor from the dropdown suggestions.", "warning");
+    function openModal() {
+        if(!document.getElementById("f_fy").value) {
+            Swal.fire("FY Required", "Please select a Financial Year first before creating new records ledger entry.", "warning");
+            return;
         }
-        if(!document.getElementById("modalLocationId").value) {
-            return Swal.fire("Required", "Please select a valid Location Code from the dropdown suggestions.", "warning");
-        }
+        document.getElementById("invoiceForm").reset();
+        document.getElementById("modalTitle").innerText = "New Purchase Entry";
+        document.getElementById("modalInvoiceId").value = "";
+        document.getElementById("modalLocationId").value = "";
+        document.getElementById("modalLocationSearch").value = "";
+        document.getElementById("modalVendorId").value = "";
+        document.getElementById("modalVendorSearch").value = "";
+        document.getElementById("modalPoSearch").value = "N/A";
+        document.getElementById("modalGstId").value = "18";
+        document.getElementById("modalGstSearch").value = "18%";
+        document.getElementById("modalInvoiceDate").value = new Date().toISOString().substring(0, 10);
+        calculateModalTotals();
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
+    }
 
-        const formElement = document.getElementById("invoiceForm");
-        const formData = new FormData(formElement);
+    function closeModal() { 
+        document.getElementById('entryModal').style.display = 'none'; 
+        document.getElementById('invoiceForm').reset(); 
+    }
+
+    function resetFilters() { 
+        document.getElementById('companySearch').value = ""; 
+        document.getElementById('companySearchHidden').value = "";
+        document.getElementById('vendorSearch').value = ""; 
+        document.getElementById('vendorSearchHidden').value = "";
+        document.getElementById('monthFilter').value = "";
+        document.getElementById('searchBox').value = "";
+        applyFilters(); 
+    }
+
+    function toggleAuditPanel(show) {
+        const panel = document.getElementById("auditPanel");
+        panel.style.display = show ? "flex" : "none";
+    }
+
+    async function showAllAuditLogs() {
+        toggleAuditPanel(true);
+        const content = document.getElementById("auditContent");
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Master History Logs...</div>`;
 
         try {
-            const response = await fetch('/api/purchase/save', {
-                method: 'POST',
-                body: formData
-            });
+            const res = await fetch(`${API_BASE}/audit_all`);
             
-            const resData = await response.json();
-            
-            if(resData.status === "success") {
-                await Swal.fire("Success!", resData.message || "Invoice saved successfully.", "success");
-                closeAddModal();
-                location.reload();
-            } else {
-                Swal.fire("Error", resData.message || "Failed to save record.", "error");
+            if (res.status === 404 && globalSelectedId) {
+                const fallbackRes = await fetch(`${API_BASE}/audit/${globalSelectedId}`);
+                const data = await fallbackRes.json();
+                if(data.success) {
+                    content.innerHTML = `
+                        <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                            <b>${data.created_date} | ${data.created_time}</b><br>
+                            Invoice: ${data.invoice_no} | Action: Initial Creation<br>
+                            <small>User: ${data.created_by}</small>
+                        </div>
+                        ${data.updated_by ? `
+                        <div style="border-left:2px solid var(--danger); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                            <b>${data.updated_date}</b><br>
+                            Invoice: ${data.invoice_no} | Action: Record Modified<br>
+                            <small>User: ${data.updated_by}</small>
+                        </div>` : ''}
+                    `;
+                }
+                return;
             }
-        } catch (err) {
-            Swal.fire("Submission Failed", "Server submission failed: " + err, "error");
+
+            const logs = await res.json();
+            if(Array.isArray(logs) && logs.length > 0) {
+                content.innerHTML = logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp || l.date || 'N/A'}</b> | Invoice: ${l.invoice_no || 'N/A'}<br>
+                        ${l.action || 'Log'}: ${l.details || 'Record accessed/saved'}<br>
+                        <small>By: ${l.user || l.email || 'System'}</small>
+                    </div>`).join('');
+            } else if (logs.success && logs.logs) {
+                content.innerHTML = logs.logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp}</b> | Invoice: ${l.invoice_no}<br>
+                        ${l.action}: ${l.details}<br>
+                        <small>By: ${l.user}</small>
+                    </div>`).join('');
+            } else {
+                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No master audit logs available.</div>`;
+            }
+        } catch (e) {
+            content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:10px;">Failed to load history data.</div>`;
         }
+    }
+
+    async function saveInvoice(event) {
+        event.preventDefault();
+        const payload = {
+            unit_id: parseInt(document.getElementById("modalLocationId").value),
+            vendor_id: parseInt(document.getElementById("modalVendorId").value),
+            invoice_date: document.getElementById("modalInvoiceDate").value,
+            invoice_no: document.getElementById("modalInvoiceNo").value.trim(),
+            product_name: document.getElementById("modalProductName").value.trim(),
+            hsn_code: document.getElementById("modalHsnSearch").value.trim(),
+            qty: parseFloat(document.getElementById("modalQty").value),
+            base_price: parseFloat(document.getElementById("modalRate").value),
+            gst_percent: parseFloat(document.getElementById("modalGstId").value),
+            po_number: document.getElementById("modalPoSearch").value.trim()
+        };
+
+        const editId = document.getElementById("modalInvoiceId").value;
+        const apiPath = editId ? `${API_BASE}/update/${editId}` : `${API_BASE}/create`;
+        const methodType = editId ? 'PUT' : 'POST';
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(apiPath, {
+                method: methodType,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if (res.ok && out.success) {
+                Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
+            } else {
+                Swal.fire("Refused", out.message || 'Check inputs!', "error");
+            }
+        } catch(e) {
+            Swal.fire("Error", "Backend processing link failed.", "error");
+        }
+    }
+
+    function editSelectedRow() {
+        if (!globalSelectedId) return;
+        
+        const row = document.querySelector(`tr[data-id="${globalSelectedId}"]`);
+        if(!row) return;
+
+        document.getElementById("modalInvoiceId").value = globalSelectedId;
+        document.getElementById("modalInvoiceDate").value = row.getAttribute("data-date");
+        document.getElementById("modalInvoiceNo").value = row.cells[2].innerText;
+        
+        const locId = row.getAttribute("data-company");
+        document.getElementById("modalLocationId").value = locId;
+        document.getElementById("modalLocationSearch").value = locationMap[locId] || "";
+
+        const venId = row.getAttribute("data-vendor");
+        document.getElementById("modalVendorId").value = venId;
+        document.getElementById("modalVendorSearch").value = vendorMap[venId] || "";
+
+        document.getElementById("modalPoSearch").value = row.cells[4].innerText;
+        document.getElementById("modalProductName").value = row.cells[6].innerText;
+        document.getElementById("modalHsnSearch").value = row.cells[7].innerText;
+
+        document.getElementById("modalQty").value = parseFloat(row.cells[8].innerText.replace(/,/g, ''));
+        document.getElementById("modalRate").value = parseFloat(row.cells[9].innerText.replace(/,/g, ''));
+
+        calculateModalTotals();
+        document.getElementById("modalTitle").innerText = "Edit Purchase Entry";
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
     }
 
     async function deleteSelected() {
-        if(!selectedRow) return Swal.fire("Warning", "Please select an invoice row to delete!", "warning");
-        
-        const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "Want to completely delete the selected Purchase Invoice record?",
-            icon: 'warning',
+        if (!globalSelectedId) return;
+
+        const decision = await Swal.fire({
+            title: "Confirm deletion.",
+            text: "This record will be deleted from the system permanently.",
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#0f172a',
-            cancelButtonColor: '#ef4444',
-            confirmButtonText: 'YES, DELETE IT'
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "Yes, Delete"
         });
 
-        if (result.isConfirmed) {
+        if (decision.isConfirmed) {
             try {
-                const response = await fetch(`/api/purchase/delete/${selectedRow.dataset.id}`, { method: 'POST' });
-                const resData = await response.json();
-                
-                if (resData.status === "success") {
-                    await Swal.fire("Deleted!", resData.message || "Record successfully removed.", "success");
-                    location.reload();
-                } else {
-                    Swal.fire("Failed!", resData.message || "Could not delete row.", "error");
+                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
+                const out = await res.json();
+                if (out.success) {
+                    Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
                 }
             } catch (err) {
-                Swal.fire("Error", "Server submission failed: " + err, "error");
+                Swal.fire("Error", "Deletion engine failed.", "error");
             }
         }
     }
 
-    function showAudit() {
-        if(!selectedRow) return Swal.fire("Warning", "Select an explicit system ledger line entry row first!", "warning");
-        
-        fetch(`/api/purchase/audit/${selectedRow.dataset.id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success" && data.audit_trail) {
-                    const trail = data.audit_trail;
-                    Swal.fire({
-                        title: 'Invoice Audit Trail',
-                        html: `<div style="text-align:left; font-size:13px;">
-                                <strong>Invoice No:</strong> ${trail.invoice_no}<br>
-                                <strong>Created By:</strong> ${trail.created_by}<br>
-                                <strong>Created Date:</strong> ${trail.created_date}<br>
-                                <strong>Created Time:</strong> ${trail.created_time}
-                               </div>`,
-                        icon: 'info',
-                        confirmButtonColor: '#0f172a'
-                    });
-                } else {
-                    Swal.fire("Error", "Could not fetch audit details.", "error");
-                }
-            })
-            .catch(err => {
-                Swal.fire("Error", "Failed to connect to server: " + err, "error");
-            });
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
+    function executePdfExport() { 
+        if(!globalSelectedId) return;
+        window.location.href = `${API_BASE}/export/pdf/${globalSelectedId}`; 
     }
-
-    function executeExcelExport() {
-        window.location.href = "/api/purchase/export/excel";
+    function executePrint() { 
+        if(!globalSelectedId) return;
+        window.open(`${API_BASE}/print/${globalSelectedId}`, '_blank'); 
     }
-
-    function executePrintView() {
-        window.open("/api/purchase/print/report", "_blank");
-    }
-
-    // Run filters initially on page compile load
-    document.addEventListener("DOMContentLoaded", function() {
-        applyFilters();
-    });
 </script>
+
 </body>
 </html>

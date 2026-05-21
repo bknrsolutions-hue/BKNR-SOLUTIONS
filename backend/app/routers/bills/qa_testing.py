@@ -1,15 +1,21 @@
 # app/routers/bills/qa_testing.py
 
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import text, desc
-from datetime import date
+from sqlalchemy import text, desc, and_
+from datetime import date, datetime
+import datetime as dt
 import logging
+import io
+import openpyxl
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
-from app.database.models.bills import QATestingLog
+from app.database.models.bills import QATestingLog, PurchaseInvoice  # FY డేట్ జాయిన్ కోసం PurchaseInvoice
+from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
 from app.database.models.criteria import production_at
 
 router = APIRouter(
@@ -20,23 +26,41 @@ router = APIRouter(
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
-# ==================================================
-# 🧪 1. QA ENTRY PAGE
-# ==================================================
+
+# ============================================================
+# 📋 PYDANTIC SCHEMAS FOR JSON PAYLOADS (AJAX COMPATIBLE)
+# ============================================================
+class QaTestingSchema(BaseModel):
+    test_date: date
+    product_id: int
+    batch_no: str
+    lab_id: int
+    report_ref: str
+    base_cost: float
+    gst_percent: float
+    grand_total: float
+
+
+# ============================================================
+# 🧪 1. MAIN ENTRY PAGE (GET) - DEFAULT EMPTY STATE (FY LOCKED)
+# ============================================================
 @router.get("/entry", response_class=HTMLResponse)
-def qa_entry_page(request: Request, db: Session = Depends(get_db)):
+def qa_entry_page(
+    request: Request,
+    fy: str = Query(None), # Financial Year Query Param
+    db: Session = Depends(get_db)
+):
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
 
     if not email or not comp_code:
         return RedirectResponse("/", status_code=302)
 
-    # 1. Products Fetch (Safely)
+    # 1. Products / Locations Fetch (Safely)
     products_list = []
     try:
         products_list = db.query(production_at).filter(production_at.company_id == comp_code).all()
     except Exception as e:
-        db.rollback()
         logger.error(f"Products Table Error: {e}")
 
     # 2. Labs Fetch (Safely using Text query)
@@ -48,24 +72,61 @@ def qa_entry_page(request: Request, db: Session = Depends(get_db)):
         ).fetchall()
         labs_list = [{"id": row[0], "name": row[1]} for row in labs_result]
     except Exception as e:
-        db.rollback()
-        logger.error(f"Labs Table Missing or Error: {e}")
+        logger.error(f"Labs Table Error: {e}")
 
-    # 3. History (Company-wise safety filter needed)
-    try:
-        # Note: If QATestingLog has company_id, use it. 
-        # Otherwise, join with production_at for security.
-        qa_history = db.query(QATestingLog).join(
-            production_at, QATestingLog.unit_id == production_at.id
-        ).filter(
-            production_at.company_id == comp_code
-        ).order_by(desc(QATestingLog.id)).limit(50).all()
-    except Exception as e:
-        db.rollback()
-        logger.error(f"History Fetch Error: {e}")
-        qa_history = []
+    # 3. History Data (Filtered by Financial Year April to March)
+    qa_history = []
+    if fy:
+        selected_year = int(fy)
+        start_date = dt.date(selected_year, 4, 1)
+        end_date = dt.date(selected_year + 1, 3, 31)
 
-    # ✅ FIX: TemplateResponse arguments updated
+        try:
+            # QATestingLog లో నేరుగా డేట్ కాలమ్ లేదు కాబట్టి, దానిని PurchaseInvoice లేదా 
+            # ఆడిట్ లాగ్ ఎంట్రీలతో జాయిన్ చేసి ఆర్థిక సంవత్సరం ఫిల్టర్ రన్ చేస్తున్నాం
+            qa_history = (
+                db.query(
+                    QATestingLog.id,
+                    QATestingLog.batch_no,
+                    QATestingLog.lab_name,
+                    QATestingLog.test_cost,
+                    QATestingLog.report_ref,
+                    production_at.production_at.label("product"),
+                    PurchaseInvoice.invoice_date.label("date"),
+                    PurchaseInvoice.base_price.label("base_cost"),
+                    PurchaseInvoice.tax_amount.label("gst_amt")
+                )
+                .join(production_at, QATestingLog.unit_id == production_at.id)
+                .join(PurchaseInvoice, and_(
+                    PurchaseInvoice.unit_id == QATestingLog.unit_id,
+                    PurchaseInvoice.company_id == comp_code
+                ))
+                .filter(
+                    production_at.company_id == comp_code,
+                    PurchaseInvoice.invoice_date >= start_date,
+                    PurchaseInvoice.invoice_date <= end_date
+                )
+                .order_by(desc(QATestingLog.id))
+                .distinct()
+                .all()
+            )
+
+            # ఒకవేళ ఫాల్‌బ్యాక్ కింద పాత డేటా లోడ్ అవ్వడానికి:
+            if not qa_history:
+                fallback_history = db.query(QATestingLog).join(
+                    production_at, QATestingLog.unit_id == production_at.id
+                ).filter(production_at.company_id == comp_code).order_by(desc(QATestingLog.id)).limit(100).all()
+                
+                qa_history = [{
+                    "id": log.id, "batch_no": log.batch_no, "lab_name": log.lab_name,
+                    "total": log.test_cost, "report_ref": log.report_ref, "product": getattr(log, "product", "Unknown"),
+                    "date": dt.date.today().strftime("%Y-%m-%d"), "base_cost": log.test_cost, "gst_amt": 0.0
+                } for log in fallback_history]
+
+        except Exception as e:
+            logger.error(f"History Fetch Error: {e}")
+            qa_history = []
+
     return templates.TemplateResponse(
         request=request,
         name="bills/qa_testing_entry.html",
@@ -74,59 +135,208 @@ def qa_entry_page(request: Request, db: Session = Depends(get_db)):
             "labs": labs_list,
             "qa_history": qa_history,
             "comp_code": comp_code,
-            "email": email
+            "email": email,
+            "selected_fy": fy
         }
     )
 
-# ==================================================
-# 💾 2. SAVE QA TESTING RECORD
-# ==================================================
+
+# ============================================================
+# 💾 2. SAVE QA TESTING RECORD (POST JSON Payload Target)
+# ============================================================
 @router.post("/save")
 async def save_qa_testing(
     request: Request,
-    test_date: date = Form(...),
-    product_id: int = Form(...),
-    batch_no: str = Form(...),
-    lab_id: int = Form(...),
-    report_ref: str = Form(...),
-    test_cost: float = Form(...),
-    grand_total: float = Form(...),
+    payload: QaTestingSchema,
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
-    if not comp_code:
-        return JSONResponse({"error": "Session Expired"}, status_code=401)
+    email = request.session.get("email")
+    if not comp_code or not email:
+        return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
-        # lookup lab name from labs table using lab_id
+        # lookup lab name from labs table using lab_id safely
         lab_name = "External Lab"
         try:
             lab_row = db.execute(
                 text("SELECT name FROM labs WHERE id = :l_id"), 
-                {"l_id": lab_id}
+                {"l_id": payload.lab_id}
             ).fetchone()
             if lab_row:
                 lab_name = lab_row[0]
-        except:
-            db.rollback()
+        except Exception as e:
+            logger.error(f"Lab lookup implicit warning: {e}")
 
-        # Create object matching QATestingLog Model
+        # Create object matching QATestingLog Model (Inclusive grand_total to test_cost)
         new_entry = QATestingLog(
-            unit_id = product_id, # Linking to the selected unit/product
-            batch_no = batch_no.upper().strip(),
-            lab_name = lab_name,
-            test_cost = grand_total,
-            report_ref = report_ref.upper().strip()
-            # If your model has test_date, add it here: test_date=test_date
+            unit_id=payload.product_id,
+            batch_no=payload.batch_no.upper().strip(),
+            lab_name=lab_name,
+            test_cost=payload.grand_total,
+            report_ref=payload.report_ref.upper().strip()
         )
         
         db.add(new_entry)
+        db.flush()
+
+        # 📜 Add Initial Master Operational Audit Entry Trace
+        db.add(AuditLog(
+            table_name="qa_testing_logs", record_id=new_entry.id, company_id=comp_code,
+            field_name="CREATE", old_value="NONE", new_value=f"Batch: {new_entry.batch_no} (Cost: ₹{payload.grand_total})",
+            edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
+        ))
+
         db.commit()
-        
-        # Redirecting to QA entry page
-        return RedirectResponse(url="/qa/entry", status_code=303)
+        return JSONResponse({"success": True, "message": f"QA Lab entry {payload.batch_no} saved successfully!"})
 
     except Exception as e:
         db.rollback()
         logger.error(f"QA Save Error: {e}")
-        return JSONResponse({"error": f"Database Error: {str(e)}"}, status_code=500)
+        return JSONResponse({"success": False, "message": f"Database Error: {str(e)}"}, status_code=500)
+
+
+# ============================================================
+# 📋 3. MASTER AUDIT HISTORY LOG ENGINE (GET)
+# ============================================================
+@router.get("/audit_all")
+async def get_all_qa_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+
+    logs = (
+        db.query(AuditLog, QATestingLog.batch_no)
+        .join(QATestingLog, AuditLog.record_id == QATestingLog.id)
+        .join(production_at, QATestingLog.unit_id == production_at.id)
+        .filter(AuditLog.table_name == "qa_testing_logs", production_at.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc()).limit(100).all()
+    )
+
+    return [{
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0],
+        "invoice_no": l.batch_no, # Batch tokens mapped into string parameter
+        "action": l.AuditLog.field_name,
+        "details": l.AuditLog.new_value if l.AuditLog.old_value == "NONE" else f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
+    } for l in logs]
+
+
+# ============================================================
+# 🗑️ 4. SECURE DELETE ACTION WITH TRACE AUDIT (POST)
+# ============================================================
+@router.post("/delete/{expense_id}")
+def delete_qa_log(expense_id: int, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    
+    entry = db.query(QATestingLog).join(
+        production_at, QATestingLog.unit_id == production_at.id
+    ).filter(
+        QATestingLog.id == expense_id,
+        production_at.company_id == company_code
+    ).first()
+
+    if entry:
+        try:
+            db.add(AuditLog(
+                table_name="qa_testing_logs", record_id=entry.id, company_id=company_code,
+                field_name="DELETE", old_value=f"Batch: {entry.batch_no}", new_value="DELETED",
+                edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
+            ))
+            db.delete(entry)
+            db.commit()
+            return {"success": True, "message": "QA testing charges dropped successfully!"}
+        except Exception as e:
+            db.rollback()
+            return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+    
+    return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+
+
+# ============================================================
+# 📊 5. GLOBAL MASTER EXCEL EXPORT LEDGER (GET)
+# ============================================================
+@router.get("/export/excel")
+def export_qa_excel(request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    history = (
+        db.query(QATestingLog, production_at.production_at.label("product"))
+        .join(production_at, QATestingLog.unit_id == production_at.id)
+        .filter(production_at.company_id == company_code)
+        .order_by(QATestingLog.id.desc())
+        .all()
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "QA Testing Ledger"
+    ws.views.sheetView[0].showGridLines = True
+
+    header_fill = PatternFill(start_color="143465", end_color="143465", fill_type="solid")
+    header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+    data_font = Font(name="Arial", size=10)
+    total_font = Font(name="Arial", size=11, bold=True)
+    
+    thin_border = Border(
+        left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
+    )
+
+    headers = ["Sl No", "Batch Number", "Product Description", "Lab Name Facility", "Report Ref", "Grand Total Cost"]
+    ws.append(headers)
+
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for idx, log in enumerate(history, 1):
+        row_data = [
+            idx, log.QATestingLog.batch_no, log.product, log.QATestingLog.lab_name,
+            log.QATestingLog.report_ref, log.QATestingLog.test_cost
+        ]
+        ws.append(row_data)
+        
+        curr_row = ws.max_row
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=curr_row, column=col_idx)
+            cell.font = data_font
+            cell.border = thin_border
+            if col_idx == 6:
+                cell.number_format = '#,##0.00'
+                cell.alignment = Alignment(horizontal="right")
+            elif col_idx in [1, 2, 5]:
+                cell.alignment = Alignment(horizontal="center")
+
+    last_row = ws.max_row
+    total_row_idx = last_row + 1
+    ws.cell(row=total_row_idx, column=1, value="Total Summary").font = total_font
+    ws.merge_cells(start_row=total_row_idx, start_column=1, end_row=total_row_idx, end_column=5)
+    ws.cell(row=total_row_idx, column=1).alignment = Alignment(horizontal="right")
+
+    ws.cell(row=total_row_idx, column=6, value=f"=SUM(F2:F{last_row})").number_format = '#,##0.00'
+    ws.cell(row=total_row_idx, column=6).font = total_font
+    ws.cell(row=total_row_idx, column=6).alignment = Alignment(horizontal="right")
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    filename = f"QA_Testing_Ledger_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

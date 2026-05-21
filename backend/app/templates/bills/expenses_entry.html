@@ -1,133 +1,457 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Other Expenses - BKNR ERP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary: #0f172a; --border: #cbd5e1; --bg: #f8fafc; --accent: #2563eb; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: var(--primary); margin: 0; }
-        
-        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h2 { font-size: 18px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px; }
-        
-        .card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-        .field-group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
-        
-        .btn-post { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 15px; }
-        .btn-new { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; }
+<meta charset="utf-8">
+<title>OTHER EXPENSES MANAGEMENT - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .table-container { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-        .table-header { padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 12px; text-transform: uppercase; }
-        .scroll-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th { background: #f8fafc; padding: 12px; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); text-align: center; color: #475569; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; text-align: center; }
-        .expense-badge { background: #eef2ff; color: #4338ca; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+:root{
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+}
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
+
+/* --- HEADER --- */
+.header-dash {
+  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+    .grand-total { width: 100%; padding: 8px 15px; } 
+}
+
+/* --- FILTERS --- */
+.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- MAIN TABLE (COMPACT PURCHASE INVOICE LAYOUT MATCHED) --- */
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1000px; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+
+.expense-badge { background: #eef2ff; color: #4338ca; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+
+/* Empty State */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+
+/* --- MODAL MANAGEMENT (4-COLUMN PURCHASE STYLE GRID) --- */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* --- AUDIT PANEL --- */
+.audit-panel { 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+}
+@media(max-width:400px){ .audit-panel { width: 100%; } }
+</style>
 </head>
+
 <body>
 
-<div class="header-section">
-    <h2><i class="fas fa-wallet" style="color:#2563eb;"></i> Other Expenses</h2>
-    <button class="btn-new" onclick="toggleForm()"><i class="fas fa-plus"></i> Add New Expense</button>
+<div class="header-dash">
+    <div class="header-titles"><h2>Other Expenses Ledger</h2></div>
+    <div class="grand-total" id="gt_display">TOTAL EXPENSE: ₹ 0.00</div>
 </div>
 
-<div id="formWrapper" class="card" style="display: none;">
-    <form id="expenseForm" method="POST" action="/api/expenses/save">
-        <div class="form-grid">
-            <div class="field-group">
-                <label>Company Unit</label>
-                <select name="production_at_id" required>
-                    <option value="">-- SELECT UNIT --</option>
-                    {% for loc in locations %}
-                    <option value="{{ loc.id }}">{{ loc.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="field-group"><label>Expense Date</label><input type="date" name="expense_date" id="expense_date" required></div>
-            <div class="field-group">
-                <label>Category</label>
-                <select name="category" required>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Stationary">Stationary</option>
-                    <option value="Staff Welfare">Staff Welfare</option>
-                    <option value="Traveling">Traveling</option>
-                    <option value="Others">Others</option>
-                </select>
-            </div>
-            <div class="field-group"><label>Paid To</label><input type="text" name="paid_to" placeholder="Vendor Name" required></div>
-            <div class="field-group"><label>Remarks</label><input type="text" name="remarks" placeholder="Description"></div>
-            <div class="field-group"><label>Voucher No</label><input type="text" name="voucher_no" placeholder="VCH-001"></div>
-            <div class="field-group"><label>Amount (₹)</label><input type="number" name="amount" id="amount" step="0.01" oninput="calcGST()" required></div>
-            <div class="field-group">
-                <label>GST %</label>
-                <select id="gst_per" name="gst_per" onchange="calcGST()">
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="12">12%</option>
-                    <option value="18">18%</option>
-                </select>
-            </div>
-            <div class="field-group">
-                <label>Total Value (₹)</label>
-                <input type="text" id="display_total" readonly style="background:#f1f5f9; font-weight:700;">
-                <input type="hidden" name="grand_total" id="hidden_total">
+<!-- 📊 FILTERS GRID BAR -->
+<div class="filter-bar">
+    <div class="filter-item">
+        <label style="color:var(--accent)">Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- SELECT FY --</option>
+            {% set start_yr = 2024 %}
+            {% set end_yr = 2027 %}
+            {% for y in range(start_yr, end_yr) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Search Category, Paid To, Location unit...">
+    </div>
+    
+    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
+</div>
+
+<!-- 🧾 ACTIONS HEADER -->
+<div class="section-header">
+    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Audit History</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
             </div>
         </div>
-        <button type="submit" class="btn-post">SAVE EXPENSE</button>
-    </form>
-</div>
-
-<div class="table-container">
-    <div class="table-header">Expense Register</div>
-    <div class="scroll-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th><th>Unit</th><th>Category</th><th>Paid To</th><th>Remarks</th><th>Voucher</th><th>Base</th><th>GST</th><th>Total</th><th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for exp in expense_history %}
-                <tr>
-                    <td>{{ exp.date }}</td>
-                    <td style="font-weight:600;">{{ exp.unit }}</td>
-                    <td><span class="expense-badge">{{ exp.category }}</span></td>
-                    <td>{{ exp.paid_to }}</td>
-                    <td style="color:#64748b;">{{ exp.remarks }}</td>
-                    <td>{{ exp.voucher_no }}</td>
-                    <td>{{ exp.amount }}</td>
-                    <td>{{ exp.gst_amt }}</td>
-                    <td style="font-weight: 700;">₹ {{ exp.total }}</td>
-                    <td><i class="fa-solid fa-trash-can" style="color: #ef4444; cursor:pointer;"></i></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW EXPENSE ENTRY</button>
     </div>
 </div>
 
+<!-- 📋 COMPACT DATA TABLE -->
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Location Unit</th>
+                <th>Expense Category</th>
+                <th class="text-right">Total Amount (₹)</th>
+                <th class="text-left">Remarks & Meta Records Log</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not expense_history %}
+            <tr>
+                <td colspan="5" class="empty-state">
+                    <i class="fa-solid fa-wallet" style="color:var(--accent);"></i><br>
+                    <b>Financial Year Not Selected</b><br>
+                    <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render active expenses data ledger.</span>
+                </td>
+            </tr>
+            {% else %}
+                {% for row in expense_history %}
+                <tr class="data-row" 
+                    data-id="{{ row.OtherExpense.id }}" 
+                    data-total="{{ row.OtherExpense.amount }}"
+                    onclick="selectRow(this, '{{ row.OtherExpense.id }}')">
+                    
+                    <td class="slno">0</td>
+                    <td style="font-weight:700;">{{ row.location_name }}</td>
+                    <td><span class="expense-badge">{{ row.OtherExpense.category }}</span></td>
+                    <td class="text-right cost-val" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(row.OtherExpense.amount or 0) }}</td>
+                    <td class="text-left" style="color:var(--muted); max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.OtherExpense.remarks }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 📦 ENTRY FORM OVERLAY MODAL (PURCHASE INVOICE STRUCTURE) -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;" id="modalTitle">New Expense Entry</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="expenseForm" onsubmit="saveExpenseLog(event)">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Company Unit</label>
+                    <select id="modalUnitId" required>
+                        <option value="">-- SELECT UNIT --</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc.id }}">{{ loc.production_at }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Expense Date</label>
+                    <input type="date" id="modalExpenseDate" required>
+                </div>
+
+                <div class="field">
+                    <label>Category</label>
+                    <select id="modalCategory" required>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Stationary">Stationary</option>
+                        <option value="Staff Welfare">Staff Welfare</option>
+                        <option value="Traveling">Traveling</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Paid To</label>
+                    <input type="text" id="modalPaidTo" placeholder="Vendor / Recipient Name" required>
+                </div>
+
+                <div class="field">
+                    <label>Voucher No</label>
+                    <input type="text" id="modalVoucherNo" placeholder="VCH-001">
+                </div>
+
+                <div class="field">
+                    <label>Base Amount (₹)</label>
+                    <input type="number" step="any" id="modalAmount" placeholder="0.00" oninput="calculateModalCost()" required>
+                </div>
+
+                <div class="field">
+                    <label>GST %</label>
+                    <select id="modalGstPer" onchange="calculateModalCost()">
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="18">18%</option>
+                    </select>
+                </div>
+
+                <div class="field" id="scollTargetField">
+                    <label>Remarks / Notes</label>
+                    <input type="text" id="modalRemarks" placeholder="Brief description details">
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; background: #f0fdf4; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
+                <span style="font-weight: 700; color: #166534; font-size: 13px;">Grand Total Value (Inclusive):</span>
+                <span style="font-size: 18px; font-weight: 800; color: #166534;"><span id="modalGrandTotal">₹ 0.00</span></span>
+            </div>
+            
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1;">Post Expense Log</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= AUDIT PANEL ================= -->
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">EXPENSE RECORD TRANSACTION LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+</div>
+
 <script>
-    document.getElementById('expense_date').valueAsDate = new Date();
+    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR
+    const API_BASE = window.location.pathname.includes('/api/') ? '/api/expenses' : '/expenses';
+    let globalSelectedId = null;
 
-    function toggleForm() {
-        const fw = document.getElementById('formWrapper');
-        fw.style.display = fw.style.display === "none" ? "block" : "none";
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+        
+        document.getElementById("dotsBtn").onclick = (e) => { 
+            e.stopPropagation(); 
+            const m = document.getElementById("dropdownMenu"); 
+            m.style.display = (m.style.display === "block") ? "none" : "block"; 
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.menu-trigger')) {
+                const m = document.getElementById("dropdownMenu");
+                if(m) m.style.display = 'none';
+            }
+        });
+
+        const searchBox = document.getElementById('searchBox');
+        if(searchBox) {
+            searchBox.addEventListener('keyup', debounce(applyFilters, 250));
+        }
+    });
+
+    function changeFY(val) {
+        if(!val) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('fy', val);
+        window.location.href = url.toString();
     }
 
-    function calcGST() {
-        const amt = parseFloat(document.getElementById('amount').value) || 0;
-        const gst = parseFloat(document.getElementById('gst_per').value) || 0;
-        const total = amt + (amt * gst / 100);
-        document.getElementById('display_total').value = "₹ " + total.toFixed(2);
-        document.getElementById('hidden_total').value = total.toFixed(2);
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
     }
+
+    function applyFilters() {
+        const tableBody = document.getElementById("tableBody");
+        if (!tableBody || tableBody.querySelector(".empty-state")) return;
+
+        const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let visibleRows = [];
+        let subtotal = 0;
+
+        rows.forEach(r => {
+            const t = parseFloat(r.getAttribute("data-total")) || 0;
+            let match = true;
+            if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
+
+            if(match) {
+                r.style.display = "";
+                subtotal += t;
+                visibleRows.push(r);
+            } else {
+                r.style.display = "none";
+            }
+        });
+
+        // Sl No Descending Calculation Engine
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".slno").innerText = visibleRows.length - index;
+        });
+
+        document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
+        document.getElementById("gt_display").innerText = "TOTAL EXPENSE: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
+    }
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    function calculateModalCost() {
+        const amt = parseFloat(document.getElementById('modalAmount').value) || 0;
+        const gst = parseFloat(document.getElementById('modalGstPer').value) || 0;
+        const grand = amt + (amt * gst / 100);
+
+        document.getElementById('modalGrandTotal').innerText = "₹ " + grand.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    }
+
+    function openModal() {
+        if(!document.getElementById("f_fy").value) {
+            Swal.fire("FY Required", "Please select a Financial Year first before creating new expense logging instances.", "warning");
+            return;
+        }
+        document.getElementById("expenseForm").reset();
+        document.getElementById("modalExpenseDate").value = new Date().toISOString().substring(0, 10);
+        document.getElementById('modalGrandTotal').innerText = "₹ 0.00";
+        document.getElementById('entryModal').style.display = 'flex';
+        document.getElementById("modalBodyContainer").scrollTop = 0;
+    }
+
+    function closeModal() { 
+        document.getElementById('entryModal').style.display = 'none'; 
+        document.getElementById('expenseForm').reset(); 
+    }
+
+    function resetFilters() { 
+        document.getElementById('searchBox').value = "";
+        applyFilters(); 
+    }
+
+    function toggleAuditPanel(show) {
+        const panel = document.getElementById("auditPanel");
+        panel.style.display = show ? "flex" : "none";
+    }
+
+    async function showAllAuditLogs() {
+        toggleAuditPanel(true);
+        const content = document.getElementById("auditContent");
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Archive Line Items...</div>`;
+        try {
+            const res = await fetch(`${API_BASE}/audit_all`);
+            const logs = await res.json();
+            if(Array.isArray(logs) && logs.length > 0) {
+                content.innerHTML = logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp}</b> | Location: ${l.invoice_no}<br>
+                        Operation: ${l.action}<br>
+                        <small>Trace Data: ${l.details}</small><br>
+                        <small style="color:var(--muted)">Operator User: ${l.user}</small>
+                    </div>`).join('');
+            } else {
+                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No transaction log history records found inside stack.</div>`;
+            }
+        } catch (e) { content.innerHTML = `Fault executing telemetry tracking pipeline synchronization.`; }
+    }
+
+    async function saveExpenseLog(event) {
+        event.preventDefault();
+        
+        const amt = parseFloat(document.getElementById('modalAmount').value) || 0;
+        const gst = parseFloat(document.getElementById('modalGstPer').value) || 0;
+        const grand = amt + (amt * gst / 100);
+
+        const payload = {
+            production_at_id: parseInt(document.getElementById("modalUnitId").value),
+            expense_date: document.getElementById("modalExpenseDate").value,
+            category: document.getElementById("modalCategory").value,
+            paid_to: document.getElementById("modalPaidTo").value.trim(),
+            voucher_no: document.getElementById("modalVoucherNo").value.trim(),
+            amount: amt,
+            gst_per: gst,
+            remarks: document.getElementById("modalRemarks").value.trim(),
+            grand_total: grand
+        };
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(`${API_BASE}/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success || out.status === 'success') {
+                Swal.fire({ icon:'success', title:'Expense Ledger Committed!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } else { Swal.fire("Error", out.message || "Save rejection validation fault.", "error"); }
+        } catch(e) { Swal.fire("Error", "Server payload channel link dropped exception.", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const resDecision = await Swal.fire({
+            title: "Destroy record node?", text: "This transaction trace row will be deleted permanently from system storage schema stack.", icon: "warning", showCancelButton: true
+        });
+        if(resDecision.isConfirmed) {
+            try {
+                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire({ icon:'success', title:'Deleted!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Interceptor execution dropping storage row node reference.", "error"); }
+        }
+    }
+
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
 </body>
 </html>

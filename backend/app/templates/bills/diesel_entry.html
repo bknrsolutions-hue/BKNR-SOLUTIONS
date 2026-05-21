@@ -1,198 +1,545 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diesel Inventory - BKNR ERP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="utf-8">
+<title>DIESEL INVENTORY & GRN System - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        :root {
-            --primary: #0f172a;
-            --in: #059669;
-            --out: #e11d48;
-            --border: #cbd5e1;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-        }
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
-        
-        h2 { margin-bottom: 20px; font-size: 20px; font-weight: 800; color: var(--primary); }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        /* Card Styles */
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-header { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 12px; text-transform: uppercase; }
-        .header-in { background: #f0fdf4; color: var(--in); border-bottom: 1px solid #dcfce7; }
-        .header-out { background: #fff1f2; color: var(--out); border-bottom: 1px solid #ffe4e6; }
-        .card-body { padding: 20px; display: none; }
-        .card-body.active { display: block; }
+<style>
+:root{
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+}
 
-        /* Form Layout */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .field-group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
-        input[readonly] { background: #f1f5f9; color: #475569; font-weight: 600; cursor: not-allowed; }
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
-        /* Buttons */
-        .btn { padding: 10px 24px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; color: #fff; margin-top: 15px; float: right; transition: 0.2s; }
-        .btn-in { background: var(--in); }
-        .btn-out { background: var(--out); }
-        
-        /* Ledger Table */
-        .table-section { background: #fff; border-radius: 10px; border: 1px solid var(--border); margin-top: 25px; overflow: hidden; }
-        .table-header { padding: 15px 20px; background: var(--primary); color: #fff; font-weight: 700; font-size: 12px; text-transform: uppercase; }
-        .scroll-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
-        th { background: #f8fafc; padding: 12px; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); text-align: center; color: #475569; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; text-align: center; color: #334155; }
-        
-        .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .badge-in { background: #dcfce7; color: #166534; }
-        .badge-out { background: #fee2e2; color: #991b1b; }
-    </style>
+/* --- HEADER --- */
+.header-dash {
+  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+    .grand-total { width: 100%; padding: 8px 15px; } 
+}
+
+/* --- FILTERS --- */
+.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- MAIN TABLE (COMPACT) --- */
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+
+/* Stream Type Badges */
+.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #fff; display: inline-block; }
+.badge-in { background: var(--success); }
+.badge-out { background: #f59e0b; }
+
+/* Empty State */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+
+/* --- MODAL MANAGEMENT (SINGLE COLUMN ON MOBILE) --- */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+@media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* --- AUDIT PANEL --- */
+.audit-panel { 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+}
+@media(max-width:400px){ .audit-panel { width: 100%; } }
+</style>
 </head>
 
 <body>
 
-<h2><i class="fas fa-gas-pump"></i> Diesel Inventory & GRN System</h2>
+<div class="header-dash">
+    <div class="header-titles"><h2>Diesel Stock Ledger</h2></div>
+    <div class="grand-total" id="gt_display">NET EXPENSE: ₹ 0.00</div>
+</div>
 
-<!-- STOCK IN -->
-<div class="card">
-    <div class="card-header header-in" onclick="toggleCard('inBody')">
-        <span>Stock In / Purchase (GRN)</span>
-        <i class="fas fa-chevron-down"></i>
+<!-- 📊 FILTERS GRID BAR -->
+<div class="filter-bar">
+    <div class="filter-item">
+        <label style="color:var(--accent)">Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- SELECT FY --</option>
+            {% set start_yr = 2024 %}
+            {% set end_yr = 2027 %}
+            {% for y in range(start_yr, end_yr) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
     </div>
-    <div id="inBody" class="card-body">
-        <form id="grnForm">
-            <div class="form-grid">
-                <div class="field-group"><label>Entry Date</label><input type="date" name="entry_date" id="in_date" required></div>
-                <div class="field-group"><label>Unit</label>
-                    <select name="in_unit_id" id="in_unit" onchange="fetchStock('in')" required>
-                        <option value="">-- Select --</option>
-                        {% for loc in locations %}<option value="{{ loc.id }}">{{ loc.production_at }}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="field-group"><label>Bill Date</label><input type="date" name="bill_date" required></div>
-                <div class="field-group"><label>GRN No</label><input type="text" name="grn_no" required></div>
-                <div class="field-group"><label>Invoice No</label><input type="text" name="bill_no" required></div>
-                <div class="field-group"><label>Vendor</label><input type="text" name="vendor" required></div>
-                <div class="field-group"><label>Available</label><input type="number" id="in_avail" readonly value="0"></div>
-                <div class="field-group"><label>Received Qty</label><input type="number" name="received_qty" id="in_qty" oninput="calcIn()" step="0.01" required></div>
-                <div class="field-group"><label>Rate</label><input type="number" name="rate" id="in_rate" oninput="calcIn()" step="0.01" required></div>
-                <div class="field-group"><label>Tax %</label><input type="number" name="tax_per" id="in_tax" value="18" oninput="calcIn()"></div>
-                <div class="field-group"><label>Net Amount</label><input type="number" name="net_amount" id="in_net" readonly></div>
-                <div class="field-group"><label>Closing Stock</label><input type="number" name="closing_stock" id="in_close" readonly></div>
-            </div>
-            <button class="btn btn-in" type="submit">POST GRN</button>
-        </form>
+
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Search GRN, Bill, Vendor, Location...">
     </div>
 </div>
 
-<!-- STOCK OUT -->
-<div class="card">
-    <div class="card-header header-out" onclick="toggleCard('outBody')">
-        <span>Stock Out / Consumption</span>
-        <i class="fas fa-chevron-down"></i>
-    </div>
-    <div id="outBody" class="card-body">
-        <form id="outForm">
-            <div class="form-grid">
-                <div class="field-group"><label>Date</label><input type="date" name="out_date" id="out_date" required></div>
-                <div class="field-group"><label>Unit</label>
-                    <select name="unit_id" id="out_unit" onchange="fetchStock('out')" required>
-                        <option value="">-- Select --</option>
-                        {% for loc in locations %}<option value="{{ loc.id }}">{{ loc.production_at }}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="field-group"><label>Available</label><input type="number" id="out_avail" readonly></div>
-                <div class="field-group"><label>Consumed Qty</label><input type="number" name="out_qty" id="out_qty" oninput="calcOut()" step="0.01" required></div>
-                <div class="field-group"><label>Closing Stock</label><input type="number" name="out_closing" id="out_close" readonly></div>
+<!-- 🧾 ACTIONS HEADER -->
+<div class="section-header">
+    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Audit History</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
             </div>
-            <button class="btn btn-out" type="submit">POST CONSUMPTION</button>
-        </form>
+        </div>
+        <button class="btn-add" style="background: var(--success); margin-right: 8px;" onclick="openModal('IN')"><i class="fa-solid fa-plus"></i> STOCK IN (GRN)</button>
+        <button class="btn-add" style="background: #f59e0b;" onclick="openModal('OUT')"><i class="fa-solid fa-gas-pump"></i> STOCK OUT (CONSUME)</button>
     </div>
 </div>
 
-<!-- LEDGER -->
-<div class="table-section">
-    <div class="table-header">Diesel Ledger</div>
-    <div class="scroll-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th><th>Type</th><th>Unit</th><th>GRN/Bill</th><th>Vendor</th>
-                    <th>Rate</th><th>Tax</th><th>IN</th><th>OUT</th><th>Net Val</th><th>Closing</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in diesel_history %}
-                <tr>
-                    <td>{{ r.DieselLog.log_date }}</td>
-                    <td><span class="badge {{ 'badge-in' if r.DieselLog.type=='IN' else 'badge-out' }}">{{ r.DieselLog.type }}</span></td>
-                    <td style="font-weight:600;">{{ r.location_name }}</td>
-                    <td>{{ r.DieselLog.grn_no or '-' }}<br><small style="color:#94a3b8;">{{ r.DieselLog.bill_no or '-' }}</small></td>
-                    <td>{{ r.DieselLog.vendor or '-' }}</td>
-                    <td>{{ r.DieselLog.avg_price }}</td>
-                    <td>{{ r.DieselLog.tax_per }}%</td>
-                    <td style="color:#166534; font-weight:700;">{{ r.DieselLog.purchase_qty or '' }}</td>
-                    <td style="color:#991b1b; font-weight:700;">{{ r.DieselLog.consumption or '' }}</td>
-                    <td>₹{{ r.DieselLog.net_val }}</td>
-                    <td style="font-weight:700;">{{ r.DieselLog.closing_stock }}</td>
+<!-- 📋 COMPACT DATA TABLE -->
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Log Date</th>
+                <th>Location</th>
+                <th>Stream Type</th>
+                <th>GRN Ref</th>
+                <th>Bill No & Date</th>
+                <th>Vendor Entity</th>
+                <th class="text-right">Opening Ltr</th>
+                <th class="text-right">Stock In (Ltr)</th>
+                <th class="text-right">Consume (Ltr)</th>
+                <th class="text-right">Closing Ltr</th>
+                <th class="text-right">Avg Rate</th>
+                <th class="text-right">Net Value</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not diesel_history %}
+            <tr>
+                <td colspan="13" class="empty-state">
+                    <i class="fa-solid fa-gas-pump"></i><br>
+                    <b>Financial Year Not Selected</b><br>
+                    <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render fuel records ledger.</span>
+                </td>
+            </tr>
+            {% else %}
+                {% for log in diesel_history %}
+                <tr class="data-row" 
+                    data-id="{{ log.DieselLog.id }}" 
+                    data-total="{{ log.DieselLog.net_val }}"
+                    onclick="selectRow(this, '{{ log.DieselLog.id }}')">
+                    
+                    <td class="slno">0</td>
+                    <td>{{ log.DieselLog.log_date }}</td>
+                    <td style="font-weight:700;">{{ log.location_name }}</td>
+                    <td>
+                        {% if log.DieselLog.type == 'IN' %}
+                        <span class="badge badge-in">STOCK IN</span>
+                        {% else %}
+                        <span class="badge badge-out">CONSUMPTION</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.DieselLog.grn_no or '-' }}</td>
+                    <td>
+                        {% if log.DieselLog.bill_no %}
+                        {{ log.DieselLog.bill_no }} <small style="color:var(--muted)">({{ log.DieselLog.bill_date }})</small>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="text-left" style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">{{ log.DieselLog.vendor or 'Internal' }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(log.DieselLog.opening_stock) }}</td>
+                    <td class="text-right" style="color:var(--success)">{{ "{:,.2f}".format(log.DieselLog.purchase_qty) if log.DieselLog.purchase_qty > 0 else '-' }}</td>
+                    <td class="text-right" style="color:#f59e0b">{{ "{:,.2f}".format(log.DieselLog.consumption) if log.DieselLog.consumption > 0 else '-' }}</td>
+                    <td class="text-right" style="font-weight:700;">{{ "{:,.2f}".format(log.DieselLog.closing_stock) }}</td>
+                    <td class="text-right">₹{{ "{:,.2f}".format(log.DieselLog.avg_price) }}</td>
+                    <td class="text-right" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(log.DieselLog.net_val) }}</td>
                 </tr>
                 {% endfor %}
-            </tbody>
-        </table>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 📦 STOCK IN (GRN) MODAL -->
+<div class="modal" id="modalIN">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--success); font-weight:800;"><i class="fa-solid fa-plus"></i> Diesel Stock In (GRN)</h3>
+            <button onclick="closeModal('IN')" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="formIn" onsubmit="saveDieselIn(event)">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Entry Log Date</label>
+                    <input type="date" id="in_entry_date" required>
+                </div>
+                <div class="field">
+                    <label>Location Unit</label>
+                    <select id="in_unit_id" onchange="lookupLastStock(this.value, 'IN')" required>
+                        <option value="">-- SELECT LOCATION --</option>
+                        {% for l in locations %}<option value="{{ l.id }}">{{ l.production_at }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field"><label>Opening Stock (Ltr)</label><input type="number" id="in_opening" value="0.00" readonly style="background:#f1f5f9;"></div>
+                <div class="field"><label>GRN Document No</label><input type="text" id="in_grn_no" required placeholder="GRN-001" style="text-transform:uppercase;"></div>
+                <div class="field"><label>Supplier Invoice No</label><input type="text" id="in_bill_no" required placeholder="INV-123"></div>
+                <div class="field"><label>Invoice Date</label><input type="date" id="in_bill_date" required></div>
+                <div class="field"><label>Vendor Name</label><input type="text" id="in_vendor" required placeholder="HPC / IOCL Dealer"></div>
+                <div class="field"><label>Received Qty (Ltr)</label><input type="number" step="any" id="in_qty" required oninput="calcInTotal()"></div>
+                <div class="field"><label>Base Rate / Ltr</label><input type="number" step="any" id="in_rate" required oninput="calcInTotal()"></div>
+                <div class="field"><label>Tax/VAT Tier (%)</label><input type="number" step="any" id="in_tax" value="0" oninput="calcInTotal()"></div>
+                <div class="field"><label>Net Amount (Incl Tax)</label><input type="number" step="any" id="in_net" readonly style="background:#f1f5f9; font-weight:700;"></div>
+                <div class="field"><label>Expected Closing (Ltr)</label><input type="number" step="any" id="in_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn-add" style="background:var(--muted);" onclick="closeModal('IN')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:var(--success);">Submit GRN</button>
+            </div>
+        </form>
     </div>
+</div>
+
+<!-- 📦 STOCK OUT (CONSUMPTION) MODAL -->
+<div class="modal" id="modalOUT">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:#f59e0b; font-weight:800;"><i class="fa-solid fa-gas-pump"></i> Fuel Consumption Entry</h3>
+            <button onclick="closeModal('OUT')" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="formOut" onsubmit="saveDieselOut(event)">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Consumption Date</label>
+                    <input type="date" id="out_date" required>
+                </div>
+                <div class="field">
+                    <label>Location Unit</label>
+                    <select id="out_unit_id" onchange="lookupLastStock(this.value, 'OUT')" required>
+                        <option value="">-- SELECT LOCATION --</option>
+                        {% for l in locations %}<option value="{{ l.id }}">{{ l.production_at }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field"><label>Available Stock (Ltr)</label><input type="number" id="out_opening" value="0.00" readonly style="background:#f1f5f9;"></div>
+                <div class="field"><label>Consumed Quantity (Ltr)</label><input type="number" step="any" id="out_qty" required oninput="calcOutTotal()"></div>
+                <div class="field"><label>Current Weighted Rate</label><input type="number" id="out_rate" readonly style="background:#f1f5f9;"></div>
+                <div class="field"><label>Calculated Closing Stock</label><input type="number" id="out_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn-add" style="background:var(--muted);" onclick="closeModal('OUT')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:#f59e0b;">Submit Consumption</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= AUDIT PANEL ================= -->
+<div class="audit-panel" id="auditPanel">
+    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px;">FUEL TRANSACTION HISTORY LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    </div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
-    document.getElementById("in_date").valueAsDate = new Date();
-    document.getElementById("out_date").valueAsDate = new Date();
+    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR (Fixes 404 Not Found error instantly)
+    const API_BASE = window.location.pathname.includes('/api/') ? '/api/diesel' : '/diesel';
+    let globalSelectedId = null;
 
-    function toggleCard(id) { document.getElementById(id).classList.toggle("active"); }
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+        
+        document.getElementById("dotsBtn").onclick = (e) => { 
+            e.stopPropagation(); 
+            const m = document.getElementById("dropdownMenu"); 
+            m.style.display = (m.style.display === "block") ? "none" : "block"; 
+        };
+        
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.menu-trigger')) {
+                const m = document.getElementById("dropdownMenu");
+                if(m) m.style.display = 'none';
+            }
+        });
 
-    async function fetchStock(type){
-        const uid = document.getElementById(type === "in" ? "in_unit" : "out_unit").value;
-        if(!uid) return;
-        const res = await fetch(`/diesel/lookup/${uid}`);
-        const d = await res.json();
-        document.getElementById(type + "_avail").value = d.last_closing;
-        type === "in" ? calcIn() : calcOut();
+        const searchBox = document.getElementById('searchBox');
+        if(searchBox) {
+            searchBox.addEventListener('keyup', debounce(applyFilters, 250));
+        }
+    });
+
+    function changeFY(val) {
+        if(!val) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('fy', val);
+        window.location.href = url.toString();
     }
 
-    function calcIn(){
-        const a = parseFloat(document.getElementById('in_avail').value) || 0;
-        const q = parseFloat(document.getElementById('in_qty').value) || 0;
-        const r = parseFloat(document.getElementById('in_rate').value) || 0;
-        const t = parseFloat(document.getElementById('in_tax').value) || 0;
-        const basic = q * r;
-        document.getElementById('in_net').value = (basic + (basic * t / 100)).toFixed(2);
-        document.getElementById('in_close').value = (a + q).toFixed(2);
+    function debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
     }
 
-    function calcOut(){
-        const a = parseFloat(document.getElementById('out_avail').value) || 0;
-        const q = parseFloat(document.getElementById('out_qty').value) || 0;
-        document.getElementById('out_close').value = (a - q).toFixed(2);
+    function applyFilters() {
+        const tableBody = document.getElementById("tableBody");
+        if (!tableBody || tableBody.querySelector(".empty-state")) return;
+
+        const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let visibleRows = [];
+        let subtotal = 0;
+
+        rows.forEach(r => {
+            const t = parseFloat(r.getAttribute("data-total")) || 0;
+            if (sVal && !r.textContent.toLowerCase().includes(sVal)) {
+                r.style.display = "none";
+            } else {
+                r.style.display = "";
+                subtotal += t;
+                visibleRows.push(r);
+            }
+        });
+
+        // Decrementing Sl No arrangement engine assignment
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".slno").innerText = visibleRows.length - index;
+        });
+
+        document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
+        document.getElementById("gt_display").innerText = "NET EXPENSE: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
     }
 
-    document.getElementById("grnForm").onsubmit = async (e) => {
-        e.preventDefault();
-        const r = await fetch("/diesel/save_in", {method: "POST", body: new FormData(e.target)});
-        const d = await r.json();
-        d.status === "success" ? location.reload() : alert(d.message);
-    };
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
 
-    document.getElementById("outForm").onsubmit = async (e) => {
-        e.preventDefault();
-        const r = await fetch("/diesel/save_out", {method: "POST", body: new FormData(e.target)});
-        const d = await r.json();
-        d.status === "success" ? location.reload() : alert(d.message);
-    };
+    // ⚡ FIX: AUTOMATIC OPENING STOCK & RATE LOOKUP ENGINE
+    async function lookupLastStock(unitId, mode) {
+        if(!unitId) {
+            if(mode === 'IN') {
+                document.getElementById('in_opening').value = "0.00";
+                calcInTotal();
+            } else {
+                document.getElementById('out_opening').value = "0.00";
+                document.getElementById('out_rate').value = "0.00";
+                calcOutTotal();
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/lookup/${unitId}`);
+            if (!res.ok) throw new Error("Network response error");
+            const data = await res.json();
+            
+            if(mode === 'IN') {
+                document.getElementById('in_opening').value = parseFloat(data.last_closing || 0).toFixed(2);
+                calcInTotal();
+            } else {
+                document.getElementById('out_opening').value = parseFloat(data.last_closing || 0).toFixed(2);
+                document.getElementById('out_rate').value = parseFloat(data.last_rate || 0).toFixed(2);
+                calcOutTotal();
+            }
+        } catch (e) { 
+            console.error("Error fetching last stock data:", e); 
+        }
+    }
+
+    function calcInTotal() {
+        const opening = parseFloat(document.getElementById('in_opening').value) || 0;
+        const qty = parseFloat(document.getElementById('in_qty').value) || 0;
+        const rate = parseFloat(document.getElementById('in_rate').value) || 0;
+        const tax = parseFloat(document.getElementById('in_tax').value) || 0;
+
+        const base = qty * rate;
+        const net = base + (base * tax / 100);
+        
+        document.getElementById('in_net').value = net.toFixed(2);
+        document.getElementById('in_closing').value = (opening + qty).toFixed(2);
+    }
+
+    function calcOutTotal() {
+        const opening = parseFloat(document.getElementById('out_opening').value) || 0;
+        const qty = parseFloat(document.getElementById('out_qty').value) || 0;
+        
+        const rem = opening - qty;
+        document.getElementById('out_closing').value = rem >= 0 ? rem.toFixed(2) : "0.00";
+    }
+
+    function openModal(mode) {
+        if(!document.getElementById("f_fy").value) {
+            Swal.fire("FY Required", "Please select a Financial Year first before executing fuel transactions.", "warning");
+            return;
+        }
+        document.getElementById(mode === 'IN' ? 'formIn' : 'formOut').reset();
+        document.getElementById(mode === 'IN' ? 'in_entry_date' : 'out_date').value = new Date().toISOString().substring(0, 10);
+        if(mode === 'IN') {
+            document.getElementById('in_bill_date').value = new Date().toISOString().substring(0, 10);
+            document.getElementById('in_opening').value = "0.00";
+            document.getElementById('in_net').value = "0.00";
+            document.getElementById('in_closing').value = "0.00";
+        } else {
+            document.getElementById('out_opening').value = "0.00";
+            document.getElementById('out_rate').value = "0.00";
+            document.getElementById('out_closing').value = "0.00";
+        }
+        document.getElementById(`modal${mode}`).style.display = 'flex';
+    }
+
+    function closeModal(mode) {
+        document.getElementById(`modal${mode}`).style.display = 'none';
+    }
+
+    function toggleAuditPanel(show) {
+        const panel = document.getElementById("auditPanel");
+        panel.style.display = show ? "flex" : "none";
+    }
+
+    async function showAllAuditLogs() {
+        toggleAuditPanel(true);
+        const content = document.getElementById("auditContent");
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Archive Line Items...</div>`;
+        try {
+            const res = await fetch(`${API_BASE}/audit_all`);
+            const logs = await res.json();
+            if(Array.isArray(logs) && logs.length > 0) {
+                content.innerHTML = logs.map(l => `
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <b>${l.timestamp}</b> | Unit: ${l.invoice_no}<br>
+                        Action: ${l.action}<br>
+                        <small>Trace Info: ${l.details}</small><br>
+                        <small style="color:var(--muted)">Op: ${l.user}</small>
+                    </div>`).join('');
+            } else {
+                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No logs found inside table stack.</div>`;
+            }
+        } catch (e) { content.innerHTML = `Fault fetching tracking records.`; }
+    }
+
+    async function saveDieselIn(event) {
+        event.preventDefault();
+        const payload = {
+            entry_date: document.getElementById("in_entry_date").value,
+            in_unit_id: parseInt(document.getElementById("in_unit_id").value),
+            bill_date: document.getElementById("in_bill_date").value,
+            grn_no: document.getElementById("in_grn_no").value.trim(),
+            bill_no: document.getElementById("in_bill_no").value.trim(),
+            vendor: document.getElementById("in_vendor").value.trim(),
+            received_qty: parseFloat(document.getElementById("in_qty").value) || 0,
+            rate: parseFloat(document.getElementById("in_rate").value) || 0,
+            tax_per: parseFloat(document.getElementById("in_tax").value) || 0,
+            net_amount: parseFloat(document.getElementById("in_net").value) || 0,
+            closing_stock: parseFloat(document.getElementById("in_closing").value) || 0
+        };
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(`${API_BASE}/save_in`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire({ icon:'success', title:'GRN Committed!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } else { Swal.fire("Error", out.message || "Save failed", "error"); }
+        } catch(e) { Swal.fire("Error", "Link dropped", "error"); }
+    }
+
+    async function saveDieselOut(event) {
+        event.preventDefault();
+        const opening = parseFloat(document.getElementById("out_opening").value) || 0;
+        const outQty = parseFloat(document.getElementById("out_qty").value) || 0;
+        if(outQty > opening) {
+            Swal.fire("Shortage", "Consumption cannot exceed current location available stock balance!", "error");
+            return;
+        }
+
+        const payload = {
+            out_date: document.getElementById("out_date").value,
+            unit_id: parseInt(document.getElementById("out_unit_id").value),
+            out_qty: outQty,
+            out_closing: parseFloat(document.getElementById("out_closing").value) || 0
+        };
+
+        try {
+            Swal.showLoading();
+            const res = await fetch(`${API_BASE}/save_out`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire({ icon:'success', title:'Consumption Saved!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } else { Swal.fire("Error", out.message || "Save failed", "error"); }
+        } catch(e) { Swal.fire("Error", "Link dropped", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const resDecision = await Swal.fire({
+            title: "Destroy entry?", text: "This will permanently remove the record node.", icon: "warning", showCancelButton: true
+        });
+        if(resDecision.isConfirmed) {
+            try {
+                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire({ icon:'success', title:'Deleted!', timer:800, showConfirmButton:false }).then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Execution drop fault", "error"); }
+        }
+    }
+
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
-
 </body>
 </html>
