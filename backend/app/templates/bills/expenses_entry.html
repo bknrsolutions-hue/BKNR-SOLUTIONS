@@ -1,160 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Other Expenses - BKNR ERP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  :root { --primary: #475569; --navy: #0f172a; --slate: #64748b; --border: #cbd5e1; --accent: #6366f1; }
-  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 10px; }
-  
-  .entry-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid var(--border); }
-  .section-title { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
-  
-  .horizontal-fields { display: flex; gap: 8px; align-items: flex-end; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; }
-  .field-group { display: flex; flex-direction: column; min-width: 120px; }
-  
-  label { font-size: 9px; font-weight: 700; color: var(--slate); margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; }
-  input, select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; color: var(--navy); height: 34px; box-sizing: border-box; }
-  input:focus { border-color: var(--accent); outline: none; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Other Expenses - BKNR ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #0f172a; --border: #cbd5e1; --bg: #f8fafc; --accent: #2563eb; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: var(--primary); margin: 0; }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { font-size: 18px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px; }
+        
+        .card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .field-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
+        
+        .btn-post { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 15px; }
+        .btn-new { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; }
 
-  .btn-post { background: var(--accent); color: white; border: none; padding: 0 20px; height: 34px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 11px; white-space: nowrap; }
-  
-  .table-section { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-  .table-header { padding: 10px 15px; background: var(--navy); color: white; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-  
-  .scroll-container { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; min-width: 1300px; }
-  th { background: #f8fafc; padding: 10px; text-align: left; font-size: 9px; color: var(--slate); border-bottom: 2px solid var(--border); text-transform: uppercase; }
-  td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-  .expense-badge { background: #eef2ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px; }
-</style>
+        .table-container { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        .table-header { padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .scroll-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th { background: #f8fafc; padding: 12px; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); text-align: center; color: #475569; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; text-align: center; }
+        .expense-badge { background: #eef2ff; color: #4338ca; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+    </style>
 </head>
 <body>
 
-<div class="entry-section">
-  <div class="section-title">General & Other Expenses Entry</div>
-  <form id="expenseForm" method="POST" action="/api/expenses/save">
-    <div class="horizontal-fields">
-      
-      <div class="field-group" style="min-width: 150px;">
-        <label>Company Unit</label>
-        <select name="production_at_id" required>
-          <option value="">-- SELECT UNIT --</option>
-          {% for loc in locations %}
-          <option value="{{ loc.id }}">{{ loc.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field-group">
-        <label>Expense Date</label>
-        <input type="date" name="expense_date" id="expense_date" required>
-      </div>
-
-      <div class="field-group" style="min-width: 140px;">
-        <label>Expense Category</label>
-        <select name="category" required>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Stationary">Stationary</option>
-          <option value="Staff Welfare">Staff Welfare / Tea</option>
-          <option value="Traveling">Traveling</option>
-          <option value="Others">Others</option>
-        </select>
-      </div>
-
-      <div class="field-group" style="min-width: 160px;">
-        <label>Paid To / Vendor</label>
-        <input type="text" name="paid_to" placeholder="Person or Shop Name" required>
-      </div>
-
-      <div class="field-group" style="min-width: 180px;">
-        <label>Description (Remarks)</label>
-        <input type="text" name="remarks" placeholder="Brief details about expense">
-      </div>
-
-      <div class="field-group">
-        <label>PO / Voucher No</label>
-        <input type="text" name="voucher_no" placeholder="VCH-001">
-      </div>
-
-      <div class="field-group">
-        <label>Amount (₹)</label>
-        <input type="number" name="amount" id="amount" step="0.01" oninput="calcGST()" required>
-      </div>
-
-      <div class="field-group" style="min-width: 80px;">
-        <label>GST %</label>
-        <select id="gst_per" name="gst_per" onchange="calcGST()">
-          <option value="0">0%</option>
-          <option value="5">5%</option>
-          <option value="12">12%</option>
-          <option value="18">18%</option>
-        </select>
-      </div>
-
-      <div class="field-group">
-        <label>Total Value (₹)</label>
-        <input type="text" id="display_total" readonly style="font-weight: 700; color: #1e293b; background: #f1f5f9;">
-        <input type="hidden" name="grand_total" id="hidden_total">
-      </div>
-
-      <button type="submit" class="btn-post">SAVE EXPENSE</button>
-    </div>
-  </form>
+<div class="header-section">
+    <h2><i class="fas fa-wallet" style="color:#2563eb;"></i> Other Expenses</h2>
+    <button class="btn-new" onclick="toggleForm()"><i class="fas fa-plus"></i> Add New Expense</button>
 </div>
 
-<div class="table-section">
-  <div class="table-header">Expense Register (Petty Cash / General)</div>
-  <div class="scroll-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Unit</th>
-          <th>Category</th>
-          <th>Paid To</th>
-          <th>Description</th>
-          <th>Voucher No</th>
-          <th>Base Amt</th>
-          <th>GST</th>
-          <th>Grand Total</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for exp in expense_history %}
-        <tr>
-          <td>{{ exp.date }}</td>
-          <td>{{ exp.unit }}</td>
-          <td><span class="expense-badge">{{ exp.category }}</span></td>
-          <td>{{ exp.paid_to }}</td>
-          <td style="font-style: italic; color: #64748b;">{{ exp.remarks }}</td>
-          <td>{{ exp.voucher_no }}</td>
-          <td>{{ exp.amount }}</td>
-          <td>{{ exp.gst_amt }}</td>
-          <td style="font-weight: 700;">₹ {{ exp.total }}</td>
-          <td><i class="fa-solid fa-trash-can" style="color: #ef4444; cursor:pointer;"></i></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div id="formWrapper" class="card" style="display: none;">
+    <form id="expenseForm" method="POST" action="/api/expenses/save">
+        <div class="form-grid">
+            <div class="field-group">
+                <label>Company Unit</label>
+                <select name="production_at_id" required>
+                    <option value="">-- SELECT UNIT --</option>
+                    {% for loc in locations %}
+                    <option value="{{ loc.id }}">{{ loc.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group"><label>Expense Date</label><input type="date" name="expense_date" id="expense_date" required></div>
+            <div class="field-group">
+                <label>Category</label>
+                <select name="category" required>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Stationary">Stationary</option>
+                    <option value="Staff Welfare">Staff Welfare</option>
+                    <option value="Traveling">Traveling</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+            <div class="field-group"><label>Paid To</label><input type="text" name="paid_to" placeholder="Vendor Name" required></div>
+            <div class="field-group"><label>Remarks</label><input type="text" name="remarks" placeholder="Description"></div>
+            <div class="field-group"><label>Voucher No</label><input type="text" name="voucher_no" placeholder="VCH-001"></div>
+            <div class="field-group"><label>Amount (₹)</label><input type="number" name="amount" id="amount" step="0.01" oninput="calcGST()" required></div>
+            <div class="field-group">
+                <label>GST %</label>
+                <select id="gst_per" name="gst_per" onchange="calcGST()">
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Total Value (₹)</label>
+                <input type="text" id="display_total" readonly style="background:#f1f5f9; font-weight:700;">
+                <input type="hidden" name="grand_total" id="hidden_total">
+            </div>
+        </div>
+        <button type="submit" class="btn-post">SAVE EXPENSE</button>
+    </form>
+</div>
+
+<div class="table-container">
+    <div class="table-header">Expense Register</div>
+    <div class="scroll-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th><th>Unit</th><th>Category</th><th>Paid To</th><th>Remarks</th><th>Voucher</th><th>Base</th><th>GST</th><th>Total</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in expense_history %}
+                <tr>
+                    <td>{{ exp.date }}</td>
+                    <td style="font-weight:600;">{{ exp.unit }}</td>
+                    <td><span class="expense-badge">{{ exp.category }}</span></td>
+                    <td>{{ exp.paid_to }}</td>
+                    <td style="color:#64748b;">{{ exp.remarks }}</td>
+                    <td>{{ exp.voucher_no }}</td>
+                    <td>{{ exp.amount }}</td>
+                    <td>{{ exp.gst_amt }}</td>
+                    <td style="font-weight: 700;">₹ {{ exp.total }}</td>
+                    <td><i class="fa-solid fa-trash-can" style="color: #ef4444; cursor:pointer;"></i></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-  document.getElementById('expense_date').valueAsDate = new Date();
+    document.getElementById('expense_date').valueAsDate = new Date();
 
-  function calcGST() {
-    const amt = parseFloat(document.getElementById('amount').value) || 0;
-    const gst = parseFloat(document.getElementById('gst_per').value) || 0;
+    function toggleForm() {
+        const fw = document.getElementById('formWrapper');
+        fw.style.display = fw.style.display === "none" ? "block" : "none";
+    }
 
-    const tax = (amt * gst) / 100;
-    const total = amt + tax;
-
-    document.getElementById('display_total').value = "₹ " + total.toLocaleString('en-IN', {minimumFractionDigits: 2});
-    document.getElementById('hidden_total').value = total.toFixed(2);
-  }
+    function calcGST() {
+        const amt = parseFloat(document.getElementById('amount').value) || 0;
+        const gst = parseFloat(document.getElementById('gst_per').value) || 0;
+        const total = amt + (amt * gst / 100);
+        document.getElementById('display_total').value = "₹ " + total.toFixed(2);
+        document.getElementById('hidden_total').value = total.toFixed(2);
+    }
 </script>
 </body>
 </html>

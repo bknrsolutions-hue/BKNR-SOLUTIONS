@@ -1,288 +1,644 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>PURCHASE ENTRY | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Purchase Invoice Ledger | BKNR ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 for Professional Popups -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<style>
-:root{
-  --primary:#143465;
-  --accent:#3b82f6;
-  --border:#d1d5db;
-  --bg:#f3f4f6;
-  --text:#1f2937;
-  --muted:#6b7280;
-  --success:#059669;
-}
+    <style>
+        :root { 
+            --primary: #0f172a; 
+            --accent: #2563eb; 
+            --border: #e2e8f0; 
+            --bg: #f1f5f9; 
+            --header: #ffffff; 
+            --text: #1e293b; 
+            --danger: #ef4444; 
+        }
+        * { box-sizing: border-box; font-family: 'Inter', Arial, sans-serif; }
+        body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; color: var(--text); overflow: hidden; }
 
-*{ box-sizing:border-box; font-family:Inter,Segoe UI,Arial,sans-serif; }
-body{ margin:0; background:var(--bg); color:var(--text); }
+        /* Header Section */
+        .header { background: var(--header); padding: 10px 15px; border-bottom: 2px solid var(--primary); }
+        .header h2 { margin: 0; font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+        
+        /* Searchable Filters Layout */
+        .filters { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
+        .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; }
+        .fbox label { font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Inputs & Searchable Dropdowns */
+        select, input[type=date], input[type=month], .search-input { padding: 6px 10px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; background: #fff; outline: none; color: var(--text); width: 100%; font-weight: 500; height: 32px; }
+        select:focus, input:focus, .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        
+        /* Master Search Bar */
+        #searchBox { border-left: 4px solid var(--accent); }
 
-h2{
-  background:#fff;
-  margin:0;
-  padding:14px;
-  text-align:center;
-  color:var(--primary);
-  font-size:16px;
-  font-weight:800;
-  border-bottom:1px solid var(--border);
-  text-transform:uppercase;
-}
+        /* Searchable Dropdown Container */
+        .dropdown-container { position: relative; width: 100%; }
+        .dropdown-menu { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 4px; max-height: 180px; overflow-y: auto; z-index: 200; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .dropdown-item { padding: 6px 10px; font-size: 11px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: left; }
+        .dropdown-item:hover { background: #eff6ff; color: var(--accent); }
+        .dropdown-item.selected { background: var(--accent); color: #fff; }
 
-.form-box{
-  width:96%;
-  max-width:1500px;
-  margin:20px auto;
-  background:#fff;
-  padding:22px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  box-shadow:0 4px 6px rgba(0,0,0,.05);
-}
+        /* Actions Bar */
+        .actions { background: #fff; padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); margin-top: 5px; position: relative; }
+        #rowCount { font-size: 10px; font-weight: 700; color: var(--accent); }
+        .action-buttons { display: flex; align-items: center; gap: 8px; }
+        .dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: #fff; font-size: 14px; font-weight: bold; }
+        .dots:hover { background: #f1f5f9; }
+        
+        /* Dropdown Actions Menu */
+        .menu-list { position: absolute; right: 15px; top: 100%; width: 180px; background: #fff; border: 1px solid var(--border); border-radius: 4px; display: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .menu-list div { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; text-align: left; }
+        .menu-list div:last-child { border-bottom: none; }
+        .menu-list div:hover { background: #eff6ff; color: var(--accent); }
 
-.section-title{
-  font-size:12px;
-  font-weight:800;
-  color:var(--primary);
-  text-transform:uppercase;
-  border-left:4px solid var(--accent);
-  padding-left:10px;
-  margin-bottom:18px;
-}
+        /* Table & Layout Grid Styles */
+        .section { flex: 1; margin: 5px; background: #fff; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
+        .table-wrap { flex: 1; overflow: auto; width: 100%; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1300px; }
+        
+        thead th { background: #f1f5f9; padding: 8px 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); color: #475569; position: sticky; top: 0; z-index: 10; text-align: center; }
+        tbody tr { cursor: pointer; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody td { padding: 7px 4px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+        
+        tr.selected { background: #dbeafe !important; }
+        tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary); }
 
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-}
+        /* Add New Invoice Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+        .modal-box { background: #fff; width: 100%; max-width: 650px; border-radius: 6px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 90vh; animation: fadeIn 0.2s ease-out; border-top: 4px solid var(--accent); }
+        .modal-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+        .modal-header h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
+        .modal-close:hover { color: var(--danger); }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .modal-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; position: relative; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-group label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: #f8fafc; }
+        .btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); padding: 7px 14px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; }
+        .btn-secondary:hover { background: #f1f5f9; }
+        .btn-primary { background: var(--accent); border: none; color: #fff; padding: 7px 14px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; }
+        .btn-primary:hover { background: #1d4ed8; }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 150px;
-  min-width: 140px;
-}
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-.field-lg { flex: 2 1 200px; }
-.field-sm { flex: 0 1 80px; }
+        /* 📱 MOBILE RESPONSIVE BLOCK - COMPACT ROW/COLUMN TABLE VIEW */
+        @media (max-width: 768px) {
+            body { overflow: auto; height: auto; }
+            .header { padding: 8px 10px; }
+            .filters { grid-template-columns: 1fr 1fr; padding: 6px; gap: 6px; }
+            .actions { padding: 6px 10px; }
+            
+            .section { margin: 2px; overflow: visible; border: 1px solid var(--border); background: #fff; }
+            .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            
+            /* Table structure constraints for grid rows */
+            table { display: table; min-width: 700px; table-layout: fixed; width: 100%; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tfoot { display: table-footer-group; }
+            
+            /* Compact table widths for mobile columns */
+            table tr { display: table-row; }
+            thead th, tbody td { display: table-cell; padding: 6px 3px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            
+            /* Specific structural widths for strict mobile layout grid */
+            table th:nth-child(1), table td:nth-child(1) { width: 35px; } /* Sl.No */
+            table th:nth-child(2), table td:nth-child(2) { width: 65px; } /* Date */
+            table th:nth-child(3), table td:nth-child(3) { width: 75px; } /* Invoice No */
+            table th:nth-child(4), table td:nth-child(4) { width: 50px; } /* Loc Code */
+            table th:nth-child(5), table td:nth-child(5) { width: 60px; } /* PO No */
+            table th:nth-child(6), table td:nth-child(6) { width: 120px; text-align: left; } /* Vendor Details */
+            table th:nth-child(7), table td:nth-child(7) { width: 120px; text-align: left; } /* Product Description */
+            table th:nth-child(8), table td:nth-child(8) { width: 45px; text-align: right; } /* Qty */
+            table th:nth-child(9), table td:nth-child(9) { width: 50px; text-align: right; } /* Rate */
+            table th:nth-child(10), table td:nth-child(10) { width: 80px; text-align: right; } /* Tax */
+            table th:nth-child(11), table td:nth-child(11) { width: 80px; text-align: right; font-weight: 700; } /* Total */
 
-label{
-  font-size:10px;
-  font-weight:700;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:4px;
-}
+            /* Hide pseudo labels to stop card formatting injection */
+            tbody td::before { content: none !important; }
+            tbody td.total-val { background: transparent; padding-top: 6px; margin-top: 0; }
+            tbody td.total-val font { font-size: 10px; font-weight: 700; }
 
-input,select{
-  padding:9px 10px;
-  font-size:13px;
-  border:1px solid var(--border);
-  border-radius:6px;
-  width:100%;
-}
-
-input:focus, select:focus{ border-color: var(--accent); }
-
-input[readonly]{ background:#f8fafc; color: var(--primary); }
-
-.btn{
-  height:38px;
-  background:var(--success);
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  font-size:12px;
-  font-weight:800;
-  cursor:pointer;
-  padding: 0 25px;
-}
-
-.table-wrap{
-  width:96%;
-  max-width:1500px;
-  margin:10px auto 40px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:10px;
-  overflow-x:auto;
-}
-
-table{ width:100%; border-collapse:collapse; min-width: 1000px; }
-
-th{
-  background:#f8fafc;
-  font-size:11px;
-  padding:12px 10px;
-  border-bottom:2px solid var(--border);
-}
-
-td{ padding:12px 10px; font-size:13px; border-bottom:1px solid #f1f5f9; }
-
-.bold{ font-weight:800; }
-.text-right{ text-align: right; }
-</style>
+            .modal-form-grid { grid-template-columns: 1fr; gap: 8px; }
+            .form-group.full-width { grid-column: span 1; }
+        }
+    </style>
 </head>
-
 <body>
 
-<h2>PURCHASE INVOICE ENTRY</h2>
 
-<div class="form-box">
-<form id="purchaseForm" onsubmit="submitPurchase(event)">
+<!-- Header + Searchable Filters -->
+<div class="header">
+    <h2><i class="fas fa-list-alt" style="color:var(--accent);"></i> Purchase Invoice Ledger</h2>
+    <div class="filters">
+        <!-- Month Filter -->
+        <div class="fbox">
+            <label>Month</label>
+            <input type="month" id="monthFilter" onchange="applyFilters()">
+        </div>
+        
+        <!-- Searchable Company Filter -->
+        <div class="fbox">
+            <label>Company</label>
+            <div class="dropdown-container">
+                <input type="text" class="search-input" id="companySearch" placeholder="Search Company..." onfocus="showDropdown('companyDropdown')" onkeyup="filterDropdown('companySearch', 'companyDropdown')">
+                <input type="hidden" id="companySearchHidden" value="">
+                <div class="dropdown-menu" id="companyDropdown">
+                    <div class="dropdown-item" data-value="" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '', 'All Companies')">All Companies</div>
+                    {% for comp_id, comp_name in company_map.items() %}
+                    <div class="dropdown-item" data-value="{{ comp_id }}" onclick="selectDropdownValue('companySearch', 'companySearchHidden', 'companyDropdown', '{{ comp_id }}', '{{ comp_name }}')">{{ comp_name }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-<div class="section-title">Invoice Details</div>
+        <!-- Searchable Vendor Filter -->
+        <div class="fbox">
+            <label>Vendor</label>
+            <div class="dropdown-container">
+                <input type="text" class="search-input" id="vendorSearch" placeholder="Search Vendor..." onfocus="showDropdown('vendorDropdown')" onkeyup="filterDropdown('vendorSearch', 'vendorDropdown')">
+                <input type="hidden" id="vendorSearchHidden" value="">
+                <div class="dropdown-menu" id="vendorDropdown">
+                    <div class="dropdown-item" data-value="" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '', 'All Vendors')">All Vendors</div>
+                    {% for v_id, v_name in vendor_map.items() %}
+                    <div class="dropdown-item" data-value="{{ v_id }}" onclick="selectDropdownValue('vendorSearch', 'vendorSearchHidden', 'vendorDropdown', '{{ v_id }}', '{{ v_name }}')">{{ v_name }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-<div class="row">
-
-<div class="field-group">
-<label>Purchase For (PO)</label>
-<select name="po_number">
-<option value="N/A">N/A</option>
-{% for po in po_list %}
-<option value="{{ po }}">{{ po }}</option>
-{% endfor %}
-</select>
+        <!-- Master Search Box -->
+        <div class="fbox">
+            <label>Search Bar</label>
+            <input id="searchBox" class="search-input" placeholder="Search Invoice, PO, or GSTIN..." onkeyup="applyFilters()">
+        </div>
+    </div>
 </div>
 
-<div class="field-group">
-<label>Production At</label>
-<select name="unit_id" required>
-<option value="">-- SELECT --</option>
-{% for l in locations %}
-<option value="{{ l.id }}">{{ l.production_at }}</option>
-{% endfor %}
-</select>
+<!-- Actions Controls Bar -->
+<div class="actions">
+    <div id="rowCount">0 rows found</div>
+    <div class="action-buttons">
+        <button onclick="openAddModal()" style="background: var(--accent); color: #fff; border: none; padding: 6px 12px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-plus"></i> Add New Invoice
+        </button>
+        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+    </div>
+    
+    <div class="menu-list" id="mainMenu">
+        <div onclick="deleteSelected()" style="color:var(--danger);"><i class="fas fa-trash-alt"></i> Delete Record</div>
+        <div onclick="showAudit()"><i class="fas fa-history" style="color:#475569;"></i> Audit History</div>
+        <hr style="margin:2px 0; border:0; border-top:1px solid var(--border);">
+        <div onclick="executeExcelExport()"><i class="fas fa-file-excel" style="color:#16a34a;"></i> Export Excel</div>
+        <div onclick="executePrintView()"><i class="fas fa-print" style="color:#6d28d9;"></i> Print Report</div>
+    </div>
 </div>
 
-<div class="field-group">
-<label>Invoice Date</label>
-<input type="date" name="invoice_date" required>
+<!-- Ledger Table Container -->
+<div class="section">
+    <div class="table-wrap">
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th style="width:45px;">Sl.No</th>
+                    <th style="width:85px;">Date</th>
+                    <th style="width:100px;">Invoice No</th>
+                    <th style="width:75px;">Loc Code</th>
+                    <th style="width:90px;">PO No</th>
+                    <th style="width:180px;">Vendor Details</th>
+                    <th style="width:180px;">Product Description</th>
+                    <th style="width:65px;">Qty</th>
+                    <th style="width:75px;">Rate</th>
+                    <th style="width:130px;">Tax (GST)</th>
+                    <th style="width:105px;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for i in invoice_history %}
+                <tr class="data-row" data-id="{{ i.id }}" data-date="{{ i.invoice_date }}" data-total="{{ i.grand_total }}" data-company="{{ i.company_id }}" data-vendor="{{ i.vendor_id }}" onclick="selectRow(this)">
+                    <td class="slno">{{ loop.index }}</td>
+                    <td>{{ i.invoice_date }}</td>
+                    <td style="font-weight:600;">{{ i.invoice_no }}</td>
+                    <td>{{ location_code_map.get(i.unit_id|string) or location_code_map.get(i.unit_id) }}</td>
+                    <td>{{ i.po_number or 'N/A' }}</td>
+                    <td style="text-align:left; padding-left:5px;">
+                        <div style="font-weight:600;">{{ vendor_map.get(i.vendor_id|string) or vendor_map.get(i.vendor_id) }}</div>
+                        <div style="font-size:9px; color:#64748b;">GSTIN: {{ vendor_gstin_map.get(i.vendor_id|string) or vendor_gstin_map.get(i.vendor_id) }}</div>
+                    </td>
+                    <td style="text-align:left; padding-left:5px;">
+                        <div>{{ i.product_name }}</div>
+                        <div style="font-size:9px; color:#64748b;">HSN: {{ i.hsn_code }}</div>
+                    </td>
+                    <td style="text-align:right; padding-right:5px;">{{ i.qty }}</td>
+                    <td style="text-align:right; padding-right:5px;">{{ i.base_price }}</td>
+                    <td style="text-align:right; padding-right:5px; color:#64748b;">₹ {{ i.tax_amount }} ({{ i.gst_percent }}%)</td>
+                    <td style="text-align:right; padding-right:5px; font-weight:600; color: var(--primary);">₹ {{ i.grand_total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <!-- Adjusted spans perfectly for mobile alignment grid matrix -->
+                    <td colspan="10" style="text-align:right; padding-right:15px; font-weight:800;">SUBTOTAL:</td>
+                    <td id="subTotalDisplay" style="text-align:right; padding-right:5px; font-weight:800; color:var(--accent);">₹ 0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
 
-<div class="field-group">
-<label>Invoice No</label>
-<input type="text" name="invoice_no" required>
-</div>
+<!-- Add New Invoice Modal Container -->
+<div class="modal-overlay" id="addInvoiceModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-invoice" style="color:var(--accent); margin-right:5px;"></i> Create New Purchase Invoice</h3>
+            <button class="modal-close" onclick="closeAddModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="invoiceForm" onsubmit="saveInvoice(event)">
+            <div class="modal-body">
+                <div class="modal-form-grid">
+                    
+                    <!-- Searchable Vendor Dropdown (Modal Column) -->
+                    <div class="form-group">
+                        <label>Vendor *</label>
+                        <div class="dropdown-container">
+                            <input type="text" class="search-input" id="modalVendorSearch" placeholder="Select Vendor..." onfocus="showDropdown('modalVendorDropdown')" onkeyup="filterDropdown('modalVendorSearch', 'modalVendorDropdown')" required autocomplete="off">
+                            <input type="hidden" id="modalVendorId" name="vendor_id" required>
+                            <div class="dropdown-menu" id="modalVendorDropdown">
+                                {% for v_id, v_name in vendor_map.items() %}
+                                <div class="dropdown-item" data-value="{{ v_id }}" onclick="selectModalDropdownValue('modalVendorSearch', 'modalVendorId', 'modalVendorDropdown', '{{ v_id }}', '{{ v_name }}')">{{ v_name }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
 
-<div class="field-group">
-<label>Vendor</label>
-<select name="vendor_id" required>
-<option value="">-- SELECT --</option>
-{% for v in vendors %}
-<option value="{{ v.id }}">{{ v.name }}</option>
-{% endfor %}
-</select>
-</div>
+                    <!-- Searchable Location Dropdown (Modal Column) -->
+                    <div class="form-group">
+                        <label>Location (Unit) *</label>
+                        <div class="dropdown-container">
+                            <input type="text" class="search-input" id="modalLocationSearch" placeholder="Select Location Code..." onfocus="showDropdown('modalLocationDropdown')" onkeyup="filterDropdown('modalLocationSearch', 'modalLocationDropdown')" required autocomplete="off">
+                            <input type="hidden" id="modalLocationId" name="unit_id" required>
+                            <div class="dropdown-menu" id="modalLocationDropdown">
+                                {% for u_id, u_code in location_code_map.items() %}
+                                <div class="dropdown-item" data-value="{{ u_id }}" onclick="selectModalDropdownValue('modalLocationSearch', 'modalLocationId', 'modalLocationDropdown', '{{ u_id }}', '{{ u_code }}')">{{ u_code }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
 
-<div class="field-group field-lg">
-<label>Product</label>
-<select id="product_sel" onchange="setProduct()" required>
-<option value="">-- SELECT --</option>
-{% for h in hsn_list %}
-<option data-name="{{ h.description }}" data-hsn="{{ h.hsn_code }}" data-gst="{{ h.gst_percent }}">
-{{ h.description }}
-</option>
-{% endfor %}
-</select>
-<input type="hidden" name="product_name" id="product_name">
-</div>
+                    <div class="form-group">
+                        <label>Invoice Date *</label>
+                        <input type="date" name="invoice_date" id="modalInvoiceDate" required>
+                    </div>
 
-<div class="field-group">
-<label>HSN</label>
-<input name="hsn_code" id="hsn_code" readonly>
-</div>
+                    <div class="form-group">
+                        <label>Invoice Number *</label>
+                        <input type="text" class="search-input" name="invoice_no" placeholder="Enter Invoice Number" required autocomplete="off">
+                    </div>
 
-<div class="field-group field-sm">
-<label>Qty</label>
-<input type="number" step="0.01" name="qty" required>
-</div>
+                    <!-- Searchable PO Number Dropdown (Modal Column) -->
+                    <div class="form-group">
+                        <label>PO Number</label>
+                        <div class="dropdown-container">
+                            <input type="text" class="search-input" id="modalPoSearch" placeholder="Select PO Number..." onfocus="showDropdown('modalPoDropdown')" onkeyup="filterDropdown('modalPoSearch', 'modalPoDropdown')" autocomplete="off">
+                            <input type="hidden" id="modalPoId" name="po_number" value="N/A">
+                            <div class="dropdown-menu" id="modalPoDropdown">
+                                {% for po in po_list %}
+                                <div class="dropdown-item" data-value="{{ po }}" onclick="selectModalDropdownValue('modalPoSearch', 'modalPoId', 'modalPoDropdown', '{{ po }}', '{{ po }}')">{{ po }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
 
-<div class="field-group field-sm">
-<label>Price</label>
-<input type="number" step="0.01" name="base_price" required>
-</div>
+                    <!-- Searchable HSN Code Dropdown (Modal Column) -->
+                    <div class="form-group">
+                        <label>HSN Code</label>
+                        <div class="dropdown-container">
+                            <input type="text" class="search-input" id="modalHsnSearch" placeholder="Select HSN..." onfocus="showDropdown('modalHsnDropdown')" onkeyup="filterDropdown('modalHsnSearch', 'modalHsnDropdown')" autocomplete="off">
+                            <input type="hidden" id="modalHsnId" name="hsn_code" value="">
+                            <div class="dropdown-menu" id="modalHsnDropdown">
+                                <div class="dropdown-item" data-value="" onclick="selectModalDropdownValue('modalHsnSearch', 'modalHsnId', 'modalHsnDropdown', '', 'Select HSN')">Select HSN</div>
+                                {% for h in hsn_list %}
+                                <div class="dropdown-item" data-value="{{ h.hsn_code }}" onclick="selectModalDropdownValue('modalHsnSearch', 'modalHsnId', 'modalHsnDropdown', '{{ h.hsn_code }}', '{{ h.hsn_code }} - {{ h.description }}')">{{ h.hsn_code }} - {{ h.description }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
 
-<div class="field-group field-sm">
-<label>GST %</label>
-<input type="number" name="gst_percent" id="gst" readonly>
-</div>
+                    <div class="form-group full-width">
+                        <label>Product Description *</label>
+                        <input type="text" class="search-input" name="product_name" placeholder="Item description details..." required autocomplete="off">
+                    </div>
 
-<div class="field-group">
-<button type="submit" class="btn">SAVE ENTRY</button>
-</div>
+                    <div class="form-group">
+                        <label>Quantity *</label>
+                        <input type="number" class="search-input" step="any" name="qty" id="modalQty" onkeyup="calculateModalTotals()" required>
+                    </div>
 
-</div>
-</form>
-</div>
+                    <div class="form-group">
+                        <label>Base Rate (₹) *</label>
+                        <input type="number" class="search-input" step="any" name="base_price" id="modalRate" onkeyup="calculateModalTotals()" required>
+                    </div>
 
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Date</th>
-<th>Invoice</th>
-<th>PO</th>
-<th>Vendor</th>
-<th>Product</th>
-<th>Qty</th>
-<th>Rate</th>
-<th>Tax</th>
-<th>Total</th>
-</tr>
-</thead>
+                    <!-- Searchable GST Dropdown (Modal Column) -->
+                    <div class="form-group">
+                        <label>GST Percent (%)</label>
+                        <div class="dropdown-container">
+                            <input type="text" class="search-input" id="modalGstSearch" value="18%" onfocus="showDropdown('modalGstDropdown')" onkeyup="filterDropdown('modalGstSearch', 'modalGstDropdown')" autocomplete="off">
+                            <input type="hidden" id="modalGstId" name="gst_percent" value="18">
+                            <div class="dropdown-menu" id="modalGstDropdown">
+                                <div class="dropdown-item" data-value="0" onclick="selectGstDropdownValue('0', '0%')">0%</div>
+                                <div class="dropdown-item" data-value="5" onclick="selectGstDropdownValue('5', '5%')">5%</div>
+                                <div class="dropdown-item" data-value="12" onclick="selectGstDropdownValue('12', '12%')">12%</div>
+                                <div class="dropdown-item" data-value="18" onclick="selectGstDropdownValue('18', '18%')">18%</div>
+                                <div class="dropdown-item" data-value="28" onclick="selectGstDropdownValue('28', '28%')">28%</div>
+                            </div>
+                        </div>
+                    </div>
 
-<tbody>
-{% for i in invoice_history %}
-<tr>
-<td>{{ i.invoice_date }}</td>
-<td class="bold">{{ i.invoice_no }}</td>
-<td>{{ i.po_number or 'N/A' }}</td>
-<td>{{ vendor_map.get(i.vendor_id) }}</td>
-<td>{{ i.product_name }}</td>
-<td class="text-right">{{ i.qty }}</td>
-<td class="text-right">{{ i.base_price }}</td>
-<td class="text-right">₹ {{ i.tax_amount }}</td>
-<td class="text-right bold">₹ {{ i.grand_total }}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+                    <div class="form-group">
+                        <label>Tax Amount (GST ₹)</label>
+                        <input type="text" class="search-input" id="modalTaxAmount" readonly style="background:#f1f5f9; font-weight:600;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Grand Total (₹)</label>
+                        <input type="text" class="search-input" id="modalGrandTotal" readonly style="background:#f8fafc; font-weight:700; color:var(--accent);">
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save Invoice</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-function setProduct(){
-const s = document.getElementById("product_sel");
-const o = s.options[s.selectedIndex];
-if(!o.value) return;
-document.getElementById("product_name").value = o.dataset.name || "";
-document.getElementById("hsn_code").value = o.dataset.hsn || "";
-document.getElementById("gst").value = o.dataset.gst || 0;
-}
+    let selectedRow = null;
 
-async function submitPurchase(e){
-e.preventDefault();
-const formData = new FormData(e.target);
+    // Searchable Dropdown Layout Engines
+    function showDropdown(menuId) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => {
+            if(m.id !== menuId) m.style.display = 'none';
+        });
+        const targetMenu = document.getElementById(menuId);
+        if (targetMenu) targetMenu.style.display = 'block';
+    }
 
-let res = await fetch("/api/purchase/save",{method:"POST",body:formData});
+    function filterDropdown(inputId, menuId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toLowerCase();
+        const menu = document.getElementById(menuId);
+        if (!menu) return;
+        const items = menu.querySelectorAll('.dropdown-item');
+        
+        items.forEach(item => {
+            const txtValue = item.textContent || item.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    }
 
-if(res.status === 404){
-res = await fetch("/purchase/save",{method:"POST",body:formData});
-}
+    function selectDropdownValue(inputId, hiddenId, menuId, value, label) {
+        document.getElementById(inputId).value = label;
+        document.getElementById(hiddenId).value = value;
+        document.getElementById(menuId).style.display = 'none';
+        applyFilters();
+    }
 
-let data = await res.json();
+    function selectModalDropdownValue(inputId, hiddenId, menuId, value, label) {
+        document.getElementById(inputId).value = label;
+        document.getElementById(hiddenId).value = value;
+        document.getElementById(menuId).style.display = 'none';
+    }
 
-if(data.status==="success"){
-alert("✅ Saved Successfully");
-location.reload();
-}else{
-alert("❌ " + data.message);
-}
-}
+    function selectGstDropdownValue(value, label) {
+        document.getElementById('modalGstSearch').value = label;
+        document.getElementById('modalGstId').value = value;
+        document.getElementById('modalGstDropdown').style.display = 'none';
+        calculateModalTotals();
+    }
+
+    // Close Dropdowns globally on outside click actions
+    window.addEventListener('click', function(e) {
+        if (!e.target.matches('.search-input')) {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        }
+        if (!e.target.matches('.dots') && !e.target.matches('.dots *')) {
+            const mainMenu = document.getElementById("mainMenu");
+            if (mainMenu) mainMenu.style.display = "none";
+        }
+    });
+
+    function toggleMenu(e) { 
+        e.stopPropagation(); 
+        const m = document.getElementById("mainMenu"); 
+        if (m) m.style.display = m.style.display === "block" ? "none" : "block"; 
+    }
+
+    function selectRow(tr) { 
+        document.querySelectorAll(".data-row").forEach(r => r.classList.remove("selected")); 
+        tr.classList.add("selected"); 
+        selectedRow = tr; 
+    }
+
+    // Company Wise & Advanced Multi-Filter Logic Engine
+    function applyFilters() {
+        const monthVal = document.getElementById('monthFilter').value;
+        const compVal = document.getElementById('companySearchHidden').value;
+        const vendorVal = document.getElementById('vendorSearchHidden').value;
+        const searchVal = document.getElementById('searchBox').value.toLowerCase();
+        
+        const rows = document.querySelectorAll('.data-row');
+        let subtotal = 0;
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const date = row.getAttribute('data-date');
+            const rowCompany = row.getAttribute('data-company');
+            const rowVendor = row.getAttribute('data-vendor');
+            const rowTotal = parseFloat(row.getAttribute('data-total')) || 0;
+            const text = row.textContent.toLowerCase();
+            
+            const matchMonth = !monthVal || date.startsWith(monthVal);
+            const matchCompany = !compVal || rowCompany === compVal;
+            const matchVendor = !vendorVal || rowVendor === vendorVal;
+            const matchSearch = text.includes(searchVal);
+
+            if (matchMonth && matchCompany && matchVendor && matchSearch) {
+                row.style.display = '';
+                subtotal += rowTotal;
+                visibleCount++;
+                const slnoEl = row.querySelector('.slno');
+                if (slnoEl) slnoEl.innerText = visibleCount;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('rowCount').innerText = visibleCount + " rows found";
+        document.getElementById('subTotalDisplay').innerText = "₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    // Create Modal Controller Operations
+    function openAddModal() {
+        document.getElementById("invoiceForm").reset();
+        document.getElementById("modalVendorId").value = "";
+        document.getElementById("modalLocationId").value = "";
+        document.getElementById("modalPoId").value = "N/A";
+        document.getElementById("modalHsnId").value = "";
+        document.getElementById("modalGstId").value = "18";
+        
+        document.getElementById("modalVendorSearch").value = "";
+        document.getElementById("modalLocationSearch").value = "";
+        document.getElementById("modalPoSearch").value = "";
+        document.getElementById("modalHsnSearch").value = "";
+        document.getElementById("modalGstSearch").value = "18%";
+
+        document.getElementById("modalInvoiceDate").value = new Date().toISOString().split('T')[0];
+        document.getElementById("modalTaxAmount").value = "₹ 0.00";
+        document.getElementById("modalGrandTotal").value = "₹ 0.00";
+        document.getElementById("addInvoiceModal").style.display = "flex";
+    }
+
+    function closeAddModal() {
+        document.getElementById("addInvoiceModal").style.display = "none";
+    }
+
+    function calculateModalTotals() {
+        const qty = parseFloat(document.getElementById("modalQty").value) || 0;
+        const rate = parseFloat(document.getElementById("modalRate").value) || 0;
+        const gstPercent = parseFloat(document.getElementById("modalGstId").value) || 0;
+
+        const subtotal = qty * rate;
+        const taxAmount = (subtotal * gstPercent) / 100;
+        const grandTotal = subtotal + taxAmount;
+
+        document.getElementById("modalTaxAmount").value = "₹ " + taxAmount.toFixed(2);
+        document.getElementById("modalGrandTotal").value = "₹ " + grandTotal.toFixed(2);
+    }
+
+    // 🎯 FastAPI Router API Endpoints ('/api' prefix standard integrated)
+    async function saveInvoice(event) {
+        event.preventDefault();
+        
+        if(!document.getElementById("modalVendorId").value) {
+            return Swal.fire("Required", "Please select a valid Vendor from the dropdown suggestions.", "warning");
+        }
+        if(!document.getElementById("modalLocationId").value) {
+            return Swal.fire("Required", "Please select a valid Location Code from the dropdown suggestions.", "warning");
+        }
+
+        const formElement = document.getElementById("invoiceForm");
+        const formData = new FormData(formElement);
+
+        try {
+            const response = await fetch('/api/purchase/save', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const resData = await response.json();
+            
+            if(resData.status === "success") {
+                await Swal.fire("Success!", resData.message || "Invoice saved successfully.", "success");
+                closeAddModal();
+                location.reload();
+            } else {
+                Swal.fire("Error", resData.message || "Failed to save record.", "error");
+            }
+        } catch (err) {
+            Swal.fire("Submission Failed", "Server submission failed: " + err, "error");
+        }
+    }
+
+    async function deleteSelected() {
+        if(!selectedRow) return Swal.fire("Warning", "Please select an invoice row to delete!", "warning");
+        
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Want to completely delete the selected Purchase Invoice record?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0f172a',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'YES, DELETE IT'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/purchase/delete/${selectedRow.dataset.id}`, { method: 'POST' });
+                const resData = await response.json();
+                
+                if (resData.status === "success") {
+                    await Swal.fire("Deleted!", resData.message || "Record successfully removed.", "success");
+                    location.reload();
+                } else {
+                    Swal.fire("Failed!", resData.message || "Could not delete row.", "error");
+                }
+            } catch (err) {
+                Swal.fire("Error", "Server submission failed: " + err, "error");
+            }
+        }
+    }
+
+    function showAudit() {
+        if(!selectedRow) return Swal.fire("Warning", "Select an explicit system ledger line entry row first!", "warning");
+        
+        fetch(`/api/purchase/audit/${selectedRow.dataset.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success" && data.audit_trail) {
+                    const trail = data.audit_trail;
+                    Swal.fire({
+                        title: 'Invoice Audit Trail',
+                        html: `<div style="text-align:left; font-size:13px;">
+                                <strong>Invoice No:</strong> ${trail.invoice_no}<br>
+                                <strong>Created By:</strong> ${trail.created_by}<br>
+                                <strong>Created Date:</strong> ${trail.created_date}<br>
+                                <strong>Created Time:</strong> ${trail.created_time}
+                               </div>`,
+                        icon: 'info',
+                        confirmButtonColor: '#0f172a'
+                    });
+                } else {
+                    Swal.fire("Error", "Could not fetch audit details.", "error");
+                }
+            })
+            .catch(err => {
+                Swal.fire("Error", "Failed to connect to server: " + err, "error");
+            });
+    }
+
+    function executeExcelExport() {
+        window.location.href = "/api/purchase/export/excel";
+    }
+
+    function executePrintView() {
+        window.open("/api/purchase/print/report", "_blank");
+    }
+
+    // Run filters initially on page compile load
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+    });
 </script>
-
 </body>
 </html>

@@ -16,6 +16,7 @@ router = APIRouter(
     tags=["Diesel"]
 )
 
+# Template directory path
 templates = Jinja2Templates(directory="app/templates")
 
 # ==================================================
@@ -29,7 +30,7 @@ def diesel_entry_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
-    # Fetching Production Locations for this company
+    # Fetching Production Locations
     locations = (
         db.query(production_at)
         .filter(production_at.company_id == company_code)
@@ -37,7 +38,7 @@ def diesel_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Fetching History with Location Names (Join)
+    # Fetching History
     diesel_history = (
         db.query(
             DieselLog,
@@ -50,20 +51,18 @@ def diesel_entry_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
         request=request,
         name="bills/diesel_entry.html",
         context={
             "locations": locations,
             "diesel_history": diesel_history,
-            "email": email,
-            "company_id": company_code
+            "email": email
         }
     )
 
 # ==================================================
-# 🔍 2. LOOKUP LAST STOCK (AJAX API)
+# 🔍 2. LOOKUP LAST STOCK
 # ==================================================
 @router.get("/lookup/{unit_id}")
 def lookup_diesel_status(unit_id: int, request: Request, db: Session = Depends(get_db)):
@@ -105,6 +104,7 @@ def save_diesel_in(
     if not email:
         return JSONResponse({"status": "error", "message": "Session Expired"}, status_code=401)
 
+    # Validate opening stock from last entry
     last = db.query(DieselLog).filter(DieselLog.unit_id == in_unit_id).order_by(desc(DieselLog.id)).first()
     opening = last.closing_stock if last else 0.0
 

@@ -31,6 +31,15 @@ body { background: var(--bg-gradient); color: var(--text-main); min-height: 100v
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
+/* Mobile Compact Optimization */
+@media (max-width: 768px) {
+  body { padding: 0.5rem; }
+  .container { padding: 1rem; }
+  .header-zone { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .table-block { overflow-x: auto; }
+}
+
 .header-zone { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 h2 { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; display: flex; align-items: center; gap: 10px; }
 h2 i { color: var(--primary-color); }
@@ -45,7 +54,6 @@ input, select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px
 input:focus, select:focus { outline: none; background: #ffffff; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
 input:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
 
-/* PERMISSIONS SEARCHABLE DROPDOWN */
 .perm-wrapper { position: relative; }
 .perm-box { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.88rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; font-weight: 500; }
 .perm-box:hover { background: #f1f5f9; }
@@ -62,16 +70,14 @@ input:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
 .item-label input[type="checkbox"] { width: auto; }
 .badge-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #e2e8f0; color: #475569; margin-left: auto; text-transform: uppercase; }
 
-/* TABLE */
 .table-block { background: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; min-width: 800px; }
 th, td { padding: 14px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); }
 th { background: var(--table-header); color: #ffffff; font-weight: 600; letter-spacing: 0.02em; font-size: 0.8rem; text-transform: uppercase; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #f8fafc; }
 .permissions-cell-span { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }
 
-/* BUTTONS */
 button { background: var(--btn-bg); color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px; }
 button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.15); }
 .btn-secondary { background: #e2e8f0; color: var(--text-main); }
@@ -82,46 +88,21 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
 .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.1); box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08); border-radius: 6px; z-index: 99; min-width: 130px; padding: 4px; }
 .dropdown-menu button { width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-main); font-size: 0.8rem; font-weight: 500; border-radius: 4px; box-shadow: none; }
 .dropdown-menu button:hover { background: #f1f5f9; }
-
-@media (max-width: 768px) {
-  body { padding: 1rem; }
-  .container { padding: 1.25rem; }
-  
-  .header-zone { flex-direction: column; gap: 1rem; align-items: flex-start; }
-  
-  .form-grid { grid-template-columns: 1fr; }
-  
-  /* Transform Table to Card-based list for Mobile */
-  .table-block { background: transparent; border: none; box-shadow: none; }
-  table, thead, tbody, th, td, tr { display: block; }
-  thead { display: none; }
-  tr { background: #ffffff; margin-bottom: 1rem; border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-  td { border: none; padding: 0.5rem 0; font-size: 0.9rem; display: flex; justify-content: space-between; }
-  td:before { content: attr(data-label); font-weight: 700; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
-  
-  .action-container { width: 100%; display: flex; justify-content: flex-end; }
-  .dropdown-menu { width: 100%; position: static; box-shadow: none; border: 1px solid var(--border-color); }
-}
 </style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- ================= HEADER ZONE ================= -->
   <div class="header-zone">
     <h2><i class="fa-solid fa-users-gear"></i> User Management Engine</h2>
     <button id="triggerFormBtn" onclick="openCreateMode()"><i class="fa-solid fa-plus"></i> Add New User</button>
   </div>
 
-  <!-- ================= FORM SECTION (ADD / EDIT) ================= -->
   <div id="formSection" class="form-card" style="display:none;">
     <h3 id="formModeTitle" style="margin-bottom: 15px; color: var(--primary-color); font-size: 1.1rem;">Create New Profile</h3>
     
-    <!-- Dynamic Form Target Action -->
     <form id="userMainForm" action="/admin/add_user" method="post">
-      
-      <!-- Hidden User ID for Edit Mode Routing -->
       <input type="hidden" id="edit_user_id" name="user_id">
 
       <div class="form-grid">
@@ -143,15 +124,7 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
         </div>
         <div class="form-group">
           <label>Access Password</label>
-          <input 
-  id="f_password"
-  name="password"
-  type="password"
-  minlength="8"
-  maxlength="64"
-  autocomplete="new-password"
-  placeholder="Leave empty to keep current password"
->
+          <input id="f_password" name="password" type="password" minlength="8" maxlength="64" autocomplete="new-password" placeholder="Leave empty to keep current password">
         </div>
       </div>
 
@@ -168,7 +141,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
           <input value="{{ company_code }}" readonly>
         </div>
         
-       <!-- ================= MATRIX SEARCHABLE PERMISSION DROPDOWN ================= -->
         <div class="form-group perm-wrapper">
           <label>Ecosystem Access Matrix</label>
           <div class="perm-box" onclick="togglePermMenu(event)">
@@ -181,7 +153,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               <input type="text" id="permSearch" placeholder="Search parameters, dashboards, records..." onkeyup="filterPermissions()">
             </div>
 
-            <!-- PILLAR: STRATEGIC DASHBOARDS -->
             <div class="pillar-section" data-pillar="Live Dashboards & Operations">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Live Dashboards</span>
@@ -197,7 +168,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               </div>
             </div>
 
-            <!-- PILLAR: PROCESSING & WAREHOUSING -->
             <div class="pillar-section" data-pillar="Processing & Warehousing">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Processing & Warehousing</span>
@@ -220,7 +190,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               </div>
             </div>
 
-            <!-- PILLAR: DATA & INTELLIGENCE -->
             <div class="pillar-section" data-pillar="Data & Intelligence">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Data & Intelligence</span>
@@ -255,7 +224,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               </div>
             </div>
 
-            <!-- PILLAR: CORPORATE FINANCE & HR -->
             <div class="pillar-section" data-pillar="Corporate Finance & HR">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Corporate Finance & HR</span>
@@ -283,7 +251,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               </div>
             </div>
 
-            <!-- PILLAR: MASTER SETUP & ADMIN -->
             <div class="pillar-section" data-pillar="Master Setup & Admin">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Master Setup & Admin</span>
@@ -338,7 +305,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
     </form>
   </div>
 
-  <!-- ================= USER LEDGER DATA TABLE ================= -->
   <div id="tableSection" class="table-block">
     <table>
       <thead>
@@ -384,11 +350,9 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
       </tbody>
     </table>
   </div>
-
 </div>
 
 <script>
-/* GLOBAL DROPDOWN CLOSE CONTROL */
 document.addEventListener("click", function(e) {
   document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
   const permMenu = document.getElementById("permMenu");
@@ -398,7 +362,7 @@ document.addEventListener("click", function(e) {
     permBox &&
     !permBox.contains(e.target) &&
     !permMenu.contains(e.target)
-) {
+  ) {
     permMenu.style.display = "none";
   }
 });
@@ -407,43 +371,27 @@ function openActionMenu(event, id) {
   event.stopPropagation();
   document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
   const activeMenu = document.getElementById("menu-" + id);
-  if (activeMenu) {
-
-    activeMenu.style.display = "block";
-}
+  if (activeMenu) { activeMenu.style.display = "block"; }
 }
 
-/* FORM STATES MECHANISM (ADD VS EDIT) */
 function openCreateMode() {
   document.getElementById("userMainForm").reset();
   document.getElementById("userMainForm").action = "/admin/add_user";
   document.getElementById("edit_user_id").value = "";
-  document.getElementById("f_email").disabled = false; // Enable email for new users
+  document.getElementById("f_email").disabled = false;
   document.getElementById("formModeTitle").innerText = "Create New User Profile";
   document.getElementById("submitFormBtn").innerText = "Commit & Save User";
-  
-  // Reset fields to default behavior
   document.getElementById("f_password").placeholder = "";
   document.getElementById("f_password").value = "";
-  
-  // Uncheck all permissions
   document.querySelectorAll('.items-grid input[type="checkbox"]').forEach(cb => cb.checked = false);
-  document.querySelectorAll(
-    '.pillar-header input[type="checkbox"]'
-).forEach(cb => {
-
-    cb.checked = false;
-});
+  document.querySelectorAll('.pillar-header input[type="checkbox"]').forEach(cb => cb.checked = false);
   updateSelectedCount();
-  
   showFormCard();
 }
 
 function triggerEditMode(id) {
   const row = document.getElementById("user-row-" + id);
   if (!row) return;
-
-  // Extract meta variables from layout bounds
   const name = row.getAttribute("data-name");
   const email = row.getAttribute("data-email");
   const mobile = row.getAttribute("data-mobile");
@@ -451,45 +399,28 @@ function triggerEditMode(id) {
   const role = row.getAttribute("data-role") || "user";
   const permissionsStr = row.getAttribute("data-permissions") || ""; 
 
-  // Load stream content directly into context elements
   document.getElementById("edit_user_id").value = id;
   document.getElementById("f_name").value = name;
   document.getElementById("f_email").value = email;
   document.getElementById("f_mobile").value = mobile;
   document.getElementById("f_designation").value = designation;
   document.getElementById("f_role").value = role;
-  
-  // Setup safe password policy parameters
   document.getElementById("f_password").value = "";
   document.getElementById("f_password").placeholder = "Leave empty to keep current password";
-
-  // Re-route form target dynamically to match endpoint logic
   document.getElementById("userMainForm").action = "/admin/edit_user/" + id;
   document.getElementById("formModeTitle").innerText = "Modify Existing Profile (ID: " + id + ")";
   document.getElementById("submitFormBtn").innerText = "Update Matrix Permissions";
 
-  // Build matrix alignment structures
-  const permList =
-    permissionsStr
-    ? permissionsStr.split(",").map(p => p.trim())
-    : [];
+  const permList = permissionsStr ? permissionsStr.split(",").map(p => p.trim()) : [];
   document.querySelectorAll('.items-grid input[name="access"]').forEach(cb => {
     cb.checked = permList.includes(cb.value);
   });
   
-  // Auto check pillar master boxes if all children are active
   document.querySelectorAll('.pillar-section').forEach(section => {
     const totalKids = section.querySelectorAll('.items-grid input[name="access"]').length;
     const checkedKids = section.querySelectorAll('.items-grid input[name="access"]:checked').length;
     const masterCb = section.querySelector('.pillar-header input[type="checkbox"]');
-    if (masterCb) {
-
-    masterCb.checked =
-        (
-            totalKids === checkedKids &&
-            totalKids > 0
-        );
-}
+    if (masterCb) { masterCb.checked = (totalKids === checkedKids && totalKids > 0); }
   });
   
   updateSelectedCount();
@@ -507,7 +438,6 @@ function closeFormSection() {
   document.getElementById("tableSection").style.opacity = "1";
 }
 
-/* SEARCHABLE MATRIX LOGIC WITH COLLAPSE LIFTS */
 function togglePermMenu(event) {
   event.stopPropagation();
   const menu = document.getElementById("permMenu");
@@ -519,11 +449,7 @@ function togglePillarCollapse(header) {
   const icon = header.querySelector('i.fa-solid');
   if(block.style.display === "none" || !block.style.display) {
     block.style.display = "block";
-    if (icon) {
-
-    icon.className =
-        "fa-solid fa-angle-down";
-}
+    if (icon) icon.className = "fa-solid fa-angle-down";
   } else {
     block.style.display = "none";
     if(icon) icon.className = "fa-solid fa-angle-right";
@@ -550,11 +476,8 @@ function updateSelectedCount() {
 
 function filterPermissions() {
   const query = document.getElementById("permSearch").value.toLowerCase();
-  
   document.querySelectorAll(".pillar-section").forEach(section => {
     let pillarMatchCount = 0;
-    
-    // Check items
     section.querySelectorAll(".item-label").forEach(label => {
       const text = label.textContent.toLowerCase();
       if(text.includes(query)) {
@@ -564,24 +487,17 @@ function filterPermissions() {
         label.style.display = "none";
       }
     });
-
     const categoryBlock = section.querySelector(".category-block");
     const icon = section.querySelector('.pillar-header i.fa-solid');
-    
     if(query.length > 0) {
       if(pillarMatchCount > 0) {
         section.style.display = "block";
         if(categoryBlock) categoryBlock.style.display = "block";
-        if (icon) {
-
-    icon.className =
-        "fa-solid fa-angle-down";
-}
+        if (icon) icon.className = "fa-solid fa-angle-down";
       } else {
         section.style.display = "none";
       }
     } else {
-      // Reset back to system default values
       section.style.display = "block";
       if(categoryBlock) categoryBlock.style.display = "none";
       if(icon) icon.className = "fa-solid fa-angle-right";
@@ -589,7 +505,6 @@ function filterPermissions() {
   });
 }
 
-// Default layout constraints initialize initialization loop
 document.querySelectorAll(".category-block").forEach(block => block.style.display = "none");
 </script>
 
