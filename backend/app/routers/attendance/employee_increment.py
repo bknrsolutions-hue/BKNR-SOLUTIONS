@@ -11,11 +11,27 @@ from app.database.models.attendance import (
     EmployeeRegistration,
     EmployeeIncrement
 )
+
 router = APIRouter(
     tags=["EMPLOYEE INCREMENT"]
 )
 
 templates = Jinja2Templates(directory="app/templates")
+
+# ==================================================
+# 🧮 UTILITY FUNCTION: SALARY BREAK-UP AUTOMATION
+# ==================================================
+def calculate_and_apply_salary_breakup(emp: EmployeeRegistration, gross_salary: float):
+    """
+    కొత్త Gross Salary ఆధారంగా అన్ని శాలరీ కంపోనెంట్స్ ని 
+    ఆటోమేటిక్‌గా క్యాలిక్యులేట్ చేసి మోడల్‌కి అసైన్ చేసే యుటిలిటీ ఫంక్షన్.
+    """
+    emp.current_salary = float(gross_salary)
+    emp.basic_salary = round(gross_salary * 0.50, 2)              # 50% Basic Salary
+    emp.hra = round(gross_salary * 0.20, 2)                       # 20% HRA
+    emp.conveyance_allowance = round(gross_salary * 0.15, 2)      # 15% Conveyance
+    emp.other_expenses = round(gross_salary * 0.15, 2)            # 15% Other Expenses
+
 
 # ==================================================
 # 1️⃣ 📄 INCREMENT PAGE
@@ -109,8 +125,9 @@ def save_increment(
     )
     db.add(new_inc_record)
 
+    # 🔥 ఎఫెక్టివ్ డేట్ ఈరోజు లేదా అంతకంటే ముందైతే బ్రేక్-అప్స్ అప్లై చేయడం
     if effective_from <= date.today():
-        emp.current_salary = new_salary
+        calculate_and_apply_salary_breakup(emp, new_salary)
 
     db.commit()
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
@@ -145,7 +162,7 @@ def get_increment_for_edit(request: Request, record_id: int, db: Session = Depen
 
 
 # ==================================================
-# 4️⃣ 💾 SAVE UPDATED MODIFICATION (FINALLY FIXED 404 URL)
+# 4️⃣ 💾 SAVE UPDATED MODIFICATION (WITH FIXED NameError & BREAK-UP)
 # ==================================================
 @router.post("/employee-increment/save-update/{record_id}")
 def save_update_increment(
@@ -163,6 +180,7 @@ def save_update_increment(
     if not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
+    # 🛠️ FIX: 'Company_id' టైపోని 'EmployeeIncrement.company_id' గా మార్చడం జరిగింది
     record = db.query(EmployeeIncrement).filter(
         EmployeeIncrement.id == record_id,
         EmployeeIncrement.company_id == company_id
@@ -176,8 +194,9 @@ def save_update_increment(
         EmployeeRegistration.company_id == company_id
     ).first()
 
+    # ఎడిట్ చేసేటప్పుడు పాత రికార్డును రోల్‌బ్యాక్ చేయడానికి బేస్ గ్రాస్ తెచ్చాం
     if emp and record.effective_from <= date.today():
-        emp.current_salary = record.old_salary 
+        calculate_and_apply_salary_breakup(emp, record.old_salary)
 
     record.increment_type = increment_type
     record.increment_value = increment_value
@@ -190,8 +209,9 @@ def save_update_increment(
     else:
         record.new_salary = record.old_salary + (record.old_salary * increment_value / 100)
 
+    # కొత్త మార్పులను శాలరీ బ్రేక్-అప్ కాలమ్స్ కి సింక్ చేయడం
     if effective_from <= date.today() and emp:
-        emp.current_salary = record.new_salary
+        calculate_and_apply_salary_breakup(emp, record.new_salary)
 
     db.commit()
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
@@ -269,8 +289,9 @@ def delete_increment(request: Request, record_id: int, db: Session = Depends(get
         EmployeeRegistration.company_id == company_id
     ).first()
 
+    # ట్రాన్సాక్షన్ డిలీట్ చేస్తే పాత శాలరీ అలవెన్స్ బ్రేక్-అప్స్ రీ-అప్లై అవుతాయి
     if emp and record.effective_from <= date.today():
-        emp.current_salary = record.old_salary
+        calculate_and_apply_salary_breakup(emp, record.old_salary)
 
     db.delete(record)
     db.commit()

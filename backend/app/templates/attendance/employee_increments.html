@@ -48,17 +48,17 @@ body {
 }
 .btn-add-voucher:hover { background: var(--primary-dark); }
 
-/* ================= 🧾 SLIDE-DOWN FORM DRAWER (HIDDEN BY DEFAULT) ================= */
+/* ================= 🧾 SLIDE-DOWN FORM DRAWER OVERLAY ================= */
 .form-backdrop {
   display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3);
-  z-index: 999; backdrop-filter: blur(2px);
+  z-index: 999; backdrop-filter: blur(2px); overflow-y: auto; padding: 10px;
 }
 .invoice-card { 
-  margin: 10px 15px 5px; background: var(--card-bg); border-radius: var(--radius-premium); 
+  margin: 40px auto; background: var(--card-bg); border-radius: var(--radius-premium); 
   border: 1px solid var(--border-color); padding: 14px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
   border-top: 3px solid var(--primary-dark);
-  position: absolute; top: 50px; left: 0; right: 0; z-index: 1000;
+  width: 100%; max-width: 650px;
   animation: slideDown 0.25s ease-out;
 }
 @keyframes slideDown {
@@ -70,9 +70,12 @@ body {
 .invoice-title-bar h3 { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 .voucher-no { font-size: 10px; font-weight: 800; color: var(--accent-blue); }
 
-.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-@media(max-width: 768px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-@media(max-width: 480px) { .form-grid { grid-template-columns: 1fr; gap: 8px; } }
+/* ================= 📱 MOBILE-FIRST RESPONSIVE GRID ================= */
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; } /* మొబైల్‌లో ఒక్కొక్కటి ఒకే రో లో వస్తుంది */
+
+@media(min-width: 601px) { 
+  .form-grid { grid-template-columns: repeat(3, 1fr); } /* డెస్క్‌టాప్ లో యథాతథంగా 3 కాలమ్స్ లో కనిపిస్తుంది */
+}
 
 .field { display: flex; flex-direction: column; gap: 4px; }
 label { font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.2px; }
@@ -166,7 +169,7 @@ tr.selected { background: #eff6ff !important; }
   <div class="invoice-card">
     <div class="invoice-title-bar">
       <h3 id="formTitle">Increment Entry Voucher</h3>
-      <span class="voucher-no">SYS-INC-VOL-{{ company_id }}</span>
+      <span class="voucher-no">{{ company_id }}</span>
     </div>
 
     <div class="form-grid">
@@ -336,7 +339,6 @@ function editSelected() {
 
         document.getElementById("incrementForm").action = "/attendance/employee-increment/save-update/" + data.id;
         
-        // డేటా లోడ్ అయ్యాక ఫామ్ ప్యానల్‌ను పాప్-అప్ చేస్తుంది
         formOverlay.style.display = "block";
     })
     .catch(() => {
@@ -361,7 +363,7 @@ function filterLedgerTable() {
     let tr = table.getElementsByTagName("tr");
 
     for (let i = 1; i < tr.length; i++) {
-        let td = tr[i].getElementsByTagName("td")[1]; // Employee ID Column
+        let td = tr[i].getElementsByTagName("td")[1];
         if (td) {
             let txtValue = td.textContent || td.innerText;
             tr[i].style.display = txtValue.toUpperCase().includes(filter) ? "" : "none";
