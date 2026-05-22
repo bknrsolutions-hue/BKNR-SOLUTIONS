@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Capital Command Center | BKNR ERP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --navy:#0f172a; --secondary:#475569; --accent:#0284c7; --emerald:#0d9488;
+  --rose:#e11d48; --amber:#b45309; --slate:#f8fafc; --border:#e2e8f0; --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;}
+body{background:#f1f5f9;color:var(--navy);padding:8px;font-size:11px;line-height:1.3;-webkit-font-smoothing:antialiased;}
+
+/* COMPACT HEADER PANEL */
+.header{background:var(--card);padding:12px 14px;border-radius:8px;border-bottom:3px solid var(--accent);margin-bottom:8px;display:flex;flex-direction:column;gap:6px;}
+@media(min-width:768px){.header{flex-direction:row;justify-content:space-between;align-items:center;padding:16px 20px;border-radius:12px;margin-bottom:12px;}}
+.header-left h2{font-size:15px;font-weight:900;color:var(--navy);letter-spacing:-0.3px;}
+@media(min-width:768px){.header-left h2{font-size:18px;}}
+.header-left p{font-size:10px;color:var(--secondary);}
+.date-badge{font-size:10px;font-weight:700;background:#f0f9ff;color:var(--accent);padding:4px 8px;border-radius:4px;align-self:start;border:1px solid #bae6fd;}
+@media(min-width:768px){.date-badge{font-size:11.5px;padding:5px 10px;border-radius:6px;}}
+
+/* 12 HR KPI GRID CONTAINER */
+.kpi-container{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px;}
+@media(min-width:480px){.kpi-container{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:768px){.kpi-container{grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}}
+@media(min-width:1024px){.kpi-container{grid-template-columns:repeat(6,1fr);}}
+
+.kpi-card{background:var(--card);padding:8px;border-radius:6px;border:1px solid var(--border);border-top:2px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,0.01);}
+@media(min-width:768px){.kpi-card{padding:12px;border-radius:10px;border-top-width:3px;}}
+.kpi-label{font-size:8.5px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
+.kpi-value{font-size:12px;font-weight:800;margin-top:2px;color:var(--navy);}
+@media(min-width:768px){.kpi-value{font-size:14px;margin-top:3px;}}
+
+.profit-card{border-top-color:var(--emerald);background:#f0fdf4;}
+.loss-card{border-top-color:var(--rose) !important;background:#fff5f5;}
+.warning-card{border-top-color:var(--amber);background:#fffbeb;}
+
+/* THE 4-COLUMN RESPONSIVE LAYOUT MATRIX */
+.matrix-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;}
+@media(min-width:768px){.matrix-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}}
+@media(min-width:1024px){.matrix-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:1400px){.matrix-grid{grid-template-columns:repeat(4,1fr);gap:12px;}}
+
+.span-large-2{grid-column:span 1;}
+@media(min-width:1400px){.span-large-2{grid-column:span 2;}}
+.col-span-full{grid-column:1 / -1;}
+
+.card{background:var(--card);border-radius:8px;padding:10px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.01);display:flex;flex-direction:column;}
+@media(min-width:768px){.card{border-radius:10px;padding:12px;}}
+.card-title{font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:8px;color:var(--navy);display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);padding-bottom:4px;letter-spacing:0.3px;}
+@media(min-width:768px){.card-title{font-size:11px;margin-bottom:10px;padding-bottom:5px;}}
+
+/* SYSTEM DATA TABLES */
+.table-wrap{overflow-x:auto;width:100%;margin-bottom:4px;WebkitOverflowScrolling:touch;}
+table{width:100%;border-collapse:collapse;white-space:nowrap;}
+th{background:var(--slate);padding:6px 8px;font-size:9px;text-transform:uppercase;font-weight:800;color:var(--secondary);border-bottom:1px solid var(--border);text-align:left;}
+td{padding:6px 8px;border-bottom:1px solid #f8fafc;font-size:10.5px;font-weight:600;}
+@media(min-width:768px){
+  th{padding:8px 10px;font-size:9.5px;}
+  td{padding:8px 10px;font-size:11.5px;}
+}
+tr:hover{background:var(--slate);}
+.text-right{text-align:right;}
+
+.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:10.5px;font-weight:600;}
+@media(min-width:768px){.row{padding:5px 0;font-size:11.5px;}}
+.row span:last-child{font-weight:700;color:var(--navy);}
+.total-row{font-weight:800;border-top:1px dashed var(--secondary);padding-top:4px;color:var(--navy);font-size:11px;margin-top:2px;}
+@media(min-width:768px){.total-row{padding-top:5px;font-size:12px;}}
+
+/* SIDEBAR NOTIFICATION ALERTS WIDGETS */
+.alert-box{background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:8px;}
+@media(min-width:768px){.alert-box{border-radius:10px;padding:12px;margin-bottom:12px;}}
+.alert-item{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#b91c1c;padding:3px 0;}
+@media(min-width:768px){.alert-item{font-size:11px;padding:4px 0;}}
+
+.chart-box{height:140px;position:relative;width:100%;margin-top:auto;}
+@media(min-width:768px){.chart-box{height:150px;}}
+.filter-bar{background:var(--card);padding:8px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+@media(min-width:768px){.filter-bar{padding:10px;border-radius:10px;margin-bottom:12px;gap:10px;}}
+.filter-bar select{padding:4px;border-radius:4px;border:1px solid var(--border);font-size:10.5px;font-weight:600;background:var(--slate);flex:1 1 auto;min-width:120px;}
+@media(min-width:768px){.filter-bar select{padding:5px;border-radius:6px;font-size:11.5px;flex:none;min-width:auto;}}
+.filter-bar form{display:flex;gap:6px;flex-wrap:wrap;width:100%;}
+@media(min-width:768px){.filter-bar form{gap:10px;}}
+</style>
+</head>
+<body>
+
+<!-- 🏢 HEADER CONTROL BANNER -->
+<div class="header">
+  <div class="header-left">
+    <h2>HR CAPITAL COMMAND CENTER</h2>
+    <p>BKNR ERP &bull; Workforce Analytics & Compliance Command Node (Company: {{ company_id }})</p>
+  </div>
+  <div class="date-badge"><i class="fa-solid fa-users-gear"></i> {{ production_for }}</div>
+</div>
+
+<!-- 🚨 HR AUDIT RISK ALERT COMPLIANCE CENTER -->
+<div class="alert-panel alert-box">
+  <div style="font-size:10px; font-weight:800; text-transform:uppercase; margin-bottom:5px; color:#b91c1c;"><i class="fa-solid fa-shield-halved"></i> Corporate HR Risk Compliance Registry</div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:4px;">
+    {% if risk_no_pan > 0 %}<div class="alert-item">⚠ Missing PAN Records Ledger: {{ risk_no_pan }} Profiles Flagged.</div>{% endif %}
+    {% if risk_no_aadhar > 0 %}<div class="alert-item">⚠ Identification Compliance Void: {{ risk_no_aadhar }} Profiles missing baseline ID fields.</div>{% endif %}
+    {% if risk_no_bank > 0 %}<div class="alert-item">⚠ Bank Mandate Exception: {{ risk_no_bank }} Profiles lack validation accounts.</div>{% endif %}
+    {% if risk_missing_statutory > 0 %}<div class="alert-item">⚠ Statutory Enrollment Missing: {{ risk_missing_statutory }} Employees lack master registration.</div>{% endif %}
+    {% if double_duty_count > 0 %}<div class="alert-item" style="color:var(--rose);">❌ Critical Shift Overlap Alert: {{ double_duty_count }} Labor profiles exceeded 14+ hours.</div>{% endif %}
+  </div>
+</div>
+
+<!-- 📊 EXECUTIVE 12 KPI GRID -->
+<div class="kpi-container">
+  <div class="kpi-card"><div class="kpi-label">Total Staff</div><div class="kpi-value">{{ total_employees }}</div></div>
+  <div class="kpi-card profit-card"><div class="kpi-label">Active Staff</div><div class="kpi-value">{{ active_employees }}</div></div>
+  <div class="kpi-card profit-card"><div class="kpi-label">Present Today</div><div class="kpi-value">{{ present_today }}</div></div>
+  <div class="kpi-card loss-card"><div class="kpi-label">Absent Today</div><div class="kpi-value">{{ absent_today }}</div></div>
+  <div class="kpi-card warning-card"><div class="kpi-label">Open Shifts</div><div class="kpi-value">{{ open_shifts }}</div></div>
+  <div class="kpi-card warning-card"><div class="kpi-label">Overtime Run (>8h)</div><div class="kpi-value">{{ overtime_count }}</div></div>
+  <div class="kpi-card loss-card"><div class="kpi-label">Double Duty Alerts</div><div class="kpi-value">{{ double_duty_count }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">New Joins (MTD)</div><div class="kpi-value">{{ new_joiners_month }}</div></div>
+  <div class="kpi-card warning-card"><div class="kpi-label">Advance Outstanding</div><div class="kpi-value">₹{{"{:.0f}".format(advances_outstanding)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">PF Active Covered</div><div class="kpi-value">{{ pf_covered }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">ESI Active Covered</div><div class="kpi-value">{{ esi_covered }}</div></div>
+  <div class="kpi-card profit-card"><div class="kpi-label">Net Gross Payroll</div><div class="kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
+</div>
+
+<!-- 🏛️ PLATINUM SYSTEM INTERACTION GRID -->
+<div class="matrix-grid">
+
+  <!-- 1. WORKFORCE DEMOGRAPHICS -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-chart-pie" style="color:var(--accent);"></i> Workforce Demographics</div>
+    <div class="chart-box"><canvas id="genderChart"></canvas></div>
+    <div style="margin-top:8px;">
+      <div style="font-size:9px; font-weight:700; color:var(--secondary); text-transform:uppercase; margin-bottom:4px;">Blood Group Spread</div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px;">
+        {% for b in blood_groups %}<span style="background:var(--slate); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">{{ b.group }}: {{ b.count }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ATTENDANCE INTELLIGENCE SYSTEM -->
+  <div class="card span-large-2">
+    <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> Last 30 Days Attendance Velocity</div>
+    <div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div>
+  </div>
+
+  <!-- BIRTHDAY SIDEBAR WIDGET -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-cake-candles" style="color:var(--rose);"></i> Lifecycle Calendar Events</div>
+    <div style="font-size:10px; font-weight:800; color:var(--secondary); text-transform:uppercase;">Today's Birthdays</div>
+    {% if birthday_actives %}{% for b in birthday_actives %}<div class="row"><span>{{ b.employee_name }}</span><span>{{ b.department }}</span></div>{% endfor %}{% else %}<p style="color:var(--secondary); padding:4px 0; font-size:10.5px;">No birth dates logged today.</p>{% endif %}
+    <div style="font-size:10px; font-weight:800; color:var(--secondary); text-transform:uppercase; margin-top:8px;">Work Anniversaries Today</div>
+    {% if anniversary_actives %}{% for a in anniversary_actives %}<div class="row"><span style="color:var(--emerald);">{{ a.employee_name }}</span><span>{{ a.designation }}</span></div>{% endfor %}{% else %}<p style="color:var(--secondary); padding:4px 0; font-size:10.5px;">No corporate milestones today.</p>{% endif %}
+  </div>
+
+  <!-- 3. DEPARTMENT STRENGTH MATRIX -->
+  <div class="card span-large-2">
+    <div class="card-title"><i class="fa-solid fa-network-wired" style="color:var(--accent);"></i> Department Strength Matrix</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Department</th><th class="text-right">Total Staff</th><th class="text-right">Present Today</th><th class="text-right">Absent</th><th class="text-right">Avg Salary</th></tr>
+        </thead>
+        <tbody>
+          {% for d in dept_matrix %}
+          <tr><td>{{ d.department }}</td><td class="text-right">{{ d.total_staff }}</td><td class="text-right" style="color:var(--emerald);">{{ d.present }}</td><td class="text-right" style="color:var(--rose);">{{ d.absent }}</td><td class="text-right">₹{{"{:.0f}".format(d.avg_salary)}}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. LABOR PRODUCTIVITY HOURS ANALYSIS -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-business-time"></i> Labor Productivity Distribution</div>
+    <div class="chart-box"><canvas id="prodChart"></canvas></div>
+  </div>
+
+  <!-- 5. COMPLIANCE METRIC GAUGES -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-building-shield" style="color:var(--emerald);"></i> Statutory Coverage Index</div>
+    <div class="row" style="margin-top:6px;"><span>PF Coverage Ratio</span><span>{{ pf_coverage_pct }}%</span></div>
+    <div style="width:100%; background:var(--slate); height:6px; border-radius:3px; overflow:hidden;"><div style="width: {{ pf_coverage_pct }}%; background:var(--emerald); height:100%;"></div></div>
+    <div class="row" style="margin-top:8px;"><span>ESI Coverage Ratio</span><span>{{ esi_coverage_pct }}%</span></div>
+    <div style="width:100%; background:var(--slate); height:6px; border-radius:3px; overflow:hidden;"><div style="width: {{ esi_coverage_pct }}%; background:var(--accent); height:100%;"></div></div>
+    <div class="row" style="margin-top:10px;"><span>New Retain Index (90 Days)</span><span>{{ new_joiners_90 }} Joiners</span></div>
+    <div class="row"><span>Yearly Attrition Index</span><span style="color:var(--rose);">{{ attrition_rate }}%</span></div>
+  </div>
+
+  <!-- 6. ADVANCE ADVANCED RECOVERY SYSTEM -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--amber);"></i> Advance Capital Balance Ledger</div>
+    <div class="row"><span>Total Advance Issued</span><span>₹{{"{:.0f}".format(adv_aggregates.issued or 0)}}</span></div>
+    <div class="row"><span>Total Recovered Amount</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(adv_aggregates.recovered or 0)}}</span></div>
+    <div class="row total-row"><span>Active Outstanding Balance</span><span style="color:var(--rose);">₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
+    <div style="font-size:9px; font-weight:700; color:var(--secondary); margin-top:6px; text-transform:uppercase;">Top Outstanding Ledgers</div>
+    {% for a in adv_outstanding_list %}
+    <div class="row" style="font-size:10.5px;"><span>{{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
+    {% endfor %}
+  </div>
+
+  <!-- 7. INCREMENT LOG TRACKER -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-arrow-trend-up" style="color:var(--emerald);"></i> Salary Increments Analytics</div>
+    <div class="row"><span>Total Increments (YTD)</span><span>{{ inc_stats.total_inc or 0 }} Issued</span></div>
+    <div class="row"><span>Average Increment Jump</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inc_stats.avg_inc_val or 0)}}</span></div>
+    <div class="row"><span>Peak Increment Released</span><span style="color:var(--accent);">₹{{"{:.0f}".format(inc_stats.max_inc_val or 0)}}</span></div>
+    <div style="font-size:9px; font-weight:700; color:var(--secondary); margin-top:6px; text-transform:uppercase;">Recent Modifications Feed</div>
+    {% for i in increment_table %}
+    <div style="font-size:10px; border-bottom:1px solid #f8fafc; padding:3px 0; display:flex; justify-content:space-between;">
+      <span>{{ i.name }}</span><span style="font-weight:700; color:var(--emerald);">+₹{{"{:.0f}".format(i.increase)}}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- 8. PAYROLL INTEL STRUCTURE -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-coins"></i> Payroll Tiers Distribution</div>
+    <div class="chart-box"><canvas id="salaryChart"></canvas></div>
+  </div>
+
+  <!-- 12. EMPLOYEE DIRECTORY EXPANDED ENGINE -->
+  <div class="card col-span-full">
+    <div class="card-title"><i class="fa-solid fa-folder-tree" style="color:var(--accent);"></i> Unified Master Corporate Employee Registry Directory</div>
+    <div class="filter-bar">
+      <form method="GET" action="/hr/hr_command_center">
+        <select name="dept_filter" onchange="this.form.submit()"><option value="">All Departments</option>{% for d in dept_matrix %}<option value="{{ d.department }}" {% if dept_filter == d.department %}selected{% endif %}>{{ d.department }}</option>{% endfor %}</select>
+        <select name="type_filter" onchange="this.form.submit()"><option value="">All Types</option><option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option><option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option></select>
+        <select name="status_filter" onchange="this.form.submit()"><option value="">All Statuses</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option></select>
+        <a href="/hr/hr_command_center" style="font-size:10.5px; font-weight:700; padding:4px; text-decoration:none; color:var(--secondary); display:inline-flex; align-items:center;">Reset Filter Logs</a>
+      </form>
+    </div>
+    <div class="table-wrap" style="max-height:300px; overflow-y:auto;">
+      <table>
+        <thead>
+          <tr><th>Staff ID</th><th>Staff Name</th><th>Department</th><th>Designation</th><th>Type</th><th>Contact Mobile</th><th>Gross Current Salary</th><th>Operational Status</th></tr>
+        </thead>
+        <tbody>
+          {% for emp in directory_list %}
+          <tr>
+            <td style="font-weight:700; color:var(--accent);">{{ emp.employee_id }}</td>
+            <td style="font-weight:700;">{{ emp.employee_name }}</td>
+            <td>{{ emp.department or 'N/A' }}</td>
+            <td>{{ emp.designation or 'N/A' }}</td>
+            <td><span style="background:var(--slate); padding:2px 5px; border-radius:4px; font-size:10px;">{{ emp.employee_type }}</span></td>
+            <td>{{ emp.mobile }}</td>
+            <td style="font-weight:700;">₹{{"{:,.0f}".format(emp.current_salary)}}</td>
+            <td><span style="padding:2px 6px; border-radius:4px; font-size:9.5px; font-weight:800; {% if emp.status == 'ACTIVE' %}background:#d1fae5; color:#065f46;{% else %}background:#fee2e2; color:#991b1b;{% endif %}">{{ emp.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 📊 INTEL GRAPHS DISPATCH SYSTEMS -->
+<script>
+// A. Demographics Circle Plot
+new Chart(document.getElementById("genderChart"), {
+  type: "pie",
+  options: { responsive: true, maintainAspectRatio: false },
+  data: {
+    labels: {{ gender_labels|tojson }},
+    datasets: [{ data: {{ gender_values|tojson }}, backgroundColor: ["#0284c7", "#ec4899", "#64748b"] }]
+  }
+});
+
+// B. Historical Timeline Velocity Flow
+new Chart(document.getElementById("attendanceTrendChart"), {
+  type: "line",
+  options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } },
+  data: {
+    labels: {{ attendance_trend_labels|tojson }},
+    datasets: [{ label: "Attendance Ratio %", data: {{ attendance_trend_data|tojson }}, borderColor: "#0d9488", fill: true, backgroundColor: "rgba(13,148,136,0.05)", tension: 0.2 }]
+  }
+});
+
+// C. Operational Shift Ranges
+new Chart(document.getElementById("prodChart"), {
+  type: "bar",
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  data: {
+    labels: ["<4 Hrs", "4-8 Hrs", "8-12 Hrs", "12+ Hrs"],
+    datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#e11d48", "#0284c7", "#0d9488", "#b45309"] }]
+  }
+});
+
+// D. Financial Salary Histogram Pillars
+new Chart(document.getElementById("salaryChart"), {
+  type: "bar",
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  data: {
+    labels: ["0-10k Tier", "10k-20k Mid", "20k-30k Executive", "30k+ Upper Board"],
+    datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#0284c7", "#6366f1", "#0d9488"] }]
+  }
+});
+</script>
+</body>
+</html>
