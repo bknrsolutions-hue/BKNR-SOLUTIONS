@@ -1,30 +1,27 @@
-# app/routers/dashboard/hr_dashboard.py
+# app/routers/dashboard_router.py
 
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
+from fastapi import APIRouter, Request, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_
-from datetime import datetime, date, timedelta
-import io
-import openpyxl
-from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from sqlalchemy import func, and_
+from datetime import date, timedelta
 
 from app.database import get_db
 from app.database.models.attendance import DailyAttendance, EmployeeRegistration, EmployeeIncrement, EmployeeSalaryAdvance
 from app.database.models.processing import AuditLog
 
+# 1️⃣ ఇక్కడ మనం మెయిన్ డ్యాష్‌బోర్డ్ రూటర్‌ను డిఫైన్ చేస్తున్నాం
 router = APIRouter(
-    prefix="/hr-dashboard",
-    tags=["HR DASHBOARD ANALYTICS"]
+    prefix="/dashboard",
+    tags=["DASHBOARDS"]
 )
 
 templates = Jinja2Templates(directory="app/templates")
 
-# ============================================================
-# 📅 1. DASHBOARD MAIN ROUTE (GET)
-# ============================================================
-@router.get("", response_class=HTMLResponse)
+# 2️⃣ వేరే ఫైల్ నుండి ఇంపోర్ట్ చేసే తలకాయనొప్పి లేకుండా, ఫంక్షన్‌ను నేరుగా ఇక్కడే రాసేసాం భాయ్!
+# దీనివల్ల ఆ 'ImportError: cannot import name router' అనే ఎర్రర్ వచ్చే ఛాన్సే లేదు.
+@router.get("/hr_dashboard", response_class=HTMLResponse)
 def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
     email = request.session.get("email")
     company_code = request.session.get("company_code")
@@ -34,7 +31,7 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
 
     today = date.today()
 
-    # 1️⃣ 🧮 TOP LEVEL METRICS
+    # 🧮 TOP LEVEL METRICS
     total_staff = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.company_id == company_code,
         EmployeeRegistration.status == "ACTIVE"
@@ -76,7 +73,7 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
         DailyAttendance.working_hours >= 14.0
     ).count()
 
-    # 2️⃣ 💵 FINANCIAL & OPERATIONAL COUNTERS
+    # 💵 FINANCIAL COUNTERS
     total_payroll_gross = db.query(func.sum(EmployeeRegistration.current_salary)).filter(
         EmployeeRegistration.company_id == company_code,
         EmployeeRegistration.status == "ACTIVE"
@@ -87,7 +84,7 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
         EmployeeSalaryAdvance.status == "APPROVED"
     ).scalar() or 0.0
 
-    # 3️⃣ 📊 DATA MATRICES & PANELS
+    # 📊 DATA MATRICES & PANELS
     dept_rows = db.query(
         EmployeeRegistration.department,
         func.count(DailyAttendance.id).label("on_floor_count")
@@ -141,7 +138,7 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
         EmployeeRegistration.status == "ACTIVE"
     ).order_by(EmployeeRegistration.employee_id.asc()).all()
 
-    # 4️⃣ 📈 CHART DATA COMPUTATION (Last 6 Days Attendance Trend)
+    # 📈 CHART DATA (Last 6 Days Attendance Trend)
     trend_labels = []
     trend_values = []
     for i in range(5, -1, -1):
@@ -161,13 +158,13 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
         ).count()
         trend_values.append(count)
 
-    # 📊 CHART DATA COMPUTATION (Department Distribution)
     dept_labels = [d.department if d.department else "GENERAL" for d in dept_rows]
     dept_values = [d.on_floor_count for d in dept_rows]
 
+    # మనం లాస్ట్ టర్న్ లో రీనేమ్ చేసిన 'hr_command_center.html' కి కనెక్ట్ చేసాం భాయ్
     return templates.TemplateResponse(
         request=request,
-        name="attendance/hr_dashboard.html",
+        name="attendance/hr_command_center.html",  
         context={
             "email": email,
             "company_id": company_code,
@@ -188,81 +185,4 @@ def hr_dashboard_page(request: Request, db: Session = Depends(get_db)):
             "attendance_labels": trend_labels,
             "attendance_values": trend_values
         }
-    )
-
-
-# ============================================================
-# 📈 2. DASHBOARD FINANCIAL EXCEL EXPORT LEDGER (GET)
-# ============================================================
-@router.get("/export/financial-excel")
-def export_dashboard_financial_excel(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
-    if not company_id:
-        return RedirectResponse("/", status_code=302)
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "HR Operational Summary"
-    ws.views.sheetView[0].showGridLines = True
-
-    header_fill = PatternFill(start_color="143465", end_color="143465", fill_type="solid")
-    header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
-    data_font = Font(name="Arial", size=10)
-    
-    thin_border = Border(
-        left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
-        top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
-    )
-
-    headers = ["Sl No", "Financial Metric Context", "Ledger Gross Balance Amount"]
-    ws.append(headers)
-
-    for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-
-    total_payroll_gross = db.query(func.sum(EmployeeRegistration.current_salary)).filter(
-        EmployeeRegistration.company_id == company_id,
-        EmployeeRegistration.status == "ACTIVE"
-    ).scalar() or 0.0
-
-    total_advance_running = db.query(func.sum(EmployeeSalaryAdvance.remaining_balance)).filter(
-        EmployeeSalaryAdvance.company_id == company_id,
-        EmployeeSalaryAdvance.status == "APPROVED"
-    ).scalar() or 0.0
-
-    metrics_data = [
-        (1, "Estimated Monthly Gross Payroll Run", total_payroll_gross),
-        (2, "Outstanding Salary Advances / Loans", total_advance_running)
-    ]
-
-    for idx, title, amt in metrics_data:
-        ws.append([idx, title, amt])
-        curr_row = ws.max_row
-        for col_idx in range(1, len(headers) + 1):
-            cell = ws.cell(row=curr_row, column=col_idx)
-            cell.font = data_font
-            cell.border = thin_border
-            if col_idx == 3:
-                cell.number_format = '₹#,##0.00'
-                cell.alignment = Alignment(horizontal="right")
-            elif col_idx == 1:
-                cell.alignment = Alignment(horizontal="center")
-
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or '')) for cell in col)
-        col_letter = openpyxl.utils.get_column_letter(col[0].column)
-        ws.column_dimensions[col_letter].width = max(max_len + 4, 15)
-
-    stream = io.BytesIO()
-    wb.save(stream)
-    stream.seek(0)
-
-    filename = f"HR_Operational_Financial_Ledger_{date.today().strftime('%Y%m%d')}.xlsx"
-    return StreamingResponse(
-        stream,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
