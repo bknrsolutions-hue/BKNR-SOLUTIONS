@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>BKNR ERP | Corporate Payroll Ledger</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 :root{
@@ -16,46 +17,81 @@
 *{box-sizing:border-box;font-family:Inter,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* HEADER */
-.header-container{background:#fff;padding:15px 20px;border-bottom:1px solid var(--border)}
-.header-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.header-main h2{margin:0;font-size:18px;font-weight:800;color:var(--primary)}
-.filters{display:flex;gap:12px;background:#f8fafc;padding:10px;border-radius:10px;border:1px solid var(--border);align-items:center}
-.filters label{font-size:9px;font-weight:800;color:var(--muted);display:block;margin-bottom:2px}
-.filters input,.filters select{padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid var(--border);font-weight:600}
+/* HEADER & RESPONSIVE RESTRUCTURE */
+.header-container{background:#fff;padding:12px 15px;border-bottom:1px solid var(--border)}
+.header-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
+.header-main h2{margin:0;font-size:15px;font-weight:800;color:var(--primary)}
+.header-main p{font-size:10px;margin:2px 0 0 0;}
 
-/* TABLE */
-.section{margin:15px 20px;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
-.table-wrap{overflow:auto;flex:1}
-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
-th{background:#f8fafc;font-size:9px;font-weight:800;text-transform:uppercase;padding:12px;border:1px solid var(--border);position:sticky;top:0;z-index:20}
-td{padding:10px;border:1px solid #edf2f7;text-align:center}
+.btn-group-layout { display:flex; gap:6px; flex-wrap:wrap; }
+.btn-action-size { padding:6px 10px; font-size:11px; font-weight:700; border-radius:6px; border:none; color:white; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
 
-.name-sticky{position:sticky;left:0;background:#fff;font-weight:700;text-align:left;border-right:2px solid var(--primary);min-width:220px;z-index:10}
-.clickable{cursor:pointer; transition: 0.2s;}
-.clickable:hover{background: #f0f7ff !important; outline: 1px solid var(--accent); transform: scale(1.05);}
+.filters{display:flex;gap:8px;background:#f8fafc;padding:8px;border-radius:8px;border:1px solid var(--border);align-items:center}
+@media(max-width: 768px) {
+    .filters { display:grid; grid-template-columns:1fr; gap:8px; width:100%; }
+    .header-main { flex-direction:column; align-items:flex-start; }
+    .btn-group-layout { width:100%; justify-content:space-between; }
+}
+.filters label{font-size:8px;font-weight:800;color:var(--muted);display:block;margin-bottom:2px;text-transform:uppercase}
+.filters input,.filters select{padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);font-weight:600;width:100%}
 
-.payout-col{background:#ecfdf5;color:#065f46;font-weight:900;font-size:13px;text-align:right;padding-right:15px}
-.adjust-input{width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:#fff7ed; color:#c2410c}
+/* ULTRA COMPACT TABLE SYSTEM */
+.section{margin:8px 10px;background:#fff;border-radius:8px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
+.table-wrap{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}
+th{background:#f8fafc;font-size:8.5px;font-weight:800;text-transform:uppercase;padding:8px 6px;border:1px solid var(--border);position:sticky;top:0;z-index:20}
+td{padding:6px;border:1px solid #edf2f7;text-align:center}
 
-/* MODAL */
+.name-sticky{position:sticky;left:0;background:#fff;font-weight:700;text-align:left;border-right:2px solid var(--primary);min-width:180px;z-index:10}
+@media(max-width: 480px) { .name-sticky { min-width:140px; font-size:9.5px; } }
+
+.clickable{cursor:pointer; transition: 0.15s;}
+.clickable:hover{background: #f0f7ff !important; outline: 1px solid var(--accent);}
+
+.payout-col{background:#ecfdf5;color:#065f46;font-weight:900;font-size:11.5px;text-align:right;padding-right:10px}
+.adjust-input{width:44px;padding:3px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:#fff7ed; color:#c2410c; font-size:10px}
+.adjust-input:disabled { background:#f1f5f9; color:#94a3b8; cursor:not-allowed; border-color:#e2e8f0; }
+
+tbody tr.selected { background-color: #f0f7ff !important; }
+tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
+
+/* MODAL STRUCTURE */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;backdrop-filter:blur(2px)}
-.modal-box{background:#fff;width:95%;max-width:750px;margin:5% auto;border-radius:14px;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1)}
-.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px}
+.modal-box{background:#fff;width:95%;max-width:750px;margin:5% auto;border-radius:12px;padding:15px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+@media(max-width:480px) { .modal-box { margin:10px auto; height:calc(100vh - 20px); max-height:none; } }
+.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:8px}
 .close{cursor:pointer;font-size:22px;color:var(--danger)}
 
-/* ATTENDANCE COLORS */
+/* ATTENDANCE SHADES */
 .att-2p{background:#dcfce7 !important; color:#15803d !important; font-weight:900}
 .att-p{background:#f0fdf4 !important; color:var(--success) !important; font-weight:700}
 .att-hp{background:#fffbeb !important; color:var(--warning) !important; font-weight:700}
 .att-a{color:var(--danger); font-weight:400; opacity:0.5}
 
 /* TIMELINE CHIPS */
-.chip { font-size: 9px; font-weight: 700; padding: 3px 6px; border-radius: 5px; display: inline-flex; align-items: center; gap: 3px; border: 1px solid transparent; margin: 2px; }
+.chip { font-size: 8.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid transparent; margin: 1px; }
 .c-in { color: var(--success); background: #ecfdf5; border-color: #a7f3d0; }
 .c-out { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
 .c-exit { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
-.badge-blue{background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700}
+.badge-blue{background:#eff6ff; color:#1d4ed8; padding:2px 5px; border-radius:4px; font-size:9.5px; font-weight:700}
+
+#printSection { display: none; }
+
+/* PRINT STYLES */
+@media print {
+  @page { size: landscape; margin: 10mm; }
+  body { background: #fff; color: #000; overflow: visible; height: auto; }
+  .header-container, .filters, button, .modal, .adjust-input { display: none !important; }
+  .section { margin: 0; padding: 0; border: none; overflow: visible; display: block; }
+  .table-wrap { overflow: visible; display: block; }
+  table { width: 100%; border: 1px solid #000; font-size: 9px; }
+  th, td { border: 1px solid #000 !important; padding: 5px 3px !important; }
+  .name-sticky { position: static !important; background: transparent !important; border-right: 1px solid #000 !important; }
+  .att-2p, .att-p, .att-hp { font-weight: bold !important; background: transparent !important; }
+  body.print-single-mode #payrollTable { display: none !important; }
+  body.print-single-mode #printSection { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; }
+  body.print-single-mode #printSection * { visibility: visible !important; }
+}
 </style>
 </head>
 
@@ -65,11 +101,12 @@ td{padding:10px;border:1px solid #edf2f7;text-align:center}
   <div class="header-main">
     <div>
       <h2><i class="fa-solid fa-building-columns"></i> Corporate Payroll & Statutory Ledger</h2>
-      <p id="monthDisplay" style="font-size:11px;color:var(--muted);font-weight:700;margin:4px 0 0 0"></p>
+      <p id="monthDisplay" style="font-size:10px;color:var(--muted);font-weight:700;margin:2px 0 0 0"></p>
     </div>
-    <div style="display:flex; gap:10px;">
-        <button onclick="generateSheet()" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;"><i class="fa-solid fa-sync"></i> Recalculate</button>
-        <button onclick="window.print()" style="background:var(--success); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;"><i class="fa-solid fa-file-excel"></i> Export Ledger</button>
+    <div class="btn-group-layout">
+        <button id="btnPrintSelected" class="btn-action-size" onclick="printSelectedRow()" style="background:var(--accent); display:none;"><i class="fa-solid fa-print"></i> Print Selected</button>
+        <button class="btn-action-size" onclick="generateSheet()" style="background:var(--primary);"><i class="fa-solid fa-sync"></i> Recalculate</button>
+        <button class="btn-action-size" onclick="printFullLedger()" style="background:var(--success);"><i class="fa-solid fa-print"></i> Export Ledger</button>
     </div>
   </div>
 
@@ -104,19 +141,19 @@ td{padding:10px;border:1px solid #edf2f7;text-align:center}
   <div class="modal-box">
     <div class="modal-header">
       <div>
-        <h3 id="modalTitle" style="margin:0; color:var(--primary)">Duty Logs</h3>
-        <p id="modalSubTitle" style="margin:0; font-size:11px; color:var(--muted)"></p>
+        <h3 id="modalTitle" style="margin:0; color:var(--primary); font-size:14px;">Duty Logs</h3>
+        <p id="modalSubTitle" style="margin:0; font-size:10px; color:var(--muted)"></p>
       </div>
       <span class="close" onclick="closeModal()">&times;</span>
     </div>
-    <div style="margin-top:15px; max-height:450px; overflow-y:auto;">
+    <div style="margin-top:12px; overflow-y:auto; flex:1;">
         <table style="width:100%">
           <thead>
             <tr style="background:#f8fafc">
-                <th style="text-align:left">Date</th>
-                <th style="text-align:left">Timeline (Gate Entry/Exit)</th>
-                <th>Work Hrs</th>
-                <th>Status</th>
+                <th style="text-align:left; padding:8px 4px;">Date</th>
+                <th style="text-align:left; padding:8px 4px;">Timeline (Gate Entry/Exit)</th>
+                <th style="padding:8px 4px;">Work Hrs</th>
+                <th style="padding:8px 4px;">Status</th>
             </tr>
           </thead>
           <tbody id="modalBody"></tbody>
@@ -125,8 +162,11 @@ td{padding:10px;border:1px solid #edf2f7;text-align:center}
   </div>
 </div>
 
+<div id="printSection"></div>
+
 <script>
 const fmt = new Intl.NumberFormat('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2});
+let selectedRowData = null;
 
 window.onload = async () => {
     const now = new Date();
@@ -177,7 +217,9 @@ async function generateSheet(){
  // BODY
  let body="";
  data.employees.forEach((emp)=>{
-  body+=`<tr>
+  let isLocked = parseFloat(emp.saved_adjustment) !== 0 ? 'disabled' : '';
+
+  body+=`<tr class="emp-row" onclick="handleRowSelect(this, ${JSON.stringify(emp).replace(/"/g, '&quot;')})">
   <td class="name-sticky">
     <div style="font-weight:800; color:var(--primary)">${emp.name}</div>
     <div style="font-size:9px; color:var(--muted); font-weight:700">${emp.id} | ${emp.dept}</div>
@@ -187,19 +229,18 @@ async function generateSheet(){
     const st = emp.att_map[i] || 'A';
     let cls = st === '2P' ? 'att-2p' : st === 'P' ? 'att-p' : st === 'HP' ? 'att-hp' : 'att-a';
     
-    // Logic 1: Passing 'i' as day number for day-wise filter
-    body+=`<td class="${cls} clickable" onclick="showAttendance('${emp.id}','${emp.name}', ${i})">${st}</td>`;
+    body+=`<td class="${cls} clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', ${i})">${st}</td>`;
   }
 
   body+=`
   <td style="font-weight:600">₹${fmt.format(emp.base_sal)}</td>
   
-  <td class="clickable" onclick="showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:800; color:var(--accent); text-decoration:underline">
+  <td class="clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:800; color:var(--accent); text-decoration:underline">
     ${emp.actual_duties}
   </td>
 
   <td style="font-weight:800; color:var(--success)">+${emp.extra_holidays}</td>
-  <td><input class="adjust-input" type="number" step="0.5" value="${emp.saved_adjustment}" onchange="saveAdjustment('${emp.id}',this.value)"></td>
+  <td><input class="adjust-input" type="number" step="0.5" value="${emp.saved_adjustment}" ${isLocked} onchange="saveAdjustment('${emp.id}',this.value)"></td>
   <td style="font-weight:800; background:#f0f9ff">₹${fmt.format(emp.earned_gross)}</td>
   <td style="color:var(--danger); font-weight:700">₹${fmt.format(emp.salary_advance)}</td>
   <td>₹${fmt.format(emp.pf)}</td>
@@ -211,15 +252,62 @@ async function generateSheet(){
   </tr>`;
  });
  document.getElementById("tbody").innerHTML=body;
+ document.getElementById("btnPrintSelected").style.display = "none";
+ selectedRowData = null;
 }
 
-// ATTENDANCE DETAILS POPUP
+function handleRowSelect(rowElement, employeeData) {
+    document.querySelectorAll(".emp-row").forEach(r => r.classList.remove("selected"));
+    rowElement.classList.add("selected");
+    selectedRowData = employeeData;
+    document.getElementById("btnPrintSelected").style.display = "inline-block";
+}
+
+function printFullLedger() {
+    document.body.classList.remove("print-single-mode");
+    window.print();
+}
+
+function printSelectedRow() {
+    if (!selectedRowData) return;
+    
+    const printContainer = document.getElementById("printSection");
+    printContainer.innerHTML = `
+        <div style="padding:20px; font-family:Inter,sans-serif;">
+            <h2 style="color:#143465; border-bottom:2px solid #143465; padding-bottom:8px; text-align:center;">BKNR SOLUTIONS - PAYROLL PAYSPLIT MASTER</h2>
+            <br>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                <tr><td style="text-align:left; font-weight:800; width:150px;">Employee Name:</td><td style="text-align:left;">${selectedRowData.name}</td></tr>
+                <tr><td style="text-align:left; font-weight:800;">Employee ID:</td><td style="text-align:left;">${selectedRowData.id}</td></tr>
+                <tr><td style="text-align:left; font-weight:800;">Department:</td><td style="text-align:left;">${selectedRowData.dept}</td></tr>
+            </table>
+            <table style="width:100%; border:1px solid #d6dde7; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="background:#f8fafc;">
+                        <th style="padding:10px; border:1px solid #d6dde7; text-align:left;">Component Description</th>
+                        <th style="padding:10px; border:1px solid #d6dde7; text-align:right;">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Gross Base Salary</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">₹${fmt.format(selectedRowData.base_sal)}</td></tr>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Earned Gross Total</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; font-weight:700;">₹${fmt.format(selectedRowData.earned_gross)}</td></tr>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#dc2626;">Salary Advance</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#dc2626;">-₹${fmt.format(selectedRowData.salary_advance)}</td></tr>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Provident Fund (PF)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.pf)}</td></tr>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Employee State Insurance (ESI)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.esi)}</td></tr>
+                    <tr style="background:#ecfdf5; font-size:14px; font-weight:800;"><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#065f46;">Net Disbursed Payout</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#065f46;">₹${fmt.format(selectedRowData.net_pay)}</td></tr>
+                </tbody>
+            </table>
+        </div>`;
+    
+    document.body.classList.add("print-single-mode");
+    window.print();
+}
+
 async function showAttendance(empId, name, day = null){
  const month = document.getElementById("monthInput").value;
  document.getElementById("modalTitle").innerText = name;
  document.getElementById("modalSubTitle").innerText = (day ? `Day ${day} Log` : `Full Month Logs`) + ` | Employee ID: ${empId}`;
 
- // Dynamic URL based on whether day is provided
  let url = `/api/salary/get-attendance-logs?emp_id=${empId}&month=${month}`;
  if(day) url += `&day=${day}`;
 
@@ -236,10 +324,10 @@ async function showAttendance(empId, name, day = null){
    }
 
    html += `<tr>
-     <td style="font-weight:600; padding:10px; border-bottom:1px solid #eee; text-align:left">${d.date}</td>
-     <td style="padding:10px; border-bottom:1px solid #eee; text-align:left">${timeline}</td>
-     <td style="font-weight:800; color:var(--accent); padding:10px; border-bottom:1px solid #eee">${d.hours} hrs</td>
-     <td style="padding:10px; border-bottom:1px solid #eee"><span class="badge-blue">${d.status}</span></td>
+     <td style="font-weight:600; padding:8px; border-bottom:1px solid #eee; text-align:left">${d.date}</td>
+     <td style="padding:8px; border-bottom:1px solid #eee; text-align:left">${timeline}</td>
+     <td style="font-weight:800; color:var(--accent); padding:8px; border-bottom:1px solid #eee">${d.hours} hrs</td>
+     <td style="padding:8px; border-bottom:1px solid #eee"><span class="badge-blue">${d.status}</span></td>
    </tr>`;
  });
 
@@ -256,7 +344,9 @@ async function saveAdjustment(empId, val){
       body:JSON.stringify({employee_id:empId, month:month, adjustment:val})
     });
     generateSheet(); 
- } catch(e) { alert("Adjustment Save Failed!"); }
+ } catch(e) { 
+    Swal.fire({ title: 'Error', text: 'Adjustment Save Failed!', icon: 'error', confirmButtonColor: '#143465' });
+ }
 }
 
 function closeModal(){document.getElementById("attModal").style.display="none";}

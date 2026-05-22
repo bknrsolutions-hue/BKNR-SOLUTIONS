@@ -3,137 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <title>Employee Registration – {{ request.session.get('company_name', 'BKNR') }} ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        :root{ --primary:#143465; --accent:#3b82f6; --success:#10b981; --border:#d6dde7; --bg:#f8fafc; --muted:#64748b; --danger:#ef4444; }
-        *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-        body{margin:0; background:var(--bg); color: #1e293b; overflow-x: hidden;}
+        :root{ 
+            --primary:#143465; --accent:#3b82f6; --success:#10b981; --border:#e2e8f0; 
+            --border-ultra-light:#f1f5f9; --bg:#f8fafc; --muted:#64748b; --danger:#ef4444; 
+        }
+        *{box-sizing:border-box; margin:0; padding:0; font-family: 'Inter', sans-serif;}
+        body{background:var(--bg); color: #334155; overflow-x: hidden;}
 
         /* ====== HEADER ====== */
         .header{ 
             position: sticky; top:0; z-index: 100;
-            background:#fff; padding:15px 25px; border-bottom:1px solid var(--border);
+            background:#fff; padding:12px 15px; border-bottom:1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; 
         }
-        .header h2{ margin:0; color:var(--primary); font-weight:800; font-size: 22px; }
-        .header p{ margin:4px 0 0; font-size:12px; color:#64748b; }
+        .header h2{ margin:0; color:var(--primary); font-weight:800; font-size: 16px; }
+        .header p{ margin:2px 0 0; font-size:10px; color:#64748b; }
 
         /* ====== FILTER BAR ====== */
         .filter-section {
-            background: #fff; margin: 20px 25px 0; padding: 15px 20px;
-            border-radius: 12px; border: 1px solid var(--border);
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            background: #fff; margin: 10px 15px; padding: 10px 12px;
+            border-radius: 8px; border: 1px solid var(--border);
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            max-width: 450px;
         }
-        .filter-input-group { display: flex; flex-direction: column; gap: 5px; }
-        .filter-input-group label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-        .filter-input-group input { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+        @media(max-width: 600px) { 
+            .filter-section { grid-template-columns: 1fr; gap: 8px; max-width: 100%; margin: 10px; } 
+        }
+        .filter-input-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-input-group label { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+        .filter-input-group input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 400; outline: none; }
         .filter-input-group input:focus { border-color: var(--accent); }
 
         /* ====== MODAL (FORM POPUP) ====== */
         #formModal {
-            display: none; 
-            position: fixed; z-index: 1000; left: 0; top: 0; 
-            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
+            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: #fff; margin: 30px auto; width: 95%; max-width: 1300px;
-            border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            max-height: 90vh; overflow-y: auto; position: relative; animation: slideDown 0.3s ease-out;
+            background: #fff; margin: 0 auto; width: 100%; height: 100%; max-width: 100%; max-height: 100vh; overflow-y: auto; position: relative;
         }
-        @keyframes slideDown { from {transform: translateY(-20px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
-
-        .modal-header {
-            padding: 20px 25px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; background: #fff; z-index: 10;
+        @media(min-width: 768px) {
+            .modal-content { margin: 30px auto; width: 95%; max-width: 1300px; height: auto; max-height: 90vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         }
-        .close-modal { font-size: 28px; cursor: pointer; color: var(--muted); font-weight: 300; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 10; }
+        .close-modal { font-size: 24px; cursor: pointer; color: var(--muted); }
 
         /* ====== FORM GRID ====== */
-        .form-container { padding: 25px 30px 100px; }
-        .form-grid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:16px; }
-        @media(max-width:1400px){ .form-grid{grid-template-columns:repeat(4,1fr)} }
-        @media(max-width:1000px){ .form-grid{grid-template-columns:repeat(2,1fr)} }
-        @media(max-width:600px){ .form-grid{grid-template-columns:1fr} }
+        .form-container { padding: 15px 15px 80px; }
+        .form-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+        @media(min-width: 601px) and (max-width: 1000px) { .form-grid{grid-template-columns:repeat(2,1fr)} }
+        @media(min-width: 1001px) and (max-width: 1400px) { .form-grid{grid-template-columns:repeat(4,1fr)} }
+        @media(min-width: 1401px) { .form-grid{grid-template-columns:repeat(6,1fr)} }
 
-        .section-title{ 
-            grid-column:1/-1; font-weight:800; color:var(--primary); 
-            margin:30px 0 10px; border-bottom: 2px solid #f1f5f9; 
-            padding-bottom: 8px; font-size: 13px; text-transform: uppercase;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .section-title i { color: var(--accent); }
-
-        .field{ display:flex; flex-direction:column; gap:6px; }
-        label{ font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing: 0.5px;}
-        input,select,textarea{ 
-            width:100%; padding:10px 12px; border:1px solid var(--border); 
-            border-radius:8px; font-size:13px; outline:none; transition: 0.2s;
-        }
-        input:focus, select:focus, textarea:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        textarea{min-height:80px; resize: vertical;}
+        .section-title{ grid-column:1/-1; font-weight:800; color:var(--primary); margin:20px 0 5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+        .field{ display:flex; flex-direction:column; gap:4px; grid-column: span 1; }
+        @media(min-width: 1001px) { .field.span-3 { grid-column: span 3; } }
+        label{ font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing: 0.5px;}
+        input,select,textarea{ width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; transition: 0.2s; }
+        textarea{min-height:60px; resize: vertical;}
         input[readonly]{background:#f8fafc; font-weight:700; color: var(--primary); cursor: not-allowed;}
-
         .hidden{display:none}
-        .bank-section { 
-            background: #f0f7ff; padding: 20px; border-radius: 12px; 
-            grid-column: 1/-1; display: grid; grid-template-columns: repeat(4, 1fr); 
-            gap: 16px; border: 1px dashed var(--accent); 
-        }
 
-        /* ====== MODAL SAVE BAR ====== */
-        .modal-actions{ 
-            position:sticky; bottom:0; left:0; right:0; 
-            padding:16px 40px; background:rgba(255,255,255,0.95); 
-            border-top:1px solid var(--border); display:flex; justify-content:flex-end; z-index: 10;
-        }
-        .btn-save{ 
-            padding:14px 40px; background:var(--primary); color:#fff; 
-            border:none; border-radius:10px; font-weight:800; cursor:pointer; 
-            transition: 0.2s; display: flex; align-items: center; gap: 10px;
-        }
-        .btn-save:hover{background:#0a1d3a; transform: translateY(-2px);}
+        /* ====== MODAL ACTIONS ====== */
+        .modal-actions{ position:fixed; bottom:0; left:0; right:0; padding:12px 20px; background:rgba(255,255,255,0.95); border-top:1px solid var(--border); display:flex; justify-content:flex-end; z-index: 10; }
+        @media(min-width: 768px) { .modal-actions { position: sticky; } }
+        .btn-save{ padding:10px 20px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-weight:800; cursor:pointer; font-size:12px; display: flex; align-items: center; gap: 6px; }
 
-        /* ====== TABLE & TOOLBAR ====== */
-        .table-header-tool { padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; }
-        .table-header-tool h3 { margin: 0; font-size: 16px; color: var(--primary); font-weight: 800; }
+        /* ====== FLOOR BALANCE STYLE ULTRA-COMPACT TABLE ====== */
+        .table-header-tool { padding: 10px 15px 5px; display: flex; justify-content: space-between; align-items: center; }
+        .table-header-tool h3 { margin: 0; font-size: 13px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
 
         .table-wrap{
-            margin: 0 25px 50px; background:#fff; border-radius:16px;
-            border:1px solid var(--border); overflow-x:auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            margin: 4px 10px 40px; background:#fff; border-radius: 8px;
+            border:1px solid var(--border); overflow: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            -webkit-overflow-scrolling: touch;
         }
 
-        table{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 4500px; }
+        table{ width:100%; border-collapse:collapse; table-layout: fixed; min-width: 3800px; } /* Fixed layout for structural consistency */
+        
+        /* Width allocation for columns matching floor tracker style */
+        th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
         thead th{
-            background:#f8fafc; padding:15px 10px; border-bottom: 1px solid var(--border); 
-            color: #475569; font-weight: 700; text-transform: uppercase; text-align: left;
-            position: sticky; top: 0; z-index: 5;
+            background: var(--bg); padding: 6px 4px; font-size: 8.5px; font-weight: 700;
+            text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 5;
         }
-        tbody td{ padding:12px 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary); white-space: nowrap; }
-        tbody tr:hover{background:#f8fbff; cursor:pointer}
-        tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
+        tbody td{ 
+            padding: 6px 4px; font-size: 9px; font-weight: 600; color: #1e293b;
+            border-bottom: 1px solid var(--border-ultra-light); border-right: 1px solid var(--border-ultra-light); 
+            text-align: center;
+        }
+        tbody tr:hover{ background: #f8fafc; cursor:pointer; }
+        tbody tr.selected{ background: #eff6ff !important; border-left: 3px solid var(--accent); }
+
+        /* Badge and status adjustments */
+        .status-badge { padding: 2px 5px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
 
         #threeDotsMenu{ position:relative; display: none; }
-        .menu-trigger {
-            background: #fff; border: 1px solid var(--border);
-            width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 18px;
-        }
-        #dropdownMenu{
-            display:none; position:absolute; right:0; top: 40px;
-            background:#fff; border:1px solid var(--border); border-radius:10px;
-            width:220px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden;
-        }
-        .menu-item{
-            padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer;
-            display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9;
-        }
+        .menu-trigger { background: #fff; border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        #dropdownMenu{ display:none; position:absolute; right:0; top: 32px; background:#fff; border:1px solid var(--border); border-radius:8px; width:180px; box-shadow:0 4px 12px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+        .menu-item{ padding:10px 12px; font-size:12px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
         .menu-item:hover{background:#f1f5ff; color: var(--accent);}
     </style>
 </head>
@@ -147,7 +124,7 @@
     </div>
     <div style="display: flex; gap: 12px; align-items: center;">
         <input type="hidden" id="companyFilter" value="{{ request.session.get('company_code', '') }}">
-        <button class="btn-save" style="background:var(--accent); padding:10px 20px;" onclick="openForm()"><i class="fa-solid fa-plus"></i> NEW REGISTRATION</button>
+        <button class="btn-save" style="background:var(--accent); padding:8px 12px; font-size:11px;" onclick="openForm()"><i class="fa-solid fa-plus"></i> NEW REGISTRATION</button>
     </div>
 </div>
 
@@ -169,7 +146,7 @@
 <div id="formModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 style="margin:0; font-size:18px; color:var(--primary);">
+            <h2 style="margin:0; font-size:14px; color:var(--primary);">
                 <i class="fa-solid fa-user-pen"></i> {% if edit_data %} Edit Employee Record {% else %} New Employee Master Entry {% endif %}
             </h2>
             <span class="close-modal" onclick="closeForm()">&times;</span>
@@ -263,12 +240,12 @@
                     <div class="field"><label>Personal Email</label><input name="personal_email" value="{{ edit_data.personal_email if edit_data else '' }}"></div>
                     <div class="field"><label>Emergency Contact Name</label><input name="emergency_name" value="{{ edit_data.emergency_name if edit_data else '' }}"></div>
                     <div class="field"><label>Emergency Mobile</label><input name="emergency_mobile" value="{{ edit_data.emergency_mobile if edit_data else '' }}"></div>
-                    <div class="field" style="grid-column: span 3;"><label>Present Address</label><textarea name="present_address">{{ edit_data.present_address if edit_data else '' }}</textarea></div>
-                    <div class="field" style="grid-column: span 3;"><label>Permanent Address</label><textarea name="permanent_address">{{ edit_data.permanent_address if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>Present Address</label><textarea name="present_address">{{ edit_data.present_address if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>Permanent Address</label><textarea name="permanent_address">{{ edit_data.permanent_address if edit_data else '' }}</textarea></div>
 
                     <div class="section-title"><i class="fa-solid fa-user-tag"></i> 6. Skills & Extra Info</div>
-                    <div class="field" style="grid-column: span 3;"><label>Skills</label><textarea name="skills" placeholder="Java, Python, Accounting, etc.">{{ edit_data.skills if edit_data else '' }}</textarea></div>
-                    <div class="field" style="grid-column: span 3;"><label>About Employee</label><textarea name="about">{{ edit_data.about if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>Skills</label><textarea name="skills" placeholder="Java, Python, Accounting, etc.">{{ edit_data.skills if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>About Employee</label><textarea name="about">{{ edit_data.about if edit_data else '' }}</textarea></div>
                     
                     <input type="hidden" name="company_id" value="{{ request.session.get('company_code') }}">
                 </div>
@@ -300,57 +277,55 @@
     <table id="empTable">
         <thead>
             <tr>
-                <th style="display:none;">Company ID</th>
-                <th style="border-left: 4px solid var(--accent);">Emp ID</th>
-                <th>Full Name</th>
-                <th>Status</th>
-                <th>Designation</th>
-                <th>Department</th>
-                <th>Mobile</th>
-                <th>Official Email</th>
-                <th>Emp Type</th>
-                <th>Joining Date</th>
-                <th>Location</th>
-                <th>Reporting To</th>
-                <th style="background:#fff9e6; border-left: 2px solid #fde68a;">Gross Total</th>
-                <th style="background:#fff9e6;">Basic</th>
-                <th style="background:#fff9e6;">HRA</th>
-                <th style="background:#fff9e6;">Conveyance</th>
-                <th style="background:#fff9e6;">Other Exp.</th>
-                <th style="background:#fff9e6;">TDS (%)</th>
-                <th style="background:#f0f7ff; border-left: 2px solid #bae6fd;">Bank Name</th>
-                <th style="background:#f0f7ff;">Account No</th>
-                <th style="background:#f0f7ff;">IFSC Code</th>
-                <th style="background:#f0f7ff;">PAN No</th>
-                <th style="background:#f0f7ff;">Aadhar No</th>
-                <th style="background:#f0f7ff;">UAN Number</th>
-                <th style="border-left: 2px solid var(--border);">Gender</th>
-                <th>DOB</th>
-                <th>Blood Group</th>
-                <th>Marital Status</th>
-                <th>Emergency No</th>
-                <th>Resign Date</th>
-                <th>Contractor</th>
-                <th>Created At</th>
+                <th style="display:none; width: 50px;">Company ID</th>
+                <th style="border-left: 4px solid var(--accent); width: 80px;">Emp ID</th>
+                <th style="width: 140px;">Full Name</th>
+                <th style="width: 80px;">Status</th>
+                <th style="width: 120px;">Designation</th>
+                <th style="width: 120px;">Department</th>
+                <th style="width: 100px;">Mobile</th>
+                <th style="width: 150px;">Official Email</th>
+                <th style="width: 100px;">Emp Type</th>
+                <th style="width: 100px;">Joining Date</th>
+                <th style="width: 100px;">Location</th>
+                <th style="width: 120px;">Reporting To</th>
+                <th style="background:#fff9e6; border-left: 2px solid #fde68a; width: 100px;">Gross Total</th>
+                <th style="background:#fff9e6; width: 90px;">Basic</th>
+                <th style="background:#fff9e6; width: 90px;">HRA</th>
+                <th style="background:#fff9e6; width: 90px;">Conveyance</th>
+                <th style="background:#fff9e6; width: 90px;">Other Exp.</th>
+                <th style="background:#fff9e6; width: 80px;">TDS (%)</th>
+                <th style="background:#f0f7ff; border-left: 2px solid #bae6fd; width: 120px;">Bank Name</th>
+                <th style="background:#f0f7ff; width: 140px;">Account No</th>
+                <th style="background:#f0f7ff; width: 100px;">IFSC Code</th>
+                <th style="background:#f0f7ff; width: 110px;">PAN No</th>
+                <th style="background:#f0f7ff; width: 110px;">Aadhar No</th>
+                <th style="background:#f0f7ff; width: 110px;">UAN Number</th>
+                <th style="border-left: 2px solid var(--border); width: 80px;">Gender</th>
+                <th style="width: 100px;">DOB</th>
+                <th style="width: 80px;">Blood Group</th>
+                <th style="width: 100px;">Marital Status</th>
+                <th style="width: 100px;">Emergency No</th>
+                <th style="width: 100px;">Resign Date</th>
+                <th style="width: 120px;">Contractor</th>
+                <th style="width: 100px;">Created At</th>
             </tr>
         </thead>
         <tbody>
             {% for e in employees %}
             <tr data-id="{{ e.employee_id }}" data-dbid="{{ e.id }}">
                 <td style="display:none;">{{ e.company_id }}</td> 
-                <td style="font-weight: 800; color: var(--accent); border-left: 4px solid var(--accent);">{{ e.employee_id }}</td>
-                <td style="font-weight: 600;">{{ e.employee_name }}</td>
+                <td style="font-weight: 700; color: var(--accent-blue); border-left: 3px solid var(--accent); text-align: left; padding-left: 8px;">{{ e.employee_id }}</td>
+                <td style="text-align: left;">{{ e.employee_name }}</td>
                 <td>
-                    <span style="padding: 4px 8px; border-radius: 4px; font-weight:700; font-size: 10px;
-                        background: {{ '#dcfce7' if e.status == 'ACTIVE' else '#fee2e2' }}; 
-                        color: {{ '#166534' if e.status == 'ACTIVE' else '#991b1b' }};">
+                    <span class="status-badge" style="background: {{ '#dcfce7' if e.status == 'ACTIVE' else '#fee2e2' }}; color: {{ '#166534' if e.status == 'ACTIVE' else '#991b1b' }};">
                         {{ e.status }}
                     </span>
                 </td>
                 <td>{{ e.designation }}</td>
                 <td>{{ e.department }}</td>
                 <td>{{ e.mobile }}</td>
-                <td>{{ e.official_email or '-' }}</td>
+                <td style="text-align: left;">{{ e.official_email or '-' }}</td>
                 <td>{{ e.employee_type }}</td>
                 <td>{{ e.joining_date }}</td>
                 <td>{{ e.location }}</td>
@@ -361,7 +336,7 @@
                 <td style="background:#fffdf5;">{{ e.conveyance_allowance }}</td>
                 <td style="background:#fffdf5;">{{ e.other_expenses }}</td>
                 <td style="background:#fffdf5;">{{ e.tds }}</td>
-                <td style="background:#f8fbff;">{{ e.bank_name }}</td>
+                <td style="background:#f8fbff; text-align: left;">{{ e.bank_name }}</td>
                 <td style="background:#f8fbff;">{{ e.account_number }}</td>
                 <td style="background:#f8fbff;">{{ e.ifsc_code }}</td>
                 <td style="background:#f8fbff;">{{ e.pan_number }}</td>
@@ -374,7 +349,7 @@
                 <td>{{ e.emergency_mobile }}</td>
                 <td>{{ e.resignation_date or '-' }}</td>
                 <td>{{ e.contractor_name or '-' }}</td>
-                <td style="font-size: 9px; color: var(--muted);">{{ e.created_at.strftime('%Y-%m-%d') if e.created_at else '-' }}</td>
+                <td style="font-size: 8.5px; color: var(--muted);">{{ e.created_at.strftime('%Y-%m-%d') if e.created_at else '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -400,7 +375,6 @@ function checkMessages() {
 function openForm() { modal.style.display = "block"; document.body.style.overflow = "hidden"; }
 function closeForm() { if ("{{ edit_data }}" !== "") { location.href = "/attendance/employee/register"; } else { modal.style.display = "none"; document.body.style.overflow = "auto"; } }
 
-// 💰 AUTO SALARY CALCULATION
 document.querySelectorAll('.sal-input').forEach(input => {
     input.addEventListener('input', () => {
         let total = 0;
@@ -409,7 +383,6 @@ document.querySelectorAll('.sal-input').forEach(input => {
     });
 });
 
-// 🖱️ ROW SELECTION
 document.querySelectorAll("#empTable tbody tr").forEach(row => {
     row.onclick = () => {
         document.querySelectorAll("#empTable tr").forEach(r => r.classList.remove("selected"));

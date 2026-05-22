@@ -3,100 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <title>Payroll Statutory Master | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-:root{
-  --primary:#0f172a;--accent:#2563eb;--border:#e5e7eb;
-  --bg:#f1f5f9;--success:#10b981
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:#1e293b}
-
-/* HEADER */
-.header{
-  background:#fff;padding:18px 32px;border-bottom:2px solid var(--primary);
-  display:flex;justify-content:space-between;align-items:center
-}
-.btn-add{
-  background:var(--primary);color:#fff;border:none;
-  padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer
+:root {
+ --primary-dark: #0f172a;
+ --accent-blue: #2563eb;
+ --border-color: #e2e8f0;
+ --border-ultra-light: #f1f5f9;
+ --slate-bg: #f8fafc;
+ --card-bg: #ffffff;
+ --text-main: #334155;
+ --text-muted: #64748b;
+ --success-green: #10b981;
+ --radius-premium: 8px;
 }
 
-/* MODAL */
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000}
-.modal-box{
-  background:#fff;width:96%;max-width:1200px;margin:20px auto;
-  border-radius:14px;max-height:92vh;overflow:auto;box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1)
-}
-.modal-header{
-  padding:16px 28px;border-bottom:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;
-  background:#f8fafc
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+ background: var(--slate-bg); height: 100vh;
+ display: flex; flex-direction: column; overflow: hidden; 
+ color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;
+ -webkit-font-smoothing: antialiased;
 }
 
-/* FORM STYLE */
-.form-body{padding:22px 28px}
-.section{
-  margin-bottom:22px;border:1px solid var(--border);
-  padding:16px;border-radius:12px;background:#fff
+/* ================= HEADER ================= */
+.header {
+  background: #fff; padding: 8px 15px; border-bottom: 1px solid var(--border-color);
+  display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;
 }
-.section-title{
-  font-size:12px;font-weight:800;color:var(--accent);
-  margin-bottom:14px;text-transform:uppercase;letter-spacing: 0.5px;
-}
-.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-@media(max-width:900px){.form-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.form-grid{grid-template-columns:1fr}}
-
-.field{display:flex;flex-direction:column;gap:6px}
-label{font-size:11px;font-weight:700;color:#64748b}
-input,select{
-  padding:10px;border:1px solid var(--border);
-  border-radius:8px;font-size:13px;outline: none;transition: border 0.2s;
-}
-input:focus, select:focus{ border-color: var(--accent); }
-input[readonly]{background:#f8fafc; cursor: not-allowed;}
-
-/* ACTIONS */
-.actions{
-  position:sticky;bottom:0;background:#f8fafc;
-  border-top:1px solid var(--border);
-  padding:14px 28px;display:flex;justify-content:flex-end;gap:10px
-}
-.btn-save{
-  background:var(--success);color:#fff;border:none;
-  padding:12px 34px;border-radius:10px;font-weight:800; cursor: pointer;
-}
-.btn-cancel{
-  background:#e2e8f0; color:#475569; border:none;
-  padding:12px 24px; border-radius:10px; font-weight:700; cursor: pointer;
+.header h2 { margin: 0; font-size: 11px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.04em; }
+.btn-add {
+  background: var(--primary-dark); color: #fff; border: none; padding: 6px 12px;
+  border-radius: 4px; font-size: 10.5px; font-weight: 700; cursor: pointer; text-transform: uppercase;
 }
 
-/* TABLE */
-.container{padding:22px}
-.table-wrap{
-  background:#fff;border-radius:14px;
-  border:1px solid var(--border);overflow:auto; height: 75vh;
+/* ================= MODAL & FORM ================= */
+#modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; backdrop-filter: blur(2px); }
+.modal-box {
+  background: #fff; width: 100%; height: 100vh; max-height: 100vh; overflow-y: auto; position: relative;
+  display: flex; flex-direction: column;
 }
-table{width:100%;border-collapse:collapse; min-width: 1000px;}
-thead th{
-  position:sticky;top:0;background:#f8fafc;z-index:2;
-  box-shadow: inset 0 -1px 0 var(--border);
+@media(min-width: 768px) {
+  .modal-box { width: 95%; max-width: 1100px; height: auto; max-height: 90vh; margin: 30px auto; border-radius: var(--radius-premium); }
 }
-th{
-  padding:14px;font-size:11px;font-weight:800;
-  text-transform:uppercase;border-bottom:1px solid var(--border); text-align: left;
+.modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--slate-bg); position: sticky; top: 0; z-index: 10; }
+.modal-header h3 { font-size: 12px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; }
+
+.form-body { padding: 12px; flex: 1; }
+.section-block { margin-bottom: 12px; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; background: #fff; }
+.section-title { font-size: 9px; font-weight: 800; color: var(--accent-blue); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media(min-width: 521px) and (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width: 901px) { .form-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.field { display: flex; flex-direction: column; gap: 3px; }
+label { font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+input, select { padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--primary-dark); border: 1px solid var(--border-color); border-radius: 4px; outline: none; background: var(--slate-bg); width: 100%; }
+input:focus, select:focus { border-color: var(--accent-blue); background: #fff; }
+input[readonly] { background: #f1f5f9; cursor: not-allowed; color: var(--text-muted); }
+
+.actions { position: fixed; bottom: 0; left: 0; right: 0; background: var(--slate-bg); border-top: 1px solid var(--border-color); padding: 10px 15px; display: flex; justify-content: flex-end; gap: 8px; z-index: 10; }
+@media(min-width: 768px) { .actions { position: sticky; } }
+.btn-save { background: var(--success-green); color: #fff; border: none; padding: 8px 20px; border-radius: 4px; font-weight: 800; font-size: 11px; cursor: pointer; text-transform: uppercase; }
+.btn-cancel { background: #e2e8f0; color: #475569; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; }
+
+/* ================= ULTRA COMPACT TABLE SYSTEMS ================= */
+.container { flex: 1; margin: 4px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+.table-wrap { flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1100px; }
+
+/* Column Width Matrix Allocation matching Floor style */
+.w-id { width: 75px; } .w-nm { width: 150px; } .w-dp { width: 110px; } .w-fm { width: 75px; }
+.w-st { width: 55px; } .w-un { width: 120px; } .w-pt { width: 65px; } .w-lw { width: 65px; } .w-ac { width: 50px; }
+
+thead th {
+    background: var(--slate-bg); padding: 6px 4px; font-size: 8px; font-weight: 700;
+    text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
 }
-td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
-.badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800; display: inline-block;}
-.yes{background:#dcfce7;color:#166534}
-.no{background:#fee2e2;color:#991b1b}
-.edit-btn{
-  background:var(--accent);color:#fff;border:none;
-  padding:8px 12px;border-radius:8px;font-size:12px;text-decoration: none;
+tbody td {
+    padding: 6px 4px; font-size: 9px; border-bottom: 1px solid var(--border-ultra-light);
+    border-right: 1px solid var(--border-ultra-light); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #1e293b;
 }
+tbody tr:hover { background: #f8fafc; cursor: pointer; }
+
+.badge { padding: 1px 4px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+.yes { background: #dcfce7; color: #166534; }
+.no { background: #fee2e2; color: #991b1b; }
+
+.edit-btn { background: var(--accent-blue); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; text-decoration: none; display: inline-flex; align-items: center; }
 </style>
 </head>
 
@@ -111,14 +115,14 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
 <div class="modal-box">
 <div class="modal-header">
   <h3 id="modalTitle">{{ 'Edit Statutory Configuration' if edit_data else 'Employee Statutory Setup' }}</h3>
-  <span onclick="closeModal()" style="cursor:pointer;font-size:24px; color: #94a3b8">&times;</span>
+  <span onclick="closeModal()" style="cursor:pointer;font-size:20px; color: var(--text-muted)">&times;</span>
 </div>
 
 <form id="statutoryForm" method="post"
  action="{% if edit_data %}/attendance/payroll/statutory/update/{{ edit_data.id }}{% else %}/attendance/payroll/statutory/save{% endif %}">
 <div class="form-body">
 
-<div class="section">
+<div class="section-block">
 <div class="section-title">Employee Information</div>
 <div class="form-grid">
   <div class="field">
@@ -127,28 +131,22 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
       <option value="">-- Loading... --</option>
     </select>
   </div>
-
   <div class="field">
     <label>Name</label>
-    <input name="employee_name" id="emp_name"
-     value="{{ edit_data.employee_name if edit_data else '' }}" readonly required>
+    <input name="employee_name" id="emp_name" value="{{ edit_data.employee_name if edit_data else '' }}" readonly required>
   </div>
-
   <div class="field">
     <label>Department</label>
-    <input name="department" id="emp_dept"
-     value="{{ edit_data.department if edit_data else '' }}" readonly>
+    <input name="department" id="emp_dept" value="{{ edit_data.department if edit_data else '' }}" readonly>
   </div>
-
   <div class="field">
     <label>Applicable From</label>
-    <input type="month" name="applicable_from" required
-     value="{{ edit_data.applicable_from.strftime('%Y-%m') if edit_data else '' }}">
+    <input type="month" name="applicable_from" required value="{{ edit_data.applicable_from.strftime('%Y-%m') if edit_data else '' }}">
   </div>
 </div>
 </div>
 
-<div class="section">
+<div class="section-block">
 <div class="section-title">PF Configuration</div>
 <div class="form-grid">
   <div class="field">
@@ -173,7 +171,7 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
 </div>
 </div>
 
-<div class="section">
+<div class="section-block">
 <div class="section-title">ESI Configuration</div>
 <div class="form-grid">
   <div class="field">
@@ -198,7 +196,7 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
 </div>
 </div>
 
-<div class="section">
+<div class="section-block">
 <div class="section-title">PT / LWF</div>
 <div class="form-grid">
   <div class="field">
@@ -241,30 +239,38 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
 <table>
 <thead>
 <tr>
-<th>Emp ID</th><th>Name</th><th>Dept</th><th>From</th>
-<th>PF</th><th>UAN</th><th>ESI</th><th>PT</th><th>LWF</th><th>Action</th>
+<th class="w-id">Emp ID</th>
+<th class="w-nm">Name</th>
+<th class="w-dp">Dept</th>
+<th class="w-fm">From</th>
+<th class="w-st">PF</th>
+<th class="w-un">UAN</th>
+<th class="w-st">ESI</th>
+<th class="w-pt">PT</th>
+<th class="w-lw">LWF</th>
+<th class="w-ac">Action</th>
 </tr>
 </thead>
 <tbody>
 {% if records %}
     {% for r in records %}
     <tr>
-    <td>{{ r.employee_id }}</td>
-    <td>{{ r.employee_name }}</td>
-    <td>{{ r.department or '-' }}</td>
+    <td style="color: var(--accent-blue); text-align: left; padding-left: 6px;">{{ r.employee_id }}</td>
+    <td style="text-align: left;">{{ r.employee_name }}</td>
+    <td style="text-align: left;">{{ r.department or '-' }}</td>
     <td>{{ r.applicable_from.strftime('%b-%Y') if r.applicable_from else '-' }}</td>
     <td><span class="badge {{ 'yes' if r.pf_applicable else 'no' }}">{{ 'YES' if r.pf_applicable else 'NO' }}</span></td>
-    <td>{{ r.uan_number or '-' }}</td>
+    <td style="text-align: left;">{{ r.uan_number or '-' }}</td>
     <td><span class="badge {{ 'yes' if r.esi_applicable else 'no' }}">{{ 'YES' if r.esi_applicable else 'NO' }}</span></td>
-    <td>{{ r.pt_amount }}</td>
-    <td>{{ r.lwf_employee_amount }}</td>
+    <td style="text-align: right; padding-right: 8px;">{{ r.pt_amount }}</td>
+    <td style="text-align: right; padding-right: 8px;">{{ r.lwf_employee_amount }}</td>
     <td>
     <a href="/attendance/tax-master/edit/{{ r.id }}" class="edit-btn"><i class="fa-solid fa-pen-to-square"></i></a>
     </td>
     </tr>
     {% endfor %}
 {% else %}
-    <tr><td colspan="10" style="text-align: center; padding: 40px; color: #94a3b8;">No statutory configurations found.</td></tr>
+    <tr><td colspan="10" style="text-align: center; padding: 30px; color: var(--text-muted);">No statutory configurations found.</td></tr>
 {% endif %}
 </tbody>
 </table>
@@ -274,7 +280,6 @@ td{padding:13px;font-size:13px;border-bottom:1px solid #f1f5f9}
 <script>
 let globalEmployees = [];
 
-// 1. Initial Load
 document.addEventListener('DOMContentLoaded', function() {
     fetchEmployees();
     {% if edit_data %}
@@ -282,12 +287,9 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endif %}
 });
 
-// 2. Fetch Employees (Using Absolute path to avoid 404 in edit mode)
 async function fetchEmployees() {
     try {
-        // Absolute path fix: always points to /attendance/api/employees
         const response = await fetch('/attendance/api/employees'); 
-        
         if (!response.ok) throw new Error(`Status: ${response.status}`);
 
         globalEmployees = await response.json();
@@ -310,7 +312,6 @@ async function fetchEmployees() {
     }
 }
 
-// 3. Auto-fill fields
 function handleEmployeeChange() {
     const empId = document.getElementById('emp_select').value;
     const emp = globalEmployees.find(e => e.employee_id == empId);
@@ -335,7 +336,6 @@ function openNew() {
 
 function closeModal() {
     document.getElementById("modal").style.display = "none";
-    // Fix for 404: always go back to base list page
     window.location.href = "/attendance/tax-master";
 }
 </script>
