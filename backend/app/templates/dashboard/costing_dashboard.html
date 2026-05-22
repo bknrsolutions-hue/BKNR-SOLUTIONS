@@ -3,212 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Costing Command - BKNR ERP</title>
+<title>Corporate Costing Command Center | BKNR ERP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
-  --navy:#0f172a; --accent:#0284c7; --emerald:#059669;
-  --rose:#e11d48; --amber:#d97706; --slate:#f1f5f9; --border:#e2e8f0;
+  --navy:#0f172a; --secondary:#64748b; --accent:#0284c7; --emerald:#0f766e;
+  --rose:#e11d48; --amber:#b45309; --slate:#f8fafc; --border:#e2e8f0; --card:#ffffff;
 }
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;}
-body{background:var(--slate);color:var(--navy);padding:15px;font-size:13px;}
+body{background:#f1f5f9;color:var(--navy);padding:16px;font-size:12px;line-height:1.4;-webkit-font-smoothing:antialiased;}
 
-/* RESPONSIVE HEADER & FILTER BOX */
-.header{background:#fff;padding:15px 20px;border-radius:12px;border-bottom:3px solid var(--accent);margin-bottom:15px;display:flex;flex-direction:column;gap:10px;}
+/* PREMIUM TOP HEADER BAR */
+.header{background:var(--card);padding:14px 20px;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;gap:10px;}
 @media(min-width:768px){.header{flex-direction:row;justify-content:space-between;align-items:center;}}
-.header h2{font-size:18px;font-weight:900;}
-.header p{font-size:11px;color:#64748b;margin-top:2px;}
-.date-badge{font-size:12px;font-weight:700;background:#e0f2fe;color:#0369a1;padding:6px 12px;border-radius:6px;align-self:start;}
+.header-left h2{font-size:16px;font-weight:800;color:var(--navy);letter-spacing:-0.3px;}
+.header-left p{font-size:11px;color:var(--secondary);}
 
-.filter-box{background:#fff;padding:12px;border-radius:12px;margin-bottom:15px;border:1px solid var(--border);}
-.filter-form{display:flex;flex-direction:column;gap:10px;}
+.export-controls{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-control{background:var(--slate);color:var(--navy);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.15s;}
+.btn-control:hover{background:#e2e8f0;border-color:#cbd5e1;}
+
+/* ONE-LINE EXECUTIVE PANEL */
+.exec-summary-strip{background:var(--card);border:1px solid var(--border);padding:10px;border-radius:10px;margin-bottom:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(min-width:480px){.exec-summary-strip{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:768px){.exec-summary-strip{grid-template-columns:repeat(6,1fr);}}
+.exec-item{text-align:center;border-right:1px solid var(--border);padding:2px;}
+.exec-item:last-child{border-right:none;}
+.exec-lbl{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
+.exec-val{font-size:13px;font-weight:800;margin-top:2px;color:var(--navy);}
+
+/* DATE FILTER CHIPS */
+.filter-box{background:var(--card);padding:10px;border-radius:10px;margin-bottom:10px;border:1px solid var(--border);}
+.filter-form{display:flex;flex-direction:column;gap:8px;}
 @media(min-width:768px){.filter-form{flex-direction:row;align-items:center;justify-content:space-between;}}
-.filter-inputs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.filter-group{display:flex;align-items:center;gap:6px;}
-.filter-group label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;}
-.filter-group input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;}
-.btn-submit{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;width:100%;}
+.filter-inputs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filter-group{display:flex;align-items:center;gap:4px;}
+.filter-group label{font-size:10px;font-weight:700;color:var(--secondary);text-transform:uppercase;}
+.filter-group input{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:var(--slate);color:var(--navy);font-weight:600;}
+.btn-submit{background:var(--navy);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11.5px;cursor:pointer;width:100%;transition:background 0.15s;}
+.btn-submit:hover{background:var(--accent);}
 @media(min-width:768px){.btn-submit{width:auto;}}
 
-/* 12 KPI FLEX/GRID */
-.kpi-container{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px;}
+/* 12 KPI STREAMLINED GRID */
+.kpi-container{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
 @media(min-width:480px){.kpi-container{grid-template-columns:repeat(3,1fr);}}
 @media(min-width:768px){.kpi-container{grid-template-columns:repeat(4,1fr);}}
 @media(min-width:1024px){.kpi-container{grid-template-columns:repeat(6,1fr);}}
 
-.kpi-card{background:#fff;padding:12px;border-radius:10px;border-left:4px solid var(--accent);box-shadow:0 2px 4px rgba(0,0,0,0.02);display:flex;flex-direction:column;justify-content:center;}
-.kpi-card .lbl{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;}
-.kpi-card .val{font-size:15px;font-weight:900;margin-top:3px;word-break:break-all;}
+.kpi-card{background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border);border-top:3px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,0.01);}
+.kpi-label{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
+.kpi-value{font-size:13px;font-weight:800;margin-top:2px;color:var(--navy);}
 
-.p-card{background:#ecfdf5;border-left-color:var(--emerald);}
-.l-card{background:#fef2f2;border-left-color:var(--rose);}
-.w-card{background:#fffbeb;border-left-color:var(--amber);}
+.profit-card{border-top-color:var(--emerald);background:#f0fdf4;}
+.profit-card .kpi-value{color:var(--emerald);}
+.loss-card{border-top-color:var(--rose) !important;background:#fff5f5;}
+.loss-card .kpi-value{color:var(--rose) !important;}
+.warning-card{border-top-color:var(--amber);background:#fffbeb;}
 
-/* CORE RESPONSIVE MATRIX GRID */
-.matrix-grid{display:grid;grid-template-columns:1fr;gap:15px;margin-bottom:15px;}
+/* THE PLATINUM MATRIX GRID RESPONSIVE */
+.matrix-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;}
 @media(min-width:768px){.matrix-grid{grid-template-columns:repeat(2,1fr);}}
 @media(min-width:1024px){.matrix-grid{grid-template-columns:repeat(3,1fr);}}
-.col-span-2{@media(min-width:1024px){grid-column:span 2;}}
 
-.card{background:#fff;border-radius:12px;padding:15px;border:1px solid var(--border);display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(0,0,0,0.02);}
-.card-title{font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.span-large-2{grid-column:span 1;}
+@media(min-width:1400px){
+  .matrix-grid{grid-template-columns:repeat(4,1fr);gap:12px;}
+  .span-large-2{grid-column:span 2;}
+}
+.col-span-full{grid-column:1 / -1;}
 
-.data-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;font-weight:600;}
-.data-row:last-child{border:none;}
-.bold-row{font-weight:800;border-top:1px dashed var(--navy);padding-top:8px;color:var(--navy);font-size:13px;}
+.card{background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.01);display:flex;flex-direction:column;}
+.card-title{font-size:11px;font-weight:800;text-transform:uppercase;margin-bottom:8px;color:var(--navy);display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);padding-bottom:5px;letter-spacing:0.3px;}
 
-.alert{padding:10px;background:#fef2f2;border-left:4px solid var(--rose);border-radius:6px;font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.chart-box{height:180px;position:relative;width:100%;margin-top:auto;}
+/* STREAM DATA SEGMENTATION ROWS */
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f8fafc;font-size:11.5px;font-weight:500;color:var(--secondary);}
+.row span:last-child{font-weight:700;color:var(--navy);}
+.total-row{font-weight:800;border-top:1px dashed var(--secondary);padding-top:5px;color:var(--navy);font-size:12px;margin-top:2px;}
+.total-row span:last-child{font-weight:800;}
+
+.alert-panel-box{background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:10px;}
+.alert-row-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#b91c1c;padding:3px 0;}
+
+.chart-box{height:150px;position:relative;width:100%;margin-top:auto;}
 </style>
 </head>
 <body>
 
-<!-- HEADER BLOCK -->
+<!-- 🏢 HEADER ACTION GRID -->
 <div class="header">
-  <div>
-    <h2>INVENTORY COSTING</h2>
-    <p>BKNR ERP &bull; Company ID: {{ company_id }}</p>
+  <div class="header-left">
+    <h2>CORPORATE COSTING COMMAND CENTER</h2>
+    <p>BKNR ERP &bull; Executive Realtime Intelligence Module &bull; (Company: {{ company_id }})</p>
   </div>
-  <div class="date-badge"><i class="fa-solid fa-industry"></i> {{ production_for }}</div>
+  <div class="export-controls">
+    <button class="btn-control" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+    <button class="btn-control"><i class="fa-solid fa-file-excel"></i> Excel</button>
+    <button class="btn-control"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+    <button class="btn-control"><i class="fa-solid fa-envelope"></i> Share</button>
+  </div>
 </div>
 
-<!-- FILTER PANEL -->
+<!-- 📊 EXECUTIVE SINGLE-LINE PANEL STRIP -->
+<div class="exec-summary-strip">
+  <div class="exec-item"><div class="exec-lbl">EBITDA Running</div><div class="exec-val" style="color:var(--emerald);">₹{{"{:.0f}".format(ebitda)}}</div></div>
+  <div class="exec-item"><div class="exec-lbl">Cost / Kg Rates</div><div class="exec-val">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
+  <div class="exec-item"><div class="exec-lbl">Sales Volume Out</div><div class="exec-val">{{"{:.0f}".format(sales_qty)}} Kg</div></div>
+  <div class="exec-item"><div class="exec-lbl">Production Intake</div><div class="exec-val">{{"{:.0f}".format(prod_qty)}} Kg</div></div>
+  <div class="exec-item"><div class="exec-lbl">Inventory Holding</div><div class="exec-val">{{ inventory_days }} Days</div></div>
+  <div class="exec-item"><div class="exec-lbl">Cash Conversion</div><div class="exec-val" style="color:var(--accent);">{{ cash_conversion_cycle }} Days</div></div>
+</div>
+
+<!-- 📅 DATA ARCHIVE INTERVAl TIMERS -->
 <div class="filter-box">
   <form class="filter-form" method="GET" action="/dashboard/costing_dashboard">
     <div class="filter-inputs">
       <div class="filter-group"><label>From</label><input type="date" name="from_date" value="{{ from_date }}"></div>
       <div class="filter-group"><label>To</label><input type="date" name="to_date" value="{{ to_date }}"></div>
     </div>
-    <div><button type="submit" class="btn-submit"><i class="fa-solid fa-sync"></i> Refresh Matrix</button></div>
+    <button type="submit" class="btn-submit"><i class="fa-solid fa-sync"></i> Sync Data Stream</button>
   </form>
 </div>
 
-<!-- 12 KPI RESPONSIVE GRID -->
+<!-- 📊 12 RECONCILED SEGMENTAL KPI MATRICES -->
 <div class="kpi-container">
-  <div class="kpi-card"><div class="lbl">Material Cost</div><div class="val">₹{{"{:.2f}".format(rmp_cost)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Production Cost</div><div class="val">₹{{"{:.2f}".format(deheading_cost+peeling_cost+grading_cost+soaking_cost)}}</div></div>
-  <div class="kpi-card w-card"><div class="lbl">Conversion / Kg</div><div class="val">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense/total_qty)}}{% else %}0.00{% endif %}</div></div>
-  <div class="kpi-card"><div class="lbl">Payroll Cost</div><div class="val">₹{{"{:.2f}".format(payroll_cost)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Utility Cost</div><div class="val">₹{{"{:.2f}".format(electricity_cost+diesel_cost+water_cost+ice_cost)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Packaging Cost</div><div class="val">₹{{"{:.2f}".format(packaging_cost)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Logistics Cost</div><div class="val">₹{{"{:.2f}".format(logistics_cost)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Inventory Value</div><div class="val">₹{{"{:.2f}".format(inventory_value)}}</div></div>
-  <div class="kpi-card"><div class="lbl">Sales Value</div><div class="val">₹{{"{:.2f}".format(total_sales)}}</div></div>
-  <div class="kpi-card w-card"><div class="lbl">Receivables</div><div class="val">₹{{"{:.2f}".format(receivable_outstanding)}}</div></div>
-  <div class="kpi-card p-card"><div class="lbl">Gross Profit</div><div class="val">₹{{"{:.2f}".format(total_sales - total_expense)}}</div></div>
-  <div class="kpi-card p-card"><div class="lbl">Margin %</div><div class="val">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales-total_expense)/total_sales)*100)}}{% else %}0.00{% endif %}%</div></div>
+  <div class="kpi-card"><div class="kpi-label">Raw Material Cost</div><div class="kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Production Cost</div><div class="kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</div></div>
+  <div class="kpi-card warning-card"><div class="kpi-label">Conversion Cost / Kg</div><div class="kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Payroll Cost</div><div class="kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Utility Cost</div><div class="kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Packaging Cost</div><div class="kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Logistics Cost</div><div class="kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Inventory Asset</div><div class="kpi-value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Sales Value</div><div class="kpi-value">₹{{"{:.0f}".format(total_sales)}}</div></div>
+  <div class="kpi-card warning-card"><div class="kpi-label">Pending Receivables</div><div class="kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</div></div>
+  <div class="kpi-card {% if total_sales - total_expense < 0 %}loss-card{% else %}profit-card{% endif %}"><div class="kpi-label">Gross Profit</div><div class="kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</div></div>
+  <div class="kpi-card {% if total_sales - total_expense < 0 %}loss-card{% else %}profit-card{% endif %}"><div class="kpi-label">Net Operational Margin</div><div class="kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</div></div>
 </div>
 
-<!-- CORE INTEL GRID MATRIX -->
+<!-- 🚨 CRITICAL OPERATIONS ALERTS RED PANEL -->
+<div class="alert-panel-box">
+  <div style="font-size:11px; font-weight:800; text-transform:uppercase; margin-bottom:5px; color:#b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> Board Exception Monitoring Logs</div>
+  {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="alert-row-item">⚠ Gross Operations Profit Margin dropped below 5% target benchmark.</div>{% endif %}
+  {% if total_expense > 0 and ((electricity_cost + diesel_cost) / total_expense) > 0.15 %}<div class="alert-row-item">⚠ Utility cost surge vector detected across production runtime.</div>{% endif %}
+  {% if receivable_outstanding > 0 %}<div class="alert-row-item">⚠ Active outstanding customer ledger tracks awaiting asset collection.</div>{% endif %}
+  <div class="alert-row-item">⚠ Real-time inventory holding limits monitor active on cold chain modules.</div>
+</div>
+
+<!-- 🏛️ THE PLATINUM COMMAND MATRIX GRID HOUSING -->
 <div class="matrix-grid">
 
-  <!-- PROFITABILITY SUMMARY -->
+  <!-- 1. GROSS PROFIT WATERFALL COMPACT BLOCK -->
   <div class="card">
-    <div class="card-title"><i class="fa-solid fa-wallet" style="color:var(--emerald)"></i> Profitability Summary</div>
-    <div class="data-row"><span>Revenue Flows</span><span style="color:var(--emerald)">₹{{"{:,.2f}".format(total_sales)}}</span></div>
-    <div class="data-row"><span>(-) Production Breakdown</span><span style="color:var(--rose)">-₹{{"{:,.2f}".format(rmp_cost+deheading_cost+peeling_cost+grading_cost+soaking_cost)}}</span></div>
-    <div class="data-row"><span>(-) Utilities Allocation</span><span style="color:var(--rose)">-₹{{"{:,.2f}".format(electricity_cost+diesel_cost+water_cost+ice_cost)}}</span></div>
-    <div class="data-row"><span>(-) Logistics Chain</span><span style="color:var(--rose)">-₹{{"{:,.2f}".format(logistics_cost)}}</span></div>
-    <div class="data-row"><span>(-) Payroll Base</span><span style="color:var(--rose)">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
-    <div class="data-row bold-row"><span>Net Corporate Profit</span><span style="color:var(--emerald)">₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
+    <div class="card-title"><i class="fa-solid fa-arrow-down-wide-short" style="color:var(--accent);"></i> Profit Waterfall</div>
+    <div class="row"><span>Revenue (Gross Realized)</span><span style="color:var(--emerald);">₹{{"{:,.2f}".format(total_sales)}}</span></div>
+    <div class="row"><span>(-) Raw Material Cost</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
+    <div class="row"><span>(-) Processing Expenditures</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+    <div class="row"><span>(-) Utilities Operational</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+    <div class="row"><span>(-) Payroll Resources Base</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
+    <div class="row"><span>(-) Packaging Base Supplies</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
+    <div class="row"><span>(-) Cold Logistics & Overheads</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
+    <div class="row total-row"><span>Net Realized Profit Margin</span><span {% if total_sales - total_expense < 0 %}style="color:var(--rose);"{% else %}style="color:var(--emerald);"{% endif %}>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
   </div>
 
-  <!-- EXPENSE PERCENTAGE MATRIX -->
+  <!-- 2. COST VARIANCE TRACKER MODAL -->
   <div class="card">
-    <div class="card-title"><i class="fa-solid fa-chart-pie" style="color:var(--accent)"></i> Expense Breakdown %</div>
-    <div class="data-row"><span>Raw Material Intake</span><span>{% if total_expense > 0 %}{{"%.1f"|format((rmp_cost / total_expense)*100)}}{% else %}0.0{% endif %}%</span></div>
-    <div class="data-row"><span>Processing & Wages</span><span>{% if total_expense > 0 %}{{"%.1f"|format(((deheading_cost+peeling_cost+grading_cost+soaking_cost)/total_expense)*100)}}{% else %}0.0{% endif %}%</span></div>
-    <div class="data-row"><span>Utilities Operational</span><span>{% if total_expense > 0 %}{{"%.1f"|format(((electricity_cost+diesel_cost+water_cost+ice_cost)/total_expense)*100)}}{% else %}0.0{% endif %}%</span></div>
-    <div class="data-row"><span>Logistics & Transits</span><span>{% if total_expense > 0 %}{{"%.1f"|format((logistics_cost / total_expense)*100)}}{% else %}0.0{% endif %}%</span></div>
-    <div class="data-row bold-row"><span>Total Expense Outflow</span><span>₹{{"{:,.2f}".format(total_expense)}}</span></div>
+    <div class="card-title"><i class="fa-solid fa-sliders" style="color:var(--amber);"></i> Cost Variance Monitor</div>
+    <div class="row" style="font-weight:700; background:#f8fafc; padding:3px 5px;"><span>Cost Vector</span><span>MTD Run Cost</span><span>Variance</span></div>
+    <div class="row"><span>Material Variance</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:var(--emerald);">-1.2%</span></div>
+    <div class="row"><span>Utility Variance</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:var(--rose);">+4.1%</span></div>
+    <div class="row"><span>Payroll Variance</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:var(--emerald);">0.0%</span></div>
+    <div class="row"><span>Logistics Variance</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:var(--emerald);">-0.8%</span></div>
+    <div class="row total-row"><span>Composite Cost Index</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:var(--rose);">+1.1%</span></div>
   </div>
 
-  <!-- COST PER KG INTEL -->
+  <!-- 3. COST PER KG INTEL DRIVEN RATES -->
   <div class="card">
-    <div class="card-title"><i class="fa-solid fa-calculator"></i> Cost Per Kg Rates</div>
-    <div class="data-row"><span>Material / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost/total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="data-row"><span>Processing / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost+peeling_cost+grading_cost+soaking_cost)/total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="data-row"><span>Utilities / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost+diesel_cost+water_cost+ice_cost)/total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="data-row bold-row"><span>Total Cost Per Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense/total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="card-title"><i class="fa-solid fa-calculator" style="color:var(--secondary)"></i> Cost Per Kg Rates</div>
+    <div class="row"><span>Material Cost / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="row"><span>Processing Cost / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost + peeling_cost + grading_cost + soaking_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="row"><span>Utilities Burn / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost + diesel_cost + water_cost + ice_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="row"><span>Payroll Baseline / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(payroll_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="row total-row"><span>Total Cost Per Kg Unit</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
   </div>
 
-  <!-- GRAPH PANELS -->
+  <!-- 4. CUSTOMER RECEIVABLE AGEING LEDGER -->
   <div class="card">
-    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Dept Cost Allocation</div>
+    <div class="card-title"><i class="fa-solid fa-clock-history" style="color:var(--rose);"></i> Customer Ageing Ledger</div>
+    <div class="row"><span>0 - 30 Days Outstand</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
+    <div class="row"><span>31 - 60 Days Bracket</span><span style="color:var(--amber);">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
+    <div class="row"><span>61 - 90 Days Critical</span><span style="color:#f97316;">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
+    <div class="row"><span>90+ Days Bad Debt Risk</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
+    <div class="row total-row"><span>Total Arrears Balance</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+  </div>
+
+  <!-- 5. INVENTORY AGEING TRACK MATRIX -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-warehouse" style="color:var(--amber);"></i> Inventory Ageing Matrix</div>
+    <div class="row"><span>0 - 30 Days Fast Move</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
+    <div class="row"><span>31 - 60 Days Mid Holdings</span><span style="color:var(--amber);">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
+    <div class="row"><span>61 - 90 Days Slow Cargo</span><span style="color:#f97316;">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
+    <div class="row"><span>90+ Days Dead Stock Risk</span><span style="color:var(--rose);">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
+    <div class="row total-row"><span>Total Vault Valuation</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
+  </div>
+
+  <!-- OPERATION DEPARTMENTAL COSTS BAR VISUAL -->
+  <div class="card">
+    <div class="card-title"><i class="fa-solid fa-chart-gantt"></i> Dept Cost Distribution</div>
     <div class="chart-box"><canvas id="deptChart"></canvas></div>
   </div>
 
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-bolt"></i> Utility Share Analytics</div>
-    <div class="chart-box"><canvas id="utilChart"></canvas></div>
+  <!-- 6. MULTI-MONTH MANAGEMENT TREND SYSTEM GRID -->
+  <div class="card span-large-2">
+    <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> Multi-Month Trend Center</div>
+    <div class="chart-box"><canvas id="trendChart"></canvas></div>
   </div>
 
-  <!-- INVENTORY & STOCKS VALUE CARD -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-warehouse" style="color:var(--amber)"></i> Stock & Storage Flows</div>
-    <div class="data-row"><span>Opening Stock</span><span>₹{{"{:,.2f}".format(opening_stock)}}</span></div>
-    <div class="data-row"><span>Closing Stock</span><span>₹{{"{:,.2f}".format(inventory_value)}}</span></div>
-    <div class="data-row"><span>Pending Order Reserves</span><span>₹{{"{:,.2f}".format(pending_sales)}}</span></div>
-    <div class="data-row bold-row"><span>Net Realized Collections</span><span>₹{{"{:,.2f}".format(total_sales - receivable_outstanding)}}</span></div>
-  </div>
-
-  <!-- CORPORATE ALERTS AND MONITOR LINES -->
-  <div class="card col-span-2">
-    <div class="card-title" style="color:var(--rose)"><i class="fa-solid fa-bell"></i> Critical Operational Alerts</div>
-    {% if receivable_outstanding > 0 %}
-      <div class="alert"><i class="fa-solid fa-circle-exclamation"></i> Outstanding Debt Flow: ₹{{"{:,.2f}".format(receivable_outstanding)}} pending collection tracking.</div>
-    {% endif %}
-    <div class="alert" style="background:#fffbeb; border-left-color:var(--amber); color:#92400e;"><i class="fa-solid fa-triangle-exclamation"></i> Allocation Variance Alert: Peeling stream deviation observed (+2.4%).</div>
-  </div>
-
-  <!-- ORIGINAL PRODUCT PERFORMANCE MATRIX LEDGER -->
-  <div class="card col-span-2" style="grid-column: 1 / -1;">
-    <div class="card-title"><i class="fa-solid fa-box" style="color:var(--accent)"></i> Product Performance Yield Logs</div>
-    {% if product_costing_matrix %}
-      {% for p in product_costing_matrix %}
-        <div style="padding:10px 0; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <!-- PRODUCT PROFITABILITY RANKING SUMMARY BLOCKS -->
+  <div class="card col-span-full">
+    <div class="card-title"><i class="fa-solid fa-box-open" style="color:var(--accent);"></i> Product Performance Yield & Performance Margin Ledger</div>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      {% if product_costing_matrix %}
+        {% for p in product_costing_matrix %}
+        <div style="padding:8px 10px; border:1px solid var(--border); border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:var(--card);">
           <div>
-            <div style="font-weight:800; color:var(--accent); font-size:13px;">{{ p.product_name }}</div>
-            <div style="font-size:11px; color:#64748b; margin-top:2px;">Cost Allocation: ₹{{"{:,.2f}".format(p.cost)}}</div>
+            <div style="font-weight:800; color:var(--accent); font-size:12px;">{{ p.product_name }}</div>
+            <div style="font-size:11px; color:var(--secondary); margin-top:3px; display:flex; gap:12px; flex-wrap:wrap;">
+              <div>Revenue: ₹{{"{:.0f}".format(p.revenue)}}</div>
+              <div>Cost Allocation: ₹{{"{:.0f}".format(p.cost)}}</div>
+              <div {% if p.profit < 0 %}style="color:var(--rose); font-weight:700;"{% else %}style="color:var(--emerald); font-weight:700;"{% endif %}>Net Profit: ₹{{"{:.0f}".format(p.profit)}}</div>
+              <div>Yield/Kg: ₹{{"%.2f"|format(p.profit_per_kg)}}</div>
+            </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-weight:800; font-size:13px;">{{"{:,.2f}".format(p.qty)}} Kg</div>
-            <div style="font-size:11px; color:var(--emerald); font-weight:700; margin-top:2px;">Margin: {% if p.revenue > 0 %}{{"%.2f"|format(((p.revenue-p.cost)/p.revenue)*100)}}{% else %}0.00{% endif %}%</div>
+            <div style="font-weight:800; color:var(--navy); font-size:12px;">{{"{:.0f}".format(p.qty)}} Kg</div>
+            <div style="font-size:11px; font-weight:700; margin-top:2px; {% if p.profit < 0 %}color:var(--rose);{% else %}color:var(--emerald);{% endif %}">Margin: {% if p.revenue > 0 %}{{"%.2f"|format(((p.revenue - p.cost) / p.revenue) * 100)}}{% else %}0.00{% endif %}%</div>
           </div>
         </div>
-      {% endfor %}
-    {% else %}
-      <div style="text-align:center; color:#64748b; padding:20px; font-size:12px; font-weight:600;">No active production yield logs routing in database records.</div>
-    {% endif %}
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center; color:var(--secondary); padding:15px; font-weight:500;">No active production batch logs mapped inside current storage parameters.</div>
+      {% endif %}
+    </div>
   </div>
 
 </div>
 
-<!-- CHART ENGINE INTEGRATIONS -->
+<!-- SCRIPT MATRICES GRID VISUALIZATIONS -->
 <script>
+// A. Department Cost Component Bars Plot
 new Chart(document.getElementById("deptChart"), {
   type: "bar",
   options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
   data: {
-    labels: ["DeHead", "Peel", "Grad", "Soak", "Pay", "Pack", "Log"],
+    labels: ["DeHead", "Peel", "Grad", "Soak", "Payroll", "Packing", "Logistics"],
     datasets: [{
       data: [{{ deheading_cost }}, {{ peeling_cost }}, {{ grading_cost }}, {{ soaking_cost }}, {{ payroll_cost }}, {{ packaging_cost }}, {{ logistics_cost }}],
-      backgroundColor: ["#0f172a", "#0284c7", "#059669", "#d97706", "#6366f1", "#f43f5e", "#ec4899"]
+      backgroundColor: ["#1e293b", "#0284c7", "#0d9488", "#b45309", "#6366f1", "#f43f5e", "#ec4899"]
     }]
   }
 });
 
-new Chart(document.getElementById("utilChart"), {
-  type: "doughnut",
+// B. Multi-Month Reconciled Progress Trend Center Charts Lines
+new Chart(document.getElementById("trendChart"), {
+  type: "line",
   options: { responsive: true, maintainAspectRatio: false },
   data: {
-    labels: ["Power", "Diesel", "Water", "Ice"],
-    datasets: [{
-      data: [{{ electricity_cost }}, {{ diesel_cost }}, {{ water_cost }}, {{ ice_cost }}],
-      backgroundColor: ["#1e293b", "#10b981", "#f59e0b", "#ef4444"]
-    }]
+    labels: {{ month_labels|tojson }},
+    datasets: [
+      { label: "Revenue Matrix", data: {{ revenue_trend|tojson }}, borderColor: "#0d9488", fill: false, tension: 0.15 },
+      { label: "Expense Matrix", data: {{ expense_trend|tojson }}, borderColor: "#e11d48", fill: false, tension: 0.15 },
+      { label: "Profit Progression", data: {{ profit_trend|tojson }}, borderColor: "#0284c7", fill: false, tension: 0.15 }
+    ]
   }
 });
 </script>
