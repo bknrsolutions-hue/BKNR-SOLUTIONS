@@ -1,461 +1,689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gate Entry & Inventory Ledger - BKNR ERP</title>
-    <!-- Inter Font & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Premium HR Command Center | BKNR ERP</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root {
+    --primary-dark: #0f172a;
+    --slate-bg: #f1f5f9; 
+    --card-bg: #ffffff;
+    --accent-blue: #1d4ed8;
+    --border-color: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --radius-premium: 12px;
+    --radius-md: 8px;
     
-    <style>
-        :root {
-            --primary-color: #0f172a;
-            --secondary-color: #1e293b;
-            --accent-color: #2563eb;
-            --bg-light: #f8fafc;
-            --border-color: #cbd5e1;
-            --text-dark: #334155;
-            --text-muted: #64748b;
-            --white: #ffffff;
-        }
+    /* State Assets */
+    --emerald: #0d9488;
+    --emerald-light: #f0fdf4;
+    --rose: #e11d48;
+    --rose-light: #fff1f2;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --indigo: #4f46e5;
+    --indigo-light: #eef2ff;
+  }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: var(--slate-bg);
+    color: var(--text-main); 
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    padding: 12px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
 
-        body {
-            background-color: var(--bg-light);
-            color: var(--text-dark);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+  .dashboard-container { 
+    width: 100%; 
+    max-width: 1600px;
+    margin: 0 auto; 
+  }
+  @media(min-width: 768px) { body { padding: 16px; } }
 
-        /* Sidebar Design */
-        .sidebar {
-            width: 260px;
-            background-color: var(--primary-color);
-            color: var(--white);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            flex-shrink: 0;
-        }
+  /* ULTRA-COMPACT HEADER */
+  .header-panel {
+    background: var(--card-bg);
+    padding: 14px 20px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-        .sidebar .brand {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--white);
-        }
+  .header-title h2 {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    text-transform: uppercase;
+  }
 
-        .sidebar .menu-item {
-            padding: 12px 15px;
-            color: #94a3b8;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
+  .header-title p {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
 
-        .sidebar .menu-item:hover, .sidebar .menu-item.active {
-            background-color: var(--secondary-color);
-            color: var(--white);
-        }
+  .date-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--slate-bg);
+    color: var(--accent-blue);
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+  }
 
-        /* Main Content Frame */
-        .main-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+  /* RISK COMPLIANCE REGISTRY */
+  .alert-box {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    padding: 12px 16px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    border: 1px solid #fecaca;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+    width: 100%;
+  }
+  .alert-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--rose);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #fecaca;
+    padding-bottom: 6px;
+  }
+  .alert-item {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    color: #991b1b;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(225, 29, 72, 0.05);
+  }
+  .alert-item:last-child { border-bottom: none; }
 
-        /* Top Navigation Header */
-        .header {
-            background-color: var(--white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
+  /* STRUCTURED REFERENCE KPI GRID (12 SYSTEM METRICS) */
+  .kpi-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  @media(min-width:480px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width:768px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+  @media(min-width:1024px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
 
-        .header h1 {
-            font-size: 22px;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
+  .ref-kpi-card {
+    padding: 14px 14px; 
+    border-radius: var(--radius-premium); 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+    border: 1px solid #e2e8f0;
+  }
+  .ref-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+  }
 
-        .company-badge {
-            background-color: #e2e8f0;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--secondary-color);
-        }
+  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .ref-kpi-value { font-size: 19px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
 
-        /* View Area Content */
-        .content-container {
-            padding: 25px 30px;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
+  /* Premium Gradients for Specific Logic States */
+  .profit-card { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important; border: 1px solid #bbf7d0 !important; }
+  .profit-card .ref-kpi-value { color: #16a34a !important; }
+  
+  .loss-card { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border: 1px solid #fecaca !important; }
+  .loss-card .ref-kpi-value { color: #e11d48 !important; }
+  
+  .warning-card { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important; border: 1px solid #ffd8a8 !important; }
+  .warning-card .ref-kpi-value { color: #ea580c !important; }
 
-        /* Filter Controls Grid */
-        .filters-panel {
-            background-color: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            align-items: flex-end;
-        }
+  /* CORE LAYOUT GRID */
+  .core-layout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media(min-width:768px){.core-layout-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }}
+  @media(min-width:1024px){.core-layout-grid { grid-template-columns: repeat(3, 1fr); }}
+  @media(min-width:1400px){.core-layout-grid { grid-template-columns: repeat(4, 1fr); }}
+  @media(min-width:1400px){.span-large-2 { grid-column: span 2; }}
+  @media(min-width:768px){.col-span-full { grid-column: 1 / -1; }}
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+  .section-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-premium);
+    padding: 16px 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+  }
 
-        .form-group label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
+  .section-header {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-main);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+  }
 
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--text-dark);
-            outline: none;
-            background-color: var(--white);
-        }
+  /* HIGHLY COMPACT BORDERLESS ROWS */
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .data-row:nth-child(even) { background: #f8fafc; }
+  .data-row span:first-child { color: var(--text-muted); font-weight: 600; }
+  .data-row span:last-child { font-weight: 700; color: var(--text-main); }
 
-        .form-control:focus {
-            border-color: var(--accent-color);
-        }
+  .anchor-total-row {
+    font-weight: 800;
+    background: var(--primary-dark) !important;
+    color: #fff !important;
+    margin-top: auto;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border-bottom: none;
+    font-size: 11px;
+  }
+  .anchor-total-row span { color: #fff !important; }
 
-        .btn-primary {
-            background-color: var(--accent-color);
-            color: var(--white);
-            border: none;
-            padding: 11px 20px;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: opacity 0.2s;
-        }
+  /* HIGH-FINISH TABLES */
+  .table-wrap {
+    width: 100%; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+    border: 1px solid var(--border-color); 
+    border-radius: var(--radius-md);
+  }
+  table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+  th { background: #f8fafc; padding: 10px 12px; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f8fafc; font-size: 11.5px; font-weight: 600; vertical-align: middle; color: var(--text-main); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #f8fafc; }
+  .text-right { text-align: right; }
 
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
+  /* SEARCHABLE COLUMN DROPDOWN COMPONENTS */
+  .th-searchable { position: relative; }
+  .th-header-content { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .col-filter-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; font-size: 10px; }
+  .col-filter-btn:hover, .col-filter-btn.active { color: var(--accent-blue); }
+  .col-dropdown-panel {
+    display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 8px; z-index: 100; min-width: 150px; text-transform: none;
+  }
+  .col-dropdown-panel input {
+    width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 6px; outline: none; background: #f8fafc;
+  }
+  .col-dropdown-panel input:focus { border-color: var(--accent-blue); }
+  .col-dropdown-options { max-height: 120px; overflow-y: auto; }
+  .col-dropdown-option { padding: 6px; font-size: 11px; cursor: pointer; border-radius: 4px; color: var(--text-main); font-weight: 600; }
+  .col-dropdown-option:hover { background: var(--slate-bg); }
 
-        /* Main Data Table Wrapper */
-        .table-responsive {
-            background-color: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow-x: auto; /* Handles horizontal scroll on mobile screen perfectly */
-            max-height: 500px;
-            overflow-y: auto;
-            position: relative;
-        }
+  /* CONTEMPORARY FILTER ENGINE BAR */
+  .filter-bar { background: #f8fafc; padding: 10px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color); }
+  .filter-bar select, .filter-bar input {
+    padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 600;
+    background: var(--card-bg); color: var(--text-main); outline: none; transition: border-color 0.2s;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent-blue); }
+  #tableSearchInput { flex: 2; min-width: 200px; font-weight: 500; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            text-align: left;
-            min-width: 1200px; /* Forces responsive horizontal scrolling on small viewports */
-        }
+  /* PREMIUM SLICK PROGRESS METRICS */
+  .gauge-container { margin-bottom: 8px; }
+  .progress-track { width: 100%; background: #e2e8f0; height: 6px; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease-in-out; }
 
-        thead th {
-            background-color: #f1f5f9;
-            color: var(--secondary-color);
-            font-weight: 600;
-            padding: 12px 16px;
-            border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+  /* CHARTS CONFINEMENT */
+  .chart-box { height: 135px; position: relative; width: 100%; margin-top: auto; padding-top: 6px; }
 
-        /* Inline Search Columns Row inside Table Head */
-        .search-row th {
-            background-color: #f8fafc;
-            padding: 6px 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .table-search-input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 12px;
-            outline: none;
-        }
-
-        .table-search-input:focus {
-            border-color: var(--accent-color);
-        }
-
-        tbody td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            color: var(--text-dark);
-            white-space: nowrap;
-        }
-
-        tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
-        /* Action Buttons */
-        .btn-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 4px;
-            border-radius: 4px;
-        }
-
-        .btn-edit { color: var(--accent-color); }
-        .btn-delete { color: #ef4444; }
-
-        /* Responsive Mobile Utility Styles */
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; padding: 15px; }
-            .sidebar .brand { margin-bottom: 10px; }
-            .sidebar .menu-container { display: flex; flex-wrap: wrap; gap: 10px; }
-            .sidebar .menu-item { margin-bottom: 0; padding: 8px 12px; font-size: 12px; }
-            .header { padding: 15px; }
-            .content-container { padding: 15px; }
-            .filters-panel { grid-template-columns: 1fr; }
-        }
-    </style>
+  /* BADGES */
+  .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; }
+</style>
 </head>
 <body>
 
-    <!-- Sidebar Frame Component -->
-    <aside class="sidebar">
-        <div class="brand">
-            <i class="fa-solid cubic-radial fa-layer-group"></i>
-            <span>BKNR ERP</span>
+<div class="dashboard-container">
+
+  <!-- 🏢 CORPORATE HEADER SYSTEM -->
+  <div class="header-panel">
+    <div class="header-title">
+      <h2>HR DASHBOARD</h2>
+      <p> {{ company_id }}</p>
+    </div>
+    <div class="date-badge"><i class="fa-solid fa-server"></i> Platform View: {{ production_for }}</div>
+  </div>
+
+  <!-- 📊 PREMIUM EXECUTIVE METRICS (12 TILES) -->
+  <div class="kpi-matrix-grid">
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Total Staff</div><div class="ref-kpi-value">{{ total_employees }}</div></div>
+    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Active Staff</div><div class="ref-kpi-value">{{ active_employees }}</div></div>
+    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Present Today</div><div class="ref-kpi-value">{{ present_today }}</div></div>
+    <div class="ref-kpi-card loss-card"><div class="ref-kpi-meta">Absent Today</div><div class="ref-kpi-value">{{ absent_today }}</div></div>
+    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Open Shifts</div><div class="ref-kpi-value">{{ open_shifts }}</div></div>
+    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Overtime Run</div><div class="ref-kpi-value">{{ overtime_count }}</div></div>
+    <div class="ref-kpi-card loss-card"><div class="ref-kpi-meta">Double Duty</div><div class="ref-kpi-value">{{ double_duty_count }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">MTD New Joins</div><div class="ref-kpi-value">{{ new_joiners_month }}</div></div>
+    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Advances O/S</div><div class="ref-kpi-value">₹{{"{:.0f}".format(advances_outstanding)}}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">PF Registered</div><div class="ref-kpi-value">{{ pf_covered }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">ESI Registered</div><div class="ref-kpi-value">{{ esi_covered }}</div></div>
+    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Structural Net Payroll</div><div class="ref-kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
+  </div>
+
+  <!-- 🏛️ CONTROL MATRIX INTERACTION NODES -->
+  <div class="core-layout-grid">
+
+    <!-- 1. GENDER DEMOGRAPHICS -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-pie-chart" style="color:var(--accent-blue);"></i> Workforce Demographics</div>
+      <div class="chart-box"><canvas id="genderChart"></canvas></div>
+      <div style="margin-top:10px; border-top: 1px solid var(--border-color); padding-top: 6px;">
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+          {% for b in blood_groups %}<span style="background:var(--slate-bg); padding:3px 6px; border-radius:4px; font-size:10px; font-weight:700; border: 1px solid var(--border-color);">{{ b.group }}:{{ b.count }}</span>{% endfor %}
         </div>
-        <nav class="menu-container">
-            <a href="#" class="menu-item active"><i class="fa-solid fa-boxes-stacked"></i> Stock Ledger</a>
-            <a href="#" class="menu-item"><i class="fa-solid fa-users"></i> HR & Attendance</a>
-            <a href="#" class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i> Billing Logs</a>
-            <a href="#" class="menu-item"><i class="fa-solid fa-gears"></i> System Masters</a>
-        </nav>
-    </aside>
+      </div>
+    </div>
 
-    <!-- Right Side Application Interface Wrapper -->
-    <main class="main-content">
-        <header class="header">
-            <h1>Stock Entry Master Engine</h1>
-            <div class="company-badge" id="currentCompanyBadge">Company ID: Loading...</div>
-        </header>
+    <!-- 2. ATTENDANCE STREAM INTELLIGENCE -->
+    <div class="section-card span-large-2">
+      <div class="section-header"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> 30-Day Attendance Velocity Flow</div>
+      <div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div>
+    </div>
 
-        <section class="content-container">
-            
-            <!-- Global Query Control Structure -->
-            <div class="filters-panel">
-                <div class="form-group">
-                    <label for="companySelect">Target Company Filter</label>
-                    <select id="companySelect" class="form-control" onchange="updateCompanyContext()">
-                        <!-- Dynamic options match directly to API values -->
-                        <option value="BKNR9879">BKNR Operations Main</option>
-                        <option value="BKNR002">BKNR Merchant Branch</option>
-                    </select>
+    <!-- 3. LIFECYCLE WIDGET -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-cake-candles" style="color:var(--rose);"></i> Lifecycle Incidents</div>
+      <div style="font-size:9.5px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Birthdays Today</div>
+      {% if birthday_actives %}{% for b in birthday_actives %}<div class="data-row"><span>{{ b.employee_name }}</span><span class="badge" style="background: var(--indigo-light); color: var(--indigo);">{{ b.department }}</span></div>{% endfor %}{% else %}<p style="color:var(--text-muted); padding:4px 12px; font-weight: 600;">No logs matched today.</p>{% endif %}
+      <div style="font-size:9.5px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-top:8px; margin-bottom:4px;">Corporate Anniversaries</div>
+      {% if anniversary_actives %}{% for a in anniversary_actives %}<div class="data-row"><span style="color:var(--emerald); font-weight: 700;">{{ a.employee_name }}</span><span>{{ a.designation }}</span></div>{% endfor %}{% else %}<p style="color:var(--text-muted); padding:4px 12px; font-weight: 600;">No milestones logs today.</p>{% endif %}
+    </div>
+
+    <!-- 4. DEPARTMENT METRIC INDEX -->
+    <div class="section-card span-large-2">
+      <div class="section-header"><i class="fa-solid fa-network-wired" style="color:var(--accent-blue);"></i> Department Allocation Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Department Segment</th><th class="text-right">Staffing</th><th class="text-right">Present</th><th class="text-right">Absent</th><th class="text-right">Average Remuneration</th></tr>
+          </thead>
+          <tbody>
+            {% for d in dept_matrix %}
+            <tr><td style="font-weight: 700;">{{ d.department }}</td><td class="text-right" style="font-weight: 700;">{{ d.total_staff }}</td><td class="text-right" style="color:var(--emerald); font-weight: 700;">{{ d.present }}</td><td class="text-right" style="color:var(--rose); font-weight: 700;">{{ d.absent }}</td><td class="text-right" style="font-weight: 700;">₹{{"{:.0f}".format(d.avg_salary)}}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. PRODUCTIVITY GAUGES -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-stopwatch" style="color: var(--amber);"></i> Labor Productivity Scale</div>
+      <div class="chart-box"><canvas id="prodChart"></canvas></div>
+    </div>
+
+    <!-- 6. STATUTORY COMPLIANCE BAR -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-shield-halved" style="color:var(--emerald);"></i> Regulatory Coverage Analytics</div>
+      <div class="gauge-container" style="margin-top:4px;">
+        <div class="data-row"><span>PF Coverage Ratio</span><span>{{ pf_coverage_pct }}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width: {{ pf_coverage_pct }}%; background: var(--emerald);"></div></div>
+      </div>
+      <div class="gauge-container" style="margin-top:8px;">
+        <div class="data-row"><span>ESI Coverage Ratio</span><span>{{ esi_coverage_pct }}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width: {{ esi_coverage_pct }}%; background: var(--accent-blue);"></div></div>
+      </div>
+      <div class="data-row" style="margin-top:6px;"><span>90-Day Retention Pool</span><span>{{ new_joiners_90 }} Joiners</span></div>
+      <div class="data-row"><span>Annualized Attrition Index</span><span style="color:var(--rose); font-weight: 800;">{{ attrition_rate }}%</span></div>
+    </div>
+
+    <!-- 7. CAPITAL ADVANCE FINANCES -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-wallet" style="color:var(--amber);"></i> Advance Capital Control Book</div>
+      <div class="data-row"><span>Total Ledger Disbursed</span><span>₹{{"{:.0f}".format(adv_aggregates.issued or 0)}}</span></div>
+      <div class="data-row"><span>Total Recovered Pool</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(adv_aggregates.recovered or 0)}}</span></div>
+      <div class="data-row anchor-total-row" style="background: var(--rose) !important;"><span>Net Outstanding Balance</span><span>₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
+      {% for a in adv_outstanding_list %}
+      <div class="data-row" style="font-size:10px; border:none; padding:3px 12px;"><span>&bull; {{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
+      {% endfor %}
+    </div>
+
+    <!-- 8. INCREMENT LOG ATOM -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-arrow-trend-up" style="color:var(--emerald);"></i> Salary Modifications Stream</div>
+      <div class="data-row"><span>Total Events (YTD)</span><span>{{ inc_stats.total_inc or 0 }} Trans</span></div>
+      <div class="data-row"><span>Mean Delta Spike</span><span>₹{{"{:.0f}".format(inc_stats.avg_inc_val or 0)}}</span></div>
+      {% for i in increment_table %}
+      <div class="data-row" style="font-size:10px; padding:6px 12px;">
+        <span>{{ i.name }}</span><span style="font-weight:700; color:var(--emerald);">+₹{{"{:.0f}".format(i.increase)}}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 9. PAYROLL HISTOGRAM STRUCTURE -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-money-bill-wave" style="color: var(--indigo);"></i> Payroll Spectrum Spread</div>
+      <div class="chart-box"><canvas id="salaryChart"></canvas></div>
+    </div>
+
+    <!-- 10. THREAT MITIGATION & COMPLIANCE INDEX -->
+    <div class="section-card">
+      <div class="alert-box" style="margin-bottom: 0; height: 100%;">
+        <div class="alert-title"><i class="fa-solid fa-triangle-exclamation"></i> Threat Mitigation & Compliance Index</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          {% if risk_no_pan > 0 %}<div class="alert-item"><i class="fa-solid fa-id-card-clip"></i> PAN Records Exception: {{ risk_no_pan }} Profiles.</div>{% endif %}
+          {% if risk_no_aadhar > 0 %}<div class="alert-item"><i class="fa-solid fa-fingerprint"></i> Identification Void: [Aadhaar Redacted] {{ risk_no_aadhar }} Profiles.</div>{% endif %}
+          {% if risk_no_bank > 0 %}<div class="alert-item"><i class="fa-solid fa-building-columns"></i> Bank Account Omission: {{ risk_no_bank }} Profiles.</div>{% endif %}
+          {% if risk_missing_statutory > 0 %}<div class="alert-item"><i class="fa-solid fa-gavel"></i> Statutory Setup Void: {{ risk_missing_statutory }} Employees.</div>{% endif %}
+          {% if double_duty_count > 0 %}<div class="alert-item" style="color:var(--rose);"><i class="fa-solid fa-clock"></i> Overtime Breach: {{ double_duty_count }} Alerts.</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. SEARCHABLE MASTER DIRECTORY -->
+    <div class="section-card col-span-full">
+      <div class="section-header"><i class="fa-solid fa-users" style="color:var(--accent-blue);"></i> Master Enterprise Employee Directory</div>
+       
+      <div class="filter-bar">
+        <form method="GET" action="/hr/hr_command_center" id="filterForm" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; width:100%;">
+          <select name="dept_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All Departments</option>{% for d in dept_matrix %}<option value="{{ d.department }}" {% if dept_filter == d.department %}selected{% endif %}>{{ d.department }}</option>{% endfor %}</select>
+          <select name="type_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All Tiers</option><option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option><option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option></select>
+          <select name="status_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All System States</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option></select>
+          <input type="text" id="tableSearchInput" onkeyup="searchTableEngine()" placeholder="🔍 Type to filter rows dynamically across records...">
+          <a href="/hr/hr_command_center" style="font-size:11px; font-weight:700; padding:6px 12px; text-decoration:none; color:var(--text-muted); background:#e2e8f0; border-radius:4px; align-self:center;">Reset</a>
+        </form>
+      </div>
+
+      <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+        <table id="employeeDataTable">
+          <thead>
+            <tr>
+              <th>System ID</th>
+              <!-- Searchable Dropdown Columns in Table Headers -->
+              <th class="th-searchable">
+                <div class="th-header-content">
+                  <span>Staff Target Name</span>
+                  <button class="col-filter-btn" onclick="toggleColumnDropdown(event, 'nameDropdown')"><i class="fa-solid fa-filter"></i></button>
                 </div>
-                <div class="form-group">
-                    <label for="movementFilter">Cargo Movement Type</label>
-                    <select id="movementFilter" class="form-control">
-                        <option value="">All Movements</option>
-                        <option value="IN">IN (Stock Intake)</option>
-                        <option value="OUT">OUT (Dispatch)</option>
-                    </select>
+                <div id="nameDropdown" class="col-dropdown-panel">
+                  <input type="text" placeholder="Search..." onkeyup="filterColumnOptions('nameDropdown', this.value)">
+                  <div class="col-dropdown-options" data-col-index="1"></div>
                 </div>
-                <button class="btn-primary" onclick="fetchStockEntriesData()">
-                    <i class="fa-solid fa-magnifying-glass"></i> Pull Records
-                </button>
-            </div>
+              </th>
+              <th class="th-searchable">
+                <div class="th-header-content">
+                  <span>Department Unit</span>
+                  <button class="col-filter-btn" onclick="toggleColumnDropdown(event, 'deptDropdown')"><i class="fa-solid fa-filter"></i></button>
+                </div>
+                <div id="deptDropdown" class="col-dropdown-panel">
+                  <input type="text" placeholder="Search..." onkeyup="filterColumnOptions('deptDropdown', this.value)">
+                  <div class="col-dropdown-options" data-col-index="2"></div>
+                </div>
+              </th>
+              <th class="th-searchable">
+                <div class="th-header-content">
+                  <span>Designation Mapping</span>
+                  <button class="col-filter-btn" onclick="toggleColumnDropdown(event, 'desigDropdown')"><i class="fa-solid fa-filter"></i></button>
+                </div>
+                <div id="desigDropdown" class="col-dropdown-panel">
+                  <input type="text" placeholder="Search..." onkeyup="filterColumnOptions('desigDropdown', this.value)">
+                  <div class="col-dropdown-options" data-col-index="3"></div>
+                </div>
+              </th>
+              <th>Staff Tier</th>
+              <th>Contact Anchor</th>
+              <th>Gross Base Wage</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in directory_list %}
+            <tr>
+              <td style="font-weight:700; color:var(--accent-blue);">{{ emp.employee_id }}</td>
+              <td style="font-weight:700; color: var(--text-main);">{{ emp.employee_name }}</td>
+              <td>{{ emp.department or 'N/A' }}</td>
+              <td>{{ emp.designation or 'N/A' }}</td>
+              <td><span class="badge" style="background:#f1f5f9; color:#475569;">{{ emp.employee_type }}</span></td>
+              <td>{{ emp.mobile }}</td>
+              <td style="font-weight:700;">₹{{"{:,.0f}".format(emp.current_salary)}}</td>
+              <td><span class="badge" style="{% if emp.status == 'ACTIVE' %}background:#ccfbf1; color:#115e59;{% else %}background:#ffe4e6; color:#9f1239;{% endif %}">{{ emp.status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-            <!-- Main Data Grid Architecture -->
-            <div class="table-responsive">
-                <table id="stockEntryTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Batch Number</th>
-                            <th>Species</th>
-                            <th>Variety</th>
-                            <th>Grade</th>
-                            <th>Cargo Type</th>
-                            <th>MC Count</th>
-                            <th>Loose Pcs</th>
-                            <th>Quantity (KG)</th>
-                            <th>Product Value/KG</th>
-                            <th>Inventory Value</th>
-                            <th>HLSO Count</th>
-                            <th>HOSO Count</th>
-                            <th>Sales Ref Rate</th>
-                            <th>Actions</th>
-                        </tr>
-                        <!-- Searchable Input row inserted inline into columns directly -->
-                        <tr class="search-row">
-                            <th></th>
-                            <th><input type="text" class="table-search-input" placeholder="Search Batch..." onkeyup="filterTableByColumn(1, this.value)"></th>
-                            <th><input type="text" class="table-search-input" placeholder="Search Species..." onkeyup="filterTableByColumn(2, this.value)"></th>
-                            <th><input type="text" class="table-search-input" placeholder="Search Variety..." onkeyup="filterTableByColumn(3, this.value)"></th>
-                            <th><input type="text" class="table-search-input" placeholder="Search Grade..." onkeyup="filterTableByColumn(4, this.value)"></th>
-                            <th><input type="text" class="table-search-input" placeholder="Search Type..." onkeyup="filterTableByColumn(5, this.value)"></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="stockTableBody">
-                        <!-- Dynamic content row records map automatically here -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+  </div>
+</div>
 
-    <!-- JavaScript REST Engine Integration Block -->
-    <script>
-        const API_BASE_URL = "/api/v1/bknr-erp";
+<!-- 📊 ENGINE INITIALIZATION SYSTEMS -->
+<script>
+// Global Chart.js Defaults configuration for corporate premium aesthetics
+Chart.defaults.font.size = 9;
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.weight = '600';
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
 
-        function updateCompanyContext() {
-            const companyId = document.getElementById("companySelect").value;
-            document.getElementById("currentCompanyBadge").innerText = `Company ID: ${companyId}`;
+new Chart(document.getElementById("genderChart"), {
+  type: "pie",
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 6 } } } },
+  data: {
+    labels: {{ gender_labels|tojson }},
+    datasets: [{ data: {{ gender_values|tojson }}, backgroundColor: ["#1d4ed8", "#ec4899", "#94a3b8"], borderWidth: 1, borderColor: "#ffffff" }]
+  }
+});
+
+new Chart(document.getElementById("attendanceTrendChart"), {
+  type: "line",
+  options: { 
+    responsive: true, maintainAspectRatio: false, 
+    plugins: { legend: { display: false } },
+    scales: { y: { min: 0, max: 100, grid: { color: "#f1f5f9" }, ticks: { font: { weight: 600 } } }, x: { grid: { display: false }, ticks: { font: { weight: 600 } } } } 
+  },
+  data: {
+    labels: {{ attendance_trend_labels|tojson }},
+    datasets: [{ label: "Attendance Ratio %", data: {{ attendance_trend_data|tojson }}, borderColor: "#0d9488", borderWidth: 2, fill: true, backgroundColor: "rgba(13,148,136,0.02)", tension: 0.15, pointRadius: 1 }]
+  }
+});
+
+new Chart(document.getElementById("prodChart"), {
+  type: "bar",
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ y: { grid: { color: "#f1f5f9" } }, x:{ grid:{ display:false } } } },
+  data: {
+    labels: ["<4h", "4-8h", "8-12h", "12h+"],
+    datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#e11d48", "#1d4ed8", "#0d9488", "#d97706"], borderRadius: 3, barThickness: 15 }]
+  }
+});
+
+new Chart(document.getElementById("salaryChart"), {
+  type: "bar",
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ y: { grid: { color: "#f1f5f9" } }, x:{ grid:{ display:false } } } },
+  data: {
+    labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
+    datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#1d4ed8", "#4f46e5", "#0d9488"], borderRadius: 3, barThickness: 15 }]
+  }
+});
+
+// Global tracking object for column specific filters
+const activeColumnFilters = {};
+
+document.addEventListener("DOMContentLoaded", function() {
+  populateColumnDropdowns();
+  
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest('.th-searchable')) {
+      document.querySelectorAll('.col-dropdown-panel').forEach(p => p.style.display = 'none');
+    }
+  });
+});
+
+function toggleColumnDropdown(e, id) {
+  e.stopPropagation();
+  const panel = document.getElementById(id);
+  const isVisible = panel.style.display === 'block';
+  document.querySelectorAll('.col-dropdown-panel').forEach(p => p.style.display = 'none');
+  panel.style.display = isVisible ? 'none' : 'block';
+  if(!isVisible) {
+    panel.querySelector('input').focus();
+  }
+}
+
+function populateColumnDropdowns() {
+  const table = document.getElementById("employeeDataTable");
+  const tr = table.getElementsByTagName("tr");
+  const uniqueValues = { 1: new Set(), 2: new Set(), 3: new Set() };
+
+  // Collect unique textual records from visible columns
+  for (let i = 1; i < tr.length; i++) {
+    for (let colIndex in uniqueValues) {
+      if (tr[i].getElementsByTagName("td")[colIndex]) {
+        let text = tr[i].getElementsByTagName("td")[colIndex].textContent.trim();
+        if(text) uniqueValues[colIndex].add(text);
+      }
+    }
+  }
+
+  // Bind option fragments inside lists
+  document.querySelectorAll('.col-dropdown-options').forEach(container => {
+    const colIndex = container.getAttribute('data-col-index');
+    container.innerHTML = '';
+    
+    // Default system option for clearing localized filters
+    const allOpt = document.createElement('div');
+    allOpt.className = 'col-dropdown-option';
+    allOpt.style.fontWeight = 'bold';
+    allOpt.innerText = 'All Records';
+    allOpt.onclick = () => selectColumnOption(container.parentNode.id, '', colIndex);
+    container.appendChild(allOpt);
+
+    Array.from(uniqueValues[colIndex]).sort().forEach(val => {
+      const opt = document.createElement('div');
+      opt.className = 'col-dropdown-option';
+      opt.innerText = val;
+      opt.onclick = () => selectColumnOption(container.parentNode.id, val, colIndex);
+      container.appendChild(opt);
+    });
+  });
+}
+
+function filterColumnOptions(panelId, query) {
+  const panel = document.getElementById(panelId);
+  const options = panel.querySelectorAll('.col-dropdown-option');
+  const upperQuery = query.toUpperCase();
+
+  options.forEach((opt, idx) => {
+    if(idx === 0) return; // Skip 'All Records' target
+    const text = opt.innerText.toUpperCase();
+    opt.style.display = text.indexOf(upperQuery) > -1 ? "" : "none";
+  });
+}
+
+function selectColumnOption(panelId, value, colIndex) {
+  const panel = document.getElementById(panelId);
+  const btn = panel.parentNode.querySelector('.col-filter-btn');
+  
+  if (value === '') {
+    delete activeColumnFilters[colIndex];
+    btn.classList.remove('active');
+  } else {
+    activeColumnFilters[colIndex] = value.toUpperCase();
+    btn.classList.add('active');
+  }
+  
+  panel.style.display = 'none';
+  panel.querySelector('input').value = '';
+  executeMasterFilteringEngine();
+}
+
+function executeMasterFilteringEngine() {
+  const table = document.getElementById("employeeDataTable");
+  const tr = table.getElementsByTagName("tr");
+  const searchInput = document.getElementById("tableSearchInput");
+  const globalFilter = searchInput ? searchInput.value.toUpperCase() : '';
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName("td");
+    let matchesGlobal = !globalFilter;
+    let matchesColumns = true;
+
+    // Check row elements against column scoped parameters
+    for (let colIndex in activeColumnFilters) {
+      if (td[colIndex]) {
+        const cellText = td[colIndex].textContent.toUpperCase();
+        if (cellText !== activeColumnFilters[colIndex]) {
+          matchesColumns = false;
+          break;
         }
+      }
+    }
 
-        // Fetching Database entries synchronized without parameter mismatch
-        async function fetchStockEntriesData() {
-            const companyId = document.getElementById("companySelect").value;
-            const movementType = document.getElementById("movementFilter").value;
-            const tableBody = document.getElementById("stockTableBody");
-            
-            tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching records from database cluster...</td></tr>`;
-            
-            try {
-                let url = `${API_BASE_URL}/inventory/stock-entries?company_id=${encodeURIComponent(companyId)}`;
-                if(movementType) {
-                    url += `&cargo_type=${encodeURIComponent(movementType)}`;
-                }
-
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                if (result.status === "success" && result.data.length > 0) {
-                    tableBody.innerHTML = "";
-                    result.data.forEach(record => {
-                        const row = document.createElement("tr");
-                        // Maps perfectly to database columns architecture
-                        row.innerHTML = `
-                            <td>${record.id}</td>
-                            <td><strong>${record.batch_number || '-'}</strong></td>
-                            <td>${record.species || '-'}</td>
-                            <td>${record.variety || '-'}</td>
-                            <td>${record.grade || '-'}</td>
-                            <td><span style="color: ${record.cargo_movement_type === 'IN' ? '#10b981' : '#f59e0b'}; font-weight: bold;">${record.cargo_movement_type || '-'}</span></td>
-                            <td>${record.no_of_mc || 0}</td>
-                            <td>${record.loose || 0}</td>
-                            <td>${record.quantity ? record.quantity.toFixed(2) : '0.00'}</td>
-                            <td>${record.product_kg_value ? record.product_kg_value.toFixed(2) : '0.00'}</td>
-                            <td>${record.inventory_value ? record.inventory_value.toFixed(2) : '0.00'}</td>
-                            <td>${record.hlso_count || 0}</td>
-                            <td>${record.hoso_count || 0}</td>
-                            <td>${record.sales_reference_rate ? record.sales_reference_rate.toFixed(2) : '0.00'}</td>
-                            <td class="btn-actions">
-                                <button class="btn-icon btn-edit" onclick="editRecord(${record.id})"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <button class="btn-icon btn-delete" onclick="deleteRecord(${record.id})"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                } else {
-                    tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: var(--text-muted);">No records found for the given criteria.</td></tr>`;
-                }
-            } catch (error) {
-                console.error("Fetch operational failure:", error);
-                tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading server ledger data.</td></tr>`;
-            }
+    // Check row matches global input engine text
+    if (globalFilter) {
+      for (let j = 0; j < td.length; j++) {
+        if (td[j]) {
+          if ((td[j].textContent || td[j].innerText).toUpperCase().indexOf(globalFilter) > -1) {
+            matchesGlobal = true;
+            break;
+          }
         }
+      }
+    }
 
-        // Instant Inline filtering functionality targeting selected columns
-        function filterTableByColumn(columnIndex, query) {
-            const filterValue = query.toLowerCase();
-            const table = document.getElementById("stockEntryTable");
-            const rows = table.getElementsByTagName("tr");
+    tr[i].style.display = (matchesGlobal && matchesColumns) ? "" : "none";
+  }
+}
 
-            // Skipping primary and secondary head elements
-            for (let i = 2; i < rows.length; i++) {
-                const td = rows[i].getElementsByTagName("td")[columnIndex];
-                if (td) {
-                    const textContent = td.textContent || td.innerText;
-                    if (textContent.toLowerCase().indexOf(filterValue) > -1) {
-                        rows[i].style.display = "";
-                    } else {
-                        rows[i].style.display = "none";
-                    }
-                }
-            }
-        }
-
-        function editRecord(id) { alert(`Trigger Edit Context Mode for entry: ${id}`); }
-        function deleteRecord(id) { alert(`Trigger Purge Request Execution sequence for entry: ${id}`); }
-
-        // Initializing UI environment on page boot
-        window.onload = () => {
-            updateCompanyContext();
-            fetchStockEntriesData();
-        };
-    </script>
+// Client-Side Real-Time Multi-Column Table Search Engine
+function searchTableEngine() {
+  executeMasterFilteringEngine();
+}
+</script>
 </body>
 </html>
