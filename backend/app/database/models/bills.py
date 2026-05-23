@@ -1,10 +1,14 @@
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text
 from app.database import Base
+from sqlalchemy.sql import func
 from datetime import datetime
 
-# 1. Electricity Table
+# =========================================================================
+# ⚡ 1. ELECTRICITY LOGS SCHEMA
+# =========================================================================
 class ElectricityLog(Base):
     __tablename__ = "electricity_logs"
+    
     id = Column(Integer, primary_key=True, index=True)
     unit_id = Column(Integer, index=True)  # Filter ki idi important
     reading_date = Column(Date, default=datetime.utcnow)
@@ -13,7 +17,10 @@ class ElectricityLog(Base):
     unit_rate = Column(Float)
     total_cost = Column(Float)
 
-# 2. Diesel Table
+
+# =========================================================================
+# ⛽ 2. DIESEL LOGS SCHEMA
+# =========================================================================
 class DieselLog(Base):
     __tablename__ = "diesel_logs"
     __table_args__ = {"extend_existing": True}
@@ -44,7 +51,10 @@ class DieselLog(Base):
 
     email = Column(String(150), index=True)
 
-# 3. Purchase & Packaging
+
+# =========================================================================
+# 📦 3. PURCHASE & PACKAGING INVOICES
+# =========================================================================
 class PurchaseInvoice(Base):
     __tablename__ = "purchase_invoices"
 
@@ -70,7 +80,11 @@ class PurchaseInvoice(Base):
     # Schema lo unna additional columns
     date = Column(String(50)) # character varying(50)
     time = Column(String(50)) # character varying(50)
-# 4. Logistics / Container
+
+
+# =========================================================================
+# 🚢 4. LOGISTICS / CONTAINER LOGS (Fixed AttributeError: Missing Date)
+# =========================================================================
 class ContainerLog(Base):
     __tablename__ = "container_logs"
 
@@ -93,9 +107,17 @@ class ContainerLog(Base):
     handling = Column(Float, default=0.0)
     detention = Column(Float, default=0.0)
     lended_total = Column(Float, default=0.0) # Grand Total (incl. GST)
-# 5. QA Testing
+
+    # 📅 Added tracking field to resolve costing dashboard query crash
+    date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
+
+
+# =========================================================================
+# 🔬 5. QA TESTING LOGS (Fixed Architectural Mismatch)
+# =========================================================================
 class QATestingLog(Base):
     __tablename__ = "qa_testing_logs"
+    
     id = Column(Integer, primary_key=True, index=True)
     unit_id = Column(Integer, index=True)
     batch_no = Column(String(50))
@@ -103,11 +125,25 @@ class QATestingLog(Base):
     test_cost = Column(Float)
     report_ref = Column(String(50))
     po_number = Column(String(100), index=True) 
-# 6. Other Expenses
+
+    # 📅 Added native tracking date column referenced in router as test_date
+    test_date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
+
+
+# =========================================================================
+# 💼 6. OTHER EXPENSES (With Added Meta Data Column)
+# =========================================================================
 class OtherExpense(Base):
     __tablename__ = "other_expenses"
+    
     id = Column(Integer, primary_key=True, index=True)
     unit_id = Column(Integer, index=True)
     category = Column(String(50)) # Canteen, Security, etc.
     amount = Column(Float)
     remarks = Column(Text)
+    
+    # 📝 Added meta details tracking column
+    meta = Column(String(255), nullable=True) 
+
+    # 📅 Date tracking column for router compliance
+    date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)

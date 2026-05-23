@@ -1,11 +1,9 @@
-# app/routers/bills/other_expenses.py
-
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, or_  # ⚡ FIX: 'or_' ఆపరేటర్‌ను ఇక్కడి నుండి ఇంపోర్ట్ చేసాము
+from sqlalchemy import desc, func, and_
 from datetime import date, datetime
 import datetime as dt
 import logging
@@ -43,7 +41,7 @@ class ExpenseSchema(BaseModel):
 
 
 # ============================================================
-# 🧾 1. EXPENSE ENTRY PAGE (GET) - FIXED OR_ SYNTAX ERROR
+# 🧾 1. EXPENSE ENTRY PAGE (GET) - COMPLIANT WITH MODEL 'date'
 # ============================================================
 @router.get("/entry", response_class=HTMLResponse)
 def expenses_entry_page(
@@ -69,23 +67,43 @@ def expenses_entry_page(
     expense_history = []
     if fy:
         selected_year = int(fy)
-        
-        # ⚡ SQL Syntax Error Fix:
-        # Remarks లోపల ఉన్న "Date: YYYY-MM-DD" స్ట్రింగ్‌ను పక్కాగా మ్యాప్ చేయడానికి కండిషన్స్ లిస్ట్
-        fy_filters = [OtherExpense.remarks.like(f"Date: {selected_year}-%")]
-        for m in [1, 2, 3]:
-            fy_filters.append(OtherExpense.remarks.like(f"Date: {selected_year + 1}-{m:02d}-%"))
+        start_date = dt.date(selected_year, 4, 1)
+        end_date = dt.date(selected_year + 1, 3, 31)
 
-        expense_history = (
-            db.query(OtherExpense, production_at.production_at.label("location_name"))
-            .join(production_at, OtherExpense.unit_id == production_at.id)
-            .filter(
-                production_at.company_id == company_code,
-                or_(*fy_filters)  # ⚡ func.or_ తీసేసి ప్యూర్ SQLAlchemy 'or_()' అన్‌ప్యాకింగ్ వాడాము
+        try:
+            # 🌟 మోడల్‌లోని 'date' కాలమ్ బేస్డ్ ఫిల్టరింగ్
+            expense_history = (
+                db.query(OtherExpense, production_at.production_at.label("location_name"))
+                .join(production_at, OtherExpense.unit_id == production_at.id)
+                .filter(
+                    production_at.company_id == company_code,
+                    OtherExpense.date >= start_date,
+                    OtherExpense.date <= end_date
+                )
+                .order_by(OtherExpense.id.desc())
+                .all()
             )
-            .order_by(OtherExpense.id.desc())
-            .all()
-        )
+
+            # ఒకవేళ ఫాల్‌బ్యాక్ కింద పాత డేటా (remarks లో స్టోర్ అయిన పాత ఫార్మాట్) లోడ్ అవ్వడానికి:
+            if not expense_history:
+                fy_filters = [OtherExpense.remarks.like(f"Date: {selected_year}-%")]
+                for m in [1, 2, 3]:
+                    fy_filters.append(OtherExpense.remarks.like(f"Date: {selected_year + 1}-{m:02d}-%"))
+                
+                from sqlalchemy import or_
+                expense_history = (
+                    db.query(OtherExpense, production_at.production_at.label("location_name"))
+                    .join(production_at, OtherExpense.unit_id == production_at.id)
+                    .filter(
+                        production_at.company_id == company_code,
+                        or_(*fy_filters)
+                    )
+                    .order_by(OtherExpense.id.desc())
+                    .all()
+                )
+        except Exception as e:
+            logger.error(f"EXPENSE HISTORY FETCH ERROR: {str(e)}")
+            expense_history = []
 
     return templates.TemplateResponse(
         request=request,
@@ -101,7 +119,7 @@ def expenses_entry_page(
 
 
 # ============================================================
-# 💾 2. SAVE EXPENSE (POST JSON)
+# 💾 2. SAVE EXPENSE (POST JSON - AUTOMATIC DATE MAPPED TO 'date')
 # ============================================================
 @router.post("/save")
 async def save_expense(
@@ -123,11 +141,13 @@ async def save_expense(
         f"Notes: {payload.remarks}"
     )
 
+    # 🌟 ఇక్కడ మోడల్ కాలమ్ 'date' కు payload.expense_date ని మ్యాప్ చేసాము 📅
     new_entry = OtherExpense(
         unit_id=payload.production_at_id,
         category=payload.category.upper().strip(),
         amount=payload.grand_total,   
-        remarks=full_remarks
+        remarks=full_remarks,
+        date=payload.expense_date if payload.expense_date else dt.date.today()
     )
 
     try:

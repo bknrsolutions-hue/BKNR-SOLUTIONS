@@ -1,5 +1,3 @@
-# app/routers/bills/qa_testing.py
-
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -14,8 +12,8 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
-from app.database.models.bills import QATestingLog, PurchaseInvoice  # FY డేట్ జాయిన్ కోసం PurchaseInvoice
-from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
+from app.database.models.bills import QATestingLog
+from app.database.models.processing import AuditLog  
 from app.database.models.criteria import production_at
 
 router = APIRouter(
@@ -42,7 +40,7 @@ class QaTestingSchema(BaseModel):
 
 
 # ============================================================
-# 🧪 1. MAIN ENTRY PAGE (GET) - DEFAULT EMPTY STATE (FY LOCKED)
+# 🧪 1. MAIN ENTRY PAGE (GET) - FIXED NATIVE DATE FILTERS
 # ============================================================
 @router.get("/entry", response_class=HTMLResponse)
 def qa_entry_page(
@@ -82,34 +80,30 @@ def qa_entry_page(
         end_date = dt.date(selected_year + 1, 3, 31)
 
         try:
-            # QATestingLog లో నేరుగా డేట్ కాలమ్ లేదు కాబట్టి, దానిని PurchaseInvoice లేదా 
-            # ఆడిట్ లాగ్ ఎంట్రీలతో జాయిన్ చేసి ఆర్థిక సంవత్సరం ఫిల్టర్ రన్ చేస్తున్నాం
-            qa_history = (
-                db.query(
-                    QATestingLog.id,
-                    QATestingLog.batch_no,
-                    QATestingLog.lab_name,
-                    QATestingLog.test_cost,
-                    QATestingLog.report_ref,
-                    production_at.production_at.label("product"),
-                    PurchaseInvoice.invoice_date.label("date"),
-                    PurchaseInvoice.base_price.label("base_cost"),
-                    PurchaseInvoice.tax_amount.label("gst_amt")
-                )
+            # టేబుల్‌ లో ఇప్పుడు 'test_date' కాలమ్ ఉంది కాబట్టి నేరుగా ఫిల్టర్ రన్ చేస్తున్నాం
+            raw_history = (
+                db.query(QATestingLog, production_at.production_at.label("product"))
                 .join(production_at, QATestingLog.unit_id == production_at.id)
-                .join(PurchaseInvoice, and_(
-                    PurchaseInvoice.unit_id == QATestingLog.unit_id,
-                    PurchaseInvoice.company_id == comp_code
-                ))
                 .filter(
                     production_at.company_id == comp_code,
-                    PurchaseInvoice.invoice_date >= start_date,
-                    PurchaseInvoice.invoice_date <= end_date
+                    QATestingLog.test_date >= start_date,
+                    QATestingLog.test_date <= end_date
                 )
                 .order_by(desc(QATestingLog.id))
-                .distinct()
                 .all()
             )
+
+            qa_history = [{
+                "id": row.QATestingLog.id,
+                "batch_no": row.QATestingLog.batch_no,
+                "lab_name": row.QATestingLog.lab_name,
+                "total": row.QATestingLog.test_cost,
+                "report_ref": row.QATestingLog.report_ref,
+                "product": row.product,
+                "date": row.QATestingLog.test_date.strftime("%Y-%m-%d") if row.QATestingLog.test_date else dt.date.today().strftime("%Y-%m-%d"),
+                "base_cost": row.QATestingLog.test_cost, 
+                "gst_amt": 0.0
+            } for row in raw_history]
 
             # ఒకవేళ ఫాల్‌బ్యాక్ కింద పాత డేటా లోడ్ అవ్వడానికి:
             if not qa_history:
@@ -120,7 +114,8 @@ def qa_entry_page(
                 qa_history = [{
                     "id": log.id, "batch_no": log.batch_no, "lab_name": log.lab_name,
                     "total": log.test_cost, "report_ref": log.report_ref, "product": getattr(log, "product", "Unknown"),
-                    "date": dt.date.today().strftime("%Y-%m-%d"), "base_cost": log.test_cost, "gst_amt": 0.0
+                    "date": log.test_date.strftime("%Y-%m-%d") if getattr(log, "test_date", None) else dt.date.today().strftime("%Y-%m-%d"), 
+                    "base_cost": log.test_cost, "gst_amt": 0.0
                 } for log in fallback_history]
 
         except Exception as e:
@@ -142,7 +137,7 @@ def qa_entry_page(
 
 
 # ============================================================
-# 💾 2. SAVE QA TESTING RECORD (POST JSON Payload Target)
+# 💾 2. SAVE QA TESTING RECORD (POST JSON - AUTOMATIC DATE)
 # ============================================================
 @router.post("/save")
 async def save_qa_testing(
@@ -168,13 +163,14 @@ async def save_qa_testing(
         except Exception as e:
             logger.error(f"Lab lookup implicit warning: {e}")
 
-        # Create object matching QATestingLog Model (Inclusive grand_total to test_cost)
+        # ఇక్కడ payload నుండి వచ్చిన 'test_date' ఆటోమేటిక్‌గా సేవ్ అవుతుంది 📅
         new_entry = QATestingLog(
             unit_id=payload.product_id,
             batch_no=payload.batch_no.upper().strip(),
             lab_name=lab_name,
             test_cost=payload.grand_total,
-            report_ref=payload.report_ref.upper().strip()
+            report_ref=payload.report_ref.upper().strip(),
+            test_date=payload.test_date if payload.test_date else dt.date.today()
         )
         
         db.add(new_entry)

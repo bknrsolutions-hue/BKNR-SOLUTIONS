@@ -32,13 +32,28 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     .grand-total { width: 100%; padding: 8px 15px; } 
 }
 
-/* --- FILTERS --- */
-.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+/* --- FIXED SMALL SIZE FILTERS (COMPACT ROW ALIGNMENT) --- */
+.filter-bar { 
+  background: #fff; padding: 10px 25px; border-bottom: 1px solid var(--border); 
+  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; 
+}
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 130px; max-width: 180px; }
+.filter-item label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 34px; }
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* Compact Clear Button alignment to match the small inputs */
+.filter-bar .btn-add { height: 34px; padding: 0 15px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+/* Extra Compact View for Mobile Screens */
+@media(max-width: 600px) {
+  .filter-bar { padding: 8px; gap: 6px; }
+  .filter-item { min-width: 110px; max-width: 100%; flex: 1; }
+  .filter-item label { font-size: 8px; }
+  .filter-item input, .filter-item select { padding: 4px 8px; font-size: 11px; height: 32px; }
+  .filter-bar .btn-add { height: 32px; font-size: 11px; padding: 0 10px; }
+}
 
 /* --- ACTIONS HEADER --- */
 .section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
@@ -100,7 +115,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL TESTING AMOUNT: ₹ 0.00</div>
 </div>
 
-<!-- 📊 FILTERS GRID BAR -->
+<!-- 📊 COMPACT FILTERS GRID BAR (FIXED SMALL SIZE) -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -119,7 +134,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <input type="text" id="searchBox" placeholder="Search Batch, Product, Lab Ref...">
     </div>
     
-    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
+    <button class="btn-add" style="background:var(--muted);" onclick="resetFilters()">Clear</button>
 </div>
 
 <!-- 🧾 ACTIONS HEADER -->

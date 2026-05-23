@@ -2,281 +2,599 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Corporate Costing Command Center | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Executive KPI Reference Center | BKNR ERP</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Choices.js CSS for Advanced Searchable Company Dropdowns -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
-  --navy:#0f172a; --secondary:#64748b; --accent:#0284c7; --emerald:#0f766e;
-  --rose:#e11d48; --amber:#b45309; --slate:#f8fafc; --border:#e2e8f0; --card:#ffffff;
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;}
-body{background:#f1f5f9;color:var(--navy);padding:16px;font-size:12px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+  :root {
+    --primary-dark: #0f172a;
+    --slate-bg: #f1f5f9; 
+    --card-bg: #ffffff;
+    --accent-blue: #1d4ed8;
+    --border-color: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --radius-premium: 12px;
+    --radius-md: 8px;
+  }
 
-/* PREMIUM TOP HEADER BAR */
-.header{background:var(--card);padding:14px 20px;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;gap:10px;}
-@media(min-width:768px){.header{flex-direction:row;justify-content:space-between;align-items:center;}}
-.header-left h2{font-size:16px;font-weight:800;color:var(--navy);letter-spacing:-0.3px;}
-.header-left p{font-size:11px;color:var(--secondary);}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: var(--slate-bg);
+    color: var(--text-main); 
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    padding: 12px 8px;
+  }
 
-.export-controls{display:flex;gap:6px;flex-wrap:wrap;}
-.btn-control{background:var(--slate);color:var(--navy);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.15s;}
-.btn-control:hover{background:#e2e8f0;border-color:#cbd5e1;}
+  .dashboard-container { 
+    width: 100%; 
+    max-width: 1600px;
+    margin: 0 auto; 
+  }
+  @media(min-width: 768px) { body { padding: 16px; } }
 
-/* ONE-LINE EXECUTIVE PANEL */
-.exec-summary-strip{background:var(--card);border:1px solid var(--border);padding:10px;border-radius:10px;margin-bottom:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-@media(min-width:480px){.exec-summary-strip{grid-template-columns:repeat(3,1fr);}}
-@media(min-width:768px){.exec-summary-strip{grid-template-columns:repeat(6,1fr);}}
-.exec-item{text-align:center;border-right:1px solid var(--border);padding:2px;}
-.exec-item:last-child{border-right:none;}
-.exec-lbl{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
-.exec-val{font-size:13px;font-weight:800;margin-top:2px;color:var(--navy);}
+  /* ULTRA-COMPACT HEADER */
+  .header-panel {
+    background: var(--card-bg);
+    padding: 14px 20px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-/* DATE FILTER CHIPS */
-.filter-box{background:var(--card);padding:10px;border-radius:10px;margin-bottom:10px;border:1px solid var(--border);}
-.filter-form{display:flex;flex-direction:column;gap:8px;}
-@media(min-width:768px){.filter-form{flex-direction:row;align-items:center;justify-content:space-between;}}
-.filter-inputs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.filter-group{display:flex;align-items:center;gap:4px;}
-.filter-group label{font-size:10px;font-weight:700;color:var(--secondary);text-transform:uppercase;}
-.filter-group input{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:var(--slate);color:var(--navy);font-weight:600;}
-.btn-submit{background:var(--navy);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-weight:700;font-size:11.5px;cursor:pointer;width:100%;transition:background 0.15s;}
-.btn-submit:hover{background:var(--accent);}
-@media(min-width:768px){.btn-submit{width:auto;}}
+  .header-title h2 {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
 
-/* 12 KPI STREAMLINED GRID */
-.kpi-container{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
-@media(min-width:480px){.kpi-container{grid-template-columns:repeat(3,1fr);}}
-@media(min-width:768px){.kpi-container{grid-template-columns:repeat(4,1fr);}}
-@media(min-width:1024px){.kpi-container{grid-template-columns:repeat(6,1fr);}}
+  .header-title p {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
 
-.kpi-card{background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border);border-top:3px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,0.01);}
-.kpi-label{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
-.kpi-value{font-size:13px;font-weight:800;margin-top:2px;color:var(--navy);}
+  .control-bar {
+    display: flex;
+    gap: 6px;
+  }
 
-.profit-card{border-top-color:var(--emerald);background:#f0fdf4;}
-.profit-card .kpi-value{color:var(--emerald);}
-.loss-card{border-top-color:var(--rose) !important;background:#fff5f5;}
-.loss-card .kpi-value{color:var(--rose) !important;}
-.warning-card{border-top-color:var(--amber);background:#fffbeb;}
+  .btn-action {
+    background: var(--slate-bg);
+    color: var(--text-main);
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+  }
+  .btn-action:hover { background: #e2e8f0; }
 
-/* THE PLATINUM MATRIX GRID RESPONSIVE */
-.matrix-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;}
-@media(min-width:768px){.matrix-grid{grid-template-columns:repeat(2,1fr);}}
-@media(min-width:1024px){.matrix-grid{grid-template-columns:repeat(3,1fr);}}
+  /* ONE-LINE EXECUTIVE QUICK GLANCE */
+  .quick-summary-strip {
+    background: var(--card-bg);
+    padding: 10px 16px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--border-color);
+  }
+  @media(min-width:576px) { .quick-summary-strip { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width:992px) { .quick-summary-strip { grid-template-columns: repeat(6, 1fr); } }
 
-.span-large-2{grid-column:span 1;}
-@media(min-width:1400px){
-  .matrix-grid{grid-template-columns:repeat(4,1fr);gap:12px;}
-  .span-large-2{grid-column:span 2;}
-}
-.col-span-full{grid-column:1 / -1;}
+  .strip-item {
+    text-align: center;
+    padding: 8px;
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    border: 1px solid #f1f5f9;
+  }
+  .strip-label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .strip-value { font-size: 14px; font-weight: 800; margin-top: 2px; color: #000000; }
 
-.card{background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.01);display:flex;flex-direction:column;}
-.card-title{font-size:11px;font-weight:800;text-transform:uppercase;margin-bottom:8px;color:var(--navy);display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);padding-bottom:5px;letter-spacing:0.3px;}
+  /* COMPACT FILTER MATRIX WITH EXTENDED SEARCHABLE SYSTEM */
+  .filter-panel {
+    background: var(--card-bg);
+    padding: 12px 20px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--border-color);
+  }
 
-/* STREAM DATA SEGMENTATION ROWS */
-.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f8fafc;font-size:11.5px;font-weight:500;color:var(--secondary);}
-.row span:last-child{font-weight:700;color:var(--navy);}
-.total-row{font-weight:800;border-top:1px dashed var(--secondary);padding-top:5px;color:var(--navy);font-size:12px;margin-top:2px;}
-.total-row span:last-child{font-weight:800;}
+  .filter-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
 
-.alert-panel-box{background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:10px;}
-.alert-row-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#b91c1c;padding:3px 0;}
+  .filter-inputs-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    flex: 1;
+  }
 
-.chart-box{height:150px;position:relative;width:100%;margin-top:auto;}
+  .input-field { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    min-width: 200px;
+  }
+  
+  .input-field label { 
+    font-size: 10px; 
+    font-weight: 800; 
+    color: var(--text-muted); 
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .input-field input {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-main);
+    outline: none;
+    width: 100%;
+  }
+
+  /* Choices.js Dropdown Optimization Overrides */
+  .choices-container-custom {
+    min-width: 260px;
+  }
+  .choices__inner {
+    background-color: #f8fafc !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 2px 8px !important;
+    min-height: 32px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-main) !important;
+  }
+  .choices__list--dropdown {
+    font-size: 11px !important;
+  }
+
+  .btn-sync {
+    background: var(--primary-dark);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-sync:hover { background: var(--accent-blue); }
+
+  /* STRUCTURED REFERENCE KPI GRID */
+  .kpi-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  @media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
+
+  .ref-kpi-card {
+    padding: 14px; 
+    border-radius: var(--radius-premium); 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+    border: 1px solid #e2e8f0;
+  }
+  .ref-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+  }
+
+  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .ref-kpi-value { font-size: 19px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
+
+  .ref-kpi-card[data-ref="rmp_cost"] { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; }
+  .ref-kpi-card[data-ref="rmp_cost"] .ref-kpi-value { color: #2563eb; }
+  
+  .ref-kpi-card[data-ref="prod_cost"] { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; }
+  .ref-kpi-card[data-ref="prod_cost"] .ref-kpi-value { color: #7c3aed; }
+
+  .ref-kpi-card[data-ref="utility"] { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; }
+  .ref-kpi-card[data-ref="utility"] .ref-kpi-value { color: #0d9488; }
+
+  .ref-kpi-card[data-ref="packaging"] { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; }
+  .ref-kpi-card[data-ref="packaging"] .ref-kpi-value { color: #db2777; }
+
+  .ref-kpi-card[data-ref="gross_sales"] { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; }
+  .ref-kpi-card[data-ref="gross_sales"] .ref-kpi-value { color: #4f46e5; }
+
+  .state-success { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important; border: 1px solid #bbf7d0 !important; }
+  .state-success .ref-kpi-value { color: #16a34a !important; }
+  
+  .state-danger { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border: 1px solid #fecaca !important; }
+  .state-danger .ref-kpi-value { color: #e11d48 !important; }
+  
+  .state-warning { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important; border: 1px solid #ffd8a8 !important; }
+  .state-warning .ref-kpi-value { color: #ea580c !important; }
+
+  /* ERROR LOGGING / ALERTS PANEL */
+  .exception-box {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    padding: 10px 16px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 12px;
+    border: 1px solid #fecaca;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+  }
+  .exception-header { font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; margin-bottom: 4px; }
+  .exception-item { display: flex; gap: 6px; align-items: center; color: #991b1b; font-size: 11px; font-weight: 700; }
+
+  /* COMPACT DATA SECTIONS GRID */
+  .core-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  @media(min-width:768px) { .core-layout-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media(min-width:1200px) { .core-layout-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width:1400px) { .core-layout-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .span-2x { grid-column: span 1; }
+  @media(min-width:1400px) { .span-2x { grid-column: span 2; } }
+  .full-width-block { grid-column: 1 / -1; }
+
+  .section-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-premium);
+    padding: 16px 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .section-header {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-main);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .data-row:nth-child(even) { background: #f8fafc; }
+  .data-row span:first-child { color: var(--text-muted); font-weight: 600; }
+  .data-row span:last-child { font-weight: 700; color: var(--text-main); }
+
+  .anchor-total-row {
+    font-weight: 800;
+    background: var(--primary-dark) !important;
+    color: #fff !important;
+    margin-top: auto;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border-bottom: none;
+  }
+  .anchor-total-row span { color: #fff !important; }
+
+  .visual-holder {
+    position: relative;
+    height: 140px;
+    width: 100%;
+    padding-top: 8px;
+    margin-top: auto;
+  }
+
+  .prod-matrix-stack { display: flex; flex-direction: column; gap: 8px; }
+  .prod-matrix-row {
+    background: #f8fafc;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-color);
+  }
+  .prod-name { font-weight: 800; color: var(--accent-blue); font-size: 12px; }
+  .prod-sub-meta { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .prod-right-metric { text-align: right; }
+  .prod-total-weight { font-weight: 800; font-size: 13px; color: #000000; }
+  .prod-net-margin { font-size: 11px; font-weight: 700; margin-top: 2px; }
 </style>
 </head>
 <body>
 
-<!-- 🏢 HEADER ACTION GRID -->
-<div class="header">
-  <div class="header-left">
-    <h2>CORPORATE COSTING COMMAND CENTER</h2>
-    <p>BKNR ERP &bull; Executive Realtime Intelligence Module &bull; (Company: {{ company_id }})</p>
-  </div>
-  <div class="export-controls">
-    <button class="btn-control" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
-    <button class="btn-control"><i class="fa-solid fa-file-excel"></i> Excel</button>
-    <button class="btn-control"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-    <button class="btn-control"><i class="fa-solid fa-envelope"></i> Share</button>
-  </div>
-</div>
+<div class="dashboard-container">
 
-<!-- 📊 EXECUTIVE SINGLE-LINE PANEL STRIP -->
-<div class="exec-summary-strip">
-  <div class="exec-item"><div class="exec-lbl">EBITDA Running</div><div class="exec-val" style="color:var(--emerald);">₹{{"{:.0f}".format(ebitda)}}</div></div>
-  <div class="exec-item"><div class="exec-lbl">Cost / Kg Rates</div><div class="exec-val">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
-  <div class="exec-item"><div class="exec-lbl">Sales Volume Out</div><div class="exec-val">{{"{:.0f}".format(sales_qty)}} Kg</div></div>
-  <div class="exec-item"><div class="exec-lbl">Production Intake</div><div class="exec-val">{{"{:.0f}".format(prod_qty)}} Kg</div></div>
-  <div class="exec-item"><div class="exec-lbl">Inventory Holding</div><div class="exec-val">{{ inventory_days }} Days</div></div>
-  <div class="exec-item"><div class="exec-lbl">Cash Conversion</div><div class="exec-val" style="color:var(--accent);">{{ cash_conversion_cycle }} Days</div></div>
-</div>
-
-<!-- 📅 DATA ARCHIVE INTERVAl TIMERS -->
-<div class="filter-box">
-  <form class="filter-form" method="GET" action="/dashboard/costing_dashboard">
-    <div class="filter-inputs">
-      <div class="filter-group"><label>From</label><input type="date" name="from_date" value="{{ from_date }}"></div>
-      <div class="filter-group"><label>To</label><input type="date" name="to_date" value="{{ to_date }}"></div>
+  <!-- 🏢 TOP CONTROLS & SESSION TRACING -->
+  <div class="header-panel">
+    <div class="header-title">
+      <h2>COSTING DASHBOARD</h2>
+      <p>Active Node Terminal Reference Trace: {{ email or 'Anonymous Corporate System Session' }}</p>
     </div>
-    <button type="submit" class="btn-submit"><i class="fa-solid fa-sync"></i> Sync Data Stream</button>
-  </form>
-</div>
-
-<!-- 📊 12 RECONCILED SEGMENTAL KPI MATRICES -->
-<div class="kpi-container">
-  <div class="kpi-card"><div class="kpi-label">Raw Material Cost</div><div class="kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Production Cost</div><div class="kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</div></div>
-  <div class="kpi-card warning-card"><div class="kpi-label">Conversion Cost / Kg</div><div class="kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Payroll Cost</div><div class="kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Utility Cost</div><div class="kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Packaging Cost</div><div class="kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Logistics Cost</div><div class="kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Inventory Asset</div><div class="kpi-value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">Sales Value</div><div class="kpi-value">₹{{"{:.0f}".format(total_sales)}}</div></div>
-  <div class="kpi-card warning-card"><div class="kpi-label">Pending Receivables</div><div class="kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</div></div>
-  <div class="kpi-card {% if total_sales - total_expense < 0 %}loss-card{% else %}profit-card{% endif %}"><div class="kpi-label">Gross Profit</div><div class="kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</div></div>
-  <div class="kpi-card {% if total_sales - total_expense < 0 %}loss-card{% else %}profit-card{% endif %}"><div class="kpi-label">Net Operational Margin</div><div class="kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</div></div>
-</div>
-
-<!-- 🚨 CRITICAL OPERATIONS ALERTS RED PANEL -->
-<div class="alert-panel-box">
-  <div style="font-size:11px; font-weight:800; text-transform:uppercase; margin-bottom:5px; color:#b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> Board Exception Monitoring Logs</div>
-  {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="alert-row-item">⚠ Gross Operations Profit Margin dropped below 5% target benchmark.</div>{% endif %}
-  {% if total_expense > 0 and ((electricity_cost + diesel_cost) / total_expense) > 0.15 %}<div class="alert-row-item">⚠ Utility cost surge vector detected across production runtime.</div>{% endif %}
-  {% if receivable_outstanding > 0 %}<div class="alert-row-item">⚠ Active outstanding customer ledger tracks awaiting asset collection.</div>{% endif %}
-  <div class="alert-row-item">⚠ Real-time inventory holding limits monitor active on cold chain modules.</div>
-</div>
-
-<!-- 🏛️ THE PLATINUM COMMAND MATRIX GRID HOUSING -->
-<div class="matrix-grid">
-
-  <!-- 1. GROSS PROFIT WATERFALL COMPACT BLOCK -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-arrow-down-wide-short" style="color:var(--accent);"></i> Profit Waterfall</div>
-    <div class="row"><span>Revenue (Gross Realized)</span><span style="color:var(--emerald);">₹{{"{:,.2f}".format(total_sales)}}</span></div>
-    <div class="row"><span>(-) Raw Material Cost</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
-    <div class="row"><span>(-) Processing Expenditures</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
-    <div class="row"><span>(-) Utilities Operational</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
-    <div class="row"><span>(-) Payroll Resources Base</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
-    <div class="row"><span>(-) Packaging Base Supplies</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
-    <div class="row"><span>(-) Cold Logistics & Overheads</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
-    <div class="row total-row"><span>Net Realized Profit Margin</span><span {% if total_sales - total_expense < 0 %}style="color:var(--rose);"{% else %}style="color:var(--emerald);"{% endif %}>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
+    <div class="control-bar">
+      <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+      <button class="btn-action"><i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Excel</button>
+      <button class="btn-action"><i class="fa-solid fa-file-pdf" style="color:#dc2626;"></i> PDF</button>
+    </div>
   </div>
 
-  <!-- 2. COST VARIANCE TRACKER MODAL -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-sliders" style="color:var(--amber);"></i> Cost Variance Monitor</div>
-    <div class="row" style="font-weight:700; background:#f8fafc; padding:3px 5px;"><span>Cost Vector</span><span>MTD Run Cost</span><span>Variance</span></div>
-    <div class="row"><span>Material Variance</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:var(--emerald);">-1.2%</span></div>
-    <div class="row"><span>Utility Variance</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:var(--rose);">+4.1%</span></div>
-    <div class="row"><span>Payroll Variance</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:var(--emerald);">0.0%</span></div>
-    <div class="row"><span>Logistics Variance</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:var(--emerald);">-0.8%</span></div>
-    <div class="row total-row"><span>Composite Cost Index</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:var(--rose);">+1.1%</span></div>
+  <!-- 📊 QUICK STREAM STRIP -->
+  <div class="quick-summary-strip">
+    <div class="strip-item"><p class="strip-label">EBITDA Pool</p><p class="strip-value" style="color:#16a34a;">₹{{"{:.0f}".format(ebitda)}}</p></div>
+    <div class="strip-item"><p class="strip-label">Processing / Kg</p><p class="strip-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</p></div>
+    <div class="strip-item"><p class="strip-label">Sales Outflow</p><p class="strip-value">{{"{:.0f}".format(sales_qty)}} Kg</p></div>
+    <div class="strip-item"><p class="strip-label">Factory Intake</p><p class="strip-value">{{"{:.0f}".format(prod_qty)}} Kg</p></div>
+    <div class="strip-item"><p class="strip-label">Stock Age Max</p><p class="strip-value">{{ inventory_days }} Days</p></div>
+    <div class="strip-item"><p class="strip-label">CCC Track</p><p class="strip-value" style="color:var(--accent-blue);">{{ cash_conversion_cycle }} Days</p></div>
   </div>
 
-  <!-- 3. COST PER KG INTEL DRIVEN RATES -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-calculator" style="color:var(--secondary)"></i> Cost Per Kg Rates</div>
-    <div class="row"><span>Material Cost / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="row"><span>Processing Cost / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost + peeling_cost + grading_cost + soaking_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="row"><span>Utilities Burn / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost + diesel_cost + water_cost + ice_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="row"><span>Payroll Baseline / Kg</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(payroll_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="row total-row"><span>Total Cost Per Kg Unit</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
+  <!-- 📅 SEARCHABLE FILTERS MATRIX -->
+  <div class="filter-panel">
+    <form class="filter-form" method="GET" action="/dashboard/costing_dashboard">
+      <div class="filter-inputs-wrapper">
+        <!-- Searchable Company Selection Dropdown -->
+        <div class="input-field choices-container-custom">
+          <label><i class="fa-solid fa-building"></i> Company ID</label>
+          <select name="company_id" id="searchableCompanyDropdown">
+            <option value="">All Structural Entities</option>
+            {% for comp in available_companies %}
+              <option value="{{ comp.code }}" {% if comp_code == comp.code or company_id == comp.code %}selected{% endif %}>
+                {{ comp.name }} ({{ comp.code }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-field"><label>From</label><input type="date" name="from_date" value="{{ from_date }}"></div>
+        <div class="input-field"><label>To</label><input type="date" name="to_date" value="{{ to_date }}"></div>
+      </div>
+      <button type="submit" class="btn-sync"><i class="fa-solid fa-sync"></i> Refresh Matrix</button>
+    </form>
   </div>
 
-  <!-- 4. CUSTOMER RECEIVABLE AGEING LEDGER -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-clock-history" style="color:var(--rose);"></i> Customer Ageing Ledger</div>
-    <div class="row"><span>0 - 30 Days Outstand</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
-    <div class="row"><span>31 - 60 Days Bracket</span><span style="color:var(--amber);">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
-    <div class="row"><span>61 - 90 Days Critical</span><span style="color:#f97316;">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
-    <div class="row"><span>90+ Days Bad Debt Risk</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
-    <div class="row total-row"><span>Total Arrears Balance</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+  <!-- 📊 12 RECONCILED STANDARD REFERENCE KPIs -->
+  <div class="kpi-matrix-grid">
+    <div class="ref-kpi-card" data-ref="rmp_cost"><span class="ref-kpi-meta">Raw Material Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</span></div>
+    <div class="ref-kpi-card" data-ref="prod_cost"><span class="ref-kpi-meta">Production Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+    <div class="ref-kpi-card state-warning" data-ref="conversion_rate"><span class="ref-kpi-meta">Conversion / Kg</span><span class="ref-kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="ref-kpi-card" data-ref="payroll"><span class="ref-kpi-meta">Payroll Resource</span><span class="ref-kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</span></div>
+    <div class="ref-kpi-card" data-ref="utility"><span class="ref-kpi-meta">Utility Expense</span><span class="ref-kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+    <div class="ref-kpi-card" data-ref="packaging"><span class="ref-kpi-meta">Packaging Supply</span><span class="ref-kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</span></div>
+    <div class="ref-kpi-card" data-ref="logistics"><span class="ref-kpi-meta">Logistics Fleet</span><span class="ref-kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</span></div>
+    <div class="ref-kpi-card" data-ref="inventory_val"><span class="ref-kpi-meta">Inventory Asset</span><span class="ref-kpi-value">₹{{"{:.0f}".format(inventory_value)}}</span></div>
+    <div class="ref-kpi-card" data-ref="gross_sales"><span class="ref-kpi-meta">Gross Sales Pool</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales)}}</span></div>
+    <div class="ref-kpi-card state-warning" data-ref="receivables"><span class="ref-kpi-meta">Arrears Pending</span><span class="ref-kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}" data-ref="gross_profit"><span class="ref-kpi-meta">Gross Margin</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</span></div>
+    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}" data-ref="net_margin_pct"><span class="ref-kpi-meta">Net Ratio</span><span class="ref-kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</span></div>
   </div>
 
-  <!-- 5. INVENTORY AGEING TRACK MATRIX -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-warehouse" style="color:var(--amber);"></i> Inventory Ageing Matrix</div>
-    <div class="row"><span>0 - 30 Days Fast Move</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
-    <div class="row"><span>31 - 60 Days Mid Holdings</span><span style="color:var(--amber);">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
-    <div class="row"><span>61 - 90 Days Slow Cargo</span><span style="color:#f97316;">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
-    <div class="row"><span>90+ Days Dead Stock Risk</span><span style="color:var(--rose);">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
-    <div class="row total-row"><span>Total Vault Valuation</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
+  <!-- 🚨 EXCEPTION TELEMETRY -->
+  <div class="exception-box">
+    <div class="exception-header"><i class="fa-solid fa-bolt"></i> Discrepancy Stack</div>
+    {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Net profit tracking below threshold standard profile.</div>{% endif %}
+    {% if receivable_outstanding > 0 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Active capital locked in external outstanding accounts.</div>{% endif %}
   </div>
 
-  <!-- OPERATION DEPARTMENTAL COSTS BAR VISUAL -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-chart-gantt"></i> Dept Cost Distribution</div>
-    <div class="chart-box"><canvas id="deptChart"></canvas></div>
-  </div>
+  <!-- 🏛️ CONTROL LEDGERS GRID -->
+  <div class="core-layout-grid">
 
-  <!-- 6. MULTI-MONTH MANAGEMENT TREND SYSTEM GRID -->
-  <div class="card span-large-2">
-    <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> Multi-Month Trend Center</div>
-    <div class="chart-box"><canvas id="trendChart"></canvas></div>
-  </div>
+    <!-- BLOCK 1: WATERFALL REFERENCE -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-sitemap" style="color:var(--accent-blue);"></i> Revenue Deductions</div>
+      <div class="data-row"><span>Gross Sales Allocation</span><span>₹{{"{:,.2f}".format(total_sales)}}</span></div>
+      <div class="data-row"><span>(-) Materials Sourcing</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
+      <div class="data-row"><span>(-) Factory Labor Runs</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+      <div class="data-row"><span>(-) Plant Utilities</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+      <div class="data-row"><span>(-) Salary Baseline</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
+      <div class="data-row"><span>(-) Packaging Inventory</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
+      <div class="data-row"><span>(-) Supply Chain / Freight</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Net Dynamic Yield</span><span>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
+    </div>
 
-  <!-- PRODUCT PROFITABILITY RANKING SUMMARY BLOCKS -->
-  <div class="card col-span-full">
-    <div class="card-title"><i class="fa-solid fa-box-open" style="color:var(--accent);"></i> Product Performance Yield & Performance Margin Ledger</div>
-    <div style="display:flex; flex-direction:column; gap:6px;">
-      {% if product_costing_matrix %}
-        {% for p in product_costing_matrix %}
-        <div style="padding:8px 10px; border:1px solid var(--border); border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:var(--card);">
-          <div>
-            <div style="font-weight:800; color:var(--accent); font-size:12px;">{{ p.product_name }}</div>
-            <div style="font-size:11px; color:var(--secondary); margin-top:3px; display:flex; gap:12px; flex-wrap:wrap;">
-              <div>Revenue: ₹{{"{:.0f}".format(p.revenue)}}</div>
-              <div>Cost Allocation: ₹{{"{:.0f}".format(p.cost)}}</div>
-              <div {% if p.profit < 0 %}style="color:var(--rose); font-weight:700;"{% else %}style="color:var(--emerald); font-weight:700;"{% endif %}>Net Profit: ₹{{"{:.0f}".format(p.profit)}}</div>
-              <div>Yield/Kg: ₹{{"%.2f"|format(p.profit_per_kg)}}</div>
+    <!-- BLOCK 2: VARIANCE REFERENCE -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:#ea580c;"></i> Target Variance Tracking</div>
+      <div class="data-row" style="font-weight:700; background:var(--primary-dark); color:#fff; border-radius:4px;"><span>Vector Element</span><span>Current MTD</span><span>Variance</span></div>
+      <div class="data-row"><span>Raw Materials</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:#16a34a;">-1.2%</span></div>
+      <div class="data-row"><span>Power & Fuels</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:#e11d48;">+4.1%</span></div>
+      <div class="data-row"><span>Human Capital</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:#16a34a;">0.0%</span></div>
+      <div class="data-row"><span>Freight Logistics</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:#16a34a;">-0.8%</span></div>
+      <div class="data-row anchor-total-row"><span>Index Composite</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:#e11d48;">+1.1%</span></div>
+    </div>
+
+    <!-- BLOCK 3: MASS METRICS -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-weight-hanging" style="color:var(--text-muted)"></i> Unit Rate Breakdown (/Kg)</div>
+      <div class="data-row"><span>Material Expense Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Processing Labor Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost + peeling_cost + grading_cost + soaking_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Utility Loading Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost + diesel_cost + water_cost + ice_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Payroll Apportioned</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(payroll_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row anchor-total-row"><span>Aggregated Unit Cost</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    </div>
+
+    <!-- BLOCK 4: BAR CHART MODULE -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color: var(--primary-dark);"></i> Segment Resource Share</div>
+      <div class="visual-holder"><canvas id="deptMiniChart"></canvas></div>
+    </div>
+
+    <!-- BLOCK 5: TIMELINE VISUALIZATION REFERENCE -->
+    <div class="section-card span-2x">
+      <div class="section-header"><i class="fa-solid fa-timeline" style="color:#0d9488;"></i> Operational Trajectory Matrix</div>
+      <div class="visual-holder"><canvas id="trendLineChart"></canvas></div>
+    </div>
+
+    <!-- BLOCK 6: ARREARS RECOVERY STRATIFICATION -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:#e11d48;"></i> Outstanding Aging Schedule</div>
+      <div class="data-row"><span>Current Frame (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
+      <div class="data-row"><span>Mid Frame (31-60 D)</span><span style="color:#ea580c;">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
+      <div class="data-row"><span>Urgent Warning (61-90 D)</span><span style="color:#f97316;">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
+      <div class="data-row"><span>Risk Recovery (90+ D)</span><span style="color:#e11d48;">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Total Active Book Arrears</span><span>₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+    </div>
+
+    <!-- BLOCK 7: ASSET COLD STORAGE MATRIX -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-box" style="color:#ea580c;"></i> Inventory Holding Vintage</div>
+      <div class="data-row"><span>Active Fast Turn (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
+      <div class="data-row"><span>Standard Hold (31-60 D)</span><span style="color:#ea580c;">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
+      <div class="data-row"><span>Slow Clearance (61-90 D)</span><span style="color:#f97316;">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
+      <div class="data-row"><span>Stagnant Risk (90+ D)</span><span style="color:#e11d48;">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Aggregate Vault Asset</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
+    </div>
+
+    <!-- BLOCK 8: SKU PERFORMANCE EXPANSION BLOCK -->
+    <div class="section-card full-width-block">
+      <div class="section-header"><i class="fa-solid fa-layer-group" style="color:var(--accent-blue);"></i> SKU Performance Metrics & Margin Realization</div>
+      <div class="prod-matrix-stack">
+        {% if product_costing_matrix %}
+          {% for p in product_costing_matrix %}
+          <div class="prod-matrix-row">
+            <div>
+              <p class="prod-name">{{ p.product_name }}</p>
+              <div class="prod-sub-meta">
+                <div>Rev: <strong>₹{{"{:.0f}".format(p.revenue)}}</strong></div>
+                <div>Cost: <strong>₹{{"{:.0f}".format(p.cost)}}</strong></div>
+                <div {% if p.profit < 0 %}style="color:#e11d48;"{% else %}style="color:#16a34a;"{% endif %}>Margin Vol: <strong>₹{{"{:.0f}".format(p.profit)}}</strong></div>
+                <div>Yield Rate: <strong>₹{{"%.2f"|format(p.profit_per_kg)}}/Kg</strong></div>
+              </div>
+            </div>
+            <div class="prod-right-metric">
+              <p class="prod-total-weight">{{ p.qty }} Kg</p>
+              <p class="prod-net-margin" {% if p.profit < 0 %}style="color:#e11d48;"{% else %}style="color:#16a34a;"{% endif %}>
+                Ratio: {% if p.revenue > 0 %}{{"%.2f"|format(((p.revenue - p.cost) / p.revenue) * 100)}}{% else %}0.00{% endif %}%
+              </p>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-weight:800; color:var(--navy); font-size:12px;">{{"{:.0f}".format(p.qty)}} Kg</div>
-            <div style="font-size:11px; font-weight:700; margin-top:2px; {% if p.profit < 0 %}color:var(--rose);{% else %}color:var(--emerald);{% endif %}">Margin: {% if p.revenue > 0 %}{{"%.2f"|format(((p.revenue - p.cost) / p.revenue) * 100)}}{% else %}0.00{% endif %}%</div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center; color:var(--text-muted); padding:24px; font-weight:600; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            No downstream log files fetched inside current runtime range.
           </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div style="text-align:center; color:var(--secondary); padding:15px; font-weight:500;">No active production batch logs mapped inside current storage parameters.</div>
-      {% endif %}
+        {% endif %}
+      </div>
     </div>
-  </div>
 
+  </div>
 </div>
 
-<!-- SCRIPT MATRICES GRID VISUALIZATIONS -->
+<!-- DATA SCRIPT PLOTS REFERENCE & INITIALIZATION -->
 <script>
-// A. Department Cost Component Bars Plot
-new Chart(document.getElementById("deptChart"), {
-  type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-  data: {
-    labels: ["DeHead", "Peel", "Grad", "Soak", "Payroll", "Packing", "Logistics"],
-    datasets: [{
-      data: [{{ deheading_cost }}, {{ peeling_cost }}, {{ grading_cost }}, {{ soaking_cost }}, {{ payroll_cost }}, {{ packaging_cost }}, {{ logistics_cost }}],
-      backgroundColor: ["#1e293b", "#0284c7", "#0d9488", "#b45309", "#6366f1", "#f43f5e", "#ec4899"]
-    }]
+document.addEventListener("DOMContentLoaded", function() {
+  // Initialize Searchable Choices Dropdown Object for Company Selector Column
+  const element = document.getElementById('searchableCompanyDropdown');
+  if (element) {
+    new Choices(element, {
+      searchEnabled: true,
+      itemSelectText: '',
+      removeItemButton: false,
+      shouldSort: false,
+      position: 'bottom'
+    });
   }
-});
 
-// B. Multi-Month Reconciled Progress Trend Center Charts Lines
-new Chart(document.getElementById("trendChart"), {
-  type: "line",
-  options: { responsive: true, maintainAspectRatio: false },
-  data: {
-    labels: {{ month_labels|tojson }},
-    datasets: [
-      { label: "Revenue Matrix", data: {{ revenue_trend|tojson }}, borderColor: "#0d9488", fill: false, tension: 0.15 },
-      { label: "Expense Matrix", data: {{ expense_trend|tojson }}, borderColor: "#e11d48", fill: false, tension: 0.15 },
-      { label: "Profit Progression", data: {{ profit_trend|tojson }}, borderColor: "#0284c7", fill: false, tension: 0.15 }
-    ]
-  }
+  // Component Load Chart Initialization
+  new Chart(document.getElementById("deptMiniChart"), {
+    type: "bar",
+    options: { 
+      responsive: true, maintainAspectRatio: false, 
+      plugins: { legend: { display: false } },
+      scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } }
+    },
+    data: {
+      labels: ["RM", "Proc", "Util", "Pay", "Pack", "Log"],
+      datasets: [{
+        data: [
+          {{ rmp_cost or 0 }}, 
+          {{ (deheading_cost or 0) + (peeling_cost or 0) + (grading_cost or 0) + (soaking_cost or 0) }}, 
+          {{ (electricity_cost or 0) + (diesel_cost or 0) + (water_cost or 0) + (ice_cost or 0) }}, 
+          {{ payroll_cost or 0 }}, 
+          {{ packaging_cost or 0 }}, 
+          {{ logistics_cost or 0 }}
+        ],
+        backgroundColor: ["#0f172a", "#1d4ed8", "#0d9488", "#b45309", "#6366f1", "#f43f5e"],
+        borderRadius: 4
+      }]
+    }
+  });
+
+  // Dynamic Trajectory Trend Timeline Line Chart Initialization
+  new Chart(document.getElementById("trendLineChart"), {
+    type: "line",
+    options: { 
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth: 8, font: { size: 10, family: "'Plus Jakarta Sans', sans-serif", weight: 700 } } } },
+      scales: { 
+        y: { ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } }, grid: { color: "#f1f5f9" } }, 
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } 
+      }
+    },
+    data: {
+      labels: {{ (month_labels or [])|tojson }},
+      datasets: [
+        { label: "Rev Stream", data: {{ (revenue_trend or [])|tojson }}, borderColor: "#0d9488", backgroundColor: "#0d9488", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
+        { label: "Exp Stream", data: {{ (expense_trend or [])|tojson }}, borderColor: "#e11d48", backgroundColor: "#e11d48", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
+        { label: "Net Pool", data: {{ (profit_trend or [])|tojson }}, borderColor: "#1d4ed8", backgroundColor: "#1d4ed8", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 }
+      ]
+    }
+  });
 });
 </script>
 </body>

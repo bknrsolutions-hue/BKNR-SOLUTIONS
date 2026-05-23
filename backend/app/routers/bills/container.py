@@ -12,7 +12,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from app.database import get_db
-from app.database.models.bills import ContainerLog, PurchaseInvoice  # జాయిన్ కోసం పర్చేజ్ ఇన్‌వాయిస్ మోడల్ తెచ్చుకున్నాం
+from app.database.models.bills import ContainerLog, PurchaseInvoice  
 from app.database.models.processing import AuditLog 
 from app.database.models.criteria import vendors
 from app.database.models.inventory_management import pending_orders, sales_dispatch
@@ -42,7 +42,7 @@ class ContainerLogisticsSchema(BaseModel):
 
 
 # ============================================================
-# 🚢 1. MAIN ENTRY PAGE (GET) - DEFAULT EMPTY STATE (FY LOCKED & FIXED)
+# 🚢 1. MAIN ENTRY PAGE (GET) - FIXED FOR NATIVE DATE FILTER
 # ============================================================
 @router.get("/entry", response_class=HTMLResponse)
 def container_entry_page(
@@ -85,7 +85,7 @@ def container_entry_page(
 
     po_list = sorted(list(po_set))
 
-    # 🔹 ⚡ HISTORY WITH ADVANCED PO/INVOICE FY FILTER LOCK (FIXED 'created_at' ERROR)
+    # 🔹 ⚡ HISTORY WITH NEW NATIVE DATE OVERSIGHT
     container_history = []
     if fy:
         selected_year = int(fy)
@@ -93,25 +93,20 @@ def container_entry_page(
         end_date = dt.date(selected_year + 1, 3, 31)
 
         try:
-            # ContainerLog లో డేట్ కాలమ్ లేదు కాబట్టి, దానిని PurchaseInvoice లోని 'invoice_date' తో జాయిన్ చేసి ఆర్థిక సంవత్సరం లాక్ చేసాం
+            # టేబుల్‌ లో ఇప్పుడు 'date' కాలమ్ ఉంది కాబట్టి డైరెక్ట్‌గా ఫిల్టర్ చేస్తున్నాం
             container_history = (
                 db.query(ContainerLog, vendors.name.label("v_name"))
                 .join(vendors, ContainerLog.vendor_id == vendors.id)
-                .join(PurchaseInvoice, and_(
-                    ContainerLog.po_number == PurchaseInvoice.po_number,
-                    PurchaseInvoice.company_id == comp_code
-                ))
                 .filter(
                     ContainerLog.company_id == comp_code,
-                    PurchaseInvoice.invoice_date >= start_date,
-                    PurchaseInvoice.invoice_date <= end_date
+                    ContainerLog.date >= start_date,
+                    ContainerLog.date <= end_date
                 )
                 .order_by(desc(ContainerLog.id))
-                .distinct()
                 .all()
             )
             
-            # ఒకవేళ ఇన్‌వాయిస్ మ్యాచ్ అవ్వని పాత రికార్డులు ఏవైనా ఉంటే, వాటి బ్యాకప్ ఫాల్‌బ్యాక్ లోడింగ్:
+            # ఒకవేళ కొత్త డేట్ కాలమ్ అప్‌డేట్ అవ్వని పాత రికార్డులు ఉంటే, వాటి కోసం ఫాల్‌బ్యాక్ సేఫ్ లోడింగ్:
             if not container_history:
                 container_history = (
                     db.query(ContainerLog, vendors.name.label("v_name"))
@@ -140,7 +135,7 @@ def container_entry_page(
 
 
 # ============================================================
-# 💾 2. SAVE/CREATE ACTION (POST JSON - FIXED 'gst_percent' ERROR)
+# 💾 2. SAVE/CREATE ACTION (POST JSON - DEFAULT DATE INCLUDED)
 # ============================================================
 @router.post("/save")
 async def save_container_log(
@@ -160,7 +155,7 @@ async def save_container_log(
         tax_calculated = round((subtotal * payload.gst_percent) / 100, 2)
         grand_total = round(subtotal + tax_calculated, 2)
 
-        # 'gst_percent' ని మోడల్ కాలమ్స్ లో స్టోర్ చేయకుండా కేవలం గ్రాండ్ టోటల్ లెక్కించి సేవ్ చేస్తున్నాం
+        # ఇక్కడ default గా ఇవాల్టి 'date' ని సేవ్‌ చేస్తున్నాం 📅
         new_entry = ContainerLog(
             company_id=comp_code,
             unit_id=request.session.get("unit_id", 0),
@@ -173,7 +168,8 @@ async def save_container_log(
             handling=payload.handling,
             detention=payload.detention,
             lended_total=grand_total,
-            vessel_name=""
+            vessel_name="",
+            date=dt.date.today()  # Default current transaction entry date
         )
 
         db.add(new_entry)

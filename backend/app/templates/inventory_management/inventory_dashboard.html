@@ -2,307 +2,442 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>BKNR ERP | Corporate Inventory Intelligence</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-:root{
-    --bg:#f8fafc;
-    --panel:#ffffff;
-    --primary:#0f172a;
-    --accent:#2563eb;
-    --success:#10b981;
-    --warning:#f59e0b;
-    --danger:#ef4444;
-    --border:#e2e8f0;
-    --text:#1e293b;
-    --sub:#64748b;
-}
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Plus Jakarta Sans',sans-serif;
-}
-
-body{
-    background:var(--bg);
-    color:var(--text);
-    font-size:11px;
-}
-
-.header{
-    background:#fff;
-    border-bottom:1px solid var(--border);
-    padding:10px 14px;
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-
-.header-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:8px;
-    gap:10px;
-}
-
-.header-title h1{
-    font-size:16px;
-    font-weight:800;
-    color:var(--primary);
-}
-
-.company-box{
-    display:flex;
-    gap:5px;
-}
-
-.badge{
-    padding:4px 8px;
-    border-radius:4px;
-    background:#eff6ff;
-    color:var(--accent);
-    font-weight:700;
-    border:1px solid #bfdbfe;
-    font-size:9px;
-    white-space: nowrap;
-}
-
-.filters{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
-    gap:6px;
-}
-
-.filter-group{
-    display:flex;
-    flex-direction:column;
-    gap:3px;
-}
-
-.filter-group label{
-    font-size:8px;
-    text-transform:uppercase;
-    font-weight:800;
-    color:var(--sub);
-}
-
-.filter-group select,
-.filter-group input{
-    border:1px solid var(--border);
-    border-radius:4px;
-    padding:6px;
-    font-size:10px;
-    background:#fff;
-    outline:none;
-    width: 100%;
-}
-
-.kpi-grid{
-    padding:10px;
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
-    gap:8px;
-}
-
-.kpi-card{
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:10px;
-    border-left:3px solid var(--accent);
-}
-
-.kpi-card h4{
-    font-size:8px;
-    text-transform:uppercase;
-    color:var(--sub);
-    margin-bottom:4px;
-}
-
-.kpi-card .value{
-    font-size:14px;
-    font-weight:800;
-    color:var(--primary);
-}
-
-.kpi-card .amt-sub{
-    font-size:9px;
-    font-weight:700;
-    color:var(--accent);
-    margin-top:2px;
-}
-
-.tabs{
-    display:flex;
-    gap:5px;
-    padding:0 10px 10px;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.tab-btn{
-    border:none;
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:6px;
-    padding:8px 12px;
-    cursor:pointer;
-    font-weight:700;
-    white-space: nowrap;
-    font-size: 10px;
-}
-
-.tab-btn.active{
-    background:var(--primary);
-    color:#fff;
-}
-
-.tab-content{
-    display:none;
-    padding:0 10px 15px;
-}
-
-.tab-content.active{
-    display:block;
-}
-
-.panel{
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    overflow:hidden;
-    margin-bottom:10px;
-}
-
-.panel-header{
-    padding:10px;
-    border-bottom:1px solid var(--border);
-    background:#f8fafc;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.panel-header h3{
-    font-size:11px;
-    font-weight:800;
-}
-
-.footer-actions{
-    display:flex;
-    gap:5px;
-}
-
-.action-btn{
-    border:none;
-    padding:6px 10px;
-    border-radius:4px;
-    background:var(--primary);
-    color:#fff;
-    font-weight:700;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    gap:4px;
-    font-size: 9px;
-}
-
-.excel-btn{ background:var(--success); }
-
-.table-wrap{
-    overflow:auto;
-    max-height:600px;
-}
-
-.compact-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:9px;
-    white-space:nowrap;
-}
-
-.compact-table thead th{
-    position:sticky;
-    top:0;
-    z-index:20;
-    background:#f1f5f9;
-    border-bottom:1px solid #cbd5e1;
-    padding:8px 5px;
-    text-transform:uppercase;
-    font-size:8px;
-    color:#475569;
-    text-align:left;
-}
-
-.compact-table tbody td{
-    padding:6px 6px;
-    border-bottom:1px solid #f1f5f9;
-}
-
-/* Mobile sticky logic for Species & Grade */
-@media(max-width:768px) {
-    .compact-table thead th:nth-child(4),
-    .compact-table tbody td:nth-child(4) {
-        position: sticky;
-        left: 0;
-        z-index: 25;
-        background: #fff;
-        border-right: 1px solid var(--border);
+    :root {
+        --bg: #f1f5f9; /* Processing Dashboard Slate BG */
+        --panel: #ffffff;
+        --primary: #0f172a;
+        --accent: #2563eb;
+        --accent-light: #eff6ff;
+        --success: #10b981;
+        --success-light: #ecfdf5;
+        --warning: #f59e0b;
+        --warning-light: #fffbeb;
+        --danger: #ef4444;
+        --danger-light: #fef2f2;
+        --reprocess: #7c3aed;
+        --reprocess-light: #f5f3ff;
+        --fresh: #0891b2;
+        --fresh-light: #ecfeff;
+        --border: #e2e8f0; /* Soft and light border from reference */
+        --text: #0f172a; /* Main dark text */
+        --sub: #475569; /* Muted subtext */
+        --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
+        --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.04);
+        --radius: 12px;
     }
-}
 
-.grand-total-row{
-    background:#dbeafe !important;
-    font-weight:800;
-    position:sticky;
-    bottom:0;
-}
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-.dead-row{ background:#fff1f2 !important; }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-size: 11px;
+        -webkit-font-smoothing: antialiased;
+    }
 
-.chart-grid{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap:10px;
-}
+    /* Premium Sticky Header */
+    .header {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 16px;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        box-shadow: var(--shadow-sm);
+    }
 
-.chart-box{
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:10px;
-    height:300px;
-}
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 10px;
+    }
 
-.age-boxes{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:8px;
-}
+    .header-title h1 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-.age-card{
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:14px;
-    text-align:center;
-    border-bottom:3px solid var(--border);
-}
+    .header-title h1 i {
+        color: var(--accent);
+    }
 
-.age-card h2{ font-size:18px; margin:5px 0; }
+    .company-box {
+        display: flex;
+        gap: 6px;
+    }
 
-.age-green{ background:#dcfce7; color:#166534; padding:2px 6px; border-radius:10px; font-weight:700; }
-.age-yellow{ background:#fef9c3; color:#854d0e; padding:2px 6px; border-radius:10px; font-weight:700; }
-.age-orange{ background:#ffedd5; color:#c2410c; padding:2px 6px; border-radius:10px; font-weight:700; }
-.age-red{ background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:10px; font-weight:700; }
+    .badge {
+        padding: 5px 10px;
+        border-radius: 6px;
+        background: var(--accent-light);
+        color: var(--accent);
+        font-weight: 700;
+        border: 1px solid #bfdbfe;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .badge:last-child {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+    }
+
+    /* Filters Zone */
+    .filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 8px;
+        background: #f8fafc;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .filter-group label {
+        font-size: 8px;
+        text-transform: uppercase;
+        font-weight: 800;
+        color: var(--sub);
+        padding-left: 2px;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 7px 8px;
+        font-size: 11px;
+        background: #fff;
+        outline: none;
+        width: 100%;
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    /* Reference Code Style Premium Colored Background KPI Cards */
+    .kpi-grid {
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+    @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(7, 1fr); gap: 12px; } }
+
+    .kpi-card {
+        border-radius: var(--radius);
+        padding: 14px 14px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .kpi-card h4 {
+        font-size: 10px;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        letter-spacing: 0.8px;
+        font-weight: 800;
+        opacity: 0.9;
+    }
+
+    .kpi-card .value {
+        font-size: 19px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+
+    .kpi-card .amt-sub {
+        font-size: 10px;
+        font-weight: 800;
+        margin-top: 6px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.7);
+        width: fit-content;
+    }
+
+    /* Soft Solid Colored Gradients from Reference Architecture */
+    .kpi-opening { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; color: #1e40af; }
+    .kpi-opening .value { color: #000; } .kpi-opening h4 { color: var(--sub); }
+    
+    .kpi-closing { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; color: #065f46; }
+    .kpi-closing .value { color: #000; } .kpi-closing h4 { color: var(--sub); }
+
+    .kpi-sales { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; color: #991b1b; }
+    .kpi-sales .value { color: #000; } .kpi-sales h4 { color: var(--sub); }
+
+    .kpi-reprocess { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; color: #92400e; }
+    .kpi-reprocess .value { color: #000; } .kpi-reprocess h4 { color: var(--sub); }
+
+    .kpi-fresh { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; color: #5b21b6; }
+    .kpi-fresh .value { color: #000; } .kpi-fresh h4 { color: var(--sub); }
+
+    .kpi-dead { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; color: #c53030; }
+    .kpi-dead .value { color: #000; } .kpi-dead h4 { color: var(--sub); }
+
+    .kpi-mc { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; color: #0369a1; }
+    .kpi-mc .value { color: #000; } .kpi-mc h4 { color: var(--sub); }
+
+    /* Elegant Segmented Tabs */
+    .tabs {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        margin: 0 16px 12px;
+        background: #e2e8f0;
+        border-radius: 8px;
+        max-width: fit-content;
+    }
+
+    .tab-btn {
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: 700;
+        white-space: nowrap;
+        font-size: 11px;
+        color: var(--sub);
+        transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+        background: #fff;
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .tab-content {
+        display: none;
+        padding: 0 16px 20px;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* 2. DATA TABLES SYSTEM - REFERENCE ARCHITECTURE STYLE */
+    .rm-summary-box { 
+        background: var(--panel); 
+        border-radius: var(--radius); 
+        border: 1px solid var(--border); 
+        margin-bottom: 20px; 
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .panel-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        background: #ffffff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .panel-header h3 {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .footer-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .action-btn {
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+    }
+
+    .excel-btn { background: var(--success); }
+
+    .table-wrap {
+        overflow: auto;
+        max-height: 550px;
+        scrollbar-width: thin;
+    }
+
+    /* Reference Table Structure Integration */
+    .rm-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 9px; 
+    }
+    
+    .rm-table th { 
+        text-align: left; 
+        padding: 8px 10px; 
+        background: #f8fafc; /* Beautiful soft header */
+        color: var(--sub); 
+        font-size: 9.5px; 
+        text-transform: uppercase; 
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+    
+    .rm-table td { 
+        padding: 8px 10px; 
+        border-bottom: 1px solid #f1f5f9; /* Smooth soft rows separator */
+        font-weight: 700; 
+        color: #1e293b; 
+    }
+    
+    .rm-table tbody tr:hover { 
+        background: #f8fafc; 
+    }
+
+    /* Screen-wide Sticky Grand Total Row Setup */
+    .grand-total-row {
+        background: #e2e8f0 !important;
+        position: sticky;
+        bottom: 0;
+        z-index: 30;
+        box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .grand-total-row td {
+        border-top: 1px solid var(--primary) !important;
+        border-bottom: none !important;
+        color: var(--primary) !important;
+        padding: 8px 10px !important;
+        font-weight: 800 !important;
+        font-size: 10px !important;
+    }
+
+    /* Mobile First Optimized Views */
+    @media(max-width:768px) {
+        .rm-table th:nth-child(4),
+        .rm-table td:nth-child(4) {
+            position: sticky;
+            left: 0;
+            z-index: 25;
+            background: #fff;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.04);
+        }
+        .rm-table th:nth-child(4) {
+            background: #f8fafc;
+        }
+    }
+
+    .dead-row { background: var(--danger-light) !important; }
+
+    /* Analytics Charts Elements */
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 14px;
+    }
+
+    .chart-box {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        height: 320px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .chart-box h3 {
+        font-size: 10px;
+        font-weight: 800;
+        margin-bottom: 12px;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    /* Aging View Segment Elements */
+    .age-boxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .age-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px 14px;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .age-card h4 {
+        font-size: 9px;
+        text-transform: uppercase;
+        color: var(--sub);
+        font-weight: 800;
+        letter-spacing: 0.6px;
+    }
+
+    .age-card h2 { 
+        font-size: 22px; 
+        margin-top: 8px; 
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    .age-green { background: var(--success-light); color: var(--success); padding: 3px 8px; border-radius: 6px; border: 1px solid #bbf7d0; }
+    .age-yellow { background: var(--warning-light); color: var(--warning); padding: 3px 8px; border-radius: 6px; border: 1px solid #fef08a; }
+    .age-orange { background: #fff7ed; color: #ea580c; padding: 3px 8px; border-radius: 6px; border: 1px solid #ffedd5; }
+    .age-red { background: var(--danger-light); color: var(--danger); padding: 3px 8px; border-radius: 6px; border: 1px solid #fecaca; }
 </style>
 </head>
 
@@ -339,19 +474,19 @@ body{
             <select name="sel_prod_for" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for p in prod_for_list %}<option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>{% endfor %}</select>
         </div>
         <div class="filter-group"><label>Search</label>
-            <input type="text" id="tableSearch" placeholder="..." onkeyup="searchTable()">
+            <input type="text" id="tableSearch" placeholder="Type to filter..." onkeyup="searchTable()">
         </div>
     </form>
 </div>
 
 <div class="kpi-grid">
-    <div class="kpi-card"><h4>Opening</h4><div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:var(--success)"><h4>Closing</h4><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:var(--danger)"><h4>Sales</h4><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:var(--warning)"><h4>Reprocess</h4><div class="value">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:#7c3aed"><h4>Fresh</h4><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:#dc2626"><h4>Dead Stock</h4><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
-    <div class="kpi-card" style="border-left-color:#0891b2"><h4>Total MC</h4><div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div><div class="amt-sub">MC</div></div>
+    <div class="kpi-card kpi-opening"><h4>Opening</h4><div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-closing"><h4>Closing</h4><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-sales"><h4>Sales</h4><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-reprocess"><h4>Reprocess</h4><div class="value">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-fresh"><h4>Fresh</h4><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-dead"><h4>Dead Stock</h4><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
+    <div class="kpi-card kpi-mc"><h4>Total MC</h4><div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div><div class="amt-sub">Boxes</div></div>
 </div>
 
 <div class="tabs">
@@ -361,24 +496,25 @@ body{
     <button class="tab-btn" onclick="openTab(event,'aging_tab')">Aging</button>
 </div>
 
+<!-- Tab 1: Live Closing Table Structural Replacement -->
 <div id="live_tab" class="tab-content active">
-    <div class="panel">
+    <div class="rm-summary-box">
         <div class="panel-header">
             <h3>Live Closing Inventory</h3>
             <div class="footer-actions">
-                <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')"><i class="fas fa-file-excel"></i></button>
-                <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i></button>
+                <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
             </div>
         </div>
         <div class="table-wrap">
-            <table class="compact-table" id="liveInventoryTable">
+            <table class="rm-table" id="liveInventoryTable">
                 <thead>
                     <tr>
                         <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
-                        <th align="right">Op MC</th><th align="right">Op Loose</th><th align="right">Op Qty</th>
-                        <th align="right">IN</th><th align="right">OUT</th>
-                        <th align="right">Cl MC</th><th align="right">Loose</th><th align="right">Cl Qty</th>
-                        <th align="right">Avg Rate</th><th align="right">Inv Value</th><th>Ageing</th>
+                        <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th>
+                        <th style="text-align: right;">IN</th><th style="text-align: right;">OUT</th>
+                        <th style="text-align: right;">Cl MC</th><th style="text-align: right;">Loose</th><th style="text-align: right;">Cl Qty</th>
+                        <th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Inv Value</th><th>Ageing</th>
                     </tr>
                 </thead>
                 <tbody id="inventoryBody">
@@ -388,8 +524,8 @@ body{
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
                         <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
                         <td align="right" style="color:#16a34a;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:#dc2626;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc }}</td><td align="right">{{ row.loose }}</td><td align="right" style="font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="font-weight:800; color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
+                        <td align="right">{{ row.mc }}</td><td align="right">{{ row.loose }}</td><td align="right" style="color: var(--primary);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
                         <td>
                             {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
                             {% elif age <= 90 %}<span class="age-yellow">{{ age }}D</span>
@@ -401,7 +537,7 @@ body{
                 </tbody>
                 <tfoot>
                     <tr class="grand-total-row">
-                        <td colspan="9" align="right">TOTAL</td>
+                        <td colspan="9" style="text-align: right;">GRAND TOTAL</td>
                         <td align="right" id="foot_op_mc">{{ grand_opening_mc|default(0) }}</td><td></td><td align="right" id="foot_op_qty">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</td>
                         <td></td><td></td>
                         <td align="right" id="foot_cl_mc">{{ closing_stock_mc|default(0) }}</td><td></td><td align="right" id="foot_cl_qty">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</td>
@@ -413,15 +549,16 @@ body{
     </div>
 </div>
 
+<!-- Tab 2: Opening Stock Table Structural Replacement -->
 <div id="opening_tab" class="tab-content">
-    <div class="panel">
+    <div class="rm-summary-box">
         <div class="panel-header"><h3>Opening Stock Summary</h3></div>
         <div class="table-wrap">
-            <table class="compact-table" id="openingTable">
+            <table class="rm-table" id="openingTable">
                 <thead>
                     <tr>
                         <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
-                        <th align="right">Op MC</th><th align="right">Op Loose</th><th align="right">Op Qty</th><th align="right">Avg Rate</th><th align="right">Value</th><th>Age</th>
+                        <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th><th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Value</th><th>Age</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -431,8 +568,8 @@ body{
                     {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
                     {% set ns.op_mc = ns.op_mc + (row.opening_mc|default(0)) %}{% set ns.op_loose = ns.op_loose + (row.opening_loose|default(0)) %}{% set ns.op_qty = ns.op_qty + (row.opening_qty|default(0)) %}{% set ns.op_val = ns.op_val + row_op_val %}
                     <tr>
-                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td>{{ row.sp }}</td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days }}D</td>
+                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
+                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days }}D</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -451,10 +588,10 @@ body{
 
 <div id="aging_tab" class="tab-content">
     <div class="age-boxes">
-        <div class="age-card" style="border-bottom-color:var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
-        <div class="age-card" style="border-bottom-color:var(--warning);"><h4>31-90 D</h4><h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2></div>
-        <div class="age-card" style="border-bottom-color:#f97316;"><h4>91-700 D</h4><h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2></div>
-        <div class="age-card" style="border-bottom-color:var(--danger);"><h4>700+ D</h4><h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2></div>
+        <div class="age-card" style="border-left: 5px solid var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
+        <div class="age-card" style="border-left: 5px solid var(--warning);"><h4>31-90 D</h4><h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2></div>
+        <div class="age-card" style="border-left: 5px solid #ea580c;"><h4>91-700 D</h4><h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2></div>
+        <div class="age-card" style="border-left: 5px solid var(--danger);"><h4>700+ D</h4><h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2></div>
     </div>
 </div>
 

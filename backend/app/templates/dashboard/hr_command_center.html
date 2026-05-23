@@ -1,303 +1,461 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>HR Capital Command Center | BKNR ERP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate Entry & Inventory Ledger - BKNR ERP</title>
+    <!-- Inter Font & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0f172a;
+            --secondary-color: #1e293b;
+            --accent-color: #2563eb;
+            --bg-light: #f8fafc;
+            --border-color: #cbd5e1;
+            --text-dark: #334155;
+            --text-muted: #64748b;
+            --white: #ffffff;
+        }
 
-<style>
-:root{
-  --navy:#0f172a; --secondary:#475569; --accent:#0284c7; --emerald:#0d9488;
-  --rose:#e11d48; --amber:#b45309; --slate:#f8fafc; --border:#e2e8f0; --card:#ffffff;
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;}
-body{background:#f1f5f9;color:var(--navy);padding:8px;font-size:11px;line-height:1.4;-webkit-font-smoothing:antialiased;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-/* HEADER PANEL - RESPONSIVE */
-.header{background:var(--card);padding:12px;border-radius:8px;border-bottom:3px solid var(--accent);margin-bottom:8px;display:flex;flex-direction:column;gap:6px;}
-@media(min-width:768px){.header{flex-direction:row;justify-content:space-between;align-items:center;padding:16px 20px;border-radius:12px;margin-bottom:12px;}}
-.header-left h2{font-size:14px;font-weight:900;color:var(--navy);letter-spacing:-0.3px;}
-@media(min-width:768px){.header-left h2{font-size:18px;}}
-.header-left p{font-size:10px;color:var(--secondary);}
-.date-badge{font-size:10px;font-weight:700;background:#f0f9ff;color:var(--accent);padding:4px 8px;border-radius:4px;align-self:start;border:1px solid #bae6fd;}
-@media(min-width:768px){.date-badge{font-size:11.5px;padding:5px 10px;border-radius:6px;align-self:center;}}
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-/* COMPACT KPI CONTAINERS FOR MOBILE (2 COLUMNS) */
-.kpi-container{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px;}
-@media(min-width:480px){.kpi-container{grid-template-columns:repeat(3,1fr);}}
-@media(min-width:768px){.kpi-container{grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}}
-@media(min-width:1024px){.kpi-container{grid-template-columns:repeat(6,1fr);}}
+        /* Sidebar Design */
+        .sidebar {
+            width: 260px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            flex-shrink: 0;
+        }
 
-.kpi-card{background:var(--card);padding:8px;border-radius:6px;border:1px solid var(--border);border-top:2px solid var(--accent);box-shadow:0 1px 2px rgba(0,0,0,0.02);}
-@media(min-width:768px){.kpi-card{padding:12px;border-radius:10px;border-top-width:3px;}}
-.kpi-label{font-size:8.5px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:0.3px;}
-.kpi-value{font-size:12px;font-weight:800;margin-top:2px;color:var(--navy);}
-@media(min-width:768px){.kpi-value{font-size:14px;margin-top:3px;}}
+        .sidebar .brand {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--white);
+        }
 
-.profit-card{border-top-color:var(--emerald);background:#f0fdf4;}
-.loss-card{border-top-color:var(--rose) !important;background:#fff5f5;}
-.warning-card{border-top-color:var(--amber);background:#fffbeb;}
+        .sidebar .menu-item {
+            padding: 12px 15px;
+            color: #94a3b8;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
 
-/* FLEXIBLE MATRIX GRID */
-.matrix-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
-@media(min-width:768px){
-  .matrix-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
-}
-@media(min-width:1024px){.matrix-grid{grid-template-columns:repeat(3,1fr);}}
-@media(min-width:1400px){.matrix-grid{grid-template-columns:repeat(4,1fr);gap:12px;}}
+        .sidebar .menu-item:hover, .sidebar .menu-item.active {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
 
-@media(min-width:1400px){.span-large-2{grid-column:span 2;}}
-@media(min-width:768px){.col-span-full{grid-column:1 / -1;}}
+        /* Main Content Frame */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-.card{background:var(--card);border-radius:8px;padding:10px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;width:100%;min-width:0;}
-@media(min-width:768px){.card{border-radius:10px;padding:12px;}}
-.card-title{font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:8px;color:var(--navy);display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);padding-bottom:4px;letter-spacing:0.3px;}
+        /* Top Navigation Header */
+        .header {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
 
-/* MOBILE TABLE OVERSCROLL FIX */
-.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px;border:1px solid var(--border);border-radius:4px;}
-table{width:100%;border-collapse:collapse;white-space:nowrap;table-layout:auto;}
-th{background:var(--slate);padding:6px 8px;font-size:9px;text-transform:uppercase;font-weight:800;color:var(--secondary);border-bottom:1px solid var(--border);text-align:left;}
-td{padding:6px 8px;border-bottom:1px solid #f8fafc;font-size:10.5px;font-weight:600;}
-@media(min-width:768px){
-  th{padding:8px 10px;font-size:9.5px;}
-  td{padding:8px 10px;font-size:11.5px;}
-}
-tr:hover{background:var(--slate);}
-.text-right{text-align:right;}
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
 
-.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:10.5px;font-weight:600;}
-.row span:last-child{font-weight:700;color:var(--navy);}
-.total-row{font-weight:800;border-top:1px dashed var(--secondary);padding-top:4px;color:var(--navy);font-size:11px;margin-top:2px;}
+        .company-badge {
+            background-color: #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
 
-/* COMPACT FILTERS FOR MOBILE Screens */
-.filter-bar{background:var(--card);padding:8px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);}
-.filter-bar form{display:flex;flex-direction:column;gap:6px;width:100%;}
-@media(min-width:576px){.filter-bar form{flex-direction:row;flex-wrap:wrap;align-items:center;}}
-.filter-bar select{padding:6px;border-radius:4px;border:1px solid var(--border);font-size:10.5px;font-weight:600;background:var(--slate);width:100%;}
-@media(min-width:576px){.filter-bar select{width:auto;flex:1;min-width:120px;}}
+        /* View Area Content */
+        .content-container {
+            padding: 25px 30px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
 
-/* NOTIFICATION RISK SECTION */
-.alert-box{background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:8px;}
-.alert-item{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:#b91c1c;padding:3px 0;}
+        /* Filter Controls Grid */
+        .filters-panel {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: flex-end;
+        }
 
-.chart-box{height:140px;position:relative;width:100%;margin-top:auto;}
-@media(min-width:768px){.chart-box{height:150px;}}
-</style>
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text-dark);
+            outline: none;
+            background-color: var(--white);
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--white);
+            border: none;
+            padding: 11px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Main Data Table Wrapper */
+        .table-responsive {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow-x: auto; /* Handles horizontal scroll on mobile screen perfectly */
+            max-height: 500px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+            min-width: 1200px; /* Forces responsive horizontal scrolling on small viewports */
+        }
+
+        thead th {
+            background-color: #f1f5f9;
+            color: var(--secondary-color);
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Inline Search Columns Row inside Table Head */
+        .search-row th {
+            background-color: #f8fafc;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-search-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .table-search-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Action Buttons */
+        .btn-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .btn-edit { color: var(--accent-color); }
+        .btn-delete { color: #ef4444; }
+
+        /* Responsive Mobile Utility Styles */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; padding: 15px; }
+            .sidebar .brand { margin-bottom: 10px; }
+            .sidebar .menu-container { display: flex; flex-wrap: wrap; gap: 10px; }
+            .sidebar .menu-item { margin-bottom: 0; padding: 8px 12px; font-size: 12px; }
+            .header { padding: 15px; }
+            .content-container { padding: 15px; }
+            .filters-panel { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- 🏢 HEADER CONTROL BANNER -->
-<div class="header">
-  <div class="header-left">
-    <h2>HR CAPITAL COMMAND CENTER</h2>
-    <p>BKNR ERP &bull; Workforce Analytics & Compliance Command Node (Company: {{ company_id }})</p>
-  </div>
-  <div class="date-badge"><i class="fa-solid fa-users-gear"></i> {{ production_for }}</div>
-</div>
+    <!-- Sidebar Frame Component -->
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fa-solid cubic-radial fa-layer-group"></i>
+            <span>BKNR ERP</span>
+        </div>
+        <nav class="menu-container">
+            <a href="#" class="menu-item active"><i class="fa-solid fa-boxes-stacked"></i> Stock Ledger</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-users"></i> HR & Attendance</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-file-invoice-dollar"></i> Billing Logs</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-gears"></i> System Masters</a>
+        </nav>
+    </aside>
 
-<!-- 🚨 HR AUDIT RISK ALERT COMPLIANCE CENTER -->
-<div class="alert-panel alert-box">
-  <div style="font-size:10px; font-weight:800; text-transform:uppercase; margin-bottom:5px; color:#b91c1c;"><i class="fa-solid fa-shield-halved"></i> Corporate HR Risk Compliance Registry</div>
-  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:4px;">
-    {% if risk_no_pan > 0 %}<div class="alert-item">⚠ Missing PAN Records Ledger: {{ risk_no_pan }} Profiles Flagged.</div>{% endif %}
-    {% if risk_no_aadhar > 0 %}<div class="alert-item">⚠ Identification Compliance Void: {{ risk_no_aadhar }} Profiles missing baseline ID fields.</div>{% endif %}
-    {% if risk_no_bank > 0 %}<div class="alert-item">⚠ Bank Mandate Exception: {{ risk_no_bank }} Profiles lack validation accounts.</div>{% endif %}
-    {% if risk_missing_statutory > 0 %}<div class="alert-item">⚠ Statutory Enrollment Missing: {{ risk_missing_statutory }} Employees lack master registration.</div>{% endif %}
-    {% if double_duty_count > 0 %}<div class="alert-item" style="color:var(--rose);">❌ Critical Shift Overlap Alert: {{ double_duty_count }} Labor profiles exceeded 14+ hours.</div>{% endif %}
-  </div>
-</div>
+    <!-- Right Side Application Interface Wrapper -->
+    <main class="main-content">
+        <header class="header">
+            <h1>Stock Entry Master Engine</h1>
+            <div class="company-badge" id="currentCompanyBadge">Company ID: Loading...</div>
+        </header>
 
-<!-- 📊 EXECUTIVE 12 KPI GRID -->
-<div class="kpi-container">
-  <div class="kpi-card"><div class="kpi-label">Total Staff</div><div class="kpi-value">{{ total_employees }}</div></div>
-  <div class="kpi-card profit-card"><div class="kpi-label">Active Staff</div><div class="kpi-value">{{ active_employees }}</div></div>
-  <div class="kpi-card profit-card"><div class="kpi-label">Present Today</div><div class="kpi-value">{{ present_today }}</div></div>
-  <div class="kpi-card loss-card"><div class="kpi-label">Absent Today</div><div class="kpi-value">{{ absent_today }}</div></div>
-  <div class="kpi-card warning-card"><div class="kpi-label">Open Shifts</div><div class="kpi-value">{{ open_shifts }}</div></div>
-  <div class="kpi-card warning-card"><div class="kpi-label">Overtime Run (>8h)</div><div class="kpi-value">{{ overtime_count }}</div></div>
-  <div class="kpi-card loss-card"><div class="kpi-label">Double Duty Alerts</div><div class="kpi-value">{{ double_duty_count }}</div></div>
-  <div class="kpi-card"><div class="kpi-label">New Joins (MTD)</div><div class="kpi-value">{{ new_joiners_month }}</div></div>
-  <div class="kpi-card warning-card"><div class="kpi-label">Advance Outstanding</div><div class="kpi-value">₹{{"{:.0f}".format(advances_outstanding)}}</div></div>
-  <div class="kpi-card"><div class="kpi-label">PF Active Covered</div><div class="kpi-value">{{ pf_covered }}</div></div>
-  <div class="kpi-card"><div class="kpi-label">ESI Active Covered</div><div class="kpi-value">{{ esi_covered }}</div></div>
-  <div class="kpi-card profit-card"><div class="kpi-label">Net Gross Payroll</div><div class="kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
-</div>
+        <section class="content-container">
+            
+            <!-- Global Query Control Structure -->
+            <div class="filters-panel">
+                <div class="form-group">
+                    <label for="companySelect">Target Company Filter</label>
+                    <select id="companySelect" class="form-control" onchange="updateCompanyContext()">
+                        <!-- Dynamic options match directly to API values -->
+                        <option value="BKNR9879">BKNR Operations Main</option>
+                        <option value="BKNR002">BKNR Merchant Branch</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="movementFilter">Cargo Movement Type</label>
+                    <select id="movementFilter" class="form-control">
+                        <option value="">All Movements</option>
+                        <option value="IN">IN (Stock Intake)</option>
+                        <option value="OUT">OUT (Dispatch)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="fetchStockEntriesData()">
+                    <i class="fa-solid fa-magnifying-glass"></i> Pull Records
+                </button>
+            </div>
 
-<!-- 🏛️ PLATINUM SYSTEM INTERACTION GRID -->
-<div class="matrix-grid">
+            <!-- Main Data Grid Architecture -->
+            <div class="table-responsive">
+                <table id="stockEntryTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Batch Number</th>
+                            <th>Species</th>
+                            <th>Variety</th>
+                            <th>Grade</th>
+                            <th>Cargo Type</th>
+                            <th>MC Count</th>
+                            <th>Loose Pcs</th>
+                            <th>Quantity (KG)</th>
+                            <th>Product Value/KG</th>
+                            <th>Inventory Value</th>
+                            <th>HLSO Count</th>
+                            <th>HOSO Count</th>
+                            <th>Sales Ref Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                        <!-- Searchable Input row inserted inline into columns directly -->
+                        <tr class="search-row">
+                            <th></th>
+                            <th><input type="text" class="table-search-input" placeholder="Search Batch..." onkeyup="filterTableByColumn(1, this.value)"></th>
+                            <th><input type="text" class="table-search-input" placeholder="Search Species..." onkeyup="filterTableByColumn(2, this.value)"></th>
+                            <th><input type="text" class="table-search-input" placeholder="Search Variety..." onkeyup="filterTableByColumn(3, this.value)"></th>
+                            <th><input type="text" class="table-search-input" placeholder="Search Grade..." onkeyup="filterTableByColumn(4, this.value)"></th>
+                            <th><input type="text" class="table-search-input" placeholder="Search Type..." onkeyup="filterTableByColumn(5, this.value)"></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+                        <!-- Dynamic content row records map automatically here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-  <!-- 1. WORKFORCE DEMOGRAPHICS -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-chart-pie" style="color:var(--accent);"></i> Workforce Demographics</div>
-    <div class="chart-box"><canvas id="genderChart"></canvas></div>
-    <div style="margin-top:8px;">
-      <div style="font-size:9px; font-weight:700; color:var(--secondary); text-transform:uppercase; margin-bottom:4px;">Blood Group Spread</div>
-      <div style="display:flex; flex-wrap:wrap; gap:4px;">
-        {% for b in blood_groups %}<span style="background:var(--slate); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">{{ b.group }}: {{ b.count }}</span>{% endfor %}
-      </div>
-    </div>
-  </div>
+    <!-- JavaScript REST Engine Integration Block -->
+    <script>
+        const API_BASE_URL = "/api/v1/bknr-erp";
 
-  <!-- 2. ATTENDANCE INTELLIGENCE SYSTEM -->
-  <div class="card span-large-2">
-    <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> Last 30 Days Attendance Velocity</div>
-    <div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div>
-  </div>
+        function updateCompanyContext() {
+            const companyId = document.getElementById("companySelect").value;
+            document.getElementById("currentCompanyBadge").innerText = `Company ID: ${companyId}`;
+        }
 
-  <!-- BIRTHDAY SIDEBAR WIDGET -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-cake-candles" style="color:var(--rose);"></i> Lifecycle Calendar Events</div>
-    <div style="font-size:10px; font-weight:800; color:var(--secondary); text-transform:uppercase;">Today's Birthdays</div>
-    {% if birthday_actives %}{% for b in birthday_actives %}<div class="row"><span>{{ b.employee_name }}</span><span>{{ b.department }}</span></div>{% endfor %}{% else %}<p style="color:var(--secondary); padding:4px 0; font-size:10.5px;">No birth dates logged today.</p>{% endif %}
-    <div style="font-size:10px; font-weight:800; color:var(--secondary); text-transform:uppercase; margin-top:8px;">Work Anniversaries Today</div>
-    {% if anniversary_actives %}{% for a in anniversary_actives %}<div class="row"><span style="color:var(--emerald);">{{ a.employee_name }}</span><span>{{ a.designation }}</span></div>{% endfor %}{% else %}<p style="color:var(--secondary); padding:4px 0; font-size:10.5px;">No corporate milestones today.</p>{% endif %}
-  </div>
+        // Fetching Database entries synchronized without parameter mismatch
+        async function fetchStockEntriesData() {
+            const companyId = document.getElementById("companySelect").value;
+            const movementType = document.getElementById("movementFilter").value;
+            const tableBody = document.getElementById("stockTableBody");
+            
+            tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching records from database cluster...</td></tr>`;
+            
+            try {
+                let url = `${API_BASE_URL}/inventory/stock-entries?company_id=${encodeURIComponent(companyId)}`;
+                if(movementType) {
+                    url += `&cargo_type=${encodeURIComponent(movementType)}`;
+                }
 
-  <!-- 3. DEPARTMENT STRENGTH MATRIX -->
-  <div class="card span-large-2">
-    <div class="card-title"><i class="fa-solid fa-network-wired" style="color:var(--accent);"></i> Department Strength Matrix</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Department</th><th class="text-right">Total Staff</th><th class="text-right">Present Today</th><th class="text-right">Absent</th><th class="text-right">Avg Salary</th></tr>
-        </thead>
-        <tbody>
-          {% for d in dept_matrix %}
-          <tr><td>{{ d.department }}</td><td class="text-right">{{ d.total_staff }}</td><td class="text-right" style="color:var(--emerald);">{{ d.present }}</td><td class="text-right" style="color:var(--rose);">{{ d.absent }}</td><td class="text-right">₹{{"{:.0f}".format(d.avg_salary)}}</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.status === "success" && result.data.length > 0) {
+                    tableBody.innerHTML = "";
+                    result.data.forEach(record => {
+                        const row = document.createElement("tr");
+                        // Maps perfectly to database columns architecture
+                        row.innerHTML = `
+                            <td>${record.id}</td>
+                            <td><strong>${record.batch_number || '-'}</strong></td>
+                            <td>${record.species || '-'}</td>
+                            <td>${record.variety || '-'}</td>
+                            <td>${record.grade || '-'}</td>
+                            <td><span style="color: ${record.cargo_movement_type === 'IN' ? '#10b981' : '#f59e0b'}; font-weight: bold;">${record.cargo_movement_type || '-'}</span></td>
+                            <td>${record.no_of_mc || 0}</td>
+                            <td>${record.loose || 0}</td>
+                            <td>${record.quantity ? record.quantity.toFixed(2) : '0.00'}</td>
+                            <td>${record.product_kg_value ? record.product_kg_value.toFixed(2) : '0.00'}</td>
+                            <td>${record.inventory_value ? record.inventory_value.toFixed(2) : '0.00'}</td>
+                            <td>${record.hlso_count || 0}</td>
+                            <td>${record.hoso_count || 0}</td>
+                            <td>${record.sales_reference_rate ? record.sales_reference_rate.toFixed(2) : '0.00'}</td>
+                            <td class="btn-actions">
+                                <button class="btn-icon btn-edit" onclick="editRecord(${record.id})"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button class="btn-icon btn-delete" onclick="deleteRecord(${record.id})"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: var(--text-muted);">No records found for the given criteria.</td></tr>`;
+                }
+            } catch (error) {
+                console.error("Fetch operational failure:", error);
+                tableBody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading server ledger data.</td></tr>`;
+            }
+        }
 
-  <!-- 4. LABOR PRODUCTIVITY HOURS ANALYSIS -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-business-time"></i> Labor Productivity Distribution</div>
-    <div class="chart-box"><canvas id="prodChart"></canvas></div>
-  </div>
+        // Instant Inline filtering functionality targeting selected columns
+        function filterTableByColumn(columnIndex, query) {
+            const filterValue = query.toLowerCase();
+            const table = document.getElementById("stockEntryTable");
+            const rows = table.getElementsByTagName("tr");
 
-  <!-- 5. COMPLIANCE METRIC GAUGES -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-building-shield" style="color:var(--emerald);"></i> Statutory Coverage Index</div>
-    <div class="row" style="margin-top:6px;"><span>PF Coverage Ratio</span><span>{{ pf_coverage_pct }}%</span></div>
-    <div style="width:100%; background:var(--slate); height:6px; border-radius:3px; overflow:hidden;"><div style="width: {{ pf_coverage_pct }}%; background:var(--emerald); height:100%;"></div></div>
-    <div class="row" style="margin-top:8px;"><span>ESI Coverage Ratio</span><span>{{ esi_coverage_pct }}%</span></div>
-    <div style="width:100%; background:var(--slate); height:6px; border-radius:3px; overflow:hidden;"><div style="width: {{ esi_coverage_pct }}%; background:var(--accent); height:100%;"></div></div>
-    <div class="row" style="margin-top:10px;"><span>New Retain Index (90 Days)</span><span>{{ new_joiners_90 }} Joiners</span></div>
-    <div class="row"><span>Yearly Attrition Index</span><span style="color:var(--rose);">{{ attrition_rate }}%</span></div>
-  </div>
+            // Skipping primary and secondary head elements
+            for (let i = 2; i < rows.length; i++) {
+                const td = rows[i].getElementsByTagName("td")[columnIndex];
+                if (td) {
+                    const textContent = td.textContent || td.innerText;
+                    if (textContent.toLowerCase().indexOf(filterValue) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
 
-  <!-- 6. ADVANCE ADVANCED RECOVERY SYSTEM -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--amber);"></i> Advance Capital Balance Ledger</div>
-    <div class="row"><span>Total Advance Issued</span><span>₹{{"{:.0f}".format(adv_aggregates.issued or 0)}}</span></div>
-    <div class="row"><span>Total Recovered Amount</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(adv_aggregates.recovered or 0)}}</span></div>
-    <div class="row total-row"><span>Active Outstanding Balance</span><span style="color:var(--rose);">₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
-    <div style="font-size:9px; font-weight:700; color:var(--secondary); margin-top:6px; text-transform:uppercase;">Top Outstanding Ledgers</div>
-    {% for a in adv_outstanding_list %}
-    <div class="row" style="font-size:10.5px;"><span>{{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
-    {% endfor %}
-  </div>
+        function editRecord(id) { alert(`Trigger Edit Context Mode for entry: ${id}`); }
+        function deleteRecord(id) { alert(`Trigger Purge Request Execution sequence for entry: ${id}`); }
 
-  <!-- 7. INCREMENT LOG TRACKER -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-arrow-trend-up" style="color:var(--emerald);"></i> Salary Increments Analytics</div>
-    <div class="row"><span>Total Increments (YTD)</span><span>{{ inc_stats.total_inc or 0 }} Issued</span></div>
-    <div class="row"><span>Average Increment Jump</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inc_stats.avg_inc_val or 0)}}</span></div>
-    <div class="row"><span>Peak Increment Released</span><span style="color:var(--accent);">₹{{"{:.0f}".format(inc_stats.max_inc_val or 0)}}</span></div>
-    <div style="font-size:9px; font-weight:700; color:var(--secondary); margin-top:6px; text-transform:uppercase;">Recent Modifications Feed</div>
-    {% for i in increment_table %}
-    <div style="font-size:10px; border-bottom:1px solid #f8fafc; padding:3px 0; display:flex; justify-content:space-between;">
-      <span>{{ i.name }}</span><span style="font-weight:700; color:var(--emerald);">+₹{{"{:.0f}".format(i.increase)}}</span>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- 8. PAYROLL INTEL STRUCTURE -->
-  <div class="card">
-    <div class="card-title"><i class="fa-solid fa-coins"></i> Payroll Tiers Distribution</div>
-    <div class="chart-box"><canvas id="salaryChart"></canvas></div>
-  </div>
-
-  <!-- 12. EMPLOYEE DIRECTORY EXPANDED ENGINE -->
-  <div class="card col-span-full">
-    <div class="card-title"><i class="fa-solid fa-folder-tree" style="color:var(--accent);"></i> Unified Master Corporate Employee Registry Directory</div>
-    <div class="filter-bar">
-      <form method="GET" action="/hr/hr_command_center">
-        <select name="dept_filter" onchange="this.form.submit()"><option value="">All Departments</option>{% for d in dept_matrix %}<option value="{{ d.department }}" {% if dept_filter == d.department %}selected{% endif %}>{{ d.department }}</option>{% endfor %}</select>
-        <select name="type_filter" onchange="this.form.submit()"><option value="">All Types</option><option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option><option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option></select>
-        <select name="status_filter" onchange="this.form.submit()"><option value="">All Statuses</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option></select>
-        <a href="/hr/hr_command_center" style="font-size:10.5px; font-weight:700; padding:6px; text-decoration:none; color:var(--secondary); text-align:center; display:block;">Reset Filter Logs</a>
-      </form>
-    </div>
-    <div class="table-wrap" style="max-height:300px; overflow-y:auto;">
-      <table>
-        <thead>
-          <tr><th>Staff ID</th><th>Staff Name</th><th>Department</th><th>Designation</th><th>Type</th><th>Contact Mobile</th><th>Gross Current Salary</th><th>Operational Status</th></tr>
-        </thead>
-        <tbody>
-          {% for emp in directory_list %}
-          <tr>
-            <td style="font-weight:700; color:var(--accent);">{{ emp.employee_id }}</td>
-            <td style="font-weight:700;">{{ emp.employee_name }}</td>
-            <td>{{ emp.department or 'N/A' }}</td>
-            <td>{{ emp.designation or 'N/A' }}</td>
-            <td><span style="background:var(--slate); padding:2px 5px; border-radius:4px; font-size:10px;">{{ emp.employee_type }}</span></td>
-            <td>{{ emp.mobile }}</td>
-            <td style="font-weight:700;">₹{{"{:,.0f}".format(emp.current_salary)}}</td>
-            <td><span style="padding:2px 6px; border-radius:4px; font-size:9.5px; font-weight:800; {% if emp.status == 'ACTIVE' %}background:#d1fae5; color:#065f46;{% else %}background:#fee2e2; color:#991b1b;{% endif %}">{{ emp.status }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-
-<!-- 📊 INTEL GRAPHS DISPATCH SYSTEMS -->
-<script>
-// A. Demographics Circle Plot
-new Chart(document.getElementById("genderChart"), {
-  type: "pie",
-  options: { responsive: true, maintainAspectRatio: false },
-  data: {
-    labels: {{ gender_labels|tojson }},
-    datasets: [{ data: {{ gender_values|tojson }}, backgroundColor: ["#0284c7", "#ec4899", "#64748b"] }]
-  }
-});
-
-// B. Historical Timeline Velocity Flow
-new Chart(document.getElementById("attendanceTrendChart"), {
-  type: "line",
-  options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } },
-  data: {
-    labels: {{ attendance_trend_labels|tojson }},
-    datasets: [{ label: "Attendance Ratio %", data: {{ attendance_trend_data|tojson }}, borderColor: "#0d9488", fill: true, backgroundColor: "rgba(13,148,136,0.05)", tension: 0.2 }]
-  }
-});
-
-// C. Operational Shift Ranges
-new Chart(document.getElementById("prodChart"), {
-  type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-  data: {
-    labels: ["<4 Hrs", "4-8 Hrs", "8-12 Hrs", "12+ Hrs"],
-    datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#e11d48", "#0284c7", "#0d9488", "#b45309"] }]
-  }
-});
-
-// D. Financial Salary Histogram Pillars
-new Chart(document.getElementById("salaryChart"), {
-  type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-  data: {
-    labels: ["0-10k Tier", "10k-20k Mid", "20k-30k Executive", "30k+ Upper Board"],
-    datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#0284c7", "#6366f1", "#0d9488"] }]
-  }
-});
-</script>
+        // Initializing UI environment on page boot
+        window.onload = () => {
+            updateCompanyContext();
+            fetchStockEntriesData();
+        };
+    </script>
 </body>
 </html>
