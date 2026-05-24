@@ -18,67 +18,98 @@
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
 body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
-/* --- HEADER --- */
+/* --- ULTRA-COMPACT HEADER --- */
 .header-dash {
-  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
-.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 6px 20px; border-radius: 6px; font-size: 12px; font-weight: 800; text-align: center; min-width: 160px;}
 
 @media(max-width:800px){ 
-    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
-    .grand-total { width: 100%; padding: 8px 15px; } 
+    .header-dash { flex-direction: column; gap: 8px; text-align: center; padding: 10px; }
+    .grand-total { width: 100%; padding: 6px 10px; } 
 }
 
-/* --- FILTERS --- */
-.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+/* --- MICRO FILTERS BAR (FIXED & SHRUNK) --- */
+.filter-bar { 
+  background: #fff; 
+  padding: 8px 20px; 
+  border-bottom: 1px solid var(--border); 
+  display: flex; 
+  align-items: flex-end; 
+  gap: 8px; 
+  flex-wrap: wrap; 
+}
+.filter-item { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+  flex: 0 0 150px; 
+  min-width: 150px; 
+}
+.filter-item.search-item {
+  flex: 1 1 200px; 
+  min-width: 180px;
+}
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 30px; }
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
+
+@media(max-width: 768px) {
+    .filter-bar { padding: 10px; gap: 6px; }
+    .filter-item { flex: 1 1 calc(50% - 6px); min-width: calc(50% - 6px); }
+    .filter-item.search-item { flex: 1 1 100%; min-width: 100%; }
+    .btn-clear { width: 100%; }
+}
 
 /* --- ACTIONS HEADER --- */
-.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
-.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; height: 30px; }
 
 /* --- THREE DOTS UNIVERSAL MENU --- */
-#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 
-/* --- MAIN TABLE (COMPACT) --- */
-.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+/* --- RESPONSIVE MAIN TABLE --- */
+.table-wrap { margin: 0 20px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 20px; } }
 
-.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1000px; }
-.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 950px; }
+.main-table thead th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; font-size: 10px; }
+.main-table tbody td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+@media(max-width: 768px) {
+    .main-table { min-width: 850px; }
+    .main-table thead th, .main-table tbody td { padding: 6px 4px; font-size: 10.5px; }
+}
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
 
 /* Empty State */
-.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+.empty-state { padding: 60px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 35px; margin-bottom: 12px; color: var(--accent); opacity: 0.6; }
 
-/* --- MODAL MANAGEMENT (SINGLE COLUMN FOR MOBILE VIEW) --- */
+/* --- MODAL MANAGEMENT --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+.modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 95%; max-width: 850px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
 @media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input, .field select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
 .field input:focus, .field select:focus { border-color: var(--accent); }
 
 /* --- AUDIT PANEL --- */
@@ -98,7 +129,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL COST: ₹ 0.00</div>
 </div>
 
-<!-- 📊 FILTERS GRID BAR -->
+<!-- 📊 ULTRA-COMPACT FILTERS GRID BAR -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -117,17 +148,17 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <input type="month" id="monthFilter" onchange="applyFilters()">
     </div>
 
-    <div class="filter-item">
+    <div class="filter-item search-item">
         <label>Search Bar</label>
         <input type="text" id="searchBox" placeholder="Search Location Unit or Date...">
     </div>
     
-    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
 
 <!-- 🧾 ACTIONS HEADER -->
 <div class="section-header">
-    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -193,7 +224,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <!-- 📦 ENTRY FORM OVERLAY MODAL -->
 <div class="modal" id="entryModal">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <h3 style="margin:0; color:var(--primary); font-weight:800;" id="modalTitle">New Electricity Entry</h3>
             <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
@@ -224,7 +255,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
                 <div class="field" id="scollTargetField">
                     <label>Unit Rate / KWH</label>
-                    <input type="number" step="any" id="modalUnitRate" value="0.00" oninput="calculateModalTotals()" required>
+                    <input type="number" step="any" id="modalUnitRate" value="0.00" oninput="calculateModalCost()" required>
                 </div>
 
                 <div class="field">
@@ -233,12 +264,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </div>
             </div>
 
-            <div style="margin-top: 20px; background: #f0fdf4; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
-                <span style="font-weight: 700; color: #166534; font-size: 13px;">Calculated Total Cost:</span>
-                <span style="font-size: 18px; font-weight: 800; color: #166534;"><span id="modalGrandTotal">₹ 0.00</span></span>
+            <div style="margin-top: 15px; background: #f0fdf4; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #bbf7d0;">
+                <span style="font-weight: 700; color: #166534; font-size: 12px;">Calculated Total Cost:</span>
+                <span style="font-size: 16px; font-weight: 800; color: #166534;"><span id="modalGrandTotal">₹ 0.00</span></span>
             </div>
             
-            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
+            <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
                 <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
                 <button type="submit" class="btn-add" style="flex: 1;">Post Log Entry</button>
             </div>
@@ -248,15 +279,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 <!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:12px;">ELECTRICITY RECORID HISTORY LOGS</b>
-        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    <div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:11px;">ELECTRICITY RECORD HISTORY LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:18px; font-weight:bold;">&times;</span>
     </div>
     <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
-    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR (Fixes 404 Not Found error instantly)
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/electricity' : '/electricity';
     let globalSelectedId = null;
 
@@ -324,7 +354,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             }
         });
 
-        // Decrementing Sl No arrangement engine assignment
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
         });
@@ -340,7 +369,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('threeDotsMenu').style.display = 'block';
     }
 
-    // ⚡ AUTOMATIC OPENING READING & RATE LOOKUP ENGINE
     async function lookupLastReading(unitId) {
         if(!unitId) {
             document.getElementById('modalOpeningKwh').value = "0.00";
@@ -388,7 +416,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('modalConsumedDisplay').value = "0.00";
         document.getElementById('modalGrandTotal').innerText = "₹ 0.00";
         document.getElementById('entryModal').style.display = 'flex';
-        document.getElementById("modalBodyContainer").scrollTop = 0;
     }
 
     function closeModal() { 
@@ -463,13 +490,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     async function deleteSelected() {
         if (!globalSelectedId) return;
         const resDecision = await Swal.fire({
-            title: "Destroy record item?", text: "This operation will completely drop the entry trace node node node.", icon: "warning", showCancelButton: true
+            title: "Destroy record item?", text: "This operation will completely drop the entry trace node.", icon: "warning", showCancelButton: true
         });
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
                 if(res.ok) Swal.fire({ icon:'success', title:'Deleted successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
-            } catch(e) { Swal.fire("Error", "Interceptor execution fault dropping node node.", "error"); }
+            } catch(e) { Swal.fire("Error", "Interceptor execution fault dropping node.", "error"); }
         }
     }
 

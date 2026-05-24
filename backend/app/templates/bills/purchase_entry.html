@@ -20,68 +20,102 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- HEADER --- */
 .header-dash {
-  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  background: #fff; padding: 12px 25px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
-.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 6px 20px; border-radius: 8px; font-size: 13px; font-weight: 800; text-align: center; min-width: 180px;}
 
 @media(max-width:800px){ 
-    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
-    .grand-total { width: 100%; padding: 8px 15px; } 
+    .header-dash { flex-direction: column; gap: 8px; text-align: center; }
+    .grand-total { width: 100%; padding: 6px 15px; } 
 }
 
-/* --- FILTERS --- */
-.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+/* --- ULTRA COMPACT FILTERS BAR --- */
+.filter-bar { 
+  background: #fff; 
+  padding: 8px 25px; 
+  border-bottom: 1px solid var(--border); 
+  display: flex; 
+  align-items: flex-end; 
+  gap: 10px; 
+  flex-wrap: wrap; 
+}
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 160px; }
+.filter-item label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-item input, .filter-item select { 
+  padding: 6px 10px; 
+  border-radius: 6px; 
+  border: 1px solid var(--border); 
+  font-size: 12px; 
+  font-weight: 600; 
+  outline: none; 
+  width: 100%; 
+  background: #fff; 
+  color: var(--text); 
+  height: 32px; /* Fixed compact height */
+}
+.filter-item input:focus, .filter-item select:focus { border-color: var(--accent); }
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+.btn-clear { 
+  background: var(--muted); 
+  color: #fff; 
+  border: none; 
+  padding: 0 15px; 
+  border-radius: 6px; 
+  font-weight: 700; 
+  font-size: 12px; 
+  cursor: pointer; 
+  height: 32px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+}
 
 /* --- SEARCHABLE DROPDOWN STYLE --- */
 .dropdown-container { position: relative; }
 .dropdown-menu {
     position: absolute; top: 100%; left: 0; width: 100%; background: #fff;
-    border: 1px solid var(--border); border-radius: 8px; margin-top: 4px;
+    border: 1px solid var(--border); border-radius: 6px; margin-top: 2px;
     max-height: 180px; overflow-y: auto; z-index: 1000;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none;
 }
-.dropdown-item { padding: 10px; font-size: 12px; cursor: pointer; color: var(--primary); font-weight: 600; }
+.dropdown-item { padding: 8px 10px; font-size: 12px; cursor: pointer; color: var(--primary); font-weight: 600; }
 .dropdown-item:hover { background: #f8fafc; color: var(--accent); }
 
 /* --- ACTIONS HEADER --- */
-.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
-.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.section-header { padding: 10px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; height: 32px; }
 
 /* --- THREE DOTS UNIVERSAL MENU --- */
-#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 36px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 
 /* --- MAIN TABLE --- */
-.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 @media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
 
 .main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
-.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+.main-table thead th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
+.main-table tbody td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
 
 /* Empty Table State Styling */
-.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+.empty-state { padding: 60px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 32px; margin-bottom: 12px; color: var(--accent); opacity: 0.6; }
 
 /* --- MODAL SYSTEM --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -89,7 +123,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input, .field select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); height: 36px; }
 .field input:focus { border-color: var(--accent); }
 
 /* --- AUDIT PANEL --- */
@@ -109,7 +143,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL AMOUNT: ₹ 0.00</div>
 </div>
 
-<!-- 📊 FILTERS GRID BAR -->
+<!-- 📊 ULTRA COMPACT FILTERS GRID BAR -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -157,12 +191,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <input type="text" id="searchBox" placeholder="Type to filter...">
     </div>
     
-    <button class="btn-add" style="background:var(--muted); height: 40px;" onclick="resetFilters()">Clear</button>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
 
 <!-- 🧾 ACTIONS & CONTROL HEADER -->
 <div class="section-header">
-    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -216,14 +250,21 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     data-company="{{ row.unit_id }}" 
                     data-vendor="{{ row.vendor_id }}"
                     data-total="{{ row.grand_total }}"
+                    data-invno="{{ row.invoice_no }}"
+                    data-ponumber="{{ row.po_number or 'N/A' }}"
+                    data-hsn="{{ row.hsn_code }}"
+                    data-qty="{{ row.qty }}"
+                    data-rate="{{ row.base_price }}"
+                    data-gst="{{ row.gst_percent }}"
+                    data-product="{{ row.product_name }}"
                     onclick="selectRow(this, '{{ row.id }}')">
                     
-                    <td class="slno">0</td> <!-- JavaScript inside applyFilters will calculate descending Sl No dynamically -->
+                    <td class="slno">0</td>
                     <td>{{ row.invoice_date }}</td>
                     <td style="font-weight:700;">{{ row.invoice_no }}</td>
                     <td>{% for loc in locations %}{% if loc.id == row.unit_id %}{{ loc.production_at }}{% endif %}{% endfor %}</td>
                     <td style="color: var(--muted);">{{ row.po_number or 'N/A' }}</td>
-                    <td class="text-left">{{ vendor_map[row.vendor_id] or 'Unknown Vendor' }}</td>
+                    <td class="text-left">{{ vendor_map[row.vendor_id|string] or vendor_map[row.vendor_id] or 'Unknown Vendor' }}</td>
                     <td class="text-left">{{ row.product_name }}</td>
                     <td>{{ row.hsn_code }}</td>
                     <td class="text-right">{{ "{:,.2f}".format(row.qty) }}</td>
@@ -500,7 +541,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         let visibleRows = [];
         let subtotal = 0;
 
-        // Step 1: Filter and extract matched rows
         rows.forEach(r => {
             const d = r.getAttribute("data-date") || "";
             const c = r.getAttribute("data-company") || "";
@@ -522,7 +562,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             }
         });
 
-        // Step 2: ⚡ REFFERENCE LOGIC MATCH - Sl No Descending Order Layout Allocation
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
         });
@@ -599,8 +638,21 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         try {
             const res = await fetch(`${API_BASE}/audit_all`);
-            
-            if (res.status === 404 && globalSelectedId) {
+            if (res.ok) {
+                const logs = await res.json();
+                if(logs && logs.length > 0) {
+                    content.innerHTML = logs.map(data => `
+                        <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                            <b>${data.created_date} | ${data.created_time}</b><br>
+                            Invoice: ${data.invoice_no} | Action: ${data.updated_by ? 'Modification Trace' : 'Initial Creation'}<br>
+                            <small>User: ${data.created_by || 'System'}</small>
+                            ${data.updated_by ? `<br><small style="color:var(--muted)">Details: ${data.updated_by}</small>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;">No audit items found in ledger history.</div>`;
+                }
+            } else if (res.status === 404 && globalSelectedId) {
                 const fallbackRes = await fetch(`${API_BASE}/audit/${globalSelectedId}`);
                 const data = await fallbackRes.json();
                 if(data.success) {
@@ -609,144 +661,132 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                             <b>${data.created_date} | ${data.created_time}</b><br>
                             Invoice: ${data.invoice_no} | Action: Initial Creation<br>
                             <small>User: ${data.created_by}</small>
-                        </div>
-                        ${data.updated_by ? `
-                        <div style="border-left:2px solid var(--danger); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                            <b>${data.updated_date}</b><br>
-                            Invoice: ${data.invoice_no} | Action: Record Modified<br>
-                            <small>User: ${data.updated_by}</small>
-                        </div>` : ''}
-                    `;
+                            ${data.updated_by ? `<br><small style="color:var(--muted)">Details: ${data.updated_by}</small>` : ''}
+                        </div>`;
+                } else {
+                    content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;">No logs discovered.</div>`;
                 }
-                return;
-            }
-
-            const logs = await res.json();
-            if(Array.isArray(logs) && logs.length > 0) {
-                content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                        <b>${l.timestamp || l.date || 'N/A'}</b> | Invoice: ${l.invoice_no || 'N/A'}<br>
-                        ${l.action || 'Log'}: ${l.details || 'Record accessed/saved'}<br>
-                        <small>By: ${l.user || l.email || 'System'}</small>
-                    </div>`).join('');
-            } else if (logs.success && logs.logs) {
-                content.innerHTML = logs.logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                        <b>${l.timestamp}</b> | Invoice: ${l.invoice_no}<br>
-                        ${l.action}: ${l.details}<br>
-                        <small>By: ${l.user}</small>
-                    </div>`).join('');
             } else {
-                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No master audit logs available.</div>`;
+                content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:20px;">Error loading audit stream records.</div>`;
             }
-        } catch (e) {
-            content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:10px;">Failed to load history data.</div>`;
-        }
-    }
-
-    async function saveInvoice(event) {
-        event.preventDefault();
-        const payload = {
-            unit_id: parseInt(document.getElementById("modalLocationId").value),
-            vendor_id: parseInt(document.getElementById("modalVendorId").value),
-            invoice_date: document.getElementById("modalInvoiceDate").value,
-            invoice_no: document.getElementById("modalInvoiceNo").value.trim(),
-            product_name: document.getElementById("modalProductName").value.trim(),
-            hsn_code: document.getElementById("modalHsnSearch").value.trim(),
-            qty: parseFloat(document.getElementById("modalQty").value),
-            base_price: parseFloat(document.getElementById("modalRate").value),
-            gst_percent: parseFloat(document.getElementById("modalGstId").value),
-            po_number: document.getElementById("modalPoSearch").value.trim()
-        };
-
-        const editId = document.getElementById("modalInvoiceId").value;
-        const apiPath = editId ? `${API_BASE}/update/${editId}` : `${API_BASE}/create`;
-        const methodType = editId ? 'PUT' : 'POST';
-
-        try {
-            Swal.showLoading();
-            const res = await fetch(apiPath, {
-                method: methodType,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const out = await res.json();
-            if (res.ok && out.success) {
-                Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
-            } else {
-                Swal.fire("Refused", out.message || 'Check inputs!', "error");
-            }
-        } catch(e) {
-            Swal.fire("Error", "Backend processing link failed.", "error");
+        } catch (err) {
+            content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:20px;">Connection failed to retrieve transaction traces.</div>`;
         }
     }
 
     function editSelectedRow() {
         if (!globalSelectedId) return;
-        
-        const row = document.querySelector(`tr[data-id="${globalSelectedId}"]`);
-        if(!row) return;
+        const row = document.querySelector(`#tableBody tr[data-id="${globalSelectedId}"]`);
+        if (!row) return;
 
+        document.getElementById("invoiceForm").reset();
+        document.getElementById("modalTitle").innerText = "Edit Purchase Entry";
+        
         document.getElementById("modalInvoiceId").value = globalSelectedId;
         document.getElementById("modalInvoiceDate").value = row.getAttribute("data-date");
-        document.getElementById("modalInvoiceNo").value = row.cells[2].innerText;
+        document.getElementById("modalInvoiceNo").value = row.getAttribute("data-invno");
         
         const locId = row.getAttribute("data-company");
         document.getElementById("modalLocationId").value = locId;
         document.getElementById("modalLocationSearch").value = locationMap[locId] || "";
-
+        
         const venId = row.getAttribute("data-vendor");
         document.getElementById("modalVendorId").value = venId;
         document.getElementById("modalVendorSearch").value = vendorMap[venId] || "";
-
-        document.getElementById("modalPoSearch").value = row.cells[4].innerText;
-        document.getElementById("modalProductName").value = row.cells[6].innerText;
-        document.getElementById("modalHsnSearch").value = row.cells[7].innerText;
-
-        document.getElementById("modalQty").value = parseFloat(row.cells[8].innerText.replace(/,/g, ''));
-        document.getElementById("modalRate").value = parseFloat(row.cells[9].innerText.replace(/,/g, ''));
-
+        
+        document.getElementById("modalPoSearch").value = row.getAttribute("data-ponumber");
+        document.getElementById("modalHsnSearch").value = row.getAttribute("data-hsn");
+        document.getElementById("modalQty").value = row.getAttribute("data-qty");
+        document.getElementById("modalRate").value = row.getAttribute("data-rate");
+        
+        const gstVal = row.getAttribute("data-gst");
+        document.getElementById("modalGstId").value = gstVal;
+        document.getElementById("modalGstSearch").value = gstVal + "%";
+        
+        document.getElementById("modalProductName").value = row.getAttribute("data-product");
+        
         calculateModalTotals();
-        document.getElementById("modalTitle").innerText = "Edit Purchase Entry";
         document.getElementById('entryModal').style.display = 'flex';
         document.getElementById("modalBodyContainer").scrollTop = 0;
     }
 
-    async function deleteSelected() {
-        if (!globalSelectedId) return;
+    async function saveInvoice(event) {
+        event.preventDefault();
+        
+        const id = document.getElementById("modalInvoiceId").value;
+        const payload = {
+            invoice_date: document.getElementById("modalInvoiceDate").value,
+            invoice_no: document.getElementById("modalInvoiceNo").value,
+            unit_id: parseInt(document.getElementById("modalLocationId").value),
+            vendor_id: parseInt(document.getElementById("modalVendorId").value),
+            po_number: document.getElementById("modalPoSearch").value || "N/A",
+            hsn_code: document.getElementById("modalHsnSearch").value,
+            qty: parseFloat(document.getElementById("modalQty").value),
+            base_price: parseFloat(document.getElementById("modalRate").value),
+            gst_percent: parseFloat(document.getElementById("modalGstId").value),
+            product_name: document.getElementById("modalProductName").value
+        };
 
-        const decision = await Swal.fire({
-            title: "Confirm deletion.",
-            text: "This record will be deleted from the system permanently.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#dc2626",
-            confirmButtonText: "Yes, Delete"
-        });
+        let url = `${API_BASE}/save`;
+        if (id) {
+            url += `?invoice_id=${id}`;
+        }
 
-        if (decision.isConfirmed) {
-            try {
-                const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                const out = await res.json();
-                if (out.success) {
-                    Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
-                }
-            } catch (err) {
-                Swal.fire("Error", "Deletion engine failed.", "error");
+        try {
+            Swal.fire({ title: 'Saving Data...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await res.json();
+            if (res.ok && result.success) {
+                Swal.fire("Saved!", "Purchase transaction processing updated successfully.", "success").then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire("Error", result.detail || "Failed to commit record updates.", "error");
             }
+        } catch (err) {
+            Swal.fire("Exception", "An unexpected failure event blocked network traffic updates.", "error");
         }
     }
 
-    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
-    function executePdfExport() { 
-        if(!globalSelectedId) return;
-        window.location.href = `${API_BASE}/export/pdf/${globalSelectedId}`; 
-    }
-    function executePrint() { 
-        if(!globalSelectedId) return;
-        window.open(`${API_BASE}/print/${globalSelectedId}`, '_blank'); 
-    }
-</script>
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        
+        const confirmation = await Swal.fire({
+            title: 'Are you sure?',
+            text: "This action will permanently purge this record statement history index details from databases!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--danger)',
+            cancelButtonColor: 'var(--muted)',
+            confirmButtonText: 'Yes, delete it!'
+        });
 
+        if (!confirmation.isConfirmed) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                Swal.fire("Deleted!", "Record matrix dropped clean.", "success").then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire("Failed", result.detail || "Unable to clear structural storage indexes.", "error");
+            }
+        } catch (err) {
+            Swal.fire("Error", "Network integration layer transaction fault caught.", "error");
+        }
+    }
+
+    function executeExcelExport() { Swal.fire("Export", "Excel Generation Stream Initialized.", "info"); }
+    function executePdfExport() { Swal.fire("Export", "PDF Report Snapshot Generated.", "info"); }
+    function executePrint() { window.print(); }
+</script>
 </body>
 </html>

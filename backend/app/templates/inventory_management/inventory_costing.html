@@ -4,99 +4,144 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Analysis | BKNR ERP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --brand-primary: #0f172a;
             --brand-accent: #2563eb;
-            --bg-main: #f1f5f9;
+            --bg-main: #f8fafc;
             --card-bg: #ffffff;
             --border-color: #e2e8f0;
             --text-main: #1e293b;
             --text-muted: #64748b;
-            --in-color: #166534;
-            --out-color: #991b1b;
+            --in-color: #16a34a;
+            --out-color: #dc2626;
+            --orange: #ea580c;
         }
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { margin: 0; background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; padding: 5px; font-size: 9.5px; }
 
-        header { background: var(--brand-primary); color: white; padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        .logo-section h1 { margin: 0; font-size: 16px; font-weight: 800; }
-        .logo-section p { margin: 0; font-size: 9px; opacity: 0.7; text-transform: uppercase; }
+        /* ================= PREMIUM HEADER & TABS ================= */
+        header { 
+            background: var(--card-bg); 
+            padding: 10px; 
+            border-radius: 8px;
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-section h1 { margin: 0; font-size: 12px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
+        .logo-section p { display: none; } /* Compact Mode */
 
-        .control-bar { background: white; padding: 8px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .nav-tabs { display: flex; background: #f1f5f9; padding: 3px; border-radius: 6px; }
-        .tab-btn { padding: 6px 14px; border: none; background: transparent; font-size: 10px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; }
-        .tab-btn.active { background: white; color: var(--brand-accent); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        /* ================= SINGLE ROW FILTERS LAYOUT ================= */
+        .control-bar { 
+            background: var(--card-bg); 
+            padding: 8px; 
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex; 
+            flex-direction: column;
+            gap: 8px; 
+            margin-bottom: 6px;
+        }
+        @media (min-width: 992px) {
+            .control-bar { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
 
-        .filters-group { display: flex; gap: 8px; flex: 1; justify-content: flex-end; align-items: center; }
-        .search-wrapper { position: relative; width: 150px; }
-        .search-wrapper i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 11px; }
-        .search-input { width: 100%; padding: 6px 10px 6px 30px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; outline: none; }
-        .select-filter { padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; outline: none; background: #fff; min-width: 120px; }
+        .nav-tabs { display: flex; background: #f1f5f9; padding: 3px; border-radius: 6px; width: max-content; }
+        .tab-btn { padding: 4px 12px; border: none; background: transparent; font-size: 9px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .tab-btn.active { background: var(--brand-primary); color: white; }
 
-        main { flex: 1; overflow: hidden; padding: 10px; display: flex; flex-direction: column; }
-        .view-content { display: none; height: 100%; width: 100%; }
-        .view-content.active { display: block; overflow-y: auto; }
+        .filters-group { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+            gap: 6px; 
+            flex: 1; 
+            align-items: center;
+            width: 100%;
+        }
+        @media (min-width: 992px) {
+            .filters-group { width: auto; justify-content: flex-end; display: flex; }
+        }
 
-        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; }
-        .empty-dashboard i { font-size: 40px; margin-bottom: 15px; opacity: 0.3; }
+        .fbox { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+        .fbox label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 
-        /* --- TABLE STYLE --- */
-        .table-container { background: white; border-radius: 4px; border: 1px solid var(--border-color); height: 100%; display: flex; flex-direction: column; }
-        .scroll-box { flex: 1; overflow: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 2600px; }
-        th { background: #f8fafc; padding: 8px 4px; font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
-        td { padding: 5px 4px; font-size: 10px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
-        tr:hover td { background-color: #f0f9ff; }
+        .search-wrapper { position: relative; min-width: 140px; }
+        .search-wrapper i { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; }
+        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); }
+        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); }
+
+        main { flex: 1; display: flex; flex-direction: column; }
+        .view-content { display: none; }
+        .view-content.active { display: block; }
+
+        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); text-align: center; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; }
+        .empty-dashboard i { font-size: 30px; margin-bottom: 10px; opacity: 0.3; }
+
+        /* ================= ULTRA-COMPACT DATA GRID ================= */
+        .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); }
+        .scroll-box { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; max-height: calc(100vh - 160px); }
+        table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        th { background: #f8fafc; padding: 5px 3px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #475569; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 20; white-space: nowrap; }
+        td { padding: 4px 3px; font-size: 9px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; font-weight: 600; }
+        tr:hover td { background-color: #f8fafc; }
         
-        .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 40px; }
-        .sticky-batch { position: sticky; left: 40px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); }
+        .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 30px; color: var(--text-muted); font-size: 8.5px; }
+        .sticky-batch { position: sticky; left: 30px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); color: var(--brand-accent); font-weight: 700; }
 
-        /* --- DASHBOARD CARD --- */
-        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
-        .grade-card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .card-head { background: #f8fafc; padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .grade-title { font-size: 15px; font-weight: 800; color: var(--brand-primary); }
-        .glaze-badge { background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; border: 1px solid #dbeafe; }
-        .card-body { padding: 12px; }
-        .variety-label { font-size: 12px; font-weight: 700; color: var(--brand-accent); margin-bottom: 10px; }
-        
-        .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-        .move-box { background: #fbfcfd; border: 1px solid #f1f5f9; padding: 8px; border-radius: 8px; }
-        .move-box.in { border-left: 3px solid #22c55e; }
-        .move-box.out { border-left: 3px solid #ef4444; }
-        
-        .move-title { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; display: block; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; }
-        .stat-row:last-child { border: none; }
-        .s-label { font-size: 8px; color: var(--text-muted); font-weight: 600; }
-        .s-value { font-size: 10px; font-weight: 700; }
+        /* Highlight Classes */
+        .move-in { background: #f0fdf4 !important; color: var(--in-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
+        .move-out { background: #fef2f2 !important; color: var(--out-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
+        .qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #fffdf5; }
+        .val-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #f0fdf4; color: var(--in-color); }
 
-        .card-footer { background: #f0fdf4; padding: 10px 15px; border-top: 1px solid #dcfce7; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 5px; align-items: center; }
+        /* ================= MICRO DASHBOARD CARD ================= */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        .grade-card { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); }
+        .card-head { background: var(--brand-primary); padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
+        .grade-title { font-size: 11px; font-weight: 800; }
+        .glaze-badge { background: rgba(255,255,255,0.15); color: white; padding: 1px 5px; border-radius: 3px; font-size: 8.5px; font-weight: 700; }
+        .card-body { padding: 10px; }
+        .variety-label { font-size: 11px; font-weight: 800; color: var(--brand-primary); margin-bottom: 2px; }
+        
+        .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .move-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; }
+        .move-box.in { border-left: 3px solid var(--in-color); }
+        .move-box.out { border-left: 3px solid var(--out-color); }
+        
+        .move-title { font-size: 8.5px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; font-size: 9.5px; }
+        .stat-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
+        .s-label { color: var(--text-muted); font-weight: 600; }
+        .s-value { font-weight: 700; }
+
+        .card-footer { background: #f0fdf4; padding: 8px 10px; border-top: 1px solid #bbf7d0; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 4px; align-items: center; }
         .footer-stat { display: flex; flex-direction: column; }
-        .footer-main-val { font-size: 12px; font-weight: 800; color: #15803d; }
-        .fs-label { font-size: 7px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 2px;}
+        .footer-main-val { font-size: 10.5px; font-weight: 800; color: #15803d; }
+        .fs-label { font-size: 7.5px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 1px;}
 
-        /* --- ENHANCED STATUS FOOTER --- */
-        .status-footer { background: white; padding: 10px 24px; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 30px; font-size: 10px; font-weight: 700; align-items: center; }
-        .stat-group { display: flex; align-items: center; gap: 15px; border-right: 2px solid #f1f5f9; padding-right: 15px; }
+        /* ================= COMPACT STATUS FOOTER ================= */
+        .status-footer { background: white; padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 15px; font-size: 9.5px; font-weight: 700; align-items: center; margin-top: 6px; box-shadow: 0 -2px 4px rgba(0,0,0,0.01); }
+        .stat-group { display: flex; align-items: center; gap: 10px; border-right: 2px solid #f1f5f9; padding-right: 10px; }
         .stat-group:last-child { border: none; }
         .stat-item { display: flex; flex-direction: column; }
         .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1px; }
-        .stat-val { color: var(--brand-primary); }
+        .stat-val { color: var(--brand-primary); font-weight: 800; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo-section">
-        <h1>INVENTORY</h1>
-        <p>Analysis</p>
+        <h1>Inventory Analysis</h1>
     </div>
-    <div id="currentDate" style="font-size: 10px;"></div>
+    <div id="currentDate" style="font-size: 9px; font-weight: 700; color: var(--text-muted);"></div>
 </header>
 
 <div class="control-bar">
@@ -106,43 +151,57 @@
     </div>
 
     <div class="filters-group">
-        <select id="prodForFilter" class="select-filter" onchange="applyFilters()" style="border: 2px solid var(--brand-accent); font-weight: 700;">
-            <option value="">-- Production For --</option>
-            {% for item in rows|map(attribute='production_for')|select('string')|unique|sort %}
-            <option value="{{ item }}">{{ item }}</option>
-            {% endfor %}
-        </select>
-
-        <select id="prodAtFilter" class="select-filter" onchange="applyFilters()">
-            <option value="">-- Production At --</option>
-            {% for item in rows|map(attribute='production_at')|select('string')|unique|sort %}
-            <option value="{{ item }}">{{ item }}</option>
-            {% endfor %}
-        </select>
-
-        <div id="dashboardFilters" style="display: none; gap: 8px;">
-            <select id="speciesFilter" class="select-filter" onchange="applyFilters()">
-                <option value="">All Species</option>
-            </select>
-            <select id="varietyFilter" class="select-filter" onchange="applyFilters()">
-                <option value="">All Varieties</option>
-            </select>
-            <select id="gradeFilter" class="select-filter" onchange="applyFilters()">
-                <option value="">All Grades</option>
-            </select>
-            <select id="glazeFilter" class="select-filter" onchange="applyFilters()">
-                <option value="">All Glazes</option>
+        <div class="fbox">
+            <label>Production For</label>
+            <select id="prodForFilter" class="select-filter" onchange="applyFilters()" style="border: 1.5px solid var(--brand-accent);">
+                <option value="">-- All Companies --</option>
+                {% for item in rows|map(attribute='production_for')|select('string')|unique|sort %}
+                <option value="{{ item }}">{{ item }}</option>
+                {% endfor %}
             </select>
         </div>
 
-        <div class="search-wrapper">
-            <i class="fas fa-search"></i>
-            <input type="text" id="globalSearch" class="search-input" placeholder="Search..." onkeyup="applyFilters()">
+        <div class="fbox">
+            <label>Production At</label>
+            <select id="prodAtFilter" class="select-filter" onchange="applyFilters()">
+                <option value="">-- All Locations --</option>
+                {% for item in rows|map(attribute='production_at')|select('string')|unique|sort %}
+                <option value="{{ item }}">{{ item }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="dashboardFilters" style="display: none; gap: 6px; align-items: center; flex: 1;">
+            <div class="fbox">
+                <label>Species</label>
+                <select id="speciesFilter" class="select-filter" onchange="applyFilters()"><option value="">All Species</option></select>
+            </div>
+            <div class="fbox">
+                <label>Variety</label>
+                <select id="varietyFilter" class="select-filter" onchange="applyFilters()"><option value="">All Varieties</option></select>
+            </div>
+            <div class="fbox">
+                <label>Grade</label>
+                <select id="gradeFilter" class="select-filter" onchange="applyFilters()"><option value="">All Grades</option></select>
+            </div>
+            <div class="fbox">
+                <label>Glaze</label>
+                <select id="glazeFilter" class="select-filter" onchange="applyFilters()"><option value="">All Glazes</option></select>
+            </div>
+        </div>
+
+        <div class="fbox" style="min-width: 140px;">
+            <label>Search</label>
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="globalSearch" class="search-input" placeholder="Search Grade, Batch..." onkeyup="applyFilters()">
+            </div>
         </div>
     </div>
 </div>
 
 <main>
+    <!-- DATA GRID VIEW -->
     <div id="tableView" class="view-content active">
         <div class="table-container">
             <div class="scroll-box">
@@ -168,11 +227,9 @@
                             <th>Prod At</th>
                             <th>MC</th>
                             <th>Loose</th>
-                            <th style="background:#f0fdf4">Qty (Kg)</th>
-                            <th style="background:#fff7ed">Rate/Kg</th>
-                            <th style="background:#fff7ed">Inv Value</th>
-                            <th>HLSO Count</th>
-                            <th>HOSO Count</th>
+                            <th style="text-align: right; padding-right: 4px;">Qty (Kg)</th>
+                            <th style="text-align: right; padding-right: 4px;">Rate/Kg</th>
+                            <th style="text-align: right; padding-right: 4px;">Inv Value</th>
                         </tr>
                     </thead>
                     <tbody id="masterTbody">
@@ -181,32 +238,28 @@
                         <tr data-species="{{r.species}}" data-grade="{{r.grade}}" data-variety="{{r.variety}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" 
                             data-rate="{{r.product_kg_value}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" 
                             data-move="{{r.cargo_movement_type}}" data-prodfor="{{r.production_for}}" data-prodat="{{r.production_at}}">
-                            <td class="sticky-id">{{ total_rows - loop.index0 }}</td>
-                            <td class="sticky-batch" style="font-weight: 700; font-family: monospace;">{{ r.batch_number }}</td>
+                            <td class="sticky-id sl-no">{{ total_rows - loop.index0 }}</td>
+                            <td class="sticky-batch">{{ r.batch_number }}</td>
                             <td>{{ r.date }}</td>
                             <td>{{ r.type_of_production }}</td>
-                            <td><span style="padding: 1px 5px; border-radius: 3px; font-weight: 800; font-size: 8px; background: {{ '#dcfce7' if r.cargo_movement_type == 'IN' else '#fee2e2' }}; color: {{ '#166534' if r.cargo_movement_type == 'IN' else '#991b1b' }}">{{ r.cargo_movement_type }}</span></td>
+                            <td><span class="{% if r.cargo_movement_type == 'IN' %}move-in{% else %}move-out{% endif %}">{{ r.cargo_movement_type }}</span></td>
                             <td>{{ r.location }}</td>
                             <td>{{ r.brand }}</td>
-                            <td style="font-weight: 600;">{{ r.species }}</td>
-                            <td style="font-weight: 600;">{{ r.variety }}</td>
+                            <td>{{ r.species }}</td>
+                            <td style="text-align:left; padding-left:4px;">{{ r.variety }}</td>
                             <td style="font-weight: 800; color: var(--brand-accent); background: #eff6ff;">{{ r.grade }}</td>
                             <td>{{ r.glaze }}</td>
                             <td>{{ r.freezer }}</td>
-                            <td>{{ r.packing_style }}</td>
+                            <td style="text-align:left; padding-left:4px;">{{ r.packing_style }}</td>
                             <td>{{ r.po_number or "-" }}</td>
                             <td>{{ r.purpose or "-" }}</td>
                             <td>{{ r.production_for or "-" }}</td>
                             <td>{{ r.production_at }}</td>
                             <td>{{ r.no_of_mc }}</td>
                             <td>{{ r.loose }}</td>
-                            <td style="font-weight: 800;">{{ r.quantity }}</td>
-                            <td>₹{{ r.product_kg_value }}</td>
-                            <td style="font-weight: 800; color: {% if r.inventory_value < 0 %}#dc2626{% else %}var(--brand-accent){% endif %};">
-    ₹{{ "{:,.0f}".format(r.inventory_value) }}
-</td>
-                            <td>{{ r.hlso_count }}</td>
-                            <td>{{ r.hoso_count }}</td>
+                            <td class="qty-bold">{% if r.quantity %}{{ "{:,.2f}".format(r.quantity|float) }}{% else %}0.00{% endif %}</td>
+                            <td style="text-align: right; padding-right: 4px;">₹{{ r.product_kg_value }}</td>
+                            <td class="val-bold">₹{{ "{:,.0f}".format(r.inventory_value) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -215,29 +268,32 @@
         </div>
     </div>
 
+    <!-- DASHBOARD VIEW -->
     <div id="dashboardView" class="view-content">
         <div id="dashContainer" class="grid-layout"></div>
     </div>
 </main>
 
+<!-- FOOTER STATUS STATS -->
 <div class="status-footer">
     <div class="stat-group">
         <div class="stat-item"><span class="stat-label">Total Items</span><span id="stat_items" class="stat-val">0</span></div>
     </div>
     <div class="stat-group">
         <div class="stat-item"><span class="stat-label">Total Stock IN</span><span id="stat_in_qty" class="stat-val" style="color:var(--in-color)">0.00 Kg</span></div>
-        <div class="stat-item"><span class="stat-label">IN Value</span><span id="stat_in_val" class="stat-val" style="color:var(--in-color)">₹0.00</span></div>
+        <div class="stat-item"><span class="stat-label">IN Value</span><span id="stat_in_val" class="stat-val" style="color:var(--in-color)">₹0</span></div>
     </div>
     <div class="stat-group">
         <div class="stat-item"><span class="stat-label">Total Stock OUT</span><span id="stat_out_qty" class="stat-val" style="color:var(--out-color)">0.00 Kg</span></div>
-        <div class="stat-item"><span class="stat-label">OUT Value</span><span id="stat_out_val" class="stat-val" style="color:var(--out-color)">₹0.00</span></div>
+        <div class="stat-item"><span class="stat-label">OUT Value</span><span id="stat_out_val" class="stat-val" style="color:var(--out-color)">₹0</span></div>
     </div>
     <div class="stat-group" style="border:none">
         <div class="stat-item"><span class="stat-label">Available Stock</span><span id="stat_qty" class="stat-val" style="color:var(--brand-accent)">0.00 Kg</span></div>
         <div class="stat-item"><span class="stat-label">Avg Rate</span><span id="stat_avg_rate" class="stat-val" style="color:#b45309">₹0.00</span></div>
-        <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0.00</span></div>
+        <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0</span></div>
     </div>
 </div>
+
 <script>
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -305,8 +361,8 @@
         
         const rows = [...document.querySelectorAll("#masterTbody tr")];
         let filteredData = [];
+        let activeIndex = 1;
         
-        // Strictly using backend values for totals
         let inQty = 0, inVal = 0, outQty = 0, outVal = 0;
 
         rows.forEach(r => {
@@ -332,26 +388,20 @@
             r.style.display = ok ? "" : "none";
             
             if(ok) {
+                r.querySelector('.sl-no').innerText = activeIndex++;
                 const q = parseFloat(r.getAttribute('data-qty')) || 0;
                 const v = parseFloat(r.getAttribute('data-val')) || 0;
 
-                if(rMove === 'IN') { 
-                    inQty += q; 
-                    inVal += v; 
-                } else { 
-                    outQty += q; 
-                    outVal += v; // v is already negative from backend
-                }
+                if(rMove === 'IN') { inQty += q; inVal += v; } 
+                else { outQty += q; outVal += v; }
 
                 filteredData.push({
                     species: rSpecies, grade: rGrade, variety: rVariety, glaze: rGlaze,
-                    qty: q, val: v, move: rMove,
-                    pack: r.getAttribute('data-pack')
+                    qty: q, val: v, move: rMove, pack: r.getAttribute('data-pack')
                 });
             }
         });
 
-        // Backend-driven logic: Balance = IN + OUT (since OUT is negative)
         const balQty = inQty - outQty;
         const balVal = inVal + outVal;
         const balAvg = balQty > 0 ? (balVal / balQty).toFixed(2) : "0.00";
@@ -360,7 +410,6 @@
         document.getElementById("stat_in_qty").innerText = inQty.toFixed(2) + " Kg";
         document.getElementById("stat_in_val").innerText = "₹" + Math.round(inVal).toLocaleString('en-IN');
         document.getElementById("stat_out_qty").innerText = outQty.toFixed(2) + " Kg";
-        // Displaying OUT value as positive in summary for UI clarity
         document.getElementById("stat_out_val").innerText = "₹" + Math.round(Math.abs(outVal)).toLocaleString('en-IN');
         document.getElementById("stat_qty").innerText = balQty.toFixed(2) + " Kg";
         document.getElementById("stat_avg_rate").innerText = "₹" + balAvg;
@@ -375,8 +424,8 @@
             container.innerHTML = `
                 <div class="empty-dashboard">
                     <i class="fas fa-filter"></i>
-                    <h3>Please select Production For</h3>
-                    <p>Select a company from the dropdown above to view the dashboard.</p>
+                    <h3>Please select Production For Company</h3>
+                    <p>Select a company filter from dropdown to visualize grade dashboard metrics.</p>
                 </div>`;
             container.style.display = "block"; return;
         }
@@ -391,7 +440,6 @@
         });
 
         Object.values(groups).forEach(g => {
-            // Using backend values: Balance = IN + OUT
             const availQty = g.inQty - g.outQty;
             const availVal = g.inVal + g.outVal;
             const inAvg = g.inQty > 0 ? (g.inVal / g.inQty).toFixed(2) : "0.00";
@@ -406,9 +454,9 @@
                     <span class="glaze-badge">${g.glaze}</span>
                 </div>
                 <div class="card-body">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <div class="variety-label" style="margin-bottom:0;">${g.variety}</div>
-                        <div style="font-size:10px; font-weight:800; color:var(--text-muted); background:#f1f5f9; padding:2px 6px; border-radius:4px;">${g.species}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div class="variety-label">${g.variety}</div>
+                        <div style="font-size:8.5px; font-weight:800; color:var(--text-muted); background:#f1f5f9; padding:1px 4px; border-radius:3px;">${g.species}</div>
                     </div>
                     <div class="movement-section">
                         <div class="move-box in">
@@ -428,7 +476,7 @@
                 <div class="card-footer">
                     <div class="footer-stat"><span class="fs-label">Balance</span><span class="footer-main-val">${availQty.toFixed(2)} Kg</span></div>
                     <div class="footer-stat"><span class="fs-label">Avail Avg</span><span class="footer-main-val" style="color:#b45309">₹${availAvg}</span></div>
-                    <div class="footer-stat" style="text-align:right"><span class="fs-label">Stock Value</span><span class="footer-main-val" style="font-size:11px;">₹${Math.round(availVal).toLocaleString('en-IN')}</span></div>
+                    <div class="footer-stat" style="text-align:right"><span class="fs-label">Stock Value</span><span class="footer-main-val">₹${Math.round(availVal).toLocaleString('en-IN')}</span></div>
                 </div>`;
             container.appendChild(card);
         });

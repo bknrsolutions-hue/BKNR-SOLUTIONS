@@ -4,61 +4,110 @@
 <meta charset="UTF-8">
 <title>Inventory Costing – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root{ --primary:#143465; --accent:#3b82f6; --border:#d6dde7; --bg:#f4f6f9; --text:#1f2937; --muted:#64748b; }
-*{box-sizing:border-box;font-family:'Inter',sans-serif}
-body{ margin:0; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+:root{ 
+ --primary:#0f172a; 
+ --accent:#2563eb; 
+ --border:#e2e8f0; 
+ --bg:#f8fafc; 
+ --header:#ffffff;
+ --text:#1e293b; 
+ --muted:#64748b; 
+ --success:#16a34a;
+ --orange:#ea580c;
+}
 
-.header-container{ background:#fff; padding:12px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1000; }
-.header-main{ display:flex; justify-content:space-between; align-items:center; }
-.header-main h2{ margin:0; font-size:16px; font-weight:800; color:var(--primary); }
+*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif;}
+body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:5px; font-size:9.5px; }
 
-/* TABS */
-.tabs{ display:flex; gap:5px; margin-top:10px; }
-.tab-btn{ padding:6px 15px; font-size:11px; font-weight:700; border:none; background:#e2e8f0; cursor:pointer; border-radius:5px; color:var(--muted); }
-.tab-btn.active{ background:var(--primary); color:#fff; }
+/* ================= PREMIUM HEADER & TABS ================= */
+.header-container{ 
+    background:var(--header); 
+    padding:10px; 
+    border-radius:8px;
+    border:1px solid var(--border); 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    margin-bottom: 6px;
+}
+.header-main{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.header-main h2{ margin:0; font-size:12px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
 
-.filters{ margin-top:10px; display:flex; gap:8px; background:#f8fafc; padding:8px; border-radius:8px; border:1px solid var(--border); flex-wrap:wrap; }
-.filters div{ display:flex; flex-direction:column; gap:2px; min-width:120px; }
-.filters label{ font-size:8px; font-weight:800; color:var(--muted); text-transform:uppercase; }
-.filters input, .filters select{ padding:4px 8px; font-size:11px; border-radius:5px; border:1px solid var(--border); }
+/* TABS SYSTEM */
+.tabs{ display:flex; gap:4px; }
+.tab-btn{ padding:4px 10px; font-size:9px; font-weight:700; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; border-radius:4px; color:var(--muted); transition: 0.2s; }
+.tab-btn.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
 
-/* VIEWS */
-.view-section{ display:none; flex:1; overflow:auto; padding:15px; }
+/* SINGLE ROW FILTERS SYSTEM (WEB VIEW) */
+.filters{ 
+ display:grid; 
+ grid-template-columns: 1fr; 
+ gap:6px; background:#f1f5f9; padding:6px; border-radius:6px; 
+ align-items: center;
+}
+@media (min-width: 768px) { 
+ .filters { 
+    grid-template-columns: 1fr minmax(120px, 180px) auto; 
+ } 
+}
+
+.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox label{ font-size:8px; font-weight:800; color:var(--muted); text-transform:uppercase; }
+
+input, select{ padding:4px 6px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; transition: 0.2s; color:#0f172a; width: 100%; }
+input:focus, select:focus{ border-color: var(--accent); background:#fff; }
+#f_search{ border-left:3px solid var(--accent); }
+
+#rowCount{ font-size:9px; font-weight:800; color:var(--accent); background: #eff6ff; padding: 4px 8px; border-radius: 4px; border: 1px solid #bfdbfe; height: 100%; display: flex; align-items: center; justify-content: center; }
+
+/* ================= VIEWS SYSTEM ================= */
+.view-section{ display:none; flex:1; }
 .view-section.active{ display:block; }
 
-/* TABLE VIEW */
-.table-card{ background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; }
-.table-wrap{ overflow:auto; max-height:calc(100vh - 250px); }
-table{ width:100%; border-collapse:collapse; font-size:10px; min-width:1600px; }
-th{ background:#f1f5f9; color:var(--primary); font-weight:800; text-transform:uppercase; position:sticky; top:0; padding:10px 5px; border-bottom:2px solid var(--border); }
-td{ padding:8px 5px; border-bottom:1px solid #edf2f7; text-align:center; }
+/* ================= ULTRA-COMPACT TABLE VIEW (REF STYLE) ================= */
+.table-card{ background:#fff; border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); margin-bottom: 10px; }
+.table-wrap{ overflow-x:auto; width: 100%; -webkit-overflow-scrolling: touch; max-height:calc(100vh - 120px); }
+table{ width:100%; border-collapse:collapse; table-layout:auto; }
 
-/* GRADE CARD VIEW */
-.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:15px; }
-.grade-card{ background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
-.card-header{ background:var(--primary); color:#fff; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; }
-.card-header h3{ margin:0; font-size:14px; font-weight:800; }
-.card-glaze{ background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px; font-size:10px; }
-.card-body{ padding:12px; }
-.variety-name{ font-weight:800; color:var(--primary); font-size:12px; margin-bottom:2px; }
-.packing-style{ font-size:10px; color:var(--muted); margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:5px; }
-.stats-row{ display:flex; justify-content:space-between; margin-bottom:5px; font-size:11px; }
+th{ 
+ background:#f8fafc; padding:5px 2px; font-size:8.5px; font-weight:800;
+ text-transform:uppercase; border-bottom:2px solid var(--border);
+ position:sticky; top:0; z-index:20; color:#475569; white-space: nowrap;
+}
+td{ padding:4px 2px; font-size:9px; border-bottom:1px solid #f1f5f9; white-space:nowrap; font-weight:600; text-align:center; }
+tr:hover td { background-color: #f8fafc; }
+
+/* Table Content Specific Highlights */
+.move-in { color: var(--success); font-weight: 800; }
+.move-out { color: #b91c1c; font-weight: 800; }
+.batch-bold { color: var(--accent); font-weight: 700; }
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #fffdf5; }
+.val-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #f0fdf4; color: var(--success); }
+
+/* ================= PREMIUM GRADE CARD VIEW ================= */
+.cards-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:10px; padding-top: 4px; }
+.grade-card{ background:#fff; border-radius:6px; border:1px solid var(--border); overflow:hidden; box-shadow:0 2px 4px rgba(0,0,0,0.02); }
+.card-header{ background:var(--primary); color:#fff; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; }
+.card-header h3{ margin:0; font-size:11px; font-weight:800; }
+.card-glaze{ background:rgba(255,255,255,0.15); padding:1px 5px; border-radius:3px; font-size:8.5px; font-weight: 700; }
+.card-body{ padding:10px; }
+.variety-name{ font-weight:800; color:var(--primary); font-size:11px; margin-bottom:2px; }
+.packing-style{ font-size:9px; color:var(--muted); margin-bottom:8px; border-bottom:1px dashed var(--border); padding-bottom:4px; font-weight: 600; }
+.stats-row{ display:flex; justify-content:space-between; margin-bottom:4px; font-size:10px; }
 .stats-label{ color:var(--muted); font-weight:600; }
-.stats-val{ font-weight:800; color:var(--text); }
-.total-box{ margin-top:10px; background:#f0fdf4; padding:8px; border-radius:6px; border:1px solid #bbf7d0; }
+.stats-val{ font-weight:700; color:var(--text); }
+.total-box{ margin-top:8px; background:#f0fdf4; padding:6px; border-radius:4px; border:1px solid #bbf7d0; }
 
-@media print{ .header-container, .tabs, .filters{ display:none; } }
+@media print{ .header-container, .table-card{ border:none; } body{background:#fff; padding:0;} .view-section{overflow:visible;} }
 </style>
 </head>
 <body>
 
 <div class="header-container">
   <div class="header-main">
-    <h2><i class="fas fa-boxes"></i> Inventory Costing Dashboard</h2>
+    <h2>Inventory Costing Dashboard</h2>
     <div class="tabs">
       <button class="tab-btn active" onclick="switchView('table', this)">TABLE VIEW</button>
       <button class="tab-btn" onclick="switchView('cards', this)">GRADE CARDS</button>
@@ -66,31 +115,58 @@ td{ padding:8px 5px; border-bottom:1px solid #edf2f7; text-align:center; }
   </div>
 
   <div class="filters">
-    <div><label>Search</label><input id="f_search" placeholder="Grade/Variety..." onkeyup="applyFilters()"></div>
-    <div><label>Movement</label>
+    <div class="fbox">
+      <label>Search</label>
+      <input id="f_search" placeholder="Search by Grade, Variety, Batch..." onkeyup="applyFilters()">
+    </div>
+    <div class="fbox">
+      <label>Movement</label>
       <select id="f_type" oninput="applyFilters()">
-        <option value="">All</option><option value="IN">IN</option><option value="OUT">OUT</option>
+        <option value="">All Movements</option>
+        <option value="IN">IN</option>
+        <option value="OUT">OUT</option>
       </select>
     </div>
-    <div style="font-size:11px; font-weight:800; align-self:center; margin-left:auto; color:var(--primary);" id="rowCount">0 Items</div>
+    <div id="rowCount">0 Items</div>
   </div>
 </div>
 
+<!-- TABLE VIEW SECTION -->
 <div id="tableView" class="view-section active">
   <div class="table-card">
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Batch</th><th>Move</th><th>Species</th><th>Variety</th><th>Grade</th><th>Glaze</th><th>Packing</th><th style="background:#fff7ed">Qty</th><th style="background:#f0fdf4">Value</th><th>Prod At</th>
+            <th style="width: 20px; text-align: center;">#</th>
+            <th>Date</th>
+            <th>Batch No</th>
+            <th>Move</th>
+            <th>Species</th>
+            <th>Variety</th>
+            <th>Grade</th>
+            <th>Glaze</th>
+            <th>Packing Style</th>
+            <th style="text-align: right; padding-right: 4px;">Qty (Kg)</th>
+            <th style="text-align: right; padding-right: 4px;">Value (₹)</th>
+            <th>Prod At</th>
           </tr>
         </thead>
         <tbody id="tbody">
           {% for r in rows %}
           <tr data-variety="{{r.variety}}" data-grade="{{r.grade}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" data-move="{{r.cargo_movement_type}}">
-            <td>{{ r.date }}</td><td>{{ r.batch_number }}</td><td>{{ r.cargo_movement_type }}</td><td>{{ r.species }}</td>
-            <td>{{ r.variety }}</td><td style="font-weight:800">{{ r.grade }}</td><td>{{ r.glaze }}</td><td>{{ r.packing_style }}</td>
-            <td style="font-weight:800">{{ r.quantity }}</td><td style="color:#15803d; font-weight:800">{{ r.inventory_value }}</td><td>{{ r.production_at }}</td>
+            <td style="color:#64748b; font-size:8.5px;" class="sl-no"></td>
+            <td>{{ r.date }}</td>
+            <td class="batch-bold">{{ r.batch_number }}</td>
+            <td class="{% if r.cargo_movement_type == 'IN' %}move-in{% else %}move-out{% endif %}">{{ r.cargo_movement_type }}</td>
+            <td>{{ r.species }}</td>
+            <td style="text-align:left; padding-left:4px;">{{ r.variety }}</td>
+            <td style="font-weight:800">{{ r.grade }}</td>
+            <td>{{ r.glaze }}</td>
+            <td style="text-align:left; padding-left:4px;">{{ r.packing_style }}</td>
+            <td class="qty-bold">{% if r.quantity %}{{ "{:,.2f}".format(r.quantity|float) }}{% else %}0.00{% endif %}</td>
+            <td class="val-bold">{% if r.inventory_value %}{{ "{:,.2f}".format(r.inventory_value|float) }}{% else %}0.00{% endif %}</td>
+            <td>{{ r.production_at }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -99,9 +175,9 @@ td{ padding:8px 5px; border-bottom:1px solid #edf2f7; text-align:center; }
   </div>
 </div>
 
+<!-- GRADE CARD VIEW SECTION -->
 <div id="cardView" class="view-section">
-  <div class="cards-grid" id="cardContainer">
-    </div>
+  <div class="cards-grid" id="cardContainer"></div>
 </div>
 
 <script>
@@ -118,6 +194,7 @@ function applyFilters(){
     const tableRows = [...document.querySelectorAll("#tbody tr")];
     
     let filteredData = [];
+    let activeIndex = 1;
 
     tableRows.forEach(r => {
         const txt = r.innerText.toLowerCase();
@@ -126,6 +203,7 @@ function applyFilters(){
         r.style.display = ok ? "" : "none";
         
         if(ok) {
+            r.querySelector('.sl-no').innerText = activeIndex++;
             filteredData.push({
                 variety: r.getAttribute('data-variety'),
                 grade: r.getAttribute('data-grade'),
@@ -146,7 +224,6 @@ function renderCards(data) {
     const container = document.getElementById("cardContainer");
     container.innerHTML = "";
     
-    // Group by Grade + Variety + Glaze
     const groups = {};
     data.forEach(item => {
         const key = `${item.grade}-${item.variety}-${item.glaze}`;
@@ -176,25 +253,25 @@ function renderCards(data) {
                 
                 <div class="stats-row">
                     <span class="stats-label">STOCK IN:</span>
-                    <span class="stats-val">${g.totalInQty.toFixed(2)} Kg</span>
+                    <span class="stats-val" style="color:var(--success); font-weight:700;">${g.totalInQty.toFixed(2)} Kg</span>
                 </div>
                 <div class="stats-row">
                     <span class="stats-label">IN VALUE:</span>
-                    <span class="stats-val">₹${g.totalInVal.toLocaleString('en-IN')}</span>
+                    <span class="stats-val">₹${g.totalInVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
-                <div class="stats-row" style="margin-top:8px; color:#b91c1c">
-                    <span class="stats-label">STOCK OUT:</span>
-                    <span class="stats-val">${g.totalOutQty.toFixed(2)} Kg</span>
+                <div class="stats-row" style="margin-top:4px;">
+                    <span class="stats-label" style="color:#b91c1c">STOCK OUT:</span>
+                    <span class="stats-val" style="color:#b91c1c; font-weight:700;">${g.totalOutQty.toFixed(2)} Kg</span>
                 </div>
                 <div class="stats-row">
                     <span class="stats-label">OUT VALUE:</span>
-                    <span class="stats-val">₹${g.totalOutVal.toLocaleString('en-IN')}</span>
+                    <span class="stats-val">₹${g.totalOutVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
 
                 <div class="total-box">
                     <div class="stats-row" style="margin-bottom:0">
-                        <span class="stats-label" style="color:#15803d">NET BALANCE:</span>
-                        <span class="stats-val" style="color:#15803d">${(g.totalInQty - g.totalOutQty).toFixed(2)} Kg</span>
+                        <span class="stats-label" style="color:var(--success); font-weight:800;">NET BALANCE:</span>
+                        <span class="stats-val" style="color:var(--success); font-weight:800;">${(g.totalInQty - g.totalOutQty).toFixed(2)} Kg</span>
                     </div>
                 </div>
             </div>

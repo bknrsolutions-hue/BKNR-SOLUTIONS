@@ -18,72 +18,96 @@
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
 body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
 
-/* --- HEADER --- */
+/* --- ULTRA-COMPACT HEADER --- */
 .header-dash {
-  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
-.grand-total { background: var(--primary); color: #fff; padding: 8px 30px; border-radius: 10px; font-size: 14px; font-weight: 800; text-align: center; min-width: 200px;}
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 6px 20px; border-radius: 6px; font-size: 12px; font-weight: 800; text-align: center; min-width: 180px;}
 
 @media(max-width:800px){ 
-    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
-    .grand-total { width: 100%; padding: 8px 15px; } 
+    .header-dash { flex-direction: column; gap: 8px; text-align: center; padding: 10px; }
+    .grand-total { width: 100%; padding: 6px 10px; } 
 }
 
-/* --- FILTERS --- */
-.filter-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-.filter-item { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-.filter-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); }
+/* --- MICRO FILTERS BAR (FIXED & MATCHING SIZES) --- */
+.filter-bar { 
+  background: #fff; 
+  padding: 8px 20px; 
+  border-bottom: 1px solid var(--border); 
+  display: flex; 
+  align-items: flex-end; 
+  gap: 10px; 
+  flex-wrap: wrap; 
+}
+.filter-item { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+  flex: 0 0 180px; /* ఆల్ ఫిల్టర్స్ మరియు సెర్చ్ బాక్స్ ఒకే సైజు లో ఉండటానికి */
+  min-width: 180px; 
+}
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 30px; }
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
+@media(max-width: 768px) {
+    .filter-bar { padding: 10px; gap: 6px; }
+    .filter-item { flex: 1 1 calc(50% - 6px); min-width: calc(50% - 6px); }
+}
+
 /* --- ACTIONS HEADER --- */
-.section-header { padding: 15px 25px 5px; display: flex; justify-content: space-between; align-items: center; }
-.btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; height: 30px; }
 
 /* --- THREE DOTS UNIVERSAL MENU --- */
-#threeDotsMenu { position: relative; display: none; margin-right: 10px; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 
-/* --- MAIN TABLE (COMPACT) --- */
-.table-wrap { margin: 0 25px 25px; background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-@media(max-width:800px){ .table-wrap { margin: 0 10px 25px; } }
+/* --- RESPONSIVE MAIN TABLE --- */
+.table-wrap { margin: 0 20px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 20px; } }
 
-.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
-.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1150px; }
+.main-table thead th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; font-size: 10px; }
+.main-table tbody td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+
+@media(max-width: 768px) {
+    .main-table { min-width: 1000px; }
+    .main-table thead th, .main-table tbody td { padding: 6px 4px; font-size: 10.5px; }
+}
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
 
 /* Stream Type Badges */
-.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #fff; display: inline-block; }
+.badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; color: #fff; display: inline-block; }
 .badge-in { background: var(--success); }
 .badge-out { background: #f59e0b; }
 
 /* Empty State */
-.empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
+.empty-state { padding: 60px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
+.empty-state i { font-size: 35px; margin-bottom: 12px; color: var(--accent); opacity: 0.6; }
 
-/* --- MODAL MANAGEMENT (SINGLE COLUMN ON MOBILE) --- */
+/* --- MODAL MANAGEMENT --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+.modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 95%; max-width: 850px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
 @media(max-width:600px){ .form-grid { grid-template-columns: 1fr !important; } }
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+.field input, .field select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
 .field input:focus, .field select:focus { border-color: var(--accent); }
 
 /* --- AUDIT PANEL --- */
@@ -100,10 +124,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 <div class="header-dash">
     <div class="header-titles"><h2>Diesel Stock Ledger</h2></div>
-    <div class="grand-total" id="gt_display">NET EXPENSE: ₹ 0.00</div>
+    <!-- ⚡ CHANGED: NET EXPENSE TO AVAILABLE QTY -->
+    <div class="grand-total" id="gt_display">AVAILABLE QTY: 0.00 Ltr</div>
 </div>
 
-<!-- 📊 FILTERS GRID BAR -->
+<!-- 📊 ULTRA-COMPACT FILTERS GRID BAR (FIXED SIZES) -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -117,15 +142,16 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </select>
     </div>
 
+    <!-- ⚡ CHANGED: SEARCH ITEM HAS SAME FIXED SIZE NOW -->
     <div class="filter-item">
         <label>Search Bar</label>
-        <input type="text" id="searchBox" placeholder="Search GRN, Bill, Vendor, Location...">
+        <input type="text" id="searchBox" placeholder="Search GRN, Bill, Vendor...">
     </div>
 </div>
 
 <!-- 🧾 ACTIONS HEADER -->
 <div class="section-header">
-    <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -137,8 +163,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
             </div>
         </div>
-        <button class="btn-add" style="background: var(--success); margin-right: 8px;" onclick="openModal('IN')"><i class="fa-solid fa-plus"></i> STOCK IN (GRN)</button>
-        <button class="btn-add" style="background: #f59e0b;" onclick="openModal('OUT')"><i class="fa-solid fa-gas-pump"></i> STOCK OUT (CONSUME)</button>
+        <button class="btn-add" style="background: var(--success); margin-right: 6px;" onclick="openModal('IN')"><i class="fa-solid fa-plus"></i> STOCK IN (GRN)</button>
+        <button class="btn-add" style="background: #f59e0b;" onclick="openModal('OUT')"><i class="fa-solid fa-gas-pump"></i> STOCK OUT</button>
     </div>
 </div>
 
@@ -166,7 +192,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             {% if not diesel_history %}
             <tr>
                 <td colspan="13" class="empty-state">
-                    <i class="fa-solid fa-gas-pump"></i><br>
+                    <i class="fa-solid fa-gas-pump" style="color:#eab308;"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render fuel records ledger.</span>
                 </td>
@@ -175,7 +201,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 {% for log in diesel_history %}
                 <tr class="data-row" 
                     data-id="{{ log.DieselLog.id }}" 
-                    data-total="{{ log.DieselLog.net_val }}"
+                    data-closing="{{ log.DieselLog.closing_stock }}"
                     onclick="selectRow(this, '{{ log.DieselLog.id }}')">
                     
                     <td class="slno">0</td>
@@ -211,7 +237,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <!-- 📦 STOCK IN (GRN) MODAL -->
 <div class="modal" id="modalIN">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <h3 style="margin:0; color:var(--success); font-weight:800;"><i class="fa-solid fa-plus"></i> Diesel Stock In (GRN)</h3>
             <button onclick="closeModal('IN')" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
@@ -239,9 +265,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Net Amount (Incl Tax)</label><input type="number" step="any" id="in_net" readonly style="background:#f1f5f9; font-weight:700;"></div>
                 <div class="field"><label>Expected Closing (Ltr)</label><input type="number" step="any" id="in_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
             </div>
-            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-                <button type="button" class="btn-add" style="background:var(--muted);" onclick="closeModal('IN')">Cancel</button>
-                <button type="submit" class="btn-add" style="background:var(--success);">Submit GRN</button>
+            <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal('IN')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:var(--success); flex: 1;">Submit GRN</button>
             </div>
         </form>
     </div>
@@ -250,7 +276,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <!-- 📦 STOCK OUT (CONSUMPTION) MODAL -->
 <div class="modal" id="modalOUT">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <h3 style="margin:0; color:#f59e0b; font-weight:800;"><i class="fa-solid fa-gas-pump"></i> Fuel Consumption Entry</h3>
             <button onclick="closeModal('OUT')" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
@@ -272,9 +298,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Current Weighted Rate</label><input type="number" id="out_rate" readonly style="background:#f1f5f9;"></div>
                 <div class="field"><label>Calculated Closing Stock</label><input type="number" id="out_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
             </div>
-            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-                <button type="button" class="btn-add" style="background:var(--muted);" onclick="closeModal('OUT')">Cancel</button>
-                <button type="submit" class="btn-add" style="background:#f59e0b;">Submit Consumption</button>
+            <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal('OUT')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:#f59e0b; flex: 1;">Submit Consumption</button>
             </div>
         </form>
     </div>
@@ -282,15 +308,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 <!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:12px;">FUEL TRANSACTION HISTORY LOGS</b>
-        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    <div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:11px;">FUEL TRANSACTION HISTORY LOGS</b>
+        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:18px; font-weight:bold;">&times;</span>
     </div>
     <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
-    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR (Fixes 404 Not Found error instantly)
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/diesel' : '/diesel';
     let globalSelectedId = null;
 
@@ -338,26 +363,31 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
         const rows = document.querySelectorAll("#tableBody .data-row");
         let visibleRows = [];
-        let subtotal = 0;
+        
+        // ⚡ FIX: AVAILABLE QTY కి కౌంటర్ సెట్ చేయడం (మొదటి విజిబుల్ రో యొక్క క్లోజింగ్ స్టాక్)
+        let latestClosingStock = 0;
 
         rows.forEach(r => {
-            const t = parseFloat(r.getAttribute("data-total")) || 0;
             if (sVal && !r.textContent.toLowerCase().includes(sVal)) {
                 r.style.display = "none";
             } else {
                 r.style.display = "";
-                subtotal += t;
                 visibleRows.push(r);
             }
         });
 
-        // Decrementing Sl No arrangement engine assignment
+        // వరుస క్రమం అమరిక మరియు టాప్ రో లో ఉన్న క్లోజింగ్ బాలెన్స్ ని రీడ్ చేయడం
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
+            if (index === 0) {
+                latestClosingStock = parseFloat(row.getAttribute("data-closing")) || 0;
+            }
         });
 
         document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
-        document.getElementById("gt_display").innerText = "NET EXPENSE: ₹ " + subtotal.toLocaleString('en-IN', {minimumFractionDigits:2});
+        
+        // ⚡ DISPLAY: AVAILABLE QTY ని లేటెస్ట్ రికార్డ్ నుండి చూపిస్తుంది
+        document.getElementById("gt_display").innerText = "AVAILABLE QTY: " + latestClosingStock.toLocaleString('en-IN', {minimumFractionDigits:2}) + " Ltr";
     }
 
     function selectRow(tr, id) {
@@ -367,7 +397,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('threeDotsMenu').style.display = 'block';
     }
 
-    // ⚡ FIX: AUTOMATIC OPENING STOCK & RATE LOOKUP ENGINE
     async function lookupLastStock(unitId, mode) {
         if(!unitId) {
             if(mode === 'IN') {

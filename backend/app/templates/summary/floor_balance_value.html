@@ -4,87 +4,98 @@
 <meta charset="UTF-8">
 <title>FLOOR BALANCE VALUE | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
  --primary:#0f172a;
  --accent:#2563eb;
  --border:#e2e8f0;
- --bg:#f1f5f9;
+ --bg:#f8fafc;
  --header:#ffffff;
  --text:#1e293b;
- --success:#10b981;
+ --success:#16a34a;
+ --orange:#ea580c;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
-body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif;}
+body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:5px; font-size:9.5px; }
 
-/* ================= HEADER & FILTERS (RMP STYLE) ================= */
-.header{ background:var(--header); padding:10px 20px; border-bottom:1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.header h2{ margin:0; font-size:16px; font-weight:800; color:var(--primary); letter-spacing:0.5px; }
+/* ================= PREMIUM HEADER & FILTERS ================= */
+.header{ 
+    background:var(--header); 
+    padding:10px; 
+    border-radius:8px;
+    border:1px solid var(--border); 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    margin-bottom: 6px;
+}
+.header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.header h2{ margin:0; font-size:12px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
 
+/* Responsive Filters: Mobile by default (1 column), Web/Desktop (Grid with Search stretching) */
 .filters{
  display:grid;
- grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
- gap:8px; background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border);
+ grid-template-columns: 1fr;
+ gap:6px; background:#f1f5f9; padding:6px; border-radius:6px;
 }
-.fbox{display:flex;flex-direction:column;gap:3px;}
-.fbox label{ font-size:9px; font-weight:800; color:#64748b; text-transform:uppercase; }
+@media (min-width: 768px) { 
+ .filters { 
+    grid-template-columns: minmax(100px, 150px) minmax(100px, 150px) minmax(100px, 150px) 1fr; 
+ } 
+}
 
-select, #searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; transition: 0.2s; }
-select:focus, #searchBox:focus{ border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox label{ font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase; }
 
-/* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:8px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
-#rowCount{ font-size:11px; font-weight:700; color:var(--accent); background: #eff6ff; padding: 4px 10px; border-radius: 20px; }
-.btn-print{ font-size:11px; cursor:pointer; color:#fff; background:var(--primary); padding:6px 15px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; }
+select, #searchBox{ padding:4px 6px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; transition: 0.2s; color:#0f172a; width: 100%; }
+select:focus, #searchBox:focus{ border-color: var(--accent); background:#fff; }
+#searchBox{ border-left:3px solid var(--accent); }
+
+/* ================= ACTIONS SYSTEM ================= */
+.actions{ background:#fff; padding:5px 8px; display:flex; justify-content:space-between; align-items:center; border-radius:6px; border:1px solid var(--border); margin-bottom:6px; }
+#rowCount{ font-size:9px; font-weight:800; color:var(--accent); background: #eff6ff; padding: 1px 6px; border-radius: 12px; border: 1px solid #bfdbfe; }
+.btn-print{ font-size:9px; cursor:pointer; color:#fff; background:var(--primary); padding:3px 8px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; border:none; display:flex; align-items:center; gap:4px; }
 .btn-print:hover{ background:var(--accent); }
 
-/* ================= TABLE AREA (RMP STYLE) ================= */
-.section{ flex:1; margin:10px; background:#fff; border:1px solid var(--border); border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+/* ================= TABLE AREA ULTRA-COMPACT LAYOUT ================= */
+.section{ background:#fff; border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); margin-bottom: 10px; }
+.table-wrap{ overflow-x:auto; width: 100%; -webkit-overflow-scrolling: touch; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100px; } 
+table{ width:100%; border-collapse:collapse; table-layout:auto; } 
 
 thead th{
- background:#f8fafc; padding:10px 5px; font-size:10px; font-weight:800;
+ background:#f8fafc; padding:5px 2px; font-size:8.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:20; color:#475569;
+ position:sticky; top:0; z-index:20; color:#475569; white-space: nowrap;
 }
 
 tbody td{
- padding:8px 5px; font-size:11px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
- white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+ padding:4px 2px; font-size:9px; border-bottom:1px solid #f1f5f9;
+ white-space:nowrap; font-weight: 600;
 }
+tr:hover td { background-color: #f8fafc; }
 
-/* Grouping Styles */
-.row-loc { background: #1e293b !important; color: #ffffff !important; font-weight: 800; text-align: left !important; }
-.row-comp { background: #f0f9ff !important; color: var(--accent) !important; font-weight: 700; text-align: left !important; }
-.row-var { background: #f8fafc !important; color: var(--primary) !important; font-weight: 700; text-align: left !important; }
+/* Subtotal Grouping Styles - Extra Tight */
+.row-loc { background: #0f172a !important; color: #ffffff !important; font-weight: 800; }
+.row-comp { background: #eff6ff !important; color: var(--accent) !important; font-weight: 700; border-top: 1px solid #dbeafe; border-bottom: 1px solid #dbeafe; }
+.row-var { background: #f8fafc !important; color: #334155 !important; font-weight: 700; border-bottom: 1px solid var(--border); }
 
-.qty-bold { text-align: right !important; font-weight: 800; padding-right: 12px !important; }
-.val-column { background: #fffbeb; color: #92400e; font-weight: 700; }
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; }
+.val-column { background: #fffdf5; color: #92400e; font-weight: 700; text-align: right !important; padding-right: 4px !important; }
+.batch-bold { color: var(--accent); font-weight: 700; }
 
-/* Precise Column Widths */
-.w-sl { width: 45px; }
-.w-loc { width: 120px; }
-.w-prod { width: 150px; }
-.w-bt { width: 100px; }
-.w-sp { width: 120px; }
-.w-vr { width: 140px; }
-.w-ct { width: 80px; }
-.w-qt { width: 100px; }
-.w-vl { width: 120px; } 
+/* Micro Tag */
+.tag { background: #f1f5f9; color: #334155; padding: 0px 3px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid #cbd5e1; display: inline-block; }
 
-tfoot td{ background:#f8fafc; font-weight:800; font-size:12px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 2px; color:var(--primary); }
 
 @media print {
     .filters, .actions, .header-top button { display: none !important; }
     .section { border: none; margin: 0; }
-    body { background: #fff; }
+    body { background: #fff; padding: 0; }
+    .table-wrap { overflow: visible; }
 }
 </style>
 </head>
@@ -94,19 +105,19 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:12px; border-top:2px so
 <div class="header">
     <div class="header-top">
         <h2>Floor Balance Value Summary</h2>
-        <button class="btn-print" onclick="window.print()">🖨 Print Report</button>
+        <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
     </div>
     <div class="filters">
-        <div class="fbox"><label>Location</label><select id="f_location"><option value="">All Locations</option>{% for l in rows_batch|map(attribute='location')|unique %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Production For</label><select id="f_production"><option value="">All Production</option>{% for p in rows_batch|map(attribute='production_for')|unique %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option>{% for v in rows_batch|map(attribute='variety')|unique %}<option value="{{ v }}">{{ v }}</option>{% endfor %}</select></div>
-        <div class="fbox" style="grid-column: span 2;"><label>Search</label><input id="searchBox" placeholder="Search by Batch, Species..."></div>
+        <div class="fbox"><label>Location</label><select id="f_location"><option value="">All</option>{% for l in rows_batch|map(attribute='location')|unique %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Production For</label><select id="f_production"><option value="">All</option>{% for p in rows_batch|map(attribute='production_for')|unique %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All</option>{% for v in rows_batch|map(attribute='variety')|unique %}<option value="{{ v }}">{{ v }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Search</label><input id="searchBox" placeholder="Search by Batch, Species..."></div>
     </div>
 </div>
 
 <div class="actions">
     <div id="rowCount">0 Records Found</div>
-    <div style="font-size: 10px; color: #64748b;">* Value calculated based on Yields and RMP Avg Rates</div>
+    <div style="font-size: 8px; font-weight: 700; color: #64748b;">* RMP Avg Rates Basis</div>
 </div>
 
 <div class="section">
@@ -114,21 +125,21 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:12px; border-top:2px so
         <table id="rmpTable">
             <thead>
                 <tr>
-                    <th class="w-sl">#</th>
-                    <th class="w-loc">Location</th>
-                    <th class="w-prod">Production For</th>
-                    <th class="w-bt">Batch No</th>
-                    <th class="w-sp">Species</th>
-                    <th class="w-vr">Variety</th>
-                    <th class="w-ct">Count</th>
-                    <th class="w-qt">Qty (Kg)</th>
-                    <th class="w-vl">Value (₹)</th> 
+                    <th style="width: 20px; text-align: center;">#</th>
+                    <th style="text-align: left;">Location</th>
+                    <th style="text-align: left;">Production For</th>
+                    <th style="text-align: center;">Batch No</th>
+                    <th style="text-align: center;">Species</th>
+                    <th style="text-align: center;">Variety</th>
+                    <th style="text-align: center;">Count</th>
+                    <th style="text-align: right; padding-right: 4px;">Qty (Kg)</th>
+                    <th style="text-align: right; padding-right: 4px;">Value (₹)</th> 
                 </tr>
             </thead>
             <tbody id="tbody"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="7" style="text-align:right">GRAND TOTAL:</td>
+                    <td colspan="7" style="text-align:right; padding-right: 6px;">GRAND TOTAL:</td>
                     <td id="net_qty" class="qty-bold">0.00</td>
                     <td id="net_value" class="qty-bold" style="color:var(--success);">0.00</td>
                 </tr>
@@ -138,7 +149,6 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:12px; border-top:2px so
 </div>
 
 <script>
-// Backend నుండి వచ్చే డేటాను ఇక్కడ స్టోర్ చేస్తున్నాం
 const rawData = [
     {% for r in rows_batch %}
     {
@@ -149,7 +159,6 @@ const rawData = [
         variety: "{{ r.variety }}",
         count: "{{ r.count }}",
         qty: {{ r.available_qty or 0 }},
-        // రూటర్ లో మనం క్యాలిక్యులేట్ చేసిన వాల్యూ ఇక్కడకు వస్తుంది
         value: {{ r.value or 0 }} 
     },
     {% endfor %}
@@ -172,14 +181,12 @@ function applyFilters() {
         return ok;
     });
 
-    // Sorting by Location and Production For
     filtered.sort((a, b) => a.location.localeCompare(b.location) || a.production_for.localeCompare(b.production_for));
 
     const tree = {};
     let grandQty = 0;
     let grandValue = 0;
 
-    // Tree Building for Grouping
     filtered.forEach(d => {
         if(!tree[d.location]) tree[d.location] = { qty: 0, val: 0, comps: {} };
         if(!tree[d.location].comps[d.production_for]) tree[d.location].comps[d.production_for] = { qty: 0, val: 0, vars: {} };
@@ -207,15 +214,15 @@ function applyFilters() {
                 tree[l].comps[c].vars[v].items.forEach(item => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${sl++}</td>
-                        <td>${item.location}</td>
-                        <td>${item.production_for}</td>
-                        <td><b>${item.batch}</b></td>
-                        <td>${item.species}</td>
-                        <td>${item.variety}</td>
-                        <td>${item.count}</td>
+                        <td style="text-align:center; color:#64748b; font-size:8.5px;">${sl++}</td>
+                        <td style="text-align:left;">${item.location}</td>
+                        <td style="text-align:left;">${item.production_for}</td>
+                        <td style="text-align:center;" class="batch-bold">${item.batch}</td>
+                        <td style="text-align:center;">${item.species}</td>
+                        <td style="text-align:center;"><span class="tag">${item.variety}</span></td>
+                        <td style="text-align:center;">${item.count}</td>
                         <td class="qty-bold">${item.qty.toFixed(2)}</td>
-                        <td class="qty-bold val-column">${item.value.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+                        <td class="val-column">${item.value.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -223,7 +230,7 @@ function applyFilters() {
         }
     }
     
-    document.getElementById("rowCount").innerText = `${filtered.length} Records Found`;
+    document.getElementById("rowCount").innerText = `${filtered.length} Records`;
     document.getElementById("net_qty").innerText = grandQty.toFixed(2);
     document.getElementById("net_value").innerText = grandValue.toLocaleString('en-IN',{minimumFractionDigits:2});
 }
@@ -232,18 +239,16 @@ function insertSubRow(label, qty, val, cls) {
     const tr = document.createElement("tr");
     tr.className = cls;
     tr.innerHTML = `
-        <td colspan="7" style="padding-left:15px; text-align:left;">${label}</td>
+        <td colspan="7" style="padding-left:6px; text-align:left;">${label}</td>
         <td class="qty-bold">${qty.toFixed(2)}</td>
         <td class="qty-bold">${val.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
     `;
     document.getElementById("tbody").appendChild(tr);
 }
 
-// Event Listeners
 [f_location, f_production, f_variety].forEach(el => el.onchange = applyFilters);
 searchBox.oninput = applyFilters;
 
-// Initialize
 applyFilters();
 </script>
 </body>
