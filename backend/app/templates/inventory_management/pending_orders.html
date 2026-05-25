@@ -2,247 +2,492 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pending Orders – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="mobile-web-app-capable" content="yes">
+<title>Pending Orders Premium – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 :root{
-  --primary:#143465;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --accent: #3b82f6;
-  --card:#ffffff;
-}
-*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-
-/* --- MAIN LAYOUT (Stable Form, Scrollable Table) --- */
-body {
-  margin: 0;
-  background: var(--bg);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
 }
 
-.header, #flash-message, .section {
-  flex-shrink: 0;
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
+
+/* --- APP BAR HEADER (FROM REFERENCE) --- */
+.header-dash {
+  background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.grand-total { background: var(--primary); color: #fff; padding: 6px 20px; border-radius: 6px; font-size: 12px; font-weight: 800; text-align: center; min-width: 160px;}
+
+@media(max-width:800px){ 
+    .header-dash { flex-direction: column; gap: 8px; text-align: center; padding: 10px; }
+    .grand-total { width: 100%; padding: 6px 10px; } 
 }
 
-/* HEADER */
-.header{
-  background:#fff; padding:12px 20px;
-  border-bottom:1px solid var(--border);
-  display:flex; justify-content:space-between; align-items:center;
+/* --- MICRO FILTERS BAR (ONE SEARCH FILTER ONLY) --- */
+.filter-bar { 
+  background: #fff; 
+  padding: 8px 20px; 
+  border-bottom: 1px solid var(--border); 
+  display: flex; 
+  align-items: flex-end; 
+  gap: 8px; 
+  flex-wrap: wrap; 
 }
-.header h2{margin:0;color:var(--primary); font-weight: 800; font-size: 18px;}
+.filter-item { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+  flex: 1;
+  min-width: 200px;
+}
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.filter-item input { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 30px; }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
 
-/* FORM SECTION */
-.section{
-  margin:10px 18px;background:#fff;padding:15px;
-  border-radius:12px;border:1px solid var(--border);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-.form-grid{
-  display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px
-}
-.field{display:flex;flex-direction:column; gap: 2px; position: relative;}
-.field label{font-size:10px;font-weight:700; color: #64748b; text-transform: uppercase;}
-.field input, .field select{
-  padding:8px;border-radius:6px;border:1px solid var(--border);
-  font-size: 12px; outline: none;
-}
-.field input[readonly] { background-color: #f8fafc; color: #475569; cursor: not-allowed; font-weight: 600; }
-.field input:focus, .field select:focus { border-color: var(--accent); }
-
-/* ITEMS TABLE IN FORM */
-.items-table-wrap { overflow-x: auto; margin-top: 10px; }
-.items-table{width:100%;border-collapse:collapse;font-size:11px;}
-.items-table th,.items-table td{
-  border:1px solid var(--border);padding:5px;text-align:center;
-}
-.items-table th { background: #f8fafc; color: #475569; font-weight: 700; white-space: nowrap;}
-.items-table td { position: relative; }
-.items-table input, .items-table select { width: 100%; font-size: 11px; padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px;}
-
-.btn-remove { 
-    background:#fee2e2; color:#ef4444; border:none; padding:2px 6px; 
-    border-radius:4px; cursor:pointer; 
+@media(max-width: 768px) {
+    .filter-bar { padding: 10px; gap: 6px; }
+    .filter-item { flex: 1 1 100%; min-width: 100%; }
+    .btn-clear { width: 100%; }
 }
 
-/* --- TABLE WRAPPER (Scrollable Area) --- */
-.table-wrap {
-  margin: 10px 18px 0 18px;
-  background: #fff;
-  border-radius: 14px 14px 0 0;
+/* --- ACTIONS HEADER --- */
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; height: 30px; }
+
+/* --- THREE DOTS UNIVERSAL MENU --- */
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: #fff; border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* --- DYNAMIC SAVING TRANSACTION BLOCK (INITIAL STATE: CLOSED) --- */
+.section {
+  margin: 0 20px 10px 20px;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  flex-grow: 1; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  display: none; /* Controlled via JS openModal */
+}
+
+.form-row-linear {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: flex-end;
 }
 
-.table-header-tool {
-    padding: 10px 20px; display: flex; justify-content: space-between;
-    align-items: center; border-bottom: 1px solid var(--border); background: #fff;
-    flex-shrink: 0;
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; position: relative; }
+.field label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
 }
-.table-header-tool h3 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; }
+.field input, .field select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  height: 32px;
+  background-color: #ffffff;
+  width: 100%;
+  outline: none;
+  color: var(--primary);
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field input[readonly] { background-color: #f8fafc; color: var(--muted); }
 
-.data-container {
-    height: auto; 
-    flex-grow: 1; 
-    overflow-y: auto;
-    overflow-x: auto;
+.f-sl { flex: 0 0 55px; }
+.f-dt { flex: 0 0 130px; }
+
+/* --- GRID ITEMS TRANSACTION ENGINE --- */
+.items-table-wrap {
+  overflow-x: auto;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.items-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.items-table th, .items-table td {
+  border: 1px solid var(--border);
+  padding: 6px;
+  text-align: center;
+}
+.items-table th {
+  background: #f8fafc;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.items-table input, .items-table select {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 28px;
+  color: var(--primary);
+  outline: none;
+}
+.items-table input:focus, .items-table select:focus { border-color: var(--accent); }
+
+.btn-remove {
+  background: #fee2e2;
+  color: var(--danger);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-#threeDotsMenu { position: relative; display: none; }
-.menu-trigger {
-  background: #fff; border: 1px solid var(--border);
-  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; font-size: 16px;
-}
-#dropdownMenu {
-  display: none; position: absolute; right: 0; top: 35px;
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 10px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,.15);
-  z-index: 1000; overflow: hidden;
-}
-.menu-item {
-  padding: 10px 15px; font-size: 12px; font-weight: 600; cursor: pointer;
-  display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary);
-}
-.menu-item:last-child { border-bottom: none; }
-.menu-item:hover { background: #f1f5ff; color: var(--accent); }
+/* --- RESPONSIVE MAIN TABLE --- */
+.table-wrap { margin: 0 20px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+@media(max-width:800px){ .table-wrap { margin: 0 10px 20px; } }
 
-/* DATA TABLE */
-.data-table { width:100%; border-collapse:collapse; font-size:10px; table-layout: auto; }
-.data-table th, .data-table td{ 
-    border:1px solid var(--border); 
-    padding:8px 5px; 
-    text-align:center; 
-    white-space: nowrap;
-}
-.data-table th { 
-    background: #f1f5f9; color: #475569; font-weight: 700; 
-    text-transform: uppercase; font-size: 9px; 
-    position: sticky; top: 0; z-index: 5;
-}
-.po-cell{background:#f8faff;font-weight:700; color: var(--accent); vertical-align: middle !important;}
-.subtotal-row td{background:#f3f6fb;font-weight:800}
-tr.active-po-row { background:#eff6ff !important; }
-tr.active-po-row td.po-cell { background:#dbeafe !important; }
+.data-container { overflow-x: auto; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1100px; }
+.main-table thead th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; font-size: 10px; }
+.main-table tbody td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 
-.btn-add-row {
-    padding: 6px 12px; background: #fff; border: 1px solid var(--border);
-    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
-}
-.btn-save-po {
-    padding: 6px 20px; background: var(--accent); color: #fff; border: none;
-    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
-}
+/* COMPACT SUMMARY ARCHITECTURE */
+.po-group-header { background: #f8fafc !important; font-weight: 800; text-align: left !important; color: var(--primary); }
+.po-subtotal-row { background: #fafafa !important; font-weight: 700; color: var(--primary); }
+tr.active-po-row td { background: #eff6ff !important; }
 
-/* STATUS COLORS */
-.status-select {
-    padding: 2px; border-radius: 4px; font-size: 9px; font-weight: 700;
-    cursor: pointer; border: 1px solid var(--border); outline: none;
-    text-transform: uppercase;
-}
-.status-pending { background: #fef2f2; color: #ef4444; }
-.status-processing { background: #fffbeb; color: #f59e0b; }
-.status-completed { background: #f0fdf4; color: #16a34a; }
+.btn-add-row { padding: 4px 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; font-weight: 700; font-size: 11px; height: 30px; cursor: pointer; }
+.btn-save-po { background: var(--accent); color: #fff; border: none; padding: 6px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
 
-/* SEARCH BOX POPUP IN DROPDOWNS */
-.search-popup {
-  position: absolute; display: none; background: white; border: 1px solid var(--border);
-  border-radius: 6px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 220px;
-}
-.search-popup input {
-  width: 100%; padding: 6px; font-size: 12px; border: none; border-bottom: 1px solid var(--border); outline: none;
-}
-.search-options-list { max-height: 160px; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
-.search-options-list li { padding: 6px 10px; font-size: 12px; cursor: pointer; color: #334155; }
+/* BADGES */
+.status-select { padding: 2px 4px; border-radius: 4px; font-size: 9px; font-weight: 800; border: 1px solid transparent; outline: none; }
+.status-pending { background: #fee2e2; color: var(--danger); }
+.status-processing { background: #fffbeb; color: #d97706; }
+.status-completed { background: #dcfce7; color: var(--success); }
+
+/* OVERLAY SEARCH CONTAINER */
+.search-popup { position: absolute; display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; }
+.search-popup input { width: 100%; padding: 6px 8px; font-size: 11px; border: none; border-bottom: 1px solid var(--border); outline: none; background: #f8fafc; }
+.search-options-list { max-height: 120px; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
+.search-options-list li { padding: 5px 8px; font-size: 11px; cursor: pointer; color: var(--text); }
 .search-options-list li:hover { background: #eff6ff; color: var(--accent); }
 
-/* PRINT STYLES */
-@media print {
-  body { height: auto; display: block; overflow: visible; }
-  body * { visibility: hidden; background: #fff !important; }
-  .table-wrap, .table-wrap * { visibility: visible; }
-  .table-wrap { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; margin: 0; padding: 0;}
-  .table-header-tool, #threeDotsMenu, .status-select { display: none !important; }
-  .data-container { height: auto !important; overflow: visible !important; }
-  .data-table { font-size: 9pt; width: 100%; border: 1px solid #000; }
-  .data-table th, .data-table td { border: 1px solid #ccc !important; padding: 4px !important; }
-  .po-cell { color: #000 !important; }
+/* --- SALES DISPATCH MODAL MANAGEMENT --- */
+.custom-modal-layout { border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+.custom-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+.custom-modal-full-width { grid-column: span 2; }
+
+/* --- MOBILE SPECIFIC STRUCTURAL REWRITE (ONE UNDER ANOTHER FOR FORM ELEMENTS) --- */
+@media(max-width: 768px) {
+  .section { margin: 0 10px 10px 10px; }
+  .form-row-linear {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .f-sl, .f-dt { flex: none; }
+  
+  /* Matrix Input layout grid wrapper - one under another */
+  .items-table-wrap { border: none; }
+  .items-table thead { display: none; }
+  .items-table tbody tr {
+    display: block;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 8px;
+  }
+  .items-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .items-table td:last-child { border-bottom: none; justify-content: flex-end; }
+  .items-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    width: 35%;
+    text-align: left;
+  }
+  .items-table td select, .items-table td input { width: 65% !important; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>Pending Orders</h2>
-  <div style="font-size: 12px; color: #64748b; font-weight: 600;">BKNR ERP System</div>
+<div class="header-dash">
+  <div class="header-titles"><h2>Pending Orders Engine Ledger</h2></div>
+  <div class="grand-total" id="gt_display">TOTAL VAL: $ 0.00</div>
 </div>
 
-{% if message %}
-<div id="flash-message" style="margin: 18px; padding: 12px; background: #dcfce7; color: #166534; border-radius: 8px; font-size: 14px; font-weight: 600; border: 1px solid #bbf7d0;">
-    <i class="fa-solid fa-circle-check"></i> {{ message }}
+<div class="filter-bar">
+    <div class="filter-item">
+        <label>Search Bar</label>
+        <input type="text" id="searchBox" placeholder="Search PO Number, Buyer, Company or Date...">
+    </div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
-<script>
-  setTimeout(function() {
-    const msg = document.getElementById('flash-message');
-    if (msg) {
-      msg.style.transition = "opacity 0.5s ease";
-      msg.style.opacity = "0";
-      setTimeout(() => msg.remove(), 500);
-    }
-  }, 3000);
-</script>
-{% endif %}
+
+<div class="section-header">
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="editPO()"><i class="fa-solid fa-pen-to-square" style="color:var(--muted)"></i> Modify PO</div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+                <div class="menu-item delete-item" onclick="deletePO()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Flush PO</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ORDER ENTRY</button>
+    </div>
+</div>
+
+<form method="post" action="/inventory/pending_orders" id="orderFormBlock" class="section">
+  <div class="form-row-linear">
+    <div class="field f-sl"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
+    
+    <div class="field">
+      <label>Company Context</label>
+      <select name="company_name" id="company_name" class="lookup searchable-column" required>
+        <option value="">Select Company</option>
+        {% for c in unique_companies %}
+          <option value="{{c}}" {% if edit_rows and edit_rows[0].company_name == c %}selected{% endif %}>{{c}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div class="field"><label>PO Number Reference</label><input name="po_number" required placeholder="PO Reference" value="{{ edit_rows[0].po_number if edit_rows else '' }}"></div>
+    
+    <div class="field">
+      <label>Buyer Profile</label>
+      <select name="buyer" class="lookup searchable-column" data-url="/criteria/buyers" required>
+        <option value="">Select Buyer</option>
+        {% for b in buyers %}<option value="{{b}}" {% if edit_rows and edit_rows[0].buyer == b %}selected{% endif %}>{{b}}</option>{% endfor %}
+        <option value="__add__">➕ Add New</option>
+      </select>
+    </div>
+    
+    <div class="field">
+      <label>Agent Link</label>
+      <select name="agent" class="lookup searchable-column" data-url="/criteria/buyer_agents">
+        <option value="">Select Agent</option>
+        {% for a in agents %}<option value="{{a}}" {% if edit_rows and edit_rows[0].agent_name == a %}selected{% endif %}>{{a}}</option>{% endfor %}
+        <option value="__add__">➕ Add New</option>
+      </select>
+    </div>
+    
+    <div class="field">
+      <label>Target Country</label>
+      <select name="country" class="lookup searchable-column" data-url="/criteria/countries">
+        <option value="">Select Country</option>
+        {% for c in countries %}<option value="{{c}}" {% if edit_rows and edit_rows[0].country == c %}selected{% endif %}>{{c}}</option>{% endfor %}
+        <option value="__add__">➕ Add New</option>
+      </select>
+    </div>
+    
+    <div class="field f-dt"><label>Shipment Schedule</label><input type="date" name="shipment_date" value="{{ edit_rows[0].shipment_date if edit_rows else '' }}"></div>
+  </div>
+
+  <div class="items-table-wrap">
+    <table class="items-table" id="itemsTable">
+      <thead>
+        <tr>
+          <th>Brand</th><th>Packing Style</th><th>Freezer</th><th>C.Glaze</th><th>W.Glaze</th><th>Species</th><th>Variety</th><th>Grade</th><th>Pieces</th><th>M.C Box</th><th>Price</th><th>Exch Rate</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if edit_rows %}
+          {% for item in edit_rows %}
+          <tr>
+            <td data-label="Brand"><select name="brand" class="lookup searchable-column" data-url="/criteria/brands">{% for b in brands %}<option value="{{b}}" {% if item.brand == b %}selected{% endif %}>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Packing Style"><select name="packing_style" class="lookup searchable-column" data-url="/criteria/packing_styles">{% for p in packing %}<option value="{{p.packing_style}}" {% if item.packing_style == p.packing_style %}selected{% endif %}>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Freezer"><select name="freezer" class="lookup searchable-column" data-url="/criteria/freezers">{% for f in freezers %}<option value="{{f}}" {% if item.freezer == f %}selected{% endif %}>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="C.Glaze"><select name="count_glaze" class="searchable-column">{% for g in glazes %}<option value="{{g}}" {% if item.count_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
+            <td data-label="W.Glaze"><select name="weight_glaze" class="searchable-column">{% for g in glazes %}<option value="{{g}}" {% if item.weight_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
+            <td data-label="Species"><select name="species" class="lookup searchable-column" data-url="/criteria/species">{% for s in species %}<option value="{{s}}" {% if item.species == s %}selected{% endif %}>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Variety"><select name="variety" class="lookup searchable-column" data-url="/criteria/varieties">{% for v in varieties %}<option value="{{v}}" {% if item.variety == v %}selected{% endif %}>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Grade"><select name="grade" class="lookup searchable-column" data-url="/criteria/grades">{% for g in grades %}<option value="{{g}}" {% if item.grade == g %}selected{% endif %}>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Pieces"><input type="number" name="no_of_pieces" value="{{ item.no_of_pieces }}"></td>
+            <td data-label="M.C Box"><input type="number" name="no_of_mc" value="{{ item.no_of_mc }}" required></td>
+            <td data-label="Price"><input type="number" step="0.01" name="selling_price" value="{{ item.selling_price }}"></td>
+            <td data-label="Exch Rate"><input type="number" step="0.01" name="exchange_rate" value="{{ item.exchange_rate }}"></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-xmark"></i></button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td data-label="Brand"><select name="brand" class="lookup searchable-column" data-url="/criteria/brands"><option value="">Select</option>{% for b in brands %}<option>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Packing Style"><select name="packing_style" class="lookup searchable-column" data-url="/criteria/packing_styles"><option value="">Select</option>{% for p in packing %}<option>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Freezer"><select name="freezer" class="lookup searchable-column" data-url="/criteria/freezers"><option value="">Select</option>{% for f in freezers %}<option>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="C.Glaze"><select name="count_glaze" class="searchable-column"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
+            <td data-label="W.Glaze"><select name="weight_glaze" class="searchable-column"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
+            <td data-label="Species"><select name="species" class="lookup searchable-column" data-url="/criteria/species"><option value="">Select</option>{% for s in species %}<option>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Variety"><select name="variety" class="lookup searchable-column" data-url="/criteria/varieties"><option value="">Select</option>{% for v in varieties %}<option>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Grade"><select name="grade" class="lookup searchable-column" data-url="/criteria/grades"><option value="">Select</option>{% for g in grades %}<option>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
+            <td data-label="Pieces"><input type="number" name="no_of_pieces"></td>
+            <td data-label="M.C Box"><input type="number" name="no_of_mc" required></td>
+            <td data-label="Price"><input type="number" step="0.01" name="selling_price"></td>
+            <td data-label="Exch Rate"><input type="number" step="0.01" name="exchange_rate"></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-xmark"></i></button></td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+    <button type="button" class="btn-add-row" onclick="addRow()"><i class="fa-solid fa-plus"></i> Add Entry Line</button>
+    <div style="display:flex; gap:6px;">
+        <button type="button" class="btn-add" style="background:var(--muted)" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn-save-po">{% if edit_rows %}Update Record{% else %}Save Purchase Order{% endif %}</button>
+    </div>
+  </div>
+</form>
+
+<div class="table-wrap">
+  <div class="data-container">
+    <table class="main-table" id="dataTable">
+      <thead>
+        <tr>
+          <th>Sl</th><th>Company</th><th>PO Number</th><th>Buyer</th><th>Agent</th><th>Ship.Date</th><th>Brand</th><th>Packing</th><th>Freezer</th><th>C.G</th><th>W.G</th><th>Species</th><th>Variety</th><th>Grade</th><th>Pcs</th><th>M.C Box</th><th>Price</th><th>Exch Rate</th><th>Workflow Architecture</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if po_groups %}
+          {% for po_code, lines in po_groups.items() %}
+            
+            <tr>
+              <td colspan="19" class="po-group-header">
+                <i class="fa-solid fa-folder-open text-accent me-1"></i> PURCHASE ORDER: <span class="text-accent" style="color:var(--accent) !important;">{{ po_code }}</span> 
+                &nbsp;|&nbsp; Company: {{ lines[0].company_name }} &nbsp;|&nbsp; Client: {{ lines[0].buyer }}
+              </td>
+            </tr>
+
+            {% set ns = namespace(total_mc=0, total_price=0, sum_exch=0, count=0) %}
+
+            {% for r in lines %}
+              {% set ns.total_mc = ns.total_mc + (r.no_of_mc|int if r.no_of_mc else 0) %}
+              {% set ns.total_price = ns.total_price + (r.selling_price|float if r.selling_price else 0.0) %}
+              {% set ns.sum_exch = ns.sum_exch + (r.exchange_rate|float if r.exchange_rate else 0.0) %}
+              {% set ns.count = ns.count + 1 %}
+
+            <tr onclick="selectPO('{{ r.po_number }}')" class="data-row po-row-{{ r.po_number }}" data-po="{{ r.po_number }}" data-total="{{ r.selling_price }}">
+              <td>{{ r.sl_no }}</td>
+              <td>{{ r.company_name }}</td>
+              <td style="font-weight: 700; color:var(--accent);">{{ r.po_number }}</td>
+              <td>{{ r.buyer }}</td>
+              <td>{{ r.agent_name }}</td>
+              <td>{{ r.shipment_date }}</td>
+              <td>{{ r.brand }}</td>
+              <td>{{ r.packing_style }}</td>
+              <td>{{ r.freezer }}</td>
+              <td>{{ r.count_glaze }}%</td>
+              <td>{{ r.weight_glaze }}%</td>
+              <td>{{ r.species }}</td>
+              <td>{{ r.variety }}</td>
+              <td>{{ r.grade }}</td>
+              <td>{{ r.no_of_pieces }}</td>
+              <td class="fw-bold">{{ r.no_of_mc }}</td>
+              <td class="text-success fw-bold">${{ r.selling_price }}</td>
+              <td style="color:var(--primary); font-weight:700;">₹{{ r.exchange_rate }}</td>
+              <td onclick="event.stopPropagation();">
+                  {% set current_status = r.progress_steps if r.progress_steps else 'pending' %}
+                  <select class="status-select status-{{ current_status|lower }}" onchange="updateStatusStyle(this,'{{ r.po_number }}')">
+                      <option value="pending" {% if current_status|lower == 'pending' %}selected{% endif %}>PENDING</option>
+                      <option value="processing" {% if current_status|lower == 'processing' %}selected{% endif %}>PROCESSING</option>
+                      <option value="completed" {% if current_status|lower == 'completed' %}selected{% endif %}>COMPLETED</option>
+                  </select>
+              </td>
+            </tr>
+            {% endfor %}
+
+            <tr class="po-subtotal-row">
+              <td colspan="15" style="text-align: right; font-weight:800;">SUB TOTAL ({{ po_code }}):</td>
+              <td style="font-weight:800;">{{ ns.total_mc }} MC</td>
+              <td class="text-success" style="font-weight:800;">${{ "%0.2f"|format(ns.total_price) }}</td>
+              <td style="font-weight:800; color:var(--primary);">
+                {% if ns.count > 0 %}
+                  ₹{{ "%0.2f"|format(ns.sum_exch / ns.count) }} (Avg)
+                {% else %}
+                  ₹0.00
+                {% endif %}
+              </td>
+              <td></td>
+            </tr>
+
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="19" class="empty-state"><i class="fa-solid fa-layer-group"></i><br>No records matched in data stream.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="modal fade" id="salesDispatchModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow-lg border-0">
-      <div class="modal-header" style="background: #1e293b; color: white;">
-        <h5 class="modal-title" style="font-size: 16px; font-weight: 800;">🚀 MOVE TO SALES DISPATCH</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border-0 custom-modal-layout">
+      <div class="modal-header px-3 py-2 bg-dark text-white border-0" style="background-color: var(--primary) !important;">
+        <h5 class="modal-title" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color:#fff;">
+          <i class="fa-solid fa-truck-ramp-box me-1 text-info"></i> SALES ROUTER DISPATCH
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="font-size: 9px;"></button>
       </div>
       <form id="salesDispatchForm" method="POST" action="/inventory/move_to_sales">
-        <div class="modal-body p-4">
-          <div class="row g-3">
-            <div class="col-12">
-              <label class="form-label fw-bold small text-muted">PO NUMBER</label>
-              <input type="text" name="po_number" id="sales_po_number" class="form-control fw-bold bg-light" readonly>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small text-muted">INVOICE NO</label>
-              <input type="text" name="invoice_no" class="form-control" placeholder="INV/24/..." required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small text-muted">INVOICE DATE</label>
-              <input type="date" name="invoice_date" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small text-muted">CONTAINER NO</label>
-              <input type="text" name="container_no" class="form-control" placeholder="MSKU...">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small text-muted">S. BILL NO</label>
-              <input type="text" name="shipping_bill" class="form-control">
-            </div>
+        <div class="custom-modal-grid">
+          <div class="custom-modal-field custom-modal-full-width field">
+            <label>PO Target Reference Model</label>
+            <input type="text" name="po_number" id="sales_po_number" readonly>
+          </div>
+          <div class="custom-modal-field field">
+            <label>Invoice Number</label>
+            <input type="text" name="invoice_no" placeholder="Enter invoice number" required>
+          </div>
+          <div class="custom-modal-field field">
+            <label>Invoice Record Date</label>
+            <input type="date" name="invoice_date" required>
+          </div>
+          <div class="custom-modal-field field">
+            <label>Shipping Bill No</label>
+            <input type="text" name="shipping_bill" placeholder="Ex: SB-5647382">
+          </div>
+          <div class="custom-modal-field field">
+            <label>Container No</label>
+            <input type="text" name="container_no" placeholder="Ex: TCNU8765432">
           </div>
         </div>
-        <div class="modal-footer bg-light">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm px-4">Move to Sales</button>
+        <div class="modal-footer p-2 border-0 d-flex justify-content-end gap-2" style="background-color: #f8fafc;">
+          <button type="button" class="btn text-muted text-decoration-none" data-bs-dismiss="modal" style="font-size:11px; font-weight:600; background:none; border:none;">Cancel</button>
+          <button type="submit" class="btn btn-primary px-3" style="font-size:11px; font-weight:700; background-color: var(--accent); border:none; height:28px; border-radius:4px; color:#fff;">Dispatch Matrix</button>
         </div>
       </form>
     </div>
@@ -250,194 +495,25 @@ tr.active-po-row td.po-cell { background:#dbeafe !important; }
 </div>
 
 <div class="modal fade" id="criteriaModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow-lg">
-      <div class="modal-header" style="background: var(--primary); color: white;">
-        <h5 class="modal-title" id="modalTitle">Add New</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header px-3 py-2 bg-secondary text-white">
+        <h5 class="modal-title" style="font-size: 11px; font-weight: 700; color:#fff;">Config Metadata Context</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="font-size: 9px;"></button>
       </div>
       <div class="modal-body p-0">
-        <iframe id="criteriaIframe" src="" style="width:100%; height:500px; border:none;"></iframe>
+        <iframe id="criteriaIframe" src="" style="width:100%; height:360px; border:none;"></iframe>
       </div>
     </div>
-  </div>
-</div>
-
-<form method="post" action="/inventory/pending_orders">
-<div class="section">
-  <div class="form-grid">
-    <div class="field"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
-    
-    <div class="field">
-      <label>Company Name</label>
-      <input type="text" name="company_name" id="company_name" 
-             value="{{ current_user_company }}" 
-             readonly required>
-    </div>
-    
-    <div class="field"><label>PO Number</label><input name="po_number" required placeholder="Ex: PO-2024-001" value="{{ edit_rows[0].po_number if edit_rows else '' }}"></div>
-    
-    <div class="field">
-      <label>Buyer</label>
-      <select name="buyer" class="lookup searchable-column" data-url="/criteria/buyers" required>
-        <option value="">Select Buyer</option>
-        {% for b in buyers %}<option value="{{b}}" {% if edit_rows and edit_rows[0].buyer == b %}selected{% endif %}>{{b}}</option>{% endfor %}
-        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
-      </select>
-    </div>
-    
-    <div class="field">
-      <label>Agent</label>
-      <select name="agent" class="lookup searchable-column" data-url="/criteria/buyer_agents">
-        <option value="">Select Agent</option>
-        {% for a in agents %}<option value="{{a}}" {% if edit_rows and edit_rows[0].agent_name == a %}selected{% endif %}>{{a}}</option>{% endfor %}
-        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
-      </select>
-    </div>
-    
-    <div class="field">
-      <label>Country</label>
-      <select name="country" class="lookup searchable-column" data-url="/criteria/countries">
-        <option value="">Select Country</option>
-        {% for c in countries %}<option value="{{c}}" {% if edit_rows and edit_rows[0].country == c %}selected{% endif %}>{{c}}</option>{% endfor %}
-        <option value="__add__" style="color: blue; font-weight: bold;">➕ Add New</option>
-      </select>
-    </div>
-    
-    <div class="field"><label>Shipment Date</label><input type="date" name="shipment_date" value="{{ edit_rows[0].shipment_date if edit_rows else '' }}"></div>
-  </div>
-
-  <div class="items-table-wrap">
-    <table class="items-table" id="itemsTable">
-      <thead>
-        <tr>
-          <th>Brand</th><th>Packing</th><th>Freezer</th><th>C.G%</th><th>W.G%</th><th>Species</th><th>Variety</th><th>Grade</th><th>Pcs</th><th>MC</th><th>S.Price($)</th><th>Exch Rate</th><th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if edit_rows %}
-          {% for item in edit_rows %}
-          <tr>
-            <td><select name="brand" class="lookup searchable-column" data-url="/criteria/brands">{% for b in brands %}<option value="{{b}}" {% if item.brand == b %}selected{% endif %}>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="packing_style" class="lookup searchable-column" data-url="/criteria/packing_styles">{% for p in packing %}<option value="{{p.packing_style}}" {% if item.packing_style == p.packing_style %}selected{% endif %}>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="freezer" class="lookup searchable-column" data-url="/criteria/freezers">{% for f in freezers %}<option value="{{f}}" {% if item.freezer == f %}selected{% endif %}>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="count_glaze" class="searchable-column">{% for g in glazes %}<option value="{{g}}" {% if item.count_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
-            <td><select name="weight_glaze" class="searchable-column">{% for g in glazes %}<option value="{{g}}" {% if item.weight_glaze == g %}selected{% endif %}>{{g}}</option>{% endfor %}</select></td>
-            <td><select name="species" class="lookup searchable-column" data-url="/criteria/species">{% for s in species %}<option value="{{s}}" {% if item.species == s %}selected{% endif %}>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="variety" class="lookup searchable-column" data-url="/criteria/varieties">{% for v in varieties %}<option value="{{v}}" {% if item.variety == v %}selected{% endif %}>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="grade" class="lookup searchable-column" data-url="/criteria/grades">{% for g in grades %}<option value="{{g}}" {% if item.grade == g %}selected{% endif %}>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><input type="number" name="no_of_pieces" value="{{ item.no_of_pieces }}"></td> 
-            <td><input type="number" name="no_of_mc" value="{{ item.no_of_mc }}" required></td>
-            <td><input type="number" step="0.01" name="selling_price" value="{{ item.selling_price }}"></td>
-            <td><input type="number" step="0.01" name="exchange_rate" value="{{ item.exchange_rate }}"></td>
-            <td><button type="button" class="btn-remove" onclick="removeRow(this)">✖</button></td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td><select name="brand" class="lookup searchable-column" data-url="/criteria/brands"><option value="">Select</option>{% for b in brands %}<option>{{b}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="packing_style" class="lookup searchable-column" data-url="/criteria/packing_styles"><option value="">Select</option>{% for p in packing %}<option>{{p.packing_style}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="freezer" class="lookup searchable-column" data-url="/criteria/freezers"><option value="">Select</option>{% for f in freezers %}<option>{{f}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="count_glaze" class="searchable-column"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
-            <td><select name="weight_glaze" class="searchable-column"><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></td>
-            <td><select name="species" class="lookup searchable-column" data-url="/criteria/species"><option value="">Select</option>{% for s in species %}<option>{{s}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="variety" class="lookup searchable-column" data-url="/criteria/varieties"><option value="">Select</option>{% for v in varieties %}<option>{{v}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><select name="grade" class="lookup searchable-column" data-url="/criteria/grades"><option value="">Select</option>{% for g in grades %}<option>{{g}}</option>{% endfor %}<option value="__add__">➕ Add New</option></select></td>
-            <td><input type="number" name="no_of_pieces"></td> 
-            <td><input type="number" name="no_of_mc" required></td>
-            <td><input type="number" step="0.01" name="selling_price"></td>
-            <td><input type="number" step="0.01" name="exchange_rate"></td>
-            <td><button type="button" class="btn-remove" onclick="removeRow(this)">✖</button></td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
-
-  <div style="margin-top:10px;display:flex;justify-content:space-between">
-    <button type="button" class="btn-add-row" onclick="addRow()">➕ Row</button>
-    <button type="submit" class="btn-save-po">{% if edit_rows %}Update{% else %}Save Order{% endif %}</button>
-  </div>
-</div>
-</form>
-
-<div class="table-wrap">
-  <div class="table-header-tool">
-      <h3>Active Purchase Orders</h3>
-      <div id="threeDotsMenu">
-        <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-        <div id="dropdownMenu">
-          <div class="menu-item" onclick="editPO()"><i class="fa-solid fa-pen-to-square"></i> Edit PO</div>
-          <div class="menu-item" onclick="deletePO()"><i class="fa-solid fa-trash-can"></i> Delete PO</div>
-          <div class="menu-item" onclick="printPO()"><i class="fa-solid fa-print"></i> Print</div>
-          <div class="menu-item" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
-          <div class="menu-item" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
-        </div>
-      </div>
-  </div>
-
-  <div class="data-container">
-    <table class="data-table" id="dataTable">
-      <thead>
-        <tr>
-          <th>Sl</th><th>Company</th><th>PO</th><th>Buyer</th><th>Agent</th><th>Ship.Dt</th><th>Brand</th><th>Pack</th><th>Frz</th><th>C.G</th><th>W.G</th><th>Species</th><th>Variety</th><th>Grd</th><th>Pcs</th><th>MC</th><th>Price</th><th>Exch</th><th style="background:#fffbeb;">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-       {% if po_groups %}
-         {% for po, rows in po_groups.items() %}
-          {% set ns = namespace(total_mc=0) %}
-          {% for r in rows %}
-            {% set ns.total_mc = ns.total_mc + (r.no_of_mc | int) %}
-            <tr onclick="selectPO('{{po}}')" data-po="{{po}}" class="po-row-{{po}}">
-              {% if loop.first %}
-                <td style="background:#f1f5f9; font-weight:800; vertical-align:middle;" rowspan="{{ rows|length + 1 }}">{{ r.sl_no }}</td>
-                <td class="po-cell" style="font-size: 9px; font-weight: 800; color: #475569;" rowspan="{{ rows|length }}">{{ r.company_name }}</td>
-                <td class="po-cell" rowspan="{{ rows|length }}">{{ r.po_number }}</td>
-                <td class="po-cell" rowspan="{{ rows|length }}">{{ r.buyer }}</td>
-                <td class="po-cell" rowspan="{{ rows|length }}">{{ r.agent_name }}</td>
-                <td class="po-cell" rowspan="{{ rows|length }}">{{ r.shipment_date }}</td>
-              {% endif %}
-              
-              <td>{{ r.brand }}</td><td>{{ r.packing_style }}</td><td>{{ r.freezer }}</td><td>{{ r.count_glaze }}</td><td>{{ r.weight_glaze }}</td><td>{{ r.species }}</td><td>{{ r.variety }}</td><td>{{ r.grade }}</td><td>{{ r.no_of_pieces }}</td><td style="font-weight:700">{{ r.no_of_mc }}</td><td style="font-weight:700; color:#16a34a;">${{ r.selling_price }}</td><td style="font-weight:700; color:#4338ca;">₹{{ r.exchange_rate }}</td>
-              
-              {% if loop.first %}
-              <td rowspan="{{ rows|length }}" style="vertical-align: middle; background:#fffbeb;">
-                {% set current_status = rows[0].progress_steps if rows[0].progress_steps else 'pending' %}
-                
-                <select class="status-select status-{{ current_status | lower }}" onchange="updateStatusStyle(this, '{{ po }}')">
-                  <option value="pending" {% if current_status|lower == 'pending' %}selected{% endif %}>PENDING</option>
-                  <option value="processing" {% if current_status|lower == 'processing' %}selected{% endif %}>PROCESSING</option>
-                  <option value="completed" {% if current_status|lower == 'completed' %}selected{% endif %}>COMPLETED</option>
-                </select>
-              </td>
-              {% endif %}
-            </tr>
-          {% endfor %}
-          <tr class="subtotal-row po-row-{{po}}" onclick="selectPO('{{po}}')" data-po="{{po}}">
-            <td colspan="9" style="text-align:right; font-size: 9px;">Total MC for {{ po }}:</td>
-            <td style="font-weight:800; color:var(--primary); background:#e2e8f0;">{{ ns.total_mc }}</td> 
-            <td colspan="4"></td>
-          </tr>
-         {% endfor %}
-       {% else %}
-          <tr>
-            <td colspan="19" style="text-align: center; padding: 20px; color: #64748b; font-size: 12px; font-weight: 600;">
-              ⚠️ No active purchase orders found.
-            </td>
-          </tr>
-       {% endif %}
-      </tbody>
-    </table>
   </div>
 </div>
 
 <div id="customSearchPopup" class="search-popup">
-  <input type="text" id="popupSearchInput" placeholder="Type to filter...">
+  <input type="text" id="popupSearchInput" placeholder="Filter dynamic items...">
   <ul id="popupOptionsList" class="search-options-list"></ul>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 let activePO = null;
@@ -446,48 +522,125 @@ const dropdownMenu  = document.getElementById("dropdownMenu");
 const criteriaModal = new bootstrap.Modal(document.getElementById('criteriaModal'));
 const salesModal = new bootstrap.Modal(document.getElementById('salesDispatchModal'));
 
+document.addEventListener("DOMContentLoaded", function() {
+    applyFilters();
+    
+    document.getElementById("dotsBtn")?.addEventListener("click", e => {
+      e.stopPropagation();
+      dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
+    });
+    
+    window.addEventListener("click", () => { if(dropdownMenu) dropdownMenu.style.display = "none"; });
+
+    const searchBox = document.getElementById('searchBox');
+    if(searchBox) {
+        searchBox.addEventListener('keyup', debounce(applyFilters, 200));
+    }
+    
+    // Auto-trigger if we are in Edit loop context
+    {% if edit_rows %}
+       document.getElementById("orderFormBlock").style.display = "block";
+    {% endif %}
+});
+
+function debounce(func, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+function applyFilters() {
+    const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
+    const rows = document.querySelectorAll("#dataTable tbody tr.data-row");
+    let visibleCount = 0;
+    let runningTotal = 0;
+
+    rows.forEach(r => {
+        const totalCost = parseFloat(r.getAttribute("data-total")) || 0;
+        let match = true;
+        if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
+
+        if(match) {
+            r.style.display = "";
+            runningTotal += totalCost;
+            visibleCount++;
+        } else {
+            r.style.display = "none";
+        }
+    });
+
+    // Also handle PO header and subtotal rows visibility logic safely based on search
+    const allRows = document.querySelectorAll("#dataTable tbody tr");
+    let poCurrentCode = "";
+    let hasVisibleChild = false;
+
+    allRows.forEach(r => {
+        if (r.classList.contains('po-group-header')) {
+            poCurrentCode = r.textContent.trim();
+            hasVisibleChild = false;
+            // Scan next rows to see if any child matches search box
+            let scan = r.nextElementSibling;
+            while(scan && !scan.classList.contains('po-group-header')) {
+                if (scan.classList.contains('data-row')) {
+                    if (!sVal || scan.textContent.toLowerCase().includes(sVal)) {
+                        hasVisibleChild = true;
+                    }
+                }
+                scan = scan.nextElementSibling;
+            }
+            r.style.display = hasVisibleChild ? "" : "none";
+        } else if (r.classList.contains('po-subtotal-row')) {
+            r.style.display = hasVisibleChild ? "" : "none";
+        }
+    });
+
+    document.getElementById("rowCount").innerText = `${visibleCount} LINE ITEMS FOUND`;
+    document.getElementById("gt_display").innerText = "TOTAL VAL: $ " + runningTotal.toLocaleString('en-US', {minimumFractionDigits:2});
+}
+
+function resetFilters() {
+    document.getElementById('searchBox').value = "";
+    applyFilters();
+}
+
+function openModal() {
+    const block = document.getElementById("orderFormBlock");
+    block.style.display = block.style.display === "block" ? "none" : "block";
+    if(block.style.display === "block") {
+        block.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function closeModal() {
+    document.getElementById("orderFormBlock").style.display = "none";
+    document.getElementById("elecEntryForm")?.reset();
+}
+
 function updateStatusStyle(select, po) {
     const newStatus = select.value;
     select.className = "status-select status-" + newStatus;
-
     if (newStatus === 'completed') {
         document.getElementById('sales_po_number').value = po;
         salesModal.show();
     }
-
     fetch('/inventory/update_po_status', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            po_number: po,
-            status: newStatus 
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Status updated successfully");
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert("Network Error: Could not save status.");
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ po_number: po, status: newStatus })
     });
 }
 
-// Helper function to trigger Criteria Modal
 function triggerCriteriaModal(targetSelect) {
   const url = targetSelect.getAttribute('data-url');
-  const label = targetSelect.closest('.field')?.querySelector('label')?.innerText || "Criteria";
   if(url) {
-    document.getElementById('modalTitle').innerText = "Add New " + label;
     document.getElementById('criteriaIframe').src = url;
     criteriaModal.show();
   }
   targetSelect.selectedIndex = 0;
 }
 
-// Listen for direct change injections
 document.addEventListener('change', function(e) {
   if (e.target.classList.contains('lookup') && e.target.value === "__add__") {
     triggerCriteriaModal(e.target);
@@ -498,103 +651,66 @@ function addRow(){
   const t = document.querySelector("#itemsTable tbody");
   const rows = t.querySelectorAll("tr");
   const r = rows[rows.length - 1].cloneNode(true);
-  
-  // Clean values from cloning
   r.querySelectorAll("input").forEach(i => i.value = "");
-  r.querySelectorAll("select").forEach(s => {
-      s.selectedIndex = 0;
-      delete s.dataset.searchAttached; // 🛠️ FIXED: Reset clone flag so search logic initializes properly on new row
-  });
+  r.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
   t.appendChild(r);
-  
-  attachSearchableDropdownLogic();
 }
 
 function removeRow(btn){
   const t = document.querySelector("#itemsTable tbody");
   if(t.querySelectorAll("tr").length > 1) btn.closest("tr").remove();
-  else alert("At least one row is required.");
 }
 
 function selectPO(po){
   activePO = po;
   threeDotsMenu.style.display = "block";
-  
-  document.querySelectorAll("#dataTable tr").forEach(r => r.classList.remove("active-po-row"));
-  document.querySelectorAll(`#dataTable tr.po-row-${po}`).forEach(r => {
-      r.classList.add("active-po-row");
-  });
+  document.querySelectorAll("#dataTable tr").forEach(r => r.classList.remove("selected-row"));
+  document.querySelectorAll(`#dataTable tr.po-row-${po}`).forEach(r => r.classList.add("selected-row"));
 }
 
-document.getElementById("menuBtn")?.addEventListener("click", e => {
-  e.stopPropagation();
-  dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
-});
-
-window.addEventListener("click", () => {
-  if(dropdownMenu) dropdownMenu.style.display = "none";
-});
-
 function editPO(){ if(activePO) location = "/inventory/pending_orders?edit=" + activePO; }
-function deletePO(){ if(activePO && confirm("Delete PO : " + activePO + " ?")){ const f = document.createElement("form"); f.method = "POST"; f.action = "/inventory/pending_orders/delete_po/" + activePO; document.body.appendChild(f); f.submit(); } }
-function printPO(){ window.print(); }
-function exportPDF(){ window.open("/inventory/pending_orders/export/pdf", "_blank"); }
-function exportExcel(){ window.open("/inventory/pending_orders/export/excel", "_blank"); }
+function deletePO(){ if(activePO && confirm("Flush and delete PO context " + activePO + "?")){ const f = document.createElement("form"); f.method = "POST"; f.action = "/inventory/pending_orders/delete_po/" + activePO; document.body.appendChild(f); f.submit(); } }
 
-/* Searchable Dropdown Core Logic */
+/* --- ACTIVE SEARCH ENGINE INJECTOR --- */
 const searchPopup = document.getElementById('customSearchPopup');
 const popupSearchInput = document.getElementById('popupSearchInput');
 const popupOptionsList = document.getElementById('popupOptionsList');
 let activeTargetSelect = null;
 
-function attachSearchableDropdownLogic() {
-  document.querySelectorAll('select.searchable-column').forEach(select => {
-    if (select.dataset.searchAttached === "true") return;
-    select.dataset.searchAttached = "true";
-
-    select.addEventListener('mousedown', function(e) {
-      if (e.button !== 0) return; 
-      e.preventDefault();
-      
-      activeTargetSelect = select;
-      const rect = select.getBoundingClientRect();
-      
-      searchPopup.style.top = `${rect.bottom + window.scrollY}px`;
-      searchPopup.style.left = `${rect.left + window.scrollX}px`;
-      searchPopup.style.width = `${rect.width}px`;
-      searchPopup.style.display = 'block';
-      
-      popupSearchInput.value = '';
-      renderFilteredOptions('');
-      popupSearchInput.focus();
-    });
-  });
-}
+document.addEventListener('mousedown', function(e) {
+  if (e.target && e.target.classList.contains('searchable-column')) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    
+    activeTargetSelect = e.target;
+    const rect = activeTargetSelect.getBoundingClientRect();
+    
+    searchPopup.style.top = `${rect.bottom + window.scrollY}px`;
+    searchPopup.style.left = `${rect.left + window.scrollX}px`;
+    searchPopup.style.width = `${rect.width}px`;
+    searchPopup.style.display = 'block';
+    
+    popupSearchInput.value = '';
+    renderFilteredOptions('');
+    popupSearchInput.focus();
+  }
+});
 
 function renderFilteredOptions(searchTerm) {
   if (!activeTargetSelect) return;
   popupOptionsList.innerHTML = '';
-  
   const options = Array.from(activeTargetSelect.options);
   const term = searchTerm.toLowerCase().trim();
   
   options.forEach(opt => {
+    if (term !== '' && opt.value === '') return;
     if (opt.text.toLowerCase().includes(term) || opt.value === "__add__") {
       const li = document.createElement('li');
       li.textContent = opt.text;
-      if(opt.value === "__add__") {
-        li.style.color = "blue";
-        li.style.fontWeight = "bold";
-        li.style.borderTop = "1px solid #e2e8f0";
-      }
       li.addEventListener('click', function() {
         activeTargetSelect.value = opt.value;
         activeTargetSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // 🛠️ FIXED: Trigger criteria dynamic frame directly if clicked inside search dropdown popup listing
-        if (opt.value === "__add__") {
-          triggerCriteriaModal(activeTargetSelect);
-        }
+        if (opt.value === "__add__") triggerCriteriaModal(activeTargetSelect);
         searchPopup.style.display = 'none';
       });
       popupOptionsList.appendChild(li);
@@ -602,20 +718,8 @@ function renderFilteredOptions(searchTerm) {
   });
 }
 
-popupSearchInput.addEventListener('input', function(e) {
-  renderFilteredOptions(e.target.value);
-});
-
-document.addEventListener('mousedown', function(e) {
-  if (!searchPopup.contains(e.target) && e.target !== activeTargetSelect) {
-    searchPopup.style.display = 'none';
-  }
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-  attachSearchableDropdownLogic();
-});
+popupSearchInput.addEventListener('input', e => renderFilteredOptions(e.target.value));
+document.addEventListener('mousedown', e => { if (!searchPopup.contains(e.target) && (!activeTargetSelect || e.target !== activeTargetSelect)) searchPopup.style.display = 'none'; });
 </script>
-
 </body>
 </html>
