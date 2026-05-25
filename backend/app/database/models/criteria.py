@@ -90,12 +90,29 @@ class buyers(Base, metacolumns):
     __tablename__ = "buyers"
     id = Column(Integer, primary_key=True)
     buyer_name = Column(String(255), nullable=False, index=True)
+    
+    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    address = Column(String(255))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
     __table_args__ = (UniqueConstraint("company_id", "buyer_name", name="uix_company_buyer"),)
 
 class buyer_agents(Base, metacolumns):
     __tablename__ = "buyer_agents"
     id = Column(Integer, primary_key=True)
     agent_name = Column(String(255), nullable=False, index=True)
+    phone = Column(String(50))
+    address = Column(String(255))
+    service_for = Column(String(150), default="Buyer Agent")
+    agent_email = Column(String(255), nullable=True)
+    
+    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    gst_number = Column(String(50))
+    bank_name = Column(String(100))
+    account_no = Column(String(100))
+    ifsc = Column(String(20))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
     __table_args__ = (UniqueConstraint("company_id", "agent_name", name="uix_company_agent"),)
 
 class packing_styles(Base, metacolumns):
@@ -125,13 +142,27 @@ class contractors(Base, metacolumns):
     phone = Column(String(50)); contractor_email = Column(String(255)); address = Column(String(255))
     gst_number = Column(String(50)); gst_percent = Column(Float); gst_applicable_from = Column(Date)
     bank_name = Column(String(100)); account_no = Column(String(100)); ifsc = Column(String(20))
+    
+    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    payment_cycle = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
     __table_args__ = (UniqueConstraint("company_id", "contractor_name", name="uix_company_contractor"),)
 
 class suppliers(Base, metacolumns):
     __tablename__ = "suppliers"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     supplier_name = Column(String(255), nullable=False, index=True)
     supplier_email = Column(String(255)); phone = Column(String(50)); address = Column(String(255))
+    
+    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    gst_number = Column(String(50))
+    bank_name = Column(String(150))
+    account_no = Column(String(100))
+    ifsc = Column(String(20))
+    payment_cycle = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
     __table_args__ = (UniqueConstraint("company_id", "supplier_name", name="uix_company_supplier"),)
 
 class peeling_rates(Base, metacolumns):
@@ -199,6 +230,16 @@ class shipping_vendors(Base, metacolumns):
     __tablename__ = "shipping_vendors"
     id = Column(Integer, primary_key=True)
     vendor_name = Column(String(255), nullable=False, index=True)
+    
+    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    gst_number = Column(String(50))
+    address = Column(String(255))
+    bank_name = Column(String(150))
+    account_no = Column(String(100))
+    ifsc = Column(String(20))
+    payment_cycle = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
     __table_args__ = (UniqueConstraint("company_id", "vendor_name", name="uix_company_shipping_vendor"),)
 
 class vendors(Base):
@@ -240,9 +281,10 @@ class vendors(Base):
     # =========================
     # AUDIT / SYSTEM
     # =========================
+    date = Column(String(20), nullable=True)             # HTML నుండి వచ్చే 'YYYY-MM-DD' డేట్ కోసం
+    time = Column(String(20), nullable=True)             # HTML నుండి వచ్చే 'HH:MM:SS' టైమ్ కోసం
+    created_by_email = Column(String(255), nullable=True) # లాగిన్ అయిన యూజర్ ఈమెయిల్ కోసం
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
 class hsn_codes(Base):
     __tablename__ = "hsn_codes"
 

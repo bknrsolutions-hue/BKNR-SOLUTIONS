@@ -1,309 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Production For – Costing Master</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<title>PRODUCTION FOR – COSTING MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  :root {
-    --primary: #143465;
-    --accent: #3b82f6;
-    --border: #d1d5db;
-    --bg: #f3f4f6;
-    --text: #1f2937;
-    --muted: #6b7280;
-    --card: #ffffff;
-    --success: #16a34a;
-  }
+:root {
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc2626;
+  --success: #10b981;
+}
 
-  * { box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-  body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; overflow-x: hidden; }
 
-  /* ================= HEADER ================= */
-  .header {
-    position: sticky; top: 0; z-index: 100;
-    background: #fff; padding: 15px 25px;
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  }
-  .header h2 { margin: 0; font-size: 20px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-  .header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-weight: 500; }
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:12px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
+.header-titles p { margin: 2px 0 0; font-size: 11px; color: var(--muted); font-weight: 500; }
 
-  /* ================= SECTION / CARD ================= */
-  .section {
-    margin: 20px; background: var(--card);
-    padding: 25px; border-radius: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  }
+/* ================= FORM CONTAINER ================= */
+.form-container {
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none; /* Initially Hidden */
+}
 
-  /* ================= FORM GRID ================= */
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
-  }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px; display: flex; align-items: center; gap: 6px; }
 
-  .field { display: flex; flex-direction: column; }
-  .field label {
-    font-size: 11px; font-weight: 700; color: var(--primary);
-    text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;
-  }
-  .field input, .field select {
-    padding: 10px 12px; border-radius: 8px;
-    border: 1px solid var(--border); font-size: 13px;
-    background: #fff; transition: all 0.2s; outline: none;
-  }
-  .field input:focus, .field select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
+.field { display: flex; flex-direction: column; }
+label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+input, select {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #fff;
+  outline: none; width: 100%; transition: 0.2s; height: 38px;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
-  /* ================= FREEZER BOX ================= */
-  .freezer-box {
-    margin-top: 20px; border: 1px solid #e2e8f0;
-    border-radius: 12px; padding: 18px;
-    background: #f8fbff; /* Soft blue background */
-  }
-  .freezer-head {
-    font-size: 13px; font-weight: 800; color: var(--primary);
-    margin-bottom: 15px; text-transform: uppercase;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .freezer-head::before { content: "❄️"; }
+/* FREEZER BOX */
+.freezer-box {
+  margin-top: 15px; border: 1px solid #e2e8f0;
+  border-radius: 8px; padding: 15px; background: #f8fbff;
+}
+.glaze-row {
+  margin-top: 10px; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px;
+}
+.glaze-cell {
+  background: #fff; padding: 8px; border-radius: 6px;
+  border: 1px solid var(--border); display: flex; flex-direction: column; transition: 0.2s;
+}
+.glaze-cell:hover { border-color: var(--accent); }
+.glaze-cell span { font-size: 9px; font-weight: 800; color: var(--muted); text-align: center; margin-bottom: 4px; }
+.glaze-cell input { text-align: center; border: none; font-weight: 700; font-size: 13px; color: var(--primary); outline: none; height: auto; padding: 2px; }
 
-  /* ================= GLAZES BOX STYLE ================= */
-  .glaze-row {
-    margin-top: 10px; display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
-  }
-  .glaze-cell {
-    background: #fff; padding: 10px; border-radius: 8px;
-    border: 1px solid var(--border); display: flex; flex-direction: column;
-    transition: 0.2s;
-  }
-  .glaze-cell:hover { border-color: var(--accent); }
-  .glaze-cell span {
-    font-size: 10px; font-weight: 800; color: var(--muted);
-    text-align: center; margin-bottom: 5px; text-transform: uppercase;
-  }
-  .glaze-cell input {
-    text-align: center; border: none; font-weight: 600;
-    font-size: 14px; color: var(--primary); outline: none;
-  }
+/* CONTROL ACTIONS HEAD */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
 
-  /* ================= ACTIONS ================= */
-  .actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
-  .btn {
-    padding: 10px 22px; border-radius: 8px; font-size: 13px;
-    font-weight: 700; cursor: pointer; transition: 0.2s;
-    text-transform: uppercase; border: 1px solid var(--border);
-  }
-  .btn-primary { background: var(--primary); color: #fff; border: none; }
-  .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
 
-  /* ================= TABLE AREA ================= */
-  .table-wrap {
-    margin: 20px; background: var(--card);
-    border-radius: 12px; border: 1px solid var(--border);
-    overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  }
-  table { width: 100%; border-collapse: collapse; }
-  thead th {
-    background: #f1f5f9; color: #475569; font-size: 11px;
-    padding: 12px 8px; text-transform: uppercase;
-    border-bottom: 2px solid var(--border);
-  }
-  tbody td {
-    font-size: 13px; padding: 12px 8px;
-    border-bottom: 1px solid #f1f5f9; text-align: center;
-  }
-  tbody tr:hover { background: #f8fbff; cursor: pointer; }
-  tbody tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.btn {
+  background: var(--primary); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+}
+.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn:hover { background: var(--accent); }
 
-  /* ================= 3 DOT MENU ================= */
-  #threeDotsMenu { margin: 10px 20px; display: none; text-align: right; }
-  #threeDotsMenu button {
-    background: var(--primary); color: white; border: none;
-    padding: 5px 12px; border-radius: 6px; font-size: 20px; cursor: pointer;
-  }
-  #dropdownMenu {
-    display: none; position: absolute; right: 20px;
-    background: #fff; border: 1px solid var(--border);
-    border-radius: 10px; width: 180px; z-index: 1000;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden;
-  }
-  .menu-item {
-    padding: 12px 15px; font-size: 13px; font-weight: 600;
-    color: var(--primary); border-bottom: 1px solid #f1f5f9; cursor: pointer;
-  }
-  .menu-item:hover { background: #f0f7ff; color: var(--accent); }
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
 
-  /* ================= SUCCESS MSG ================= */
-  #successMsg {
-    position: fixed; top: 25px; right: 25px;
-    background: var(--success); color: #fff;
-    padding: 15px 25px; border-radius: 12px;
-    font-weight: 700; font-size: 14px; z-index: 9999;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: none;
-    animation: slideIn 0.3s ease-out;
-  }
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
-  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
-  @media(max-width: 1200px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
-  @media(max-width: 700px){ .form-grid{ grid-template-columns: 1fr; } .actions{ justify-content: center; } .btn{ width: 100%; } }
+th {
+  background: #f1f5f9; color: #475569; padding: 8px 6px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
+}
+td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+tr:hover { background: #f8fbff; cursor: pointer; }
+tr.selected { background: #eff6ff !important; }
+
+/* MOBILE CARD LIST */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); }
+
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <h2>Production For – Costing Master</h2>
-  <p>Freezer & Glaze wise costing</p>
+  <div class="header-titles">
+      <h2>Production For – Costing Master</h2>
+      <p>Freezer & Glaze wise costing structure templates</p>
+  </div>
 </div>
 
-<div id="successMsg">✔ Saved Successfully</div>
+<!-- FORM AREA -->
+<form id="costingForm" onsubmit="saveRecord(event)">
+  <div class="form-container" id="formSection">
+    
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-calculator"></i> Production Base Parameters</div>
+      
+      <div class="field">
+        <label>Production For</label>
+        <input name="production_for" id="production_for" required placeholder="e.g. Internal / Client name">
+      </div>
 
-<form id="costingForm">
-<div class="section">
+      <div class="field">
+        <label>Apply From</label>
+        <input type="date" name="apply_from" id="apply_from" required>
+      </div>
 
-<div class="form-grid">
-  <div class="field"><label>Production For</label><input name="production_for" required></div>
-  <div class="field"><label>Apply From</label><input type="date" name="apply_from" required></div>
-  <div class="field"><label>Free Days</label><input type="number" name="free_days" value="0"></div>
-  <div class="field">
-    <label>Status</label>
-    <select name="status"><option>Active</option><option>Inactive</option></select>
-  </div>
-  <div class="field"><label>Ice ₹ / KG</label><input type="number" step="0.01" name="ice_rate_per_kg"></div>
-  <div class="field"><label>Grading ₹ / KG</label><input type="number" step="0.01" name="grading_rate_per_kg"></div>
-  <div class="field"><label>Peeling ₹ / KG</label><input type="number" step="0.01" name="peeling_rate_per_kg"></div>
-  <div class="field"><label>Deheading ₹ / KG</label><input type="number" step="0.01" name="deheading_rate_per_kg"></div>
-</div>
+      <div class="field">
+        <label>Free Days</label>
+        <input type="number" name="free_days" id="free_days" value="0">
+      </div>
 
-<div class="freezer-box">
-  <div class="freezer-head">Freezer Costing</div>
+      <div class="field">
+        <label>Status</label>
+        <select name="status" id="status">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
 
-  <div class="form-grid">
-    <div class="field"><label>Freezer Name</label><input name="freezer_name"></div>
-    <div class="field"><label>Repack ₹ / KG</label><input type="number" step="0.01" name="repacking_cost_per_kg"></div>
-    <div class="field"><label>MC / Day</label><input type="number" step="0.01" name="rate_per_mc_day"></div>
-  </div>
-
-  <div class="glaze-row">
-    {% for g in ["NWNC","20","25","30","35","40","45","50","55","60"] %}
-    <div class="glaze-cell">
-      <span>{{g}}%</span>
-      <input type="number" step="0.01" name="prod_cost_{{g}}">
+      <div class="field"><label>Ice ₹ / KG</label><input type="number" step="0.01" name="ice_rate_per_kg" id="ice_rate_per_kg" placeholder="0.00"></div>
+      <div class="field"><label>Grading ₹ / KG</label><input type="number" step="0.01" name="grading_rate_per_kg" id="grading_rate_per_kg" placeholder="0.00"></div>
+      <div class="field"><label>Peeling ₹ / KG</label><input type="number" step="0.01" name="peeling_rate_per_kg" id="peeling_rate_per_kg" placeholder="0.00"></div>
+      <div class="field"><label>Deheading ₹ / KG</label><input type="number" step="0.01" name="deheading_rate_per_kg" id="deheading_rate_per_kg" placeholder="0.00"></div>
     </div>
-    {% endfor %}
+
+    <div class="freezer-box">
+      <div class="form-title-inner" style="color: #0284c7;"><i class="fa-solid fa-snowflake"></i> Freezer & Glaze Matrix Segments</div>
+      
+      <div class="form-grid">
+        <div class="field"><label>Freezer Name</label><input name="freezer_name" id="freezer_name" placeholder="e.g. IQF / Plate Freezer"></div>
+        <div class="field"><label>Repack ₹ / KG</label><input type="number" step="0.01" name="repacking_cost_per_kg" id="repacking_cost_per_kg" placeholder="0.00"></div>
+        <div class="field"><label>MC / Day</label><input type="number" step="0.01" name="rate_per_mc_day" id="rate_per_mc_day" placeholder="0.00"></div>
+      </div>
+
+      <div class="glaze-row">
+        {% for g in ["NWNC","20","25","30","35","40","45","50","55","60"] %}
+        <div class="glaze-cell">
+          <span>{{g}}%</span>
+          <input type="number" step="0.01" name="prod_cost_{{g}}" id="prod_cost_{{g}}" placeholder="0.00">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <input type="hidden" name="id" id="record_id">
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">SAVE STRUCTURE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+    </div>
   </div>
-</div>
-
-<div class="actions">
-  <button class="btn btn-primary">Save</button>
-</div>
-
-</div>
 </form>
 
-<!-- 3 DOT MENU -->
-<div id="threeDotsMenu">
-  <button class="btn">⋮</button>
-  <div id="dropdownMenu">
-    <div class="menu-item" onclick="editRow()">✏️ Edit</div>
-    <div class="menu-item" onclick="deleteRow()">🗑 Delete</div>
-    <div class="menu-item" onclick="printRow()">🖨 Print</div>
-    <div class="menu-item" onclick="exportPDF()">📄 Export PDF</div>
-    <div class="menu-item" onclick="exportExcel()">📊 Export Excel</div>
-  </div>
+{% if today_data %}
+
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Active Costing Matrices</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Costing Configuration</button>
+        </div>
+
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Record</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Costing</div>
+            <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print Row</div>
+            <div onclick="exportAction('PDF')" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+            <div onclick="exportAction('Excel')" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+          </div>
+        </div>
+    </div>
 </div>
 
-<div class="table-wrap">
-<table id="dataTable">
-<thead>
-<tr>
-  <th>ID</th><th>Production</th><th>Apply From</th><th>Freezer</th>
-  <th>Glaze</th><th>Prod ₹</th><th>Repack ₹</th><th>MC/Day</th>
-  <th>Ice</th><th>Grade</th><th>Peel</th><th>DH</th><th>Status</th>
-</tr>
-</thead>
-<tbody>
-{% for r in today_data %}
-<tr data-id="{{r.id}}">
-<td>{{r.id}}</td>
-<td>{{r.production_for}}</td>
-<td>{{r.apply_from}}</td>
-<td>{{r.freezer_name}}</td>
-<td>{{r.glaze_percent}}</td>
-<td>{{r.production_cost_per_kg}}</td>
-<td>{{r.repacking_cost_per_kg}}</td>
-<td>{{r.rate_per_mc_day}}</td>
-<td>{{r.ice_rate_per_kg}}</td>
-<td>{{r.grading_rate_per_kg}}</td>
-<td>{{r.peeling_rate_per_kg}}</td>
-<td>{{r.deheading_rate_per_kg}}</td>
-<td>{{r.status}}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
+    {% for r in today_data %}
+    <div class="data-card" data-id="{{ r.id }}" data-production="{{ r.production_for }}" data-apply="{{ r.apply_from }}" data-freezer="{{ r.freezer_name }}"
+         data-repack="{{ r.repacking_cost_per_kg }}" data-mc="{{ r.rate_per_mc_day }}" data-ice="{{ r.ice_rate_per_kg }}" data-grading="{{ r.grading_rate_per_kg }}"
+         data-peeling="{{ r.peeling_rate_per_kg }}" data-deheading="{{ r.deheading_rate_per_kg }}" data-status="{{ r.status }}" data-free-days="{{ r.free_days }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">ID</span>
+            <span class="card-val">#{{ r.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Production For</span>
+            <span class="card-val" style="color:var(--accent);">{{ r.production_for }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Freezer / Status</span>
+            <span class="card-val">{{ r.freezer_name }} | <span style="color: {% if r.status == 'Active' %}var(--success){% else %}var(--muted){% endif %}; font-weight:800;">{{ r.status }}</span></span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Ice / Grade / Peel</span>
+            <span class="card-val">₹{{ r.ice_rate_per_kg }} / ₹{{ r.grading_rate_per_kg }} / ₹{{ r.peeling_rate_per_kg }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Repack / MC Day</span>
+            <span class="card-val">₹{{ r.repacking_cost_per_kg }} / ₹{{ r.rate_per_mc_day }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Timeline Apply From</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ r.apply_from }} ({{ r.free_days }} Free Days)</span>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<!-- COMPACT FULL TABLE VIEW -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:60px;">ID</th>
+        <th>Production For</th>
+        <th>Apply From</th>
+        <th>Freezer Name</th>
+        <th>Repack ₹</th>
+        <th>MC/Day</th>
+        <th>Ice ₹</th>
+        <th>Grade ₹</th>
+        <th>Peel ₹</th>
+        <th>DH ₹</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in today_data %}
+      <tr data-id="{{ r.id }}" data-production="{{ r.production_for }}" data-apply="{{ r.apply_from }}" data-freezer="{{ r.freezer_name }}"
+          data-repack="{{ r.repacking_cost_per_kg }}" data-mc="{{ r.rate_per_mc_day }}" data-ice="{{ r.ice_rate_per_kg }}" data-grading="{{ r.grading_rate_per_kg }}"
+          data-peeling="{{ r.peeling_rate_per_kg }}" data-deheading="{{ r.deheading_rate_per_kg }}" data-status="{{ r.status }}" data-free-days="{{ r.free_days }}"
+          onclick="selectRowOrCard(this)">
+        <td>{{ r.id }}</td>
+        <td style="font-weight:700; text-align:left; color: var(--primary);">{{ r.production_for }}</td>
+        <td>{{ r.apply_from }}</td>
+        <td style="font-weight:600; color: var(--accent);">{{ r.freezer_name }}</td>
+        <td>{{ r.repacking_cost_per_kg }}</td>
+        <td>{{ r.rate_per_mc_day }}</td>
+        <td>{{ r.ice_rate_per_kg }}</td>
+        <td>{{ r.grading_rate_per_kg }}</td>
+        <td>{{ r.peeling_rate_per_kg }}</td>
+        <td>{{ r.deheading_rate_per_kg }}</td>
+        <td style="font-weight:800; color: {% if r.status == 'Active' %}var(--success){% else %}var(--danger){% endif %};">{{ r.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endif %}
 
 <script>
-let selectedRow=null;
+let selectedElement = null;
 
-document.querySelectorAll("#dataTable tbody tr").forEach(r=>{
-  r.onclick=()=>{
-    document.querySelectorAll("#dataTable tr").forEach(x=>x.classList.remove("selected"));
-    r.classList.add("selected");
-    selectedRow=r;
-    threeDotsMenu.style.display="block";
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
+
+/* -------------------------------------
+   SAVE / UPDATE ROUTINE
+-------------------------------------- */
+async function saveRecord(e){
+  e.preventDefault();
+  const form = document.getElementById("costingForm");
+  const fd = new FormData(form);
+
+  const res = await fetch("/criteria/production_for", { method: "POST", body: fd });
+  const data = await res.json();
+  
+  if(data.success){
+    Swal.fire({icon:'success', title:'Costing Configuration Saved!', timer:1200, showConfirmButton:false}).then(()=>{
+        location.reload();
+    });
+  } else {
+    Swal.fire({icon:'error', title:'Submission Processing Failed!'});
   }
+}
+
+/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
-document.querySelector("#threeDotsMenu button").onclick=()=>{
-  dropdownMenu.style.display =
-    dropdownMenu.style.display==="block"?"none":"block";
-};
-
-function editRow(){
-  if(selectedRow) location="/criteria/production_for?edit="+selectedRow.dataset.id;
+/* ------------------- ACTIONS PIPELINE ------------------- */
+function editSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById("record_id").value = d.id;
+  document.getElementById("production_for").value = d.production;
+  document.getElementById("apply_from").value = d.apply;
+  document.getElementById("free_days").value = d.freeDays;
+  document.getElementById("status").value = d.status;
+  document.getElementById("ice_rate_per_kg").value = d.ice;
+  document.getElementById("grading_rate_per_kg").value = d.grading;
+  document.getElementById("peeling_rate_per_kg").value = d.peeling;
+  document.getElementById("deheading_rate_per_kg").value = d.deheading;
+  document.getElementById("freezer_name").value = d.freezer;
+  document.getElementById("repacking_cost_per_kg").value = d.repack;
+  document.getElementById("rate_per_mc_day").value = d.mc;
+  
+  // Note: Dynamic glaze values can be mapped or fetched separately if stored individually in backend.
+  
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
 }
-function deleteRow(){
-  if(selectedRow && confirm("Delete?")){
-    fetch("/criteria/production_for/delete/"+selectedRow.dataset.id,{method:"POST"})
-      .then(()=>location.reload());
-  }
-}
-function printRow(){ window.print(); }
-function exportPDF(){ alert("PDF export – backend pending"); }
-function exportExcel(){ alert("Excel export – backend pending"); }
 
-/* AJAX SUBMIT + SUCCESS MESSAGE */
-const form=document.getElementById("costingForm");
-const successMsg=document.getElementById("successMsg");
-
-form.addEventListener("submit",function(e){
-  e.preventDefault();
-  const fd=new FormData(form);
-
-  fetch("/criteria/production_for",{
-    method:"POST",
-    body:fd
-  })
-  .then(r=>r.json())
-  .then(d=>{
-    if(d.success){
-      successMsg.style.display="block";
-      setTimeout(()=>location.reload(),1000);
+async function deleteSelected(){
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Drop this production costing configuration profile matrix permanently?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete matrix'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const id = selectedElement.dataset.id;
+      const res = await fetch(`/criteria/production_for/delete/${id}`, {method:"POST"});
+      if(res.ok) location.reload();
+      else Swal.fire({icon:'error', title:'Matrix deletion dropped by core engine.'});
     }
   });
-});
-</script>
+}
 
+function exportAction(type) {
+    Swal.fire({icon:'info', title: `${type} Export Engine`, text:'Backend data stream compilation handler pending.'});
+}
+
+function clearForm(){
+  selectedElement = null;
+  document.getElementById("costingForm").reset();
+  document.getElementById("record_id").value = "";
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
+}
+</script>
 </body>
 </html>

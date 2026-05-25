@@ -1,298 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>PRODUCTION AT MASTER | BKNR SOLUTIONS</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<title>PRODUCTION AT MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <style>
-        :root {
-            --primary: #143465;
-            --accent: #3b82f6;
-            --border: #d1d5db;
-            --bg: #f3f4f6;
-            --text: #1f2937;
-            --muted: #6b7280;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        * { box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+<style>
+:root {
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc2626;
+  --success: #10b981;
+}
 
-        h2 {
-            background: #fff; margin: 0; padding: 15px;
-            text-align: center; color: var(--primary);
-            font-size: 18px; font-weight: 800; text-transform: uppercase;
-            border-bottom: 1px solid var(--border);
-            letter-spacing: 1px;
-        }
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; overflow-x: hidden; }
 
-        /* ================= FORM CONTAINER ================= */
-        .form-container {
-            width: 90%; max-width: 1100px; margin: 25px auto;
-            background: #fff; padding: 30px; border-radius: 12px;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:10px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
 
-        .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 15px; }
-        .col { flex: 1; min-width: 260px; display: flex; flex-direction: column; }
+/* ================= FORM CONTAINER ================= */
+.form-container {
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none; /* Initially Hidden */
+}
 
-        label {
-            font-size: 11px; font-weight: 700; color: var(--primary);
-            text-transform: uppercase; margin-bottom: 6px;
-            letter-spacing: 0.5px;
-        }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 15px; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
 
-        input {
-            padding: 10px 14px; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 14px; background: #fff;
-            transition: all 0.2s; outline: none;
-        }
-        input:focus { 
-            border-color: var(--accent); 
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
-        }
+.field { display: flex; flex-direction: column; }
+label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+input {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #fff;
+  outline: none; width: 100%; transition: 0.2s; height: 38px;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
-        /* ================= ACTIONS & BUTTONS ================= */
-        .actions { text-align: center; margin-top: 25px; display: flex; justify-content: center; gap: 12px; }
-        
-        .btn {
-            background: var(--primary); color: white; border: none;
-            padding: 12px 30px; border-radius: 8px; font-size: 13px;
-            font-weight: 700; cursor: pointer; transition: 0.2s;
-            text-transform: uppercase; min-width: 150px;
-        }
-        
-        .btn-clear { background: #f1f5f9; color: var(--muted); }
-        
-        .btn:hover { 
-            background: var(--accent); 
-            color: #fff; 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+/* CONTROL ACTIONS HEAD */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
 
-        /* ================= TABLE AREA ================= */
-        table {
-            width: 90%; max-width: 1100px; margin: 25px auto 40px;
-            border-collapse: collapse; background: #fff;
-            border-radius: 10px; overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
 
-        th {
-            background: #f1f5f9; color: #475569; padding: 12px;
-            font-size: 11px; text-transform: uppercase;
-            border-bottom: 2px solid var(--border);
-            text-align: left;
-        }
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.btn {
+  background: var(--primary); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+}
+.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn:hover { background: var(--accent); }
 
-        td {
-            padding: 12px; border-bottom: 1px solid #f1f5f9;
-            font-size: 13px; color: var(--text);
-        }
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
 
-        tr:hover { background: #f8fbff; cursor: pointer; }
-        tr.selected { background: #eff6ff !important; border-left: 5px solid var(--accent); }
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
-        /* ================= 3 DOTS MENU ================= */
-        #menuWrap {
-            display: none; width: 90%; max-width: 1100px;
-            margin: 10px auto; text-align: right; position: relative;
-        }
+/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
-        #dotsBtn {
-            background: var(--primary); color: white; border: none;
-            padding: 6px 14px; font-size: 20px;
-            border-radius: 6px; cursor: pointer; transition: 0.2s;
-        }
+th {
+  background: #f1f5f9; color: #475569; padding: 8px 6px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
+}
+td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+tr:hover { background: #f8fbff; cursor: pointer; }
+tr.selected { background: #eff6ff !important; }
 
-        #dropdownMenu {
-            display: none; position: absolute; right: 0; top: 40px;
-            background: white; border: 1px solid var(--border);
-            width: 180px; border-radius: 8px; z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden;
-        }
+/* MOBILE CARD LIST */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); }
 
-        .menu-item {
-            padding: 12px 15px; font-size: 13px; font-weight: 600;
-            color: var(--primary); border-bottom: 1px solid #f1f5f9;
-            cursor: pointer; transition: 0.2s; text-align: left;
-        }
-        .menu-item:last-child { border-bottom: none; }
-        .menu-item:hover { background: #f0f7ff; color: var(--accent); }
-
-        @media(max-width: 768px){
-            .form-container, table { width: 95%; }
-            .col { min-width: 100%; }
-            .actions { flex-direction: column; }
-            .btn { width: 100%; }
-        }
-    </style>
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
+}
+</style>
 </head>
 
 <body>
 
-<h2>PRODUCTION AT MASTER</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>Production At Master</h2>
+  </div>
+</div>
 
-<form onsubmit="saveRecord(event)">
-    <div class="form-container">
-        <div class="row">
-            <div class="col">
-                <label>Production At (Name)</label>
-                <input type="text" id="production_at_name" name="production_at_name" required placeholder="e.g. Unit A">
-            </div>
-            <div class="col">
-                <label>Meter Number</label>
-                <input type="text" id="meter_number" name="meter_number" required placeholder="e.g. MTR-12345">
-            </div>
-            <div class="col">
-                <label>Unit Rate (₹)</label>
-                <input type="number" id="unit_rate" name="unit_rate" step="0.01" required placeholder="e.g. 8.50">
-            </div>
-        </div>
+<!-- FORM AREA -->
+<form onsubmit="saveRecord(event)" id="productionForm">
+  <div class="form-container" id="formSection">
+    
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-industry"></i> Production Center Metrics Matrix</div>
+      
+      <div class="field">
+        <label>Production At (Name)</label>
+        <input type="text" id="production_at_name" required placeholder="e.g. Unit A">
+      </div>
 
-        <input type="hidden" id="record_id" name="id">
-        <input type="hidden" id="meta_date" name="date">
-        <input type="hidden" id="meta_time" name="time">
+      <div class="field">
+        <label>Meter Number</label>
+        <input type="text" id="meter_number" required placeholder="e.g. MTR-12345">
+      </div>
 
-        <div class="actions">
-            <button class="btn" type="submit">SAVE</button>
-            <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
-        </div>
+      <div class="field">
+        <label>Unit Rate (₹)</label>
+        <input type="number" step="0.01" id="unit_rate" required placeholder="e.g. 8.50">
+      </div>
     </div>
+
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_date">
+    <input type="hidden" id="meta_time">
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">SAVE CENTER</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+    </div>
+  </div>
 </form>
 
 {% if today_data %}
-<div id="menuWrap">
-    <button id="dotsBtn">⋮</button>
-    <div id="dropdownMenu">
-        <div class="menu-item" onclick="editSelected()">✏️ Edit</div>
-        <div class="menu-item" onclick="deleteSelected()">🗑️ Delete</div>
+
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Registered Production Units</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Production Center</button>
+        </div>
+
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Block</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Center</div>
+          </div>
+        </div>
     </div>
 </div>
 
-<table id="dataTable">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Production At</th>
-            <th>Meter Number</th>
-            <th>Unit Rate</th> <th>Date</th>
-            <th>Time</th>
-            <th>Email</th>
-            <th>Company ID</th>
-        </tr>
-    </thead>
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
+    {% for row in today_data %}
+    <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.production_at }}" data-meter="{{ row.meter_number }}" data-rate="{{ row.unit_rate }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">ID</span>
+            <span class="card-val">#{{ row.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Production Center</span>
+            <span class="card-val" style="color:var(--accent);">{{ row.production_at }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Meter Number</span>
+            <span class="card-val" style="font-weight:600;">{{ row.meter_number }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Unit Rate</span>
+            <span class="card-val" style="color:var(--success);">₹{{ row.unit_rate }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Timestamp</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.date }} {{ row.time }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Operator</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.email }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 
+<!-- COMPACT FULL TABLE VIEW -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:60px;">ID</th>
+        <th>Production Station / Unit</th>
+        <th>Meter Serial ID</th>
+        <th>Unit Power Rate</th>
+        <th>Log Date</th>
+        <th>Log Time</th>
+        <th>Email Account</th>
+        <th>Company ID</th>
+      </tr>
+    </thead>
     <tbody>
-        {% for row in today_data %}
-        <tr 
-            data-id="{{ row.id }}"
-            data-name="{{ row.production_at }}"
-            data-meter="{{ row.meter_number }}"
-            data-rate="{{ row.unit_rate }}"
-        >
-            <td>{{ row.id }}</td>
-            <td>{{ row.production_at }}</td>
-            <td>{{ row.meter_number }}</td>
-            <td>{{ row.unit_rate }}</td> <td>{{ row.date }}</td>
-            <td>{{ row.time }}</td>
-            <td>{{ row.email }}</td>
-            <td>{{ row.company_id }}</td>
-        </tr>
-        {% endfor %}
+      {% for row in today_data %}
+      <tr data-id="{{ row.id }}" data-name="{{ row.production_at }}" data-meter="{{ row.meter_number }}" data-rate="{{ row.unit_rate }}"
+          onclick="selectRowOrCard(this)">
+        <td>{{ row.id }}</td>
+        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.production_at }}</td>
+        <td style="font-weight:600; color:var(--primary);">{{ row.meter_number }}</td>
+        <td style="font-weight:800; color:var(--success);">{{ row.unit_rate }}</td>
+        <td style="color:#475569;">{{ row.date }}</td>
+        <td style="color:#64748b;">{{ row.time }}</td>
+        <td style="color:#0284c7; font-size:11px;">{{ row.email }}</td>
+        <td>{{ row.company_id }}</td>
+      </tr>
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
+
 {% endif %}
 
 <script>
-let selectedRow = null;
+let selectedElement = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Current date and time auto-fill
-    const now = new Date();
-    document.getElementById("meta_date").value = now.toISOString().slice(0, 10);
-    document.getElementById("meta_time").value = now.toTimeString().slice(0, 8);
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
 
-    const rows = document.querySelectorAll("#dataTable tbody tr");
-    const menu = document.getElementById("menuWrap");
-    const dropdownMenu = document.getElementById("dropdownMenu");
-    const dotsBtn = document.getElementById("dotsBtn");
-
-    rows.forEach(r => {
-        r.onclick = function() {
-            rows.forEach(x => x.classList.remove("selected"));
-            r.classList.add("selected");
-            selectedRow = r;
-            menu.style.display = "block";
-        };
-    });
-
-    dotsBtn.onclick = (e) => {
-        e.stopPropagation();
-        dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
-    };
-
-    // Click outside to close menu
-    window.onclick = () => { dropdownMenu.style.display = "none"; };
+/* -------------------------------------
+   DOM INIT & RUNTIME TIMESTAMPS
+-------------------------------------- */
+document.addEventListener("DOMContentLoaded",()=>{
+  updateTimestamps();
 });
 
-/* SAVE */
-async function saveRecord(e) {
-    e.preventDefault();
+function updateTimestamps() {
+  const now = new Date();
+  if(document.getElementById("meta_date")) document.getElementById("meta_date").value = now.toISOString().slice(0,10);
+  if(document.getElementById("meta_time")) document.getElementById("meta_time").value = now.toTimeString().slice(0,8);
+}
 
-    const fd = new FormData();
-    if(document.getElementById("record_id").value) {
-        fd.append("id", document.getElementById("record_id").value);
-    }
+/* -------------------------------------
+   SAVE / UPDATE OPERATION
+-------------------------------------- */
+async function saveRecord(e){
+  e.preventDefault();
+  updateTimestamps();
 
-    fd.append("production_at_name", document.getElementById("production_at_name").value);
-    fd.append("meter_number", document.getElementById("meter_number").value);
-    fd.append("unit_rate", document.getElementById("unit_rate").value); // ✅ Rate data added
-    fd.append("date", document.getElementById("meta_date").value);
-    fd.append("time", document.getElementById("meta_time").value);
+  const fd = new FormData();
+  if(document.getElementById("record_id").value) {
+      fd.append("id", document.getElementById("record_id").value);
+  }
 
-    // Endpoint URL check cheskondi
-    const res = await fetch("/criteria/production_at", { method: "POST", body: fd });
-    
-    if(res.ok) {
+  fd.append("production_at_name", document.getElementById("production_at_name").value.trim());
+  fd.append("meter_number", document.getElementById("meter_number").value.trim());
+  fd.append("unit_rate", document.getElementById("unit_rate").value);
+  fd.append("date", document.getElementById("meta_date").value);
+  fd.append("time", document.getElementById("meta_time").value);
+
+  const res = await fetch("/criteria/production_at", {method:"POST", body:fd});
+  if(res.ok){
+    Swal.fire({icon:'success', title:'Center Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
         location.reload();
-    } else {
-        alert("Save Failed! Please check backend console.");
+    });
+  } else {
+    Swal.fire({icon:'error', title:'Save Center Failed!'});
+  }
+}
+
+/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+/* ------------------- EDIT & DELETE ACTIONS ------------------- */
+function editSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById("record_id").value = d.id;
+  document.getElementById("production_at_name").value = d.name;
+  document.getElementById("meter_number").value = d.meter;
+  document.getElementById("unit_rate").value = d.rate;
+  
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteSelected(){
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Delete this entire production unit profile segment fully?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete center'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const id = selectedElement.dataset.id;
+      const res = await fetch(`/criteria/production_at/delete/${id}`, {method:"POST"});
+      if(res.ok) location.reload();
+      else Swal.fire({icon:'error', title:'Delete workflow aborted by server'});
     }
+  });
 }
 
-/* EDIT */
-function editSelected() {
-    if(!selectedRow) return;
-    document.getElementById("record_id").value = selectedRow.dataset.id;
-    document.getElementById("production_at_name").value = selectedRow.dataset.name;
-    document.getElementById("meter_number").value = selectedRow.dataset.meter;
-    document.getElementById("unit_rate").value = selectedRow.dataset.rate; // ✅ Populate rate for edit
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+function clearForm(){
+  selectedElement = null;
+  document.getElementById("productionForm").reset();
+  document.getElementById("record_id").value = "";
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
 }
 
-/* DELETE */
-async function deleteSelected() {
-    if(!selectedRow || !confirm("Are you sure you want to delete this record?")) return;
-    const id = selectedRow.dataset.id;
-    const res = await fetch(`/criteria/production_at/delete/${id}`, { method: "POST" });
-    if(res.ok) location.reload();
-    else alert("Delete Failed!");
-}
-
-/* CLEAR */
-function clearForm() {
-    document.getElementById("record_id").value = "";
-    document.getElementById("production_at_name").value = "";
-    document.getElementById("meter_number").value = "";
-    document.getElementById("unit_rate").value = ""; // ✅ Clear unit rate
-    document.querySelectorAll("tr.selected").forEach(r => r.classList.remove("selected"));
-    document.getElementById("menuWrap").style.display = "none";
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 </script>
-
 </body>
 </html>

@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <title>CONTRACTORS MASTER – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 :root{
@@ -13,177 +17,248 @@
   --bg: #f3f4f6;
   --text: #1f2937;
   --muted: #6b7280;
+  --danger: #dc2626;
 }
-*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; overflow-x: hidden; }
 
-/* ================= HEADER ================= */
-h2 {
-  background: #fff; margin: 0; padding: 15px;
-  text-align: center; color: var(--primary);
-  font-size: 18px; font-weight: 800; text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  letter-spacing: 1px;
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:12px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
 }
+.header-titles h2{ margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* ================= FORM CONTAINER ================= */
 .form-container{
-  width: 98%; max-width: 1400px; margin: 20px auto;
-  background: #fff; padding: 25px; border-radius: 12px;
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none; /* Initially Hidden for Clean View */
 }
 
 .grid{
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.form-title-inner { 
+  font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; 
+  margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); 
+  padding-bottom: 3px; display: flex; align-items: center; gap: 6px;
 }
 
 .field{ display: flex; flex-direction: column; }
-
-label{
-  font-size: 11px; font-weight: 700; color: var(--primary);
-  text-transform: uppercase; margin-bottom: 6px;
-}
+label{ font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
 
 input, select, textarea{
-  padding: 10px; border: 1px solid var(--border);
-  border-radius: 8px; font-size: 13px; background: #fff;
-  transition: all 0.2s; outline: none;
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #fff;
+  transition: all 0.2s; outline: none; height: 38px; width: 100%;
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 textarea{ resize: none; height: 38px; }
 
-/* ================= ACTIONS ================= */
+/* ================= CONTROL ACTIONS HEAD ================= */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+
 .actions{
-  grid-column: span 6;
+  grid-column: 1 / -1;
   text-align: center;
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #f1f5f9;
+  margin-top: 10px;
+  display: flex; justify-content: center; gap: 10px;
 }
 .btn{
   background: var(--primary); color: #fff; border: none;
-  padding: 12px 25px; border-radius: 8px; font-size: 13px;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
   font-weight: 700; cursor: pointer; transition: 0.2s;
-  text-transform: uppercase; width: 160px; margin: 0 5px;
+  text-transform: uppercase; min-width: 130px;
 }
 .btn-clear{ background: #f1f5f9; color: var(--muted); }
-.btn:hover{ background: var(--accent); color: #fff; transform: translateY(-1px); }
+.btn:hover{ background: var(--accent); }
 
-/* ================= 3 DOT MENU ================= */
-.menu-wrap{
-  width: 98%; max-width: 1400px; margin: 10px auto;
-  text-align: right; position: relative;
-  display: none; /* Hidden until a row is selected */
-}
-.menu-btn{
-  background: var(--primary); color: #fff; border: none;
-  width: 38px; height: 38px; border-radius: 8px;
-  cursor: pointer; font-size: 20px; transition: 0.2s;
-}
-.menu{
-  position: absolute; right: 0; top: 45px;
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 10px; width: 180px; z-index: 1000;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;
-  display: none;
-}
-.menu div{
-  padding: 12px 15px; font-size: 12px; font-weight: 600;
-  color: var(--primary); border-bottom: 1px solid #f1f5f9;
-  cursor: pointer; text-align: left;
-}
-.menu div:hover{ background: #f0f7ff; color: var(--accent); }
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 180px; z-index: 1000; overflow: hidden; }
 
-/* ================= TABLE ================= */
-.table-wrap { width: 98%; max-width: 1400px; margin: 0 auto 40px; overflow-x: auto; }
-table{
-  width: 100%; border-collapse: collapse; background: #fff;
-  border-radius: 10px; overflow: hidden;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-th, td{ padding: 12px 10px; font-size: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+/* ================= COMPACT TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table{ width: 100%; border-collapse: collapse; table-layout: auto; }
+th, td{ padding: 8px 10px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
 th{ background: #f1f5f9; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 10px; }
 tr:hover{ background: #f8fbff; cursor: pointer; }
-tr.selected{ background: #eff6ff !important; border-left: 5px solid var(--accent); }
+tr.selected{ background: #eff6ff !important; }
 
-/* ================= RESPONSIVE ================= */
-@media(max-width: 1100px){
-  .grid{ grid-template-columns: repeat(3, 1fr); }
-  .actions{ grid-column: span 3; }
-}
-@media(max-width: 600px){
-  .grid{ grid-template-columns: 1fr; }
-  .actions{ grid-column: span 1; }
-  .btn { width: 100%; margin: 5px 0; }
+/* ================= MOBILE CARD LIST ================= */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); text-align: right; }
+
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
 }
 </style>
 </head>
 
 <body>
 
-<h2>CONTRACTORS MASTER</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>Contractors Master</h2>
+  </div>
+  <div style="font-size:11px; font-weight:700; color: var(--muted)">BKNR ERP</div>
+</div>
 
+<!-- FORM AREA -->
 <form onsubmit="submitContractor(event)" id="contractorForm">
-<div class="form-container">
+<div class="form-container" id="formSection">
 <div class="grid">
+  
+  <div class="form-title-inner"><i class="fa-solid fa-user-tie"></i> Contractor Core Information</div>
 
-<div class="field"><label>Contractor Name</label><input id="contractor_name" required placeholder="Enter Name"></div>
-<div class="field"><label>Phone Number</label><input id="phone" placeholder="98480xxxxx"></div>
-<div class="field"><label>Email Address</label><input type="email" id="contractor_email" placeholder="example@mail.com"></div>
-<div class="field"><label>GST No</label><input id="gst_number" placeholder="GSTIN12345"></div>
-<div class="field"><label>GST %</label><input type="number" step="0.01" id="gst_percent" placeholder="18"></div>
-<div class="field"><label>GST Applicable From</label><input type="date" id="gst_applicable_from"></div>
+  <div class="field"><label>Contractor Name</label><input id="contractor_name" required placeholder="Enter Full Name"></div>
+  <div class="field"><label>Phone Number</label><input id="phone" placeholder="Enter Phone Number"></div>
+  <div class="field"><label>Email Address</label><input type="email" id="contractor_email" placeholder="example@mail.com"></div>
+  <div class="field"><label>GST No</label><input id="gst_number" placeholder="GSTIN12345"></div>
+  <div class="field"><label>GST %</label><input type="number" step="0.01" id="gst_percent" placeholder="18"></div>
+  <div class="field"><label>GST Applicable From</label><input type="date" id="gst_applicable_from"></div>
 
-<div class="field"><label>Bank Name</label><input id="bank_name" placeholder="SBI / HDFC"></div>
-<div class="field"><label>Account No</label><input id="account_no" placeholder="1234567890"></div>
-<div class="field"><label>IFSC Code</label><input id="ifsc" placeholder="SBIN000123"></div>
+  <div class="form-title-inner" style="margin-top:10px;"><i class="fa-solid fa-building-columns"></i> Financial Settlements & Bank Details</div>
 
-<div class="field" style="grid-column:span 3">
-  <label>Office Address</label><textarea id="address" placeholder="Full Address..."></textarea>
-</div>
+  <div class="field"><label>Bank Name</label><input id="bank_name" placeholder="SBI / HDFC / ICICI"></div>
+  <div class="field"><label>Account No</label><input id="account_no" placeholder="Account Number"></div>
+  <div class="field"><label>IFSC Code</label><input id="ifsc" placeholder="IFSC Code"></div>
 
-<input type="hidden" id="record_id">
-<input type="hidden" id="date">
-<input type="hidden" id="time">
+  <div class="field" style="grid-column: span 3">
+    <label>Office Address</label><textarea id="address" placeholder="Complete Registered Office Address..."></textarea>
+  </div>
 
-<div class="actions">
-  <button type="submit" class="btn">SAVE</button>
-  <button type="reset" class="btn btn-clear" onclick="clearForm()">CLEAR</button>
-</div>
+  <input type="hidden" id="record_id">
+  <input type="hidden" id="date">
+  <input type="hidden" id="time">
+
+  <div class="actions">
+    <button type="submit" class="btn">SAVE DATA</button>
+    <button type="button" class="btn btn-clear" onclick="clearForm()">CANCEL</button>
+  </div>
 
 </div>
 </div>
 </form>
 
-<div class="menu-wrap" id="menuWrap">
-  <button class="menu-btn" onclick="toggleMenu(event)">⋮</button>
-  <div class="menu" id="menu">
-    <div onclick="editRow()">✏️ Edit Contractor</div>
-    <div onclick="deleteRow()">🗑️ Delete Record</div>
-    <div onclick="printRow()">🖨️ Print Details</div>
-  </div>
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Contractor Registry</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Contractor</button>
+        </div>
+
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editRow()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Profile</div>
+            <div onclick="printRow()" class="menu-item"><i class="fa-solid fa-print"></i> Print Sheet</div>
+            <div onclick="deleteRow()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Record</div>
+          </div>
+        </div>
+    </div>
 </div>
 
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
+    {% if today_data %}
+    {% for r in today_data %}
+    <div class="data-card" 
+         data-id="{{r.id}}"
+         data-name="{{r.contractor_name}}"
+         data-phone="{{r.phone}}"
+         data-email="{{r.contractor_email}}"
+         data-gst="{{r.gst_number}}"
+         data-gstp="{{r.gst_percent}}"
+         data-gstfrom="{{r.gst_applicable_from}}"
+         data-bank="{{r.bank_name}}"
+         data-acc="{{r.account_no}}"
+         data-ifsc="{{r.ifsc}}"
+         data-addr="{{r.address}}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">Contractor ID</span>
+            <span class="card-val">#{{r.id}}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Vendor Name</span>
+            <span class="card-val" style="color:var(--accent); font-size:12px;">{{r.contractor_name}}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Contact Details</span>
+            <span class="card-val">{{r.phone}} <br><small style="color:var(--muted)">{{r.contractor_email}}</small></span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">GSTIN / Rate</span>
+            <span class="card-val">{{r.gst_number}} ({{r.gst_percent}}%)</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Settlement Bank</span>
+            <span class="card-val" style="font-size:10px;">{{r.bank_name}} - A/C: {{r.account_no}}</span>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="text-align:center; color:var(--muted); font-size:13px; background:#fff; padding:20px; border-radius:8px;">No contractors found.</p>
+    {% endif %}
+</div>
+
+<!-- COMPACT FULL SCREEN TABLE VIEW -->
 <div class="table-wrap">
 {% if today_data %}
 <table id="dataTable">
 <thead>
 <tr>
-<th>ID</th><th>Name</th><th>Phone</th><th>Email</th>
-<th>GST No</th><th>GST %</th><th>GST From</th>
-<th>Bank Name</th><th>Account No</th><th>IFSC</th><th>Address</th>
+  <th style="width:60px;">ID</th>
+  <th>Vendor Name</th>
+  <th>Phone Number</th>
+  <th>Email Address</th>
+  <th>GSTIN Code</th>
+  <th>GST %</th>
+  <th>Applicable From</th>
+  <th>Bank Engine</th>
+  <th>Account Number</th>
+  <th>IFSC Clearance</th>
+  <th>Registered Address</th>
 </tr>
 </thead>
 <tbody>
 {% for r in today_data %}
-<tr onclick="selectRow(this)"
+<tr onclick="selectRowOrCard(this)"
  data-id="{{r.id}}"
  data-name="{{r.contractor_name}}"
  data-phone="{{r.phone}}"
@@ -195,28 +270,39 @@ tr.selected{ background: #eff6ff !important; border-left: 5px solid var(--accent
  data-acc="{{r.account_no}}"
  data-ifsc="{{r.ifsc}}"
  data-addr="{{r.address}}">
-<td>{{r.id}}</td>
-<td>{{r.contractor_name}}</td>
-<td>{{r.phone}}</td>
-<td>{{r.contractor_email}}</td>
-<td>{{r.gst_number}}</td>
-<td>{{r.gst_percent}}</td>
-<td>{{r.gst_applicable_from}}</td>
-<td>{{r.bank_name}}</td>
-<td>{{r.account_no}}</td>
-<td>{{r.ifsc}}</td>
-<td>{{r.address}}</td>
+  <td>#{{r.id}}</td>
+  <td style="font-weight:700; text-align:left; color: var(--accent);">{{r.contractor_name}}</td>
+  <td>{{r.phone}}</td>
+  <td style="color:#0284c7;">{{r.contractor_email}}</td>
+  <td style="font-family:monospace; font-weight:600;">{{r.gst_number}}</td>
+  <td>{{r.gst_percent}}%</td>
+  <td style="color:var(--muted);">{{r.gst_applicable_from}}</td>
+  <td style="font-weight:600; color:#475569;">{{r.bank_name}}</td>
+  <td>{{r.account_no}}</td>
+  <td style="font-family:monospace;">{{r.ifsc}}</td>
+  <td style="text-align:left; max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{r.address}}</td>
 </tr>
 {% endfor %}
 </tbody>
 </table>
 {% else %}
-<p style="text-align:center; color:var(--muted); font-size:13px;">No contractors found.</p>
+<p style="text-align:center; color:var(--muted); font-size:13px; padding:20px; margin:0;">No contractors configuration rows found.</p>
 {% endif %}
 </div>
 
 <script>
-let selectedRowElement = null;
+let selectedElement = null;
+
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
 
 /* SET CURRENT DATE & TIME */
 function setDateTime(){
@@ -225,7 +311,7 @@ function setDateTime(){
  document.getElementById('time').value = d.toTimeString().slice(0,8);
 }
 
-/* SUBMIT FORM */
+/* SUBMIT FORM EXECUTION */
 async function submitContractor(e){
  e.preventDefault(); 
  setDateTime();
@@ -237,7 +323,7 @@ async function submitContractor(e){
  ];
  
  fields.forEach(id => {
-   fd.append(id, document.getElementById(id).value);
+   fd.append(id, document.getElementById(id).value.trim());
  });
  
  const recId = document.getElementById('record_id').value;
@@ -246,40 +332,41 @@ async function submitContractor(e){
  try {
    const response = await fetch("/criteria/contractors", { method: "POST", body: fd });
    if(response.ok){
-     alert("Data Saved Successfully!");
-     location.reload();
+     Swal.fire({icon:'success', title:'Contractor Profile Documented!', timer:1200, showConfirmButton:false}).then(()=>{
+         location.reload();
+     });
    } else {
-     alert("Failed to save data.");
+     Swal.fire({icon:'error', title:'Operational Pipeline Fault', text:'Failed to save asset records.'});
    }
  } catch (err) {
    console.error(err);
-   alert("Server Error!");
+   Swal.fire({icon:'error', title:'Server Stack Error'});
  }
 }
 
-/* ROW SELECTION */
-function selectRow(row){
- document.querySelectorAll("#dataTable tr").forEach(x => x.classList.remove("selected"));
- row.classList.add("selected"); 
- selectedRowElement = row;
+/* ROW / CARD SYNCED SELECTION LINKAGE */
+function selectRowOrCard(el){
+ document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
  
- document.getElementById('menuWrap').style.display = "block";
- // Close menu if it was open
- document.getElementById('menu').style.display = "none";
+ const id = el.dataset.id;
+ selectedElement = el;
+ 
+ document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+ document.getElementById('threeDotsMenu').style.display = "block";
 }
 
-/* TOGGLE 3-DOT MENU */
-function toggleMenu(e){
- e.stopPropagation();
- const menu = document.getElementById('menu');
- menu.style.display = menu.style.display === "block" ? "none" : "block";
-}
+/* TOGGLE 3-DOT SYSTEM */
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
 
-/* EDIT FUNCTION */
+/* EDIT PIPELINE ROUTINE */
 function editRow(){
- if(!selectedRowElement) return;
+ if(!selectedElement) return;
  
- const d = selectedRowElement.dataset;
+ const d = selectedElement.dataset;
  document.getElementById('record_id').value = d.id;
  document.getElementById('contractor_name').value = d.name;
  document.getElementById('phone').value = d.phone;
@@ -292,61 +379,96 @@ function editRow(){
  document.getElementById('ifsc').value = d.ifsc;
  document.getElementById('address').value = d.addr;
  
+ document.getElementById("formSection").style.display = "block";
+ document.getElementById("toggleActionArea").style.display = "none";
  window.scrollTo({ top: 0, behavior: "smooth" });
- document.getElementById('menu').style.display = "none";
 }
 
-/* DELETE FUNCTION */
+/* DELETE PIPELINE ROUTINE */
 async function deleteRow(){
- if(!selectedRowElement) return;
- if(!confirm("Are you sure you want to delete this contractor?")) return;
+ if(!selectedElement) return;
  
- const id = selectedRowElement.dataset.id;
- try {
-   const response = await fetch(`/criteria/contractors/delete/${id}`, { method: "POST" });
-   if(response.ok) location.reload(); 
-   else alert("Delete failed!");
- } catch (err) {
-   alert("Error deleting record.");
- }
+ Swal.fire({
+    title: 'Purge Contractor Profile?',
+    text: "This execution clears out the mapped contractor matrix.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, Delete Entity'
+ }).then(async (result) => {
+    if (result.isConfirmed) {
+      const id = selectedElement.dataset.id;
+      try {
+        const response = await fetch(`/criteria/contractors/delete/${id}`, { method: "POST" });
+        if(response.ok) location.reload(); 
+        else Swal.fire({icon:'error', title:'Access Node Aborted Operation.'});
+      } catch (err) {
+        Swal.fire({icon:'error', title:'Network Node Failure.'});
+      }
+    }
+ });
 }
 
-/* PRINT FUNCTION */
+/* PRINT SUB-WINDOW GENERATION */
 function printRow(){
- if(!selectedRowElement) return;
- const d = selectedRowElement.dataset;
+ if(!selectedElement) return;
+ const d = selectedElement.dataset;
  const win = window.open("", "_blank");
  win.document.write(`
    <html>
-   <head><title>Contractor Details</title></head>
-   <body style="font-family:sans-serif; padding:20px;">
-     <h2>Contractor Profile</h2>
-     <hr>
-     <p><b>Name:</b> ${d.name}</p>
-     <p><b>Phone:</b> ${d.phone}</p>
-     <p><b>Email:</b> ${d.email}</p>
-     <p><b>GST No:</b> ${d.gst} (${d.gstp}%)</p>
-     <p><b>Bank:</b> ${d.bank} | <b>Acc:</b> ${d.acc} | <b>IFSC:</b> ${d.ifsc}</p>
-     <p><b>Address:</b> ${d.addr}</p>
+   <head>
+     <title>Contractor Dossier - ${d.name}</title>
+     <style>
+       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding:30px; color:#333; line-height: 1.6; }
+       h2 { color: #143465; text-transform: uppercase; border-bottom: 2px solid #143465; padding-bottom: 8px; margin-bottom: 20px;}
+       .section-title { font-weight: bold; color: #3b82f6; text-transform: uppercase; font-size: 13px; margin-top: 20px; border-bottom: 1px dashed #ddd; }
+       p { margin: 8px 0; font-size: 14px; }
+       b { color: #111; width: 150px; display: inline-block; }
+     </style>
+   </head>
+   <body>
+     <h2>Contractor Profile Dossier</h2>
+     <p><b>System ID:</b> #${d.id}</p>
+     
+     <div class="section-title">Core Identification</div>
+     <p><b>Contractor Name:</b> ${d.name}</p>
+     <p><b>Phone Roster:</b> ${d.phone}</p>
+     <p><b>Email Channel:</b> ${d.email}</p>
+     <p><b>Office Address:</b> ${d.addr}</p>
+     
+     <div class="section-title">Taxation Compliance</div>
+     <p><b>GSTIN Code:</b> ${d.gst}</p>
+     <p><b>Tax Bracket Rate:</b> ${d.gstp}%</p>
+     <p><b>Activation Date:</b> ${d.gstfrom}</p>
+     
+     <div class="section-title">Financial Settlement Coordinates</div>
+     <p><b>Bank Engine:</b> ${d.bank}</p>
+     <p><b>Account Number:</b> ${d.acc}</p>
+     <p><b>IFSC Clearance:</b> ${d.ifsc}</p>
    </body>
    </html>
  `);
  win.document.close();
- win.print();
+ setTimeout(() => { win.print(); }, 500);
 }
 
-/* CLEAR FORM */
+/* CLEAR FORM DATA RESET */
 function clearForm(){
- selectedRowElement = null;
+ selectedElement = null;
+ document.getElementById("contractorForm").reset();
  document.getElementById('record_id').value = "";
- document.getElementById('menuWrap').style.display = "none";
- document.querySelectorAll("#dataTable tr").forEach(x => x.classList.remove("selected"));
+ document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+ document.getElementById('threeDotsMenu').style.display = "none";
+ 
+ document.getElementById("formSection").style.display = "none";
+ document.getElementById("toggleActionArea").style.display = "flex";
 }
 
-/* CLOSE MENU ON CLICK OUTSIDE */
+/* CLOSE Dropped Nodes Contextually */
 window.onclick = function(event) {
- if (!event.target.matches('.menu-btn')) {
-   document.getElementById('menu').style.display = "none";
+ if (!event.target.matches('.dots-trigger') && !event.target.matches('.fa-ellipsis-v')) {
+   const d = document.getElementById("dropdownMenu");
+   if(d) d.style.display = "none";
  }
 }
 </script>

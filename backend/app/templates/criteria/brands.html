@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>BRANDS MASTER</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRANDS MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
 :root{
   --primary: #143465;
@@ -12,181 +17,226 @@
   --bg: #f3f4f6;
   --text: #1f2937;
   --muted: #6b7280;
-  --success: #059669;
+  --danger: #dc2626;
 }
-*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-h2 {
-  background: #fff; margin: 0; padding: 15px;
-  text-align: center; color: var(--primary);
-  font-size: 18px; font-weight: 800; text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  letter-spacing: 1px;
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
+
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:10px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
 }
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
 
 /* ================= FORM CONTAINER ================= */
 .form-container {
-  width: 90%; max-width: 1100px; margin: 25px auto;
-  background: #fff; padding: 30px; border-radius: 12px;
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none;
 }
 
-.row { display: flex; justify-content: center; margin-bottom: 10px; }
-.col { width: 100%; max-width: 500px; display: flex; flex-direction: column; }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(4, 1fr); } }
 
-label {
-  font-size: 11px; font-weight: 700; color: var(--primary);
-  text-transform: uppercase; margin-bottom: 8px; text-align: left;
-}
+.field { display: flex; flex-direction: column; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
 
+label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
 input {
-  padding: 12px; border: 1px solid var(--border);
-  border-radius: 8px; font-size: 14px; background: #fff;
-  transition: all 0.2s; outline: none;
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #fff;
+  outline: none; width: 100%; transition: 0.2s;
 }
-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
-/* Buttons */
-.actions { text-align: center; margin-top: 25px; display: flex; justify-content: center; gap: 12px; }
-.btn {
-  background: var(--primary); color: white; border: none;
-  padding: 12px 30px; border-radius: 8px; font-size: 13px;
-  font-weight: 700; cursor: pointer; transition: 0.2s;
-  text-transform: uppercase; min-width: 140px;
-}
-.btn-clear { background: #f1f5f9; color: var(--muted); }
-.btn:hover { background: var(--accent); color: #fff; transform: translateY(-1px); }
-
-/* ================= TABLE AREA ================= */
-#threeDotsMenu {
-  width: 90%; max-width: 1100px; margin: 15px auto;
+/* CONTROL ACTIONS HEAD */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
   position: relative;
 }
-#dotsBtn {
-  background: var(--primary); color: #fff; border: none;
-  width: 38px; height: 38px; border-radius: 8px;
-  cursor: pointer; font-size: 20px; transition: 0.2s;
-}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
 
-#dropdownMenu {
-  position: absolute; right: 0; top: 45px; width: 180px;
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  display: none; z-index: 1000; overflow: hidden;
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.btn {
+  background: var(--primary); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
 }
-.menu-item {
-  padding: 12px 15px; font-size: 12px; font-weight: 600;
-  border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary);
-  text-align: left;
-}
+.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn:hover { background: var(--accent); }
+
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
 .menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
-table {
-  width: 90%; max-width: 1100px; margin: 10px auto 40px;
-  border-collapse: collapse; background: #fff;
-  border-radius: 10px; overflow: hidden;
-  border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
+/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+
 th {
-  background: #f1f5f9; color: #475569; padding: 12px;
-  font-size: 11px; text-transform: uppercase; border-bottom: 2px solid var(--border);
-  text-align: center;
+  background: #f1f5f9; color: #475569; padding: 8px 6px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
 }
-td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; text-align: center; color: var(--text); }
+td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
 tr:hover { background: #f8fbff; cursor: pointer; }
-tr.selected { background: #eff6ff !important; border-left: 5px solid var(--accent); }
+tr.selected { background: #eff6ff !important; }
 
-/* Column Customization */
-td:nth-child(2) { font-weight: 700; color: var(--primary); } /* Brand Name Column */
+/* MOBILE CARD LIST */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); }
 
-@media(max-width: 768px){
-  .form-container, table, #threeDotsMenu { width: 95%; }
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
   .actions { flex-direction: column; }
   .btn { width: 100%; }
 }
 </style>
 </head>
+
 <body>
 
-<h2>BRANDS MASTER</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>Brands Master</h2>
+  </div>
+</div>
 
-<!-- FORM -->
-<form onsubmit="submitBrand(event)">
-  <div class="form-container">
-    <div class="row">
-      <div class="col">
+<!-- FORM AREA -->
+<form onsubmit="submitBrand(event)" id="brandForm">
+  <div class="form-container" id="formSection">
+    
+    <!-- Profile Info Grid -->
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-tags"></i> Brand Profile</div>
+      <div class="field">
         <label>Brand Name</label>
         <input type="text" id="brand_name" required placeholder="Enter Brand Name">
       </div>
     </div>
 
-    <!-- Hidden Fields -->
+    <!-- Metadata Hidden Fields -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_email">
     <input type="hidden" id="meta_company_id">
 
     <div class="actions">
-      <button class="btn" type="submit">SAVE</button>
-      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+      <button class="btn btn-primary" type="submit">SAVE BRAND</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
   </div>
 </form>
 
 {% if message %}
-<p style="text-align:center;color:green;font-weight:600;">{{ message }}</p>
+<p style="text-align:center;color:green;font-weight:600;font-size:12px;">{{ message }}</p>
 {% endif %}
 
 {% if today_data %}
 
-<div id="threeDotsMenu" style="display:none;width:90%;max-width:1100px;
-  margin:10px auto;text-align:right;position:relative;">
-  <button id="dotsBtn" style="
-    background:#003366;color:white;border:none;padding:6px 12px;
-    border-radius:6px;cursor:pointer;font-weight:600;font-size:20px;">⋮</button>
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Brand Data Logs</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Brand</button>
+        </div>
 
-  <div id="dropdownMenu" style="
-    display:none;position:absolute;right:0;background:white;border:1px solid #ccc;
-    border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);width:180px;z-index:1000;">
-    <div onclick="editSelected()" class="menu-item">✏️ Edit</div>
-    <div onclick="deleteSelected()" class="menu-item">🗑️ Delete</div>
-    <div onclick="printSelected()" class="menu-item">🖨️ Print</div>
-    <div onclick="exportPDF()" class="menu-item">📄 Export PDF</div>
-    <div onclick="exportExcel()" class="menu-item">📊 Export Excel</div>
-  </div>
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
+            <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+          </div>
+        </div>
+    </div>
 </div>
 
-<table id="dataTable">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Brand Name</th>
-      <th>Date</th>
-      <th>Time</th>
-      <th>Email</th>
-      <th>Company ID</th>
-    </tr>
-  </thead>
-  <tbody>
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
     {% for row in today_data %}
-    <tr data-id="{{ row.id }}" data-name="{{ row.brand_name }}">
-      <td>{{ row.id }}</td>
-      <td>{{ row.brand_name }}</td>
-      <td>{{ row.date }}</td>
-      <td>{{ row.time }}</td>
-      <td>{{ row.email }}</td>
-      <td>{{ row.company_id }}</td>
-    </tr>
+    <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.brand_name }}"
+         data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">ID</span>
+            <span class="card-val">#{{ row.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Brand Name</span>
+            <span class="card-val" style="color:var(--accent);">{{ row.brand_name }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Created At</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.date }} {{ row.time }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">User Email</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.email }}</span>
+        </div>
+    </div>
     {% endfor %}
-  </tbody>
-</table>
+</div>
+
+<!-- COMPACT FULL TABLE VIEW -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:50px;">ID</th>
+        <th>Brand Name</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Email</th>
+        <th>Company ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in today_data %}
+      <tr data-id="{{ row.id }}" data-name="{{ row.brand_name }}"
+          data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
+          onclick="selectRowOrCard(this)">
+        <td>{{ row.id }}</td>
+        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.brand_name }}</td>
+        <td style="color: #475569;">{{ row.date if row.date else '' }}</td>
+        <td style="color: #64748b;">{{ row.time if row.time else '' }}</td>
+        <td style="color: #0284c7; font-size: 11px;">{{ row.email if row.email else '' }}</td>
+        <td>{{ row.company_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 {% endif %}
 
 <script>
-
-let selectedRow = null;
+let selectedElement = null;
 
 /* -------------------------------------
    LOAD LOGIN MAIL + COMPANY ID
@@ -204,6 +254,16 @@ function loadLoginData() {
 
 document.addEventListener("DOMContentLoaded", loadLoginData);
 
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
 
 /* -------------------------------------
    SUBMIT FORM USING FORMDATA
@@ -239,67 +299,72 @@ async function submitBrand(e){
   });
 
   if(res.ok){
-    alert("Saved Successfully!");
-    location.reload();
+    Swal.fire({icon:'success', title:'Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+        location.reload();
+    });
   } else {
-    alert("Save Failed: " + await res.text());
+    Swal.fire({icon:'error', title:'Save Failed: ' + await res.text()});
   }
 }
 
-/* -------------------------------------
-   SELECT + EDIT + DELETE
--------------------------------------- */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const rows = document.querySelectorAll('#dataTable tbody tr');
-  const menu = document.getElementById('threeDotsMenu');
-
-  rows.forEach(row=>{
-    row.addEventListener('click', ()=>{
-      rows.forEach(r => r.classList.remove('selected'));
-      row.classList.add('selected');
-      selectedRow = row;
-      menu.style.display = "block";
-    });
-  });
-});
-
-
-document.getElementById('dotsBtn').addEventListener('click', ()=>{
-  const d = document.getElementById('dropdownMenu');
-  d.style.display = (d.style.display==="block") ? "none" : "block";
-});
-
-
-function editSelected(){
-  if(!selectedRow) return alert("Select a row!");
-
-  document.getElementById("record_id").value = selectedRow.dataset.id;
-  document.getElementById("brand_name").value = selectedRow.dataset.name;
-
-  window.scrollTo({top:0,behavior:'smooth'});
+/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
 }
 
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+/* ------------------- EDIT & DELETE ACTIONS ------------------- */
+function editSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById("record_id").value = d.id;
+  document.getElementById("brand_name").value = d.name;
+  
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
+}
 
 async function deleteSelected(){
-  if(!selectedRow) return alert("Select row!");
-  if(!confirm("Are you sure?")) return;
-
-  const id = selectedRow.dataset.id;
-
-  const res = await fetch(`/criteria/brands/delete/${id}`, {
-    method:"POST"
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Delete this brand?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const id = selectedElement.dataset.id;
+      const res = await fetch(`/criteria/brands/delete/${id}`, {
+        method:"POST"
+      });
+      if(res.ok) location.reload();
+      else Swal.fire({icon:'error', title:'Delete failed'});
+    }
   });
-
-  if(res.ok) location.reload();
-  else alert("Delete failed");
 }
 
-
+/* ------------------- EXTRAS ACTIONS ------------------- */
 function printSelected(){
-  if(!selectedRow) return alert("Select a row!");
+  if(!selectedElement) return;
 
-  const id = selectedRow.children[0].innerText;
-  const name = selectedRow.children[1].innerText;
+  const id = selectedElement.dataset.id;
+  const name = selectedElement.dataset.name;
 
   const p = window.open("", "_blank");
   p.document.write("<h3>Brand Details</h3>");
@@ -312,10 +377,10 @@ function printSelected(){
 function exportPDF(){ printSelected(); }
 
 function exportExcel(){
-  if(!selectedRow) return alert("Select a row!");
+  if(!selectedElement) return;
 
-  const id = selectedRow.children[0].innerText;
-  const name = selectedRow.children[1].innerText;
+  const id = selectedElement.dataset.id;
+  const name = selectedElement.dataset.name;
 
   const data = `ID\tBrand Name\n${id}\t${name}`;
   const blob = new Blob([data], {type:"application/vnd.ms-excel"});
@@ -323,18 +388,25 @@ function exportExcel(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "brand_record.xls";
+  a.download = `brand_${name}.xls`;
   a.click();
 }
 
 function clearForm(){
-  selectedRow = null;
-  document.querySelectorAll("tr.selected")
-    .forEach(r => r.classList.remove("selected"));
-  document.getElementById("threeDotsMenu").style.display="none";
+  selectedElement = null;
+  document.getElementById("brandForm").reset();
+  document.getElementById("record_id").value = "";
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
 }
 
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
+}
 </script>
-
 </body>
 </html>

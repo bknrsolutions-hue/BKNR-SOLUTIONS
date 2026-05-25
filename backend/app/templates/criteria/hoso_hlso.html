@@ -3,150 +3,142 @@
 <head>
 <meta charset="utf-8">
 <title>HOSO → HLSO YIELDS | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Tom Select CSS for Searchable Dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  :root {
-    --primary: #143465;
-    --accent: #3b82f6;
-    --bg: #f4f6f9;
-    --border: #d1d5db;
-    --text: #1f2937;
-  }
+:root {
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc2626;
+}
 
-  body { font-family: Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; overflow-x: hidden; }
 
-  .header {
-    background: #fff;
-    padding: 15px 25px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:12px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
 
-  .header h2 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--primary);
-    font-weight: 800;
-    text-transform: uppercase;
-  }
+/* ================= FORM CONTAINER ================= */
+.form-container {
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none; /* Initially Hidden */
+}
 
-  .section { margin: 20px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 15px; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px; display: flex; align-items: center; gap: 6px;}
 
-  .card {
-    background: #fff;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  }
+.field { display: flex; flex-direction: column; }
+label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+input, .ts-wrapper {
+  font-size: 13px !important; background: #fff;
+  outline: none; width: 100%; transition: 0.2s;
+}
+input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; height: 38px; }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-  }
+/* Tom Select Styling Customization */
+.ts-control { height: 38px !important; padding: 8px 12px !important; border-radius: 6px !important; border: 1px solid var(--border) !important; }
+.ts-wrapper.focus .ts-control { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important; }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+/* CONTROL ACTIONS HEAD */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
 
-  .field label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-  }
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
 
-  input, select {
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    font-size: 14px;
-  }
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.btn {
+  background: var(--primary); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+}
+.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn:hover { background: var(--accent); }
 
-  .actions {
-    margin-top: 25px;
-    display: flex;
-    gap: 12px;
-  }
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
 
-  .btn {
-    padding: 12px 25px;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 13px;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
-  .btn-save { background: var(--primary); color: #fff; }
-  .btn-clear { background: #e2e8f0; }
+/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
-  .table-wrap {
-    margin-top: 25px;
-    background: #fff;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
+th {
+  background: #f1f5f9; color: #475569; padding: 8px 6px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
+}
+td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+tr:hover { background: #f8fbff; cursor: pointer; }
+tr.selected { background: #eff6ff !important; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
+/* MOBILE CARD LIST */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); }
 
-  th {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 11px;
-    padding: 12px;
-    text-align: center;
-  }
-
-  td {
-    padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  tr:hover { background: #f8fbff; cursor: pointer; }
-  tr.selected { background: #eff6ff !important; }
-
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <h2>HOSO → HLSO Yields Master</h2>
-  <div style="font-size:12px;font-weight:600;">BKNR SOLUTIONS</div>
+  <div class="header-titles">
+      <h2>HOSO → HLSO Yields Master</h2>
+  </div>
+  <div style="font-size:11px; font-weight:700; color: var(--muted)">BKNR SOLUTIONS</div>
 </div>
 
-<div class="section">
-
-<form onsubmit="saveRecord(event)">
-  <div class="card">
+<!-- FORM AREA -->
+<form onsubmit="saveRecord(event)" id="yieldForm">
+  <div class="form-container" id="formSection">
+    
     <div class="form-grid">
-
+      <div class="form-title-inner"><i class="fa-solid fa-calculator"></i> Species Yield Configuration Mapping</div>
+      
       <div class="field">
         <label>Species</label>
-        <select id="species" required>
-          <option value="" disabled selected>Select Species</option>
+        <select id="species" required placeholder="Select or Search Species...">
+          <option value="" disabled selected>Select or Search Species...</option>
           {% for s in species_list %}
             <option value="{{ s }}">{{ s }}</option>
           {% endfor %}
@@ -154,80 +146,239 @@
       </div>
 
       <div class="field">
-        <label>HOSO Count (Eg: 10 or 10 to 20)</label>
-        <input type="text" id="hoso_count" required>
+        <label>HOSO Count (e.g. 10 or 10 to 20)</label>
+        <input type="text" id="hoso_count" required placeholder="Enter HOSO Count">
       </div>
 
       <div class="field">
         <label>HLSO Yield (%)</label>
-        <input type="number" id="hlso_yield_pct" step="0.01" required>
+        <input type="number" id="hlso_yield_pct" step="0.01" required placeholder="0.00">
       </div>
-
     </div>
+
+    <!-- Hidden Field for Updating Records -->
+    <input type="hidden" id="record_id">
 
     <div class="actions">
-      <button class="btn btn-save" type="submit">
-        <i class="fa-solid fa-floppy-disk"></i> SAVE
-      </button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">
-        CLEAR
-      </button>
+      <button class="btn btn-primary" type="submit">SAVE CONFIG</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
-
   </div>
 </form>
 
 {% if today_data %}
-<div class="table-wrap">
-<table id="dataTable">
-<thead>
-<tr>
-  <th>ID</th>
-  <th>Species</th>
-  <th>HOSO Count</th>
-  <th>Yield (%)</th>
-  <th>HLSO Count</th>
-  <th>Date & Time</th>
-</tr>
-</thead>
 
-<tbody>
-{% for row in today_data %}
-<tr data-id="{{ row.id }}">
-  <td>#{{ row.id }}</td>
-  <td>{{ row.species }}</td>
-  <td>{{ row.hoso_count }}</td>
-  <td>{{ row.hlso_yield_pct }}%</td>
-  <td><strong>{{ row.hlso_count }}</strong></td>
-  <td>{{ row.date }} | {{ row.time }}</td>
-</tr>
-{% endfor %}
-</tbody>
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Yield Metric Configurations</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Yield Configuration</button>
+        </div>
 
-</table>
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Entry</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Mapping</div>
+          </div>
+        </div>
+    </div>
 </div>
+
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
+    {% for row in today_data %}
+    <div class="data-card" 
+         data-id="{{ row.id }}" 
+         data-species="{{ row.species }}"
+         data-hoso="{{ row.hoso_count }}"
+         data-yield="{{ row.hlso_yield_pct }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">Yield ID</span>
+            <span class="card-val">#{{ row.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Species Classification</span>
+            <span class="card-val" style="color:var(--accent);">{{ row.species }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">HOSO Count</span>
+            <span class="card-val">{{ row.hoso_count }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label font-weight:700;">HLSO Yield (%)</span>
+            <span class="card-val" style="color:#10b981;">{{ row.hlso_yield_pct }}%</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Target HLSO Count</span>
+            <span class="card-val"><strong>{{ row.hlso_count }}</strong></span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Logged Stamp</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.date }} | {{ row.time }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- COMPACT FULL TABLE VIEW -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:70px;">ID</th>
+        <th>Species Classification</th>
+        <th>HOSO Count</th>
+        <th>Yield (%)</th>
+        <th>Calculated HLSO Count</th>
+        <th>Log Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in today_data %}
+      <tr data-id="{{ row.id }}" 
+          data-species="{{ row.species }}"
+          data-hoso="{{ row.hoso_count }}"
+          data-yield="{{ row.hlso_yield_pct }}"
+          onclick="selectRowOrCard(this)">
+        <td>#{{ row.id }}</td>
+        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.species }}</td>
+        <td style="font-weight:600;">{{ row.hoso_count }}</td>
+        <td style="font-weight:700; color:#10b981;">{{ row.hlso_yield_pct }}%</td>
+        <td><strong>{{ row.hlso_count }}</strong></td>
+        <td style="color:#475569; font-size:11px;">{{ row.date }} | {{ row.time }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endif %}
 
-</div>
-
 <script>
-function saveRecord(e){
-  e.preventDefault();
-  const fd = new FormData();
-  fd.append("species", species.value);
-  fd.append("hoso_count", hoso_count.value);
-  fd.append("hlso_yield_pct", hlso_yield_pct.value);
+let selectedElement = null;
+let speciesSelectControl = null;
 
-  fetch("/criteria/hoso_hlso", { method:"POST", body: fd })
-    .then(()=>location.reload());
+/* -------------------------------------
+   DOM INIT & SEARCHABLE DROPDOWN
+-------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+    // Making the Species Column Searchable
+    speciesSelectControl = new TomSelect("#species", {
+        create: false,
+        sortField: { field: "text", direction: "asc" }
+    });
+});
+
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
+
+/* -------------------------------------
+   SAVE / UPDATE ROUTINE
+-------------------------------------- */
+async function saveRecord(e){
+  e.preventDefault();
+
+  const fd = new FormData();
+  const record_id = document.getElementById("record_id").value;
+  if(record_id) fd.append("id", record_id);
+  
+  fd.append("species", document.getElementById("species").value);
+  fd.append("hoso_count", document.getElementById("hoso_count").value.trim());
+  fd.append("hlso_yield_pct", document.getElementById("hlso_yield_pct").value);
+
+  const res = await fetch("/criteria/hoso_hlso", { method:"POST", body: fd });
+  if(res.ok){
+    Swal.fire({icon:'success', title:'Yield Map Cached Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+        location.reload();
+    });
+  } else {
+    Swal.fire({icon:'error', title:'Backend rejected the transaction sequence.'});
+  }
+}
+
+/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+/* ------------------- EDIT & DELETE ACTIONS ------------------- */
+function editSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById("record_id").value = d.id;
+  if(speciesSelectControl) speciesSelectControl.setValue(d.species);
+  document.getElementById("hoso_count").value = d.hoso;
+  document.getElementById("hlso_yield_pct").value = d.yield;
+  
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteSelected(){
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Completely drop this HOSO → HLSO metrics configuration alignment?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete mapping'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const id = selectedElement.dataset.id;
+      // Using standard configuration endpoint structure for delete ops
+      const res = await fetch(`/criteria/hoso_hlso/delete/${id}`, {method:"POST"});
+      if(res.ok) location.reload();
+      else Swal.fire({icon:'error', title:'Data operational node denied deletion stream.'});
+    }
+  });
 }
 
 function clearForm(){
-  species.value="";
-  hoso_count.value="";
-  hlso_yield_pct.value="";
+  selectedElement = null;
+  document.getElementById("yieldForm").reset();
+  document.getElementById("record_id").value = "";
+  if(speciesSelectControl) speciesSelectControl.setValue("");
+  
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 </script>
-
 </body>
 </html>

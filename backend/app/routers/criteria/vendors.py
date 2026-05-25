@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from typing import Optional
 
 from app.database import get_db
 from app.database.models.criteria import vendors
@@ -31,7 +32,6 @@ def vendors_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # ✅ FIX: TemplateResponse arguments updated
     return templates.TemplateResponse(
         request=request,
         name="criteria/vendors.html",
@@ -43,13 +43,13 @@ def vendors_page(request: Request, db: Session = Depends(get_db)):
     )
 
 # ---------------------------------------------------------
-# SAVE / UPDATE VENDOR
+# SAVE / UPDATE VENDOR (FIXED: CREATED USER EMAIL)
 # ---------------------------------------------------------
 @router.post("/vendors")
 def save_vendor(
     request: Request,
     name: str = Form(...),
-    email: str = Form(""),
+    email: str = Form(""),          # ఇది వెండర్ యొక్క ఈమెయిల్ ఐడి
     service_for: str = Form(""),
     gst_number: str = Form(""),
     address: str = Form(""),
@@ -57,9 +57,11 @@ def save_vendor(
     account_no: str = Form(""),
     ifsc: str = Form(""),
     id: str = Form(""),
+    date: str = Form(...),          
+    time: str = Form(...),          
     db: Session = Depends(get_db)
 ):
-    session_email = request.session.get("email")
+    session_email = request.session.get("email") # 👈 సెషన్ నుండి లాగిన్ యూజర్ ఈమెయిల్ తీసుకుంటున్నాం
     company_code = request.session.get("company_code")
 
     if not session_email or not company_code:
@@ -96,6 +98,11 @@ def save_vendor(
         row.bank_name = bank_name
         row.account_no = account_no
         row.ifsc = ifsc
+        row.date = date
+        row.time = time
+        
+        # 👈 ఒకవేళ ఎడిట్ చేసినా లేదా రికార్డ్ అప్‌డేట్ చేసినా క్రియేటెడ్ యూజర్ ఈమెయిల్ మిస్ కాకుండా ట్రాక్ చేస్తుంది
+        row.created_by_email = session_email 
         
     # INSERT MODE
     else:
@@ -108,6 +115,9 @@ def save_vendor(
             bank_name=bank_name, 
             account_no=account_no, 
             ifsc=ifsc,
+            date=date,                        
+            time=time,                        
+            created_by_email=session_email,   # 👈 సెషన్ ఈమెయిల్‌ను ఇక్కడ పక్కాగా మ్యాప్ చేశాను
             company_id=company_code
         )
         db.add(new_vendor)

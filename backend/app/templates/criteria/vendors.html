@@ -3,221 +3,449 @@
 <head>
 <meta charset="utf-8">
 <title>VENDORS MASTER | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  body { font-family: Inter, Segoe UI, sans-serif; }
-  th { font-size: 11px; text-transform: uppercase; }
-  td { font-size: 13px; }
-  tr.selected { background: #e0edff !important; border-left: 4px solid #2563eb; }
+:root{
+  --primary: #143465;
+  --accent: #3b82f6;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc2626;
+}
+
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
+
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:#fff; padding:10px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
+
+/* ================= FORM CONTAINER ================= */
+.form-container {
+  width: 95%; max-width: 1400px; margin: 10px auto;
+  background: #fff; padding: 15px 20px; border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: none;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(4, 1fr); } }
+
+.field { display: flex; flex-direction: column; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
+
+label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+input, select, textarea {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #fff;
+  outline: none; width: 100%; transition: 0.2s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+textarea { resize: none; height: 38px; }
+
+/* CONTROL ACTIONS HEAD */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+
+.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.btn {
+  background: var(--primary); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+}
+.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn:hover { background: var(--accent); }
+
+/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: #003366; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+
+/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
+.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+
+th {
+  background: #f1f5f9; color: #475569; padding: 8px 6px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
+}
+td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+tr:hover { background: #f8fbff; cursor: pointer; }
+tr.selected { background: #eff6ff !important; }
+
+/* MOBILE CARD LIST */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--primary); }
+
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; }
+}
 </style>
 </head>
 
-<body class="bg-gray-100">
+<body>
 
-<!-- ================= HEADER ================= -->
-<div class="bg-white border-b px-6 py-3 flex justify-between items-center">
-  <h1 class="text-lg font-extrabold text-slate-800 tracking-wide">
-    VENDORS MASTER
-  </h1>
-  <span class="text-xs font-mono bg-slate-100 px-3 py-1 rounded">
-    {{ company_id }}
-  </span>
+<div class="header">
+  <div class="header-titles">
+      <h2>Vendors Master</h2>
+  </div>
 </div>
 
-<!-- ================= FORM ================= -->
-<form onsubmit="submitVendor(event)">
-<div class="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow border">
-
-  <h2 class="text-sm font-bold text-slate-700 mb-4 uppercase">
-    Vendor Details
-  </h2>
-
-  <!-- BASIC -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Vendor Name</label>
-      <input id="name" required
-        class="w-full px-3 py-2 border rounded text-sm font-semibold uppercase focus:ring-2 focus:ring-blue-500">
+<!-- FORM AREA -->
+<form onsubmit="submitVendor(event)" id="vendorForm">
+  <div class="form-container" id="formSection">
+    
+    <!-- Row 1: Profile Info -->
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-store"></i> Basic Profile</div>
+      <div class="field">
+        <label>Vendor Name</label>
+        <input type="text" id="name" required placeholder="Enter Vendor Name">
+      </div>
+      <div class="field">
+        <label>Service For</label>
+        <input list="service_list" id="service_for" required placeholder="Select or Type Service..." onfocus="this.value=''">
+        <datalist id="service_list">
+            <option value="Transport">
+            <option value="Diesel">
+            <option value="Packing">
+            <option value="Raw Materials">
+            <option value="Maintenance">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="example@mail.com">
+      </div>
     </div>
 
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Service For</label>
-      <input id="service_for"
-        class="w-full px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-blue-500"
-        placeholder="Transport / Diesel / Packing">
+    <!-- Row 2: Statutory & Bank Details -->
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-building-columns"></i> Statutory & Banking Info</div>
+      <div class="field">
+        <label>GST Number</label>
+        <input type="text" id="gst_number" placeholder="Enter GSTIN">
+      </div>
+      <div class="field">
+        <label>Bank Name</label>
+        <input type="text" id="bank_name" placeholder="Enter Bank Name">
+      </div>
+      <div class="field">
+        <label>Account Number</label>
+        <input type="text" id="account_no" placeholder="Enter Account Number">
+      </div>
+      <div class="field">
+        <label>IFSC Code</label>
+        <input type="text" id="ifsc" placeholder="Enter IFSC Code">
+      </div>
     </div>
 
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Email</label>
-      <input id="email" type="email"
-        class="w-full px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-blue-500">
+    <!-- Row 3: Address -->
+    <div class="form-grid">
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Address</label>
+        <textarea id="address" placeholder="Enter Full Address"></textarea>
+      </div>
+    </div>
+
+    <!-- Metadata Structs -->
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_date">
+    <input type="hidden" id="meta_time">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">SAVE VENDOR</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
   </div>
-
-  <!-- GST -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">GST Number</label>
-      <input id="gst_number"
-        class="w-full px-3 py-2 border rounded text-sm uppercase">
-    </div>
-
-    <div class="md:col-span-3">
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Address</label>
-      <input id="address"
-        class="w-full px-3 py-2 border rounded text-sm">
-    </div>
-  </div>
-
-  <!-- BANK -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Bank Name</label>
-      <input id="bank_name"
-        class="w-full px-3 py-2 border rounded text-sm">
-    </div>
-
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">Account No</label>
-      <input id="account_no"
-        class="w-full px-3 py-2 border rounded text-sm">
-    </div>
-
-    <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1">IFSC Code</label>
-      <input id="ifsc"
-        class="w-full px-3 py-2 border rounded text-sm uppercase">
-    </div>
-  </div>
-
-  <input type="hidden" id="record_id">
-
-  <!-- ACTIONS -->
-  <div class="mt-6 flex gap-3">
-    <button class="bg-slate-800 text-white px-8 py-2 rounded text-sm font-bold hover:bg-blue-700">
-      SAVE
-    </button>
-    <button type="button" onclick="clearForm()"
-      class="bg-gray-200 text-gray-700 px-6 py-2 rounded text-sm font-bold">
-      CLEAR
-    </button>
-  </div>
-
-</div>
 </form>
 
-<!-- ================= ACTION MENU ================= -->
-<div id="actionPanel"
-  class="max-w-6xl mx-auto mt-4 flex justify-end gap-2 hidden">
-  <button onclick="editSelected()"
-    class="text-xs bg-blue-600 text-white px-4 py-1 rounded font-bold">
-    EDIT
-  </button>
-  <button onclick="deleteSelected()"
-    class="text-xs bg-red-600 text-white px-4 py-1 rounded font-bold">
-    DELETE
-  </button>
+{% if message %}
+<p style="text-align:center;color:green;font-weight:600;font-size:12px;">{{ message }}</p>
+{% endif %}
+
+{% if vendors_list %}
+
+<!-- CONTROL ACTIONS HEADER BAR -->
+<div class="table-header-bar">
+    <h3 class="table-title">Vendor Data Logs</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Vendor</button>
+        </div>
+
+        <!-- RIGHT INLINE 3-DOT MENU -->
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+          </div>
+        </div>
+    </div>
 </div>
 
-<!-- ================= TABLE ================= -->
-<div class="max-w-6xl mx-auto mt-2 bg-white rounded-xl shadow border overflow-hidden">
-
-<table class="w-full table-fixed">
-<thead class="bg-slate-100">
-<tr>
-  <th class="w-[20%] px-3 py-2">Vendor</th>
-  <th class="w-[15%] px-3 py-2">Service</th>
-  <th class="w-[15%] px-3 py-2">GST</th>
-  <th class="w-[30%] px-3 py-2">Bank Details</th>
-  <th class="w-[20%] px-3 py-2">Email</th>
-</tr>
-</thead>
-
-<tbody>
-{% for v in vendors_list %}
-<tr onclick="selectRow(this)"
-    class="hover:bg-blue-50 cursor-pointer"
-    data-id="{{ v.id }}"
-    data-name="{{ v.name }}"
-    data-service="{{ v.service_for }}"
-    data-email="{{ v.email }}"
-    data-gst="{{ v.gst_number }}"
-    data-address="{{ v.address }}"
-    data-bank="{{ v.bank_name }}"
-    data-acc="{{ v.account_no }}"
-    data-ifsc="{{ v.ifsc }}">
-
-  <td class="px-3 py-2 font-bold">{{ v.name }}</td>
-  <td class="px-3 py-2 text-xs">{{ v.service_for }}</td>
-  <td class="px-3 py-2 font-mono text-xs">{{ v.gst_number }}</td>
-  <td class="px-3 py-2 text-xs">
-    <b>{{ v.bank_name }}</b><br>
-    <span class="text-gray-500">{{ v.account_no }} | {{ v.ifsc }}</span>
-  </td>
-  <td class="px-3 py-2 text-xs text-blue-600">{{ v.email }}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-
+<!-- MOBILE VIEW CARD LIST -->
+<div class="mobile-card-list">
+    {% for v in vendors_list %}
+    <div class="data-card" data-id="{{ v.id }}" 
+         data-name="{{ v.name }}" data-service="{{ v.service_for }}" 
+         data-email="{{ v.email }}" data-gst="{{ v.gst_number }}" 
+         data-address="{{ v.address }}" data-bank="{{ v.bank_name }}"
+         data-acc="{{ v.account_no }}" data-ifsc="{{ v.ifsc }}"
+         data-date="{{ v.date }}" data-time="{{ v.time }}" data-uemail="{{ v.created_by_email }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">Vendor Name</span>
+            <span class="card-val" style="color:var(--accent);">{{ v.name }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Service</span>
+            <span class="card-val">{{ v.service_for if v.service_for else '-' }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">GSTIN</span>
+            <span class="card-val">{{ v.gst_number if v.gst_number else '-' }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Created At</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ v.date }} {{ v.time }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">User</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ v.created_by_email }}</span>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 
-<!-- ================= SCRIPT ================= -->
+<!-- COMPACT FULL TABLE VIEW -->
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:50px;">ID</th>
+        <th>Vendor Name</th>
+        <th>Service For</th>
+        <th>Email</th>
+        <th>GST Number</th>
+        <th>Address</th>
+        <th>Bank Name</th>
+        <th>Account No</th>
+        <th>IFSC</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Created User</th>
+        <th>Company ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in vendors_list %}
+      <tr data-id="{{ v.id }}" 
+          data-name="{{ v.name }}" data-service="{{ v.service_for }}" 
+          data-email="{{ v.email }}" data-gst="{{ v.gst_number }}" 
+          data-address="{{ v.address }}" data-bank="{{ v.bank_name }}"
+          data-acc="{{ v.account_no }}" data-ifsc="{{ v.ifsc }}"
+          data-date="{{ v.date }}" data-time="{{ v.time }}" data-uemail="{{ v.created_by_email }}"
+          onclick="selectRowOrCard(this)">
+        <td>{{ v.id }}</td>
+        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ v.name }}</td>
+        <td>{{ v.service_for if v.service_for else '' }}</td>
+        <td>{{ v.email if v.email else '' }}</td>
+        <td style="font-mono">{{ v.gst_number if v.gst_number else '' }}</td>
+        <td style="text-align:left;">{{ v.address if v.address else '' }}</td>
+        <td>{{ v.bank_name if v.bank_name else '' }}</td>
+        <td>{{ v.account_no if v.account_no else '' }}</td>
+        <td>{{ v.ifsc if v.ifsc else '' }}</td>
+        <td style="color: #475569;">{{ v.date if v.date else '' }}</td>
+        <td style="color: #64748b;">{{ v.time if v.time else '' }}</td>
+        <td style="color: #0284c7; font-size: 10px;">{{ v.created_by_email if v.created_by_email else '' }}</td>
+        <td>{{ v.company_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endif %}
+
 <script>
-let selectedRow = null;
+let selectedElement = null;
 
-function selectRow(row){
-  document.querySelectorAll("tbody tr").forEach(r=>r.classList.remove("selected"));
-  row.classList.add("selected");
-  selectedRow = row;
-  document.getElementById("actionPanel").classList.remove("hidden");
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
 }
 
+/* ------------------- SAVE ACTION SYSTEM ------------------- */
 async function submitVendor(e){
   e.preventDefault();
+  
   const fd = new FormData();
-  ["name","email","service_for","gst_number","address",
-   "bank_name","account_no","ifsc"].forEach(id=>{
-     fd.append(id, document.getElementById(id).value);
-   });
-  if(record_id.value) fd.append("id", record_id.value);
+  const rid = document.getElementById("record_id").value;
+  if(rid) fd.append('id', rid);
 
-  const r = await fetch("/criteria/vendors",{method:"POST",body:fd});
-  if(r.ok) location.reload(); else alert("Save failed");
+  fd.append('name', document.getElementById("name").value.trim());
+  fd.append('service_for', document.getElementById("service_for").value.trim());
+  fd.append('email', document.getElementById("email").value.trim());
+  fd.append('gst_number', document.getElementById("gst_number").value.trim());
+  fd.append('address', document.getElementById("address").value.trim());
+  fd.append('bank_name', document.getElementById("bank_name").value.trim());
+  fd.append('account_no', document.getElementById("account_no").value.trim());
+  fd.append('ifsc', document.getElementById("ifsc").value.trim());
+  
+  // Handling timestamp metadata injection
+  const now = new Date();
+  const dateStr = document.getElementById("meta_date").value || now.toISOString().slice(0,10);
+  const timeStr = document.getElementById("meta_time").value || now.toTimeString().slice(0,8);
+  
+  fd.append('date', dateStr);
+  fd.append('time', timeStr);
+  fd.append('email', document.getElementById("meta_email").value);
+  fd.append('company_id', document.getElementById("meta_company_id").value);
+
+  const res = await fetch('/criteria/vendors', {method:'POST', body:fd});
+  if(res.ok){ 
+    Swal.fire({icon:'success', title:'Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+        location.reload();
+    });
+  } else { 
+    Swal.fire({icon:'error', title:'Error saving record'});
+  }
 }
 
+/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+/* ------------------- EDIT & DELETE ACTIONS ------------------- */
 function editSelected(){
-  if(!selectedRow) return;
-  const d = selectedRow.dataset;
-  record_id.value=d.id;
-  name.value=d.name;
-  service_for.value=d.service;
-  email.value=d.email;
-  gst_number.value=d.gst;
-  address.value=d.address;
-  bank_name.value=d.bank;
-  account_no.value=d.acc;
-  ifsc.value=d.ifsc;
-  window.scrollTo({top:0,behavior:"smooth"});
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById('record_id').value = d.id;
+  document.getElementById('name').value = d.name || '';
+  document.getElementById('service_for').value = d.service || '';
+  document.getElementById('email').value = d.email || '';
+  document.getElementById('gst_number').value = d.gst || '';
+  document.getElementById('address').value = d.address || '';
+  document.getElementById('bank_name').value = d.bank || '';
+  document.getElementById('account_no').value = d.acc || '';
+  document.getElementById('ifsc').value = d.ifsc || '';
+  
+  document.getElementById('meta_date').value = d.date || '';
+  document.getElementById('meta_time').value = d.time || '';
+  
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 async function deleteSelected(){
-  if(!selectedRow || !confirm("Delete vendor?")) return;
-  await fetch(`/criteria/vendors/delete/${selectedRow.dataset.id}`,{method:"POST"});
-  location.reload();
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Delete this vendor?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const res = await fetch(`/criteria/vendors/delete/${selectedElement.dataset.id}`,{method:'POST'});
+      if(res.ok) location.reload();
+    }
+  });
+}
+
+/* ------------------- EXCEL EXPORT LOGIC ------------------- */
+function exportExcel(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  const headers = "ID\tVendor Name\tService For\tEmail\tGSTIN\tAddress\tBank Name\tAccount No\tIFSC\tDate\tTime\tCreated User\n";
+  const rowData = `${d.id}\t${d.name}\t${d.service||''}\t${d.email||''}\t${d.gst||''}\t${d.address||''}\t${d.bank||''}\t${d.acc||''}\t${d.ifsc||''}\t${d.date||''}\t${d.time||''}\t${d.uemail||''}`;
+  
+  const blob = new Blob([headers + rowData], {type:"application/vnd.ms-excel"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Vendor_${d.name}.xls`;
+  a.click();
 }
 
 function clearForm(){
-  document.querySelector("form").reset();
-  record_id.value="";
-  selectedRow=null;
-  document.getElementById("actionPanel").classList.add("hidden");
-  document.querySelectorAll("tr").forEach(r=>r.classList.remove("selected"));
+  selectedElement = null;
+  document.getElementById("vendorForm").reset();
+  document.getElementById("record_id").value = "";
+  document.getElementById("meta_date").value = "";
+  document.getElementById("meta_time").value = "";
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 </script>
-
 </body>
 </html>

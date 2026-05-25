@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.database import get_db
 from app.database.models.criteria import buyer_agents
@@ -43,13 +44,21 @@ def buyer_agents_page(request: Request, db: Session = Depends(get_db)):
     )
 
 # ---------------------------------------------------------
-# SAVE (ADD / UPDATE)
+# SAVE (ADD / UPDATE) - ALL COLUMNS INCLUDED (WITH AGENT EMAIL)
 # ---------------------------------------------------------
 @router.post("/")
 def save_buyer_agent(
     request: Request,
     agent_name: str = Form(...),
-    id: int = Form(None),
+    agent_email: Optional[str] = Form(None),  # 👈 కొత్తగా యాడ్ చేసిన ఏజెంట్ ఈమెయిల్ ఫీల్డ్
+    phone: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    service_for: str = Form(...),
+    gst_number: Optional[str] = Form(None),
+    bank_name: Optional[str] = Form(None),
+    account_no: Optional[str] = Form(None),
+    ifsc: Optional[str] = Form(None),
+    id: Optional[int] = Form(None),
     date: str = Form(...),
     time: str = Form(...),
     db: Session = Depends(get_db)
@@ -84,7 +93,7 @@ def save_buyer_agent(
             }
         )
 
-    # UPDATE
+    # UPDATE EXISTING RECORD
     if id:
         row = db.query(buyer_agents).filter(
             buyer_agents.id == id,
@@ -94,15 +103,32 @@ def save_buyer_agent(
         if not row:
             return RedirectResponse("/buyer_agents?msg=Record+Not+Found", status_code=302)
 
+        # Updating all new table columns
         row.agent_name = agent_name
+        row.agent_email = agent_email  # 👈 అప్‌డేట్ లాజిక్‌లో యాడ్ చేసాను
+        row.phone = phone
+        row.address = address
+        row.service_for = service_for
+        row.gst_number = gst_number
+        row.bank_name = bank_name
+        row.account_no = account_no
+        row.ifsc = ifsc
         row.date = date
         row.time = time
         row.email = session_email
 
-    # INSERT
+    # INSERT NEW RECORD
     else:
         new_row = buyer_agents(
             agent_name=agent_name,
+            agent_email=agent_email,  # 👈 ఇన్సర్ట్ లాజిక్‌లో యాడ్ చేసాను
+            phone=phone,
+            address=address,
+            service_for=service_for,
+            gst_number=gst_number,
+            bank_name=bank_name,
+            account_no=account_no,
+            ifsc=ifsc,
             date=date,
             time=time,
             email=session_email,
@@ -112,20 +138,7 @@ def save_buyer_agent(
 
     db.commit()
 
-    data = db.query(buyer_agents).filter(
-        buyer_agents.company_id == company_code
-    ).order_by(buyer_agents.id.desc()).all()
-
-    return templates.TemplateResponse(
-        request=request,
-        name="criteria/buyer_agents.html",
-        context={
-            "today_data": data,
-            "email": session_email,
-            "company_id": company_code,
-            "message": f"✔️ Agent '{agent_name}' saved successfully!"
-        }
-    )
+    return Response(status_code=200)
 
 
 # ---------------------------------------------------------
@@ -146,4 +159,4 @@ def delete_agent(id: int, request: Request, db: Session = Depends(get_db)):
 
     db.commit()
 
-    return RedirectResponse("/buyer_agents?msg=Deleted", status_code=302)
+    return Response(status_code=200)
