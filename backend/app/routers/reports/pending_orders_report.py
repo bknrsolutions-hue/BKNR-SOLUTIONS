@@ -1,5 +1,5 @@
 # ============================================================
-# PENDING ORDERS REPORT ROUTER (BKNR ERP - UPDATED)
+# PENDING ORDERS REPORT ROUTER (BKNR ERP - COMPANY STRICT FILTER)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, HTTPException
@@ -65,14 +65,15 @@ def pending_orders_report_page(
     v_records = db.query(varieties).filter(varieties.company_id == comp_code).all()
     grade_map_list = db.query(grade_to_hoso).filter(grade_to_hoso.company_id == comp_code).all()
 
-    # 4. Global Stock Pool Calculation
+    # 4. Global Stock Pool Calculation (Using production_for as Primary Dimension)
     stock_pool = {}
     for s in all_stock:
         s_gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
         s_gl_val = s_gl_match.group(1) if s_gl_match else "0"
         s_frz = str(s.freezer or "N/A").strip().lower()
-        s_prod_for = str(s.production_for or "").strip().upper()
+        s_prod_for = str(s.production_for or "").strip().upper()  # Exact Target Entity Name
         
+        # Key signature generated using stock_entry production_for identity prefix
         key = f"{s_prod_for}|{str(s.species).strip().lower()}|{str(s.variety).strip().lower()}|{str(s.grade).strip().lower()}|{str(s.packing_style).strip().lower()}|{s_gl_val}|{s_frz}"
         
         qty = float(s.quantity or 0)
@@ -83,7 +84,9 @@ def pending_orders_report_page(
 
     # 5. Processing Loop
     for r in rows:
-        current_row_comp = str(r.buyer or "").strip().upper() 
+        # ✅ FIX ALIGNMENT: pending_orders.company_name row extraction mapped explicitly
+        current_row_comp = str(r.company_name or "").strip().upper()  
+        
         p_spec = str(r.species or "").strip().lower()
         p_var = str(r.variety or "").strip().lower()
         p_grad = str(r.grade or "").strip().lower()
@@ -99,6 +102,8 @@ def pending_orders_report_page(
         p_w_gl_val = float(w_gl_match.group(1)) if w_gl_match else 0.0
         w_gl_factor = (100 - p_w_gl_val) / 100 if p_w_gl_val < 100 else 1.0
 
+        # ✅ STRICT MATCH ENFORCED: exact_key checks balance using pending_orders.company_name
+        # This matches keys in global pool where stock_entry.production_for == pending_orders.company_name
         exact_key = f"{current_row_comp}|{p_spec}|{p_var}|{p_grad}|{p_pack}|{str(int(p_c_gl_val))}|{p_frz}"
         opening_bal = round(stock_pool.get(exact_key, 0.0), 2)
         r.available_stock = opening_bal
@@ -147,6 +152,7 @@ def pending_orders_report_page(
         is_order_nwnc = "NWNC" in p_gl_full_text or p_c_gl_val == 0
         
         for s in all_stock:
+            # ✅ STRICT MATCH ENFORCED ALSO FOR REFERRAL STOCK LOOKUPS
             if str(s.production_for or "").strip().upper() != current_row_comp: continue
             s_gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
             s_gl_num = s_gl_match.group(1) if s_gl_match else "0"
@@ -203,7 +209,7 @@ def pending_orders_report_page(
                     h_yield_pct = float(nearest_y.hlso_yield_pct or 100) / 100
                     r.req_hoso_qty = round(r.req_hlso_qty / h_yield_pct, 2) if h_yield_pct > 0 else 0
 
-    # ✅ FIXED TemplateResponse Format
+    # Template Response
     return templates.TemplateResponse(
         request=request,
         name="reports/pending_orders_report.html",
