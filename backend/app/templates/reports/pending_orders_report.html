@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Pending Orders Detailed Report – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -12,8 +12,8 @@
   --primary:#143465; --border:#d6dde7; --bg:#f4f6f9; --accent: #3b82f6; --card:#ffffff;
   --success: #16a34a; --danger: #dc2626;
 }
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color: #334155; font-size: 8px;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent;}
+body{margin:0; background:var(--bg); color: #334155; font-size: 11px; line-height: 1.5;}
 
 /* HEADER */
 .header{
@@ -31,10 +31,10 @@ body{margin:0; background:var(--bg); color: #334155; font-size: 8px;}
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
-.field{display:flex; flex-direction:column; gap: 3px;}
-.field label{font-size:7.5px; font-weight:700; color: #64748b; text-transform: uppercase;}
+.field{display:flex; flex-direction:column; gap: 4px;}
+.field label{font-size:9px; font-weight:700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;}
 .field input, .field select{
-  padding:5px; border-radius:5px; border:1px solid var(--border); font-size: 9px; outline: none;
+  padding:6px 10px; border-radius:6px; border:1px solid var(--border); font-size: 11px; font-weight:600; outline: none; background:#fff; height: 32px;
 }
 
 /* SUMMARY CARDS */
@@ -46,26 +46,26 @@ body{margin:0; background:var(--bg); color: #334155; font-size: 8px;}
     overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 .summary-header {
-    background: #f8fafc; padding: 10px 15px; cursor: pointer;
+    background: #f8fafc; padding: 12px 15px; cursor: pointer;
     border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
 }
-.summary-header h3 { margin: 0; font-size: 10px; color: var(--primary); font-weight: 800; }
+.summary-header h3 { margin: 0; font-size: 11px; color: var(--primary); font-weight: 800; }
 .summary-content { padding: 10px; display: block; }
 
-.sum-table { width: 100%; border-collapse: collapse; font-size: 9px; }
-.sum-table th { background: var(--primary); color: white; padding: 6px; text-align: left; }
-.sum-table td { padding: 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.sum-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sum-table th { background: var(--primary); color: white; padding: 8px; text-align: left; font-size: 10px; font-weight: 700; }
+.sum-table td { padding: 8px; border-bottom: 1px solid var(--border); font-weight: 600; }
 .sum-total-row { background: #f1f5f9; font-weight: 800 !important; color: var(--primary); }
 
-/* DRILL DOWN STYLE (SUMARY EXPAND) */
+/* DRILL DOWN STYLE (SUMMARY EXPAND) */
 .drill-row td { background: #fffbeb !important; padding: 0 !important; }
-.drill-container { padding: 5px; border: 1px dashed #fcd34d; margin: 5px; border-radius: 6px; background: #fff; }
-.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 8px; }
+.drill-container { padding: 8px; border: 1px dashed #fcd34d; margin: 5px; border-radius: 6px; background: #fff; }
+.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .drill-mini-table th { 
-    background: #fef3c7; color: #92400e; padding: 3px 5px; 
-    border: 1px solid #fde68a; height: 20px !important; /* Header height reduced */
+    background: #fef3c7; color: #92400e; padding: 6px; 
+    border: 1px solid #fde68a; font-weight: 700;
 }
-.drill-mini-table td { padding: 3px 5px; border: 1px solid #fde68a; text-align: center; color: #334155; }
+.drill-mini-table td { padding: 6px; border: 1px solid #fde68a; text-align: center; color: #334155; font-weight: 600; }
 
 .clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
 
@@ -74,44 +74,156 @@ body{margin:0; background:var(--bg); color: #334155; font-size: 8px;}
   margin:0 15px 30px; background:#fff; border-radius:12px; border:1px solid var(--border);
   overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
+.table-responsive-container { overflow: auto; max-height: 600px; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 thead th {
-    background: #f1f5f9; color: #475569; padding: 6px 2px; height: 55px;
-    font-size: 6.5px; font-weight: 700; border: 1px solid var(--border);
-    text-transform: uppercase; white-space: normal; word-wrap: break-word;
+    background: #f1f5f9; color: #475569; padding: 8px 4px; height: 50px;
+    font-size: 9.5px; font-weight: 700; border: 1px solid var(--border);
+    text-transform: uppercase; white-space: normal; word-wrap: break-word; position: sticky; top:0; z-index: 10;
 }
 
 tbody td {
-    padding: 6px 2px; border: 1px solid var(--border);
-    text-align: center; word-wrap: break-word; vertical-align: middle;
+    padding: 8px 4px; border: 1px solid var(--border);
+    text-align: center; word-wrap: break-word; vertical-align: middle; font-size: 10.5px; font-weight: 500;
 }
 
 thead th, tbody td { width: 3.44%; }
 
 .po-cell { background: #f8faff; font-weight: 700; color: var(--accent); }
-.subtotal-row td { background: #f3f6fb; font-weight: 800; color: var(--primary); border-top: 2px solid var(--border); }
+.subtotal-row td { background: #f3f6fb; font-weight: 800; color: var(--primary); border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); }
 .grand-total { background: var(--primary) !important; color: white !important; font-weight: 800; }
 .calc-col { background: #f0fdf4; color: #15803d; font-weight: 700; }
 .currency-col { background: #fffbeb; color: #b45309; font-weight: 700; }
 
 .stock-btn { 
-    background: #eff6ff; color: var(--accent); font-weight: 800; padding: 2px;
-    border-radius: 4px; border: 1px solid #bfdbfe; cursor: pointer; display: block;
-    text-decoration: underline;
+    background: #eff6ff; color: var(--accent); font-weight: 800; padding: 4px;
+    border-radius: 4px; border: 1px solid #bfdbfe; cursor: pointer; display: inline-block;
+    text-decoration: underline; font-size: 10px;
 }
 
 /* CORPORATE EXPAND STYLES */
 .detail-container { padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; margin: 5px 10px; border-radius: 8px; }
-.detail-title { font-size: 9px; font-weight: 800; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
-.corp-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 8.5px; background: #fff; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
-.corp-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; border-bottom: 2px solid var(--border); }
-.corp-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; }
+.detail-title { font-size: 11px; font-weight: 800; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; }
+.corp-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10.5px; background: #fff; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.corp-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700; }
+.corp-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
 .badge-po { background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 3px; font-weight: 700; }
 .txt-red { color: var(--danger) !important; font-weight: 700; }
 .txt-green { color: var(--success) !important; font-weight: 700; }
 
 @media print { .header, .section-filter, .summary-header i { display: none !important; } }
+
+/* --- MOBILE COMPACT OPTIMIZATION LAYOUT --- */
+@media(max-width: 992px) {
+    .header { flex-direction: column; gap: 10px; text-align: center; padding: 10px; }
+    .header h2 { font-size: 14px; }
+    
+    .section-filter { grid-template-columns: repeat(2, 1fr); margin: 10px; padding: 10px; gap: 8px; }
+    .section-filter .field:nth-child(4) { grid-column: span 2; }
+    .section-filter .field:nth-child(5) { grid-column: span 2; }
+    
+    .summary-container { grid-template-columns: 1fr; margin: 0 10px 10px; gap: 10px; }
+    
+    .table-wrap { margin: 0 10px 20px; border: none; background: transparent; box-shadow: none; }
+    .table-responsive-container { overflow: visible; max-height: none; }
+    
+    #mainTable thead { display: none; }
+    #mainTable, #mainTable tbody, #mainTable tfoot { display: block; width: 100%; }
+    
+    #mainTable tbody .data-row {
+        display: block;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 14px;
+        padding: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    
+    #mainTable tbody td[rowspan] {
+        background: #f8fafc !important;
+        color: var(--primary) !important;
+        font-weight: 800 !important;
+        border-bottom: 2px solid var(--border) !important;
+    }
+    
+    #mainTable tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100% !important;
+        border: none !important;
+        padding: 6px 4px;
+        border-bottom: 1px dashed #f1f5f9 !important;
+        text-align: right;
+        font-size: 11px;
+    }
+    
+    #mainTable tbody td:last-child { border-bottom: none !important; }
+    
+    #mainTable tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        font-size: 9px;
+        text-align: left;
+        flex: 1;
+        padding-right: 10px;
+    }
+    
+    .subtotal-row {
+        display: block;
+        background: #eef2ff !important;
+        border: 1px solid #c7d2fe !important;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 20px;
+    }
+    .subtotal-row td {
+        display: flex;
+        justify-content: space-between;
+        width: 100% !important;
+        border: none !important;
+        padding: 4px 0;
+        font-size: 11px;
+    }
+    .subtotal-row td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        color: var(--primary);
+        font-size: 9.5px;
+    }
+    
+    .grand-total {
+        display: block;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    .grand-total td {
+        display: flex;
+        justify-content: space-between;
+        width: 100% !important;
+        border: none !important;
+        padding: 5px 0;
+        font-size: 12px;
+    }
+    .grand-total td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        font-size: 10px;
+    }
+    
+    .expand-row { display: block; width: 100%; margin-top: -14px; margin-bottom: 14px; }
+    .expand-row td { display: block; width: 100% !important; border: none !important; }
+    
+    .corp-table th { display: none; }
+    .corp-table, .corp-table tbody, .corp-table tr { display: block; width: 100%; }
+    .corp-table tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+    .corp-table td { display: flex; justify-content: space-between; padding: 4px 10px; border: none !important; }
+    .corp-table td::before { content: attr(data-label); font-weight: 700; color:#64748b; font-size: 9px; }
+}
 </style>
 </head>
 
@@ -119,11 +231,11 @@ thead th, tbody td { width: 3.44%; }
 
 <div class="header">
   <h2><i class="fa-solid fa-chart-line"></i> Pending Orders Detailed Report</h2>
-  <div style="display: flex; gap: 10px; align-items: center;">
-    <button onclick="resetFilters()" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:700; font-size:9px;">
+  <div style="display: flex; gap: 10px; align-items: center; width: 100%; justify-content: flex-end;">
+    <button onclick="resetFilters()" style="background:#64748b; color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">
         RESET ALL
     </button>
-    <button onclick="window.print()" style="background:var(--accent); color:white; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:700; font-size:9px;">
+    <button onclick="window.print()" style="background:var(--accent); color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">
         <i class="fa fa-print"></i> PRINT
     </button>
   </div>
@@ -170,92 +282,122 @@ thead th, tbody td { width: 3.44%; }
 </div>
 
 <div class="table-wrap">
-    <table id="mainTable">
-        <thead>
-            <tr>
-                <th style="width: 2%;">Sl</th>
-                <th>Company</th> <th>PO Number</th>
-                <th>Buyer</th>
-                <th>Ship Date</th>
-                <th>Packing Style</th>
-                <th>Brand</th>
-                <th>Sps</th>
-                <th>Var</th>
-                <th>CG %</th>
-                <th>WG %</th>
-                <th>Grd</th>
-                <th>NW Grd</th>
-                <th>Pcs</th>
-                <th>Ord MC</th>
-                <th>Price ($)</th> <th>Exch Rate</th> <th>Stk MC</th>
-                <th>Pnd MC</th>
-                <th>Net Cnt</th>
-                <th>HL Cnt</th>
-                <th>HO Cnt</th>
-                <th>Ord Qty</th>
-                <th>Avl Stk</th>
-                <th>Pnd Prd</th>
-                <th>Ref Stk</th>
-                <th>Stk Util</th>
-                <th>Req HL</th>
-                <th>Req HO</th>
-            </tr>
-        </thead>
-        <tbody id="tbody">
-            {% if rows %}
-            {% set sorted_rows = rows|sort(attribute='sl_no') %}
-            {% for po, items in sorted_rows|groupby('po_number') %}
-                {% for r in items %}
-                <tr class="data-row" 
-                    data-sl="{{ r.sl_no }}"
-                    data-po="{{ po }}" 
-                    data-species="{{ r.species }}" 
-                    data-variety="{{ r.variety }}" 
-                    data-hl-cnt="{{ r.hl_count_calc | round | int }}" 
-                    data-ho-cnt="{{ r.hoso_count_calc | round | int }}"
-                    data-net-cnt="{{ r.net_count_calc }}"
-                    data-r-hl="{{ r.req_hlso_qty }}" 
-                    data-r-ho="{{ r.req_hoso_qty }}">
-                    
-                    {% if loop.first %}
-                    <td rowspan="{{ items|length }}" class="po-cell" style="background:#f1f5f9; color:#1e293b;">{{ r.sl_no }}</td>
-                    <td rowspan="{{ items|length }}" class="po-cell" style="font-size: 6px; color: #64748b;">{{ r.company_name }}</td> 
-                    <td rowspan="{{ items|length }}" class="po-cell">{{ po }}</td>
-                    <td rowspan="{{ items|length }}" class="po-cell">{{ r.buyer }}</td>
-                    <td rowspan="{{ items|length }}" class="po-cell">{{ r.shipment_date }}</td>
-                    {% endif %}
-                    
-                    <td>{{ r.packing_style }}</td><td>{{ r.brand }}</td><td style="font-weight:700;">{{ r.species }}</td><td>{{ r.variety }}</td>
-                    <td>{{ r.count_glaze }}</td><td>{{ r.weight_glaze }}</td><td>{{ r.grade }}</td><td style="background:#f8fafc; font-weight:700;">{{ r.nw_grade or '-' }}</td><td>{{ r.no_of_pieces }}</td>
-                    <td class="v-mc">{{ r.no_of_mc }}</td>
-                    <td class="currency-col">$ {{ r.selling_price }}</td> <td class="currency-col">₹ {{ r.exchange_rate }}</td> <td class="v-smc">{{ r.stock_mc }}</td><td class="v-ppmc">{{ r.prod_pending_mc }}</td>
-                    <td class="calc-col">{{ r.net_count_calc }}</td><td class="calc-col">{{ r.hl_count_calc }}</td><td class="calc-col">{{ r.hoso_count_calc }}</td>
-                    <td class="v-ord">{{ r.ordered_qty }}</td><td class="v-avail">{{ r.available_stock }}</td><td class="v-pend">{{ r.pending_production }}</td>
-                    <td><span class="stock-btn" data-history='{{ r.ref_json | safe }}' onclick="toggleDetail(this, 'Referral Details')">{{ r.ref_opt_stock }}</span></td>
-                    <td><span class="stock-btn" data-history='{{ r.util_json | safe }}' onclick="toggleDetail(this, 'Utilization History')">{{ r.existed_stock_util }}</span></td>
-                    <td class="v-hl" style="font-weight:800;">{{ r.req_hlso_qty }}</td><td class="v-ho" style="font-weight:800;">{{ r.req_hoso_qty }}</td>
+    <div class="table-responsive-container">
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th style="width: 2%;">Sl</th>
+                    <th>Company</th> <th>PO Number</th>
+                    <th>Buyer</th>
+                    <th>Ship Date</th>
+                    <th>Packing Style</th>
+                    <th>Brand</th>
+                    <th>Sps</th>
+                    <th>Var</th>
+                    <th>CG %</th>
+                    <th>WG %</th>
+                    <th>Grd</th>
+                    <th>NW Grd</th>
+                    <th>Pcs</th>
+                    <th>Ord MC</th>
+                    <th>Price ($)</th> <th>Exch Rate</th> <th>Stk MC</th>
+                    <th>Pnd MC</th>
+                    <th>Net Cnt</th>
+                    <th>HL Cnt</th>
+                    <th>HO Cnt</th>
+                    <th>Ord Qty</th>
+                    <th>Avl Stk</th>
+                    <th>Pnd Prd</th>
+                    <th>Ref Stk</th>
+                    <th>Stk Util</th>
+                    <th>Req HL</th>
+                    <th>Req HO</th>
                 </tr>
-                <tr class="expand-row" style="display:none;"><td colspan="29" style="padding:0; background:#f8fafc;"><div></div></td></tr>
+            </thead>
+            <tbody id="tbody">
+                {% if rows %}
+                {% set sorted_rows = rows|sort(attribute='sl_no') %}
+                {% for po, items in sorted_rows|groupby('po_number') %}
+                    {% for r in items %}
+                    <tr class="data-row" 
+                        data-sl="{{ r.sl_no }}"
+                        data-po="{{ po }}" 
+                        data-species="{{ r.species }}" 
+                        data-variety="{{ r.variety }}" 
+                        data-hl-cnt="{{ r.hl_count_calc | round | int }}" 
+                        data-ho-cnt="{{ r.hoso_count_calc | round | int }}"
+                        data-net-cnt="{{ r.net_count_calc }}"
+                        data-r-hl="{{ r.req_hlso_qty }}" 
+                        data-r-ho="{{ r.req_hoso_qty }}">
+                        
+                        {% if loop.first %}
+                        <td rowspan="{{ items|length }}" class="po-cell" style="background:#f1f5f9; color:#1e293b;" data-label="Sl No">{{ r.sl_no }}</td>
+                        <td rowspan="{{ items|length }}" class="po-cell" style="font-size: 10px; color: #64748b;" data-label="Company">{{ r.company_name }}</td> 
+                        <td rowspan="{{ items|length }}" class="po-cell" data-label="PO Number">{{ po }}</td>
+                        <td rowspan="{{ items|length }}" class="po-cell" data-label="Buyer">{{ r.buyer }}</td>
+                        <td rowspan="{{ items|length }}" class="po-cell" data-label="Ship Date">{{ r.shipment_date }}</td>
+                        {% else %}
+                        <td class="po-cell" style="display:none;" data-label="Sl No">{{ r.sl_no }}</td>
+                        <td class="po-cell" style="display:none;" data-label="Company">{{ r.company_name }}</td>
+                        <td class="po-cell" style="display:none;" data-label="PO Number">{{ po }}</td>
+                        <td class="po-cell" style="display:none;" data-label="Buyer">{{ r.buyer }}</td>
+                        <td class="po-cell" style="display:none;" data-label="Ship Date">{{ r.shipment_date }}</td>
+                        {% endif %}
+                        
+                        <td data-label="Packing Style">{{ r.packing_style }}</td>
+                        <td data-label="Brand">{{ r.brand }}</td>
+                        <td style="font-weight:700;" data-label="Species">{{ r.species }}</td>
+                        <td data-label="Variety">{{ r.variety }}</td>
+                        <td data-label="CG %">{{ r.count_glaze }}</td>
+                        <td data-label="WG %">{{ r.weight_glaze }}</td>
+                        <td data-label="Grade">{{ r.grade }}</td>
+                        <td style="background:#f8fafc; font-weight:700;" data-label="NW Grade">{{ r.nw_grade or '-' }}</td>
+                        <td data-label="Pieces">{{ r.no_of_pieces }}</td>
+                        <td class="v-mc" data-label="Ordered MC">{{ r.no_of_mc }}</td>
+                        <td class="currency-col" data-label="Price ($)">$ {{ r.selling_price }}</td> 
+                        <td class="currency-col" data-label="Exch Rate">₹ {{ r.exchange_rate }}</td> 
+                        <td class="v-smc" data-label="Stock MC">{{ r.stock_mc }}</td>
+                        <td class="v-ppmc" data-label="Pending MC">{{ r.prod_pending_mc }}</td>
+                        <td class="calc-col" data-label="Net Count">{{ r.net_count_calc }}</td>
+                        <td class="calc-col" data-label="HL Count">{{ r.hl_count_calc }}</td>
+                        <td class="calc-col" data-label="HO Count">{{ r.hoso_count_calc }}</td>
+                        <td class="v-ord" data-label="Ordered Qty">{{ r.ordered_qty }}</td>
+                        <td class="v-avail" data-label="Available Stock">{{ r.available_stock }}</td>
+                        <td class="v-pend" data-label="Pending Prod">{{ r.pending_production }}</td>
+                        <td data-label="Referral Stock"><span class="stock-btn" data-history='{{ r.ref_json | safe }}' onclick="toggleDetail(this, 'Referral Details')">{{ r.ref_opt_stock }}</span></td>
+                        <td data-label="Stock Utilized"><span class="stock-btn" data-history='{{ r.util_json | safe }}' onclick="toggleDetail(this, 'Utilization History')">{{ r.existed_stock_util }}</span></td>
+                        <td class="v-hl" style="font-weight:800;" data-label="Required HL">{{ r.req_hlso_qty }}</td>
+                        <td class="v-ho" style="font-weight:800;" data-label="Required HO">{{ r.req_hoso_qty }}</td>
+                    </tr>
+                    <tr class="expand-row" style="display:none;"><td colspan="29" style="padding:0; background:#f8fafc;"><div></div></td></tr>
+                    {% endfor %}
+                    <tr class="subtotal-row" data-po-sub="{{ po }}">
+                        <td colspan="14" style="text-align:right; padding-right:15px;" data-label="Scope">TOTAL FOR PO {{ po }}:</td>
+                        <td class="s-mc" data-label="Ordered MC">0</td>
+                        <td class="s-smc" data-label="Stock MC">0</td>
+                        <td class="s-ppmc" data-label="Pending MC">0</td>
+                        <td class="s-ord" data-label="Ordered Qty">0</td>
+                        <td class="s-avail" data-label="Available Stock">0</td>
+                        <td class="s-pend" data-label="Pending Prod">0</td>
+                        <td class="s-hl" data-label="Required HL">0</td>
+                        <td class="s-ho" data-label="Required HO">0</td>
+                    </tr>
                 {% endfor %}
-                <tr class="subtotal-row" data-po-sub="{{ po }}">
-                    <td colspan="14" style="text-align:right; padding-right:15px;">TOTAL FOR PO {{ po }}:</td>
-                    <td class="s-mc">0</td>
-                    <td colspan="2"></td> <td class="s-smc">0</td><td class="s-ppmc">0</td><td colspan="3"></td>
-                    <td class="s-ord">0</td><td class="s-avail">0</td><td class="s-pend">0</td><td colspan="2"></td>
-                    <td class="s-hl">0</td><td class="s-ho">0</td>
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr class="grand-total">
+                    <td colspan="14" style="text-align:right; padding-right:15px;" data-label="Scope">GRAND TOTAL:</td>
+                    <td id="gt_mc" data-label="Total MC">0</td>
+                    <td id="gt_ord" data-label="Total Ordered">0</td>
+                    <td id="gt_avail" data-label="Total Available">0</td>
+                    <td id="gt_pend" data-label="Total Pending">0</td>
+                    <td id="gt_hl" data-label="Total Req HL">0</td>
+                    <td id="gt_ho" data-label="Total Req HO">0</td>
                 </tr>
-            {% endfor %}
-            {% endif %}
-        </tbody>
-        <tfoot>
-            <tr class="grand-total">
-                <td colspan="14" style="text-align:right; padding-right:15px;">GRAND TOTAL:</td>
-                <td id="gt_mc">0</td><td colspan="7"></td>
-                <td id="gt_ord">0</td><td id="gt_avail">0</td><td id="gt_pend">0</td><td colspan="2"></td>
-                <td id="gt_hl">0</td><td id="gt_ho">0</td>
-            </tr>
-        </tfoot>
-    </table>
+            </tfoot>
+        </table>
+    </div>
 </div>
 
 <script>
@@ -426,8 +568,10 @@ function resetFilters() {
 
 function toggleDetail(el, title) {
     const nextTr = el.closest("tr").nextElementSibling;
-    const isVisible = nextTr.style.display === "table-row";
-    nextTr.style.display = isVisible ? "none" : "table-row";
+    const isVisible = nextTr.style.display === "table-row" || nextTr.style.display === "block";
+    
+    const displayStyle = window.innerWidth <= 992 ? "block" : "table-row";
+    nextTr.style.display = isVisible ? "none" : displayStyle;
     
     if(!isVisible) {
         const history = JSON.parse(el.getAttribute("data-history") || "[]");
@@ -438,14 +582,20 @@ function toggleDetail(el, title) {
                     <thead><tr><th>Source / Ref</th><th>Opening (KG)</th><th>Utilized (KG)</th><th>Balance (KG)</th></tr></thead>
                     <tbody>`;
         if(history.length === 0) h += `<tr><td colspan="4" style="text-align:center;">No Records Found</td></tr>`;
+        
         history.forEach(i => {
-            const bal = parseFloat(i.balance);
+            const bal = parseFloat(i.balance) || 0;
             const balClass = bal < 0 ? "txt-red" : "txt-green";
-            h += `<tr>
-                <td><span class="badge-po">${i.po_no}</span></td>
-                <td>${i.available}</td>
-                <td class="txt-red">-${i.utilized}</td>
-                <td class="${balClass}">${bal.toFixed(2)}</td>
+            
+            const sourceRef = i.po_no ? i.po_no : (i.source ? i.source : '-');
+            const openingQty = i.available !== undefined ? i.available : (i.opening !== undefined ? i.opening : 0);
+            const utilizedQty = i.utilized !== undefined ? i.utilized : 0;
+
+            h += `<tr class="corp-mobile-tr">
+                <td data-label="Source / Ref"><span class="badge-po">${sourceRef}</span></td>
+                <td data-label="Opening (KG)">${openingQty}</td>
+                <td data-label="Utilized (KG)" class="txt-red">-${utilizedQty}</td>
+                <td data-label="Balance (KG)" class="${balClass}">${bal.toFixed(2)}</td>
             </tr>`;
         });
         nextTr.querySelector("div").innerHTML = h + `</tbody></table></div>`;

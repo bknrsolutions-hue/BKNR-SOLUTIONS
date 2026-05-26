@@ -112,21 +112,66 @@ tr.selected-row td { background: #eff6ff !important; }
 
 /* MOBILE SPECIFIC RESPONSIVE OVERRIDE */
 @media(max-width: 768px) {
+    body { padding-bottom: 20px; }
     .header-dash { flex-direction: column; gap: 8px; text-align: center; padding: 10px; }
     .grand-total { width: 100%; }
     .filter-bar { padding: 10px; gap: 6px; }
     .filter-item { flex: 1 1 100%; min-width: 100%; }
     .btn-clear { width: 100%; }
-    .section { margin: 0 10px 10px 10px; }
-    .form-row-linear { flex-direction: column; align-items: stretch; gap: 10px; }
-    .f-sl, .f-dt { flex: none; }
-    .items-table-wrap { border: none; }
-    .items-table thead { display: none; }
-    .items-table tbody tr { display: block; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; padding: 8px; }
-    .items-table td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 6px 0; border-bottom: 1px dashed var(--border); }
-    .items-table td:last-child { border-bottom: none; justify-content: flex-end; }
-    .items-table td::before { content: attr(data-label); font-weight: 700; font-size: 10px; color: var(--text-sub); text-transform: uppercase; width: 35%; text-align: left; }
-    .items-table td select, .items-table td input { width: 65% !important; }
+    
+    /* --- MOBILE FORM LAYOUT FIX --- */
+    .section { margin: 0 10px 10px 10px; padding: 12px; }
+    .form-row-linear { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
+    .f-sl { grid-column: span 1; }
+    .f-dt { grid-column: span 1; }
+    .form-row-linear .field:not(.f-sl):not(.f-dt) { grid-column: span 2; } /* పెద్ద డ్రాప్‌డౌన్‌లు ఫుల్ విడ్త్ అవుతాయి */
+    .field input, .field select { height: 36px; font-size: 12px; } /* మొబైల్ టచ్ ఫ్రెండ్లీ సైజ్ */
+
+    /* --- MOBILE ITEMS TABLE CARD FIX --- */
+    .items-table-wrap { border: none; margin-top: 16px; }
+    .items-table { min-width: 100%; display: block; }
+    .items-table thead { display: none; } /* టేబుల్ హెడర్ దాచేస్తాం */
+    .items-table tbody { display: block; width: 100%; }
+    
+    .items-table tbody tr { 
+        display: block; 
+        background: #ffffff; 
+        border: 1px solid var(--border); 
+        border-radius: 10px; 
+        margin-bottom: 12px; 
+        padding: 10px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    .items-table td { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        border: none !important; 
+        padding: 6px 0; 
+        border-bottom: 1px dashed #f1f5f9 !important; 
+        text-align: right;
+    }
+    .items-table td:last-child { border-bottom: none !important; justify-content: center; padding-top: 10px; }
+    
+    /* లెఫ్ట్ సైడ్ లేబుల్స్ ని ఇన్జెక్ట్ చేయడం */
+    .items-table td::before { 
+        content: attr(data-label); 
+        font-weight: 800; 
+        font-size: 9px; 
+        color: var(--text-sub); 
+        text-transform: uppercase; 
+        text-align: left;
+        flex: 1;
+    }
+    .items-table td select, .items-table td input { width: 60% !important; height: 32px; font-size: 11px; text-align: left; }
+    .btn-remove { width: 100%; height: 32px; font-size: 11px; display: flex; gap: 6px; justify-content: center; align-items: center; }
+    
+    /* ఫామ్ బాటమ్ బటన్స్ */
+    .section div[style*="justify-content: space-between"] { flex-direction: column; gap: 10px; align-items: stretch !important; }
+    .btn-add-row { width: 100%; }
+    .section div[style*="display:flex; gap:6px;"] { flex-direction: column; gap: 8px; }
+    .btn-save-po, .section button[onclick="closeModal()"] { width: 100%; height: 36px; }
 }
 </style>
 </head>
@@ -165,6 +210,7 @@ tr.selected-row td { background: #eff6ff !important; }
 <form method="post" action="/inventory/pending_orders" id="orderFormBlock" class="section">
   <div class="form-row-linear">
     <div class="field f-sl"><label>Sl No</label><input type="number" name="sl_no" id="sl_no" value="{{ next_sl }}" required></div>
+    <div class="field f-dt"><label>Shipment Schedule</label><input type="date" name="shipment_date" value="{{ edit_rows[0].shipment_date if edit_rows else '' }}"></div>
     
     <div class="field">
       <label>Company Context</label>
@@ -204,8 +250,6 @@ tr.selected-row td { background: #eff6ff !important; }
         <option value="__add__">➕ Add New</option>
       </select>
     </div>
-    
-    <div class="field f-dt"><label>Shipment Schedule</label><input type="date" name="shipment_date" value="{{ edit_rows[0].shipment_date if edit_rows else '' }}"></div>
   </div>
 
   <div class="items-table-wrap">
@@ -231,7 +275,7 @@ tr.selected-row td { background: #eff6ff !important; }
             <td data-label="M.C Box"><input type="number" name="no_of_mc" value="{{ item.no_of_mc }}" required></td>
             <td data-label="Price"><input type="number" step="0.01" name="selling_price" value="{{ item.selling_price }}"></td>
             <td data-label="Exch Rate"><input type="number" step="0.01" name="exchange_rate" value="{{ item.exchange_rate }}"></td>
-            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-xmark"></i></button></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-trash-can"></i> Remove Line</button></td>
           </tr>
           {% endfor %}
         {% else %}
@@ -248,14 +292,14 @@ tr.selected-row td { background: #eff6ff !important; }
             <td data-label="M.C Box"><input type="number" name="no_of_mc" required></td>
             <td data-label="Price"><input type="number" step="0.01" name="selling_price"></td>
             <td data-label="Exch Rate"><input type="number" step="0.01" name="exchange_rate"></td>
-            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-xmark"></i></button></td>
+            <td><button type="button" class="btn-remove" onclick="removeRow(this)"><i class="fa-solid fa-trash-can"></i> Remove Line</button></td>
           </tr>
         {% endif %}
       </tbody>
     </table>
   </div>
 
-  <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+  <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center;">
     <button type="button" class="btn-add-row" onclick="addRow()"><i class="fa-solid fa-plus"></i> Add Entry Line</button>
     <div style="display:flex; gap:6px;">
         <button type="button" class="btn-add" style="background:var(--text-sub)" onclick="closeModal()">Cancel</button>
@@ -285,8 +329,6 @@ tr.selected-row td { background: #eff6ff !important; }
               {% set ns.count = ns.count + 1 %}
 
             <tr onclick="selectPO('{{ r.po_number }}')" class="data-row po-row-{{ r.po_number }}" data-po="{{ r.po_number }}" data-total="{{ r.selling_price }}">
-              
-              <!-- డైనమిక్ మెర్జింగ్ అప్లై అవ్వడానికి క్లాస్ ఐడెంటిఫైయర్స్ యాడ్ చేసాం -->
               <td class="m-sl"></td>
               <td class="m-comp">{{ r.company_name }}</td>
               <td class="m-po" style="font-weight: 700; color:var(--accent);">{{ r.po_number }}</td>
@@ -429,7 +471,6 @@ function parse(txt) {
     return parseFloat(txt.replace(/[^\d.-]/g, '')) || 0;
 }
 
-// టేబుల్ సెల్స్ ని రీసెట్ చేసే హెల్పర్ ఫంక్షన్
 function resetMergedCell(tr, className) {
     let cell = tr.querySelector('.' + className);
     if (!cell) {
@@ -450,7 +491,6 @@ function applyFilters() {
     const sVal = document.getElementById("searchBox").value.toLowerCase().trim();
     const rows = document.querySelectorAll("#dataTable tbody tr.data-row");
     
-    // మునుపటి సబ్‌టోటల్స్ మరియు మెర్జింగ్ ఎఫెక్ట్స్ క్లియర్ చేయడం
     document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
     const mergeClasses = ['m-sl', 'm-comp', 'm-po', 'm-buyer', 'm-agent', 'm-date'];
     rows.forEach(tr => {
@@ -462,7 +502,6 @@ function applyFilters() {
     let runningTotal = 0;
     let totalLineCount = 0;
 
-    // ఫిల్టరింగ్ పాస్
     rows.forEach(r => {
         let match = true;
         if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
@@ -481,7 +520,6 @@ function applyFilters() {
         }
     });
 
-    // DYNAMIC ROWSPAN MERGING (SALES REPORT ARCHITECTURE)
     let totalGroups = uniquePos.length;
     let groupCounts = {};
     visibleRows.forEach(tr => {
@@ -532,7 +570,6 @@ function applyFilters() {
         }
     });
 
-    // DYNAMIC SUBTOTAL INSERTER LOGIC
     let currentPo = null;
     let subMc = 0, subPrice = 0, subExch = 0, subCount = 0;
 
@@ -541,7 +578,7 @@ function applyFilters() {
         subTr.className = 'subtotal-row';
         
         let avgExch = subCount > 0 ? (subExch / subCount) : 0;
-        runningTotal += subPrice; // గ్రాండ్ టోటల్ కి యాడ్ చేయడం
+        runningTotal += subPrice;
         
         subTr.innerHTML = `
             <td style="text-align:left;" colspan="3"><strong>SUBTOTAL (PO: ${poNo})</strong></td>
