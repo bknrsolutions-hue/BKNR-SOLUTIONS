@@ -5,7 +5,7 @@
 <title>BKNR ERP | Premium Sales Intelligence</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -18,7 +18,6 @@
 }
 
 * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-
 body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.5; }
 
 /* STICKY HEADER & DYNAMIC FILTERS */
@@ -28,68 +27,128 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
     position: sticky; top: 0; z-index: 1000;
 }
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.header h1 { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+.header h1 { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0; }
 
 .filters-wrapper { overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .filters-wrapper::-webkit-scrollbar { display: none; }
 .filters { display: flex; gap: 8px; white-space: nowrap; }
 
-.fbox { display: flex; flex-direction: column; gap: 3px; min-width: 100px; }
+.fbox { display: flex; flex-direction: column; gap: 3px; min-width: 110px; }
 .fbox label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-sub); padding-left: 2px; }
 
 .filter-select, .search-input { 
     padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); 
     font-size: 10px; font-weight: 700; background: #fff; outline: none; transition: 0.2s;
+    height: 32px;
 }
-.filter-select:focus { border-color: var(--primary); ring: 2px var(--primary-light); }
+.filter-select:focus, .search-input:focus { border-color: var(--primary); }
 
-/* KPI CARDS - SCROLLABLE ON MOBILE */
+/* PREMIUM COMPACT KPI CONTAINER */
 .kpi-container { 
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-    gap: 10px; padding: 12px 16px; 
+    display: grid; 
+    grid-template-columns: repeat(8, 1fr); 
+    gap: 10px; 
+    padding: 14px 16px; 
+    background: #f8fafc;
 }
 .kpi-box { 
-    background: var(--panel); padding: 12px; border-radius: 12px; 
-    border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    padding: 12px 14px; 
+    border-radius: 12px; 
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    min-height: 96px;
+    height: 96px;
+    width: 100%;
 }
-.kpi-title { font-size: 8.5px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 6px; }
-.kpi-val { font-size: 15px; font-weight: 800; color: var(--text-main); }
-.kpi-meta { font-size: 9px; font-weight: 600; margin-top: 4px; display: block; }
+.kpi-box:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.bg-rev   { background: #f5f7ff; border: 1px solid #e0e7ff; }
+.bg-pl    { background: #f0fdf4; border: 1px solid #dcfce7; }
+.bg-debt  { background: #fff5f5; border: 1px solid #fee2e2; }
+.bg-yield { background: #f0fdfa; border: 1px solid #ccfbf1; }
+.bg-cost  { background: #fffbeb; border: 1px solid #fef3c7; }
+.bg-pk    { background: #fafafa; border: 1px solid #e4e4e7; }
+.bg-qty   { background: #faf5ff; border: 1px solid #f3e8ff; }
+.bg-inv   { background: #fdf2f8; border: 1px solid #fce7f3; }
+
+.kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.kpi-title { font-size: 8.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.kpi-icon {
+    font-size: 10px; width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: rgba(255, 255, 255, 0.7);
+}
+.bg-rev .kpi-icon   { color: #4338ca; }
+.bg-pl .kpi-icon    { color: #15803d; }
+.bg-debt .kpi-icon  { color: #b91c1c; }
+.bg-yield .kpi-icon { color: #0d9488; }
+.bg-cost .kpi-icon  { color: #b45309; }
+.bg-pk .kpi-icon    { color: #52525b; }
+.bg-qty .kpi-icon   { color: #6b21a8; }
+.bg-inv .kpi-icon   { color: #be185d; }
+
+.kpi-val { font-size: 15px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px; line-height: 1.2; }
+.kpi-meta { font-size: 9px; font-weight: 700; margin-top: 6px; display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 5px; width: fit-content; background: rgba(255, 255, 255, 0.6); color: #475569; }
+
+.badge-neutral { color: #475569; }
+.badge-success { background: #dcfce7 !important; color: #15803d; }
+.badge-danger { background: #fee2e2 !important; color: #b91c1c; }
+.badge-info { background: #e0f2fe !important; color: #0369a1; }
 
 /* CHARTS */
 .charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 16px 16px; }
-.chart-box { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); height: 220px; }
+.chart-box { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); height: 200px; }
 .chart-header { font-size: 10px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); border-left: 3px solid var(--primary); padding-left: 8px; }
-.canvas-container { height: 160px; position: relative; }
+.canvas-container { height: 140px; position: relative; }
 
 /* COMPACT DATA TABLE */
 .data-container { padding: 0 16px 20px; }
 .table-panel { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.table-scroll { overflow: auto; max-height: 600px; }
-table { width: 100%; border-collapse: collapse; min-width: 2400px; } 
+.table-scroll { overflow: auto; max-height: 500px; }
+table { width: 100%; border-collapse: collapse; min-width: 2000px; } 
 
 thead th { 
-    background: #f1f5f9; color: var(--text-sub); font-size: 9px; font-weight: 800;
-    padding: 12px 8px; text-align: center; border-bottom: 2px solid var(--border);
-    position: sticky; top: 0; z-index: 100;
+    background: #f1f5f9; color: var(--text-sub); font-size: 9.5px; font-weight: 800;
+    padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100; white-space: nowrap;
 }
-tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: center; font-weight: 500; }
+tbody td { padding: 5px 4px; border-bottom: 1px solid #f8fafc; text-align: center; font-weight: 500; font-size: 10px; white-space: nowrap; }
 
-.inp-edit { width: 60px; border: 1px solid var(--border); border-radius: 6px; padding: 4px; text-align: center; font-weight: 800; background: var(--bg); }
+/* Merged Cell Styling for Premium Look */
+tbody td.merged-cell { 
+    background: #fafbfc; 
+    font-weight: 600; 
+    border-bottom: 1px solid var(--border) !important;
+    border-right: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+tbody td.sl-no-merged { 
+    color: var(--primary); 
+    font-weight: 700;
+}
 
-.status-pill { padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 9px; border: none; cursor: pointer; }
-.pill-received { background: #ecfdf5; color: #065f46; }
-.pill-unpaid { background: #fff1f2; color: #9f1239; }
+.inp-edit { width: 48px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; text-align: center; font-weight: 800; background: var(--bg); font-size: 10px; }
+
+.status-pill { padding: 2px 4px; border-radius: 4px; font-weight: 800; font-size: 9px; border: 1px solid transparent; cursor: pointer; outline: none; }
+.pill-received { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.pill-unpaid { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+
+.subtotal-row { background-color: #f8fafc; font-weight: 700; border-top: 1px solid var(--border); border-bottom: 2px solid var(--border); }
+.subtotal-row td { color: #1e293b; font-size: 10.5px; padding: 5px 4px; white-space: nowrap; }
 
 #msg { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: none; z-index: 2000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 
-/* MOBILE RESPONSIVENESS */
-@media (max-width: 1024px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .kpi-container { grid-template-columns: repeat(2, 1fr); }
-    .header h1 { font-size: 14px; }
-    .header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
-}
+@media (max-width: 1400px) { .kpi-container { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+@media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; gap: 10px; } .header h1 { font-size: 13px; } }
+@media (max-width: 768px) { .kpi-container { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
@@ -99,10 +158,10 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
 <div class="dashboard">
     <div class="header">
         <div class="header-top">
-            <h1><i class="fas fa-chart-line"></i> SALES INTELLIGENCE</h1>
-            <div style="display:flex; gap:8px;">
-                <button onclick="location.reload()" class="filter-select" style="background:var(--primary-light); color:var(--primary); border:none;"><i class="fas fa-sync"></i></button>
-                <button onclick="window.print()" class="filter-select" style="background:var(--primary); color:white; border:none;">EXPORT PDF</button>
+            <h1><i class="fas fa-chart-line"></i> <span>SALES INTELLIGENCE</span></h1>
+            <div style="display:flex; gap:6px;">
+                <button onclick="location.reload()" class="filter-select" style="background:var(--primary-light); color:var(--primary); border:none; width:32px; padding:0;"><i class="fas fa-sync"></i></button>
+                <button onclick="window.print()" class="filter-select" style="background:var(--primary); color:white; border:none; font-size:9px;">EXPORT</button>
             </div>
         </div>
         
@@ -111,7 +170,7 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
                 <div class="fbox">
                     <label>Fin. Year</label>
                     <select id="f_fy" class="filter-select" onchange="changeFY(this.value)" style="border-color: var(--primary);">
-                        <option value="">Select FY</option>
+                        <option value="ALL">All FY</option>
                         {% set start_yr = 2024 %}
                         {% set end_yr = 2027 %}
                         {% for y in range(start_yr, end_yr) %}
@@ -119,7 +178,7 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
                         {% endfor %}
                     </select>
                 </div>
-                <div class="fbox"><label>Buyer / Country</label><input type="text" id="buyer_search" class="search-input" placeholder="Search..." onkeyup="runAnalytics()"></div>
+                <div class="fbox"><label>Buyer / Country / Brand</label><input type="text" id="buyer_search" class="search-input" placeholder="Search..." onkeyup="runAnalytics()"></div>
                 <div class="fbox"><label>Invoice</label><select id="sel_inv" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Inv</option></select></div>
                 <div class="fbox"><label>PO No</label><select id="sel_po" onchange="runAnalytics()" class="filter-select"><option value="ALL">All PO</option></select></div>
                 <div class="fbox"><label>Variety</label><select id="sel_variety" onchange="runAnalytics()" class="filter-select"><option value="ALL">All Varieties</option></select></div>
@@ -134,19 +193,51 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
                         <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
                     </select>
                 </div>
+                <div class="fbox">
+                    <label>Status</label>
+                    <select id="sel_status" onchange="runAnalytics()" class="filter-select">
+                        <option value="ALL">All Status</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Received">Received</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="kpi-container">
-        <div class="kpi-box" style="border-top: 4px solid var(--primary);"><span class="kpi-title">Gross Revenue</span><span class="kpi-val" id="k_rev">₹ 0</span><span class="kpi-meta" id="k_usd_total">$ 0</span></div>
-        <div class="kpi-box" style="border-top: 4px solid var(--success);"><span class="kpi-title">Net Profit</span><span class="kpi-val" id="k_pl" style="color:var(--success)">₹ 0</span><span class="kpi-meta" id="k_margin">0% Margin</span></div>
-        <div class="kpi-box" style="border-top: 4px solid var(--danger);"><span class="kpi-title">Pending Due</span><span class="kpi-val" id="k_debt" style="color:var(--danger)">₹ 0</span><span class="kpi-meta" id="k_cei">0% Collected</span></div>
-        <div class="kpi-box" style="border-top: 4px solid var(--secondary);"><span class="kpi-title">Profit / KG</span><span class="kpi-val" id="k_yield">₹ 0.00</span><span class="kpi-meta">Realization</span></div>
-        <div class="kpi-box"><span class="kpi-title">Landed Logistics</span><span class="kpi-val" id="k_cost">₹ 0</span><span class="kpi-meta" id="k_cost_ratio">0% Ratio</span></div>
-        <div class="kpi-box"><span class="kpi-title">Packing Cost</span><span class="kpi-val" id="k_pk_total">₹ 0</span><span class="kpi-meta" id="k_pk_ratio">0% Rev</span></div>
-        <div class="kpi-box"><span class="kpi-title">Volume (KG)</span><span class="kpi-val" id="k_qty">0</span><span class="kpi-meta" id="k_mc">0 MC</span></div>
-        <div class="kpi-box"><span class="kpi-title">Invoice Count</span><span class="kpi-val" id="k_inv_count">0</span><span class="kpi-meta">Transacted</span></div>
+        <div class="kpi-box bg-rev">
+            <div class="kpi-header"><span class="kpi-title">Gross Revenue</span><div class="kpi-icon"><i class="fas fa-wallet"></i></div></div>
+            <span class="kpi-val" id="k_rev">₹ 0</span><span class="kpi-meta badge-neutral" id="k_usd_total">$ 0</span>
+        </div>
+        <div class="kpi-box bg-pl">
+            <div class="kpi-header"><span class="kpi-title">Net Profit</span><div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div></div>
+            <span class="kpi-val" id="k_pl">₹ 0</span><span class="kpi-meta badge-success" id="k_margin">0% Margin</span>
+        </div>
+        <div class="kpi-box bg-debt">
+            <div class="kpi-header"><span class="kpi-title">Pending Due</span><div class="kpi-icon"><i class="fas fa-clock"></i></div></div>
+            <span class="kpi-val" id="k_debt">₹ 0</span><span class="kpi-meta badge-danger" id="k_cei">0% Collected</span>
+        </div>
+        <div class="kpi-box bg-yield">
+            <div class="kpi-header"><span class="kpi-title">Profit / KG</span><div class="kpi-icon"><i class="fas fa-calculator"></i></div></div>
+            <span class="kpi-val" id="k_yield">₹ 0.00</span><span class="kpi-meta badge-info">Realization</span>
+        </div>
+        <div class="kpi-box bg-cost">
+            <div class="kpi-header"><span class="kpi-title">Landed Freight</span><div class="kpi-icon"><i class="fas fa-ship"></i></div></div>
+            <span class="kpi-val" id="k_cost">₹ 0</span><span class="kpi-meta badge-neutral" id="k_cost_ratio">0% Ratio</span>
+        </div>
+        <div class="kpi-box bg-pk">
+            <div class="kpi-header"><span class="kpi-title">Packing Cost</span><div class="kpi-icon"><i class="fas fa-box"></i></div></div>
+            <span class="kpi-val" id="k_pk_total">₹ 0</span><span class="kpi-meta badge-neutral" id="k_pk_ratio">0% Rev</span>
+        </div>
+        <div class="kpi-box bg-qty">
+            <div class="kpi-header"><span class="kpi-title">Volume (KG)</span><div class="kpi-icon"><i class="fas fa-cubes"></i></div></div>
+            <span class="kpi-val" id="k_qty">0</span><span class="kpi-meta badge-info" id="k_mc">0 MC</span>
+        </div>
+        <div class="kpi-box bg-inv">
+            <div class="kpi-header"><span class="kpi-title">Invoices</span><div class="kpi-icon"><i class="fas fa-file-invoice"></i></div></div>
+            <span class="kpi-val" id="k_inv_count">0</span><span class="kpi-meta badge-neutral">Transacted</span>
+        </div>
     </div>
 
     <div class="charts-grid">
@@ -174,20 +265,22 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
                             <tr class="data-row" 
                                 data-dt="{{ s.invoice_date }}" data-m="{{ s.invoice_date[5:7] }}" 
                                 data-y="{{ s.invoice_date[0:4] }}" data-st="{{ s.status }}" 
-                                data-buyer="{{ s.buyer_name | lower }}" data-country="{{ s.country | lower }}" 
+                                data-buyer="{{ s.buyer_name | lower }}" data-country="{{ s.country | lower }}" data-brand="{{ s.brand | lower }}"
                                 data-countryname="{{ s.country }}" data-grade="{{ s.grade }}" 
                                 data-variety="{{ s.variety }}" data-inv="{{ s.invoice_no }}" data-po="{{ s.po_number }}">
-                                <td>{{ loop.index }}</td>
-                                <td><strong>{{ s.invoice_no }}</strong></td>
-                                <td>{{ s.invoice_date }}</td>
+                                
+                                <!-- డైనమిక్ మెర్జింగ్ కి అనుగుణంగా ఐడెంటిఫైయర్స్ యాడ్ చేసాం -->
+                                <td class="m-sl"></td>
+                                <td class="m-inv"><strong>{{ s.invoice_no }}</strong></td>
+                                <td class="m-date">{{ s.invoice_date }}</td>
                                 <td style="text-align:left;">{{ s.buyer_name }}</td>
                                 <td>{{ s.country }}</td>
                                 <td>{{ s.brand }}</td>
                                 <td>{{ s.variety }}</td>
                                 <td>{{ s.grade }}</td>
-                                <td>{{ s.po_number }}</td>
-                                <td>{{ s.container_no }}</td>
-                                <td>{{ s.shipping_bill }}</td>
+                                <td class="m-po">{{ s.po_number }}</td>
+                                <td class="m-cont">{{ s.container_no if s.container_no else '' }}</td>
+                                <td class="m-sbill">{{ s.shipping_bill if s.shipping_bill else '' }}</td>
                                 <td>{{ s.count_glaze }} / {{ s.weight_glaze }}</td>
                                 <td>{{ s.packing_style }}</td>
                                 <td class="v-mc">{{ s.no_of_mc }}</td>
@@ -220,11 +313,31 @@ tbody td { padding: 10px 8px; border-bottom: 1px solid #f8fafc; text-align: cent
 let charts = {};
 Chart.register(ChartDataLabels);
 
+function parse(txt) {
+    if(!txt) return 0;
+    return parseFloat(txt.replace(/[^\d.-]/g, '')) || 0;
+}
+
 function changeFY(year) {
-    if(!year) return;
     const url = new URL(window.location);
-    url.searchParams.set('fy', year);
+    if (!year || year === 'ALL') {
+        url.searchParams.delete('fy');
+    } else {
+        url.searchParams.set('fy', year);
+    }
     window.location.href = url.href;
+}
+
+function setDefaultFY() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('fy')) {
+        const today = new Date();
+        const currentMonth = today.getMonth(); 
+        const currentYear = today.getFullYear();
+        const dynamicFY = currentMonth >= 3 ? currentYear : currentYear - 1;
+        const fySelect = document.getElementById('f_fy');
+        if (fySelect) fySelect.value = dynamicFY;
+    }
 }
 
 async function updateRow(id, type, val) {
@@ -243,36 +356,98 @@ async function updateRow(id, type, val) {
 function populateFilters() {
     const invs = new Set(), pos = new Set(), varieties = new Set(), grades = new Set();
     document.querySelectorAll('.data-row').forEach(tr => {
-        invs.add(tr.dataset.inv); pos.add(tr.dataset.po);
-        varieties.add(tr.dataset.variety); grades.add(tr.dataset.grade);
+        if(tr.dataset.inv) invs.add(tr.dataset.inv); 
+        if(tr.dataset.po) pos.add(tr.dataset.po);
+        if(tr.dataset.variety) varieties.add(tr.dataset.variety); 
+        if(tr.dataset.grade) grades.add(tr.dataset.grade);
     });
     const addOpts = (id, set) => {
         const el = document.getElementById(id);
+        if (!el) return;
         Array.from(set).sort().forEach(val => el.add(new Option(val, val)));
     };
     addOpts('sel_inv', invs); addOpts('sel_po', pos); addOpts('sel_variety', varieties); addOpts('sel_grade', grades);
 }
 
+function getFYDates(fyStartYear) {
+    const start = new Date(fyStartYear, 3, 1);
+    const end = new Date(parseInt(fyStartYear) + 1, 2, 31);
+    return { start, end };
+}
+
+// టేబుల్ లో నిర్దేశిత కాలమ్స్ ని రీసెట్ చేసే సహాయక ఫంక్షన్
+function resetMergedCell(tr, className) {
+    let cell = tr.querySelector('.' + className);
+    if (!cell) {
+        cell = document.createElement('td');
+        cell.className = className;
+        // టేబుల్ హెడర్ ఆర్డర్ ప్రకారం సరైన పొజిషన్ లో ఇన్సర్ట్ చేయడం
+        if(className === 'm-sl') tr.insertBefore(cell, tr.firstChild);
+        else if(className === 'm-inv') tr.insertBefore(cell, tr.children[1]);
+        else if(className === 'm-date') tr.insertBefore(cell, tr.children[2]);
+        else if(className === 'm-po') tr.insertBefore(cell, tr.children[8]);
+        else if(className === 'm-cont') tr.insertBefore(cell, tr.children[9]);
+        else if(className === 'm-sbill') tr.insertBefore(cell, tr.children[10]);
+    }
+    cell.removeAttribute('rowspan');
+    cell.style.display = "";
+}
+
 function runAnalytics() {
-    const m = document.getElementById('sel_m').value, invF = document.getElementById('sel_inv').value;
-    const poF = document.getElementById('sel_po').value, varF = document.getElementById('sel_variety').value;
-    const grdF = document.getElementById('sel_grade').value, q = document.getElementById('buyer_search').value.toLowerCase();
+    const m = document.getElementById('sel_m').value;
+    const invF = document.getElementById('sel_inv').value;
+    const poF = document.getElementById('sel_po').value;
+    const varF = document.getElementById('sel_variety').value;
+    const grdF = document.getElementById('sel_grade').value;
+    const statusF = document.getElementById('sel_status').value;
+    const q = document.getElementById('buyer_search').value.toLowerCase();
+    const fyF = document.getElementById('f_fy').value;
     
     let d = { 
         rev:0, usd:0, pl:0, paid:0, unpaid:0, cost:0, pk:0, kg:0, mc:0, invs: new Set(), 
         grades:{}, buyers:{}, varieties:{}, countries:{}, dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } 
     };
 
+    let fyRange = null;
+    if (fyF && fyF !== 'ALL') {
+        fyRange = getFYDates(fyF);
+    }
+
+    // మునుపటి సబ్‌టోటల్స్ మరియు పాత మెర్జింగ్ ఎఫెక్ట్స్ క్లియర్ చేయడం
+    document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
+    
+    const mergeClasses = ['m-sl', 'm-inv', 'm-date', 'm-po', 'm-cont', 'm-sbill'];
     document.querySelectorAll('.data-row').forEach(tr => {
-        let match = (m === 'ALL' || tr.dataset.m === m);
+        mergeClasses.forEach(cls => resetMergedCell(tr, cls));
+    });
+
+    let visibleRows = [];
+    let uniqueInvs = [];
+
+    document.querySelectorAll('.data-row').forEach(tr => {
+        let match = true;
+        const rowDate = new Date(tr.dataset.dt);
+
+        if (fyRange) {
+            if (rowDate < fyRange.start || rowDate > fyRange.end) match = false;
+        }
+
+        if(m !== 'ALL' && tr.dataset.m !== m) match = false;
         if(invF !== 'ALL' && tr.dataset.inv !== invF) match = false;
         if(poF !== 'ALL' && tr.dataset.po !== poF) match = false;
         if(varF !== 'ALL' && tr.dataset.variety !== varF) match = false;
         if(grdF !== 'ALL' && tr.dataset.grade !== grdF) match = false;
-        if(q && !tr.dataset.buyer.includes(q) && !tr.dataset.country.includes(q)) match = false;
+        if(statusF !== 'ALL' && tr.dataset.st !== statusF) match = false;
+        if(q && !tr.dataset.buyer.includes(q) && !tr.dataset.country.includes(q) && !tr.dataset.brand.includes(q)) match = false;
 
         if(match) {
             tr.style.display = "";
+            visibleRows.push(tr);
+            
+            if (!uniqueInvs.includes(tr.dataset.inv)) {
+                uniqueInvs.push(tr.dataset.inv);
+            }
+
             const rev = parse(tr.querySelector('.v-inr').innerText), usd = parse(tr.querySelector('.v-usd').innerText);
             const pl = parse(tr.querySelector('.v-pl').innerText), log = parse(tr.querySelector('.v-fr').innerText);
             const pak = parse(tr.querySelector('.v-pk').innerText), kg = parse(tr.querySelector('.v-kg').innerText);
@@ -287,37 +462,178 @@ function runAnalytics() {
             d.buyers[tr.dataset.buyer.toUpperCase()] = (d.buyers[tr.dataset.buyer.toUpperCase()] || 0) + rev;
             d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
             d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
-            d.timeline.labels.push(tr.querySelector('td:nth-child(2)').innerText); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
-        } else tr.style.display = "none";
+            
+            // చార్ట్ కి సరిగ్గా మ్యాప్ అవ్వడానికి ఇన్వాయిస్ నంబర్ రీట్రీవ్ లాజిక్
+            let invLabel = tr.querySelector('.m-inv') ? tr.querySelector('.m-inv').innerText : tr.dataset.inv;
+            d.timeline.labels.push(invLabel); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
+        } else {
+            tr.style.display = "none";
+        }
     });
+
+    // MULTI-COLUMN DYNAMIC ROWSPAN MERGING
+    let totalGroups = uniqueInvs.length;
+    let groupCounts = {};
+    visibleRows.forEach(tr => {
+        groupCounts[tr.dataset.inv] = (groupCounts[tr.dataset.inv] || 0) + 1;
+    });
+
+    let trackedGroups = [];
+    visibleRows.forEach((tr) => {
+        let inv = tr.dataset.inv;
+        
+        if (!trackedGroups.includes(inv)) {
+            trackedGroups.push(inv);
+            let groupIndex = uniqueInvs.indexOf(inv);
+            let spanCount = groupCounts[inv];
+            
+            // గ్రూప్‌లో ఇది మొదటి రో కాబట్టి వాల్యూస్ సెట్ చేసి 'rowspan' ఇస్తున్నాం
+            let slCell = tr.querySelector('.m-sl');
+            slCell.innerText = totalGroups - groupIndex;
+            slCell.setAttribute('rowspan', spanCount);
+            slCell.className = "m-sl merged-cell sl-no-merged";
+
+            let invCell = tr.querySelector('.m-inv');
+            invCell.setAttribute('rowspan', spanCount);
+            invCell.className = "m-inv merged-cell";
+
+            let dateCell = tr.querySelector('.m-date');
+            dateCell.setAttribute('rowspan', spanCount);
+            dateCell.className = "m-date merged-cell";
+
+            let poCell = tr.querySelector('.m-po');
+            poCell.setAttribute('rowspan', spanCount);
+            poCell.className = "m-po merged-cell";
+
+            let contCell = tr.querySelector('.m-cont');
+            contCell.setAttribute('rowspan', spanCount);
+            contCell.className = "m-cont merged-cell";
+
+            let sbillCell = tr.querySelector('.m-sbill');
+            sbillCell.setAttribute('rowspan', spanCount);
+            sbillCell.className = "m-sbill merged-cell";
+
+        } else {
+            // గ్రూప్‌లోని తదుపరి రోస్ నుండి ఈ సెల్స్ ని రిమూవ్ చేస్తున్నాం (మెర్జ్డ్ సెల్ కవర్ చేస్తుంది)
+            tr.querySelector('.m-sl').remove();
+            tr.querySelector('.m-inv').remove();
+            tr.querySelector('.m-date').remove();
+            tr.querySelector('.m-po').remove();
+            tr.querySelector('.m-cont').remove();
+            tr.querySelector('.m-sbill').remove();
+        }
+    });
+
+    // SUBTOTAL INSERTER LOGIC
+    let currentInv = null;
+    let subMc = 0, subKg = 0, subUsd = 0, subInr = 0, subSt = 0, subFr = 0, subPk = 0, subPl = 0;
+
+    const insertSubtotal = (afterRow, invNo) => {
+        const subTr = document.createElement('tr');
+        subTr.className = 'subtotal-row';
+        
+        subTr.innerHTML = `
+            <td style="text-align:left;" colspan="2"><strong>SUBTOTAL (${invNo})</strong></td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td style="font-weight:800;">${subMc.toLocaleString()}</td>
+            <td style="font-weight:800;">${subKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td></td>
+            <td style="font-weight:800;">$ ${subUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800;">₹ ${subInr.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800;">₹ ${subSt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800;">₹ ${subFr.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800;">₹ ${subPk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800; color:${subPl >= 0 ? 'var(--success)' : 'var(--danger)'}">₹ ${subPl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td></td><td></td>
+        `;
+        afterRow.parentNode.insertBefore(subTr, afterRow.nextSibling);
+    };
+
+    for (let i = 0; i < visibleRows.length; i++) {
+        const tr = visibleRows[i];
+        const inv = tr.dataset.inv;
+
+        if (currentInv !== null && currentInv !== inv) {
+            insertSubtotal(visibleRows[i-1], currentInv);
+            subMc = 0; subKg = 0; subUsd = 0; subInr = 0; subSt = 0; subFr = 0; subPk = 0; subPl = 0;
+        }
+
+        currentInv = inv;
+        subMc += parseInt(tr.querySelector('.v-mc').innerText) || 0;
+        subKg += parse(tr.querySelector('.v-kg').innerText);
+        subUsd += parse(tr.querySelector('.v-usd').innerText);
+        subInr += parse(tr.querySelector('.v-inr').innerText);
+        subSt += parse(tr.querySelector('.v-st').innerText);
+        subFr += parse(tr.querySelector('.v-fr').innerText);
+        subPk += parse(tr.querySelector('.v-pk').innerText);
+        subPl += parse(tr.querySelector('.v-pl').innerText);
+
+        if (i === visibleRows.length - 1) {
+            insertSubtotal(tr, currentInv);
+        }
+    }
+
     updateKPIs(d); renderCharts(d);
 }
 
 function updateKPIs(d) {
     const fL = (v) => "₹ " + (v/100000).toFixed(2) + " L";
+    
     document.getElementById('k_rev').innerText = fL(d.rev);
-    document.getElementById('k_usd_total').innerText = "$ " + d.usd.toLocaleString();
+    document.getElementById('k_usd_total').innerText = "$ " + Math.round(d.usd).toLocaleString();
     document.getElementById('k_pl').innerText = fL(d.pl);
     document.getElementById('k_debt').innerText = fL(d.unpaid);
     document.getElementById('k_inv_count').innerText = d.invs.size;
     document.getElementById('k_cost').innerText = fL(d.cost);
     document.getElementById('k_pk_total').innerText = fL(d.pk);
-    document.getElementById('k_qty').innerText = d.kg.toLocaleString();
+    document.getElementById('k_qty').innerText = Math.round(d.kg).toLocaleString();
     document.getElementById('k_mc').innerText = d.mc + " MC";
-    document.getElementById('k_margin').innerText = d.rev > 0 ? ((d.pl/d.rev)*100).toFixed(1) + "% Margin" : "0%";
-    document.getElementById('k_cei').innerText = d.rev > 0 ? ((d.paid/d.rev)*100).toFixed(1) + "% Paid" : "0%";
+    
+    document.getElementById('k_cost_ratio').innerText = d.rev > 0 ? ((d.cost/d.rev)*100).toFixed(1) + "% Ratio" : "0% Ratio";
+    document.getElementById('k_pk_ratio').innerText = d.rev > 0 ? ((d.pk/d.rev)*100).toFixed(1) + "% Rev" : "0% Rev";
     document.getElementById('k_yield').innerText = d.kg > 0 ? "₹ " + (d.pl/d.kg).toFixed(2) : "₹ 0.00";
+
+    const marginEl = document.getElementById('k_margin');
+    if (d.rev > 0) {
+        const marginPct = ((d.pl / d.rev) * 100).toFixed(1);
+        marginEl.innerText = marginPct + "% Margin";
+        if (d.pl >= 0) {
+            marginEl.className = "kpi-meta badge-success";
+            document.getElementById('k_pl').style.color = "#15803d";
+        } else {
+            marginEl.className = "kpi-meta badge-danger";
+            document.getElementById('k_pl').style.color = "#b91c1c";
+        }
+    } else {
+        marginEl.innerText = "0% Margin";
+        marginEl.className = "kpi-meta badge-neutral";
+        document.getElementById('k_pl').style.color = "#0f172a";
+    }
+
+    const ceiEl = document.getElementById('k_cei');
+    if (d.rev > 0) {
+        const collectedPct = ((d.paid / d.rev) * 100).toFixed(0);
+        ceiEl.innerText = collectedPct + "% Collected";
+        if (collectedPct >= 80) ceiEl.className = "kpi-meta badge-success";
+        else if (collectedPct >= 50) ceiEl.className = "kpi-meta badge-neutral";
+        else ceiEl.className = "kpi-meta badge-danger";
+        document.getElementById('k_debt').style.color = d.unpaid > 0 ? "#b91c1c" : "#0f172a";
+    } else {
+        ceiEl.innerText = "0% Collected";
+        ceiEl.className = "kpi-meta badge-neutral";
+        document.getElementById('k_debt').style.color = "#0f172a";
+    }
 }
 
 function renderCharts(d) {
-    const cp = { datalabels: { display: true, color: '#475569', font: { weight: '800', size: 9 }, formatter: (v) => v > 10000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
-    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } };
+    const cp = { datalabels: { display: true, color: '#475569', font: { weight: '800', size: 8 }, formatter: (v) => v > 10000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
+    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 6, font: { size: 8, weight: '700' } } } };
 
     if(charts.cDay) charts.cDay.destroy();
     const sortedDates = Object.keys(d.dayTrend).sort();
     charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
-        type: 'line', data: { labels: sortedDates, datasets: [{ data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#4338ca', borderWidth: 3, tension: 0.4, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.05)' }] }, 
-        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false } } } } 
+        type: 'line', data: { labels: sortedDates, datasets: [{ data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#4338ca', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.03)' }] }, 
+        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 } } } } } 
     });
 
     if(charts.cCountry) charts.cCountry.destroy();
@@ -335,26 +651,29 @@ function renderCharts(d) {
     if(charts.c3) charts.c3.destroy();
     const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
-        type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9', borderRadius: 5 }] }, 
-        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false } } } 
+        type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9', borderRadius: 4 }] }, 
+        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false }, x: { ticks: { font: { size: 8 } } } } } 
     });
 
     if(charts.c4) charts.c4.destroy();
     const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c4 = new Chart(document.getElementById('c_buyer'), { 
-        type: 'bar', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: '#4338ca', borderRadius: 5 }] }, 
-        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: cp, scales: { x: { display: false } } } 
+        type: 'bar', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: '#6366f1', borderRadius: 4 }] }, 
+        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { ticks: { font: { size: 8 } } } } } 
     });
 
-    if(charts.c1) charts.c1.destroy();
-    charts.c1 = new Chart(document.getElementById('c_line'), { 
-        type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#4338ca', tension: 0.3 }, { label: 'P/L', data: d.timeline.pl, borderColor: '#10b981', tension: 0.3 }] }, 
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true } } } 
+    if(charts.c5) charts.c5.destroy();
+    charts.c5 = new Chart(document.getElementById('c_line'), { 
+        type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#0ea5e9', borderWidth: 1.5, tension: 0.3 }, { label: 'P&L', data: d.timeline.pl, borderColor: '#10b981', borderWidth: 1.5, tension: 0.3 }] }, 
+        options: { maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: { size: 8 } } }, datalabels: { display: false } }, scales: { y: { display: false }, x: { ticks: { font: { size: 7 } } } } } 
     });
 }
 
-function parse(str) { return parseFloat(str.replace(/[^0-9.-]/g, '')) || 0; }
-window.onload = () => { populateFilters(); runAnalytics(); };
+window.onload = function() {
+    setDefaultFY();
+    populateFilters();
+    runAnalytics();
+};
 </script>
 </body>
 </html>

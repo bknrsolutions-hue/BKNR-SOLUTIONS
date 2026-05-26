@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi import APIRouter, Request, Depends, Form, HTTPException, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from datetime import datetime
 from collections import defaultdict
 from pydantic import BaseModel
@@ -175,7 +175,7 @@ def save_pending_orders(
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES (TRANSFER WITH EXCHANGE RATE)
+# 3️⃣ MOVE TO SALES
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -251,10 +251,14 @@ def move_to_sales(
     )
 
 # -------------------------------------------------------------------------
-# 4️⃣ SALES REPORT PAGE (DYNAMIC CALCULATIONS)
+# 4️⃣ SALES REPORT PAGE (UPDATED WITH FINANCIAL YEAR FILTER)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
-def sales_report(request: Request, db: Session = Depends(get_db)):
+def sales_report(
+    request: Request, 
+    fy: Optional[str] = Query(None), # URL నుండి fy ని పారామీటర్‌గా స్వీకరిస్తుంది
+    db: Session = Depends(get_db)
+):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
@@ -262,7 +266,19 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
-    sales_data = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code).order_by(
+    # Base Query Construction
+    query = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
+
+    # Financial Year Date Logic (April 1st to March 31st)
+    if fy and fy != "ALL":
+        try:
+            start_date = f"{fy}-04-01"
+            end_date = f"{int(fy) + 1}-03-31"
+            query = query.filter(sales_dispatch.invoice_date.between(start_date, end_date))
+        except ValueError:
+            pass
+
+    sales_data = query.order_by(
         sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no
     ).all()
 
@@ -310,13 +326,14 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
 
     db.commit()
     return templates.TemplateResponse(
-    request=request, 
-    name="inventory_management/sales_report.html", 
-    context={
-        "sales_data": processed, 
-        "unique_companies": unique_companies
-    }
-)
+        request=request, 
+        name="inventory_management/sales_report.html", 
+        context={
+            "sales_data": processed, 
+            "unique_companies": unique_companies,
+            "selected_fy": fy or "" # HTML లో డ్రాప్‌డౌన్ 'selected' స్టేట్ మెయింటైన్ చేయడానికి ఉపయోగపడుతుంది
+        }
+    )
 
 # -------------------------------------------------------------------------
 # 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX)
@@ -331,14 +348,12 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     if not sale_item:
         return {"status": "error", "message": "Record not found"}
     
-    # Get MC Weight for re-calc
     p_style = db.query(packing_styles).filter(
         packing_styles.company_id == sale_item.company_id,
         packing_styles.packing_style == sale_item.packing_style
     ).first()
     mc_weight = float(p_style.mc_weight or 1.0) if p_style else 1.0
     
-    # Re-calculate
     sale_item.exchange_rate = new_rate
     qty_kg = float(sale_item.no_of_mc or 0) * mc_weight
     total_inr = (qty_kg * float(sale_item.price or 0)) * new_rate
