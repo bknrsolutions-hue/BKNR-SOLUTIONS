@@ -259,7 +259,7 @@ class vendors(Base):
     # What service vendor provides
     # Examples: Transport / Diesel / Ice / Packing / Misc
     service_for = Column(String(150))
-
+    payment_cycle = Column(String(100), nullable=True)
     # =========================
     # GST & ADDRESS
     # =========================

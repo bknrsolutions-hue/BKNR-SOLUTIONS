@@ -13,105 +13,139 @@
 :root{
   --primary: #143465;
   --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #dc2626;
+  --border: #e2e8f0;
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --muted: #64748b;
+  --danger: #ef4444;
 }
 
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 30px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:#fff; padding:10px 15px;
+  background:#fff; padding:8px 12px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
-.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
+.header-titles h2{ margin:0; font-size:13px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
 
 /* ================= FORM CONTAINER ================= */
 .form-container {
-  width: 95%; max-width: 1400px; margin: 10px auto;
-  background: #fff; padding: 15px 20px; border-radius: 8px;
+  width: 96%; max-width: 1400px; margin: 6px auto;
+  background: #fff; padding: 12px 16px; border-radius: 8px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
   display: none;
 }
 
-.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
-@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(4, 1fr); } }
-
-.field { display: flex; flex-direction: column; }
-.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
-
-label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
-input, select, textarea {
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: #fff;
-  outline: none; width: 100%; transition: 0.2s;
+/* MOBILE FIRST DEFAULT VERTICAL LAYOUT */
+.form-grid {
+  display: flex;
+  flex-direction: column !important;
+  gap: 10px;
+  margin-bottom: 8px;
 }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
-textarea { resize: none; height: 38px; }
+
+/* DESKTOP MATRIX ALIGNMENT SYSTEM */
+@media(min-width: 768px) {
+  .form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(180px, 1fr)) !important; /* Fixed 4 Column Grid Matrix */
+  }
+  .grid-title-full {
+    grid-column: 1 / -1 !important; /* Spans perfectly across entire desktop rows */
+  }
+  .grid-span-4 {
+    grid-column: span 4 !important;
+  }
+}
+
+.form-title-inner { 
+  font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; 
+  margin: 12px 0 6px; border-bottom: 1px dashed var(--border); 
+  padding-bottom: 4px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.3px;
+  width: 100%;
+}
+.form-grid > .form-title-inner:first-child { margin-top: 2px; }
+
+.field { display: flex; flex-direction: column; width: 100% !important; }
+label { font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.2px; }
+
+input, select, textarea {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; background: #fff;
+  transition: all 0.15s ease; outline: none; height: 34px; width: 100% !important;
+  color: var(--text);
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); 
+}
+textarea { resize: none; height: 34px; }
 
 /* CONTROL ACTIONS HEAD */
 .table-header-bar {
-  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  width: 96%; max-width: 1400px; margin: 12px auto 6px;
   display: flex; justify-content: space-between; align-items: center;
   position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; letter-spacing: 0.2px; }
 
 .top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 6px 12px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 10px; text-transform: uppercase; transition: all 0.15s; }
+.btn-toggle:active { transform: scale(0.98); }
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.actions { text-align: center; margin-top: 12px; display: flex; justify-content: center; gap: 6px; width: 100%; }
+@media(min-width: 768px) {
+  .actions { grid-column: 1 / -1 !important; margin-top: 15px; }
+}
+@media(max-width: 480px) {
+  .actions { flex-direction: column-reverse; gap: 6px; }
+  .btn { width: 100% !important; height: 36px; padding: 0 !important; line-height: 36px; }
+}
+
 .btn {
   background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+  padding: 8px 16px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; cursor: pointer; transition: 0.15s;
+  text-transform: uppercase; min-width: 110px; letter-spacing: 0.2px;
 }
-.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn-clear { background: #e2e8f0; color: var(--muted); }
 .btn:hover { background: var(--accent); }
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
 .menu-container { position: relative; display: none; }
-.dots-trigger { background: #003366; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+.dots-trigger { background: var(--primary); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 34px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden; padding: 2px; }
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.menu-item { padding: 8px 12px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: all 0.1s; text-align: left; }
+.menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+.table-wrap { width: 96%; max-width: 1400px; margin: 0 auto 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
-th {
-  background: #f1f5f9; color: #475569; padding: 8px 6px;
-  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
-  text-align: center; white-space: nowrap;
-}
-td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+th, td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
 tr:hover { background: #f8fbff; cursor: pointer; }
 tr.selected { background: #eff6ff !important; }
 
 /* MOBILE CARD LIST */
-.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); }
+.mobile-card-list { display: none; width: 96%; margin: 4px auto 30px; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.15s ease; position: relative; }
+.data-card.selected { border: 1.5px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; font-size: 11px; gap: 8px; }
+.card-row:last-child { margin-bottom: 0; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 1px; }
+.card-val { font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
 
 @media(max-width: 1024px){
-  .table-wrap { display: none; }
-  .mobile-card-list { display: block; }
-  .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
 }
 </style>
 </head>
@@ -122,15 +156,14 @@ tr.selected { background: #eff6ff !important; }
   <div class="header-titles">
       <h2>Vendors Master</h2>
   </div>
+  <div style="font-size:10px; font-weight:700; color: var(--muted)">BKNR ERP</div>
 </div>
 
-<!-- FORM AREA -->
 <form onsubmit="submitVendor(event)" id="vendorForm">
   <div class="form-container" id="formSection">
     
-    <!-- Row 1: Profile Info -->
     <div class="form-grid">
-      <div class="form-title-inner"><i class="fa-solid fa-store"></i> Basic Profile</div>
+      <div class="form-title-inner grid-title-full"><i class="fa-solid fa-store"></i> Basic Profile Engine</div>
       <div class="field">
         <label>Vendor Name</label>
         <input type="text" id="name" required placeholder="Enter Vendor Name">
@@ -147,14 +180,27 @@ tr.selected { background: #eff6ff !important; }
         </datalist>
       </div>
       <div class="field">
-        <label>Email</label>
+        <label>Email ID</label>
         <input type="email" id="email" placeholder="example@mail.com">
+      </div>
+      <div class="field">
+        <label>Payment Cycle</label>
+        <input list="payment_cycle_list" id="payment_cycle" placeholder="Select or Type Cycle..." onfocus="this.value=''">
+        <datalist id="payment_cycle_list">
+            <option value="Weekly">
+            <option value="Fortnightly">
+            <option value="Monthly">
+            <option value="Bi-Monthly">
+            <option value="Advance Payment">
+            <option value="15 Days">
+            <option value="30 Days">
+            <option value="45 Days">
+        </datalist>
       </div>
     </div>
 
-    <!-- Row 2: Statutory & Bank Details -->
     <div class="form-grid">
-      <div class="form-title-inner"><i class="fa-solid fa-building-columns"></i> Statutory & Banking Info</div>
+      <div class="form-title-inner grid-title-full"><i class="fa-solid fa-building-columns"></i> Statutory & Banking Registry</div>
       <div class="field">
         <label>GST Number</label>
         <input type="text" id="gst_number" placeholder="Enter GSTIN">
@@ -173,25 +219,24 @@ tr.selected { background: #eff6ff !important; }
       </div>
     </div>
 
-    <!-- Row 3: Address -->
     <div class="form-grid">
-      <div class="field" style="grid-column: 1 / -1;">
+      <div class="field grid-span-4">
         <label>Address</label>
-        <textarea id="address" placeholder="Enter Full Address"></textarea>
+        <textarea id="address" placeholder="Enter Full Address Configuration Details..."></textarea>
+      </div>
+      
+      <div class="actions">
+        <button class="btn" type="submit" id="submitBtn">SAVE VENDOR</button>
+        <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
       </div>
     </div>
 
-    <!-- Metadata Structs -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_date">
     <input type="hidden" id="meta_time">
     <input type="hidden" id="meta_email" value="{{ email }}">
     <input type="hidden" id="meta_company_id" value="{{ company_id }}">
 
-    <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE VENDOR</button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
-    </div>
   </div>
 </form>
 
@@ -201,28 +246,25 @@ tr.selected { background: #eff6ff !important; }
 
 {% if vendors_list %}
 
-<!-- CONTROL ACTIONS HEADER BAR -->
 <div class="table-header-bar">
     <h3 class="table-title">Vendor Data Logs</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 8px; align-items: center;">
         <div class="top-actions" id="toggleActionArea">
             <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Vendor</button>
         </div>
 
-        <!-- RIGHT INLINE 3-DOT MENU -->
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
-            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Parameters</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Node</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Matrix</div>
           </div>
         </div>
     </div>
 </div>
 
-<!-- MOBILE VIEW CARD LIST -->
 <div class="mobile-card-list">
     {% for v in vendors_list %}
     <div class="data-card" data-id="{{ v.id }}" 
@@ -230,50 +272,51 @@ tr.selected { background: #eff6ff !important; }
          data-email="{{ v.email }}" data-gst="{{ v.gst_number }}" 
          data-address="{{ v.address }}" data-bank="{{ v.bank_name }}"
          data-acc="{{ v.account_no }}" data-ifsc="{{ v.ifsc }}"
+         data-pcycle="{{ v.payment_cycle if v.payment_cycle else '' }}"
          data-date="{{ v.date }}" data-time="{{ v.time }}" data-uemail="{{ v.created_by_email }}"
          onclick="selectRowOrCard(this)">
         <div class="card-row">
-            <span class="card-label">Vendor Name</span>
-            <span class="card-val" style="color:var(--accent);">{{ v.name }}</span>
+            <span class="card-label">Vendor Unit</span>
+            <span class="card-val" style="color:var(--accent); font-size:12px;">{{ v.name }}</span>
         </div>
         <div class="card-row">
-            <span class="card-label">Service</span>
+            <span class="card-label">Service Allocation</span>
             <span class="card-val">{{ v.service_for if v.service_for else '-' }}</span>
         </div>
         <div class="card-row">
-            <span class="card-label">GSTIN</span>
+            <span class="card-label">Payment Cycle</span>
+            <span class="card-val" style="font-weight:700; color:#475569;">{{ v.payment_cycle if v.payment_cycle else '-' }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">GSTIN System</span>
             <span class="card-val">{{ v.gst_number if v.gst_number else '-' }}</span>
         </div>
         <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
-            <span class="card-label">Created At</span>
+            <span class="card-label">Pipeline Logs</span>
             <span class="card-val" style="font-size:10px; color:var(--muted);">{{ v.date }} {{ v.time }}</span>
-        </div>
-        <div class="card-row">
-            <span class="card-label">User</span>
-            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ v.created_by_email }}</span>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- COMPACT FULL TABLE VIEW -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
       <tr>
         <th style="width:50px;">ID</th>
-        <th>Vendor Name</th>
-        <th>Service For</th>
-        <th>Email</th>
-        <th>GST Number</th>
-        <th>Address</th>
-        <th>Bank Name</th>
-        <th>Account No</th>
-        <th>IFSC</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Created User</th>
-        <th>Company ID</th>
+        <th>Vendor Corporate Name</th>
+        <th>Service Context</th>
+        <th>Payment Cycle</th>
+        <th>Email Infrastructure</th>
+        <th>GST Registry</th>
+        <th>Physical Address</th>
+        <th>Bank Custodian</th>
+        <th>Account Node</th>
+        <th>IFSC Code</th>
+        <th>Log Date</th>
+        <th>Log Time</th>
+        <th>Authorized Node</th>
+        <th>Company Token</th>
       </tr>
     </thead>
     <tbody>
@@ -283,13 +326,15 @@ tr.selected { background: #eff6ff !important; }
           data-email="{{ v.email }}" data-gst="{{ v.gst_number }}" 
           data-address="{{ v.address }}" data-bank="{{ v.bank_name }}"
           data-acc="{{ v.account_no }}" data-ifsc="{{ v.ifsc }}"
+          data-pcycle="{{ v.payment_cycle if v.payment_cycle else '' }}"
           data-date="{{ v.date }}" data-time="{{ v.time }}" data-uemail="{{ v.created_by_email }}"
           onclick="selectRowOrCard(this)">
-        <td>{{ v.id }}</td>
+        <td>#{{ v.id }}</td>
         <td style="font-weight:700; text-align:left; color: var(--accent);">{{ v.name }}</td>
         <td>{{ v.service_for if v.service_for else '' }}</td>
+        <td style="font-weight:700; color:#475569;">{{ v.payment_cycle if v.payment_cycle else '' }}</td>
         <td>{{ v.email if v.email else '' }}</td>
-        <td style="font-mono">{{ v.gst_number if v.gst_number else '' }}</td>
+        <td>{{ v.gst_number if v.gst_number else '' }}</td>
         <td style="text-align:left;">{{ v.address if v.address else '' }}</td>
         <td>{{ v.bank_name if v.bank_name else '' }}</td>
         <td>{{ v.account_no if v.account_no else '' }}</td>
@@ -331,13 +376,13 @@ async function submitVendor(e){
   fd.append('name', document.getElementById("name").value.trim());
   fd.append('service_for', document.getElementById("service_for").value.trim());
   fd.append('email', document.getElementById("email").value.trim());
+  fd.append('payment_cycle', document.getElementById("payment_cycle").value.trim());
   fd.append('gst_number', document.getElementById("gst_number").value.trim());
   fd.append('address', document.getElementById("address").value.trim());
   fd.append('bank_name', document.getElementById("bank_name").value.trim());
   fd.append('account_no', document.getElementById("account_no").value.trim());
   fd.append('ifsc', document.getElementById("ifsc").value.trim());
   
-  // Handling timestamp metadata injection
   const now = new Date();
   const dateStr = document.getElementById("meta_date").value || now.toISOString().slice(0,10);
   const timeStr = document.getElementById("meta_time").value || now.toTimeString().slice(0,8);
@@ -383,6 +428,7 @@ function editSelected(){
   document.getElementById('name').value = d.name || '';
   document.getElementById('service_for').value = d.service || '';
   document.getElementById('email').value = d.email || '';
+  document.getElementById('payment_cycle').value = d.pcycle || '';
   document.getElementById('gst_number').value = d.gst || '';
   document.getElementById('address').value = d.address || '';
   document.getElementById('bank_name').value = d.bank || '';
@@ -392,6 +438,7 @@ function editSelected(){
   document.getElementById('meta_date').value = d.date || '';
   document.getElementById('meta_time').value = d.time || '';
   
+  document.getElementById("submitBtn").innerText = "UPDATE VENDOR";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -402,11 +449,11 @@ async function deleteSelected(){
   
   Swal.fire({
     title: 'Are you sure?',
-    text: "Delete this vendor?",
+    text: "Terminate this tracking vendor node?",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: 'var(--danger)',
-    confirmButtonText: 'Yes, delete it!'
+    confirmButtonText: 'Yes, Purge it!'
   }).then(async (result) => {
     if (result.isConfirmed) {
       const res = await fetch(`/criteria/vendors/delete/${selectedElement.dataset.id}`,{method:'POST'});
@@ -419,8 +466,8 @@ async function deleteSelected(){
 function exportExcel(){
   if(!selectedElement) return;
   const d = selectedElement.dataset;
-  const headers = "ID\tVendor Name\tService For\tEmail\tGSTIN\tAddress\tBank Name\tAccount No\tIFSC\tDate\tTime\tCreated User\n";
-  const rowData = `${d.id}\t${d.name}\t${d.service||''}\t${d.email||''}\t${d.gst||''}\t${d.address||''}\t${d.bank||''}\t${d.acc||''}\t${d.ifsc||''}\t${d.date||''}\t${d.time||''}\t${d.uemail||''}`;
+  const headers = "ID\tVendor Name\tService For\tPayment Cycle\tEmail\tGSTIN\tAddress\tBank Name\tAccount No\tIFSC\tDate\tTime\tCreated User\n";
+  const rowData = `${d.id}\t${d.name}\t${d.service||''}\t${d.pcycle||''}\t${d.email||''}\t${d.gst||''}\t${d.address||''}\t${d.bank||''}\t${d.acc||''}\t${d.ifsc||''}\t${d.date||''}\t${d.time||''}\t${d.uemail||''}`;
   
   const blob = new Blob([headers + rowData], {type:"application/vnd.ms-excel"});
   const a = document.createElement('a');
@@ -435,6 +482,7 @@ function clearForm(){
   document.getElementById("record_id").value = "";
   document.getElementById("meta_date").value = "";
   document.getElementById("meta_time").value = "";
+  document.getElementById("submitBtn").innerText = "SAVE VENDOR";
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   
@@ -442,9 +490,11 @@ function clearForm(){
   document.getElementById("toggleActionArea").style.display = "flex";
 }
 
-window.onclick = () => {
-    const d = document.getElementById("dropdownMenu");
-    if(d) d.style.display = "none";
+window.onclick = function(event) {
+ if (!event.target.matches('.dots-trigger') && !event.target.matches('.fa-ellipsis-v')) {
+   const d = document.getElementById("dropdownMenu");
+   if(d) d.style.display = "none";
+ }
 }
 </script>
 </body>

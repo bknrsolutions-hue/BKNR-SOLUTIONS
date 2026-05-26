@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -312,7 +312,7 @@
         <div class="card indigo">
             <div class="card-meta">
                 <div class="label">Live Floor</div>
-                <div class="value">{{ floor_total }}<small>kg</small></div>
+                <div class="value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
             </div>
             <div class="card-icon-zone"><i class="fa-solid fa-snowflake"></i></div>
         </div>
@@ -419,7 +419,7 @@
 
     <div class="section-head">Live Floor Balance Details <hr></div>
     <div class="floor-box">
-        <iframe src="/reports/floor_balance_report" class="floor-frame"></iframe>
+        <iframe src="/reports/floor_balance_report" id="floorReportFrame" class="floor-frame"></iframe>
     </div>
 </div>
 
@@ -480,6 +480,77 @@
         if (event.target == document.getElementById('entryModal')) {
             closeEntryModal();
         }
+    }
+
+    // 🔹 SYNCHRONIZATION WITH PRECISE ELEMENT-MATCH BOUNDARY CONTROL
+    function syncLiveFloorFromIframe() {
+        try {
+            const iframe = document.getElementById("floorReportFrame");
+            if (!iframe) return;
+
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (!iframeDoc) return;
+
+            let extractedValue = "";
+            const cells = iframeDoc.querySelectorAll("td, th, span, div");
+            
+            for (let i = 0; i < cells.length; i++) {
+                const elText = cells[i].innerText || cells[i].textContent || "";
+                if (elText.toUpperCase().includes("GRAND NET BALANCE:")) {
+                    const balancePart = elText.toUpperCase().split("GRAND NET BALANCE:")[1];
+                    const numMatch = balancePart.match(/[0-9,.]+/);
+                    if (numMatch) {
+                        extractedValue = numMatch[0].trim();
+                        break; 
+                    }
+                }
+            }
+
+            if (extractedValue) {
+                document.getElementById("liveFloorKpiVal").innerText = extractedValue;
+                return;
+            }
+
+            // Fallback total calculation if precise row parsing is needed
+            let computedTotal = 0;
+            const iframeRows = iframeDoc.querySelectorAll("table tbody tr");
+            let parsedRows = false;
+
+            iframeRows.forEach(row => {
+                if (row.style.display !== "none") {
+                    const columns = row.querySelectorAll("td");
+                    if (columns.length > 0) {
+                        const lastCellText = columns[columns.length - 1].innerText;
+                        if (/[0-9]/.test(lastCellText) && !lastCellText.toUpperCase().includes("TOTAL")) {
+                            const val = parseFloat(lastCellText.replace(/[^0-9.]/g, '')) || 0;
+                            computedTotal += val;
+                            parsedRows = true;
+                        }
+                    }
+                }
+            });
+
+            if (parsedRows && computedTotal > 0) {
+                document.getElementById("liveFloorKpiVal").innerText = computedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        } catch (e) {
+            console.log("Sync loop error capture: ", e);
+        }
+    }
+
+    // Attaching load and modification triggers to tracking frame lifecycle
+    const iframeEl = document.getElementById("floorReportFrame");
+    if (iframeEl) {
+        iframeEl.addEventListener("load", function() {
+            setTimeout(syncLiveFloorFromIframe, 300);
+            try {
+                const iframeDoc = iframeEl.contentDocument || iframeEl.contentWindow.document;
+                const observer = new MutationObserver(syncLiveFloorFromIframe);
+                observer.observe(iframeDoc.body, { attributes: true, childList: true, subtree: true });
+            } catch(err) {
+                setInterval(syncLiveFloorFromIframe, 1500);
+            }
+        });
     }
 </script>
 </body>

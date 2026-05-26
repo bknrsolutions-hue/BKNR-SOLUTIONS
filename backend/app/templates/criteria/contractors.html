@@ -13,115 +13,127 @@
 :root{
   --primary: #143465;
   --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #dc2626;
+  --border: #e2e8f0;
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --muted: #64748b;
+  --danger: #ef4444;
 }
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px; overflow-x: hidden; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 30px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:#fff; padding:12px 15px;
+  background:#fff; padding:8px 12px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
-.header-titles h2{ margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+.header-titles h2{ margin:0; font-size:13px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
 
 /* ================= FORM CONTAINER ================= */
 .form-container{
-  width: 95%; max-width: 1400px; margin: 10px auto;
-  background: #fff; padding: 15px 20px; border-radius: 8px;
+  width: 96%; max-width: 1400px; margin: 6px auto;
+  background: #fff; padding: 10px 12px; border-radius: 8px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none; /* Initially Hidden for Clean View */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  display: none; 
 }
 
 .grid{
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
 }
+@media(max-width: 600px) {
+  .grid { grid-template-columns: 1fr; gap: 6px; }
+  .field[style*="grid-column"] { grid-column: span 1 !important; }
+}
+
 .form-title-inner { 
-  font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; 
-  margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); 
-  padding-bottom: 3px; display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; 
+  margin: 4px 0 2px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); 
+  padding-bottom: 3px; display: flex; align-items: center; gap: 4px; letter-spacing: 0.2px;
 }
 
 .field{ display: flex; flex-direction: column; }
-label{ font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+label{ font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.2px; }
 
 input, select, textarea{
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: #fff;
-  transition: all 0.2s; outline: none; height: 38px; width: 100%;
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; background: #fff;
+  transition: all 0.15s ease; outline: none; height: 34px; width: 100%;
+  color: var(--text);
+  -webkit-appearance: none;
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
-textarea{ resize: none; height: 38px; }
+textarea{ resize: none; height: 44px; }
 
 /* ================= CONTROL ACTIONS HEAD ================= */
 .table-header-bar {
-  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  width: 96%; max-width: 1400px; margin: 8px auto 4px;
   display: flex; justify-content: space-between; align-items: center;
   position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; letter-spacing: 0.2px; }
 
 .top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 6px 12px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 10px; text-transform: uppercase; transition: all 0.15s; }
+.btn-toggle:active { transform: scale(0.98); }
 
 .actions{
   grid-column: 1 / -1;
   text-align: center;
-  margin-top: 10px;
-  display: flex; justify-content: center; gap: 10px;
+  margin-top: 8px;
+  display: flex; justify-content: center; gap: 6px;
 }
+@media(max-width: 480px) {
+  .actions { flex-direction: column-reverse; gap: 6px; }
+  .btn { width: 100% !important; height: 36px; padding: 0 !important; line-height: 36px; }
+}
+
 .btn{
   background: var(--primary); color: #fff; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; transition: 0.2s;
-  text-transform: uppercase; min-width: 130px;
+  padding: 8px 16px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; cursor: pointer; transition: 0.15s;
+  text-transform: uppercase; min-width: 110px; letter-spacing: 0.2px;
 }
-.btn-clear{ background: #f1f5f9; color: var(--muted); }
+.btn-clear{ background: #e2e8f0; color: var(--muted); }
 .btn:hover{ background: var(--accent); }
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
 .menu-container { position: relative; display: none; }
-.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 180px; z-index: 1000; overflow: hidden; }
+.dots-trigger { background: var(--primary); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 34px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden; padding: 2px; }
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.menu-item { padding: 8px 12px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: all 0.1s; text-align: left; }
+.menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT TABLE AREA ================= */
-.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+.table-wrap { width: 96%; max-width: 1400px; margin: 0 auto 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
 table{ width: 100%; border-collapse: collapse; table-layout: auto; }
-th, td{ padding: 8px 10px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
-th{ background: #f1f5f9; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 10px; }
+th, td{ padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+th{ background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
 tr:hover{ background: #f8fbff; cursor: pointer; }
 tr.selected{ background: #eff6ff !important; }
 
 /* ================= MOBILE CARD LIST ================= */
-.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); text-align: right; }
+.mobile-card-list { display: none; width: 96%; margin: 4px auto 30px; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.15s ease; position: relative; }
+.data-card.selected { border: 1.5px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; font-size: 11px; gap: 8px; }
+.card-row:last-child { margin-bottom: 0; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 1px; }
+.card-val { font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
 
+/* ================= RESPONSIVE VIEWPORTS CONTROLS ================= */
 @media(max-width: 1024px){
-  .table-wrap { display: none; }
-  .mobile-card-list { display: block; }
-  .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
 }
 </style>
 </head>
@@ -132,10 +144,9 @@ tr.selected{ background: #eff6ff !important; }
   <div class="header-titles">
       <h2>Contractors Master</h2>
   </div>
-  <div style="font-size:11px; font-weight:700; color: var(--muted)">BKNR ERP</div>
+  <div style="font-size:10px; font-weight:700; color: var(--muted)">BKNR ERP</div>
 </div>
 
-<!-- FORM AREA -->
 <form onsubmit="submitContractor(event)" id="contractorForm">
 <div class="form-container" id="formSection">
 <div class="grid">
@@ -172,16 +183,14 @@ tr.selected{ background: #eff6ff !important; }
 </div>
 </form>
 
-<!-- CONTROL ACTIONS HEADER BAR -->
 <div class="table-header-bar">
     <h3 class="table-title">Contractor Registry</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 8px; align-items: center;">
         <div class="top-actions" id="toggleActionArea">
             <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Contractor</button>
         </div>
 
-        <!-- RIGHT INLINE 3-DOT MENU -->
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
@@ -193,7 +202,6 @@ tr.selected{ background: #eff6ff !important; }
     </div>
 </div>
 
-<!-- MOBILE VIEW CARD LIST -->
 <div class="mobile-card-list">
     {% if today_data %}
     {% for r in today_data %}
@@ -228,22 +236,21 @@ tr.selected{ background: #eff6ff !important; }
         </div>
         <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
             <span class="card-label">Settlement Bank</span>
-            <span class="card-val" style="font-size:10px;">{{r.bank_name}} - A/C: {{r.account_no}}</span>
+            <span class="card-val" style="font-size:11px;">{{r.bank_name}} - A/C: {{r.account_no}}</span>
         </div>
     </div>
     {% endfor %}
     {% else %}
-    <p style="text-align:center; color:var(--muted); font-size:13px; background:#fff; padding:20px; border-radius:8px;">No contractors found.</p>
+    <p style="text-align:center; color:var(--muted); font-size:12px; background:#fff; padding:15px; border-radius:6px;">No contractors found.</p>
     {% endif %}
 </div>
 
-<!-- COMPACT FULL SCREEN TABLE VIEW -->
 <div class="table-wrap">
 {% if today_data %}
 <table id="dataTable">
 <thead>
 <tr>
-  <th style="width:60px;">ID</th>
+  <th style="width:50px;">ID</th>
   <th>Vendor Name</th>
   <th>Phone Number</th>
   <th>Email Address</th>
@@ -286,7 +293,7 @@ tr.selected{ background: #eff6ff !important; }
 </tbody>
 </table>
 {% else %}
-<p style="text-align:center; color:var(--muted); font-size:13px; padding:20px; margin:0;">No contractors configuration rows found.</p>
+<p style="text-align:center; color:var(--muted); font-size:12px; padding:15px; margin:0;">No contractors configuration rows found.</p>
 {% endif %}
 </div>
 

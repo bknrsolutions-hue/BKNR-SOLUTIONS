@@ -43,7 +43,7 @@ def vendors_page(request: Request, db: Session = Depends(get_db)):
     )
 
 # ---------------------------------------------------------
-# SAVE / UPDATE VENDOR (FIXED: CREATED USER EMAIL)
+# SAVE / UPDATE VENDOR (FIXED: PAYMENT CYCLE ADDED)
 # ---------------------------------------------------------
 @router.post("/vendors")
 def save_vendor(
@@ -51,6 +51,7 @@ def save_vendor(
     name: str = Form(...),
     email: str = Form(""),          # ఇది వెండర్ యొక్క ఈమెయిల్ ఐడి
     service_for: str = Form(""),
+    payment_cycle: str = Form(""),  # 👈 ఇక్కడ FastAPI Form parameter యాడ్ చేసాను
     gst_number: str = Form(""),
     address: str = Form(""),
     bank_name: str = Form(""),
@@ -93,6 +94,7 @@ def save_vendor(
         row.name = name
         row.email = email
         row.service_for = service_for
+        row.payment_cycle = payment_cycle # 👈 అప్‌డేట్ రన్ అవుతున్నప్పుడు డేటా మ్యాప్ అవుతుంది
         row.gst_number = gst_number
         row.address = address
         row.bank_name = bank_name
@@ -101,7 +103,7 @@ def save_vendor(
         row.date = date
         row.time = time
         
-        # 👈 ఒకవేళ ఎడిట్ చేసినా లేదా రికార్డ్ అప్‌డేట్ చేసినా క్రియేటెడ్ యూజర్ ఈమెయిల్ మిస్ కాకుండా ట్రాక్ చేస్తుంది
+        # ఒకవేళ ఎడిట్ చేసినా లేదా రికార్డ్ అప్‌డేట్ చేసినా క్రియేటెడ్ యూజర్ ఈమెయిల్ మిస్ కాకుండా ట్రాక్ చేస్తుంది
         row.created_by_email = session_email 
         
     # INSERT MODE
@@ -110,6 +112,7 @@ def save_vendor(
             name=name, 
             email=email, 
             service_for=service_for,
+            payment_cycle=payment_cycle, # 👈 కొత్త ఎంట్రీ క్రియేట్ ఐనప్పుడు ఇక్కడ సేవ్ అవుతుంది
             gst_number=gst_number, 
             address=address,
             bank_name=bank_name, 
@@ -117,7 +120,7 @@ def save_vendor(
             ifsc=ifsc,
             date=date,                        
             time=time,                        
-            created_by_email=session_email,   # 👈 సెషన్ ఈమెయిల్‌ను ఇక్కడ పక్కాగా మ్యాప్ చేశాను
+            created_by_email=session_email,   
             company_id=company_code
         )
         db.add(new_vendor)
