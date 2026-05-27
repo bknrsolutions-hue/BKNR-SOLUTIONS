@@ -4,12 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BKNR ERP | Master Periodic Summary</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2=family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --brand: #1e3a8a; --accent: #ea580c; --border: #cbd5e1; --success: #16a34a; --danger: #dc2626; --bg-light: #f1f5f9; }
+        :root { 
+            --brand: #1e3a8a; 
+            --accent: #ea580c; 
+            --border: #cbd5e1; 
+            --success: #16a34a; 
+            --danger: #dc2626; 
+            --bg-light: #f1f5f9; 
+            --orange-accent: #ea580c;
+            --primary-dark: #0f172a;
+            --radius-premium: 12px;
+        }
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { margin: 0; background-color: var(--bg-light); color: #0f172a; padding: 10px; font-size: 8px; }
+        body { margin: 0; background-color: var(--bg-light); color: #0f172a; padding: 10px; font-size: 8px; position: relative; }
         
         /* Header Styling */
         .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: white; padding: 12px; border-radius: 4px; border-bottom: 3px solid var(--brand); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -41,8 +51,58 @@
         .btn-print { background: var(--brand); color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: 700; font-size: 10px; cursor: pointer; transition: 0.2s; }
         .btn-print:hover { background: #172554; }
 
+        /* ================= 🚧 ENTERPRISE DEVELOPMENT BLUR OVERLAY ================= */
+        .dev-blur-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(241, 245, 249, 0.5); /* Semi-transparent background with soft premium blur */
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 99999; /* Higher than any data row or sticky headers */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .dev-loader-card {
+            background: var(--primary-dark);
+            color: #ffffff;
+            padding: 20px 32px;
+            border-radius: var(--radius-premium);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            max-width: 360px;
+        }
+        .dev-status-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+        .dev-tools-icon {
+            animation: spinTools 1.5s linear infinite;
+            color: var(--orange-accent);
+        }
+        .dev-loader-card p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 9.5px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        @keyframes spinTools {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media print { 
-            .filter-card, .no-print, .btn-print { display: none !important; } 
+            .filter-card, .no-print, .btn-print, .dev-blur-overlay { display: none !important; } 
             body { padding: 0; background: white; } 
             .table-wrap { border: none; }
             th { background: #eee !important; color: black; border: 1px solid #000; }
@@ -51,6 +111,17 @@
     </style>
 </head>
 <body>
+
+<!-- 🚧 SYSTEM RECONCILIATION & DEVELOPMENT BLOCKER -->
+<div class="dev-blur-overlay">
+  <div class="dev-loader-card">
+    <div class="dev-status-title">
+      <i class="fas fa-tools dev-tools-icon fa-lg"></i>
+      <span>Updating Periodic Metrics Logics...</span>
+    </div>
+    <p>We are currently refining the data mapping rules across RMP, Processing, and Cold Storage modules. Live view is paused during structural ledger updates.</p>
+  </div>
+</div>
 
 <div class="report-header">
     <h1><i class="fas fa-warehouse"></i> MASTER PERIODIC PRODUCTION & INVENTORY SUMMARY</h1>

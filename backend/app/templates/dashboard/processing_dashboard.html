@@ -18,7 +18,7 @@
             --slate-bg: #f1f5f9; 
             --card-bg: #ffffff;
             --accent-blue: #1d4ed8;
-            --border-color: #e2e8f0; /* Soft and light border */
+            --border-color: #e2e8f0;
             --text-main: #0f172a;
             --text-muted: #475569;
             --radius-premium: 12px;
@@ -33,11 +33,9 @@
             overflow-x: hidden;
         }
 
-        /* Mobile First: Take full screen width to maximize chart view space */
         .dashboard { width: 100%; padding: 12px 8px 30px 8px; margin: 0; }
         @media(min-width: 768px) { .dashboard { width: 94%; margin: auto; padding: 16px 0 30px 0; } }
         
-        /* 1. TOP SOLID PROCESS KPI CARDS - BOLD TEXT & SOFT BORDERS */
         .cards { 
             display: grid; 
             grid-template-columns: repeat(2, 1fr); 
@@ -76,31 +74,28 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
         }
 
-        /* Solid Heavy Gradients for deep bold colors with light borders */
         .blue { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; } .blue .card-icon-zone { color: #2563eb; }
         .green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; } .green .card-icon-zone { color: #16a34a; }
         .orange { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; } .orange .card-icon-zone { color: #ea580c; }
         .purple { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; } .purple .card-icon-zone { color: #7c3aed; }
-        .teal { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; } .teal .card-icon-zone { color: #0d9488; }
+        .teal { background: linear-gradient(135deg, #f0fdf4 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; } .teal .card-icon-zone { color: #0d9488; }
         .pink { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; } .pink .card-icon-zone { color: #db2777; }
         .gray { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; } .gray .card-icon-zone { color: #1e293b; }
         .indigo { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; } .indigo .card-icon-zone { color: #4f46e5; }
 
-        /* SECTION HEADERS */
         .section-head { 
-            font-size: 11px; 
-            font-weight: 800; 
-            color: var(--text-muted); 
-            margin: 24px 0 12px 0; 
             display: flex; 
             align-items: center; 
             gap: 10px; 
-            text-transform: uppercase; 
+            margin: 24px 0 12px 0; 
+            color: var(--text-muted); 
+            font-size: 11px; 
+            font-weight: 800; 
             letter-spacing: 1.5px;
+            text-transform: uppercase; 
         }
         .section-head hr { flex: 1; border: 0; border-top: 1px solid var(--border-color); }
 
-        /* 2. DATA TABLES SYSTEM WITH BOLD CONTENT BUT SOFT LINES */
         .rm-summary-box { 
             background: var(--card-bg); 
             border-radius: var(--radius-premium); 
@@ -112,18 +107,17 @@
         
         .rm-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .rm-table th { 
-            text-align: left; padding: 12px 14px; 
+            padding: 12px 14px; 
             background: #f8fafc; 
-            color: var(--text-muted); font-size: 10px; 
-            text-transform: uppercase; font-weight: 800;
-            letter-spacing: 0.8px;
-            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 10px; 
+            font-weight: 800;
+            letter-spacing: 0.8px; text-align: left;
+            text-transform: uppercase;
         }
         .rm-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: #1e293b; }
         .rm-table tr:last-child td { border-bottom: none; }
         .rm-table tbody tr:hover { background: #f8fafc; }
 
-        /* 3. CHARTS ROW */
         .charts-row { 
             display: grid;
             grid-template-columns: 1fr; 
@@ -145,8 +139,7 @@
         }
         .chart-title { 
             font-size: 10px; font-weight: 800; color: var(--text-muted); 
-            margin-bottom: 14px; text-transform: uppercase; text-align: center; 
-            letter-spacing: 0.8px;
+            margin-bottom: 14px; text-align: center; letter-spacing: 0.8px; text-transform: uppercase; 
         }
         
         .chart-container {
@@ -155,7 +148,6 @@
             width: 100%;  
         }
 
-        /* 4. ATTENDANCE STREAM PANEL (SOFT BORDERS) */
         .attendance-viewport {
             overflow-x: auto;
             scrollbar-width: none;
@@ -198,7 +190,6 @@
         .att-single { background: #eff6ff; border: 1px solid #dbeafe; border-left: 5px solid #2563eb; }
         .att-double { background: #f5f3ff; border: 1px solid #e9d5ff; border-left: 5px solid #7c3aed; }
 
-        /* CLUSTER SUMMARY MATRICES */
         .summary-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
         @media(min-width: 768px) { .summary-grid { grid-template-columns: 1fr 1fr; gap: 16px; } }
         
@@ -209,7 +200,6 @@
         }
         .summary-card td { border-bottom: 1px solid #f1f5f9 !important; }
 
-        /* 5. LIVE FLOOR SYSTEM FRAME */
         .floor-box { 
             background: var(--card-bg); border-radius: var(--radius-premium); 
             border: 1px solid var(--border-color); overflow: hidden; 
@@ -217,7 +207,6 @@
         }
         .floor-frame { width: 100%; height: 350px; border: none; display: block; opacity: 1; }
 
-        /* DIALOG WINDOW OVERLAY */
         .modal-overlay {
             display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; 
             background-color: rgba(15, 23, 42, 0.5);
@@ -242,11 +231,11 @@
             padding: 16px 20px; background: #fff; border-bottom: 1px solid var(--border-color);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-header h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.8px; }
+        .modal-header h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary-dark); letter-spacing: 0.8px; text-transform: uppercase; }
         .close-btn { 
-            font-size: 16px; cursor: pointer; color: #64748b; 
-            display: flex; align-items: center; justify-content: center;
             width: 30px; height: 30px; border-radius: 50%; background: #f1f5f9;
+            color: #64748b; font-size: 16px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
             font-weight: bold;
             transition: all 0.15s;
         }
@@ -482,7 +471,7 @@
         }
     }
 
-    // 🔹 SYNCHRONIZATION WITH PRECISE ELEMENT-MATCH BOUNDARY CONTROL
+    // ⚡️ OPTIMIZED REAL-TIME SYNCHRONIZATION WITH INSTANT PARSING BREAKS
     function syncLiveFloorFromIframe() {
         try {
             const iframe = document.getElementById("floorReportFrame");
@@ -491,32 +480,27 @@
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             if (!iframeDoc) return;
 
-            let extractedValue = "";
-            const cells = iframeDoc.querySelectorAll("td, th, span, div");
-            
+            // 1. దొరికిన వెంటనే లూప్ ఆపేసి ఇన్స్టాంట్‌గా KPI ని అప్‌డేట్ చేస్తుంది
+            const cells = iframeDoc.querySelectorAll("td, th, span, div, b, strong");
             for (let i = 0; i < cells.length; i++) {
-                const elText = cells[i].innerText || cells[i].textContent || "";
+                const elText = cells[i].textContent || cells[i].innerText || "";
                 if (elText.toUpperCase().includes("GRAND NET BALANCE:")) {
                     const balancePart = elText.toUpperCase().split("GRAND NET BALANCE:")[1];
                     const numMatch = balancePart.match(/[0-9,.]+/);
                     if (numMatch) {
-                        extractedValue = numMatch[0].trim();
-                        break; 
+                        document.getElementById("liveFloorKpiVal").innerText = numMatch[0].trim();
+                        return; // దొరికింది కాబట్టి వెంటనే ఇక్కడితో ఎగ్జిక్యూషన్ ముగుస్తుంది
                     }
                 }
             }
 
-            if (extractedValue) {
-                document.getElementById("liveFloorKpiVal").innerText = extractedValue;
-                return;
-            }
-
-            // Fallback total calculation if precise row parsing is needed
+            // 2. ఒకవేళ పై ఎలిమెంట్ దొరకకపోతే మాత్రమే టేబుల్ రోస్ రన్ అవుతాయి
             let computedTotal = 0;
             const iframeRows = iframeDoc.querySelectorAll("table tbody tr");
             let parsedRows = false;
 
-            iframeRows.forEach(row => {
+            for (let i = 0; i < iframeRows.length; i++) {
+                const row = iframeRows[i];
                 if (row.style.display !== "none") {
                     const columns = row.querySelectorAll("td");
                     if (columns.length > 0) {
@@ -528,7 +512,7 @@
                         }
                     }
                 }
-            });
+            }
 
             if (parsedRows && computedTotal > 0) {
                 document.getElementById("liveFloorKpiVal").innerText = computedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -538,17 +522,22 @@
         }
     }
 
-    // Attaching load and modification triggers to tracking frame lifecycle
+    // డిలేస్ తగ్గించడానికి ఐఫ్రేమ్ లోడింగ్ ఈవెంట్స్ మరియు మ్యుటేషన్ రూల్స్ మార్చాం
     const iframeEl = document.getElementById("floorReportFrame");
     if (iframeEl) {
+        // ఐఫ్రేమ్ కంటెంట్ లోడ్ అవ్వడం స్టార్ట్ అయిన వెంటనే రన్ చేస్తుంది
         iframeEl.addEventListener("load", function() {
-            setTimeout(syncLiveFloorFromIframe, 300);
+            syncLiveFloorFromIframe(); 
+            
             try {
                 const iframeDoc = iframeEl.contentDocument || iframeEl.contentWindow.document;
+                
+                // MutationObserver ని చాలా వేగంగా (throttle లేకుండా) రెస్పాండ్ అయ్యేలా కన్ఫిగర్ చేశాం
                 const observer = new MutationObserver(syncLiveFloorFromIframe);
                 observer.observe(iframeDoc.body, { attributes: true, childList: true, subtree: true });
             } catch(err) {
-                setInterval(syncLiveFloorFromIframe, 1500);
+                // ఫాల్‌బ్యాక్ పోలింగ్ ఇంటర్వెల్‌ను 1500ms నుండి 400ms కి తగ్గించాం
+                setInterval(syncLiveFloorFromIframe, 400);
             }
         });
     }

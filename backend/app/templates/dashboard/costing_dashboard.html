@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Choices.js CSS for Advanced Searchable Company Dropdowns -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,6 +25,7 @@
     --text-muted: #475569;
     --radius-premium: 12px;
     --radius-md: 8px;
+    --orange-accent: #ea580c;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,6 +36,7 @@
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     padding: 12px 8px;
+    position: relative;
   }
 
   .dashboard-container { 
@@ -356,13 +357,73 @@
   .prod-right-metric { text-align: right; }
   .prod-total-weight { font-weight: 800; font-size: 13px; color: #000000; }
   .prod-net-margin { font-size: 11px; font-weight: 700; margin-top: 2px; }
+
+  /* ================= 🚧 ENTERPRISE DEVELOPMENT BLUR OVERLAY ================= */
+  .dev-blur-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(241, 245, 249, 0.5); /* సగం బ్యాక్‌గ్రౌండ్ కనిపిస్తూ మోడరన్‌గా బ్లర్ చేస్తుంది */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 99999; /* అన్ని ఎలిమెంట్స్ మరియు డ్రాప్‌డౌన్స్ కంటే పైన ఉంటుంది */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .dev-loader-card {
+    background: var(--primary-dark);
+    color: #ffffff;
+    padding: 20px 32px;
+    border-radius: var(--radius-premium);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    max-width: 360px;
+  }
+  .dev-status-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+  .dev-tools-icon {
+    animation: spinTools 1.5s linear infinite;
+    color: var(--orange-accent);
+  }
+  .dev-loader-card p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 9.5px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  @keyframes spinTools {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @media print { .dev-blur-overlay { display: none; } }
 </style>
 </head>
 <body>
 
+<div class="dev-blur-overlay">
+  <div class="dev-loader-card">
+    <div class="dev-status-title">
+      <i class="fas fa-tools dev-tools-icon fa-lg"></i>
+      <span>Updating Executive Matrix Logics...</span>
+    </div>
+    <p>We are currently configuring advanced costing formulas, variance trackers, and downstream corporate ledgers. This report view will freeze during runtime updates.</p>
+  </div>
+</div>
+
 <div class="dashboard-container">
 
-  <!-- 🏢 TOP CONTROLS & SESSION TRACING -->
   <div class="header-panel">
     <div class="header-title">
       <h2>COSTING DASHBOARD</h2>
@@ -375,7 +436,6 @@
     </div>
   </div>
 
-  <!-- 📊 QUICK STREAM STRIP -->
   <div class="quick-summary-strip">
     <div class="strip-item"><p class="strip-label">EBITDA Pool</p><p class="strip-value" style="color:#16a34a;">₹{{"{:.0f}".format(ebitda)}}</p></div>
     <div class="strip-item"><p class="strip-label">Processing / Kg</p><p class="strip-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</p></div>
@@ -385,11 +445,9 @@
     <div class="strip-item"><p class="strip-label">CCC Track</p><p class="strip-value" style="color:var(--accent-blue);">{{ cash_conversion_cycle }} Days</p></div>
   </div>
 
-  <!-- 📅 SEARCHABLE FILTERS MATRIX -->
   <div class="filter-panel">
     <form class="filter-form" method="GET" action="/dashboard/costing_dashboard">
       <div class="filter-inputs-wrapper">
-        <!-- Searchable Company Selection Dropdown -->
         <div class="input-field choices-container-custom">
           <label><i class="fa-solid fa-building"></i> Company ID</label>
           <select name="company_id" id="searchableCompanyDropdown">
@@ -408,7 +466,6 @@
     </form>
   </div>
 
-  <!-- 📊 12 RECONCILED STANDARD REFERENCE KPIs -->
   <div class="kpi-matrix-grid">
     <div class="ref-kpi-card" data-ref="rmp_cost"><span class="ref-kpi-meta">Raw Material Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</span></div>
     <div class="ref-kpi-card" data-ref="prod_cost"><span class="ref-kpi-meta">Production Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
@@ -424,17 +481,14 @@
     <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}" data-ref="net_margin_pct"><span class="ref-kpi-meta">Net Ratio</span><span class="ref-kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</span></div>
   </div>
 
-  <!-- 🚨 EXCEPTION TELEMETRY -->
   <div class="exception-box">
     <div class="exception-header"><i class="fa-solid fa-bolt"></i> Discrepancy Stack</div>
     {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Net profit tracking below threshold standard profile.</div>{% endif %}
     {% if receivable_outstanding > 0 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Active capital locked in external outstanding accounts.</div>{% endif %}
   </div>
 
-  <!-- 🏛️ CONTROL LEDGERS GRID -->
   <div class="core-layout-grid">
 
-    <!-- BLOCK 1: WATERFALL REFERENCE -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-sitemap" style="color:var(--accent-blue);"></i> Revenue Deductions</div>
       <div class="data-row"><span>Gross Sales Allocation</span><span>₹{{"{:,.2f}".format(total_sales)}}</span></div>
@@ -447,7 +501,6 @@
       <div class="data-row anchor-total-row"><span>Net Dynamic Yield</span><span>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
     </div>
 
-    <!-- BLOCK 2: VARIANCE REFERENCE -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:#ea580c;"></i> Target Variance Tracking</div>
       <div class="data-row" style="font-weight:700; background:var(--primary-dark); color:#fff; border-radius:4px;"><span>Vector Element</span><span>Current MTD</span><span>Variance</span></div>
@@ -458,7 +511,6 @@
       <div class="data-row anchor-total-row"><span>Index Composite</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:#e11d48;">+1.1%</span></div>
     </div>
 
-    <!-- BLOCK 3: MASS METRICS -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-weight-hanging" style="color:var(--text-muted)"></i> Unit Rate Breakdown (/Kg)</div>
       <div class="data-row"><span>Material Expense Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
@@ -468,19 +520,16 @@
       <div class="data-row anchor-total-row"><span>Aggregated Unit Cost</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
     </div>
 
-    <!-- BLOCK 4: BAR CHART MODULE -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-chart-pie" style="color: var(--primary-dark);"></i> Segment Resource Share</div>
       <div class="visual-holder"><canvas id="deptMiniChart"></canvas></div>
     </div>
 
-    <!-- BLOCK 5: TIMELINE VISUALIZATION REFERENCE -->
     <div class="section-card span-2x">
       <div class="section-header"><i class="fa-solid fa-timeline" style="color:#0d9488;"></i> Operational Trajectory Matrix</div>
       <div class="visual-holder"><canvas id="trendLineChart"></canvas></div>
     </div>
 
-    <!-- BLOCK 6: ARREARS RECOVERY STRATIFICATION -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:#e11d48;"></i> Outstanding Aging Schedule</div>
       <div class="data-row"><span>Current Frame (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
@@ -490,7 +539,6 @@
       <div class="data-row anchor-total-row"><span>Total Active Book Arrears</span><span>₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
     </div>
 
-    <!-- BLOCK 7: ASSET COLD STORAGE MATRIX -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-box" style="color:#ea580c;"></i> Inventory Holding Vintage</div>
       <div class="data-row"><span>Active Fast Turn (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
@@ -500,7 +548,6 @@
       <div class="data-row anchor-total-row"><span>Aggregate Vault Asset</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
     </div>
 
-    <!-- BLOCK 8: SKU PERFORMANCE EXPANSION BLOCK -->
     <div class="section-card full-width-block">
       <div class="section-header"><i class="fa-solid fa-layer-group" style="color:var(--accent-blue);"></i> SKU Performance Metrics & Margin Realization</div>
       <div class="prod-matrix-stack">
@@ -535,7 +582,6 @@
   </div>
 </div>
 
-<!-- DATA SCRIPT PLOTS REFERENCE & INITIALIZATION -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // Initialize Searchable Choices Dropdown Object for Company Selector Column
