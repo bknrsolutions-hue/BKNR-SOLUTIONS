@@ -203,7 +203,15 @@ def move_to_sales(
             detail="PO Number not found"
         )
 
+    packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+    weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
+
     for item in items:
+        # Pre-calculating quantities/amounts before committing database logs
+        qty_kg = float(item.no_of_mc or 0) * weight_map.get(str(item.packing_style).strip(), 1.0)
+        usd_val = qty_kg * float(item.selling_price or 0)
+        inr_val = usd_val * float(item.exchange_rate or 83.5)
+
         db.add(
             sales_dispatch(
                 company_id=company_code,
@@ -224,6 +232,12 @@ def move_to_sales(
                 grade=item.grade,
                 company_name=item.company_name,
                 exchange_rate=item.exchange_rate,
+                
+                # 🛠️ FIXED: Auto-populating the 3 new tracking columns on dynamic migration
+                sales_quantity=qty_kg,
+                amount_usd=usd_val,
+                amount_inr=inr_val,
+                
                 stock_value=0.0,
                 profit_loss=0.0,
                 freight_cost=0.0,
@@ -251,12 +265,12 @@ def move_to_sales(
     )
 
 # -------------------------------------------------------------------------
-# 4️⃣ SALES REPORT PAGE (UPDATED WITH FINANCIAL YEAR FILTER)
+# 4️⃣ SALES REPORT PAGE (UPDATED WITH FINANCIAL YEAR & STORAGE MATRIX)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report(
     request: Request, 
-    fy: Optional[str] = Query(None), # URL నుండి fy ని పారామీటర్‌గా స్వీకరిస్తుంది
+    fy: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -316,8 +330,14 @@ def sales_report(
         p_cost = packing_map.get(sale_po, 0)
         pl = inr - (stock_val + f_cost + p_cost)
 
-        # Update DB fields
-        s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
+        # 🛠️ FIXED: Storing recalculated values including the 3 new tracking columns into the DB object safely
+        s.sales_quantity = qty
+        s.amount_usd = usd
+        s.amount_inr = inr
+        s.stock_value = stock_val
+        s.freight_cost = f_cost
+        s.packing_cost = p_cost
+        s.profit_loss = pl
 
         processed.append({
             "sl_no": sl_no, "obj": s, "total_qty_kg": qty, "total_usd": usd, "total_inr": inr,
@@ -331,7 +351,7 @@ def sales_report(
         context={
             "sales_data": processed, 
             "unique_companies": unique_companies,
-            "selected_fy": fy or "" # HTML లో డ్రాప్‌డౌన్ 'selected' స్టేట్ మెయింటైన్ చేయడానికి ఉపయోగపడుతుంది
+            "selected_fy": fy or ""
         }
     )
 
@@ -356,7 +376,14 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     
     sale_item.exchange_rate = new_rate
     qty_kg = float(sale_item.no_of_mc or 0) * mc_weight
-    total_inr = (qty_kg * float(sale_item.price or 0)) * new_rate
+    total_usd = qty_kg * float(sale_item.price or 0)
+    total_inr = total_usd * new_rate
+    
+    # 🛠️ FIXED: Ensuring real-time modification syncs back to new database tracking columns instantly
+    sale_item.sales_quantity = qty_kg
+    sale_item.amount_usd = total_usd
+    sale_item.amount_inr = total_inr
+    
     sale_item.profit_loss = total_inr - (float(sale_item.stock_value or 0) + 
                                          float(sale_item.freight_cost or 0) + 
                                          float(sale_item.packing_cost or 0))

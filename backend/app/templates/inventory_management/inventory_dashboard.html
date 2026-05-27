@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>BKNR ERP | Corporate Inventory Intelligence</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -161,6 +161,8 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        cursor: pointer;
+        text-decoration: none;
     }
 
     .kpi-card:hover {
@@ -256,7 +258,7 @@
         display: block;
     }
 
-    /* 2. DATA TABLES SYSTEM - REFERENCE ARCHITECTURE STYLE */
+    /* DATA TABLES SYSTEM - REFERENCE ARCHITECTURE STYLE */
     .rm-summary-box { 
         background: var(--panel); 
         border-radius: var(--radius); 
@@ -454,24 +456,24 @@
         </div>
     </div>
 
-    <form method="get" class="filters">
+    <form method="get" id="filterForm" class="filters" action="">
         <div class="filter-group">
             <label>FY</label>
-            <select name="sel_fy" onchange="this.form.submit()">
+            <select name="sel_fy" onchange="document.getElementById('filterForm').submit()">
                 {% for fy in fy_options %}<option value="{{ fy }}" {{ 'selected' if sel_fy == fy else '' }}>{{ fy }}</option>{% endfor %}
             </select>
         </div>
         <div class="filter-group"><label>Species</label>
-            <select name="sel_species" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for s in species_list %}<option value="{{ s }}" {{ 'selected' if sel_species == s else '' }}>{{ s }}</option>{% endfor %}</select>
+            <select name="sel_species" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for s in species_list %}<option value="{{ s }}" {{ 'selected' if sel_species == s else '' }}>{{ s }}</option>{% endfor %}</select>
         </div>
         <div class="filter-group"><label>Variety</label>
-            <select name="sel_variety" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for v in varieties_list %}<option value="{{ v }}" {{ 'selected' if sel_variety == v else '' }}>{{ v }}</option>{% endfor %}</select>
+            <select name="sel_variety" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for v in varieties_list %}<option value="{{ v }}" {{ 'selected' if sel_variety == v else '' }}>{{ v }}</option>{% endfor %}</select>
         </div>
         <div class="filter-group"><label>Grade</label>
-            <select name="sel_grade" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for g in grades_list %}<option value="{{ g }}" {{ 'selected' if sel_grade == g else '' }}>{{ g }}</option>{% endfor %}</select>
+            <select name="sel_grade" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for g in grades_list %}<option value="{{ g }}" {{ 'selected' if sel_grade == g else '' }}>{{ g }}</option>{% endfor %}</select>
         </div>
         <div class="filter-group"><label>Client</label>
-            <select name="sel_prod_for" onchange="this.form.submit()"><option value="ALL">ALL</option>{% for p in prod_for_list %}<option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>{% endfor %}</select>
+            <select name="sel_prod_for" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for p in prod_for_list %}<option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>{% endfor %}</select>
         </div>
         <div class="filter-group"><label>Search</label>
             <input type="text" id="tableSearch" placeholder="Type to filter..." onkeyup="searchTable()">
@@ -479,21 +481,61 @@
     </form>
 </div>
 
+<!-- 🟢 KPI GRID ZONE: Real URLs sync applied perfectly to dodge 404 errors -->
 <div class="kpi-grid">
-    <div class="kpi-card kpi-opening"><h4>Opening</h4><div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-closing"><h4>Closing</h4><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-sales"><h4>Sales</h4><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-reprocess"><h4>Reprocess</h4><div class="value">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-fresh"><h4>Fresh</h4><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-dead"><h4>Dead Stock</h4><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
-    <div class="kpi-card kpi-mc"><h4>Total MC</h4><div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div><div class="amt-sub">Boxes</div></div>
+    <!-- Opening click triggers smooth scroll to Opening Stock Table in same dashboard -->
+    <div class="kpi-card kpi-opening" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
+        <h4>Opening</h4>
+        <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
+    </div>
+    
+    <!-- Closing click triggers smooth scroll to Live Closing Inventory Table in same dashboard -->
+    <div class="kpi-card kpi-closing" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
+        <h4>Closing</h4>
+        <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
+    </div>
+    
+    <!-- Sales redirect endpoint mapping synced with system operation settings -->
+    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales">
+        <h4>Sales</h4>
+        <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
+    </a>
+    
+    <!-- Reprocess redirect endpoint mapping synced with system operation settings -->
+    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess">
+        <h4>Reprocess</h4>
+        <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
+        <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
+    </a>
+    
+    <!-- Fresh redirect endpoint mapping synced with system operation settings -->
+    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh">
+        <h4>Fresh</h4>
+        <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
+    </a>
+    
+    <div class="kpi-card kpi-dead">
+        <h4>Dead Stock</h4>
+        <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
+    </div>
+    
+    <div class="kpi-card kpi-mc">
+        <h4>Total MC</h4>
+        <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
+        <div class="amt-sub">Boxes</div>
+    </div>
 </div>
 
-<div class="tabs">
-    <button class="tab-btn active" onclick="openTab(event,'live_tab')">Live Inventory</button>
-    <button class="tab-btn" onclick="openTab(event,'opening_tab')">Opening Stock</button>
-    <button class="tab-btn" onclick="openTab(event,'comparison_tab')">Comparison</button>
-    <button class="tab-btn" onclick="openTab(event,'aging_tab')">Aging</button>
+<div class="tabs" id="dashboardTabsBlock">
+    <button class="tab-btn active" id="live_tab_btn" onclick="openTab(event,'live_tab')">Live Inventory</button>
+    <button class="tab-btn" id="opening_tab_btn" onclick="openTab(event,'opening_tab')">Opening Stock</button>
+    <button class="tab-btn" id="comparison_tab_btn" onclick="openTab(event,'comparison_tab')">Comparison</button>
+    <button class="tab-btn" id="aging_tab_btn" onclick="openTab(event,'aging_tab')">Aging</button>
 </div>
 
 <!-- Tab 1: Live Closing Table Structural Replacement -->
@@ -520,7 +562,7 @@
                 <tbody id="inventoryBody">
                     {% for row in stock_table_data %}
                     {% set age = row.ageing_days|default(0) %}
-                    <tr class="{{ 'dead-row' if age > 700 else '' }}" data-opening-qty="{{ row.opening_qty|default(0) }}" data-closing-qty="{{ row.qty|default(0) }}" data-opening-mc="{{ row.opening_mc|default(0) }}" data-closing-mc="{{ row.mc|default(0) }}" data-inv-val="{{ row.value|default(0) }}">
+                    <tr class="{{ 'dead-row' if age > 700 else '' }}" data-opening-qty="{{ row.opening_qty|default(0) }}" data-closing-qty="{{ row.qty|default(0) }}" data-opening-mc="{{ row.opening_mc|default(0) }}" data-closing-mc="{{ row.mc|default(0) }}" data-inv-val="{{ row.value|default(0) }}" data-reprocess-qty="{{ row.reprocess_qty|default(0) }}" data-reprocess-val="{{ row.reprocess_value|default(0) }}">
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
                         <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
                         <td align="right" style="color:#16a34a;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:#dc2626;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
@@ -600,8 +642,25 @@ function openTab(evt, tabId){
     document.querySelectorAll('.tab-content').forEach(tab => { tab.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); });
     document.getElementById(tabId).classList.add('active');
-    evt.currentTarget.classList.add('active');
+    
+    // Check if dynamic text or event target object passed
+    if(evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+    } else if(evt) {
+        let TargetButton = document.getElementById(evt);
+        if(TargetButton) TargetButton.classList.add('active');
+    }
 }
+
+// Tab scroll processing and active component selection handler code block
+function scrollToDashboardTab(btnId, tabId) {
+    openTab(btnId, tabId);
+    let targetBlock = document.getElementById('dashboardTabsBlock');
+    if(targetBlock) {
+        targetBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
 const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fmtVal = new Intl.NumberFormat('en-IN', { minimumFractionDigits:0, maximumFractionDigits:0 });
 
@@ -609,7 +668,7 @@ function searchTable(){
     let input = document.getElementById("tableSearch");
     let filter = input.value.toUpperCase();
     let rows = document.querySelectorAll("#inventoryBody tr");
-    let sumOpQty = 0, sumClQty = 0, sumOpMC = 0, sumClMC = 0, sumClVal = 0;
+    let sumOpQty = 0, sumClQty = 0, sumOpMC = 0, sumClMC = 0, sumClVal = 0, sumReprocessQty = 0, sumReprocessVal = 0;
     rows.forEach(tr => {
         let text = tr.innerText.toUpperCase();
         if(text.indexOf(filter) > -1){
@@ -619,6 +678,8 @@ function searchTable(){
             sumOpMC += parseInt(tr.dataset.openingMc || 0);
             sumClMC += parseInt(tr.dataset.closingMc || 0);
             sumClVal += parseFloat(tr.dataset.invVal || 0);
+            sumReprocessQty += parseFloat(tr.dataset.reprocessQty || 0);
+            sumReprocessVal += parseFloat(tr.dataset.reprocessVal || 0);
         } else { tr.style.display = "none"; }
     });
     document.getElementById('foot_op_qty').innerText = fmt.format(sumOpQty);
@@ -626,6 +687,9 @@ function searchTable(){
     document.getElementById('foot_op_mc').innerText = sumOpMC.toLocaleString();
     document.getElementById('foot_cl_mc').innerText = sumClMC.toLocaleString();
     document.getElementById('foot_cl_val').innerText = fmtVal.format(sumClVal);
+    
+    document.getElementById('reprocessKpiQty').innerText = fmt.format(sumReprocessQty);
+    document.getElementById('reprocessKpiVal').innerText = "₹ " + fmtVal.format(sumReprocessVal);
 }
 
 function exportToExcel(tableID, fileName){
@@ -637,12 +701,12 @@ function exportToExcel(tableID, fileName){
 window.onload = function(){
     new Chart(document.getElementById('fyChart'), {
         type:'bar',
-        data:{ labels: {{ fy_labels|tojson }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson }}, backgroundColor:'#2563eb' },{ label:'Closing', data: {{ fy_closing|tojson }}, backgroundColor:'#10b981' }] },
+        data:{ labels: {{ fy_labels|tojson if fy_labels else '[]' }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson if fy_opening else '[]' }}, backgroundColor:'#2563eb' },{ label:'Closing', data: {{ fy_closing|tojson if fy_closing else '[]' }}, backgroundColor:'#10b981' }] },
         options:{ responsive:true, maintainAspectRatio:false }
     });
     new Chart(document.getElementById('varietyChart'), {
         type:'doughnut',
-        data:{ labels: {{ variety_labels|tojson }}, datasets:[{ data: {{ variety_values|tojson }}, backgroundColor:['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed'] }] },
+        data:{ labels: {{ variety_labels|tojson if variety_labels else '[]' }}, datasets:[{ data: {{ variety_values|tojson if variety_values else '[]' }}, backgroundColor:['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed'] }] },
         options:{ responsive:true, maintainAspectRatio:false }
     });
 }

@@ -115,6 +115,9 @@ class sales_dispatch(Base):
     freight_cost = Column(Float, default=0.0)
     packing_cost = Column(Float, default=0.0)
     status = Column(String(50), default="Unpaid") 
+    sales_quantity = Column(Float, default=0.0, nullable=True)  
+    amount_usd = Column(Float, default=0.0, nullable=True)      
+    amount_inr = Column(Float, default=0.0, nullable=True)
     created_at = Column(Date, default=func.now() if 'func' in globals() else datetime.now().date())
   
     

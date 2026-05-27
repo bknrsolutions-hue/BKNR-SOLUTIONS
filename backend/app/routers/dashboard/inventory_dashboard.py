@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, not_
 from datetime import datetime, date
 from collections import defaultdict
 
@@ -10,6 +11,10 @@ from app.database.models.inventory_management import (
     stock_entry,
     cold_storage_holding
 )
+
+# 🛠️ FIXED: Added Dedicated Database Models for Independent Override Calculations
+from app.database.models.inventory_management import sales_dispatch
+from app.database.models.reprocess import Reprocess  # 👈 Dedicated Reprocess Model Imported
 
 from app.database.models.criteria import (
     varieties,
@@ -88,7 +93,7 @@ async def get_inventory_dashboard(
     total_out_qty = 0.0
     age_30, age_90, age_700, dead_stock_qty = 0.0, 0.0, 0.0, 0.0
 
-    # KPI Value Counters (Added for complete KPI integration)
+    # KPI Value Counters
     total_opening_value = 0.0
     total_out_value = 0.0
     reprocess_value = 0.0
@@ -118,15 +123,24 @@ async def get_inventory_dashboard(
 
     # Combined Processing
     all_raw_data = []
-    for s in stocks: all_raw_data.append((s, s.production_at or "PLANT", s.date))
-    for c in cs_holds: all_raw_data.append((c, c.cold_storage_name or "CS", c.in_date))
+    # Normalizing locations while pushing elements into the processing collection
+    for s in stocks: 
+        prod_val = getattr(s, "production_at", "PLANT")
+        if not prod_val or str(prod_val).strip() == "" or str(prod_val).strip().lower() == "none":
+            prod_val = "PLANT"
+        all_raw_data.append((s, str(prod_val).strip().upper(), s.date))
+        
+    for c in cs_holds: 
+        cs_val = getattr(c, "cold_storage_name", "CS")
+        if not cs_val or str(cs_val).strip() == "" or str(cs_val).strip().lower() == "none":
+            cs_val = "CS"
+        all_raw_data.append((c, str(cs_val).strip().upper(), c.in_date))
 
     # First Pass: Compute average items mapping for value estimations
     for item, loc, s_date in all_raw_data:
         if not s_date or is_filtered(item, loc): continue
-        move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
         qty = float(getattr(item, "quantity", 0) or 0)
-        rate = float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0)
+        rate = float(getattr(item, "product_kg_value", 0) or getattr(item, "rate_per_kg", 0) or 0)
         
         if qty > 0 and rate > 0:
             g_key = (item.species or "N/A", item.variety or "N/A", getattr(item, "packing_style", "N/A") or "N/A", item.glaze or "NW", item.grade or "N/A", item.production_for or "N/A")
@@ -140,10 +154,9 @@ async def get_inventory_dashboard(
     for item, loc, s_date in all_raw_data:
         if not s_date or is_filtered(item, loc): continue
 
-        # KPI Fix: Ensure all values are handled even if they are None
         move = str(getattr(item, "cargo_movement_type", "") or "").strip().upper()
         qty = float(getattr(item, "quantity", 0) or 0)
-        rate = float(getattr(item, "rate_per_kg", 0) or getattr(item, "product_kg_value", 0) or 0)
+        rate = float(getattr(item, "product_kg_value", 0) or getattr(item, "rate_per_kg", 0) or 0)
         mc = int(getattr(item, "no_of_mc", 0) or 0)
         loose = int(getattr(item, "loose", 0) or 0)
         
@@ -170,12 +183,15 @@ async def get_inventory_dashboard(
         # Current FY Transactions
         if fy_start <= s_date <= fy_end:
             current_fy_stock_qty += net
-            if move == "IN": 
+            
+            # 🛠️ FIXED: STRICT CONSTRAINT - Only sum IN value from the fresh stock_entry table data
+            if move == "IN" and isinstance(item, stock_entry): 
                 total_in_qty += qty
                 total_in_value += calculated_row_value
-            elif move == "OUT":
-                total_out_qty += qty
-                total_out_value += calculated_row_value
+
+            purpose = str(getattr(item, "purpose", "") or "").upper()
+            if move == "OUT" and "SALE" in purpose:
+                total_sales_qty += qty
 
         # Closing Stock Logic (Up to FY End)
         if s_date <= fy_end:
@@ -183,7 +199,6 @@ async def get_inventory_dashboard(
             closing_stock_mc += mc_net
             grand_loose += loose_net
             
-            # Aging only for 'IN' movements that are still in stock (Logic approximation)
             if move == "IN":
                 if ageing_days <= 30: age_30 += qty
                 elif ageing_days <= 90: age_90 += qty
@@ -191,16 +206,6 @@ async def get_inventory_dashboard(
                 else: 
                     dead_stock_qty += qty
                     dead_stock_value += calculated_row_value
-
-        # Sales & Reprocess KPI Fix
-        purpose = str(getattr(item, "purpose", "") or "").upper()
-        if move == "OUT" and "SALE" in purpose:
-            total_sales_qty += qty
-
-        prod_type = str(getattr(item, "type_of_production", "") or "").upper()
-        if move == "IN" and prod_type != "RAW":
-            reprocess_qty += qty
-            reprocess_value += calculated_row_value
 
         # Table Grouping
         fr = getattr(item, "freezer", "IQF") if hasattr(item, "freezer") else "CS"
@@ -225,6 +230,51 @@ async def get_inventory_dashboard(
         variety_stats[item.variety or "N/A"] += net
         grade_stats[item.grade or "N/A"] += net
         daily_flow[s_date.strftime("%Y-%m-%d")][move] += qty
+
+    # 🛠️ FIXED: OVERRIDE SALES METRICS DIRECT FROM INDEPENDENT SALES DISPATCH LOGS
+    sales_db_query = db.query(
+        func.sum(sales_dispatch.sales_quantity).label("sales_qty_kg"),  
+        func.sum(sales_dispatch.amount_inr).label("sales_total_inr_value")  
+    ).filter(
+        sales_dispatch.company_id == comp_code,
+        func.to_date(sales_dispatch.invoice_date, 'YYYY-MM-DD') >= fy_start,
+        func.to_date(sales_dispatch.invoice_date, 'YYYY-MM-DD') <= fy_end
+    )
+
+    if sel_variety != "ALL":
+        sales_db_query = sales_db_query.filter(sales_dispatch.variety == sel_variety)
+    if sel_grade != "ALL":
+        sales_db_query = sales_db_query.filter(sales_dispatch.grade == sel_grade)
+    if sel_prod_for != "ALL":
+        sales_db_query = sales_db_query.filter(sales_dispatch.buyer_name == sel_prod_for)
+        
+    sales_metrics_result = sales_db_query.first()
+    total_out_qty = float(getattr(sales_metrics_result, "sales_qty_kg", 0) or 0)
+    total_out_value = float(getattr(sales_metrics_result, "sales_total_inr_value", 0) or 0)
+
+    # 🛠️ FIXED: REPROCESS CALCULATION INTEGRATION EXCLUDING 'SALES' TYPE
+    reprocess_db_query = db.query(
+        func.sum(Reprocess.in_qty).label("reproc_total_qty"),
+        func.sum(Reprocess.inventory_value).label("reproc_total_value")
+    ).filter(
+        Reprocess.company_id == comp_code,
+        Reprocess.date >= fy_start,
+        Reprocess.date <= fy_end,
+        not_(Reprocess.reprocess_type.ilike("%sales%"))
+    )
+
+    if sel_species != "ALL":
+        reprocess_db_query = reprocess_db_query.filter(Reprocess.species == sel_species)
+    if sel_variety != "ALL":
+        reprocess_db_query = reprocess_db_query.filter(Reprocess.variety == sel_variety)
+    if sel_grade != "ALL":
+        reprocess_db_query = reprocess_db_query.filter(Reprocess.grade == sel_grade)
+    if sel_prod_for != "ALL":
+        reprocess_db_query = reprocess_db_query.filter(Reprocess.production_for == sel_prod_for)
+
+    reprocess_metrics_result = reprocess_db_query.first()
+    reprocess_qty = float(getattr(reprocess_metrics_result, "reproc_total_qty", 0) or 0)
+    reprocess_value = float(getattr(reprocess_metrics_result, "reproc_total_value", 0) or 0)
 
     # Global Weighted Average Rate Calculation
     global_item_rates = defaultdict(lambda: {"sum_val": 0.0, "sum_qty": 0.0})
