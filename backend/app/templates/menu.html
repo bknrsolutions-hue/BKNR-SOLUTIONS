@@ -187,18 +187,13 @@ body {
 
 .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* 🌟 Sticky Header Configuration: ఎల్లప్పుడూ స్క్రీన్ పైనే ఫిక్స్ అయి ఉంటుంది */
 .app-header {
     height: var(--header-h); 
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border-color);
     display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
-    position: sticky;
-    top: 0;
-    z-index: 990; 
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    z-index: 90;
 }
 
 .header-left-meta { display: flex; align-items: center; gap: 16px; }
@@ -216,9 +211,8 @@ body {
 .hamburger-trigger-btn {
     background: #fff; border: 1px solid #e2e8f0; color: var(--primary-dark);
     padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
-    display: flex; align-items: center; justify-content: center;
 }
-.hamburger-trigger-btn:hover { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
+.hamburger-trigger-btn:hover { background: var(--primary-dark); color: #fff; }
 
 .header-right-actions { display: flex; align-items: center; gap: 15px; }
 
@@ -265,12 +259,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
         font-size: 13px;
         padding-left: 8px;
     }
-    .app-header {
-        padding: 0 12px;
-    }
-    .header-right-actions {
-        gap: 8px;
-    }
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -303,7 +291,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
 <div class="app-container">
     <div class="app-header">
         <div class="header-left-meta">
-            <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Open Menu">
+            <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <div class="company-header-title">
@@ -446,39 +434,39 @@ const organizedMenu = [
     },
     {
         pillarName: "Master Setup & Admin",
-        categories: [
-            {
-                title: "Criteria Masters",
-                icon: "fa-folder-tree",
-                items: [
-                    ['brands', '/criteria/brands', 'fa-caret-right', 'Brands', 'Config'],
-                    ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents', 'Config'],
-                    ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers', 'Config'],
-                    ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals', 'Config'],
-                    ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master', 'Config'],
-                    ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations', 'Config'],
-                    ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors', 'Config'],
-                    ['countries', '/criteria/countries', 'fa-caret-right', 'Countries', 'Config'],
-                    ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers', 'Config'],
-                    ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes', 'Config'],
-                    ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO', 'Config'],
-                    ['grades', '/criteria/grades', 'fa-caret-right', 'Grades', 'Config'],
-                    ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO', 'Config'],
-                    ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes', 'Config'],
-                    ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles', 'Config'],
-                    ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At', 'Config'],
-                    ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates', 'Config'],
-                    ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At', 'Config'],
-                    ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For', 'Config'],
-                    ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types', 'Config'],
-                    ['purchasing_locations', '/criteria/purchasing_locations', 'fa-caret-right', 'Purchasing Locations', 'Config'],
-                    ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes', 'Config'],
-                    ['species', '/criteria/species', 'fa-caret-right', 'Species', 'Config'],
-                    ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers', 'Config'],
-                    ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties', 'Config'],
-                    ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers', 'Config'],
-                    ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors', 'Config']
-                ]
+categories: [
+    {
+        title: "Criteria Masters",
+        icon: "fa-folder-tree",
+        items: [
+            ['brands', '/criteria/brands', 'fa-caret-right', 'Brands', 'Config'],
+            ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents', 'Config'],
+            ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers', 'Config'],
+            ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals', 'Config'],
+            ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master', 'Config'],
+            ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations', 'Config'],
+            ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors', 'Config'],
+            ['countries', '/criteria/countries', 'fa-caret-right', 'Countries', 'Config'],
+            ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers', 'Config'],
+            ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes', 'Config'],
+            ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO', 'Config'],
+            ['grades', '/criteria/grades', 'fa-caret-right', 'Grades', 'Config'],
+            ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO', 'Config'],
+            ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes', 'Config'],
+            ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles', 'Config'],
+            ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At', 'Config'],
+            ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates', 'Config'],
+            ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At', 'Config'],
+            ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For', 'Config'],
+            ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types', 'Config'],
+            ['purchasing_locations', '/criteria/purchasing_locations', 'fa-caret-right', 'Purchasing Locations', 'Config'],
+            ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes', 'Config'],
+            ['species', '/criteria/species', 'fa-caret-right', 'Species', 'Config'],
+            ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers', 'Config'],
+            ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties', 'Config'],
+            ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers', 'Config'],
+            ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors', 'Config']
+        ]
             },
             {
                 title: "Administration",
