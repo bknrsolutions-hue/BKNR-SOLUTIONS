@@ -206,7 +206,12 @@ class Production(Base):
     __tablename__ = "production"
 
     id = Column(Integer, primary_key=True, index=True)
-
+    date = Column(Date)
+    time = Column(Time)
+    production_at = Column(String(255))
+    production_for = Column(String(255))
+    production_type = Column(String)
+    species = Column(String(100))
     batch_number = Column(String(100))
     brand = Column(String(255))
     variety_name = Column(String(100))
@@ -219,19 +224,14 @@ class Production(Base):
     loose = Column(Integer)
     production_qty = Column(Float)
 
-    production_type = Column(String)
     target_yield_percent = Column(Float)
     diff_qty = Column(Float)        
     diff_percent = Column(Float)
 
-    species = Column(String(100))
     company_id = Column(String(50))
     email = Column(String)
 
-    date = Column(Date)
-    time = Column(Time)
-    production_at = Column(String(255))
-    production_for = Column(String(255))
+
 
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from datetime import datetime
