@@ -112,21 +112,22 @@ class Grading(Base):
     __tablename__ = "grading"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    batch_number = Column(String(100))
-    variety_name = Column(String(100))
-    graded_count = Column(String(50))
-    quantity = Column(Float)
-    species = Column(String(100))
-    hoso_count = Column(String(50))
-
-    company_id = Column(String(50))
-    email = Column(String)
-
     date = Column(Date)
     time = Column(Time)
     peeling_at = Column(String(255))
     production_for = Column(String(255))
+    species = Column(String(100))
+    batch_number = Column(String(100))
+    hoso_count = Column(String(50))
+    variety_name = Column(String(100))
+    graded_count = Column(String(50))
+    quantity = Column(Float)
+    
+
+    email = Column(String)
+    company_id = Column(String(50))
+
+
     
 
 
@@ -137,7 +138,9 @@ class Peeling(Base):
     __tablename__ = "peeling"
 
     id = Column(Integer, primary_key=True, index=True)
-
+    peeling_at = Column(String(255))
+    production_for = Column(String(255))
+    species = Column(String(100))
     batch_number = Column(String(100))
     hlso_count = Column(String(50))
     hlso_qty = Column(Float)
@@ -147,7 +150,6 @@ class Peeling(Base):
 
     yield_percent = Column(Float)
     target_yield_percent = Column(Float)
-    species = Column(String(100))
     contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
     rate = Column(Float)
     amount = Column(Float)
@@ -160,8 +162,7 @@ class Peeling(Base):
     # For multi-company access control
     email = Column(String(200))
     company_id = Column(String(50))
-    peeling_at = Column(String(255))
-    production_for = Column(String(255))
+
 
 
 # ---------------------------------------------------------

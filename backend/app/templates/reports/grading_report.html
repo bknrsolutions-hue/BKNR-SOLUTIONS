@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>GRADING REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
@@ -13,9 +15,12 @@
  --bg:#f1f5f9;
  --header:#ffffff;
  --text:#1e293b;
+ --text-muted:#64748b;
+ --danger: #ef4444;
+ --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
+*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
 body{
  margin:0; background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text);
@@ -31,14 +36,17 @@ body{
 
 .filters{
  margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:6px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
+ grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
+ gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+
+/* FY Dropdown Specific */
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
@@ -48,26 +56,31 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 .dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
 
 .menu-list{
- position:absolute; right:0; top:30px; width:200px; background:#fff; border:1px solid var(--border);
+ position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
+.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1000px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; } 
+
+#summaryContent table,
+#detailedContent table{ min-width: 1350px; }
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
+ background:#f1f5f9; padding:8px 4px; font-size:10px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ text-align:center;
 }
 
 tbody td{
- padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
+ padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -76,63 +89,159 @@ tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
 
+/* Empty State Styling */
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+
+/* Optimized Column Widths */
+.w-sl { width: 45px; } .w-bt { width: 95px; } .w-sp { width: 120px; } 
+.w-ct { width: 85px; } .w-vr { width: 100px; } .w-qt { width: 95px; }
+
 .qty-link{ color: var(--accent); font-weight: 700; text-decoration: underline; cursor: pointer; }
-
-/* Precise Column Widths */
-.w-sl { width: 40px; }
-.w-bt { width: 90px; }
-.w-sp { width: 130px; }
-.w-ct { width: 70px; }
-.w-vr { width: 90px; }
-.w-qt { width: 80px; }
-
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
-/* ================= AUDIT & MODAL ================= */
+/* Expansion Row Style Standardizations */
+.expand-row{ background: #fbfcfe; display: none; }
+.expand-box{ padding: 8px; border: 1px solid var(--accent); border-radius: 4px; margin: 5px; background: #fff; overflow-x: auto; }
+
+/* ================= CARD VIEW STYLES (MOBILE FIT) ================= */
+.cards-grid {
+ display: grid; 
+ grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
+ gap: 8px; padding: 8px; overflow-y: auto; height: 100%; background: #f1f5f9;
+}
+.report-card {
+ background: #fff; border: 1px solid var(--border); border-radius: 5px;
+ display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+ border-top: 3px solid var(--primary);
+}
+.card-top {
+ background: #f8fafc; padding: 6px 10px; 
+ border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700;
+ display: flex; justify-content: space-between; align-items: center;
+}
+.card-top .left-info { display: flex; flex-direction: column; gap: 1px; color: var(--primary); }
+.card-top .right-info { text-align: right; font-size: 10.5px; color: var(--accent); background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe; }
+.card-top .badge { color: #64748b; font-size: 9px; font-weight: 600; text-transform: uppercase; }
+
+.card-body { padding: 6px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.card-body-summary { display: flex; justify-content: space-between; font-size: 10.5px; background: #f8fafc; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 1px; }
+.card-body-title { font-size: 9px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 2px; margin-bottom: 2px; text-transform: uppercase;}
+
+.card-details-table{
+    width:100% !important;
+    border-collapse:collapse !important;
+    margin-bottom:0 !important;
+    border:1px solid #e2e8f0 !important;
+    min-width:unset !important;
+    table-layout:fixed !important;
+}
+.card-details-table th { font-size: 9.5px; color: #475569; padding: 6px 4px; background: #f1f5f9; font-weight: 800; border: 1px solid #e2e8f0; text-transform: uppercase; text-align: center; }
+.card-details-table td { font-size: 9.5px; font-weight: 700; color: var(--text); padding: 6px 4px; border: 1px solid #e2e8f0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-details-table .card-subtotal-row td { background: #f8fafc; font-weight: 800; color: var(--accent); border-top: 1.5px solid var(--border); }
+
+/* Card Footer Grid */
+.card-footer {
+ background: #f8fafc; padding: 6px 10px; border-top: 1px solid var(--border);
+ display: grid; grid-template-columns: 1fr 1fr; gap: 4px 6px; font-size: 9.5px;
+}
+.footer-item { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+.footer-item:nth-last-child(-n+2) { border-bottom: none; padding-bottom: 0; }
+
+/* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:280px; text-align:center; }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px;}
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; }
+.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
 
 .audit-panel{ position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; border-left:3px solid var(--primary); display:none; flex-direction:column; z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); }
-
-/* Expansion Row */
-.expand-row{ background: #fbfcfe; display: none; }
-.expand-box{ padding: 10px; border: 1px solid var(--accent); border-radius: 4px; margin: 5px; background: #fff; }
 </style>
 </head>
-
 <body>
 
 <div class="header">
-    <h2>GRADING SUMMARY REPORT</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>GRADING SUMMARY REPORT</h2>
+        <div style="font-size: 11px; color: var(--text-muted); font-weight:700;">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
     <div class="view-tabs">
         <div class="tab active" onclick="switchView('summary', this)">Summary View</div>
         <div class="tab" onclick="switchView('detailed', this)">Detailed View</div>
+        <div class="tab" onclick="switchView('card', this)">Card View</div>
     </div>
     <div class="filters">
-        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="">All</option></select></div>
-        <div class="fbox"><label>Species</label><select id="f_species"><option value="">All</option></select></div>
-        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All</option></select></div>
-        <div class="fbox"><label>HOSO Count</label><select id="f_count"><option value="">All</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Species, Count...">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="" {% if not selected_fy %}selected{% endif %}>-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Batch</label>
+            <select id="f_batch" onchange="applyFilters()">
+                <option value="">All Batches</option>
+                {% for b in batches %}
+                <option value="{{b}}">{{b}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Species</label>
+            <select id="f_species" onchange="applyFilters()">
+                <option value="">All Species</option>
+                {% for s in species_list %}
+                <option value="{{s}}">{{s}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Variety</label>
+            <select id="f_variety" onchange="applyFilters()">
+                <option value="">All Varieties</option>
+                {% for v in varieties %}
+                <option value="{{v}}">{{v}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>HOSO Count</label>
+            <select id="f_count" onchange="applyFilters()">
+                <option value="">All Counts</option>
+                {% for c in counts %}
+                <option value="{{c}}">{{c}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <input id="searchBox" placeholder="Quick Search Batch, Species, Variety, Count..." onkeyup="applyFilters()">
     </div>
 </div>
 
 <div class="actions">
-    <div id="rowCount">0 rows</div>
+    <div id="rowCount">0 rows found</div>
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
+            {% if is_admin %}
             <div onclick="enableEdit()">✏️ Edit Row (Detailed Only)</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
+            {% endif %}
             <div onclick="toggleAudit()">📜 Full Audit History</div>
             <hr>
+            <b>📋 Export Options</b>
             <div onclick="askConfirm('print_table')">🖨 Print Table</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF</div>
             <hr>
+            {% if is_admin %}
             <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Row</div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -157,24 +266,34 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
                 </tr>
             </thead>
             <tbody id="summaryBody">
-                {% for r in rows %}
-                <tr class="data-row {% if r.is_subtotal %}subtotal{% endif %}" 
-                    data-batch="{{r.batch}}" data-species="{{r.species}}" data-count="{{r.hoso_count}}" data-variety="{{r.variety}}">
-                    <td>{{r.id}}</td>
-                    <td>{{r.batch}}</td>
-                    <td>{{r.species}}</td>
-                    <td>{{r.hoso_count}}</td>
-                    <td>{{r.variety}}</td>
-                    <td class="qty-link" onclick="expandRow(this,'hoso','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')">{{r.hoso_qty}}</td>
-                    <td class="qty-link" onclick="expandRow(this,'graded','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')">{{r.graded_qty}}</td>
-                    <td>{{r.workout_count}}</td>
-                    <td>{{r.yield_pct}}%</td>
-                    <td>{{r.grading_hoso_qty}}</td>
-                    <td>{{r.weight_diff_kg}}</td>
-                    <td>{{r.weight_diff_pct}}%</td>
+                {% if not selected_fy or not rows %}
+                <tr>
+                    <td colspan="12" class="empty-state">
+                        <i class="fa-solid fa-calendar-check"></i><br>
+                        <b>Financial Year Not Selected</b><br>
+                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span>
+                    </td>
                 </tr>
-                <tr class="expand-row"><td colspan="12"><div class="expand-box">Loading...</div></td></tr>
-                {% endfor %}
+                {% else %}
+                    {% for r in rows %}
+                    <tr class="data-row {% if r.is_subtotal %}subtotal{% endif %}" 
+                        data-batch="{{r.batch}}" data-species="{{r.species}}" data-count="{{r.hoso_count}}" data-variety="{{r.variety}}" onclick="selectRow(this)">
+                        <td class="w-sl slno">{% if r.is_subtotal %}{% else %}{{ r.id }}{% endif %}</td>
+                        <td class="w-bt">{{r.batch}}</td>
+                        <td class="w-sp">{{r.species}}</td>
+                        <td class="w-ct">{{r.hoso_count}}</td>
+                        <td class="w-vr">{{r.variety}}</td>
+                        <td class="w-qt qty-link" onclick="expandRow(this,'hoso','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')">{{r.hoso_qty}}</td>
+                        <td class="w-qt qty-link" onclick="expandRow(this,'graded','{{r.batch}}','{{r.species}}','{{r.hoso_count}}','{{r.variety}}')">{{r.graded_qty}}</td>
+                        <td class="w-qt">{{r.workout_count}}</td>
+                        <td class="w-qt" style="color:var(--accent); font-weight:800;">{{r.yield_pct}}%</td>
+                        <td class="w-qt">{{r.grading_hoso_qty}}</td>
+                        <td class="w-qt diff-kg-cell" data-val="{{r.weight_diff_kg}}">{{r.weight_diff_kg}}</td>
+                        <td class="w-qt diff-pct-cell" data-val="{{r.weight_diff_pct}}">{{r.weight_diff_pct}}%</td>
+                    </tr>
+                    <tr class="expand-row"><td colspan="12"><div class="expand-box">Loading Breakdown Data View...</div></td></tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
         </table>
     </div>
@@ -185,27 +304,44 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
             <tbody id="detailedBody"></tbody>
         </table>
     </div>
+
+    <div id="cardContent" class="table-wrap" style="display:none; height:100%;">
+        <div class="cards-grid" id="cardsGrid"></div>
+    </div>
 </div>
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg"></h4>
-        <button class="btn-y" id="btnYes">Confirm</button>
+        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <button class="btn-y" id="btnYes">Yes, Proceed</button>
         <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
     <div style="padding:12px;background:var(--primary);color:#fff;display:flex;justify-content:space-between;align-items:center;">
-        <b>FULL AUDIT HISTORY</b>
+        <b style="font-size:12px;">FULL AUDIT HISTORY</b>
         <span onclick="toggleAudit()" style="cursor:pointer;font-size:20px;">×</span>
     </div>
     <div id="auditContent" style="padding:10px;overflow:auto;flex:1;background:#f8fafc;"></div>
 </div>
 
 <script>
-const baseUrl = "/reports/grading_report";
 let selectedRow = null, currentAction = null;
+const allRows = [...document.querySelectorAll("#summaryBody tr.data-row:not(.subtotal)")];
+const baseUrl = "/reports/grading_report";
+let allDetailedData = []; 
+
+// Financial Year Change Logic
+function changeFY(val) {
+    if(!val) {
+        window.location.href = window.location.pathname;
+        return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
+}
 
 function switchView(view, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -213,47 +349,213 @@ function switchView(view, btn) {
     if(view === 'summary') {
         document.getElementById('summaryContent').style.display = 'block';
         document.getElementById('detailedContent').style.display = 'none';
+        document.getElementById('cardContent').style.display = 'none';
         applyFilters();
-    } else {
+    } else if(view === 'detailed') {
         document.getElementById('summaryContent').style.display = 'none';
         document.getElementById('detailedContent').style.display = 'block';
+        document.getElementById('cardContent').style.display = 'none';
         loadDetailedData();
+    } else if(view === 'card') {
+        document.getElementById('summaryContent').style.display = 'none';
+        document.getElementById('detailedContent').style.display = 'none';
+        document.getElementById('cardContent').style.display = 'block';
+        if (allDetailedData.length === 0) {
+            loadDetailedData().then(() => renderCardsView());
+        } else {
+            renderCardsView();
+        }
     }
 }
 
 function loadDetailedData() {
     const body = document.getElementById("detailedBody");
     const head = document.getElementById("detailedHeader");
-    body.innerHTML = "<tr><td colspan='10'>Loading Session Data...</td></tr>";
+    
+    if(!document.getElementById("f_fy").value) {
+        body.innerHTML = "<tr><td colspan='12' class='empty-state'><b>Financial Year Not Selected</b></td></tr>";
+        return Promise.resolve();
+    }
+    
+    body.innerHTML = "<tr><td colspan='12'>Loading Session Data Logs...</td></tr>";
 
-    fetch(`${baseUrl}/details?source=all&batch=&species=&hoso_count=&variety=`)
+    return fetch(`${baseUrl}/details?source=all&batch=&species=&hoso_count=&variety=`)
     .then(r=>r.json()).then(data => {
-        if(!data.length) return body.innerHTML = "<tr><td>No Data</td></tr>";
-        let keys = Object.keys(data[0]).filter(k => k !== "_sa_instance_state");
-        head.innerHTML = keys.map(k => `<th>${k.replace(/_/g,' ')}</th>`).join('');
+        allDetailedData = data; 
+        if(!data.length) return body.innerHTML = "<tr><td colspan='12'>No Detailed Data Log Found</td></tr>";
+        
+        const keys = [
+            "id", "date", "time", "peeling_at", "production_for", 
+            "species", "batch_number", "hoso_count", "variety_name", 
+            "graded_count", "quantity", "email"
+        ];
+        
+        head.innerHTML = keys.map(k => {
+            return `<th>${k.replace(/_/g,' ')}</th>`;
+        }).join('');
+
         body.innerHTML = data.map(row => `
             <tr data-id="${row.id}" onclick="selectRow(this)">
-                ${keys.map(k => `<td class="${k==='id'?'':'editable'}" data-field="${k}">${row[k]??''}</td>`).join('')}
+                ${keys.map(k => {
+                    let displayValue = row[k] ?? '';
+                    if(k === 'quantity' && displayValue !== '') {
+                        let parsed = parseFloat(displayValue);
+                        if(!isNaN(parsed)) displayValue = parsed.toFixed(2);
+                    }
+                    return `<td class="${k==='id'?'':'editable'}" data-field="${k}">${displayValue}</td>`;
+                }).join('')}
             </tr>
         `).join('');
-        document.getElementById("rowCount").innerText = `${data.length} sessions`;
+        document.getElementById("rowCount").innerText = `${data.length} functional sessions found`;
     });
 }
 
+function renderCardsView() {
+    const cardsGrid = document.getElementById("cardsGrid");
+    cardsGrid.innerHTML = "";
+    
+    if(allRows.length === 0) {
+        cardsGrid.innerHTML = `<div style="grid-column:1/-1;" class="empty-state"><b>Financial Year Not Selected</b></div>`;
+        return;
+    }
+    
+    const b = f_batch.value.toLowerCase();
+    const s = f_species.value.toLowerCase();
+    const v = f_variety.value.toLowerCase();
+    const c = f_count.value.toLowerCase();
+    const q = searchBox.value.toLowerCase();
+    
+    let visibleCards = 0;
+    
+    allRows.forEach((r) => {
+        const tds = r.querySelectorAll("td");
+        if(tds.length < 12) return;
+        
+        const id = tds[0].innerText;
+        const batch = tds[1].innerText;
+        const species = tds[2].innerText;
+        const hosoCount = tds[3].innerText;
+        const variety = tds[4].innerText;
+        const actualHoso = tds[5].innerText;
+        const gradedQty = tds[6].innerText;
+        const workoutCount = tds[7].innerText;
+        const yieldPct = tds[8].innerText;
+        const gradingHoso = tds[9].innerText;
+        const diffKg = tds[10].innerText;
+        const diffPct = tds[11].innerText;
+
+        const text = r.innerText.toLowerCase();
+        let matchesFilters = (!b || batch.toLowerCase() === b) &&
+                             (!s || species.toLowerCase() === s) &&
+                             (!v || variety.toLowerCase() === v) &&
+                             (!c || hosoCount.toLowerCase() === c) &&
+                             (!q || text.includes(q));
+                             
+        if(matchesFilters) {
+            visibleCards++;
+            
+            const subRows = allDetailedData.filter(row => 
+                String(row.batch_number || row.batch || '').toLowerCase() === batch.toLowerCase() &&
+                String(row.species || '').toLowerCase() === species.toLowerCase() &&
+                String(row.hoso_count || '').toLowerCase() === hosoCount.toLowerCase() &&
+                String(row.variety_name || row.variety || '').toLowerCase() === variety.toLowerCase()
+            );
+
+            let subTableBodyHTML = "";
+            let cardTotalQuantity = 0;
+
+            if(subRows.length === 0) {
+                subTableBodyHTML = `<tr><td colspan="2" style="color:#64748b; font-style:italic; text-align:center; padding: 6px 4px; font-size: 9.5px;">No breakdown details available</td></tr>`;
+            } else {
+                subRows.forEach(row => {
+                    let finalCount = row.graded_count ?? '-';
+                    let rawQty = row.quantity ?? 0;
+                    
+                    let finalQty = parseFloat(rawQty);
+                    if (isNaN(finalQty)) finalQty = 0;
+                    cardTotalQuantity += finalQty;
+                    
+                    subTableBodyHTML += `
+                    <tr>
+                        <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center;">${finalCount}</td>
+                        <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center; color:var(--accent); font-weight:700;">${finalQty.toFixed(2)} KG</td>
+                     </tr>
+                    `;
+                });
+                
+                subTableBodyHTML += `
+                <tr class="card-subtotal-row">
+                    <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:right; font-weight:800; text-transform:uppercase;">Total:</td>
+                    <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center; font-weight:800;">${cardTotalQuantity.toFixed(2)} KG</td>
+                </tr>
+                `;
+            }
+            
+            const cardHTML = `
+                <div class="report-card">
+                    <div class="card-top">
+                        <div class="left-info">
+                            <div>BATCH: ${batch}</div>
+                            <div class="badge">${species} | ${variety}</div>
+                        </div>
+                        <div class="right-info">
+                            <span style="font-size:8px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">HOSO Count</span>
+                            <b>${hosoCount}</b>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-body-summary">
+                            <span style="color:#64748b; font-weight:600;">Actual HOSO Qty:</span>
+                            <span style="font-weight:800; color:var(--primary);">${actualHoso} KG</span>
+                        </div>
+                        <div class="card-body-title">Graded Details Breakdown</div>
+                        <div style="border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; overflow:hidden;">
+                            <table class="card-details-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50%;">Count</th>
+                                        <th style="width: 50%;">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${subTableBodyHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="footer-item"><span style="color:#64748b;">Workout:</span> <b>${workoutCount}</b></div>
+                        <div class="footer-item"><span style="color:#64748b;">Yield:</span> <b>${yieldPct}</b></div>
+                        <div class="footer-item"><span style="color:#64748b;">Grading HOSO:</span> <b>${gradingHoso}</b></div>
+                        <div class="footer-item"><span style="color:#64748b;">Diff:</span> <b style="color:${parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)'}">${diffKg} (${diffPct})</b></div>
+                    </div>
+                </div>
+            `;
+            cardsGrid.insertAdjacentHTML('beforeend', cardHTML);
+        }
+    });
+    
+    document.getElementById("rowCount").innerText = `${visibleCards} cards displayed`;
+}
+
 function selectRow(tr) { 
-    document.querySelectorAll("tr").forEach(r => r.classList.remove("selected")); 
+    if(tr.querySelector('.empty-state')) return;
+    document.querySelectorAll("#summaryBody tr, #detailedBody tr").forEach(r => r.classList.remove("selected")); 
     tr.classList.add("selected"); 
     selectedRow = tr; 
 }
 
 function applyFilters() {
+    if(allRows.length === 0) return;
+
     const b = f_batch.value.toLowerCase(), s = f_species.value.toLowerCase();
     const v = f_variety.value.toLowerCase(), c = f_count.value.toLowerCase();
     const q = searchBox.value.toLowerCase();
     let visible = 0;
 
-    document.querySelectorAll("#summaryBody .data-row").forEach(r => {
+    allRows.forEach(r => {
         const text = r.innerText.toLowerCase();
+        
         let ok = (!b || r.dataset.batch.toLowerCase() === b) &&
                  (!s || r.dataset.species.toLowerCase() === s) &&
                  (!v || r.dataset.variety.toLowerCase() === v) &&
@@ -261,9 +563,29 @@ function applyFilters() {
                  (!q || text.includes(q));
         
         r.style.display = ok ? "" : "none";
-        if(ok && !r.classList.contains("subtotal")) visible++;
+        if(ok) {
+            visible++;
+            const diffKgEl = r.querySelector(".diff-kg-cell");
+            const diffPctEl = r.querySelector(".diff-pct-cell");
+            if(diffKgEl && diffPctEl) {
+                const kv = parseFloat(diffKgEl.getAttribute('data-val')) || 0;
+                diffKgEl.style.color = kv >= 0 ? "var(--success)" : "var(--danger)";
+                diffPctEl.style.color = kv >= 0 ? "var(--success)" : "var(--danger)";
+            }
+        }
     });
-    document.getElementById("rowCount").innerText = `${visible} groups`;
+    
+    // SL No Re-assignment Descending Framework Loop
+    let filteredDataRows = allRows.filter(r => r.style.display !== "none");
+    filteredDataRows.forEach((row, index) => {
+        row.querySelector(".slno").innerText = filteredDataRows.length - index;
+    });
+
+    document.getElementById("rowCount").innerText = `${visible} groups found`;
+    
+    if (document.getElementById("cardContent").style.display === "block") {
+        renderCardsView();
+    }
 }
 
 function expandRow(el, source, batch, species, count, variety) {
@@ -273,19 +595,51 @@ function expandRow(el, source, batch, species, count, variety) {
     
     fetch(`${baseUrl}/details?source=${source}&batch=${batch}&species=${species}&hoso_count=${count}&variety=${variety}`)
     .then(r=>r.json()).then(data => {
-        let keys = Object.keys(data[0]).filter(k => k !== "Form" && k !== "_sa_instance_state");
-        let html = `<table style="width:100%; border:1px solid #ddd; font-size:9px;"><thead><tr>`;
-        keys.forEach(k => html += `<th style="background:#eee; padding:4px; border:1px solid #ddd;">${k}</th>`);
+        if(!data || !data.length) {
+            sub.querySelector(".expand-box").innerHTML = "<div style='padding:6px 4px; font-size:9.5px; color:#64748b; text-align:center;'>No breakdown dataset found.</div>";
+            return;
+        }
+
+        let keys = [];
+        if (source === 'hoso') {
+            keys = [
+                "id", "date", "time", "peeling_at", "production_for", 
+                "species", "batch_number", "hoso_count", "hoso_qty", "hlso_qty", 
+                "yield_percent", "target_yield_percent", "diff_qty", "diff_percent", 
+                "contractor", "rate_per_kg", "amount"
+            ];
+        } else {
+            keys = [
+                "id", "date", "time", "peeling_at", "production_for", 
+                "species", "batch_number", "hoso_count", "variety_name", 
+                "graded_count", "quantity"
+            ];
+        }
+        
+        let html = `<table style="width:100%; border:1px solid var(--border); font-size:9.5px; border-collapse:collapse; table-layout:fixed; text-align:center;"><thead><tr>`;
+        keys.forEach(k => {
+            html += `<th style="background:#f1f5f9; padding:6px 4px; border:1px solid #e2e8f0; text-transform:uppercase; font-weight:800; text-align:center;">${k.replace(/_/g,' ')}</th>`;
+        });
+        
         html += `</tr></thead><tbody>`;
         data.forEach(row => {
-            html += `<tr>${keys.map(k => `<td style="border:1px solid #ddd; padding:4px; text-align:center;">${row[k]??''}</td>`).join('')}</tr>`;
+            html += `<tr>${keys.map(k => {
+                let displayValue = row[k] ?? '';
+                if(["hoso_qty", "hlso_qty", "yield_percent", "target_yield_percent", "diff_qty", "diff_percent", "rate_per_kg", "amount", "quantity"].includes(k) && displayValue !== '') {
+                    let parsed = parseFloat(displayValue);
+                    if(!isNaN(parsed)) {
+                        displayValue = k.includes('percent') ? parsed.toFixed(2) + '%' : parsed.toFixed(2);
+                    }
+                }
+                return `<td style="border:1px solid #f1f5f9; padding:6px 4px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayValue}</td>`;
+            }).join('')}</tr>`;
         });
         sub.querySelector(".expand-box").innerHTML = html + `</tbody></table>`;
     });
 }
 
 function enableEdit() {
-    if(!selectedRow || !selectedRow.parentElement.id.includes("detailed")) return alert("Select a row in Detailed View!");
+    if(!selectedRow || !selectedRow.parentElement.id.includes("detailed")) return alert("Please select a valid row line inside Detailed View to enable modifications.");
     selectedRow.querySelectorAll(".editable").forEach(td => {
         const val = td.innerText.trim();
         td.innerHTML = `<input class="edit-input" value="${val}">`;
@@ -296,9 +650,11 @@ async function saveEdit() {
     if(!selectedRow) return;
     const payload = { id: selectedRow.dataset.id };
     const inputs = selectedRow.querySelectorAll(".edit-input");
+    if(!inputs.length) return;
     inputs.forEach(i => payload[i.parentElement.dataset.field] = i.value);
+    
     const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) loadDetailedData(); else alert("Error updating row.");
+    if(res.ok) loadDetailedData(); else alert("Error processing ledger entry updates.");
 }
 
 function toggleAudit() {
@@ -307,31 +663,31 @@ function toggleAudit() {
     if(p.style.display === "flex") {
         fetch(`${baseUrl}/audit`).then(r=>r.json()).then(data => {
             document.getElementById("auditContent").innerHTML = data.map(l => `
-                <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
-                    <b>ID: ${l.record_id}</b> | ${l.edited_at}<br>
-                    Field: ${l.field_name} | By: ${l.edited_by}<br>
-                    <span style="color:red; text-decoration:line-through;">${l.old_value}</span> → <span style="color:green; font-weight:bold;">${l.new_value}</span>
+                <div style="font-size:10px; border-bottom:1px solid var(--border); padding:8px 0; line-height:1.4;">
+                    <b>ID Ref: ${l.record_id}</b> | ${l.edited_at}<br>
+                    Field: <span style="color:var(--accent); font-weight:700;">${l.field_name}</span> | By: ${l.edited_by}<br>
+                    <span style="color:var(--danger); text-decoration:line-through;">${l.old_value}</span> → <span style="color:var(--success); font-weight:bold;">${l.new_value}</span>
                 </div>
             `).join("");
         });
     }
 }
 
-function askConfirm(action) { currentAction = action; confirmMsg.innerText = `Confirm ${action.replace(/_/g,' ')}?`; confirmModal.style.display = "flex"; }
+function askConfirm(action) { 
+    if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
+    currentAction = action; 
+    confirmMsg.innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()} Request?`; 
+    confirmModal.style.display = "flex"; 
+}
 function closeModal() { confirmModal.style.display = "none"; }
 btnYes.onclick = () => { closeModal(); if(currentAction==='print_table') window.print(); };
 
 function toggleMenu(e) { e.stopPropagation(); mainMenu.style.display = mainMenu.style.display==="block"?"none":"block"; }
-document.onclick = () => mainMenu.style.display="none";
+document.onclick = () => { if(document.getElementById("mainMenu")) mainMenu.style.display="none"; }
 
-// Init filters
-const bSel = f_batch, sSel = f_species;
-[...new Set([...document.querySelectorAll(".data-row")].map(r=>r.dataset.batch))].forEach(v=> bSel.add(new Option(v,v)));
-[...new Set([...document.querySelectorAll(".data-row")].map(r=>r.dataset.species))].forEach(v=> sSel.add(new Option(v,v)));
-
-[f_batch, f_species, f_variety, f_count].forEach(el => el.onchange = applyFilters);
-searchBox.oninput = applyFilters;
-applyFilters();
+window.onload = () => {
+    applyFilters();
+};
 </script>
 </body>
 </html>
