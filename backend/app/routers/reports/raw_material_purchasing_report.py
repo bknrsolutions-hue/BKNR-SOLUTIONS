@@ -64,7 +64,20 @@ def report_page(
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # FY select cheyakapothe empty rows
+    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
+    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        current_year = d.year
+        if d.month >= 4:
+            fy_str = f"{current_year}"
+        else:
+            fy_str = f"{current_year - 1}"
+        fy_set.add(fy_str)
+    financial_years = sorted(list(fy_set), reverse=True)
+
+    # FY select cheyakapothe empty rows వెళ్తాయి
     if not fy:
         return templates.TemplateResponse(
             request=request,
@@ -73,6 +86,7 @@ def report_page(
                 "rows": [], "batches": [], "suppliers": [], "varieties": [],
                 "species": [], "production_for_list": [], "peeling_locations": [],
                 "hsn_list": [], "company_name": "", "company_address": "",
+                "financial_years": financial_years, # Pass dynamic FY list
                 "selected_fy": None, "is_admin": role == "admin"
             }
         )
@@ -82,7 +96,7 @@ def report_page(
     end_date = dt.date(selected_fy + 1, 3, 31)
 
     # --- UPDATED QUERY LOGIC ---
-    # RMP date tho sambandham lekunda, Gate Entry date range ni base chesukuntunnam
+    # RMP date tho sambandham lekunda, Gate Entry date range ni base chesukuni query filter avతుంది
     rows = (
         db.query(RawMaterialPurchasing)
         .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
@@ -115,6 +129,7 @@ def report_page(
             "hsn_list": get_dist("hsn_code"),
             "company_name": comp["name"],
             "company_address": comp["address"],
+            "financial_years": financial_years, # Pass dynamic FY list
             "selected_fy": str(selected_fy),
             "is_admin": role == "admin",
             "datetime": datetime

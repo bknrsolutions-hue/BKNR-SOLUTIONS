@@ -184,7 +184,6 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 # =====================================================
 # LOGIN
 # =====================================================
-
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
@@ -202,11 +201,12 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
-    # ✅ SESSION SET
+    # ✅ SESSION SET (🌟 ADDED company_name TO SESSION TO MATCH CORRESPONDING RECON MATRICES)
     request.session.update({
         "email": user.email,
         "company_id": company.id,
         "company_code": company.company_code,
+        "company_name": company.company_name,  # ఇక్కడ కంపెనీ నేమ్ కూడా సెషన్ లో సేవ్ అవుతుంది!
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions

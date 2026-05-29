@@ -177,7 +177,7 @@ body {
     line-height: 1.4;
     margin-bottom: 4px;
 }
-.footer-powered {
+.sidebar-footer .footer-powered {
     font-size: 9px;
     font-weight: 800;
     color: var(--primary-dark);
@@ -187,7 +187,7 @@ body {
 
 .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* 🌟 Sticky Header Configuration: ఎల్లప్పుడూ స్క్రీన్ పైనే ఫిక్స్ అయి ఉంటుంది */
+/* 🌟 Sticky Header Configuration */
 .app-header {
     height: var(--header-h); 
     background: rgba(255, 255, 255, 0.95);
@@ -306,8 +306,9 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
             <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Open Menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
+            <!-- 🌟 ఈ భాగంలో కంపెనీ నేమ్ వచ్చేలా చేసాను (ఒకవేళ సెషన్‌లో పేరు లేకపోతే కోడ్ చూపిస్తుంది) -->
             <div class="company-header-title">
-                {{ request.session.get('company_code') }}
+                {{ request.session.get('company_name') or request.session.get('company_code') }}
             </div>
         </div>
         

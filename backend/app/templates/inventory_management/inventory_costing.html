@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Analysis | BKNR ERP</title>
+    <title>Inventory Analysis | {{ company_name or 'COMPANY' }} ERP</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -20,8 +20,8 @@
             --orange: #ea580c;
         }
 
-        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { margin: 0; background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; padding: 5px; font-size: 9.5px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; padding: 5px; font-size: 9.5px; line-height: 1.3; }
 
         /* ================= PREMIUM HEADER & TABS ================= */
         header { 
@@ -36,7 +36,6 @@
             align-items: center;
         }
         .logo-section h1 { margin: 0; font-size: 12px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
-        .logo-section p { display: none; } /* Compact Mode */
 
         /* ================= SINGLE ROW FILTERS LAYOUT ================= */
         .control-bar { 
@@ -59,14 +58,14 @@
 
         .filters-group { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+            grid-template-columns: 1fr; 
             gap: 6px; 
             flex: 1; 
             align-items: center;
             width: 100%;
         }
         @media (min-width: 992px) {
-            .filters-group { width: auto; justify-content: flex-end; display: flex; }
+            .filters-group { grid-template-columns: 120px repeat(2, minmax(110px, 140px)) 1fr 140px; justify-content: flex-end; display: grid; }
         }
 
         .fbox { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
@@ -74,14 +73,30 @@
 
         .search-wrapper { position: relative; min-width: 140px; }
         .search-wrapper i { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; }
-        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); }
-        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); }
+        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); height: 26px; }
+        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); height: 26px; }
+
+        /* PREMIUM style for FY */
+        .fy-select-premium {
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 10px;
+            font-weight: 700;
+            outline: none;
+            background: #f8fafc;
+            width: 100%;
+            color: var(--brand-accent);
+            border-left: 3px solid var(--brand-accent);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
         main { flex: 1; display: flex; flex-direction: column; }
         .view-content { display: none; }
         .view-content.active { display: block; }
 
-        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); text-align: center; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; }
+        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); text-align: center; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; width: 100%; }
         .empty-dashboard i { font-size: 30px; margin-bottom: 10px; opacity: 0.3; }
 
         /* ================= ULTRA-COMPACT DATA GRID ================= */
@@ -95,7 +110,6 @@
         .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 30px; color: var(--text-muted); font-size: 8.5px; }
         .sticky-batch { position: sticky; left: 30px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); color: var(--brand-accent); font-weight: 700; }
 
-        /* Highlight Classes */
         .move-in { background: #f0fdf4 !important; color: var(--in-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
         .move-out { background: #fef2f2 !important; color: var(--out-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
         .qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #fffdf5; }
@@ -133,6 +147,10 @@
         .stat-item { display: flex; flex-direction: column; }
         .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1px; }
         .stat-val { color: var(--brand-primary); font-weight: 800; }
+        
+        .empty-state { text-align:center; padding:60px 20px; color:#94a3b8; background: white; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; }
+
+        @media print { .header-container, .table-container, .control-bar, .nav-tabs { border:none; display: none !important; } body{background:#fff; padding:0;} }
     </style>
 </head>
 <body>
@@ -150,10 +168,23 @@
         <button class="tab-btn" onclick="switchView('dashboard', this)">GRADE DASHBOARD</button>
     </div>
 
-    <div class="filters-group">
+    <form method="get" id="filterForm" class="filters-group">
+        <div class="fbox" id="fyFilterWrapper">
+            <label style="color: var(--brand-accent); font-weight: 800;"><i class="fa-solid fa-calendar-check" style="margin-right: 2px;"></i> Year Filter</label>
+            <select id="f_fy" class="fy-select-premium" onchange="changeFY(this.value)">
+                <option value="" style="color: var(--text-muted); font-weight:600;">-- ALL YEARS (DEFAULT) --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                {% set next_yr_short = (y + 1) | string %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ next_yr_short[2:] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
         <div class="fbox">
             <label>Production For</label>
-            <select id="prodForFilter" class="select-filter" onchange="applyFilters()" style="border: 1.5px solid var(--brand-accent);">
+            <select id="prodForFilter" name="production_for" class="select-filter" onchange="applyFilters()">
                 <option value="">-- All Companies --</option>
                 {% for item in rows|map(attribute='production_for')|select('string')|unique|sort %}
                 <option value="{{ item }}">{{ item }}</option>
@@ -161,9 +192,9 @@
             </select>
         </div>
 
-        <div class="fbox">
+        <div class="fbox" id="prodAtFilterWrapper">
             <label>Production At</label>
-            <select id="prodAtFilter" class="select-filter" onchange="applyFilters()">
+            <select id="prodAtFilter" name="production_at" class="select-filter" onchange="applyFilters()">
                 <option value="">-- All Locations --</option>
                 {% for item in rows|map(attribute='production_at')|select('string')|unique|sort %}
                 <option value="{{ item }}">{{ item }}</option>
@@ -171,7 +202,7 @@
             </select>
         </div>
 
-        <div id="dashboardFilters" style="display: none; gap: 6px; align-items: center; flex: 1;">
+        <div id="dashboardFilters" style="display: none; gap: 6px; align-items: center;">
             <div class="fbox">
                 <label>Species</label>
                 <select id="speciesFilter" class="select-filter" onchange="applyFilters()"><option value="">All Species</option></select>
@@ -191,17 +222,17 @@
         </div>
 
         <div class="fbox" style="min-width: 140px;">
-            <label>Search</label>
+            <label>Local Search</label>
             <div class="search-wrapper">
                 <i class="fas fa-search"></i>
                 <input type="text" id="globalSearch" class="search-input" placeholder="Search Grade, Batch..." onkeyup="applyFilters()">
             </div>
         </div>
-    </div>
+    </form>
 </div>
 
 <main>
-    <!-- DATA GRID VIEW -->
+    <!-- 🌟 STRATEGIC FIXED BLOCK: REMOVED EMPTY IF CONDITIONAL WRAPPERS -->
     <div id="tableView" class="view-content active">
         <div class="table-container">
             <div class="scroll-box">
@@ -233,12 +264,11 @@
                         </tr>
                     </thead>
                     <tbody id="masterTbody">
-                        {% set total_rows = rows|length %}
-                        {% for r in rows|reverse %}
+                        {% for r in rows %}
                         <tr data-species="{{r.species}}" data-grade="{{r.grade}}" data-variety="{{r.variety}}" data-glaze="{{r.glaze}}" data-qty="{{r.quantity}}" 
                             data-rate="{{r.product_kg_value}}" data-val="{{r.inventory_value}}" data-pack="{{r.packing_style}}" 
                             data-move="{{r.cargo_movement_type}}" data-prodfor="{{r.production_for}}" data-prodat="{{r.production_at}}">
-                            <td class="sticky-id sl-no">{{ total_rows - loop.index0 }}</td>
+                            <td class="sticky-id sl-no"></td>
                             <td class="sticky-batch">{{ r.batch_number }}</td>
                             <td>{{ r.date }}</td>
                             <td>{{ r.type_of_production }}</td>
@@ -268,19 +298,17 @@
         </div>
     </div>
 
-    <!-- DASHBOARD VIEW -->
     <div id="dashboardView" class="view-content">
         <div id="dashContainer" class="grid-layout"></div>
     </div>
 </main>
 
-<!-- FOOTER STATUS STATS -->
 <div class="status-footer">
     <div class="stat-group">
         <div class="stat-item"><span class="stat-label">Total Items</span><span id="stat_items" class="stat-val">0</span></div>
     </div>
     <div class="stat-group">
-        <div class="stat-item"><span class="stat-label">Total Stock IN</span><span id="stat_in_qty" class="stat-val" style="color:var(--in-color)">0.00 Kg</span></div>
+        <div class="stat-in-qty" style="display:flex; flex-direction:column;"><span class="stat-label">Total Stock IN</span><span id="stat_in_qty" class="stat-val" style="color:var(--in-color); font-weight:800;">0.00 Kg</span></div>
         <div class="stat-item"><span class="stat-label">IN Value</span><span id="stat_in_val" class="stat-val" style="color:var(--in-color)">₹0</span></div>
     </div>
     <div class="stat-group">
@@ -299,27 +327,42 @@
 
     let currentView = 'table';
 
+    function changeFY(val) {
+        const url = new URL(window.location.href);
+        if (val) {
+            url.searchParams.set('fy', val);
+        } else {
+            url.searchParams.delete('fy');
+        }
+        window.location.href = url.toString();
+    }
+
     function switchView(view, btn) {
         currentView = view;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
-        document.getElementById(view + 'View').classList.add('active');
+        const targetView = document.getElementById(view + 'View');
+        if (targetView) targetView.classList.add('active');
+        
         document.getElementById('dashboardFilters').style.display = (view === 'dashboard') ? 'flex' : 'none';
+        document.getElementById('fyFilterWrapper').style.display = (view === 'dashboard') ? 'none' : 'flex';
+        document.getElementById('prodAtFilterWrapper').style.display = (view === 'dashboard') ? 'none' : 'flex';
+        
         if(view === 'dashboard') populateDashboardFilters();
         applyFilters();
     }
 
     function populateDashboardFilters() {
-        const rows = [...document.querySelectorAll("#masterTbody tr")];
+        const tbody = document.getElementById("masterTbody");
+        if(!tbody) return;
+        const rows = [...tbody.querySelectorAll("tr")];
         const prodFor = document.getElementById("prodForFilter").value;
-        const prodAt = document.getElementById("prodAtFilter").value;
         let species = new Set(), grades = new Set(), varieties = new Set(), glazes = new Set();
         
         rows.forEach(r => {
             const rProdFor = r.getAttribute('data-prodfor') || "";
-            const rProdAt = r.getAttribute('data-prodat') || "";
-            if ((!prodFor || rProdFor === prodFor) && (!prodAt || rProdAt === prodAt)) {
+            if (!prodFor || rProdFor === prodFor) {
                 const s = r.getAttribute('data-species');
                 const g = r.getAttribute('data-grade');
                 const v = r.getAttribute('data-variety');
@@ -338,6 +381,7 @@
 
     function updateSelect(id, set, defaultText) {
         const select = document.getElementById(id);
+        if(!select) return;
         const currentVal = select.value;
         select.innerHTML = `<option value="">${defaultText}</option>`;
         [...set].sort().forEach(val => {
@@ -351,19 +395,39 @@
     }
 
     function applyFilters() {
+        const tbody = document.getElementById("masterTbody");
+        if(!tbody) return;
+        
         const query = document.getElementById("globalSearch").value.toLowerCase();
         const prodFor = document.getElementById("prodForFilter").value;
         const prodAt = document.getElementById("prodAtFilter").value;
-        const species = document.getElementById("speciesFilter").value;
-        const grade = document.getElementById("gradeFilter").value;
-        const variety = document.getElementById("varietyFilter").value;
-        const glaze = document.getElementById("glazeFilter").value;
         
-        const rows = [...document.querySelectorAll("#masterTbody tr")];
-        let filteredData = [];
-        let activeIndex = 1;
+        const rows = [...tbody.querySelectorAll("tr")];
+        let tableFilteredData = [];
+        let dashboardFilteredData = [];
         
         let inQty = 0, inVal = 0, outQty = 0, outVal = 0;
+
+        const species = document.getElementById("speciesFilter") ? document.getElementById("speciesFilter").value : "";
+        const grade = document.getElementById("gradeFilter") ? document.getElementById("gradeFilter").value : "";
+        const variety = document.getElementById("varietyFilter") ? document.getElementById("varietyFilter").value : "";
+        const glaze = document.getElementById("glazeFilter") ? document.getElementById("glazeFilter").value : "";
+
+        let totalMatchingRows = 0;
+        rows.forEach(r => {
+            const txt = r.innerText.toLowerCase();
+            const rProdFor = r.getAttribute('data-prodfor') || "";
+            const rProdAt = r.getAttribute('data-prodat') || "";
+            
+            if (currentView === 'table') {
+                const okTable = (!query || txt.includes(query)) && 
+                                (!prodFor || rProdFor === prodFor) &&
+                                (!prodAt || rProdAt === prodAt);
+                if(okTable) totalMatchingRows++;
+            }
+        });
+
+        let currentSlNo = totalMatchingRows;
 
         rows.forEach(r => {
             const txt = r.innerText.toLowerCase();
@@ -375,63 +439,66 @@
             const rGlaze = r.getAttribute('data-glaze');
             const rMove = r.getAttribute('data-move');
             
-            const ok = (!query || txt.includes(query)) && 
-                       (!prodFor || rProdFor === prodFor) &&
-                       (!prodAt || rProdAt === prodAt) &&
-                       (currentView === 'table' || (
+            const q = parseFloat(r.getAttribute('data-qty')) || 0;
+            const v = parseFloat(r.getAttribute('data-val')) || 0;
+
+            if (currentView === 'table') {
+                const okTable = (!query || txt.includes(query)) && 
+                                (!prodFor || rProdFor === prodFor) &&
+                                (!prodAt || rProdAt === prodAt);
+                
+                r.style.display = okTable ? "" : "none";
+                if(okTable) {
+                    r.querySelector('.sl-no').innerText = currentSlNo--;
+                    if(rMove === 'IN') { inQty += q; inVal += v; } 
+                    else { outQty += q; outVal += v; }
+                    tableFilteredData.push({ qty: q, val: v, move: rMove });
+                }
+            }
+            
+            const okDash = (!query || txt.includes(query)) && 
+                           (!prodFor || rProdFor === prodFor) &&
                            (!species || rSpecies === species) &&
                            (!grade || rGrade === grade) &&
                            (!variety || rVariety === variety) &&
-                           (!glaze || rGlaze === glaze)
-                       ));
-
-            r.style.display = ok ? "" : "none";
-            
-            if(ok) {
-                r.querySelector('.sl-no').innerText = activeIndex++;
-                const q = parseFloat(r.getAttribute('data-qty')) || 0;
-                const v = parseFloat(r.getAttribute('data-val')) || 0;
-
-                if(rMove === 'IN') { inQty += q; inVal += v; } 
-                else { outQty += q; outVal += v; }
-
-                filteredData.push({
+                           (!glaze || rGlaze === glaze);
+                           
+            if (okDash) {
+                dashboardFilteredData.push({
                     species: rSpecies, grade: rGrade, variety: rVariety, glaze: rGlaze,
-                    qty: q, val: v, move: rMove, pack: r.getAttribute('data-pack')
+                    qty: q, val: v, move: rMove
                 });
             }
         });
 
-        const balQty = inQty - outQty;
-        const balVal = inVal + outVal;
-        const balAvg = balQty > 0 ? (balVal / balQty).toFixed(2) : "0.00";
+        if(currentView === 'table') {
+            const balQty = inQty - outQty;
+            const balVal = inVal + outVal;
+            const balAvg = balQty > 0 ? (balVal / balQty).toFixed(2) : "0.00";
 
-        document.getElementById("stat_items").innerText = filteredData.length;
-        document.getElementById("stat_in_qty").innerText = inQty.toFixed(2) + " Kg";
-        document.getElementById("stat_in_val").innerText = "₹" + Math.round(inVal).toLocaleString('en-IN');
-        document.getElementById("stat_out_qty").innerText = outQty.toFixed(2) + " Kg";
-        document.getElementById("stat_out_val").innerText = "₹" + Math.round(Math.abs(outVal)).toLocaleString('en-IN');
-        document.getElementById("stat_qty").innerText = balQty.toFixed(2) + " Kg";
-        document.getElementById("stat_avg_rate").innerText = "₹" + balAvg;
-        document.getElementById("stat_val").innerText = "₹" + Math.round(balVal).toLocaleString('en-IN');
+            document.getElementById("stat_items").innerText = tableFilteredData.length;
+            document.getElementById("stat_in_qty").innerText = inQty.toFixed(2) + " Kg";
+            document.getElementById("stat_in_val").innerText = "₹" + Math.round(inVal).toLocaleString('en-IN');
+            document.getElementById("stat_out_qty").innerText = outQty.toFixed(2) + " Kg";
+            document.getElementById("stat_out_val").innerText = "₹" + Math.round(Math.abs(outVal)).toLocaleString('en-IN');
+            document.getElementById("stat_qty").innerText = balQty.toFixed(2) + " Kg";
+            document.getElementById("stat_avg_rate").innerText = "₹" + balAvg;
+            document.getElementById("stat_val").innerText = "₹" + Math.round(balVal).toLocaleString('en-IN');
+        }
 
-        if(currentView === 'dashboard') renderDashboard(filteredData, prodFor);
+        if(currentView === 'dashboard') {
+            renderDashboard(dashboardFilteredData);
+        }
     }
 
-    function renderDashboard(data, prodFor) {
+    function renderDashboard(data) {
         const container = document.getElementById("dashContainer");
-        if(!prodFor) {
-            container.innerHTML = `
-                <div class="empty-dashboard">
-                    <i class="fas fa-filter"></i>
-                    <h3>Please select Production For Company</h3>
-                    <p>Select a company filter from dropdown to visualize grade dashboard metrics.</p>
-                </div>`;
-            container.style.display = "block"; return;
-        }
+        if(!container) return;
+        
         container.style.display = "grid";
         container.innerHTML = "";
         const groups = {};
+        
         data.forEach(item => {
             const key = `${item.species}_${item.variety}_${item.grade}_${item.glaze}`;
             if(!groups[key]) groups[key] = { ...item, inQty: 0, inVal: 0, outQty: 0, outVal: 0 };
@@ -439,9 +506,26 @@
             else { groups[key].outQty += item.qty; groups[key].outVal += item.val; }
         });
 
-        Object.values(groups).forEach(g => {
+        const groupedEntries = Object.values(groups);
+        if(groupedEntries.length === 0) {
+            container.innerHTML = `
+                <div class="empty-dashboard">
+                    <i class="fas fa-search-minus"></i>
+                    <h3>No grade metrics found</h3>
+                    <p>Try changing filters or company verification criteria.</p>
+                </div>`;
+            return;
+        }
+
+        let dInQty = 0, dInVal = 0, dOutQty = 0, dOutVal = 0;
+
+        groupedEntries.forEach(g => {
             const availQty = g.inQty - g.outQty;
             const availVal = g.inVal + g.outVal;
+            
+            dInQty += g.inQty; dInVal += g.inVal;
+            dOutQty += g.outQty; dOutVal += g.outVal;
+
             const inAvg = g.inQty > 0 ? (g.inVal / g.inQty).toFixed(2) : "0.00";
             const outAvg = g.outQty > 0 ? (Math.abs(g.outVal) / g.outQty).toFixed(2) : "0.00";
             const availAvg = availQty > 0 ? (availVal / availQty).toFixed(2) : "0.00";
@@ -480,9 +564,24 @@
                 </div>`;
             container.appendChild(card);
         });
+
+        const dBalQty = dInQty - dOutQty;
+        const dBalVal = dInVal + dOutVal;
+        const dBalAvg = dBalQty > 0 ? (dBalVal / dBalQty).toFixed(2) : "0.00";
+
+        document.getElementById("stat_items").innerText = groupedEntries.length;
+        document.getElementById("stat_in_qty").innerText = dInQty.toFixed(2) + " Kg";
+        document.getElementById("stat_in_val").innerText = "₹" + Math.round(dInVal).toLocaleString('en-IN');
+        document.getElementById("stat_out_qty").innerText = dOutQty.toFixed(2) + " Kg";
+        document.getElementById("stat_out_val").innerText = "₹" + Math.round(Math.abs(dOutVal)).toLocaleString('en-IN');
+        document.getElementById("stat_qty").innerText = dBalQty.toFixed(2) + " Kg";
+        document.getElementById("stat_avg_rate").innerText = "₹" + dBalAvg;
+        document.getElementById("stat_val").innerText = "₹" + Math.round(dBalVal).toLocaleString('en-IN');
     }
 
-    window.onload = applyFilters;
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilters();
+    });
 </script>
 </body>
 </html>

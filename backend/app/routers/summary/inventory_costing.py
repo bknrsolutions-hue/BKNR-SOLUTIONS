@@ -1,16 +1,18 @@
 # ============================================================
 # FINAL INVENTORY & REPROCESS COSTING ROUTER
-# (FINAL PRODUCTION VERSION - RMP VS REPROCESS CONDITION ADDED)
+# (FINAL PRODUCTION VERSION - COMPLETED STABLE MATRIX)
 # ============================================================
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case, and_
 
 import re
+from datetime import datetime, date
+import datetime as dt
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -21,11 +23,12 @@ from app.database.models.inventory_management import (
 from app.database.models.processing import (
     RawMaterialPurchasing,
     Grading,
-    Peeling
+    Peeling,
+    GateEntry
 )
 from app.database.models.criteria import (
     varieties as VarietyTable,
-    HOSO_HLSO_Yields,production_for as ProductionForTable
+    HOSO_HLSO_Yields, production_for as ProductionForTable
 )
 from app.services.floor_balance import (
     get_floor_balance
@@ -104,7 +107,6 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
 
     if not master: return 5.0
 
-    # Source identification logic
     is_source_rmp = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == comp_code,
         RawMaterialPurchasing.batch_number == row.batch_number
@@ -128,10 +130,8 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
     is_source_hlso = "HLSO" in source_variety
 
     if any(x in prod_type for x in ["RAW", "MELTING", "PRODUCTION"]):
-        # Base: Production + Ice
         cost = float(master.production_cost_per_kg or 0) + float(master.ice_rate_per_kg or 0)
         
-        # Transformation Addons
         if is_source_hoso:
             if is_finish_hlso:
                 cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0))
@@ -139,11 +139,9 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
                 cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0) + float(master.peeling_rate_per_kg or 0))
         
         elif is_source_hlso:
-            # RMP HLSO to HLSO requires Grading
             if is_finish_hlso and is_source_rmp:
                 cost += float(master.grading_rate_per_kg or 0)
             elif is_finish_va:
-                # VA from HLSO always needs Peeling, but only RMP needs Grading
                 if is_source_rmp: cost += float(master.grading_rate_per_kg or 0)
                 cost += float(master.peeling_rate_per_kg or 0)
 
@@ -166,10 +164,34 @@ def inventory_costing_page(
     request: Request,
     db: Session = Depends(get_db),
     from_date: str = "",
-    to_date: str = ""
+    to_date: str = "",
+    fy: str = Query(None)
 ):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/auth/login", status_code=302)
+
+    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
+    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        current_year = d.year
+        if d.month >= 4:
+            fy_str = f"{current_year}"
+        else:
+            fy_str = f"{current_year - 1}"
+        fy_set.add(fy_str)
+    financial_years = sorted(list(fy_set), reverse=True)
+
+    # --- Financial Year Bounds Definition ---
+    selected_fy = fy
+    fy_start, fy_end = None, None
+    if selected_fy:
+        start_year = int(selected_fy)
+        fy_start = date(start_year, 4, 1)
+        fy_end = date(start_year + 1, 3, 31)
+        if not from_date: from_date = fy_start.isoformat()
+        if not to_date: to_date = fy_end.isoformat()
 
     plant_rows = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
     cs_rows = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
@@ -255,8 +277,24 @@ def inventory_costing_page(
     db.commit()
     db.expire_all()
 
-    all_rows = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all() + \
-               db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
+    # --- SAFE OUTER JOIN GATE ENTRY SELECTION STRUCTURE ---
+    base_query = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
+        stock_entry.company_id == comp_code
+    )
+
+    if selected_fy and fy_start and fy_end:
+        base_query = base_query.filter(
+            case(
+                (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
+                else_=and_(stock_entry.date >= fy_start, stock_entry.date <= fy_end)
+            )
+        )
+    else:
+        if from_date: base_query = base_query.filter(stock_entry.date >= date.fromisoformat(from_date))
+        if to_date: base_query = base_query.filter(stock_entry.date <= date.fromisoformat(to_date))
+
+    # 🌟 న్యూ ఎంట్రీస్ పైన, ఓల్డ్ ఎంట్రీస్ కిందకు వచ్చేలా ఇక్కడ .desc() ఆర్డర్ అప్లై చేశాను
+    all_rows = base_query.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
     total_qty_in = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
     total_qty_out = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT")
@@ -270,7 +308,11 @@ def inventory_costing_page(
         request=request, 
         name="inventory_management/inventory_costing.html", 
         context={
-            "rows": all_rows, "from_date": from_date, "to_date": to_date,
+            "rows": all_rows, 
+            "from_date": from_date, 
+            "to_date": to_date,
+            "financial_years": financial_years,
+            "selected_fy": selected_fy,
             "summary": {
                 "total_items": len(all_rows), "qty_in": total_qty_in, "qty_out": total_qty_out,
                 "net_qty": available_qty, "val_in": total_val_in, "val_out": total_val_out_abs,

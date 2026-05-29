@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, date
+import datetime as dt
 import pytz
 import openpyxl 
 from io import BytesIO
@@ -18,7 +19,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry
 from app.database.models.users import Company
-from app.database.models.processing import AuditLog 
+from app.database.models.processing import AuditLog, GateEntry 
 from app.database.models.criteria import (
     production_for, production_at, freezers, packing_styles,
     glazes, varieties, grades, brands, species as species_model
@@ -73,23 +74,46 @@ async def stock_report_page(
     if not email or not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
+    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
+    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        current_year = d.year
+        if d.month >= 4:
+            fy_str = f"{current_year}"
+        else:
+            fy_str = f"{current_year - 1}"
+        fy_set.add(fy_str)
+    financial_years = sorted(list(fy_set), reverse=True)
+
     # --- Financial Year Logic ---
     selected_fy = fy
+    
+    # 🌟 బాచ్ నంబర్ వేరేగా ఉన్నా డేటా మిస్ అవ్వకుండా ఇక్కడ OUTERJOIN (లెఫ్ట్ జాయిన్) ఉపయోగించాం
+    q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
+        stock_entry.company_id == comp_code
+    )
+
     if selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
-        # Dates apply only if manually not changed or if FY is explicitly clicked
+        
+        # 🌟 గేట్ ఎంట్రీ డేట్ ఉంటే దాని ప్రకారం, లేకపోతే స్టాక్ ఎంట్రీ ఓన్ డేట్ ప్రకారం కండిషన్ అప్లై అవుతుంది
+        q = q.filter(
+            case(
+                (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
+                else_=and_(stock_entry.date >= fy_start, stock_entry.date <= fy_end)
+            )
+        )
         if not from_date: from_date = fy_start.isoformat()
         if not to_date: to_date = fy_end.isoformat()
+    else:
+        if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
+        if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
 
-    q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
-    
-    # Apply Filters only if FY or Date is present
-    if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
-    if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
-
-    # If no FY and no dates, return empty or default behavior (here returning empty rows if no FY)
+    # If no FY and no dates, return empty rows safely
     if not selected_fy and not from_date:
         rows = []
     else:
@@ -103,6 +127,7 @@ async def stock_report_page(
         "rows": rows, 
         "from_date": from_date, 
         "to_date": to_date,
+        "financial_years": financial_years,
         "selected_fy": selected_fy,
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),

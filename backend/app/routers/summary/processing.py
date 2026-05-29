@@ -2,10 +2,10 @@ from fastapi import APIRouter, Request, Depends, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import distinct, func
+from sqlalchemy import distinct, func, and_
 from typing import Optional
 import re
-import logging
+from datetime import date
 from collections import defaultdict
 
 from app.database import get_db
@@ -67,7 +67,7 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
                 last_num = int(nums[-1])
                 match_count = last_num - 1 
                 hlso_m = db.query(HOSO_HLSO_Yields).filter(
-                    HOSO_HLSO_Yields.company_id == company_id,
+                    HOSO_HLSO_Yields.company_id == company_code,
                     HOSO_HLSO_Yields.hoso_count == match_count,
                     HOSO_HLSO_Yields.species == species
                 ).first()
@@ -84,6 +84,7 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
 @router.get("/summary/processing", response_class=HTMLResponse)
 async def get_processing_summary(
     request: Request,
+    fy: str = Query(None),  # FY Filter Param
     production_for: str = Query(None),
     prod_type: str = Query(None),
     batch: str = Query(None),
@@ -96,6 +97,19 @@ async def get_processing_summary(
     companies = []
     companies_query = db.query(distinct(GateEntry.production_for)).filter(GateEntry.company_id == company_code).all()
     companies = [c[0] for c in companies_query if c[0]]
+
+    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM DATABASE ---
+    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == company_code, GateEntry.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        current_year = d.year
+        if d.month >= 4:
+            fy_str = f"{current_year}-{str(current_year + 1)[2:]}"
+        else:
+            fy_str = f"{current_year - 1}-{str(current_year)[2:]}"
+        fy_set.add(fy_str)
+    financial_years = sorted(list(fy_set), reverse=True)
 
     batches = []
     floor_balance_list = []
@@ -111,41 +125,140 @@ async def get_processing_summary(
         "floor_qty": 0, "floor_amount": 0, "grading_qty": 0
     }
     
-    # Cleaned rows structure without unwanted overview summary maps
     rows = {
         "gate": [], "rmp": [], "deheading": [], "peeling": [], 
         "soaking": [], "production": [], "stock": [], "reprocess": [],
-        "grading_details": []
+        "grading_details": [], "grading_summary": []
     }
     subtotals = {}
 
-    if production_for and prod_type:
-        if prod_type == "RMP":
-            batch_query = db.query(distinct(GateEntry.batch_number)).filter(
-                GateEntry.company_id == company_code,
-                func.trim(GateEntry.production_for) == func.trim(production_for)
-            ).all()
-        else:
-            batch_query = db.query(distinct(Reprocess.new_batch_id)).filter(
-                Reprocess.company_id == company_code,
-                func.trim(Reprocess.production_for) == func.trim(production_for)
-            ).all()
-        batches = sorted([b[0] for b in batch_query if b[0]])
+    # Strict Rule: FY మరియు మిగతా ప్రైమరీ ఫిల్టర్స్ సెలెక్ట్ చేస్తేనే బాచ్ డ్రాప్‌డౌన్ లోడ్ అవుతుంది
+    if fy and production_for and prod_type:
+        try:
+            start_year = int(fy.split('-')[0])
+            start_date = date(start_year, 4, 1)
+            end_date = date(start_year + 1, 3, 31)
+        except ValueError:
+            start_date, end_date = None, None
 
-    if batch:
+        if start_date and end_date:
+            if prod_type == "RMP":
+                batch_query = db.query(distinct(GateEntry.batch_number)).filter(
+                    GateEntry.company_id == company_code,
+                    func.trim(GateEntry.production_for) == func.trim(production_for),
+                    GateEntry.date >= start_date,
+                    GateEntry.date <= end_date
+                ).all()
+            else:
+                batch_query = db.query(distinct(Reprocess.new_batch_id)).filter(
+                    Reprocess.company_id == company_code,
+                    func.trim(Reprocess.production_for) == func.trim(production_for),
+                    Reprocess.date >= start_date,
+                    Reprocess.date <= end_date
+                ).all()
+            batches = sorted([b[0] for b in batch_query if b[0]])
+
+    # ఒకవేళ బాచ్ కూడా సెలెక్ట్ అయ్యి ఉంటేనే పూర్తి నివేదిక టేబుల్స్ లోడ్ అవుతాయి
+    if fy and production_for and prod_type and batch:
         # Load Tables
         rows["deheading"] = db.query(DeHeading).filter(DeHeading.batch_number==batch, DeHeading.company_id==company_code).all()
         rows["peeling"] = db.query(Peeling).filter(Peeling.batch_number==batch, Peeling.company_id==company_code).all()
         rows["soaking"] = db.query(Soaking).filter(Soaking.batch_number==batch, Soaking.company_id==company_code).all()
         rows["production"] = db.query(Production).filter(Production.batch_number==batch, Production.company_id==company_code).all()
         
-        # --- GRADING DETAILS DATA FETCH (Pure record-wise delegation) ---
+        # --- GRADING DETAILS DATA FETCH ---
         grading_records = db.query(Grading).filter(
             Grading.batch_number == batch, 
             Grading.company_id == company_code
         ).all()
         rows["grading_details"] = grading_records
         card["grading_qty"] = sum(float(g.quantity or 0) for g in grading_records)
+
+        # Pre-fetch Base tables depending on type to use in aggregation
+        if prod_type == "RMP":
+            rows["gate"] = db.query(GateEntry).filter(GateEntry.batch_number==batch, GateEntry.company_id==company_code).all()
+            rows["rmp"] = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.batch_number==batch, RawMaterialPurchasing.company_id==company_code).all()
+            
+            if rows["gate"]:
+                g = rows["gate"][0]
+                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"])})
+        else: 
+            rows["reprocess"] = db.query(Reprocess).filter(Reprocess.new_batch_id==batch, Reprocess.company_id==company_code).all()
+            if rows["reprocess"]:
+                rep = rows["reprocess"][0]
+                card.update({"supplier_name": "INTERNAL REPROCESS", "purchasing_location": rep.location, "receiving_center": rep.production_at, "total_boxes": sum(int(row.no_of_mc or 0) for row in rows["reprocess"])})
+
+        # ============================================================
+        # GRADING REPORT LOGIC (YIELD MAP & DEHEADING MAP)
+        # ============================================================
+        yield_map = {
+            (r.species, str(r.hoso_count)): float(r.hlso_yield_pct or 0) / 100
+            for r in db.query(HOSO_HLSO_Yields)
+            .filter(HOSO_HLSO_Yields.company_id == company_code)
+            .all()
+        }
+
+        deheading_hoso_map = defaultdict(float)
+        for r in rows["deheading"]:
+            deheading_hoso_map[
+                (r.batch_number, r.species, str(r.hoso_count))
+            ] += float(r.hoso_qty or 0)
+
+        grouped = defaultdict(list)
+        for r in grading_records:
+            grouped[
+                (
+                    r.batch_number,
+                    r.species,
+                    str(r.hoso_count),
+                    r.variety_name
+                )
+            ].append(r)
+
+        grading_summary = []
+        for (batch_no, species, hoso_count, variety), items in grouped.items():
+            graded_qty_sum = sum(float(i.quantity or 0) for i in items)
+            base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
+
+            yield_factor = yield_map.get((species, hoso_count), 0)
+
+            if variety == "HOSO":
+                actual_hoso_qty = graded_qty_sum
+            elif variety == "HLSO":
+                actual_hoso_qty = deheading_hoso_map.get((batch_no, species, hoso_count), 0)
+            else:
+                actual_hoso_qty = 0
+
+            workout = (base / graded_qty_sum if graded_qty_sum > 0 else 0)
+
+            if variety == "HLSO":
+                workout = workout * 2.2 * yield_factor
+
+            yield_pct = (graded_qty_sum / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
+
+            grading_hoso_qty = (
+                graded_qty_sum / yield_factor
+                if variety == "HLSO" and yield_factor > 0
+                else graded_qty_sum
+            )
+
+            diff_kg = (grading_hoso_qty - actual_hoso_qty if variety == "HLSO" else 0)
+            diff_pct = (diff_kg / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
+
+            grading_summary.append({
+                "species": species,
+                "hoso_count": hoso_count,
+                "variety": variety,
+                "hoso_qty": round(actual_hoso_qty, 2),
+                "graded_qty": round(graded_qty_sum, 2),
+                "workout_count": round(workout, 2),
+                "yield_pct": round(yield_pct, 2),
+                "grading_hoso_qty": round(grading_hoso_qty, 2),
+                "weight_diff_kg": round(diff_kg, 2),
+                "weight_diff_pct": round(diff_pct, 2)
+            })
+
+        rows["grading_summary"] = grading_summary
 
         # --- PRODUCTION SUBTOTALS ---
         for p in rows["production"]:
@@ -174,13 +287,6 @@ async def get_processing_summary(
         v_records = {v.variety_name.lower(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == company_code).all()}
 
         if prod_type == "RMP":
-            rows["gate"] = db.query(GateEntry).filter(GateEntry.batch_number==batch, GateEntry.company_id==company_code).all()
-            rows["rmp"] = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.batch_number==batch, RawMaterialPurchasing.company_id==company_code).all()
-            
-            if rows["gate"]:
-                g = rows["gate"][0]
-                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"])})
-
             for r in rows["rmp"]: 
                 combos.add((r.batch_number, r.count, r.species, r.variety_name, production_for, r.peeling_at or "Floor", "RMP"))
             for g in grading_records: 
@@ -188,10 +294,6 @@ async def get_processing_summary(
             for p in rows["peeling"]:
                 combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, production_for, p.peeling_at or "Floor", "RMP"))
         else: 
-            rows["reprocess"] = db.query(Reprocess).filter(Reprocess.new_batch_id==batch, Reprocess.company_id==company_code).all()
-            if rows["reprocess"]:
-                rep = rows["reprocess"][0]
-                card.update({"supplier_name": "INTERNAL REPROCESS", "purchasing_location": rep.location, "receiving_center": rep.production_at, "total_boxes": sum(int(row.no_of_mc or 0) for row in rows["reprocess"])})
             for r in rows["reprocess"]: 
                 combos.add((r.new_batch_id, r.grade, r.species, r.variety, production_for, r.production_at or "Floor", "REPROCESS"))
 
@@ -229,7 +331,7 @@ async def get_processing_summary(
                 h_count = l_num / p_y / s_y
             except: h_count = 0
                 
-            hlso_m = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code, HOSO_HLSO_Yields.hlso_count == round(h_count)).first()
+            hlso_m = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code, HOSO_HLSO_Yields.hoso_count == round(h_count)).first()
             h_h_y = (hlso_m.hlso_yield_pct / 100) if hlso_m else 1.0
             item_yield = (p_y * s_y * h_h_y) if "HOSO" not in str(r.variety).upper() else 0.98
             
@@ -264,5 +366,17 @@ async def get_processing_summary(
 
     return templates.TemplateResponse(
         request=request, name="summary/processing_summary.html", 
-        context={"companies": companies, "batches": batches, "selected_company": production_for, "selected_prod_type": prod_type, "selected_batch": batch, "rows": rows, "card": card, "hoso_floor_balance": floor_balance_list, "subtotals": subtotals}
+        context={
+            "financial_years": financial_years,
+            "selected_fy": fy,
+            "companies": companies, 
+            "batches": batches, 
+            "selected_company": production_for, 
+            "selected_prod_type": prod_type, 
+            "selected_batch": batch, 
+            "rows": rows, 
+            "card": card, 
+            "hoso_floor_balance": floor_balance_list, 
+            "subtotals": subtotals
+        }
     )
