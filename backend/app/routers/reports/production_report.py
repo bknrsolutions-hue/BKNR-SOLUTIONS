@@ -152,9 +152,8 @@ def production_report_page(
             "datetime": datetime 
         }
     )
-
 # ------------------------------------------------------------
-# UPDATE WITH AUDIT LOG
+# UPDATE WITH AUDIT LOG & GLAZE ADJUSTMENT
 # ------------------------------------------------------------
 @router.post("/update")
 def update_production(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -201,7 +200,7 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                 has_changes = True
 
     if has_changes:
-        # ✅ Auto-Recalculate Production Quantity on update
+        # 1. Base Production Quantity calculation based on Packing Style
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
             packing_styles.packing_style == row.packing_style
@@ -210,7 +209,25 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
         if pack:
             mc_w = float(pack.mc_weight or 0)
             sl_w = float(pack.slab_weight or 0)
-            row.production_qty = round((float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w), 2)
+            base_qty = (float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w)
+        else:
+            base_qty = 0.0
+
+        # 2. 🔥 GLAZE ADJUSTMENT LOGIC
+        final_production_qty = base_qty
+        glaze_text = str(row.glaze or "").strip().upper()
+
+        if "NWNC" not in glaze_text:
+            # Safely extract numbers (e.g., '20%' -> 20.0)
+            import re
+            match = re.search(r'(\d+\.?\d*)', glaze_text)
+            glaze_percent = float(match.group(1)) if match else 0.0
+            
+            if glaze_percent > 0:
+                final_production_qty = final_production_qty * ((100 - glaze_percent) / 100)
+
+        # 3. Save with 3 decimal precision
+        row.production_qty = round(final_production_qty, 3)
 
         try:
             db.commit()
@@ -220,7 +237,6 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
             raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "no_changes"}
-
 # ------------------------------------------------------------
 # DELETE RECORD
 # ------------------------------------------------------------

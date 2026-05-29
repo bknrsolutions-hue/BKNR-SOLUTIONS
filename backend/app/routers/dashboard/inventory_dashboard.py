@@ -260,7 +260,8 @@ async def get_inventory_dashboard(
         Reprocess.company_id == comp_code,
         Reprocess.date >= fy_start,
         Reprocess.date <= fy_end,
-        not_(Reprocess.reprocess_type.ilike("%sales%"))
+        not_(Reprocess.reprocess_type.ilike("%SALE%")),
+        not_(Reprocess.reprocess_type.ilike("%STOR%"))
     )
 
     if sel_species != "ALL":

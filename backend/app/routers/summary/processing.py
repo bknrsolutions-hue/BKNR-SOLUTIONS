@@ -6,6 +6,7 @@ from sqlalchemy import distinct, func
 from typing import Optional
 import re
 import logging
+from collections import defaultdict
 
 from app.database import get_db
 # Models Imports
@@ -47,11 +48,9 @@ def get_process_addon(variety: str, freezer: str, purpose: str) -> int:
 # HELPER: CALCULATE VALUE BASED ON REVERSE YIELDS (DIVISION)
 # ============================================================
 def calculate_balance_value(db: Session, company_id: str, batch: str, variety: str, count: str, species: str, qty: float, avg_rate: float):
-    # 1. HOSO Case (Direct Value)
     if not variety or "HOSO" in variety.upper():
         return round(qty * avg_rate, 2)
 
-    # 2. Yields logic
     var_obj = db.query(VarietyTable).filter(
         VarietyTable.company_id == company_id,
         VarietyTable.variety_name == variety
@@ -60,14 +59,13 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
     p_y = (float(var_obj.peeling_yield) / 100) if var_obj and var_obj.peeling_yield else 1.0
     s_y = (float(var_obj.soaking_yield) / 100) if var_obj and var_obj.soaking_yield else 1.0
 
-    # HLSO Yield (Grade-1 Rule: 20 -> 19 lookup)
     h_y = 1.0
     if count:
         try:
             nums = re.findall(r'\d+', str(count))
             if nums:
                 last_num = int(nums[-1])
-                match_count = last_num - 1 # Nuvvu cheppina logic: 20-1=19
+                match_count = last_num - 1 
                 hlso_m = db.query(HOSO_HLSO_Yields).filter(
                     HOSO_HLSO_Yields.company_id == company_id,
                     HOSO_HLSO_Yields.hoso_count == match_count,
@@ -78,7 +76,6 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
         except:
             h_y = 1.0
 
-    # FINAL CALCULATION: Qty / (PY * SY * HY)
     denominator = p_y * s_y * h_y
     effective_raw_qty = qty / denominator if denominator > 0 else qty
     
@@ -114,7 +111,12 @@ async def get_processing_summary(
         "floor_qty": 0, "floor_amount": 0, "grading_qty": 0
     }
     
-    rows = {"gate":[], "rmp":[], "deheading":[], "peeling":[], "soaking":[], "production":[], "stock":[], "reprocess":[]}
+    # Cleaned rows structure without unwanted overview summary maps
+    rows = {
+        "gate": [], "rmp": [], "deheading": [], "peeling": [], 
+        "soaking": [], "production": [], "stock": [], "reprocess": [],
+        "grading_details": []
+    }
     subtotals = {}
 
     if production_for and prod_type:
@@ -137,6 +139,14 @@ async def get_processing_summary(
         rows["soaking"] = db.query(Soaking).filter(Soaking.batch_number==batch, Soaking.company_id==company_code).all()
         rows["production"] = db.query(Production).filter(Production.batch_number==batch, Production.company_id==company_code).all()
         
+        # --- GRADING DETAILS DATA FETCH (Pure record-wise delegation) ---
+        grading_records = db.query(Grading).filter(
+            Grading.batch_number == batch, 
+            Grading.company_id == company_code
+        ).all()
+        rows["grading_details"] = grading_records
+        card["grading_qty"] = sum(float(g.quantity or 0) for g in grading_records)
+
         # --- PRODUCTION SUBTOTALS ---
         for p in rows["production"]:
             v_name, s_name, b_num = str(p.variety_name or "").strip(), str(p.species or "").strip(), str(p.batch_number or "").strip()
@@ -173,12 +183,8 @@ async def get_processing_summary(
 
             for r in rows["rmp"]: 
                 combos.add((r.batch_number, r.count, r.species, r.variety_name, production_for, r.peeling_at or "Floor", "RMP"))
-            
-            grad_items = db.query(Grading).filter(Grading.batch_number==batch, Grading.company_id==company_code).all()
-            card["quantity"] = sum(float(g.quantity or 0) for g in grad_items)
-            for g in grad_items: 
-                combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, production_for, g.peeling_at or "Floor", "RMP"))
-            
+            for g in grading_records: 
+                combos.add((g.batch_number, g.hoso_count, g.species, g.variety_name, production_for, g.peeling_at or "Floor", "RMP"))
             for p in rows["peeling"]:
                 combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, production_for, p.peeling_at or "Floor", "RMP"))
         else: 

@@ -1,3 +1,7 @@
+# ============================================================
+# REPROCESS, SALES & STORING REPORT ROUTER (FINAL FIXED)
+# ============================================================
+
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -23,7 +27,11 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         return RedirectResponse("/auth/login", status_code=302)
 
     selected_fy = request.query_params.get('fy')
-    rows = []
+    
+    # 3 Tab ల కోసం ముందే లిస్టులను డిక్లేర్ చేస్తున్నాం
+    rows_reprocess = []
+    rows_sales = []
+    rows_storing = []
 
     if selected_fy:
         try:
@@ -98,6 +106,10 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
 
             for item in inventory_out_data:
                 p_val = str(item.purpose or "GENERAL OUT").upper()
+                
+                # గమనిక: ఇక్కడ పాత Sales/Storing 'continue' స్కిప్ కండిషన్లు తీసేశాం, 
+                # కాబట్టి ఈ రికార్డులు కూడా డేటాబేస్‌లోకి ఇన్సర్ట్ అవుతాయి.
+
                 d_str = item.date.strftime('%y%m%d') if item.date else datetime.now().strftime('%y%m%d')
                 
                 p_for_name = item.production_for
@@ -126,13 +138,12 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                     else:
                         prefix = company_prefix_map[p_for_clean]
 
-                    p_tag_map = {"SALES": "SL", "MELTING": "ML", "REPACKING": "RP", "REGLAZE": "RZ", "STORING": "ST"}
+                    p_tag_map = {"MELTING": "ML", "REPACKING": "RP", "REGLAZE": "RZ", "STORING": "ST"}
                     tag = p_tag_map.get(p_val, "RE")
                     b_id = f"{prefix}-{tag}-{d_str}-{daily_counter:03d}"
                     generated_batches[match_key] = b_id
 
                 # --- 🔹 START KG VALUE LOOKUP LOGIC ---
-                # Nuvvu mundu share chesina models lo lookup correct field 'product_kg_value'
                 stock_in_record = db.query(stock_entry.product_kg_value).filter(
                     stock_entry.company_id == comp_code,
                     stock_entry.cargo_movement_type.ilike("IN"),
@@ -146,7 +157,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                 if stock_in_record and stock_in_record[0]:
                     final_rate = float(stock_in_record[0])
                 else:
-                    # Fallback to calculation if lookup fails
                     y_val = getattr(item, '_y', 1.0)
                     b_rate = batch_calculated_rates.get(item.batch_number, 0)
                     final_rate = 280.0 if any(x in str(item.grade).upper() for x in ["BKN", "DC"]) else round(b_rate / y_val, 2)
@@ -179,20 +189,38 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                 ))
 
             db.commit()
-            rows = db.query(Reprocess).filter(
+
+            # 6. DATA FETCHING & FILTERING FOR TABS
+            base = db.query(Reprocess).filter(
                 Reprocess.company_id == comp_code,
                 Reprocess.date.between(start_date, end_date)
+            )
+
+            rows_reprocess = base.filter(
+                ~Reprocess.reprocess_type.ilike("%SALE%"),
+                ~Reprocess.reprocess_type.ilike("%STOR%")
+            ).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
+
+            rows_sales = base.filter(
+                Reprocess.reprocess_type.ilike("%SALE%")
+            ).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
+
+            rows_storing = base.filter(
+                Reprocess.reprocess_type.ilike("%STOR%")
             ).order_by(Reprocess.date.desc(), Reprocess.new_batch_id.desc()).all()
 
         except Exception as e:
             db.rollback()
             print(f"Reprocess Generation Error: {e}")
 
+    # RENDERING THE TEMPLATE WITH ACCURATE CONTEXT
     return templates.TemplateResponse(
-        request=request, 
-        name="reports/re-process.html", 
+        request=request,
+        name="reports/re-process.html",
         context={
-            "rows": rows, 
+            "rows_reprocess": rows_reprocess,
+            "rows_sales": rows_sales,
+            "rows_storing": rows_storing,
             "selected_fy": selected_fy,
             "datetime": datetime
         }

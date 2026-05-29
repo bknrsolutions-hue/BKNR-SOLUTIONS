@@ -454,15 +454,14 @@ def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(
             time=datetime.now().time(),
             batch_number=old_entry.batch_number,
             production_at=old_entry.production_at,
-            # ఇక్కడ production_for వాల్యూ యాడ్ అయింది
             production_for=getattr(old_entry, 'production_for', None), 
             variety_name=old_entry.variety_name,
             species=old_entry.species,
             in_count=old_entry.in_count,
-            sintex_number=f"AUTO-CLR-{old_entry.sintex_number}", # Auto cleared ani identify cheyadaniki
+            sintex_number=f"AUTO-CLR-{old_entry.sintex_number}", 
             rejection_qty=-offset_qty, 
-            in_qty=0, # Stock disturb avvakunda
-            status="Completed", # Idi kuda ventane complete aypovali
+            in_qty=0, 
+            status="Completed", 
             company_id=company_code,
             email=email
         )
@@ -509,6 +508,18 @@ def save_production(
         if not company_code or not email:
             return RedirectResponse("/auth/login", status_code=302)
 
+        # Production Qty After Glaze Adjustment
+        final_production_qty = float(production_qty or 0)
+        glaze_text = str(glaze or "").strip().upper()
+
+        if "NWNC" not in glaze_text:
+            glaze_percent = extract_number(glaze_text, 0)
+            if glaze_percent > 0:
+                final_production_qty = round(
+                    final_production_qty * ((100 - glaze_percent) / 100),
+                    3
+                )
+
         obj = Production(
             batch_number=batch_number,
             brand=brand,
@@ -520,7 +531,7 @@ def save_production(
             species=species,
             no_of_mc=no_of_mc,
             loose=loose,
-            production_qty=production_qty,
+            production_qty=final_production_qty,
             production_type=production_type,
             production_at=production_at,
             production_for=production_for,
@@ -550,7 +561,6 @@ def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
     
-    # Redirect to main page with edit_id parameter
     return RedirectResponse(f"/processing/production?edit_id={id}", status_code=303)
 
 
@@ -589,6 +599,18 @@ def update_production(
         ).first()
 
         if entry:
+            # Production Qty After Glaze Adjustment
+            final_production_qty = float(production_qty or 0)
+            glaze_text = str(glaze or "").strip().upper()
+
+            if "NWNC" not in glaze_text:
+                glaze_percent = extract_number(glaze_text, 0)
+                if glaze_percent > 0:
+                    final_production_qty = round(
+                        final_production_qty * ((100 - glaze_percent) / 100),
+                        3
+                    )
+
             entry.batch_number = batch_number
             entry.brand = brand
             entry.variety_name = variety_name
@@ -599,7 +621,7 @@ def update_production(
             entry.species = species
             entry.no_of_mc = no_of_mc
             entry.loose = loose
-            entry.production_qty = production_qty
+            entry.production_qty = final_production_qty
             entry.production_type = production_type
             entry.production_at = production_at
             entry.production_for = production_for

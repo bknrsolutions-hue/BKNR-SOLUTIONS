@@ -25,7 +25,7 @@ body{
 }
 
 /* ================= HEADER & SEARCH ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
+.header{ background:var(--header); padding:10px 15px; border-bottom:1px solid var(--border); }
 .header-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
@@ -40,6 +40,41 @@ body{
 select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+/* ================= CORPORATE TABS STRUCT ================= */
+.tabs-container {
+    display: flex;
+    background: #ffffff;
+    padding: 0 15px;
+    border-bottom: 2px solid var(--primary);
+}
+.tab-btn {
+    padding: 10px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+.tab-btn:hover {
+    color: var(--accent);
+}
+.tab-btn.active {
+    color: var(--accent);
+}
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent);
+}
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
@@ -88,7 +123,7 @@ tfoot td{
 }
 
 @media print {
-    .header, .filters { display: none !important; }
+    .header, .filters, .tabs-container { display: none !important; }
     .section { border: none !important; margin: 0 !important; }
     .table-wrap { overflow: visible !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
@@ -100,7 +135,7 @@ tfoot td{
 
 <div class="header">
     <div class="header-top">
-        <h2>RE-PROCESS TRACKING</h2>
+        <h2>RE-PROCESS & OUT TRACKING</h2>
         <div style="font-size: 11px; color: var(--text-muted);">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
@@ -122,6 +157,12 @@ tfoot td{
         <div class="fbox"><label>To</label><input type="date" id="f_to" onchange="applyFilters()"></div>
         <input type="text" id="searchBox" placeholder="Quick Search Batch, Variety, Grade..." onkeyup="applyFilters()">
     </div>
+</div>
+
+<div class="tabs-container">
+    <button class="tab-btn active" id="tab-reprocess" onclick="switchTab('reprocess')"><i class="fa-solid fa-arrows-rotate"></i> Reprocess</button>
+    <button class="tab-btn" id="tab-sales" onclick="switchTab('sales')"><i class="fa-solid fa-cart-shopping"></i> Sales Out</button>
+    <button class="tab-btn" id="tab-storing" onclick="switchTab('storing')"><i class="fa-solid fa-warehouse"></i> Storing Out</button>
 </div>
 
 <div class="section">
@@ -147,16 +188,7 @@ tfoot td{
                 </tr>
             </thead>
             <tbody id="tbody">
-                {% if not rows %}
-                <tr>
-                    <td colspan="15" class="empty-state">
-                        <i class="fa-solid fa-arrows-rotate"></i><br>
-                        <b>Financial Year Not Selected</b><br>
-                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view re-process data.</span>
-                    </td>
-                </tr>
-                {% endif %}
-            </tbody>
+                </tbody>
             <tfoot>
                 <tr>
                     <td colspan="11" style="text-align:right">GRAND TOTALS:</td>
@@ -171,33 +203,94 @@ tfoot td{
 </div>
 
 <script>
-const rawData = [
-    {% for r in rows %}
-    {
-        date: "{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}",
-        display_date: "{{ r.date.strftime('%d-%m-%Y') if r.date else '' }}",
-        new_id: "{{ r.new_batch_id }}",
-        orig_batch: "{{ r.original_batch }}",
-        prod_for: "{{ r.production_for }}",
-        type: "{{ r.reprocess_type }}",
-        variety: "{{ r.variety }}",
-        grade: "{{ r.grade }}",
-        species: "{{ r.species }}",
-        freezer: "{{ r.freezer }}",
-        glaze: "{{ r.glaze }}",
-        qty: parseFloat("{{ r.in_qty or 0 }}"),
-        rate: parseFloat("{{ r.product_kg_value or 0 }}"),
-        value: parseFloat("{{ r.inventory_value or 0 }}"),
-        prod_at: "{{ r.production_at }}"
-    },
-    {% endfor %}
-];
+// 🔹 CURRENT SELECTED TAB STATE
+let currentTab = 'reprocess';
+
+// 🔹 SPLITTING JINJA CONTEXT INTO 3 DISTINCT JAVASCRIPT ARRAYS
+// 🔹 SPLITTING JINJA CONTEXT INTO 3 DISTINCT JAVASCRIPT ARRAYS WITH EXACT MATCHES
+const datasets = {
+    reprocess: [
+        {% for r in rows_reprocess %}
+        {
+            date: "{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}",
+            display_date: "{{ r.date.strftime('%d-%m-%Y') if r.date else '' }}",
+            new_id: "{{ r.new_batch_id }}",
+            orig_batch: "{{ r.original_batch }}",
+            prod_for: "{{ r.production_for }}",
+            type: "{{ r.reprocess_type }}",
+            variety: "{{ r.variety }}",
+            grade: "{{ r.grade }}",
+            species: "{{ r.species }}",
+            freezer: "{{ r.freezer }}",
+            glaze: "{{ r.glaze }}",
+            qty: parseFloat("{{ r.in_qty or 0 }}"),
+            rate: parseFloat("{{ r.product_kg_value or 0 }}"),
+            value: parseFloat("{{ r.inventory_value or 0 }}"),
+            prod_at: "{{ r.production_at }}"
+        },
+        {% endfor %}
+    ],
+    sales: [
+        {% for r in rows_sales %}
+        {
+            date: "{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}",
+            display_date: "{{ r.date.strftime('%d-%m-%Y') if r.date else '' }}",
+            new_id: "{{ r.new_batch_id }}",
+            orig_batch: "{{ r.original_batch }}",
+            prod_for: "{{ r.production_for }}",
+            type: "{{ r.reprocess_type }}",
+            variety: "{{ r.variety }}",
+            grade: "{{ r.grade }}",
+            species: "{{ r.species }}",
+            freezer: "{{ r.freezer }}",
+            glaze: "{{ r.glaze }}",
+            qty: parseFloat("{{ r.in_qty or 0 }}"),
+            rate: parseFloat("{{ r.product_kg_value or 0 }}"),
+            value: parseFloat("{{ r.inventory_value or 0 }}"),
+            prod_at: "{{ r.production_at }}"
+        },
+        {% endfor %}
+    ],
+    storing: [
+        {% for r in rows_storing %}
+        {
+            date: "{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}",
+            display_date: "{{ r.date.strftime('%d-%m-%Y') if r.date else '' }}",
+            new_id: "{{ r.new_batch_id }}",
+            orig_batch: "{{ r.original_batch }}",
+            prod_for: "{{ r.production_for }}",
+            type: "{{ r.reprocess_type }}",
+            variety: "{{ r.variety }}",
+            grade: "{{ r.grade }}",
+            species: "{{ r.species }}",
+            freezer: "{{ r.freezer }}",
+            glaze: "{{ r.glaze }}",
+            qty: parseFloat("{{ r.in_qty or 0 }}"),
+            rate: parseFloat("{{ r.product_kg_value or 0 }}"),
+            value: parseFloat("{{ r.inventory_value or 0 }}"),
+            prod_at: "{{ r.production_at }}"
+        },
+        {% endfor %}
+    ]
+};
 
 function changeFY(val) {
     if(!val) return;
     const url = new URL(window.location.href);
     url.searchParams.set('fy', val);
     window.location.href = url.toString();
+}
+
+// 🔹 TAB SWITCHING LOGIC
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update active tab button classes
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    // Re-apply filters with new dataset
+    applyFilters();
 }
 
 function applyFilters() {
@@ -214,14 +307,25 @@ function applyFilters() {
         return;
     }
 
+    // Current tab కి సంబంధించిన డేటాని ఫెచ్ చేయడం
+    let activeData = datasets[currentTab] || [];
+
     tbody.innerHTML = "";
-    let filtered = rawData.filter(d => {
+    
+    let filtered = activeData.filter(d => {
         let ok = true;
         if(f1 && d.date < f1) ok = false;
         if(f2 && d.date > f2) ok = false;
         if(q && !Object.values(d).join(' ').toLowerCase().includes(q)) ok = false;
         return ok;
     });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="15" class="empty-state"><i class="fa-regular fa-folder-open"></i><br><b>No Records Found</b><br><span style="font-size: 11px;">No data matches the selected criteria in this tab.</span></td></tr>`;
+        document.getElementById("grand_qty").innerText = "0.00 Kg";
+        document.getElementById("grand_val").innerText = "₹0.00";
+        return;
+    }
 
     let gQty = 0, gVal = 0;
     const groups = {};

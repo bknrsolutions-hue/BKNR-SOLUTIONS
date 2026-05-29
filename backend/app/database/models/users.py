@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, Text
 from datetime import datetime
 from app.database import Base
 
@@ -31,7 +31,7 @@ class Company(Base):
     sub_companies = relationship("Company")
 
 
-# =================== USER MODEL ===================
+# =================== USER MODEL (UPDATED) ===================
 class User(Base):
     __tablename__ = "users"
 
@@ -52,6 +52,11 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # 🌟 NEW MULTI-TENANT SEGMENTATION TEXT COLUMNS (FOR JSON STORAGE)
+    allowed_units = Column(Text, nullable=True)     # Stores JSON array of unit strings
+    allowed_companies = Column(Text, nullable=True) # Stores JSON array of company strings
+
+    # relationships
     company = relationship("Company", back_populates="users")
 
 
@@ -68,4 +73,3 @@ class OTPTable(Base):
     is_used = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-
