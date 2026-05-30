@@ -97,7 +97,7 @@ tfoot td{
 
 <div class="header">
     <div class="header-top">
-        <h2>STOCK LEDGER REPORT</h2>
+        <h2>STOCK LEDGER REPORT - {{ company_name }}</h2>
         <div style="font-size: 10px; font-weight: 700; color: #64748b;">BKNR ERP · 2026</div>
     </div>
     <div class="filters">
@@ -105,10 +105,8 @@ tfoot td{
             <label style="color:var(--accent)">Financial Year *</label>
             <select id="f_fy" onchange="changeFY(this.value)">
                 <option value="">-- SELECT FY --</option>
-                {% set start_yr = 2024 %}
-                {% set end_yr = 2027 %}
-                {% for y in range(start_yr, end_yr) %}
-                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% for y in financial_years %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ (y|int) + 1 }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -155,7 +153,7 @@ tfoot td{
                     <th style="width:45px">#</th>
                     <th style="width:90px">Date</th>
                     <th style="width:110px">Batch #</th>
-                    <th style="width:110px">Type of Production</th>
+                    <th style="width:130px">Type of Production</th>
                     <th style="width:60px">Type</th>
                     <th style="width:100px">Brand</th>
                     <th style="width:100px">Species</th>
@@ -190,15 +188,15 @@ tfoot td{
                         <td class="slno"></td>
                         <td>{{ r.date }}</td>
                         <td class="editable" data-field="batch_number" style="font-weight:700">{{ r.batch_number }}</td>
-                        <td class="lookup production_types_list" data-field="type_of_production">{{ r.type_of_production }}</td>
+                        <td class="lookup production_types_list" data-field="type_of_production">{{ r.type_of_production or '' }}</td>
                         <td style="font-weight:800; color: {{ '#16a34a' if r.cargo_movement_type=='IN' else '#dc2626' }}">{{ r.cargo_movement_type }}</td>
                         <td class="lookup brands_list" data-field="brand">{{ r.brand }}</td>
                         <td class="lookup species_list" data-field="species">{{ r.species }}</td>
                         <td class="editable" data-field="location">{{ r.location }}</td>
-                        <td>{{ r.po_number }}</td>
-                        <td class="lookup production_for_list" data-field="production_for">{{ r.production_for }}</td>
-                        <td class="lookup production_at_list" data-field="production_at">{{ r.production_at }}</td>
-                        <td class="lookup freezers_list" data-field="freezer">{{ r.freezer }}</td>
+                        <td>{{ r.po_number or '' }}</td>
+                        <td class="lookup production_for_list" data-field="production_for">{{ r.production_for or '' }}</td>
+                        <td class="lookup production_at_list" data-field="production_at">{{ r.production_at or '' }}</td>
+                        <td class="lookup freezers_list" data-field="freezer">{{ r.freezer or '' }}</td>
                         <td class="lookup packing_styles_list" data-field="packing_style">{{ r.packing_style }}</td>
                         <td class="lookup varieties_list" data-field="variety">{{ r.variety }}</td>
                         <td class="lookup glazes_list" data-field="glaze">{{ r.glaze }}</td>
@@ -206,8 +204,8 @@ tfoot td{
                         <td class="editable" data-field="no_of_mc">{{ r.no_of_mc or 0 }}</td>
                         <td class="editable" data-field="loose">{{ r.loose or 0 }}</td>
                         <td class="qty-col">{{ "{:,.2f}".format(r.quantity or 0) }}</td>
-                        <td class="editable inv-col" data-field="purpose">{{ r.purpose }}</td>
-                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email }}</td>
+                        <td class="editable inv-col" data-field="purpose">{{ r.purpose or '' }}</td>
+                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email.split('@')[0] if r.email else '' }}</td>
                     </tr>
                     {% endfor %}
                 {% endif %}
@@ -245,16 +243,16 @@ tfoot td{
 
 <script>
 const lookups = {
-    brands_list: {{ brands_list|tojson or [] }},
-    species_list: {{ species_list|tojson or [] }},
-    varieties_list: {{ varieties_list|tojson or [] }},
-    grades_list: {{ grades_list|tojson or [] }},
-    glazes_list: {{ glazes_list|tojson or [] }},
-    freezers_list: {{ freezers_list|tojson or [] }},
-    packing_styles_list: {{ packing_styles_list|tojson or [] }},
-    production_for_list: {{ production_for_list|tojson or [] }},
-    production_at_list: {{ production_at_list|tojson or [] }},
-    production_types_list: ["PROCESSED", "SEMIPROCESSED", "RAW"] // Default values or add from backend
+    brands_list: {{ brands_list|default([])|tojson }},
+    species_list: {{ species_list|default([])|tojson }},
+    varieties_list: {{ varieties_list|default([])|tojson }},
+    grades_list: {{ grades_list|default([])|tojson }},
+    glazes_list: {{ glazes_list|default([])|tojson }},
+    freezers_list: {{ freezers_list|default([])|tojson }},
+    packing_styles_list: {{ packing_styles_list|default([])|tojson }},
+    production_for_list: {{ production_for_list|default([])|tojson }},
+    production_at_list: {{ production_at_list|default([])|tojson }},
+    production_types_list: {{ type_of_production_list|default([])|tojson }}
 };
 
 const baseUrl = window.location.pathname.replace(/\/$/, ""); 
@@ -338,6 +336,7 @@ function enableEdit() {
         if(td.classList.contains("lookup")){
             const type = td.classList[1]; const opts = lookups[type] || [];
             td.innerHTML = `<select class="edit-input" data-field="${field}" data-old-val="${val}">
+                <option value="">-- SELECT --</option>
                 ${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}
             </select>`;
         } else { 

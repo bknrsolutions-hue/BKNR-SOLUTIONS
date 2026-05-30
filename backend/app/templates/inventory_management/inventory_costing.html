@@ -18,139 +18,210 @@
             --in-color: #16a34a;
             --out-color: #dc2626;
             --orange: #ea580c;
+            --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+            --card-header-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; padding: 5px; font-size: 9.5px; line-height: 1.3; }
+        
+        /* 🌟 బాడీని ఫుల్ స్క్రీన్ లాక్ చేసి స్క్రోల్ కాకుండా ఆపాం */
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px; 
+            font-size: 9.5px; 
+            line-height: 1.3; 
+            overflow: hidden; 
+        }
 
-        /* ================= PREMIUM HEADER & TABS ================= */
         header { 
             background: var(--card-bg); 
-            padding: 10px; 
+            padding: 12px; 
             border-radius: 8px;
             border: 1px solid var(--border-color); 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0; /* హెడర్ సైజ్ తగ్గకుండా ఫిక్స్డ్ గా ఉండటానికి */
         }
-        .logo-section h1 { margin: 0; font-size: 12px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
+        .logo-section h1 { margin: 0; font-size: 13px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 4px solid var(--orange); padding-left: 8px; }
 
-        /* ================= SINGLE ROW FILTERS LAYOUT ================= */
+        /* ================= FILTERS CONTAINER ================= */
         .control-bar { 
             background: var(--card-bg); 
-            padding: 8px; 
+            padding: 12px; 
             border-radius: 8px;
             border: 1px solid var(--border-color);
             display: flex; 
             flex-direction: column;
-            gap: 8px; 
-            margin-bottom: 6px;
-        }
-        @media (min-width: 992px) {
-            .control-bar { flex-direction: row; justify-content: space-between; align-items: center; }
+            gap: 12px; 
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            flex-shrink: 0;
         }
 
         .nav-tabs { display: flex; background: #f1f5f9; padding: 3px; border-radius: 6px; width: max-content; }
-        .tab-btn { padding: 4px 12px; border: none; background: transparent; font-size: 9px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .tab-btn { padding: 5px 14px; border: none; background: transparent; font-size: 9px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: 0.2s; }
         .tab-btn.active { background: var(--brand-primary); color: white; }
 
-        .filters-group { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 6px; 
-            flex: 1; 
-            align-items: center;
-            width: 100%;
-        }
-        @media (min-width: 992px) {
-            .filters-group { grid-template-columns: 120px repeat(2, minmax(110px, 140px)) 1fr 140px; justify-content: flex-end; display: grid; }
-        }
+        .filters-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; width: 100%; }
+        .fbox { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+        .fbox label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
 
-        .fbox { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
-        .fbox label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-
-        .search-wrapper { position: relative; min-width: 140px; }
+        .search-wrapper { position: relative; width: 100%; }
         .search-wrapper i { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; }
-        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); height: 26px; }
-        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); height: 26px; }
+        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); height: 28px; }
+        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); height: 28px; cursor: pointer; }
 
-        /* PREMIUM style for FY */
-        .fy-select-premium {
-            padding: 4px 6px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            font-size: 10px;
-            font-weight: 700;
-            outline: none;
-            background: #f8fafc;
-            width: 100%;
-            color: var(--brand-accent);
-            border-left: 3px solid var(--brand-accent);
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .fy-select-premium { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; outline: none; background: #f8fafc; width: 100%; color: var(--brand-accent); border-left: 3px solid var(--brand-accent); cursor: pointer; height: 28px; }
+        .dashboard-fields-wrapper { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-width: max-content; }
+
+        /* 🌟 Main కంటెంట్ బాడీ లోపల ఉన్న స్పేస్ మొత్తాన్ని ఆక్యుపై చేస్తుంది */
+        main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            margin-bottom: 8px;
         }
+        .view-content { display: none; height: 100%; }
+        .view-content.active { display: flex; flex-direction: column; overflow: hidden; }
 
-        main { flex: 1; display: flex; flex-direction: column; }
-        .view-content { display: none; }
-        .view-content.active { display: block; }
-
-        .empty-dashboard { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); text-align: center; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; width: 100%; }
-        .empty-dashboard i { font-size: 30px; margin-bottom: 10px; opacity: 0.3; }
-
-        /* ================= ULTRA-COMPACT DATA GRID ================= */
-        .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); }
-        .scroll-box { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; max-height: calc(100vh - 160px); }
+        /* ================= TABLE DESIGN ================= */
+        .table-container { 
+            background: white; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-color); 
+            overflow: hidden; 
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); 
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* 🌟 టేబుల్ బాక్స్ కి కరెక్ట్ హైట్ ఇచ్చి లోపలే స్క్రోల్ అయ్యేలా సెట్ చేశాం */
+        .scroll-box { 
+            overflow-y: auto; 
+            overflow-x: auto; 
+            width: 100%; 
+            height: 100%;
+            -webkit-overflow-scrolling: touch; 
+        }
+        
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
-        th { background: #f8fafc; padding: 5px 3px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #475569; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 20; white-space: nowrap; }
-        td { padding: 4px 3px; font-size: 9px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; font-weight: 600; }
+        th { background: #f8fafc; padding: 6px 4px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #475569; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 20; white-space: nowrap; }
+        td { padding: 5px 4px; font-size: 9px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; font-weight: 600; }
         tr:hover td { background-color: #f8fafc; }
         
         .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 30px; color: var(--text-muted); font-size: 8.5px; }
         .sticky-batch { position: sticky; left: 30px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); color: var(--brand-accent); font-weight: 700; }
 
-        .move-in { background: #f0fdf4 !important; color: var(--in-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
-        .move-out { background: #fef2f2 !important; color: var(--out-color) !important; font-weight: 800; padding: 1px 4px; border-radius: 3px; font-size: 8px; }
-        .qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #fffdf5; }
-        .val-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; background: #f0fdf4; color: var(--in-color); }
+        .move-in { background: #f0fdf4 !important; color: var(--in-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; }
+        .move-out { background: #fef2f2 !important; color: var(--out-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; }
+        .qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: #fffdf5; }
+        .val-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: #f0fdf4; color: var(--in-color); }
 
-        /* ================= MICRO DASHBOARD CARD ================= */
-        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-        .grade-card { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); }
-        .card-head { background: var(--brand-primary); padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
-        .grade-title { font-size: 11px; font-weight: 800; }
-        .glaze-badge { background: rgba(255,255,255,0.15); color: white; padding: 1px 5px; border-radius: 3px; font-size: 8.5px; font-weight: 700; }
-        .card-body { padding: 10px; }
-        .variety-label { font-size: 11px; font-weight: 800; color: var(--brand-primary); margin-bottom: 2px; }
+        /* ================= PREMIUM GRADE DASHBOARD CARDS ================= */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; padding: 2px; }
         
-        .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        .move-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; }
-        .move-box.in { border-left: 3px solid var(--in-color); }
-        .move-box.out { border-left: 3px solid var(--out-color); }
+        /* Dashboard వ్యూ లో కూడా కార్డ్స్ మాత్రమే స్క్రోల్ అవ్వాలి */
+        #dashboardView {
+            overflow-y: auto;
+            height: 100%;
+            padding-right: 4px;
+        }
+
+        .grade-card { 
+            background: white; 
+            border-radius: 10px; 
+            border: 1px solid #e2e8f0; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: var(--card-shadow); 
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+        }
+        .grade-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+            border-color: #cbd5e1;
+        }
         
-        .move-title { font-size: 8.5px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; font-size: 9.5px; }
+        .card-head { 
+            background: var(--card-header-gradient); 
+            padding: 10px 14px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .grade-title { font-size: 12px; font-weight: 800; letter-spacing: 0.3px; color: #f8fafc; }
+        .glaze-badge { background: rgba(37, 99, 235, 0.25); color: #93c5fd; padding: 2px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.3); letter-spacing: 0.2px; }
+        
+        .card-body { padding: 14px; background: #ffffff; }
+        .variety-label { font-size: 11px; font-weight: 800; color: var(--brand-accent); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
+        .variety-label::before { content: ''; display: inline-block; width: 4px; height: 11px; background: var(--brand-accent); border-radius: 2px; }
+        
+        .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .move-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px; transition: background 0.2s ease; }
+        .move-box:hover { background: #f1f5f9; }
+        .move-box.in { border-left: 3.5px solid var(--in-color); }
+        .move-box.out { border-left: 3.5px solid var(--out-color); }
+        
+        .move-title { font-size: 8.5px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 3px; }
+        .move-box.in .move-title { color: #15803d; }
+        .move-box.out .move-title { color: #b91c1c; }
+        
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; font-size: 9.5px; align-items: center; }
         .stat-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
         .s-label { color: var(--text-muted); font-weight: 600; }
-        .s-value { font-weight: 700; }
+        .s-value { font-weight: 700; color: #0f172a; }
 
-        .card-footer { background: #f0fdf4; padding: 8px 10px; border-top: 1px solid #bbf7d0; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 4px; align-items: center; }
+        .card-footer { 
+            background: #f0fdf4; 
+            padding: 10px 14px; 
+            border-top: 1px solid #dcfce7; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1.1fr; 
+            gap: 6px; 
+            align-items: center; 
+        }
         .footer-stat { display: flex; flex-direction: column; }
-        .footer-main-val { font-size: 10.5px; font-weight: 800; color: #15803d; }
-        .fs-label { font-size: 7.5px; font-weight: 800; color: #166534; text-transform: uppercase; display: block; margin-bottom: 1px;}
+        .footer-main-val { font-size: 11px; font-weight: 800; color: #166534; }
+        .fs-label { font-size: 7.5px; font-weight: 800; color: #15803d; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.2px; }
 
-        /* ================= COMPACT STATUS FOOTER ================= */
-        .status-footer { background: white; padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 15px; font-size: 9.5px; font-weight: 700; align-items: center; margin-top: 6px; box-shadow: 0 -2px 4px rgba(0,0,0,0.01); }
-        .stat-group { display: flex; align-items: center; gap: 10px; border-right: 2px solid #f1f5f9; padding-right: 10px; }
+        /* ================= 🌟 STICKY STATUS FOOTER ================= */
+        .status-footer { 
+            background: white; 
+            padding: 10px 15px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 16px; 
+            font-size: 9.5px; 
+            font-weight: 700; 
+            align-items: center; 
+            box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.05); 
+            position: sticky;
+            bottom: 0;
+            z-index: 100; /* టేబుల్ డేటా ఫుటర్ వెనుక నుండి స్క్రోల్ అవుతుంది */
+            margin-top: auto; 
+            flex-shrink: 0;
+        }
+        .stat-group { display: flex; align-items: center; gap: 12px; border-right: 2px solid #f1f5f9; padding-right: 12px; }
         .stat-group:last-child { border: none; }
         .stat-item { display: flex; flex-direction: column; }
-        .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1px; }
+        .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
         .stat-val { color: var(--brand-primary); font-weight: 800; }
-        
-        .empty-state { text-align:center; padding:60px 20px; color:#94a3b8; background: white; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; }
 
-        @media print { .header-container, .table-container, .control-bar, .nav-tabs { border:none; display: none !important; } body{background:#fff; padding:0;} }
+        @media print { .header-container, .table-container, .control-bar, .nav-tabs { display: none !important; } body{background:#fff; padding:0;} }
     </style>
 </head>
 <body>
@@ -170,9 +241,9 @@
 
     <form method="get" id="filterForm" class="filters-group">
         <div class="fbox" id="fyFilterWrapper">
-            <label style="color: var(--brand-accent); font-weight: 800;"><i class="fa-solid fa-calendar-check" style="margin-right: 2px;"></i> Year Filter</label>
+            <label style="color: var(--brand-accent);"><i class="fa-solid fa-calendar-check"></i> Year Filter</label>
             <select id="f_fy" class="fy-select-premium" onchange="changeFY(this.value)">
-                <option value="" style="color: var(--text-muted); font-weight:600;">-- ALL YEARS (DEFAULT) --</option>
+                <option value="">-- ALL YEARS --</option>
                 {% set start_yr = 2024 %}
                 {% set end_yr = 2027 %}
                 {% for y in range(start_yr, end_yr) %}
@@ -202,7 +273,7 @@
             </select>
         </div>
 
-        <div id="dashboardFilters" style="display: none; gap: 6px; align-items: center;">
+        <div id="dashboardFilters" class="dashboard-fields-wrapper" style="display: none;">
             <div class="fbox">
                 <label>Species</label>
                 <select id="speciesFilter" class="select-filter" onchange="applyFilters()"><option value="">All Species</option></select>
@@ -221,7 +292,7 @@
             </div>
         </div>
 
-        <div class="fbox" style="min-width: 140px;">
+        <div class="fbox" style="flex: 1.5; min-width: 160px;">
             <label>Local Search</label>
             <div class="search-wrapper">
                 <i class="fas fa-search"></i>
@@ -232,7 +303,6 @@
 </div>
 
 <main>
-    <!-- 🌟 STRATEGIC FIXED BLOCK: REMOVED EMPTY IF CONDITIONAL WRAPPERS -->
     <div id="tableView" class="view-content active">
         <div class="table-container">
             <div class="scroll-box">
@@ -299,7 +369,8 @@
     </div>
 
     <div id="dashboardView" class="view-content">
-        <div id="dashContainer" class="grid-layout"></div>
+        <div id="dashContainer" class="grid-layout">
+            </div>
     </div>
 </main>
 
@@ -321,7 +392,6 @@
         <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0</span></div>
     </div>
 </div>
-
 <script>
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 

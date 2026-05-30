@@ -11,7 +11,7 @@
 
 <style>
     :root {
-        --bg: #f1f5f9; /* Processing Dashboard Slate BG */
+        --bg: #f1f5f9; 
         --panel: #ffffff;
         --primary: #0f172a;
         --accent: #2563eb;
@@ -26,9 +26,9 @@
         --reprocess-light: #f5f3ff;
         --fresh: #0891b2;
         --fresh-light: #ecfeff;
-        --border: #e2e8f0; /* Soft and light border from reference */
-        --text: #0f172a; /* Main dark text */
-        --sub: #475569; /* Muted subtext */
+        --border: #e2e8f0; 
+        --text: #0f172a; 
+        --sub: #475569; 
         --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
         --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.04);
         --radius: 12px;
@@ -48,7 +48,6 @@
         -webkit-font-smoothing: antialiased;
     }
 
-    /* Premium Sticky Header */
     .header {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(12px);
@@ -104,34 +103,101 @@
         border-color: var(--primary);
     }
 
-    /* Filters Zone */
     .filters {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
         background: #f8fafc;
-        padding: 8px;
+        padding: 10px;
         border-radius: 8px;
         border: 1px solid var(--border);
     }
 
-    .filter-group {
+    .fbox {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        position: relative;
     }
 
-    .filter-group label {
-        font-size: 8px;
+    .fbox label {
+        font-size: 9px;
         text-transform: uppercase;
         font-weight: 800;
-        color: var(--sub);
         padding-left: 2px;
         letter-spacing: 0.5px;
     }
 
-    .filter-group select,
-    .filter-group input {
+    /* Searchable Dropdown Layout Styling */
+    .searchable-dropdown-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .dropdown-display-box {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 7px 8px;
+        font-size: 11px;
+        background: #fff;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .dropdown-search-wrapper {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-top: 4px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .dropdown-search-wrapper input {
+        border: none;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 10px;
+        font-size: 11px;
+        width: 100%;
+        outline: none;
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 10;
+    }
+
+    .dropdown-options-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .dropdown-options-list li {
+        padding: 8px 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--text);
+    }
+
+    .dropdown-options-list li:hover,
+    .dropdown-options-list li.selected-option {
+        background: var(--accent-light);
+        color: var(--accent);
+    }
+
+    .fbox input.main-search-field {
         border: 1px solid var(--border);
         border-radius: 6px;
         padding: 7px 8px;
@@ -143,7 +209,6 @@
         font-weight: 600;
     }
 
-    /* Reference Code Style Premium Colored Background KPI Cards */
     .kpi-grid {
         padding: 14px 16px;
         display: grid;
@@ -151,11 +216,11 @@
         gap: 10px;
     }
     @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
-    @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(7, 1fr); gap: 12px; } }
+    @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
 
     .kpi-card {
         border-radius: var(--radius);
-        padding: 14px 14px;
+        padding: 14px;
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         display: flex;
@@ -197,7 +262,6 @@
         width: fit-content;
     }
 
-    /* Soft Solid Colored Gradients from Reference Architecture */
     .kpi-opening { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; color: #1e40af; }
     .kpi-opening .value { color: #000; } .kpi-opening h4 { color: var(--sub); }
     
@@ -213,13 +277,15 @@
     .kpi-fresh { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; color: #5b21b6; }
     .kpi-fresh .value { color: #000; } .kpi-fresh h4 { color: var(--sub); }
 
+    .kpi-reglaze { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border: 1px solid #80deea; color: #006064; }
+    .kpi-reglaze .value { color: #000; } .kpi-reglaze h4 { color: var(--sub); }
+
     .kpi-dead { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; color: #c53030; }
     .kpi-dead .value { color: #000; } .kpi-dead h4 { color: var(--sub); }
 
     .kpi-mc { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; color: #0369a1; }
     .kpi-mc .value { color: #000; } .kpi-mc h4 { color: var(--sub); }
 
-    /* Elegant Segmented Tabs */
     .tabs {
         display: flex;
         gap: 4px;
@@ -258,7 +324,6 @@
         display: block;
     }
 
-    /* DATA TABLES SYSTEM - REFERENCE ARCHITECTURE STYLE */
     .rm-summary-box { 
         background: var(--panel); 
         border-radius: var(--radius); 
@@ -280,7 +345,7 @@
     .panel-header h3 {
         font-size: 11px;
         font-weight: 800;
-        color: var(--text-muted);
+        color: var(--sub);
         text-transform: uppercase;
         letter-spacing: 0.8px;
     }
@@ -312,7 +377,6 @@
         scrollbar-width: thin;
     }
 
-    /* Reference Table Structure Integration */
     .rm-table { 
         width: 100%; 
         border-collapse: collapse; 
@@ -322,7 +386,7 @@
     .rm-table th { 
         text-align: left; 
         padding: 8px 10px; 
-        background: #f8fafc; /* Beautiful soft header */
+        background: #f8fafc; 
         color: var(--sub); 
         font-size: 9.5px; 
         text-transform: uppercase; 
@@ -336,7 +400,7 @@
     
     .rm-table td { 
         padding: 8px 10px; 
-        border-bottom: 1px solid #f1f5f9; /* Smooth soft rows separator */
+        border-bottom: 1px solid #f1f5f9; 
         font-weight: 700; 
         color: #1e293b; 
     }
@@ -345,7 +409,6 @@
         background: #f8fafc; 
     }
 
-    /* Screen-wide Sticky Grand Total Row Setup */
     .grand-total-row {
         background: #e2e8f0 !important;
         position: sticky;
@@ -363,7 +426,6 @@
         font-size: 10px !important;
     }
 
-    /* Mobile First Optimized Views */
     @media(max-width:768px) {
         .rm-table th:nth-child(4),
         .rm-table td:nth-child(4) {
@@ -380,7 +442,6 @@
 
     .dead-row { background: var(--danger-light) !important; }
 
-    /* Analytics Charts Elements */
     .chart-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -405,7 +466,6 @@
         letter-spacing: 0.8px;
     }
 
-    /* Aging View Segment Elements */
     .age-boxes {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -456,68 +516,166 @@
         </div>
     </div>
 
+    <!-- 🔍 SEARCHABLE DROPDOWNS INTEGRATION FORM -->
     <form method="get" id="filterForm" class="filters" action="">
-        <div class="filter-group">
-            <label>FY</label>
-            <select name="sel_fy" onchange="document.getElementById('filterForm').submit()">
-                {% for fy in fy_options %}<option value="{{ fy }}" {{ 'selected' if sel_fy == fy else '' }}>{{ fy }}</option>{% endfor %}
-            </select>
+        
+        <!-- FY Searchable Dropdown -->
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_fy')">
+                    <span id="label_fy">
+                        {% set initial_fy = "" %}
+                        {% for y in financial_years %}
+                            {% if selected_fy == y|string or sel_fy == y|string %}
+                                FY {{ y }}-{{ (y|int) + 1 }}
+                                {% set initial_fy = y|string %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ initial_fy if initial_fy != "" else "-- SELECT FY --" }}
+                    </span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_fy">
+                    <input type="text" placeholder="Search FY..." onkeyup="filterDropdownList('dropdown_fy', this.value)">
+                    <ul class="dropdown-options-list">
+                        {% for y in financial_years %}
+                        <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}" onclick="selectDropdownOption('sel_fy', '{{ y }}', 'FY {{ y }}-{{ (y|int) + 1 }}', true)">FY {{ y }}-{{ (y|int) + 1 }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_fy" name="sel_fy" value="{{ sel_fy if sel_fy else selected_fy }}">
+            </div>
         </div>
-        <div class="filter-group"><label>Species</label>
-            <select name="sel_species" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for s in species_list %}<option value="{{ s }}" {{ 'selected' if sel_species == s else '' }}>{{ s }}</option>{% endfor %}</select>
+
+        <!-- Species Searchable Dropdown -->
+        <div class="fbox">
+            <label style="color:var(--accent)">Species *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_species')">
+                    <span id="label_species">{{ sel_species if sel_species and sel_species != 'ALL' else 'ALL SPECIES' }}</span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_species">
+                    <input type="text" placeholder="Search Species..." onkeyup="filterDropdownList('dropdown_species', this.value)">
+                    <ul class="dropdown-options-list">
+                        <li class="{% if not sel_species or sel_species == 'ALL' %}selected-option{% endif %}" onclick="selectDropdownOption('sel_species', 'ALL', 'ALL SPECIES')">ALL SPECIES</li>
+                        {% for s in species_list %}
+                        <li class="{% if sel_species == s %}selected-option{% endif %}" onclick="selectDropdownOption('sel_species', '{{ s }}', '{{ s }}')">{{ s }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_species" name="sel_species" value="{{ sel_species if sel_species else 'ALL' }}">
+            </div>
         </div>
-        <div class="filter-group"><label>Variety</label>
-            <select name="sel_variety" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for v in varieties_list %}<option value="{{ v }}" {{ 'selected' if sel_variety == v else '' }}>{{ v }}</option>{% endfor %}</select>
+
+        <!-- Variety Searchable Dropdown -->
+        <div class="fbox">
+            <label style="color:var(--accent)">Variety *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_variety')">
+                    <span id="label_variety">{{ sel_variety if sel_variety and sel_variety != 'ALL' else 'ALL VARIETIES' }}</span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_variety">
+                    <input type="text" placeholder="Search Variety..." onkeyup="filterDropdownList('dropdown_variety', this.value)">
+                    <ul class="dropdown-options-list">
+                        <li class="{% if not sel_variety or sel_variety == 'ALL' %}selected-option{% endif %}" onclick="selectDropdownOption('sel_variety', 'ALL', 'ALL VARIETIES')">ALL VARIETIES</li>
+                        {% for v in varieties_list %}
+                        <li class="{% if sel_variety == v %}selected-option{% endif %}" onclick="selectDropdownOption('sel_variety', '{{ v }}', '{{ v }}')">{{ v }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_variety" name="sel_variety" value="{{ sel_variety if sel_variety else 'ALL' }}">
+            </div>
         </div>
-        <div class="filter-group"><label>Grade</label>
-            <select name="sel_grade" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for g in grades_list %}<option value="{{ g }}" {{ 'selected' if sel_grade == g else '' }}>{{ g }}</option>{% endfor %}</select>
+
+        <!-- Grade Searchable Dropdown -->
+        <div class="fbox">
+            <label style="color:var(--accent)">Grade *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_grade')">
+                    <span id="label_grade">{{ sel_grade if sel_grade and sel_grade != 'ALL' else 'ALL GRADES' }}</span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_grade">
+                    <input type="text" placeholder="Search Grade..." onkeyup="filterDropdownList('dropdown_grade', this.value)">
+                    <ul class="dropdown-options-list">
+                        <li class="{% if not sel_grade or sel_grade == 'ALL' %}selected-option{% endif %}" onclick="selectDropdownOption('sel_grade', 'ALL', 'ALL GRADES')">ALL GRADES</li>
+                        {% for g in grades_list %}
+                        <li class="{% if sel_grade == g %}selected-option{% endif %}" onclick="selectDropdownOption('sel_grade', '{{ g }}', '{{ g }}')">{{ g }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_grade" name="sel_grade" value="{{ sel_grade if sel_grade else 'ALL' }}">
+            </div>
         </div>
-        <div class="filter-group"><label>Client</label>
-            <select name="sel_prod_for" onchange="document.getElementById('filterForm').submit()"><option value="ALL">ALL</option>{% for p in prod_for_list %}<option value="{{ p }}" {{ 'selected' if sel_prod_for == p else '' }}>{{ p }}</option>{% endfor %}</select>
+
+        <!-- Client Searchable Dropdown -->
+        <div class="fbox">
+            <label style="color:var(--accent)">Client *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_prod_for')">
+                    <span id="label_prod_for">{{ sel_prod_for if sel_prod_for and sel_prod_for != 'ALL' else 'ALL CLIENTS' }}</span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_prod_for">
+                    <input type="text" placeholder="Search Client..." onkeyup="filterDropdownList('dropdown_prod_for', this.value)">
+                    <ul class="dropdown-options-list">
+                        <li class="{% if not sel_prod_for or sel_prod_for == 'ALL' %}selected-option{% endif %}" onclick="selectDropdownOption('sel_prod_for', 'ALL', 'ALL CLIENTS')">ALL CLIENTS</li>
+                        {% for p in prod_for_list %}
+                        <li class="{% if sel_prod_for == p %}selected-option{% endif %}" onclick="selectDropdownOption('sel_prod_for', '{{ p }}', '{{ p }}')">{{ p }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_prod_for" name="sel_prod_for" value="{{ sel_prod_for if sel_prod_for else 'ALL' }}">
+            </div>
         </div>
-        <div class="filter-group"><label>Search</label>
-            <input type="text" id="tableSearch" placeholder="Type to filter..." onkeyup="searchTable()">
+
+        <div class="fbox">
+            <label style="color:var(--sub)">Search *</label>
+            <input type="text" id="tableSearch" class="main-search-field" placeholder="Type to filter..." onkeyup="searchTable()">
         </div>
     </form>
 </div>
 
-<!-- 🟢 KPI GRID ZONE: Real URLs sync applied perfectly to dodge 404 errors -->
 <div class="kpi-grid">
-    <!-- Opening click triggers smooth scroll to Opening Stock Table in same dashboard -->
     <div class="kpi-card kpi-opening" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
         <h4>Opening</h4>
         <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
     </div>
     
-    <!-- Closing click triggers smooth scroll to Live Closing Inventory Table in same dashboard -->
     <div class="kpi-card kpi-closing" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
         <h4>Closing</h4>
         <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
     </div>
     
-    <!-- Sales redirect endpoint mapping synced with system operation settings -->
     <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales">
         <h4>Sales</h4>
         <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
     </a>
     
-    <!-- Reprocess redirect endpoint mapping synced with system operation settings -->
     <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess">
         <h4>Reprocess</h4>
         <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
         <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
     </a>
     
-    <!-- Fresh redirect endpoint mapping synced with system operation settings -->
     <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh">
         <h4>Fresh</h4>
         <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
     </a>
-    
+
+    <div class="kpi-card kpi-reglaze">
+        <h4>Reglaze Prod.</h4>
+        <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
+        <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
+    </div>
+
     <div class="kpi-card kpi-dead">
         <h4>Dead Stock</h4>
         <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
@@ -538,7 +696,7 @@
     <button class="tab-btn" id="aging_tab_btn" onclick="openTab(event,'aging_tab')">Aging</button>
 </div>
 
-<!-- Tab 1: Live Closing Table Structural Replacement -->
+<!-- LIVE INVENTORY TAB -->
 <div id="live_tab" class="tab-content active">
     <div class="rm-summary-box">
         <div class="panel-header">
@@ -562,11 +720,18 @@
                 <tbody id="inventoryBody">
                     {% for row in stock_table_data %}
                     {% set age = row.ageing_days|default(0) %}
-                    <tr class="{{ 'dead-row' if age > 700 else '' }}" data-opening-qty="{{ row.opening_qty|default(0) }}" data-closing-qty="{{ row.qty|default(0) }}" data-opening-mc="{{ row.opening_mc|default(0) }}" data-closing-mc="{{ row.mc|default(0) }}" data-inv-val="{{ row.value|default(0) }}" data-reprocess-qty="{{ row.reprocess_qty|default(0) }}" data-reprocess-val="{{ row.reprocess_value|default(0) }}">
+                    <tr class="{{ 'dead-row' if age > 700 else '' }}" 
+                        data-opening-qty="{{ row.opening_qty|default(0) }}" 
+                        data-closing-qty="{{ row.qty|default(0) }}" 
+                        data-opening-mc="{{ row.opening_mc|default(0) }}" 
+                        data-closing-mc="{{ row.mc|default(0) }}" 
+                        data-inv-val="{{ row.value|default(0) }}" 
+                        data-reprocess-qty="{{ row.reprocess_qty|default(0) }}" 
+                        data-reprocess-val="{{ row.reprocess_value|default(0) }}">
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
+                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
                         <td align="right" style="color:#16a34a;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:#dc2626;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc }}</td><td align="right">{{ row.loose }}</td><td align="right" style="color: var(--primary);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
                         <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
                         <td>
                             {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
@@ -591,7 +756,7 @@
     </div>
 </div>
 
-<!-- Tab 2: Opening Stock Table Structural Replacement -->
+<!-- OPENING TAB -->
 <div id="opening_tab" class="tab-content">
     <div class="rm-summary-box">
         <div class="panel-header"><h3>Opening Stock Summary</h3></div>
@@ -604,14 +769,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% set ns = namespace(op_mc=0, op_loose=0, op_qty=0, op_val=0) %}
                     {% for row in stock_table_data %}
                     {% if row.opening_qty != 0 %}
                     {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
-                    {% set ns.op_mc = ns.op_mc + (row.opening_mc|default(0)) %}{% set ns.op_loose = ns.op_loose + (row.opening_loose|default(0)) %}{% set ns.op_qty = ns.op_qty + (row.opening_qty|default(0)) %}{% set ns.op_val = ns.op_val + row_op_val %}
                     <tr>
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc }}</td><td align="right">{{ row.opening_loose }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days }}D</td>
+                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -621,6 +784,7 @@
     </div>
 </div>
 
+<!-- COMPARISON TAB -->
 <div id="comparison_tab" class="tab-content">
     <div class="chart-grid">
         <div class="chart-box"><h3>FY Comparison</h3><canvas id="fyChart"></canvas></div>
@@ -628,6 +792,7 @@
     </div>
 </div>
 
+<!-- AGING TAB -->
 <div id="aging_tab" class="tab-content">
     <div class="age-boxes">
         <div class="age-card" style="border-left: 5px solid var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
@@ -638,12 +803,80 @@
 </div>
 
 <script>
+// Toggle View Logic for Searchable Custom Dropdowns
+function toggleSearchDropdown(id) {
+    // Close other opened dropdown wrappers first to protect overlay stack
+    document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
+        if(wrapper.id !== id) wrapper.style.display = 'none';
+    });
+    
+    let target = document.getElementById(id);
+    if (target.style.display === 'block') {
+        target.style.display = 'none';
+    } else {
+        target.style.display = 'block';
+        // Focus the target input fields automatically upon extraction
+        let inputField = target.querySelector('input');
+        if(inputField) {
+            inputField.value = '';
+            inputField.focus();
+            filterDropdownList(id, ''); // Show all lines initially
+        }
+    }
+}
+
+// Keyup Engine Filter Tracker Inside Dropdowns
+function filterDropdownList(wrapperId, query) {
+    let container = document.getElementById(wrapperId);
+    let filter = query.toUpperCase();
+    let liItems = container.querySelectorAll('.dropdown-options-list li');
+    
+    liItems.forEach(li => {
+        let txtValue = li.textContent || li.innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            li.style.display = "";
+        } else {
+            li.style.display = "none";
+        }
+    });
+}
+
+// Option Assignment Handler & Dispatcher
+function selectDropdownOption(hiddenInputId, val, displayName, isFYChange = false) {
+    document.getElementById(hiddenInputId).value = val;
+    
+    // Auto collapse parent container wrapper
+    let parentWrapper = document.getElementById(hiddenInputId).previousElementSibling;
+    if(parentWrapper) parentWrapper.style.display = 'none';
+    
+    if(isFYChange) {
+        changeFY(val);
+    } else {
+        document.getElementById('filterForm').submit();
+    }
+}
+
+// Global Document Listener to Close Opened Overlay List Dropdowns on Outside Clicks
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.searchable-dropdown-container')) {
+        document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
+            wrapper.style.display = 'none';
+        });
+    }
+});
+
+function changeFY(val) {
+    if(!val) return;
+    let url = new URL(window.location.href);
+    url.searchParams.set('sel_fy', val);
+    window.location.href = url.toString();
+}
+
 function openTab(evt, tabId){
     document.querySelectorAll('.tab-content').forEach(tab => { tab.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); });
     document.getElementById(tabId).classList.add('active');
     
-    // Check if dynamic text or event target object passed
     if(evt && evt.currentTarget) {
         evt.currentTarget.classList.add('active');
     } else if(evt) {
@@ -652,7 +885,6 @@ function openTab(evt, tabId){
     }
 }
 
-// Tab scroll processing and active component selection handler code block
 function scrollToDashboardTab(btnId, tabId) {
     openTab(btnId, tabId);
     let targetBlock = document.getElementById('dashboardTabsBlock');
@@ -669,6 +901,7 @@ function searchTable(){
     let filter = input.value.toUpperCase();
     let rows = document.querySelectorAll("#inventoryBody tr");
     let sumOpQty = 0, sumClQty = 0, sumOpMC = 0, sumClMC = 0, sumClVal = 0, sumReprocessQty = 0, sumReprocessVal = 0;
+    
     rows.forEach(tr => {
         let text = tr.innerText.toUpperCase();
         if(text.indexOf(filter) > -1){
@@ -682,6 +915,7 @@ function searchTable(){
             sumReprocessVal += parseFloat(tr.dataset.reprocessVal || 0);
         } else { tr.style.display = "none"; }
     });
+    
     document.getElementById('foot_op_qty').innerText = fmt.format(sumOpQty);
     document.getElementById('foot_cl_qty').innerText = fmt.format(sumClQty);
     document.getElementById('foot_op_mc').innerText = sumOpMC.toLocaleString();

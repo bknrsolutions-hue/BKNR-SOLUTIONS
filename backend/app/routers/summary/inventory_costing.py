@@ -1,6 +1,6 @@
 # ============================================================
 # FINAL INVENTORY & REPROCESS COSTING ROUTER
-# (FINAL PRODUCTION VERSION - COMPLETED STABLE MATRIX)
+# (UPDATED: ALL DATA BY DEFAULT & CONDITIONAL CARD VIEW)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Query
@@ -8,11 +8,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_
+from sqlalchemy import func, and_, case
 
 import re
 from datetime import datetime, date
-import datetime as dt
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -28,7 +27,9 @@ from app.database.models.processing import (
 )
 from app.database.models.criteria import (
     varieties as VarietyTable,
-    HOSO_HLSO_Yields, production_for as ProductionForTable
+    HOSO_HLSO_Yields,
+    production_for as ProductionForTable,
+    brands, species as species_model, grades, glazes, freezers, packing_styles, production_at, production_types
 )
 from app.services.floor_balance import (
     get_floor_balance
@@ -131,20 +132,17 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
 
     if any(x in prod_type for x in ["RAW", "MELTING", "PRODUCTION"]):
         cost = float(master.production_cost_per_kg or 0) + float(master.ice_rate_per_kg or 0)
-        
         if is_source_hoso:
             if is_finish_hlso:
                 cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0))
             elif is_finish_va:
                 cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0) + float(master.peeling_rate_per_kg or 0))
-        
         elif is_source_hlso:
             if is_finish_hlso and is_source_rmp:
                 cost += float(master.grading_rate_per_kg or 0)
             elif is_finish_va:
                 if is_source_rmp: cost += float(master.grading_rate_per_kg or 0)
                 cost += float(master.peeling_rate_per_kg or 0)
-
         return round(cost, 2)
 
     elif any(x in prod_type for x in ["REGLAZE", "REFREEZING"]):
@@ -156,7 +154,7 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
     return 5.0
 
 # ============================================================
-# MAIN ROUTER
+# MAIN ROUTER WITH UPDATED FILTER FLOW
 # ============================================================
 
 @router.get("/inventory_costing", response_class=HTMLResponse)
@@ -165,43 +163,81 @@ def inventory_costing_page(
     db: Session = Depends(get_db),
     from_date: str = "",
     to_date: str = "",
-    fy: str = Query(None)
+    fy: str = Query(None),
+    production_for_filter: str = Query("", alias="production_for") # UI డ్రాప్‌డౌన్ ఫిల్టర్ మ్యాచ్
 ):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/auth/login", status_code=302)
 
-    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
+    # 1. Dynamic Financial Years Generation from Gate Entry
     all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
     fy_set = set()
     for d_tuple in all_dates:
         d = d_tuple[0]
-        current_year = d.year
         if d.month >= 4:
-            fy_str = f"{current_year}"
+            fy_str = f"{d.year}"
         else:
-            fy_str = f"{current_year - 1}"
+            fy_str = f"{d.year - 1}"
         fy_set.add(fy_str)
     financial_years = sorted(list(fy_set), reverse=True)
 
-    # --- Financial Year Bounds Definition ---
     selected_fy = fy
-    fy_start, fy_end = None, None
+
+    # 2. Base Queries Formulation
+    q_stock = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
+        stock_entry.company_id == comp_code
+    )
+    
+    q_cs = db.query(cold_storage_holding).outerjoin(GateEntry, cold_storage_holding.batch_number == GateEntry.batch_number).filter(
+        cold_storage_holding.company_id == comp_code
+    )
+
+    # UI నుండి కంపెనీ (production_for) ఫిల్టర్ అప్లై చేస్తే:
+    if production_for_filter:
+        q_stock = q_stock.filter(stock_entry.production_for == production_for_filter)
+        q_cs = q_cs.filter(cold_storage_holding.production_for == production_for_filter)
+
+    # FY & Date Range Logic
     if selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
+        
+        q_stock = q_stock.filter(
+            case(
+                (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
+                else_=and_(stock_entry.date >= fy_start, stock_entry.date <= fy_end)
+            )
+        )
+        q_cs = q_cs.filter(
+            case(
+                (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
+                else_=and_(cold_storage_holding.date >= fy_start, cold_storage_holding.date <= fy_end)
+            )
+        )
         if not from_date: from_date = fy_start.isoformat()
         if not to_date: to_date = fy_end.isoformat()
+    else:
+        if from_date:
+            q_stock = q_stock.filter(stock_entry.date >= date.fromisoformat(from_date))
+            q_cs = q_cs.filter(cold_storage_holding.date >= date.fromisoformat(from_date))
+        if to_date:
+            q_stock = q_stock.filter(stock_entry.date <= date.fromisoformat(to_date))
+            q_cs = q_cs.filter(cold_storage_holding.date <= date.fromisoformat(to_date))
 
-    plant_rows = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
-    cs_rows = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
+    # 🌟 మార్పు: FY సెలెక్ట్ చేయకపోయినా ఖాళీగా ఉంచకుండా, టేబుల్ లోని మొత్తం డేటా (All Data) లోడ్ అవుతుంది
+    plant_rows = q_stock.order_by(stock_entry.date.desc()).all()
+    cs_rows = q_cs.order_by(cold_storage_holding.date.desc()).all()
+
+    # Context Mapping Reference Assets
     reprocess_rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).all()
-
     v_records = {v.variety_name.lower().strip(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == comp_code).all()}
+    
     batch_numbers = list(set([r.batch_number for r in (plant_rows + cs_rows) if r.batch_number]))
     batch_residual_map = {}
     batch_total_hoso_weight_pool = {}
 
+    # 3. Calculation Processing Pool Matrices
     for batch in batch_numbers:
         rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty).label("tq"), func.sum(RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
         raw_val = float(rmp_stats.ta or 0); raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
@@ -277,24 +313,8 @@ def inventory_costing_page(
     db.commit()
     db.expire_all()
 
-    # --- SAFE OUTER JOIN GATE ENTRY SELECTION STRUCTURE ---
-    base_query = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
-        stock_entry.company_id == comp_code
-    )
-
-    if selected_fy and fy_start and fy_end:
-        base_query = base_query.filter(
-            case(
-                (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
-                else_=and_(stock_entry.date >= fy_start, stock_entry.date <= fy_end)
-            )
-        )
-    else:
-        if from_date: base_query = base_query.filter(stock_entry.date >= date.fromisoformat(from_date))
-        if to_date: base_query = base_query.filter(stock_entry.date <= date.fromisoformat(to_date))
-
-    # 🌟 న్యూ ఎంట్రీస్ పైన, ఓల్డ్ ఎంట్రీస్ కిందకు వచ్చేలా ఇక్కడ .desc() ఆర్డర్ అప్లై చేశాను
-    all_rows = base_query.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
+    # 4. Fetch Structured Output Records Set
+    all_rows = plant_rows + cs_rows
 
     total_qty_in = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
     total_qty_out = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT")
@@ -303,6 +323,24 @@ def inventory_costing_page(
     available_qty = total_qty_in + total_qty_out
     balance_value = total_val_in + (sum(float(r.inventory_value or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT"))
     avg_rate = (balance_value / available_qty) if available_qty > 0 else 0
+
+    # 5. Safe Fetch Helper Method
+    def get_list(model, attr):
+        return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
+
+    try:
+        p_types_data = db.query(production_types).filter(production_types.company_id == comp_code).all()
+    except Exception:
+        p_types_data = db.query(production_types).all()
+
+    prod_types_list = []
+    for x in p_types_data:
+        val = getattr(x, "type_name", None) or getattr(x, "production_type", None) or getattr(x, "type_of_production", None)
+        if val: prod_types_list.append(val)
+    prod_types_list = sorted(list(set(prod_types_list)))
+
+    if not prod_types_list:
+        prod_types_list = ["RAW", "MELTING", "PRODUCTION", "REGLAZE", "REFREEZING", "REPACKING", "REWEIGHMENT"]
 
     return templates.TemplateResponse(
         request=request, 
@@ -313,6 +351,19 @@ def inventory_costing_page(
             "to_date": to_date,
             "financial_years": financial_years,
             "selected_fy": selected_fy,
+            "selected_production_for": production_for_filter, # UI లో చెక్ చేసుకోవడానికి
+            "company_name": request.session.get("company_name", "BKNR"),
+            "is_admin": request.session.get("role") == "admin",
+            "brands_list": get_list(brands, "brand_name"),
+            "species_list": get_list(species_model, "species_name"),
+            "varieties_list": [v.variety_name for v in v_records.values()],
+            "grades_list": get_list(grades, "grade_name"),
+            "glazes_list": get_list(glazes, "glaze_name"),
+            "freezers_list": get_list(freezers, "freezer_name"),
+            "packing_styles_list": get_list(packing_styles, "packing_style"),
+            "production_for_list": sorted({x.production_for for x in db.query(ProductionForTable).filter(ProductionForTable.company_id == comp_code).all() if x.production_for}),
+            "production_at_list": get_list(production_at, "production_at"),
+            "type_of_production_list": prod_types_list,
             "summary": {
                 "total_items": len(all_rows), "qty_in": total_qty_in, "qty_out": total_qty_out,
                 "net_qty": available_qty, "val_in": total_val_in, "val_out": total_val_out_abs,

@@ -8,7 +8,6 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, date
-import datetime as dt
 import pytz
 import openpyxl 
 from io import BytesIO
@@ -21,7 +20,7 @@ from app.database.models.inventory_management import stock_entry
 from app.database.models.users import Company
 from app.database.models.processing import AuditLog, GateEntry 
 from app.database.models.criteria import (
-    production_for, production_at, freezers, packing_styles,
+    production_for, production_at, freezers, packing_styles, production_types,
     glazes, varieties, grades, brands, species as species_model
 )
 
@@ -90,7 +89,7 @@ async def stock_report_page(
     # --- Financial Year Logic ---
     selected_fy = fy
     
-    # 🌟 బాచ్ నంబర్ వేరేగా ఉన్నా డేటా మిస్ అవ్వకుండా ఇక్కడ OUTERJOIN (లెఫ్ట్ జాయిన్) ఉపయోగించాం
+    # 🌟 బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
     q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
         stock_entry.company_id == comp_code
     )
@@ -100,7 +99,7 @@ async def stock_report_page(
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
         
-        # 🌟 గేట్ ఎంట్రీ డేట్ ఉంటే దాని ప్రకారం, లేకపోతే స్టాక్ ఎంట్రీ ఓన్ డేట్ ప్రకారం కండిషన్ అప్లై అవుతుంది
+        # గేట్ ఎంట్రీ డేట్ ఉంటే దాని ప్రకారం, లేకపోతే స్టాక్ ఎంట్రీ ఓన్ డేట్ ప్రకారం కండిషన్ అప్లై అవుతుంది
         q = q.filter(
             case(
                 (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
@@ -122,6 +121,25 @@ async def stock_report_page(
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
+    # 🌟 production_types టేబుల్ లో company_id లేకపోయినా లేదా కాలమ్ నేమ్స్ తేడా ఉన్నా క్రాష్ అవ్వకుండా సేఫ్ ఫెట్చింగ్ లాజిక్
+    try:
+        # మొదట కంపెనీ కోడ్ తో ట్రై చేస్తున్నాం
+        p_types_data = db.query(production_types).filter(production_types.company_id == comp_code).all()
+    except Exception:
+        # ఒకవేళ ఆ టేబుల్ లో company_id కాలమ్ లేకపోతే గ్లోబల్ గా అన్ని రికార్డులు తెస్తాం
+        p_types_data = db.query(production_types).all()
+
+    # మీ మోడల్ లో కాలమ్ పేరు 'type_name' లేదా 'production_type' ఏదైనా సరే డైనమిక్ గా వాల్యూస్ కలెక్ట్ చేస్తుంది భాయ్
+    prod_types_list = []
+    for x in p_types_data:
+        val = getattr(x, "type_name", None) or getattr(x, "production_type", None) or getattr(x, "type_of_production", None)
+        if val: prod_types_list.append(val)
+    prod_types_list = sorted(list(set(prod_types_list)))
+
+    # ఒకవేళ డేటాబేస్ టేబుల్ పూర్తిగా ఖాళీగా ఉంటే డిఫాల్ట్ వాల్యూస్ బ్యాకప్ లాగా పనిచేస్తాయి
+    if not prod_types_list:
+        prod_types_list = ["PROCESSED", "SEMIPROCESSED", "RAW"]
+
     context = {
         "request": request, 
         "rows": rows, 
@@ -132,6 +150,10 @@ async def stock_report_page(
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
+        
+        # 🌟 డేటా టేబుల్ నుండి క్లీన్ గా వెళ్తున్న డ్రాప్ డౌన్ లిస్ట్
+        "type_of_production_list": prod_types_list,
+        
         "production_at_list": get_list(production_at, "production_at"),
         "freezers_list": get_list(freezers, "freezer_name"),
         "packing_styles_list": get_list(packing_styles, "packing_style"),
@@ -174,7 +196,7 @@ async def update_stock(request: Request, payload: dict = Body(...), db: Session 
         if new_mc > bal_mc or new_ls > bal_ls:
             raise HTTPException(status_code=400, detail=f"Insufficient Stock! Available: {bal_mc} MC, {bal_ls} Lse")
 
-    fields = ["batch_number", "location", "brand", "freezer", "glaze", "species", "packing_style", "variety", "grade", "no_of_mc", "loose", "product_kg_value", "sales_reference_rate", "hlso_count", "hoso_count", "purpose"]
+    fields = ["batch_number", "location", "brand", "freezer", "glaze", "species", "packing_style", "variety", "grade", "no_of_mc", "loose", "product_kg_value", "sales_reference_rate", "hlso_count", "hoso_count", "purpose", "type_of_production"]
     for f in fields:
         if f in payload:
             old_v, new_v = str(getattr(row, f) or "").strip(), str(payload[f] or "").strip()
