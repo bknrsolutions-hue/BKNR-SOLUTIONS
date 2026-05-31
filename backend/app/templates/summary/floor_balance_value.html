@@ -20,43 +20,65 @@
 }
 
 *{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif;}
-body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:5px; font-size:9.5px; }
+body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:10px; font-size:9.5px; }
 
 /* ================= PREMIUM HEADER & FILTERS ================= */
 .header{ 
     background:var(--header); 
-    padding:10px; 
+    padding:12px; 
     border-radius:8px;
     border:1px solid var(--border); 
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
     margin-bottom: 6px;
 }
 .header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.header h2{ margin:0; font-size:12px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
+.company-badge { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); font-weight: 700; color: var(--text); font-size: 9px; }
 
-/* Responsive Filters: Mobile by default (1 column), Web/Desktop (Grid with Search stretching) */
+/* Responsive Filters Grid */
 .filters{
  display:grid;
  grid-template-columns: 1fr;
- gap:6px; background:#f1f5f9; padding:6px; border-radius:6px;
+ gap:8px; background:#f1f5f9; padding:8px; border-radius:6px;
 }
 @media (min-width: 768px) { 
  .filters { 
-    grid-template-columns: minmax(100px, 150px) minmax(100px, 150px) minmax(100px, 150px) 1fr; 
+    grid-template-columns: repeat(3, minmax(160px, 1fr)) 1.5fr; 
  } 
 }
 
-.fbox{display:flex;flex-direction:column;gap:2px;}
-.fbox label{ font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase; }
+.fbox{position: relative; display:flex; flex-direction:column; gap:2px;}
+.fbox label{ font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom: 1px; }
 
-select, #searchBox{ padding:4px 6px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; transition: 0.2s; color:#0f172a; width: 100%; }
-select:focus, #searchBox:focus{ border-color: var(--accent); background:#fff; }
-#searchBox{ border-left:3px solid var(--accent); }
+/* ================= SEARCHABLE DROPDOWN CORE COMPONENT ================= */
+.searchable-select-container { position: relative; width: 100%; }
+.select-trigger { 
+    padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); 
+    border-radius:4px; background:#fff; outline:none; color:#0f172a; width: 100%; 
+    display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+}
+.select-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+    border: 1px solid var(--border); border-radius: 4px; margin-top: 2px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 100; display: none;
+}
+.dropdown-search-input {
+    width: 100%; padding: 5px; font-size: 9.5px; border: none;
+    border-bottom: 1px solid var(--border); outline: none; font-weight: 600;
+}
+.dropdown-options { max-height: 150px; overflow-y: auto; padding: 2px 0; }
+.dropdown-option { 
+    padding: 5px 8px; font-size: 9.5px; cursor: pointer; font-weight: 600; color: var(--text);
+}
+.dropdown-option:hover { background: #eff6ff; color: var(--accent); }
+.dropdown-option.selected { background: var(--accent); color: #fff; }
+
+#searchBox{ padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; color:#0f172a; width: 100%; border-left:3px solid var(--accent); }
 
 /* ================= ACTIONS SYSTEM ================= */
 .actions{ background:#fff; padding:5px 8px; display:flex; justify-content:space-between; align-items:center; border-radius:6px; border:1px solid var(--border); margin-bottom:6px; }
 #rowCount{ font-size:9px; font-weight:800; color:var(--accent); background: #eff6ff; padding: 1px 6px; border-radius: 12px; border: 1px solid #bfdbfe; }
-.btn-print{ font-size:9px; cursor:pointer; color:#fff; background:var(--primary); padding:3px 8px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; border:none; display:flex; align-items:center; gap:4px; }
+.btn-print{ font-size:9px; cursor:pointer; color:#fff; background:var(--primary); padding:4px 10px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; border:none; display:flex; align-items:center; gap:4px; }
 .btn-print:hover{ background:var(--accent); }
 
 /* ================= TABLE AREA ULTRA-COMPACT LAYOUT ================= */
@@ -66,33 +88,35 @@ select:focus, #searchBox:focus{ border-color: var(--accent); background:#fff; }
 table{ width:100%; border-collapse:collapse; table-layout:auto; } 
 
 thead th{
- background:#f8fafc; padding:5px 2px; font-size:8.5px; font-weight:800;
+ background:#f8fafc; padding:6px 4px; font-size:8.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  position:sticky; top:0; z-index:20; color:#475569; white-space: nowrap;
 }
 
 tbody td{
- padding:4px 2px; font-size:9px; border-bottom:1px solid #f1f5f9;
+ padding:5px 4px; font-size:9px; border-bottom:1px solid #f1f5f9;
  white-space:nowrap; font-weight: 600;
 }
 tr:hover td { background-color: #f8fafc; }
 
-/* Subtotal Grouping Styles - Extra Tight */
+/* Subtotal Grouping Styles - Extra Premium Tight */
 .row-loc { background: #0f172a !important; color: #ffffff !important; font-weight: 800; }
-.row-comp { background: #eff6ff !important; color: var(--accent) !important; font-weight: 700; border-top: 1px solid #dbeafe; border-bottom: 1px solid #dbeafe; }
+.row-comp { background: #e0f2fe !important; color: #0369a1 !important; font-weight: 700; border-top: 1px solid #bae6fd; border-bottom: 1px solid #bae6fd; }
 .row-var { background: #f8fafc !important; color: #334155 !important; font-weight: 700; border-bottom: 1px solid var(--border); }
 
-.qty-bold { text-align: right !important; font-weight: 800; padding-right: 4px !important; }
-.val-column { background: #fffdf5; color: #92400e; font-weight: 700; text-align: right !important; padding-right: 4px !important; }
+.qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; }
+.val-column { background: #fffdf5; color: #92400e; font-weight: 700; text-align: right !important; padding-right: 6px !important; }
 .batch-bold { color: var(--accent); font-weight: 700; }
 
-/* Micro Tag */
-.tag { background: #f1f5f9; color: #334155; padding: 0px 3px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid #cbd5e1; display: inline-block; }
+.tag { background: #edf2f7; color: #2d3748; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid #cbd5e1; display: inline-block; }
+.source-tag { font-size: 8px; padding: 1px 3px; border-radius: 3px; font-weight: 700; }
+.src-rmp { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
+.src-reprocess { background: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
 
-tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 2px; color:var(--primary); }
+tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); }
 
 @media print {
-    .filters, .actions, .header-top button { display: none !important; }
+    .filters, .actions, .btn-print { display: none !important; }
     .section { border: none; margin: 0; }
     body { background: #fff; padding: 0; }
     .table-wrap { overflow: visible; }
@@ -105,19 +129,81 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
 <div class="header">
     <div class="header-top">
         <h2>Floor Balance Value Summary</h2>
-        <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+        <div>
+            <span class="company-badge"><i class="fa-solid fa-building"></i> Company: {{ company_id }}</span>
+            <button class="btn-print" onclick="window.print()" style="display:inline-flex; margin-left:5px;"><i class="fas fa-print"></i> Print</button>
+        </div>
     </div>
+    
     <div class="filters">
-        <div class="fbox"><label>Location</label><select id="f_location"><option value="">All</option>{% for l in rows_batch|map(attribute='location')|unique %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Production For</label><select id="f_production"><option value="">All</option>{% for p in rows_batch|map(attribute='production_for')|unique %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All</option>{% for v in rows_batch|map(attribute='variety')|unique %}<option value="{{ v }}">{{ v }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Search</label><input id="searchBox" placeholder="Search by Batch, Species..."></div>
+        <!-- Searchable Location Select -->
+        <div class="fbox">
+            <label>Location</label>
+            <div class="searchable-select-container" id="container_location">
+                <div class="select-trigger" onclick="toggleDropdown('location')">
+                    <span id="label_location">All Locations</span> <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="select-dropdown" id="drop_location">
+                    <input type="text" class="dropdown-search-input" placeholder="Search Location..." oninput="filterOptions('location')">
+                    <div class="dropdown-options" id="opts_location">
+                        <div class="dropdown-option selected" onclick="selectOption('location', '')">All Locations</div>
+                        {% for l in rows_batch|map(attribute='location')|unique %}
+                        <div class="dropdown-option" onclick="selectOption('location', '{{ l }}')">{{ l }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Searchable Production For Select -->
+        <div class="fbox">
+            <label>Production For</label>
+            <div class="searchable-select-container" id="container_production">
+                <div class="select-trigger" onclick="toggleDropdown('production')">
+                    <span id="label_production">All Stocks</span> <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="select-dropdown" id="drop_production">
+                    <input type="text" class="dropdown-search-input" placeholder="Search Production For..." oninput="filterOptions('production')">
+                    <div class="dropdown-options" id="opts_production">
+                        <div class="dropdown-option selected" onclick="selectOption('production', '')">All Stocks</div>
+                        {% for p in rows_batch|map(attribute='production_for')|unique %}
+                        <div class="dropdown-option" onclick="selectOption('production', '{{ p }}')">{{ p }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Searchable Variety Select -->
+        <div class="fbox">
+            <label>Variety</label>
+            <div class="searchable-select-container" id="container_variety">
+                <div class="select-trigger" onclick="toggleDropdown('variety')">
+                    <span id="label_variety">All Varieties</span> <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="select-dropdown" id="drop_variety">
+                    <input type="text" class="dropdown-search-input" placeholder="Search Variety..." oninput="filterOptions('variety')">
+                    <div class="dropdown-options" id="opts_variety">
+                        <div class="dropdown-option selected" onclick="selectOption('variety', '')">All Varieties</div>
+                        {% for v in rows_batch|map(attribute='variety')|unique %}
+                        <div class="dropdown-option" onclick="selectOption('variety', '{{ v }}')">{{ v }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Text Filter -->
+        <div class="fbox">
+            <label>Global Filter</label>
+            <input id="searchBox" placeholder="Search by Batch, Species, Source...">
+        </div>
     </div>
 </div>
 
 <div class="actions">
     <div id="rowCount">0 Records Found</div>
-    <div style="font-size: 8px; font-weight: 700; color: #64748b;">* RMP Avg Rates Basis</div>
+    <div style="font-size: 8px; font-weight: 700; color: #64748b;"><i class="fa-solid fa-circle-info"></i> RMP & Reprocess Costing Balanced Framework</div>
 </div>
 
 <div class="section">
@@ -125,21 +211,22 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
         <table id="rmpTable">
             <thead>
                 <tr>
-                    <th style="width: 20px; text-align: center;">#</th>
+                    <th style="width: 25px; text-align: center;">#</th>
                     <th style="text-align: left;">Location</th>
                     <th style="text-align: left;">Production For</th>
                     <th style="text-align: center;">Batch No</th>
+                    <th style="text-align: center;">Source</th>
                     <th style="text-align: center;">Species</th>
                     <th style="text-align: center;">Variety</th>
                     <th style="text-align: center;">Count</th>
-                    <th style="text-align: right; padding-right: 4px;">Qty (Kg)</th>
-                    <th style="text-align: right; padding-right: 4px;">Value (₹)</th> 
+                    <th style="text-align: right; padding-right: 6px;">Qty (Kg)</th>
+                    <th style="text-align: right; padding-right: 6px;">Value (₹)</th> 
                 </tr>
             </thead>
             <tbody id="tbody"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="7" style="text-align:right; padding-right: 6px;">GRAND TOTAL:</td>
+                    <td colspan="8" style="text-align:right; padding-right: 6px;">GRAND TOTAL:</td>
                     <td id="net_qty" class="qty-bold">0.00</td>
                     <td id="net_value" class="qty-bold" style="color:var(--success);">0.00</td>
                 </tr>
@@ -153,21 +240,94 @@ const rawData = [
     {% for r in rows_batch %}
     {
         location: "{{ r.location or 'Floor' }}",
-        production_for: "{{ r.production_for or 'General' }}",
+        production_for: "{{ r.production_for or 'General Stock' }}",
         batch: "{{ r.batch }}",
         species: "{{ r.species }}",
         variety: "{{ r.variety }}",
         count: "{{ r.count }}",
         qty: {{ r.available_qty or 0 }},
-        value: {{ r.value or 0 }} 
+        value: {{ r.value or 0 }},
+        source: "{{ r.source or 'RMP' }}"
     },
     {% endfor %}
 ];
 
+// Dropdown Values State Tracker
+let filterState = {
+    location: '',
+    production: '',
+    variety: ''
+};
+
+function toggleDropdown(type) {
+    const el = document.getElementById(`drop_${type}`);
+    const isVisible = el.style.display === 'block';
+    closeAllDropdowns();
+    if (!isVisible) {
+        el.style.display = 'block';
+        const searchInput = el.querySelector('input');
+        searchInput.value = ''; // Input క్లియర్ చేస్తుంది
+        searchInput.focus();
+        filterOptions(type); // లిస్ట్‌ను రీసెట్ చేస్తుంది
+    }
+}
+
+function closeAllDropdowns() {
+    ['location', 'production', 'variety'].forEach(type => {
+        document.getElementById(`drop_${type}`).style.display = 'none';
+    });
+}
+
+function filterOptions(type) {
+    const input = document.getElementById(`drop_${type}`).querySelector('input');
+    const filter = input.value.toLowerCase();
+    const options = document.getElementById(`opts_${type}`).querySelectorAll('.dropdown-option');
+    
+    options.forEach(opt => {
+        const text = opt.innerText.toLowerCase();
+        if (text.includes(filter)) {
+            opt.style.display = 'block';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+}
+
+function selectOption(type, value) {
+    filterState[type] = value;
+    
+    // UI ఆప్షన్స్ క్లాస్ అప్‌డేట్
+    const container = document.getElementById(`opts_${type}`);
+    container.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+    
+    // ట్రిగ్గర్ హెడర్ టెక్స్ట్ అప్‌డేట్
+    const trigger = document.getElementById(`label_${type}`);
+    if(value === '') {
+        trigger.innerText = type === 'location' ? 'All Locations' : type === 'production' ? 'All Stocks' : 'All Varieties';
+    } else {
+        trigger.innerText = value;
+    }
+    
+    // క్లిక్ చేసిన ఎలిమెంట్‌ను హైలైట్ చేయడానికి `event.currentTarget` ని వాడుతున్నాం
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('selected');
+    }
+    
+    closeAllDropdowns();
+    applyFilters();
+}
+
+// డ్రాప్‌డౌన్ బయట క్లిక్ చేస్తే ఆటోమేటిక్‌గా క్లోజ్ అవ్వడానికి
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.searchable-select-container')) {
+        closeAllDropdowns();
+    }
+});
+
 function applyFilters() {
-    const fLoc = document.getElementById("f_location").value;
-    const fProd = document.getElementById("f_production").value;
-    const fVar = document.getElementById("f_variety").value;
+    const fLoc = filterState.location;
+    const fProd = filterState.production;
+    const fVar = filterState.variety;
     const q = document.getElementById("searchBox").value.toLowerCase();
     const tbody = document.getElementById("tbody");
     tbody.innerHTML = "";
@@ -181,12 +341,14 @@ function applyFilters() {
         return ok;
     });
 
+    // సాఫ్ట్ సార్టింగ్ అల్గారిథమ్
     filtered.sort((a, b) => a.location.localeCompare(b.location) || a.production_for.localeCompare(b.production_for));
 
     const tree = {};
     let grandQty = 0;
     let grandValue = 0;
 
+    // మల్టీ లెవెల్ ట్రీ ఆబ్జెక్ట్ కన్స్ట్రక్షన్
     filtered.forEach(d => {
         if(!tree[d.location]) tree[d.location] = { qty: 0, val: 0, comps: {} };
         if(!tree[d.location].comps[d.production_for]) tree[d.location].comps[d.production_for] = { qty: 0, val: 0, vars: {} };
@@ -213,11 +375,13 @@ function applyFilters() {
                 insertSubRow(`---- ${v} TOTAL`, tree[l].comps[c].vars[v].qty, tree[l].comps[c].vars[v].val, "row-var");
                 tree[l].comps[c].vars[v].items.forEach(item => {
                     const tr = document.createElement("tr");
+                    const srcClass = item.source === "RMP" ? "src-rmp" : "src-reprocess";
                     tr.innerHTML = `
                         <td style="text-align:center; color:#64748b; font-size:8.5px;">${sl++}</td>
                         <td style="text-align:left;">${item.location}</td>
                         <td style="text-align:left;">${item.production_for}</td>
                         <td style="text-align:center;" class="batch-bold">${item.batch}</td>
+                        <td style="text-align:center;"><span class="source-tag ${srcClass}">${item.source}</span></td>
                         <td style="text-align:center;">${item.species}</td>
                         <td style="text-align:center;"><span class="tag">${item.variety}</span></td>
                         <td style="text-align:center;">${item.count}</td>
@@ -239,16 +403,14 @@ function insertSubRow(label, qty, val, cls) {
     const tr = document.createElement("tr");
     tr.className = cls;
     tr.innerHTML = `
-        <td colspan="7" style="padding-left:6px; text-align:left;">${label}</td>
+        <td colspan="8" style="padding-left:6px; text-align:left;">${label}</td>
         <td class="qty-bold">${qty.toFixed(2)}</td>
         <td class="qty-bold">${val.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
     `;
     document.getElementById("tbody").appendChild(tr);
 }
 
-[f_location, f_production, f_variety].forEach(el => el.onchange = applyFilters);
-searchBox.oninput = applyFilters;
-
+document.getElementById("searchBox").oninput = applyFilters;
 applyFilters();
 </script>
 </body>
