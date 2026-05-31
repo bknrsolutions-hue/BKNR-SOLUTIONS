@@ -11,6 +11,8 @@ import datetime as dt
 from io import BytesIO
 
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from weasyprint import HTML
 
 from app.database import get_db
@@ -42,31 +44,41 @@ async def gate_entry_report(
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    # --- MODIFIED: FY LOCK LOGIC ---
-    # User inka FY select cheyakapothe, empty data pampali (404 rakunda)
+    # Global unique tracking arrays static loading across multi-company filter setups
+    meta_base = db.query(GateEntry).filter(GateEntry.company_id == company_id).all()
+    
+    def extract_global_unique(field_attr):
+        return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
+
+    global_suppliers = extract_global_unique("supplier_name")
+    global_factories = extract_global_unique("receiving_center")
+    global_locations = extract_global_unique("purchasing_location")
+    global_vehicles = extract_global_unique("vehicle_number")
+    global_production_for = extract_global_unique("production_for")
+
     if not fy:
         return templates.TemplateResponse(
             request=request,
             name="reports/gate_entry_report.html",
             context={
                 "rows": [],
-                "suppliers_list": [],
-                "factories_list": [],
-                "locations_list": [],
-                "vehicles_list": [],
-                "production_for_list": [],
+                "suppliers_list": global_suppliers,
+                "factories_list": global_factories,
+                "locations_list": global_locations,
+                "vehicles_list": global_vehicles,
+                "production_for_list": global_production_for,
                 "is_admin": role == "admin",
                 "selected_fy": None,
                 "datetime": datetime
             }
         )
 
-    # 1. Determine Target Financial Year
+    # 1. Determine Target Financial Year Range
     selected_fy = int(fy)
     start_date = dt.date(selected_fy, 4, 1)
     end_date = dt.date(selected_fy + 1, 3, 31)
 
-    # 2. Fetch Rows based on FY range
+    # 2. Fetch Rows based on FY range query filters
     rows = (
         db.query(GateEntry)
         .filter(
@@ -78,20 +90,16 @@ async def gate_entry_report(
         .all()
     )
 
-    # 3. Meta-data for Searchable Dropdowns (Reference code style)
-    def get_unique(field_attr):
-        return sorted(list({getattr(r, field_attr) for r in rows if getattr(r, field_attr)}))
-
     return templates.TemplateResponse(
         request=request,
         name="reports/gate_entry_report.html",
         context={
             "rows": rows,
-            "suppliers_list": get_unique("supplier_name"),
-            "factories_list": get_unique("receiving_center"),
-            "locations_list": get_unique("purchasing_location"),
-            "vehicles_list": get_unique("vehicle_number"),
-            "production_for_list": get_unique("production_for"),
+            "suppliers_list": global_suppliers,
+            "factories_list": global_factories,
+            "locations_list": global_locations,
+            "vehicles_list": global_vehicles,
+            "production_for_list": global_production_for,
             "is_admin": role == "admin",
             "selected_fy": str(selected_fy),
             "datetime": datetime
@@ -99,7 +107,194 @@ async def gate_entry_report(
     )
 
 # ============================================================
-# 2. UPDATE ACTION (POST) - WITH AUDIT LOG PRESERVATION
+# 2. DYNAMIC REAL-TIME PDF METADATA FILTER EXPORT
+# ============================================================
+@router.get("/export_pdf")
+async def gate_export_pdf(
+    request: Request, 
+    fy: str = Query(None),
+    supplier: str = Query(None),
+    factory: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    company_id = request.session.get("company_code")
+    company_name = request.session.get("company_name", "BKNR ENTERPRISES")
+    if not fy: 
+        raise HTTPException(status_code=400, detail="Financial Year parameter missing")
+        
+    selected_fy = int(fy)
+    start_date = date(selected_fy, 4, 1)
+    end_date = date(selected_fy + 1, 3, 31)
+
+    # Multi-dimensional Interceptor Architecture
+    query = db.query(GateEntry).filter(
+        GateEntry.company_id == company_id,
+        GateEntry.date >= start_date,
+        GateEntry.date <= end_date
+    )
+    
+    if supplier and supplier.strip() != "":
+        query = query.filter(GateEntry.supplier_name == supplier)
+    if factory and factory.strip() != "":
+        query = query.filter(GateEntry.receiving_center == factory)
+
+    rows = query.order_by(GateEntry.date.asc()).all()
+
+    # Dynamic render mapped onto direct printing target HTML
+    html_content = templates.get_template("reports/gate_entry_print.html").render({
+        "request": request,
+        "company_name": company_name,
+        "rows": rows,
+        "printed_on": datetime.now(),
+        "auto": 0  # Prevents infinite javascript print reload loop
+    })
+    
+    pdf = HTML(string=html_content).write_pdf()
+    return StreamingResponse(
+        BytesIO(pdf), 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f"attachment; filename=GATE_ENTRY_FY{fy}.pdf"}
+    )
+
+# ============================================================
+# 3. DYNAMIC EXCEL ENGINE (CORPORATE DESIGN SHEET BUILDER)
+# ============================================================
+@router.get("/export_excel")
+async def gate_export_excel(
+    request: Request, 
+    fy: str = Query(None),
+    supplier: str = Query(None),
+    factory: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    company_id = request.session.get("company_code")
+    company_name = request.session.get("company_name", "BKNR ENTERPRISES")
+    if not fy: 
+        raise HTTPException(status_code=400, detail="Financial Year parameter missing")
+        
+    selected_fy = int(fy)
+    start_date = date(selected_fy, 4, 1)
+    end_date = date(selected_fy + 1, 3, 31)
+
+    query = db.query(GateEntry).filter(
+        GateEntry.company_id == company_id,
+        GateEntry.date >= start_date,
+        GateEntry.date <= end_date
+    )
+    
+    if supplier and supplier.strip() != "":
+        query = query.filter(GateEntry.supplier_name == supplier)
+    if factory and factory.strip() != "":
+        query = query.filter(GateEntry.receiving_center == factory)
+
+    rows = query.order_by(GateEntry.date.asc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Gate Entry Report"
+    ws.views.sheetView[0].showGridLines = True
+
+    # Company Top Banner block styling
+    ws.merge_cells("A1:M1")
+    ws["A1"] = company_name.upper()
+    ws["A1"].font = Font(name="Arial", size=14, bold=True, color="003366")
+    ws["A1"].alignment = Alignment(horizontal="center")
+    
+    ws.merge_cells("A2:M2")
+    ws["A2"] = f"GATE ENTRY SHEET | FY: {fy}-{int(fy)+1}"
+    ws["A2"].font = Font(name="Arial", size=10, bold=True, color="475569")
+    ws["A2"].alignment = Alignment(horizontal="center")
+    
+    ws.append([]) # spacer line
+
+    # Grid Corporate Table Headers mapping 
+    headers = ["SL", "Date", "Time", "Batch Number", "Challan No", "Gate Pass", "Factory", "Supplier Name", "Location", "Vehicle No", "Material Box", "Empty Box", "Ice Box"]
+    ws.append(headers)
+    
+    header_font = Font(name="Arial", size=9, bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center")
+    thin_side = Side(style='thin', color='000000')
+    thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=4, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+
+    # Data population block
+    start_data_row = 5
+    for idx, r in enumerate(rows, 1):
+        dt_str = r.date.strftime("%d-%m-%Y") if isinstance(r.date, (date, datetime)) else str(r.date)
+        tm_str = r.time.strftime("%H:%M") if r.time else ""
+        
+        ws.append([
+            idx, dt_str, tm_str, r.batch_number, r.challan_number or "", r.gate_pass_number or "",
+            r.receiving_center or "", r.supplier_name or "", r.purchasing_location or "", r.vehicle_number or "",
+            r.no_of_material_boxes or 0, r.no_of_empty_boxes or 0, r.no_of_ice_boxes or 0
+        ])
+        
+        current_row = start_data_row + idx - 1
+        for col_num in range(1, len(headers) + 1):
+            cell = ws.cell(row=current_row, column=col_num)
+            cell.font = Font(name="Arial", size=9)
+            cell.border = thin_border
+            if col_num in [8, 9]:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+            elif col_num >= 11:
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            else:
+                cell.alignment = center_align
+
+    # Excel math layout injection formulas
+    last_data_row = start_data_row + len(rows) - 1
+    total_row_idx = last_data_row + 1
+    
+    ws.append(["GRAND TOTAL SUMMARY COUNT", "", "", "", "", "", "", "", "", "", f"=SUM(K{start_data_row}:K{last_data_row})", f"=SUM(L{start_data_row}:L{last_data_row})", f"=SUM(M{start_data_row}:M{last_data_row})"])
+    ws.merge_cells(start_row=total_row_idx, start_column=1, end_row=total_row_idx, end_column=10)
+    
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=total_row_idx, column=col_num)
+        cell.font = Font(name="Arial", size=9, bold=True, color="003366")
+        cell.fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+        cell.border = thin_border
+        if col_num >= 11:
+            cell.alignment = Alignment(horizontal="right", vertical="center")
+        else:
+            ws.cell(row=total_row_idx, column=1).alignment = Alignment(horizontal="right")
+
+    # Auto calculation grid column layouts adjustments (FIXED FOR MERGED CELLS)
+    for col in ws.columns:
+        max_len = 0
+        first_cell = col[0]
+        
+        # Safely extract column letter independent of cell type initialization
+        if hasattr(first_cell, 'column_letter'):
+            col_letter = first_cell.column_letter
+        else:
+            col_letter = get_column_letter(first_cell.column)
+            
+        for cell in col:
+            # Skip top titles & summary cells that skew column widths distorting readability
+            if cell.row > 3 and cell.row < total_row_idx and cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+                
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 11)
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": f"attachment; filename=GATE_ENTRY_FY{fy}.xlsx"}
+    )
+
+# ============================================================
+# 4. ACTION CONTROLLERS SYSTEM
 # ============================================================
 @router.post("/update")
 async def update_gate_entry(
@@ -118,7 +313,6 @@ async def update_gate_entry(
     if not row: 
         raise HTTPException(status_code=404, detail="Record not found")
 
-    # Fields to update
     fields = [
         "batch_number", "challan_number", "gate_pass_number", "receiving_center",
         "supplier_name", "purchasing_location", "vehicle_number", "production_for",
@@ -130,13 +324,11 @@ async def update_gate_entry(
             old_val = str(getattr(row, f))
             new_val = payload[f]
             
-            # Type conversion for box counts
             if f in ["no_of_material_boxes", "no_of_empty_boxes", "no_of_ice_boxes"]:
                 try: new_val = float(new_val or 0)
                 except: new_val = 0.0
 
             if old_val != str(new_val):
-                # Add Audit Log entry
                 db.add(AuditLog(
                     table_name="gate_entry", 
                     record_id=row.id, 
@@ -152,9 +344,6 @@ async def update_gate_entry(
     db.commit()
     return {"status": "success"}
 
-# ============================================================
-# 3. AUDIT HISTORY & EXPORTS
-# ============================================================
 @router.get("/audit")
 async def get_gate_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -172,48 +361,6 @@ async def get_gate_audit(request: Request, db: Session = Depends(get_db)):
         "time": l.edited_at.strftime("%d-%m-%Y %H:%M:%S")
     } for l in logs]
 
-@router.get("/export_pdf")
-def gate_export_pdf(request: Request, fy: str = Query(None), db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
-    if not fy: return {"error": "FY missing"}
-    selected_fy = int(fy)
-    
-    rows = db.query(GateEntry).filter(
-        GateEntry.company_id == company_id,
-        GateEntry.date >= date(selected_fy, 4, 1),
-        GateEntry.date <= date(selected_fy + 1, 3, 31)
-    ).order_by(GateEntry.date.asc()).all()
-
-    html = templates.get_template("reports/gate_entry_print.html").render({
-        "request": request, "rows": rows, "printed_on": datetime.now(),
-        "total_mat": sum(r.no_of_material_boxes or 0 for r in rows),
-        "total_emp": sum(r.no_of_empty_boxes or 0 for r in rows),
-        "total_ice": sum(r.no_of_ice_boxes or 0 for r in rows)
-    })
-    pdf = HTML(string=html).write_pdf()
-    return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=GATE_ENTRY.pdf"})
-
-@router.get("/export_excel")
-def gate_export_excel(request: Request, fy: str = Query(None), db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
-    if not fy: return {"error": "FY missing"}
-    selected_fy = int(fy)
-    
-    rows = db.query(GateEntry).filter(
-        GateEntry.company_id == company_id,
-        GateEntry.date >= date(selected_fy, 4, 1),
-        GateEntry.date <= date(selected_fy + 1, 3, 31)
-    ).order_by(GateEntry.date.asc()).all()
-
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Date","Time","Batch","Challan","G.Pass","Factory","Supplier","Location","Vehicle","Prod For","Mat","Emp","Ice"])
-    for r in rows:
-        ws.append([str(r.date), r.time.strftime("%H:%M") if r.time else "", r.batch_number, r.challan_number, r.gate_pass_number, r.receiving_center, r.supplier_name, r.purchasing_location, r.vehicle_number, r.production_for, r.no_of_material_boxes, r.no_of_empty_boxes, r.no_of_ice_boxes])
-
-    stream = BytesIO(); wb.save(stream); stream.seek(0)
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=GATE_ENTRY.xlsx"})
-
 @router.post("/delete")
 async def delete_gate_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
@@ -224,6 +371,7 @@ async def delete_gate_row(request: Request, payload: dict = Body(...), db: Sessi
             field_name="DELETE", old_value="Gate Entry Record", new_value="DELETED", 
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
-        db.delete(row); db.commit()
+        db.delete(row)
+        db.commit()
         return {"status": "success"}
     return {"status": "error"}

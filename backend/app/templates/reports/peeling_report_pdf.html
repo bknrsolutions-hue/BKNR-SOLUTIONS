@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PEELING BILL | BKNR ERP</title>
+
+<style>
+body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; color: #1e293b; background: #fff; }
+h2 { text-align: center; color: #0f172a; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; font-size: 16px; letter-spacing: 0.5px; }
+.subtitle { text-align: center; font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* 🌟 ULTRA-COMPACT DATA MATRIX FOR FULL COLUMN VISIBILITY */
+table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; margin-bottom: 5px; }
+th, td { border: 1px solid #cbd5e1; padding: 4px 2px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+th { background: #0f172a; color: #fff; font-weight: 700; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.2px; }
+
+tbody tr:nth-child(even) { background: #f8fafc; }
+tfoot td { font-weight: bold; background: #f1f5f9; color: #0f172a; border-top: 2px solid #0f172a; font-size: 9px; }
+
+.text-right { text-align: right; padding-right: 4px; }
+.text-left { text-align: left; padding-left: 4px; }
+
+/* Variance Status Colors */
+.gain-text { color: #16a34a; font-weight: bold; }
+.loss-text { color: #dc2626; font-weight: bold; }
+
+/* 📊 STRICT COLUMN WIDTH MATRIX (TOTAL = 100%) - ZERO OVERFLOW */
+.col-id   { width: 3.5%; }
+.col-dt   { width: 6.5%; }
+.col-bt   { width: 6.5%; }
+.col-loc  { width: 7.5%; }
+.col-pf   { width: 7.5%; }
+.col-sp   { width: 5.5%; }
+.col-var  { width: 7.5%; }
+.col-con  { width: 10.0%; }
+.col-cnt  { width: 4.5%; }
+.col-qty  { width: 5.5%; }
+.col-yld  { width: 4.5%; }
+.col-diff { width: 5.5%; }
+.col-rt   { width: 4.5%; }
+.col-amt  { width: 8.0%; }
+.col-user { width: 8.0%; }
+
+/* ================= HARD PRINTER CONFIGURATION ================= */
+@media print {
+    @page { size: A4 landscape; margin: 5mm; }
+    body { margin: 0; background: #fff; color: #000; font-size: 8.5px; }
+    th { background: #0f172a !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tfoot td { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tbody tr:nth-child(even) { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .gain-text { color: #16a34a !important; }
+    .loss-text { color: #dc2626 !important; }
+}
+</style>
+</head>
+
+<body>
+
+<h2>PEELING BILL SUMMARY</h2>
+<div class="subtitle">BKNR ENTERPRISES LOGISTICS ENGINE</div>
+
+<table id="detailTable">
+    <thead>
+        <tr>
+            <th class="col-id">ID</th>
+            <th class="col-dt">Date</th>
+            <th class="col-bt">Batch No</th>
+            <th class="col-loc">Peeling At</th>
+            <th class="col-pf">Prod For</th>
+            <th class="col-sp">Species</th>
+            <th class="col-var">Variety</th>
+            <th class="col-con">Contractor</th>
+            <th class="col-cnt">HL-Cnt</th>
+            <th class="col-qty">HLSO Kg</th>
+            <th class="col-qty">Peeled Kg</th>
+            <th class="col-yld">Tgt %</th>
+            <th class="col-yld">Act %</th>
+            <th class="col-diff">Diff %</th>
+            <th class="col-diff">Diff Kg</th>
+            <th class="col-rt">Rate</th>
+            <th class="col-amt">Amount</th>
+            <th class="col-user">User</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.date.strftime('%d-%m-%Y') if r.date.strftime is defined else r.date }}</td>
+            <td style="font-weight: 600;">{{ r.batch_number }}</td>
+            <td class="text-left">{{ r.peeling_at }}</td>
+            <td class="text-left">{{ r.production_for }}</td>
+            <td>{{ r.species }}</td>
+            <td class="text-left">{{ r.variety_name }}</td>
+            <td class="text-left" style="font-weight: 500;">{{ r.contractor_name }}</td>
+            <td>{{ r.hlso_count or 0 }}</td>
+            <td class="hlso text-right">{{ "%.2f"|format(r.hlso_qty|default(0)) }}</td>
+            <td class="peeled text-right" style="font-weight: 500;">{{ "%.2f"|format(r.peeled_qty|default(0)) }}</td>
+            <td style="color: #64748b;">{{ "%.2f"|format(r.target_yield_percent|default(0)) }}%</td>
+            <td style="font-weight: 600; color: #2563eb;">{{ "%.2f"|format(r.yield_percent|default(0)) }}%</td>
+            
+            <td class="diff_pct" data-val="{{ r.diff_percent|default(0) }}">{{ "%.2f"|format(r.diff_percent|default(0)) }}%</td>
+            <td class="diff_kg" data-val="{{ r.diff_qty|default(0) }}">{{ "%.2f"|format(r.diff_qty|default(0)) }}</td>
+            
+            <td class="text-right">₹{{ "%.2f"|format(r.rate|default(0)) }}</td>
+            <td class="amount text-right" style="font-weight: 600;">{{ "%.2f"|format(r.amount|default(0)) }}</td>
+            <td class="text-left" style="font-size: 8px; color: #64748b;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+    <tfoot>
+        <tr>
+            <td colspan="9" style="text-align: right; padding-right: 8px;">GRAND TOTALS:</td>
+            <td id="gt_hlso" class="text-right">0.00</td>
+            <td id="gt_peeled" class="text-right">0.00</td>
+            <td></td>
+            <td id="gt_yield">0.00%</td>
+            <td id="gt_diff_pct">0.00%</td>
+            <td id="gt_diff_kg" class="text-right">0.00</td>
+            <td></td>
+            <td id="gt_amount" class="text-right">₹0.00</td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+
+<script>
+function n(v) { return parseFloat(v) || 0; }
+
+/* ================= COMPUTE HIGHLIGHTS & VARIANCE COLORS ================= */
+document.querySelectorAll("#detailTable tbody tr").forEach(row => {
+    const pctCell = row.querySelector(".diff_pct");
+    const kgCell = row.querySelector(".diff_kg");
+    
+    if(pctCell && kgCell) {
+        const valPct = n(pctCell.getAttribute("data-val"));
+        const valKg = n(kgCell.getAttribute("data-val"));
+        
+        if(valPct >= 0) {
+            pctCell.classList.add("gain-text");
+            pctCell.innerText = "+" + valPct.toFixed(2) + "%";
+        } else {
+            pctCell.classList.add("loss-text");
+        }
+        
+        if(valKg >= 0) {
+            kgCell.classList.add("gain-text");
+            kgCell.innerText = "+" + valKg.toFixed(2);
+        } else {
+            kgCell.classList.add("loss-text");
+        }
+    }
+});
+
+/* ================= GRAND TOTAL ENGINE CALCULATOR ================= */
+let ghl = 0, gp = 0, ga = 0, totalRows = 0, sumDiffPct = 0, sumDiffKg = 0;
+
+document.querySelectorAll("#detailTable tbody tr").forEach(r => {
+    ghl += n(r.querySelector(".hlso").innerText);
+    gp  += n(r.querySelector(".peeled").innerText);
+    ga  += n(r.querySelector(".amount").innerText);
+    
+    sumDiffPct += n(r.querySelector(".diff_pct").getAttribute("data-val"));
+    sumDiffKg  += n(r.querySelector(".diff_kg").getAttribute("data-val"));
+    totalRows++;
+});
+
+document.getElementById("gt_hlso").innerText = ghl.toFixed(2);
+document.getElementById("gt_peeled").innerText = gp.toFixed(2);
+document.getElementById("gt_amount").innerText = "₹" + ga.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+// Weighted Yield Calculation
+let gy = ghl ? ((gp / ghl) * 100) : 0;
+document.getElementById("gt_yield").innerText = gy.toFixed(2) + "%";
+
+// Dynamic Variance Aggregates
+const avgDiffPct = totalRows ? (sumDiffPct / totalRows) : 0;
+const tgtDiffPctEl = document.getElementById("gt_diff_pct");
+tgtDiffPctEl.innerText = (avgDiffPct >= 0 ? "+" : "") + avgDiffPct.toFixed(2) + "%";
+tgtDiffPctEl.className = avgDiffPct >= 0 ? "gain-text" : "loss-text";
+
+const tgtDiffKgEl = document.getElementById("gt_diff_kg");
+tgtDiffKgEl.innerText = (sumDiffKg >= 0 ? "+" : "") + sumDiffKg.toFixed(2);
+tgtDiffKgEl.className = sumDiffKg >= 0 ? "gain-text" : "loss-text";
+
+/* TRIGGER SYSTEM PRINT AUTOMATICALLY */
+window.onload = function() {
+    window.print();
+};
+</script>
+
+</body>
+</html>

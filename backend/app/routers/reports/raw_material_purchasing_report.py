@@ -1,11 +1,12 @@
-# ============================================================
-# RAW MATERIAL PURCHASING REPORT ROUTER (BKNR ERP - UPDATED)
-# ============================================================
+# ============================================================================
+# RAW MATERIAL PURCHASING REPORT ROUTER (BKNR ERP - FILTER LOCK ENGINE)
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Query, Body, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
 from datetime import datetime, date
 import datetime as dt
 import json
@@ -16,7 +17,7 @@ from weasyprint import HTML
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry, AuditLog
-from app.database.models.criteria import suppliers as SupplierTable
+from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields, suppliers as SupplierTable
 from app.database.models.users import Company
 
 router = APIRouter(
@@ -77,7 +78,6 @@ def report_page(
         fy_set.add(fy_str)
     financial_years = sorted(list(fy_set), reverse=True)
 
-    # FY select cheyakapothe empty rows వెళ్తాయి
     if not fy:
         return templates.TemplateResponse(
             request=request,
@@ -86,7 +86,7 @@ def report_page(
                 "rows": [], "batches": [], "suppliers": [], "varieties": [],
                 "species": [], "production_for_list": [], "peeling_locations": [],
                 "hsn_list": [], "company_name": "", "company_address": "",
-                "financial_years": financial_years, # Pass dynamic FY list
+                "financial_years": financial_years,
                 "selected_fy": None, "is_admin": role == "admin"
             }
         )
@@ -95,14 +95,12 @@ def report_page(
     start_date = dt.date(selected_fy, 4, 1)
     end_date = dt.date(selected_fy + 1, 3, 31)
 
-    # --- UPDATED QUERY LOGIC ---
-    # RMP date tho sambandham lekunda, Gate Entry date range ni base chesukuni query filter avతుంది
     rows = (
         db.query(RawMaterialPurchasing)
         .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
         .filter(
             RawMaterialPurchasing.company_id == comp_code,
-            GateEntry.company_id == comp_code, # Security Check
+            GateEntry.company_id == comp_code,
             GateEntry.date >= start_date,
             GateEntry.date <= end_date
         )
@@ -129,16 +127,16 @@ def report_page(
             "hsn_list": get_dist("hsn_code"),
             "company_name": comp["name"],
             "company_address": comp["address"],
-            "financial_years": financial_years, # Pass dynamic FY list
+            "financial_years": financial_years,
             "selected_fy": str(selected_fy),
             "is_admin": role == "admin",
             "datetime": datetime
         }
     )
 
-# ============================================================
-# AUDIT LOGS, UPDATE & DELETE (ORIGINAL CODE PRESERVED)
-# ============================================================
+# -----------------------------------------------------------
+# AUDIT LOGS, UPDATE & DELETE (PRESERVED LOGIC)
+# -----------------------------------------------------------
 @router.get("/audit")
 def fetch_all_audit_logs(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -186,28 +184,45 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
 @router.post("/delete")
 def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    edited_by = request.session.get("email")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
     if row:
-        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=edited_by, edited_at=datetime.now()))
+        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=datetime.now()))
         db.delete(row); db.commit()
         return {"status": "deleted"}
     return {"status": "error"}
 
 # -----------------------------------------------------------
-# EXPORT & PRINT (GATE ENTRY DATE JOIN APPLIED)
+# EXPORT EXCEL (WITH EXTENDED INTERHITED SCREEN FILTERS)
 # -----------------------------------------------------------
 @router.get("/export_excel")
-def export_rmp_excel(request: Request, fy: str = Query(None), ids: str = Query(None), db: Session = Depends(get_db)):
+def export_rmp_excel(
+    request: Request, 
+    fy: str = Query(None), 
+    ids: str = Query(None), 
+    supplier: str = Query(None),
+    variety: str = Query(None),
+    batch: str = Query(None),
+    peeling: str = Query(None),
+    hsn: str = Query(None),
+    production_for: str = Query(None),
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
     query = db.query(RawMaterialPurchasing).join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number).filter(RawMaterialPurchasing.company_id == comp_code)
     
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         query = query.filter(RawMaterialPurchasing.id.in_(id_list))
-    elif fy:
-        s_fy = int(fy)
-        query = query.filter(GateEntry.date >= date(s_fy, 4, 1), GateEntry.date <= date(s_fy + 1, 3, 31))
+    else:
+        if fy:
+            s_fy = int(fy)
+            query = query.filter(GateEntry.date >= date(s_fy, 4, 1), GateEntry.date <= date(s_fy + 1, 3, 31))
+        if batch: query = query.filter(RawMaterialPurchasing.batch_number == batch)
+        if supplier: query = query.filter(RawMaterialPurchasing.supplier_name == supplier)
+        if variety: query = query.filter(RawMaterialPurchasing.variety_name == variety)
+        if peeling: query = query.filter(RawMaterialPurchasing.peeling_at == peeling)
+        if hsn: query = query.filter(RawMaterialPurchasing.hsn_code == hsn)
+        if production_for: query = query.filter(RawMaterialPurchasing.production_for == production_for)
     
     rows = query.order_by(RawMaterialPurchasing.date.asc()).all()
     wb = Workbook()
@@ -220,16 +235,77 @@ def export_rmp_excel(request: Request, fy: str = Query(None), ids: str = Query(N
     out = BytesIO(); wb.save(out); out.seek(0)
     return StreamingResponse(out, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=RMP_Report.xlsx"})
 
+
+# -----------------------------------------------------------
+# 🟢 FIXED: SCREEN-REPLICATED EXACT FILTER ENGAGED PRINT TABLE
+# -----------------------------------------------------------
 @router.get("/print_table", response_class=HTMLResponse)
-def print_table_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+def print_table_view(
+    request: Request, 
+    ids: str = Query(None),
+    fy: str = Query(None),
+    batch: str = Query(None),
+    supplier: str = Query(None),
+    variety: str = Query(None),
+    peeling: str = Query(None),
+    hsn: str = Query(None),
+    production_for: str = Query(None),
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
-    q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == comp_code)
+    if not comp_code:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    # Base Join Rules Structure Setup Enforced
+    q = db.query(RawMaterialPurchasing).join(
+        GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
+    ).filter(
+        RawMaterialPurchasing.company_id == comp_code,
+        GateEntry.company_id == comp_code
+    )
+    
+    # 1. Direct Hard-Check Visible Explicit IDs
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         q = q.filter(RawMaterialPurchasing.id.in_(id_list))
+    
+    # 2. Extract Matching active Screen filters parameters 
+    else:
+        if fy:
+            try:
+                start_year = int(fy)
+                q = q.filter(
+                    GateEntry.date >= date(start_year, 4, 1),
+                    GateEntry.date <= date(start_year + 1, 3, 31)
+                )
+            except: pass
+        
+        if batch:
+            q = q.filter(RawMaterialPurchasing.batch_number == batch)
+        if supplier:
+            q = q.filter(RawMaterialPurchasing.supplier_name == supplier)
+        if variety:
+            q = q.filter(RawMaterialPurchasing.variety_name == variety)
+        if peeling:
+            q = q.filter(RawMaterialPurchasing.peeling_at == peeling)
+        if hsn:
+            q = q.filter(RawMaterialPurchasing.hsn_code == hsn)
+        if production_for:
+            q = q.filter(RawMaterialPurchasing.production_for == production_for)
+
     rows = q.order_by(RawMaterialPurchasing.date.asc()).all()
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_table.html", context={"rows": rows, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    
+    return templates.TemplateResponse(
+        request=request, 
+        name="reports/raw_material_purchasing_print_table.html", 
+        context={
+            "rows": rows, 
+            "company_name": comp["name"], 
+            "company_address": comp["address"], 
+            "printed_on": datetime.now()
+        }
+    )
 
 @router.get("/print_summary", response_class=HTMLResponse)
 def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
@@ -249,7 +325,23 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
     return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
 
 @router.get("/export_pdf")
-async def export_rmp_pdf(request: Request, ids: str = Query(None), type: str = Query("table"), db: Session = Depends(get_db)):
-    resp = print_summary_view(request, ids, db) if type == "summary" else print_table_view(request, ids, db)
+async def export_rmp_pdf(
+    request: Request, 
+    ids: str = Query(None), 
+    fy: str = Query(None),
+    batch: str = Query(None),
+    supplier: str = Query(None),
+    variety: str = Query(None),
+    peeling: str = Query(None),
+    hsn: str = Query(None),
+    production_for: str = Query(None),
+    type: str = Query("table"), 
+    db: Session = Depends(get_db)
+):
+    if type == "summary":
+        resp = print_summary_view(request, ids, db)
+    else:
+        resp = print_table_view(request, ids, fy, batch, supplier, variety, peeling, hsn, production_for, db)
+        
     pdf = HTML(string=resp.body.decode()).write_pdf()
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=RMP_{type}.pdf"})

@@ -5,145 +5,271 @@
 <title>RAW MATERIAL PURCHASING – TABLE VIEW (LANDSCAPE)</title>
 
 <style>
-    @page { size: A4 landscape; margin: 10mm; }
+    /* 1. STRICT PRINT ORIENTATION & PAGE GAP SETTING */
+    @page { 
+        size: A4 landscape; 
+        margin: 6mm 6mm 6mm 6mm; 
+    }
 
     body {
         font-family: Arial, sans-serif;
-        font-size: 11px;
+        font-size: 8.5px;
         color: black;
         margin: 0;
         padding: 0;
+        background: #fff;
     }
 
-    .header-box { text-align: center; margin-bottom: 5px; }
-    .header-box h2 { margin: 0; font-size: 20px; color: #003366; }
-    .header-box p { margin: 2px 0; font-size: 12px; }
-
-    .report-title {
-        text-align: center;
-        font-size: 15px;
+    /* 2. HEADER ARCHITECTURE */
+    .header-layout {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid #003366;
+        padding-bottom: 5px;
         margin-bottom: 8px;
-        font-weight: bold;
-        color: #003366;
     }
 
-    .right-info { text-align: right; font-size: 11px; margin-bottom: 8px; }
+    .main-header {
+        text-align: left;
+        flex: 1;
+    }
+    .main-header h2 { 
+        margin: 0; 
+        font-size: 16px; 
+        color: #003366; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+    .main-header .report-title {
+        margin: 2px 0 0 0;
+        font-size: 11px;
+        font-weight: bold;
+        color: #475569;
+    }
 
+    .side-header {
+        text-align: right;
+        font-size: 9.5px;
+        line-height: 1.4;
+        font-weight: bold;
+    }
+    .supplier-badge {
+        color: #003366;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    /* 3. MAXIMUM UTILITY TABLE STRUCTURE */
     table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 10px;
-        table-layout: fixed;
+        font-size: 8px;
+        table-layout: fixed; 
     }
 
     th, td {
-        border: 1px solid black;
-        padding: 5px 3px;
+        border: 1px solid #000000;
+        padding: 3px 2px;
         text-align: center;
-        word-break: break-word;
+        word-wrap: break-word;
+        white-space: normal !important; 
+        overflow: hidden;
     }
 
     th {
-        background: #003366;
-        color: white;
+        background: #003366 !important;
+        color: white !important;
         font-weight: bold;
+        text-transform: uppercase;
+        font-size: 8px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    .subtotal { background: #e6f0ff; font-weight: bold; }
+    tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    /* Batch Subtotal Styling */
+    .batch-subtotal {
+        background: #f1f5f9 !important;
+        font-weight: 800;
+        color: #0f172a !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Grand Net Total Styling */
+    .grand-total { 
+        background: #dbeafe !important; 
+        font-weight: bold; 
+        font-size: 8.5px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .text-left { text-align: left !important; padding-left: 3px !important; }
+    .text-right { text-align: right !important; padding-right: 3px !important; }
+    .qty-bold { font-weight: 800; text-align: right !important; padding-right: 3px !important; }
+
+    /* 4. EXPLICIT BALANCED LAYOUT MATRIX (TOTAL = 100%) */
+    .col-id   { width: 3%; }
+    .col-dt   { width: 6.5%; }
+    .col-bt   { width: 7.5%; }
+    .col-spl  { width: 12%; }
+    .col-vrt  { width: 8%; }
+    .col-spc  { width: 7.5%; }
+    .col-cnt  { width: 4.5%; }
+    .col-g1   { width: 5%; }
+    .col-g2   { width: 5%; }
+    .col-dc   { width: 5%; }
+    .col-rec  { width: 5.5%; }
+    .col-rate { width: 5%; }
+    .col-amt  { width: 8%; }
+    .col-box  { width: 4%; }
+    .col-rem  { width: 13.5%; }
+
+    .filters, .actions, .menu-box, button {
+        display: none !important;
+    }
 </style>
 </head>
 
 <body>
 
-<div class="header-box">
-    <h2>{{ company_name }}</h2>
-    <p>{{ company_address }}</p>
+<div class="header-layout">
+    <div class="main-header">
+        <h2>{{ company_name }}</h2>
+        <div class="report-title">RAW MATERIAL PURCHASING – TABLE VIEW</div>
+    </div>
+    <div class="side-header">
+        <div class="supplier-badge">Supplier: <span id="displaySupplier">ALL SUPPLIERS</span></div>
+        <div style="font-size: 8px; color: #475569; font-weight: normal; margin-top: 1px;">
+            Printed: {{ printed_on.strftime("%d-%m-%Y %H:%M") }}
+        </div>
+    </div>
 </div>
 
-<div class="report-title">RAW MATERIAL PURCHASING – TABLE VIEW</div>
-
-<div class="right-info">
-    Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M") }}
-</div>
-
-
-<!-- NAMESPACE — FIX FOR TOTALS -->
-{% set ns = namespace(g1=0, g2=0, dc=0, recv=0, amount=0) %}
-
+{% set grand = namespace(g1=0, g2=0, dc=0, recv=0, amount=0, boxes=0) %}
 
 <table>
 <thead>
 <tr>
-    <th>ID</th>
-    <th>Date</th>
-    <th>Time</th>
-    <th>Batch</th>
-    <th>Supplier</th>
-    <th>Variety</th>
-    <th>Species</th>
-    <th>Count</th>
-    <th>G1</th>
-    <th>G2</th>
-    <th>DC</th>
-    <th>Received</th>
-    <th>Rate</th>
-    <th>Amount</th>
-    <th>Boxes</th>
-    <th>Remarks</th>
-    <th>Email</th>
+    <th class="col-id">#</th>
+    <th class="col-dt">Date</th>
+    <th class="col-bt">Batch</th>
+    <th class="col-spl">Supplier</th>
+    <th class="col-vrt">Variety</th>
+    <th class="col-spc">Species</th>
+    <th class="col-cnt">Count</th>
+    <th class="col-g1">G1</th>
+    <th class="col-g2">G2</th>
+    <th class="col-dc">DC</th>
+    <th class="col-rec">Received</th>
+    <th class="col-rate">Rate</th>
+    <th class="col-amt">Amount</th>
+    <th class="col-box">Boxes</th>
+    <th class="col-rem">Remarks</th>
 </tr>
 </thead>
 
 <tbody>
-{% for r in rows %}
-<tr>
-    <td>{{ r.id }}</td>
-    <td>{{ r.date }}</td>
-    <td>{{ r.time.strftime("%H:%M:%S") if r.time else '' }}</td>
-    <td>{{ r.batch_number }}</td>
-    <td>{{ r.supplier_name }}</td>
-    <td>{{ r.variety_name }}</td>
-    <td>{{ r.species }}</td>
-    <td>{{ r.count }}</td>
-    <td>{{ r.g1_qty }}</td>
-    <td>{{ r.g2_qty }}</td>
-    <td>{{ r.dc_qty }}</td>
-    <td>{{ r.received_qty }}</td>
-    <td>{{ r.rate_per_kg }}</td>
-    <td>{{ r.amount }}</td>
-    <td>{{ r.material_boxes }}</td>
-    <td>{{ r.remarks }}</td>
-    <td>{{ r.email }}</td>
-</tr>
+{% for batch_group in rows|groupby('batch_number') %}
+    
+    {% set batch_tot = namespace(g1=0, g2=0, dc=0, recv=0, amount=0, boxes=0) %}
+    
+    <tr class="batch-subtotal">
+        <td colspan="15" class="text-left" style="background-color: #f8fafc; font-size: 8.5px; letter-spacing: 0.3px;">
+            <i class="fa-solid fa-folder-open"></i> BATCH ID: <b>{{ batch_group.grouper }}</b>
+        </td>
+    </tr>
 
-<!-- UPDATE TOTALS -->
-{% set ns.g1 = ns.g1 + (r.g1_qty or 0) %}
-{% set ns.g2 = ns.g2 + (r.g2_qty or 0) %}
-{% set ns.dc = ns.dc + (r.dc_qty or 0) %}
-{% set ns.recv = ns.recv + (r.received_qty or 0) %}
-{% set ns.amount = ns.amount + (r.amount or 0) %}
+    {% for r in batch_group.list %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ r.date }}</td>
+        <td>{{ r.batch_number }}</td>
+        <td class="text-left">{{ r.supplier_name }}</td>
+        <td>{{ r.variety_name }}</td>
+        <td>{{ r.species }}</td>
+        <td>{{ r.count }}</td>
+        <td class="text-right">{{ "%.2f"|format(r.g1_qty or 0) }}</td>
+        <td class="text-right">{{ "%.2f"|format(r.g2_qty or 0) }}</td>
+        <td class="text-right">{{ "%.2f"|format(r.dc_qty or 0) }}</td>
+        <td class="text-right" style="color: #003366; font-weight: bold;">{{ "%.2f"|format(r.received_qty or 0) }}</td>
+        <td class="text-right">{{ "%.2f"|format(r.rate_per_kg or 0) }}</td>
+        <td class="text-right">{{ "%.2f"|format(r.amount or 0) }}</td>
+        <td>{{ r.material_boxes or 0 }}</td>
+        <td class="text-left">{{ r.remarks or '' }}</td>
+    </tr>
 
+    {% set batch_tot.g1 = batch_tot.g1 + (r.g1_qty or 0) %}
+    {% set batch_tot.g2 = batch_tot.g2 + (r.g2_qty or 0) %}
+    {% set batch_tot.dc = batch_tot.dc + (r.dc_qty or 0) %}
+    {% set batch_tot.recv = batch_tot.recv + (r.received_qty or 0) %}
+    {% set batch_tot.amount = batch_tot.amount + (r.amount or 0) %}
+    {% set batch_tot.boxes = batch_tot.boxes + (r.material_boxes or 0) %}
+
+    {% set grand.g1 = grand.g1 + (r.g1_qty or 0) %}
+    {% set grand.g2 = grand.g2 + (r.g2_qty or 0) %}
+    {% set grand.dc = grand.dc + (r.dc_qty or 0) %}
+    {% set grand.recv = grand.recv + (r.received_qty or 0) %}
+    {% set grand.amount = grand.amount + (r.amount or 0) %}
+    {% set grand.boxes = grand.boxes + (r.material_boxes or 0) %}
+    {% endfor %}
+
+    <tr class="batch-subtotal">
+        <td colspan="7" class="text-right" style="padding-right: 8px;">BATCH [{{ batch_group.grouper }}] SUB TOTAL:</td>
+        <td class="qty-bold">{{ "%.2f"|format(batch_tot.g1) }}</td>
+        <td class="qty-bold">{{ "%.2f"|format(batch_tot.g2) }}</td>
+        <td class="qty-bold">{{ "%.2f"|format(batch_tot.dc) }}</td>
+        <td class="qty-bold" style="color: #003366;">{{ "%.2f"|format(batch_tot.recv) }}</td>
+        <td class="qty-bold" style="color: #2563eb; font-size:7.5px;">{{ "%.2f"|format(batch_tot.amount / batch_tot.recv) if batch_tot.recv > 0 else '0.00' }}</td>
+        <td class="qty-bold">{{ "%.2f"|format(batch_tot.amount) }}</td>
+        <td style="font-weight: 800;">{{ batch_tot.boxes }}</td>
+        <td></td>
+    </tr>
 {% endfor %}
 </tbody>
 
 <tfoot>
-<tr class="subtotal">
-    <td colspan="8">TOTAL</td>
-    <td>{{ "%.2f"|format(ns.g1) }}</td>
-    <td>{{ "%.2f"|format(ns.g2) }}</td>
-    <td>{{ "%.2f"|format(ns.dc) }}</td>
-    <td>{{ "%.2f"|format(ns.recv) }}</td>
+<tr class="grand-total">
+    <td colspan="7" style="text-align: right; padding-right: 8px; font-weight: 800; font-size: 9px; color: #003366;">GRAND NET TOTAL:</td>
+    <td class="qty-bold" style="border-top: 2px double #000;">{{ "%.2f"|format(grand.g1) }}</td>
+    <td class="qty-bold" style="border-top: 2px double #000;">{{ "%.2f"|format(grand.g2) }}</td>
+    <td class="qty-bold" style="border-top: 2px double #000;">{{ "%.2f"|format(grand.dc) }}</td>
+    <td class="qty-bold" style="color: #003366; border-top: 2px double #000;">{{ "%.2f"|format(grand.recv) }}</td>
+    <td class="qty-bold" style="color: blue; font-size:8px; border-top: 2px double #000;">{{ "%.2f"|format(grand.amount / grand.recv) if grand.recv > 0 else '0.00' }}</td>
+    <td class="qty-bold" style="border-top: 2px double #000;">{{ "%.2f"|format(grand.amount) }}</td>
+    <td style="font-weight: 800; border-top: 2px double #000;">{{ grand.boxes }}</td>
     <td></td>
-    <td>{{ "%.2f"|format(ns.amount) }}</td>
-    <td></td>
-    <td colspan="2"></td>
 </tr>
 </tfoot>
-
 </table>
 
 <script>
-    window.onload = function () { window.print(); };
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.parent.location.search || window.location.search);
+        let supplierParam = urlParams.get('supplier') || "";
+        
+        if(!supplierParam && window.opener) {
+            const openerDoc = window.opener.document;
+            const selectEl = openerDoc.getElementById('f_supplier');
+            if(selectEl && selectEl.value) {
+                supplierParam = selectEl.value;
+            }
+        }
+
+        if(supplierParam && supplierParam.trim() !== "") {
+            document.getElementById("displaySupplier").innerText = supplierParam.toUpperCase();
+        }
+
+        setTimeout(function() {
+            window.print();
+        }, 400);
+    };
 </script>
 
 </body>

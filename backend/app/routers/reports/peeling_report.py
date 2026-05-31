@@ -1,5 +1,5 @@
 # ============================================================
-# PEELING REPORT ROUTER (BKNR ERP) - FY LOCK + BATCH SYNC
+# PEELING REPORT ROUTER (BKNR ERP) - FY LOCK + EXPORT ENGINES
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
@@ -11,6 +11,7 @@ import datetime as dt
 from datetime import datetime
 from io import BytesIO
 from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from app.database import get_db
 from app.database.models.processing import Peeling, AuditLog
@@ -29,6 +30,7 @@ def get_fin_year(date_val):
     # Entry date 2026-03-25 ayithe adi 2025 FY kindaku vasthundi
     return date_val.year if date_val.month >= 4 else date_val.year - 1
 
+
 # ------------------------------------------------------------
 # 1. MAIN REPORT PAGE (GET) - FY FILTERED & AUTO REFRESH
 # ------------------------------------------------------------
@@ -37,7 +39,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
     
-    # Financial Year from Query Params (e.g., ?fy=2025)
+    # Financial Year from Query Params (e.g., ?fy=2026)
     selected_fy = request.query_params.get("fy")
 
     if not comp_code:
@@ -116,6 +118,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
         }
     )
 
+
 # ------------------------------------------------------------
 # 2. INLINE UPDATE (POST) - WITH FY LOCK & AUDIT
 # ------------------------------------------------------------
@@ -149,7 +152,7 @@ async def update_peeling(
             new_val = payload[field]
             old_val = getattr(row, field)
 
-            if field in ["hlso_qty", "peeled_qty", "rate"]:
+            if field in ["hlso_qty", "peeled_qty", "rate", "hlso_count"]:
                 try: new_val = float(new_val or 0)
                 except: new_val = 0.0
 
@@ -187,8 +190,212 @@ async def update_peeling(
     db.commit()
     return {"status": "success", "target_yield": row.target_yield_percent}
 
+
 # ------------------------------------------------------------
-# 3. AUDIT, DELETE, EXCEL & BILLING
+# 3. EXPORT REGION (PDF & EXCEL SPECIFIC ROUTINGS)
+# ------------------------------------------------------------
+@router.get("/export_pdf")
+async def peeling_export_pdf(
+    request: Request, 
+    ids: str = Query(None), 
+    db: Session = Depends(get_db)
+):
+    """
+    Renders selected rows into a standalone clean print/PDF compilation viewport layout.
+    """
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Session expired")
+
+    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    if ids:
+        id_list = [int(i) for i in ids.split(",") if i.isdigit()]
+        q = q.filter(Peeling.id.in_(id_list))
+        
+    rows = q.order_by(Peeling.date.asc()).all()
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/peeling_report_pdf.html", # Custom PDF clean printable layout template
+        context={
+            "rows": rows,
+            "print_date": datetime.now(),
+            "company_code": comp_code
+        }
+    )
+
+
+@router.get("/export_excel")
+def peeling_export_excel(
+    request: Request, 
+    ids: str = Query(None), 
+    db: Session = Depends(get_db)
+):
+    comp_code = request.session.get("company_code")
+    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    if ids: 
+        q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Peeling Ledger"
+    
+    # Enable grid lines visibility
+    ws.views.sheetView[0].showGridLines = True
+    
+    # Styles Setup
+    font_family = "Segoe UI"
+    header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+    header_font = Font(name=font_family, size=11, bold=True, color="FFFFFF")
+    data_font = Font(name=font_family, size=10, bold=False)
+    total_font = Font(name=font_family, size=10, bold=True)
+    
+    thin_border = Border(
+        left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
+    )
+    total_border = Border(
+        top=Side(style='thin', color='000000'), 
+        bottom=Side(style='double', color='000000')
+    )
+
+    # Header Row
+    headers = [
+        "Date", "Batch No", "Contractor", "Variety", "HL-Count", 
+        "HLSO Qty (Kg)", "Peeled Qty (Kg)", "Target Yield %", 
+        "Actual Yield %", "Diff %", "Diff Qty (Kg)", "Rate (₹)", "Amount (₹)"
+    ]
+    ws.append(headers)
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # Data Rows Insertion
+    start_row = 2
+    for r in q.order_by(Peeling.date.asc()).all():
+        ws.append([
+            str(r.date.strftime('%d-%m-%Y') if r.date else ''),
+            r.batch_number or '',
+            r.contractor_name or '',
+            r.variety_name or '',
+            r.hlso_count or 0,
+            r.hlso_qty or 0.0,
+            r.peeled_qty or 0.0,
+            r.target_yield_percent or 0.0,
+            r.yield_percent or 0.0,
+            r.diff_percent or 0.0,
+            r.diff_qty or 0.0,
+            r.rate or 0.0,
+            r.amount or 0.0
+        ])
+        
+    end_row = ws.max_row
+    
+    # Formatting Cell Values & Alignments
+    for row in range(start_row, end_row + 1):
+        for col in range(1, 14):
+            cell = ws.cell(row=row, column=col)
+            cell.font = data_font
+            cell.border = thin_border
+            
+            # Alignments & Number Formats
+            if col in [1, 2]:
+                cell.alignment = Alignment(horizontal="center")
+            elif col in [3, 4]:
+                cell.alignment = Alignment(horizontal="left")
+            elif col == 5:
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '#,##0'
+            elif col in [6, 7, 11, 12, 13]:
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '#,##0.00'
+            elif col in [8, 9, 10]:
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '0.00"%"'
+
+    # Grand Totals Row Compilation
+    tot_row = end_row + 1
+    ws.cell(row=tot_row, column=1, value="GRAND TOTALS").font = total_font
+    ws.merge_cells(start_row=tot_row, start_column=1, end_row=tot_row, end_column=4)
+    ws.cell(row=tot_row, column=1).alignment = Alignment(horizontal="right", bold=True)
+    
+    # Excel Formulations for Aggregations
+    ws.cell(row=tot_row, column=5, value=f"=SUM(E{start_row}:E{end_row})").number_format = '#,##0'
+    ws.cell(row=tot_row, column=6, value=f"=SUM(F{start_row}:F{end_row})").number_format = '#,##0.00'
+    ws.cell(row=tot_row, column=7, value=f"=SUM(G{start_row}:G{end_row})").number_format = '#,##0.00'
+    
+    # Average yield formula logic injection
+    ws.cell(row=tot_row, column=9, value=f"=IF(F{tot_row}>0,(G{tot_row}/F{tot_row})*100,0)").number_format = '0.00"%"'
+    ws.cell(row=tot_row, column=11, value=f"=SUM(K{start_row}:K{end_row})").number_format = '#,##0.00'
+    ws.cell(row=tot_row, column=13, value=f"=SUM(M{start_row}:M{end_row})").number_format = '#,##0.00'
+    
+    for col in range(1, 14):
+        t_cell = ws.cell(row=tot_row, column=col)
+        t_cell.font = total_font
+        t_cell.border = total_border
+        if col >= 5:
+            t_cell.alignment = Alignment(horizontal="right")
+
+    # Column Width Optimization Setup
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = col[0].column_letter
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 11)
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=PEELING_REPORT.xlsx"}
+    )
+
+
+@router.get("/contractor_monthly_bill")
+def peeling_monthly_bill(
+    request: Request, 
+    month: str, 
+    contractor: str, 
+    ids: str = None, 
+    db: Session = Depends(get_db)
+):
+    comp_code = request.session.get("company_code")
+    q = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
+    
+    if ids: 
+        q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
+    else: 
+        q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
+        
+    rows = q.order_by(Peeling.date.asc()).all()
+
+    # --- Calculations ---
+    t_hlso = sum(r.hlso_qty or 0 for r in rows)
+    t_peeled = sum(r.peeled_qty or 0 for r in rows)
+    
+    # Calculate Average Yield Matrix
+    avg_yield = (t_peeled / t_hlso * 100) if t_hlso > 0 else 0
+
+    data = {
+        "request": request, 
+        "rows": rows, 
+        "contractor_name": contractor, 
+        "month_year": month,
+        "total_hlso": round(t_hlso, 2),
+        "total_peeled": round(t_peeled, 2),
+        "avg_yield": round(avg_yield, 2),
+        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
+        "bill_date": datetime.now()
+    }
+    return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
+
+
+# ------------------------------------------------------------
+# 4. AUDIT & DELETION DATA STREAM ENGINE
 # ------------------------------------------------------------
 @router.get("/audit_all")
 async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
@@ -207,8 +414,13 @@ async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db))
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 
+
 @router.post("/delete")
-async def delete_peeling(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+async def delete_peeling(
+    request: Request, 
+    payload: dict = Body(...), 
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
     row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
     if row:
@@ -217,56 +429,7 @@ async def delete_peeling(request: Request, payload: dict = Body(...), db: Sessio
             field_name="DELETE", old_value="Peeling Record", new_value="DELETED", 
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
-        db.delete(row); db.commit()
+        db.delete(row)
+        db.commit()
         return {"status": "success"}
     return {"status": "error"}
-
-@router.get("/export_excel")
-def peeling_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code")
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
-    if ids: q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
-    
-    wb = Workbook(); ws = wb.active
-    ws.append(["Date", "Batch", "Contractor", "Variety", "HLSO Qty", "Peeled Qty", "Yield %", "Rate", "Amount"])
-    for r in q.order_by(Peeling.date.asc()).all():
-        ws.append([str(r.date), r.batch_number, r.contractor_name, r.variety_name, r.hlso_qty, r.peeled_qty, r.yield_percent, r.rate, r.amount])
-    
-    stream = BytesIO(); wb.save(stream); stream.seek(0)
-    return StreamingResponse(
-        stream, 
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": "attachment; filename=PEELING_REPORT.xlsx"}
-    )
-
-@router.get("/contractor_monthly_bill")
-def peeling_monthly_bill(request: Request, month: str, contractor: str, ids: str = None, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code")
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
-    
-    if ids: 
-        q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
-    else: 
-        q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
-        
-    rows = q.order_by(Peeling.date.asc()).all()
-
-    # --- Calculations ---
-    t_hlso = sum(r.hlso_qty or 0 for r in rows)
-    t_peeled = sum(r.peeled_qty or 0 for r in rows)
-    
-    # Calculate Average Yield (Error fix ikkada undi)
-    avg_yield = (t_peeled / t_hlso * 100) if t_hlso > 0 else 0
-
-    data = {
-        "request": request, 
-        "rows": rows, 
-        "contractor_name": contractor, 
-        "month_year": month,
-        "total_hlso": round(t_hlso, 2),
-        "total_peeled": round(t_peeled, 2),
-        "avg_yield": avg_yield, # <--- Ikkada pampithe HTML lo error podhi
-        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
-        "bill_date": datetime.now()
-    }
-    return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)

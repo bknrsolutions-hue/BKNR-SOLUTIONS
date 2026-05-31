@@ -1,116 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Print - Gate Entry Report</title>
 
 <style>
+    /* 1. STRICT PRINT ORIENTATION & PAGE GAP SETTING */
+    @page { 
+        size: A4 landscape; 
+        margin: 5mm 5mm 5mm 5mm; 
+    }
+
     body {
         font-family: Arial, sans-serif;
-        font-size: 12px;
-        margin: 20px;
-        color: #000;
+        font-size: 8px;
+        color: black;
+        margin: 0;
+        padding: 0;
+        background: #fff;
     }
 
-    /* HEADER */
-    .header-box {
-        width: 100%;
-        margin-bottom: 8px;
-        text-align: center;
+    /* 2. DUAL BLOCK COMPACT CORPORATE HEADER */
+    .header-layout {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid #003366;
+        padding-bottom: 3px;
+        margin-bottom: 6px;
     }
 
-    .company-name {
-        font-size: 20px;
-        font-weight: bold;
-        color: #003366;
-        margin-bottom: 4px;
-    }
-
-    .company-address {
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .report-title {
+    .main-header {
         text-align: left;
-        font-size: 16px;
+        flex: 1;
+    }
+    .main-header h2 { 
+        margin: 0; 
+        font-size: 14px; 
+        color: #003366; 
+        text-transform: uppercase; 
+        letter-spacing: 0.3px;
+    }
+    .main-header .report-title {
+        margin: 1px 0 0 0;
+        font-size: 10px;
         font-weight: bold;
-        color: #003366;
-        margin-top: 5px;
+        color: #475569;
     }
 
-    .printed-on {
+    .side-header {
         text-align: right;
-        font-size: 11px;
-        margin-bottom: 10px;
+        font-size: 9px;
+        line-height: 1.3;
+        font-weight: bold;
+    }
+    .supplier-badge {
+        color: #003366;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
     }
 
-    /* TABLE */
+    /* 3. MAXIMUM UTILITY TABLE STRUCTURE (AUTO-FIT WIDTH) */
     table {
-        width: 100%;
+        width: 95%;
         border-collapse: collapse;
+        font-size: 7.5px;
+        table-layout: fixed; /* Dynamic column lock rules applied below */
+        page-break-inside: auto;
+    }
+
+    table th, table td {
+        border: 0.5px solid #000000;
+        padding: 3px 2px;
+        text-align: center;
+        word-wrap: break-word;
+        white-space: normal !important; /* Stack text safely into multiple lines if needed */
+        overflow: hidden;
     }
 
     table th {
-        background: #003366;
-        color: white;
-        padding: 5px;
-        border: 1px solid #333;
-        white-space: normal;
-        word-wrap: break-word;
-        font-size: 11px;
-        text-align: left;
+        background: #003366 !important;
+        color: white !important;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 7.5px;
+        text-align: center;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    table td {
-        padding: 4px;
-        border: 1px solid #333;
-        white-space: normal;
-        word-wrap: break-word;
-        font-size: 11px;
+    tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
     }
 
-    @page { 
-        size: A4 landscape; 
-        margin: 8mm;
+    .text-left { text-align: left !important; padding-left: 3px !important; }
+    .text-right { text-align: right !important; padding-right: 3px !important; font-weight: bold; }
+    
+    /* 4. RE-CONFIGURED MATRIX FOR ZERO BLANK SPACE (EXACT MATH = TOTAL 100%) */
+    .col-sl   { width: 2.5%; }
+    .col-dt   { width: 6.5%; }
+    .col-tm   { width: 4.5%; }
+    .col-bt   { width: 7.0%; }
+    .col-ch   { width: 6.5%; }
+    .col-gp   { width: 6.5%; }
+    .col-fc   { width: 8.0%; }
+    .col-spl  { width: 14.0%; }
+    .col-lc   { width: 9.5%; }
+    .col-vh   { width: 7.5%; }
+    .col-pf   { width: 7.5%; }
+    .col-spc  { width: 6.5%; }
+    .col-bx   { width: 3.0%; } /* Mat, Emp, Ice Boxes standardized to safe proportional limits */
+    .col-em   { width: 4.5%; } /* Fixed User Column to safely prevent layout overflow gaps */
+
+    .subtotal-row {
+        background: #f1f5f9 !important;
+        font-weight: bold;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 </style>
 </head>
 
 <body>
 
-<!-- COMPANY HEADER -->
-<div class="header-box">
-    <div class="company-name">{{ company_name }}</div>
-    <div class="company-address">{{ company_address }}</div>
+<div class="header-layout">
+    <div class="main-header">
+        <h2>{{ company_name }}</h2>
+        <div class="report-title">GATE ENTRY LOG — DETAILED VIEW SHEET</div>
+    </div>
+    <div class="side-header">
+        <div class="supplier-badge">Supplier: <span id="displaySupplier">ALL SUPPLIERS</span></div>
+        <div style="font-size: 8px; color: #475569; font-weight: normal; margin-top: 1px;">
+            Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M:%S") }}
+        </div>
+    </div>
 </div>
 
-<div class="report-title">Gate Entry Report</div>
-
-<div class="printed-on">
-    Printed On: {{ printed_on.strftime("%d-%m-%Y %H:%M:%S") }}
-</div>
+{% set total_boxes = namespace(material=0, empty=0, ice=0) %}
 
 <table>
 <thead>
 <tr>
-    <th>SL No</th>
-    <th>Date</th>
-    <th>Time</th>
-    <th>Batch Number</th>
-    <th>Challan Number</th>
-    <th>Gate Pass Number</th>
-    <th>Receiving Center</th>
-    <th>Supplier Name</th>
-    <th>Purchasing Location</th>
-    <th>Vehicle Number</th>
-    <th>Production For</th>
-    <th>Species</th>
-    <th>Material Boxes</th>
-    <th>Empty Boxes</th>
-    <th>Ice Boxes</th>
-    <th>Email</th>
-    <th>Company ID</th>
+    <th class="col-sl">#</th>
+    <th class="col-dt">Date</th>
+    <th class="col-tm">Time</th>
+    <th class="col-bt">Batch</th>
+    <th class="col-ch">Challan</th>
+    <th class="col-gp">Gate Pass</th>
+    <th class="col-fc">Factory</th>
+    <th class="col-spl">Supplier Name</th>
+    <th class="col-lc">Location</th>
+    <th class="col-vh">Vehicle</th>
+    <th class="col-pf">Prod For</th>
+    <th class="col-spc">Species</th>
+    <th class="col-bx">Mat.</th>
+    <th class="col-bx">Emp.</th>
+    <th class="col-bx">Ice</th>
+    <th class="col-em">User</th>
 </tr>
 </thead>
 
@@ -118,34 +166,68 @@
 {% for r in rows %}
 <tr>
     <td>{{ loop.index }}</td>
-    <td>{{ r.date }}</td>
-    <td>{{ r.time.strftime("%H:%M:%S") if r.time else '' }}</td>
+    <td>{{ r.date.strftime('%d-%m-%Y') if r.date.strftime else r.date }}</td>
+    <td>{{ r.time.strftime('%H:%M') if r.time and r.time.strftime else (r.time or '') }}</td>
     <td>{{ r.batch_number }}</td>
-    <td>{{ r.challan_number }}</td>
-    <td>{{ r.gate_pass_number }}</td>
-    <td>{{ r.receiving_center }}</td>
-    <td>{{ r.supplier_name }}</td>
-    <td>{{ r.purchasing_location }}</td>
-    <td>{{ r.vehicle_number }}</td>
-    <td>{{ r.production_for }}</td>
-    <td>{{ r.species }}</td>
-    <td>{{ r.no_of_material_boxes }}</td>
-    <td>{{ r.no_of_empty_boxes }}</td>
-    <td>{{ r.no_of_ice_boxes }}</td>
-    <td>{{ r.email }}</td>
-    <td>{{ r.company_id }}</td>
+    <td>{{ r.challan_number or 'N/A' }}</td>
+    <td>{{ r.gate_pass_number or 'N/A' }}</td>
+    <td>{{ r.receiving_center or 'N/A' }}</td>
+    <td class="text-left">{{ r.supplier_name }}</td>
+    <td class="text-left">{{ r.purchasing_location or 'N/A' }}</td>
+    <td>{{ r.vehicle_number or 'N/A' }}</td>
+    <td>{{ r.production_for or 'N/A' }}</td>
+    <td>{{ r.species or 'N/A' }}</td>
+    <td class="text-right">{{ r.no_of_material_boxes or 0 }}</td>
+    <td class="text-right">{{ r.no_of_empty_boxes or 0 }}</td>
+    <td class="text-right">{{ r.no_of_ice_boxes or 0 }}</td>
+    <td class="text-left" style="font-size: 7px; color: #334155;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
 </tr>
+
+{% set total_boxes.material = total_boxes.material + (r.no_of_material_boxes|int if r.no_of_material_boxes else 0) %}
+{% set total_boxes.empty = total_boxes.empty + (r.no_of_empty_boxes|int if r.no_of_empty_boxes else 0) %}
+{% set total_boxes.ice = total_boxes.ice + (r.no_of_ice_boxes|int if r.no_of_ice_boxes else 0) %}
 {% endfor %}
 </tbody>
+
+<tfoot>
+<tr class="subtotal-row">
+    <td colspan="12" style="text-align: right; padding-right: 6px; font-weight: 800; font-size: 8px;">TOTAL SUMMARY COUNT:</td>
+    <td class="text-right" style="color: #003366; font-size: 8px;">{{ total_boxes.material }}</td>
+    <td class="text-right" style="color: #003366; font-size: 8px;">{{ total_boxes.empty }}</td>
+    <td class="text-right" style="color: #003366; font-size: 8px;">{{ total_boxes.ice }}</td>
+    <td></td>
+</tr>
+</tfoot>
 </table>
 
-{% if auto == 1 %}
 <script>
     window.onload = function() {
-        window.print();
+        // AUTO DETECT SELECTED SUPPLIER FROM URL OR OPENER PORTAL
+        const urlParams = new URLSearchParams(window.parent.location.search || window.location.search);
+        let supplierParam = urlParams.get('supplier') || "";
+        
+        if(!supplierParam && window.opener) {
+            try {
+                const openerDoc = window.opener.document;
+                const selectEl = openerDoc.getElementById('f_supplier');
+                if(selectEl && selectEl.value) {
+                    supplierParam = selectEl.value;
+                }
+            } catch(e) { console.log("Opener context security block"); }
+        }
+
+        if(supplierParam && supplierParam.trim() !== "") {
+            document.getElementById("displaySupplier").innerText = supplierParam.toUpperCase();
+        }
+
+        // Safe delay rendering print modal overlay
+        {% if auto == 1 %}
+        setTimeout(function() {
+            window.print();
+        }, 350);
+        {% endif %}
     };
 </script>
-{% endif %}
 
 </body>
 </html>

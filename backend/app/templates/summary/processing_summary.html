@@ -217,15 +217,88 @@
 
         /* Strict Print Engine */
         @media print { 
-            .filter-card, button, .no-print { display: none !important; } 
-            body { padding: 0; background: white; color: #000; font-size: 9px; } 
-            td { font-size: 9px; padding: 4px 6px; }
-            th { font-size: 9.5px; padding: 5px 6px; }
-            .horizontal-kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; }
-            .cards-view-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
-            .table-wrap, .kpi-column-card, .recon-wrap, .report-card { border: 1px solid #aaa !important; box-shadow: none !important; page-break-inside: avoid; }
-            .section-title { page-break-after: avoid; }
-        }
+    /* 1. HIDE USER INTERACTION CONTROLS BLOCKS COMPLETELY */
+    .filter-card, button, .no-print, .btn, .dropdown, form, nav, footer { 
+        display: none !important; 
+    } 
+    
+    /* 2. ENFORCE ULTRA-STRICT PRINT FULL CONTAINER DISPLAY */
+    html, body { 
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important; 
+        background: #fff !important; 
+        color: #000 !important; 
+        font-size: 8.5px !important; /* Slightly smaller to pull extra columns in */
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important;
+    } 
+
+    /* 3. DYNAMIC BOOTSTRAP RESETS FOR FULL CONTAINER VISIBILITY */
+    .container, .container-fluid, .row, .col-12, main, #wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+    
+    /* 4. PREVENT PRODUCTION TABLE CUT-OFF & TEXT RE-WRAPPING */
+    table { 
+        width: 100% !important; 
+        table-layout: auto !important; /* Auto matches data widths instead of squeezing columns */
+        page-break-inside: auto;
+    }
+    
+    tr { 
+        page-break-inside: avoid !important; 
+        page-break-after: auto !important; 
+    }
+    
+    td, th { 
+        font-size: 8px !important; 
+        padding: 3px 4px !important; /* Extra padding shrink to align massive columns list */
+        word-wrap: break-word !important;
+        white-space: normal !important; /* Forces multi-line line wrap instead of cutting code blocks */
+    }
+    
+    th { 
+        font-size: 8.5px !important; 
+        background-color: #333 !important; 
+        color: #fff !important; 
+    }
+
+    /* 5. FIX CARDS AND SECTION BREAK MANAGEMENT HIERARCHY */
+    .horizontal-kpi-grid { 
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important; 
+        gap: 4px !important; 
+    }
+    
+    .cards-view-grid { 
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important; 
+        gap: 6px !important; 
+    }
+    
+    /* 6. ENFORCE PAGE ORIENTATION SAFEGUARDS */
+    .table-wrap, .kpi-column-card, .recon-wrap, .report-card, .section-title { 
+        border: 1px solid #aaa !important; 
+        box-shadow: none !important; 
+        page-break-inside: avoid !important; 
+        margin-bottom: 8px !important;
+    }
+    
+    .section-title { 
+        page-break-after: avoid !important; 
+    }
+
+    /* 7. PREVENT OVERFLOW CLIP CRASH */
+    div, section, main, article {
+        overflow: visible !important;
+    }
+}
+        
     </style>
 </head>
 <body>
@@ -1009,78 +1082,102 @@
 </div>
 
 <div class="section-title"><i class="fas fa-warehouse" style="color:var(--orange)"></i> 8. STOCK INVENTORY LOG</div>
-<div class="table-wrap">
-    <table>
-        <thead>
+    <table class="table table-bordered table-striped text-nowrap">
+        <thead class="table-dark">
             <tr>
-                <th class="text-center" style="width:30px">Sl</th>
+                <th class="sl-no">Sl.No</th>
                 <th>Species</th>
                 <th>Location</th>
-                <th>Prod At</th>
-                <th>Type</th>
-                <th>Movement</th>
+                <th>Production At</th>
+                <th>Production For</th>
+                <th>PO Number</th>
+                <th>Purpose </th>
+                <th>Movement Type</th>
                 <th>Brand</th>
                 <th>Freezer</th>
-                <th>Packing</th>
-                <th class="text-right">MC</th>
-                <th class="text-right">Loose</th>
+                <th>Packing Style</th>
                 <th>Variety</th>
                 <th>Grade</th>
-                <th class="text-right">Qty (KG)</th>
-                <th class="text-right">Value</th>
-                <th>Email</th>
+                <th class="text-right">No of MC</th>
+                <th class="text-right">Loose</th>
+                <th class="qty-column text-right">Quantity (KG)</th>
+                <th class="money-column text-right">Inventory Value</th>
             </tr>
         </thead>
         <tbody>
-            {% set ns_stock = namespace(current_variety='', variety_qty=0, variety_val=0) %}
-            {% set grand_stock = namespace(qty=0.0, val=0.0) %}
+            {% set ns_stock = namespace(current_variety='', variety_qty=0, variety_val=0, variety_mc=0, variety_loose=0) %}
+            {% set grand_stock = namespace(qty=0.0, val=0.0, mc=0, loose=0) %}
+            
             {% for row in rows.stock|sort(attribute='variety') %}
-                {% set grand_stock.qty = grand_stock.qty + (row.quantity | float) %}
-                {% set grand_stock.val = grand_stock.val + (row.inventory_value | float) %}
+                {% set grand_stock.qty = grand_stock.qty + (row.quantity | float if row.quantity else 0.0) %}
+                {% set grand_stock.val = grand_stock.val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                {% set grand_stock.mc = grand_stock.mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                {% set grand_stock.loose = grand_stock.loose + (row.loose | int if row.loose else 0) %}
 
                 {% if ns_stock.current_variety != '' and ns_stock.current_variety != row.variety %}
-                    <tr class="subtotal-row">
+                    <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
                         <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
-                        <td class="qty-column">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
-                        <td class="money-column">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
-                        <td></td>
+                        <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
+                        <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
+                        <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                        <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
                     </tr>
-                    {% set ns_stock.variety_qty = 0 %}{% set ns_stock.variety_val = 0 %}
+                    {% set ns_stock.variety_qty = 0 %}{% set ns_stock.variety_val = 0 %}{% set ns_stock.variety_mc = 0 %}{% set ns_stock.variety_loose = 0 %}
                 {% endif %}
+                
                 <tr>
                     <td class="sl-no">{{ loop.index }}</td>
-                    <td>{{ row.species }}</td>
-                    <td>{{ row.location }}</td>
-                    <td>{{ row.production_at }}</td>
-                    <td>{{ row.type_of_production }}</td>
-                    <td>{{ row.cargo_movement_type }}</td>
-                    <td>{{ row.brand }}</td>
-                    <td>{{ row.freezer }}</td>
-                    <td>{{ row.packing_style }}</td>
-                    <td class="text-right">{{ row.no_of_mc }}</td>
-                    <td class="text-right">{{ row.loose }}</td>
-                    <td><span class="tag">{{ row.variety }}</span></td>
-                    <td>{{ row.grade or row.hlso_count }}</td>
-                    <td class="qty-column">{{ row.quantity }}</td>
-                    <td class="money-column">₹ {{ "{:,.2f}".format(row.inventory_value | float) }}</td>
-                    <td>{{ row.email }}</td>
+                    <td>{{ row.species or 'N/A' }}</td>
+                    <td>{{ row.location or 'N/A' }}</td>
+                    <td>{{ row.production_at or 'N/A' }}</td>
+                    <td>{{ row.production_for or 'N/A' }}</td>
+                    <td>{{ row.po_number or 'N/A' }}</td>
+                    <td>{{ row.purpose or 'N/A' }}</td>
+                    <td><span class="badge {{ 'bg-success' if row.cargo_movement_type == 'IN' else 'bg-danger' }}">{{ row.cargo_movement_type }}</span></td>
+                    <td>{{ row.brand or 'N/A' }}</td>
+                    <td>{{ row.freezer or 'N/A' }}</td>
+                    <td>{{ row.packing_style or 'N/A' }}</td>
+                    <td><span class="tag">{{ row.variety or 'N/A' }}</span></td>
+                    <td>{{ row.grade or 'N/A' }}</td>
+                    <td class="text-right">{{ row.no_of_mc or 0 }}</td>
+                    <td class="text-right">{{ row.loose or 0 }}</td>
+                    <td class="qty-column text-right">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td>
+                    <td class="money-column text-right">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td>
                 </tr>
-                {% set ns_stock.current_variety = row.variety %}{% set ns_stock.variety_qty = ns_stock.variety_qty + (row.quantity | float) %}{% set ns_stock.variety_val = ns_stock.variety_val + (row.inventory_value | float) %}
+                
+                {% set ns_stock.current_variety = row.variety %}
+                {% set ns_stock.variety_qty = ns_stock.variety_qty + (row.quantity | float if row.quantity else 0.0) %}
+                {% set ns_stock.variety_val = ns_stock.variety_val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                {% set ns_stock.variety_mc = ns_stock.variety_mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                {% set ns_stock.variety_loose = ns_stock.variety_loose + (row.loose | int if row.loose else 0) %}
+                
                 {% if loop.last %}
-                    <tr class="subtotal-row">
+                    <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
                         <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
-                        <td class="qty-column">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
-                        <td class="money-column">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
-                        <td></td>
+                        <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
+                        <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
+                        <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                        <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
                     </tr>
                 {% endif %}
+            {% else %}
+                <tr>
+                    <td colspan="17" class="text-center text-muted py-4">
+                        <i class="fas fa-box-open d-block mb-2" style="font-size: 2rem;"></i>
+                        No Active Stock Inventory Found in Cold Storage For This Batch.
+                    </td>
+                </tr>
             {% endfor %}
-            <tr class="subtotal-row" style="background:#f0fdf4 !important; border-top:2px double #16a34a;">
-                <td colspan="13" style="text-align:right; font-weight:800; color:#14532d;">GRAND TOTAL STOCK LOG:</td>
-                <td class="qty-column" style="color:#14532d; background:#dcfce7;">{{ "%.2f"|format(grand_stock.qty) }}</td>
-                <td class="money-column" style="color:#14532d;">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
-                <td></td>
+            
+            {% if rows.stock and rows.stock|length > 0 %}
+            <tr class="subtotal-row" style="background:#f0fdf4 !important; border-top:2px double #16a34a; font-weight: 800;">
+                <td colspan="13" style="text-align:right; color:#14532d;">GRAND TOTAL STOCK LOG:</td>
+                <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.mc }}</td>
+                <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.loose }}</td>
+                <td class="qty-column text-right" style="color:#14532d; background:#dcfce7;">{{ "%.2f"|format(grand_stock.qty) }}</td>
+                <td class="money-column text-right" style="color:#14532d; background:#dcfce7;">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
             </tr>
+            {% endif %}
         </tbody>
     </table>
 </div>
@@ -1131,14 +1228,22 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll('.searchable-select').forEach(function(select) {
-        new TomSelect(select, {
-            create: false,
-            sortField: { field: "text", direction: "asc" },
-            onChange: function() { document.getElementById('filterForm').submit(); }
+    
+    // 1. SEARCHABLE SELECT DROP-DOWNS (TOMSELECT) INITIALIZATION
+    if (typeof TomSelect !== 'undefined') {
+        document.querySelectorAll('.searchable-select').forEach(function(select) {
+            new TomSelect(select, {
+                create: false,
+                sortField: { field: "text", direction: "asc" },
+                onChange: function() { 
+                    const filterForm = document.getElementById('filterForm');
+                    if(filterForm) filterForm.submit(); 
+                }
+            });
         });
-    });
+    }
 
+    // 2. JINJA2 TEMPLATE BREAKDOWN DATA ARRAY
     const allDetailedData = [
         {% for row in rows.grading_details %}
         {
@@ -1152,111 +1257,164 @@ document.addEventListener("DOMContentLoaded", function() {
         {% endfor %}
     ];
 
+    // 3. CACHE DOM DOM ELEMENTS FOR SEARCH & FILTER
     const allRows = document.querySelectorAll("#rawGradingSummaryTable tbody tr");
+    const f_batch = document.getElementById("f_batch");
+    const f_species = document.getElementById("f_species");
+    const f_variety = document.getElementById("f_variety");
+    const f_count = document.getElementById("f_count");
+    const searchBox = document.getElementById("searchBox");
 
+    // 4. MAIN CARDS VIEW RENDER FUNCTION
     function renderCardsView() {
         const cardsGrid = document.getElementById("cardsGrid");
-        if(!cardsGrid) return;
+        if(!cardsGrid) return; // Safety Check
         cardsGrid.innerHTML = "";
         
-        if(allRows.length === 0) {
-            cardsGrid.innerHTML = `<div style="grid-column:1/-1;" class="empty-state"><b>No grading summary data available</b></div>`;
+        if(!allRows || allRows.length === 0) {
+            cardsGrid.innerHTML = `<div style="grid-column:1/-1;" class="empty-state"><b>Financial Year Not Selected</b></div>`;
             return;
         }
+        
+        // Extract Dynamic Filter Values safely with fallbacks
+        const b = f_batch ? f_batch.value.toLowerCase() : "";
+        const s = f_species ? f_species.value.toLowerCase() : "";
+        const v = f_variety ? f_variety.value.toLowerCase() : "";
+        const c = f_count ? f_count.value.toLowerCase() : "";
+        const q = searchBox ? searchBox.value.toLowerCase() : "";
+        
+        let visibleCards = 0;
         
         allRows.forEach((r) => {
             const tds = r.querySelectorAll("td");
             if(tds.length < 12) return;
             
-            const batch = tds[1].innerText;
-            const species = tds[2].innerText;
-            const hosoCount = tds[3].innerText;
-            const variety = tds[4].innerText;
-            const actualHoso = tds[5].innerText;
-            const gradedQty = tds[6].innerText;
-            const workoutCount = tds[7].innerText;
-            const yieldPct = tds[8].innerText;
-            const gradingHoso = tds[9].innerText;
-            const diffKg = tds[10].innerText;
-            const diffPct = tds[11].innerText;
+            // Extract text metrics from the active table row
+            const id = tds[0].innerText.trim();
+            const batch = tds[1].innerText.trim();
+            const species = tds[2].innerText.trim();
+            const hosoCount = tds[3].innerText.trim();
+            const variety = tds[4].innerText.trim();
+            const actualHoso = tds[5].innerText.trim();
+            const gradedQty = tds[6].innerText.trim();
+            const workoutCount = tds[7].innerText.trim();
+            const yieldPct = tds[8].innerText.trim();
+            const gradingHoso = tds[9].innerText.trim();
+            const diffKg = tds[10].innerText.trim();
+            const diffPct = tds[11].innerText.trim();
+
+            // Unified Query Filter Check
+            const text = r.innerText.toLowerCase();
+            let matchesFilters = (!b || batch.toLowerCase() === b) &&
+                                 (!s || species.toLowerCase() === s) &&
+                                 (!v || variety.toLowerCase() === v) &&
+                                 (!c || hosoCount.toLowerCase() === c) &&
+                                 (!q || text.includes(q));
+                                 
+            if(matchesFilters) {
+                visibleCards++;
                 
-            const subRows = allDetailedData.filter(row => 
-                String(row.batch_number || '').toLowerCase() === batch.toLowerCase() &&
-                String(row.species || '').toLowerCase() === species.toLowerCase() &&
-                String(row.hoso_count || '').toLowerCase() === hosoCount.toLowerCase() &&
-                String(row.variety_name || '').toLowerCase() === variety.toLowerCase()
-            );
+                // Match items against detailed dataset mapping (handles multi-property naming variants)
+                const subRows = allDetailedData.filter(row => 
+                    String(row.batch_number || row.batch || '').toLowerCase() === batch.toLowerCase() &&
+                    String(row.species || '').toLowerCase() === species.toLowerCase() &&
+                    String(row.hoso_count || '').toLowerCase() === hosoCount.toLowerCase() &&
+                    String(row.variety_name || row.variety || '').toLowerCase() === variety.toLowerCase()
+                );
 
-            let subTableBodyHTML = "";
-            let cardTotalQuantity = 0;
+                let subTableBodyHTML = "";
+                let cardTotalQuantity = 0;
 
-            if(subRows.length === 0) {
-                subTableBodyHTML = `<tr><td colspan="2" style="color:#64748b; font-style:italic; text-align:center; padding: 4px; font-size: 9px;">No breakdown details available</td></tr>`;
-            } else {
-                subRows.forEach(row => {
-                    let finalCount = row.graded_count ?? '-';
-                    let rawQty = row.quantity ?? 0;
+                if(subRows.length === 0) {
+                    subTableBodyHTML = `<tr><td colspan="2" style="color:#64748b; font-style:italic; text-align:center; padding: 6px 4px; font-size: 9.5px;">No breakdown details available</td></tr>`;
+                } else {
+                    subRows.forEach(row => {
+                        let finalCount = row.graded_count ?? '-';
+                        let rawQty = row.quantity ?? 0;
+                        
+                        let finalQty = parseFloat(rawQty);
+                        if (isNaN(finalQty)) finalQty = 0;
+                        cardTotalQuantity += finalQty;
+                        
+                        // Clean layout using padding structure from baseline
+                        subTableBodyHTML += `
+                        <tr>
+                            <td style="border-bottom:1px solid #f1f5f9; padding:6px 4px; font-size:9.5px; text-align:center; font-weight:600;">${finalCount}</td>
+                            <td style="border-bottom:1px solid #f1f5f9; padding:6px 4px; font-size:9.5px; text-align:right; color:var(--accent); font-weight:700;">${finalQty.toFixed(2)} KG</td>
+                         </tr>
+                        `;
+                    });
                     
-                    let finalQty = parseFloat(rawQty);
-                    if (isNaN(finalQty)) finalQty = 0;
-                    cardTotalQuantity += finalQty;
-                    
+                    // Card Subtotal Layout
                     subTableBodyHTML += `
-                    <tr>
-                        <td style="border-bottom:1px solid #f1f5f9; padding:4px; font-size:9px; text-align:center; font-weight:600;">${finalCount}</td>
-                        <td style="border-bottom:1px solid #f1f5f9; padding:4px; font-size:9px; text-align:right; color:var(--accent); font-weight:700;">${finalQty.toFixed(2)} KG</td>
-                     </tr>
+                    <tr class="card-subtotal-row" style="background-color: #f8fafc;">
+                        <td style="padding:6px 4px; font-size:9.5px; text-align:left; font-weight:800; text-transform:uppercase; color:#1e40af;">Total:</td>
+                        <td style="padding:6px 4px; font-size:9.5px; text-align:right; font-weight:800; color:#1e40af;">${cardTotalQuantity.toFixed(2)} KG</td>
+                    </tr>
                     `;
-                });
+                }
                 
-                subTableBodyHTML += `
-                <tr class="card-subtotal-row">
-                    <td style="padding:4px; font-size:9px; text-align:left; font-weight:800; text-transform:uppercase; color:#1e40af;">Total:</td>
-                    <td style="padding:4px; font-size:9px; text-align:right; font-weight:800; color:#1e40af;">${cardTotalQuantity.toFixed(2)} KG</td>
-                </tr>
+                // Construct Component UI Structure
+                const cardHTML = `
+                    <div class="report-card">
+                        <div class="card-top">
+                            <div class="left-info">
+                                <div style="font-weight:700;">BATCH: ${batch}</div>
+                                <div class="badge" style="margin-top: 4px;">${species} | ${variety}</div>
+                            </div>
+                            <div class="right-info" style="text-align:right;">
+                                <span style="font-size:8px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">HOSO Count</span>
+                                <b style="font-size:12px; color:var(--brand);">${hosoCount}</b>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-body-summary" style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                                <span style="color:#64748b; font-weight:600;">Actual HOSO Qty:</span>
+                                <span style="font-weight:800; color:var(--brand);">${actualHoso} KG</span>
+                            </div>
+                            <div class="card-body-title" style="font-size:10px; font-weight:700; margin-bottom:6px; color:#334155;">Graded Details Breakdown</div>
+                            <div style="border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; overflow:hidden;">
+                                <table class="card-details-table" style="width:100%; border-collapse:collapse;">
+                                    <thead>
+                                        <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                                            <th style="width: 50%; text-align:center; padding:4px; font-size:9px; color:#475569;">Count</th>
+                                            <th style="width: 50%; text-align:right; padding:4px; font-size:9px; color:#475569;">Quantity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${subTableBodyHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 9.5px; border-top: 1px solid #f1f5f9; padding-top: 8px;">
+                            <div class="footer-item"><span style="color:#64748b;">Workout:</span> <b>${workoutCount}</b></div>
+                            <div class="footer-item" style="text-align:right;"><span style="color:#64748b;">Yield:</span> <b>${yieldPct}</b></div>
+                            <div class="footer-item"><span style="color:#64748b;">Grading HOSO:</span> <b>${gradingHoso}</b></div>
+                            <div class="footer-item" style="text-align:right;"><span style="color:#64748b;">Diff:</span> <b style="color:${parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)'}">${diffKg} (${diffPct})</b></div>
+                        </div>
+                    </div>
                 `;
+                cardsGrid.insertAdjacentHTML('beforeend', cardHTML);
             }
-            
-            const cardHTML = `
-                <div class="report-card">
-                    <div class="card-top">
-                        <div class="left-info">
-                            <div>BATCH: ${batch}</div>
-                            <div class="badge">${species} | ${variety}</div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-body-summary">
-                            <span style="color:#64748b; font-weight:600;">Actual HOSO Qty:</span>
-                            <span style="font-weight:800; color:var(--brand);">${actualHoso} KG</span>
-                        </div>
-                        <div class="card-body-title">Graded Details Breakdown</div>
-                        <div style="border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; overflow:hidden;">
-                            <table class="card-details-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50%; text-align:center; padding:4px; font-size:8.5px;">Count</th>
-                                        <th style="width: 50%; text-align:right; padding:4px; font-size:8.5px;">Quantity</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${subTableBodyHTML}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="footer-item"><span style="color:#64748b;">Workout:</span> <b>${workoutCount}</b></div>
-                        <div class="footer-item" style="text-align:right;"><span style="color:#64748b;">Yield:</span> <b>${yieldPct}</b></div>
-                        <div class="footer-item"><span style="color:#64748b;">Grading HOSO:</span> <b>${gradingHoso}</b></div>
-                        <div class="footer-item" style="text-align:right;"><span style="color:#64748b;">Diff:</span> <b style="color:${parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)'}">${diffKg} (${diffPct})</b></div>
-                    </div>
-                </div>
-            `;
-            cardsGrid.insertAdjacentHTML('beforeend', cardHTML);
         });
+        
+        // Dynamic Counter Component Update
+        const rowCountEl = document.getElementById("rowCount");
+        if(rowCountEl) {
+            rowCountEl.innerText = `${visibleCards} cards displayed`;
+        }
     }
 
+    // 5. EVENT LISTENERS ASSIGNMENT FOR LIVE FILTERING (TABLE/CARDS SYNC)
+    [f_batch, f_species, f_variety, f_count, searchBox].forEach(element => {
+        if(element) {
+            element.addEventListener("input", renderCardsView);
+            element.addEventListener("change", renderCardsView);
+        }
+    });
+
+    // 6. INITIAL RENDER CALL
     renderCardsView();
 });
 </script>

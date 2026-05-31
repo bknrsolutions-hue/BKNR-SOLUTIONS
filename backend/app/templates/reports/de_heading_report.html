@@ -21,18 +21,14 @@
 }
 
 *{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
-body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
-}
+body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
 
 /* ================= HEADER & FILTERS ================= */
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
+ margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
  gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
@@ -40,8 +36,6 @@ body{
 
 select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
-
-/* FY Dropdown Specific */
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
@@ -59,20 +53,20 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
 .menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
-/* ================= TABLE AREA ================= */
+/* ================= TABLE AREA - FULL WIDTH COMPACT DESIGN WITH ZERO SCREEN OVERRUNS ================= */
 .section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+.table-wrap{ flex:1; overflow:auto; width: 100%; background: #fff; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1650px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 100%; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
+ background:#f1f5f9; padding:8px 2px; font-size:9.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
 }
 
 tbody td{
- padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
+ padding:6px 2px; font-size:9px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -80,23 +74,41 @@ tbody td{
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
-/* Empty State Styling */
 .empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
 .empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
 
-/* Optimized Column Widths */
-.w-sl { width: 40px; } .w-dt { width: 85px; } .w-bt { width: 95px; } .w-con { width: 130px; }
-.w-sp { width: 110px; } .w-ct { width: 60px; } .w-qt { width: 75px; } .w-yld { width: 70px; }
-.w-diff { width: 70px; } .w-rt { width: 65px; } .w-am { width: 95px; } .w-loc { width: 110px; } 
-.w-pf { width: 120px; } .w-em { width: 140px; }
+/* 🌟 BALANCED COLUMN RESPONSIVE WIDTH MATRIX SCALE (TOTAL MATCHES = 100% PERFECT PROPORTIONS) */
+.w-sl { width: 3%; }     
+.w-dt { width: 6.5%; }   
+.w-bt { width: 6.5%; }   
+.w-con { width: 11.5%; } 
+.w-sp { width: 8.5%; }   
+.w-ct { width: 4.5%; }   
+.w-qt { width: 5.5%; }   
+.w-yld { width: 5.5%; }  
+.w-diff { width: 5.5%; } 
+.w-rt { width: 4.5%; }   
+.w-am { width: 7.5%; }   
+.w-loc { width: 8.5%; }  
+.w-pf { width: 8.5%; }   
+.w-em { width: 8.5%; }   
 
 .yield-cell { font-weight: 800; color: var(--accent); }
 .target-cell { font-weight: 600; color: #64748b; background: #f8fafc; }
 .diff-cell { font-weight: 700; }
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
+/* SEARCHABLE INLINE DROPDOWN EMBEDDED STRUCTURES */
+.searchable-dropdown-container { position: relative; width: 100%; }
+.searchable-dropdown-list {
+    position: absolute; left: 0; top: 100%; right: 0; max-height: 140px; overflow-y: auto;
+    background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+}
+.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
+
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
 
 /* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
@@ -109,14 +121,41 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
+
+/* ================= RUNTIME NATIVE HARD PRINT SYSTEM COMPILE (A4 LANDSCAPE COMPLETE OVERRIDES) ================= */
+@media print {
+    @page { size: A4 landscape; margin: 6mm; }
+    body { background: #fff; height: auto; overflow: visible; color: #000; }
+    .header, .actions, .menu-box, .audit-panel, button, #confirmModal { display: none !important; }
+    .section { border: none; margin: 0; padding: 0; overflow: visible; }
+    .table-wrap { overflow: visible; width: 100%; }
+    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
+    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 1px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
+}
+.print-header-block { display: none; }
 </style>
 </head>
 <body>
 
+<!-- REALTIME PRINT HEAD BLOCK COMPILER -->
+<div class="print-header-block">
+    <div style="text-align: left;">
+        <h2 style="margin:0; font-size:15px; color:#0f172a; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
+        <div style="margin:2px 0 0 0; font-size:10px; font-weight:bold; color:#475569;">DE-HEADING & PRODUCTION YIELD MATRIX REPORT</div>
+    </div>
+    <div style="text-align: right; font-size: 9px; font-weight: bold; line-height: 1.4;">
+        <div style="color:#2563eb; font-size:10px; text-transform:uppercase;">CONTRACTOR: <span id="printContractorLabel">ALL CONTRACTORS</span></div>
+        <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">Generated Realtime Local Client System</div>
+    </div>
+</div>
+
 <div class="header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>DE-HEADING REPORT</h2>
-        <div style="font-size: 11px; color: var(--text-muted);">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight:600;">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
     </div>
@@ -181,7 +220,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
             <div onclick="toggleAudit()">📜 View Audit History</div>
             <hr>
             <b>📋 Export Options</b>
-            <div onclick="window.print()">🖨 Print Current View</div>
+            <div onclick="triggerLocalPrint()">🖨 Print Current View</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF Report</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <hr>
@@ -248,14 +287,14 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                         <td class="amt-cell" data-val="{{ r.amount }}">₹{{ r.amount }}</td>
                         <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
                         <td class="editable" data-field="production_for">{{ r.production_for }}</td>
-                        <td style="font-size: 8px; color: #94a3b8;">{{ r.email or 'System' }}</td>
+                        <td style="font-size: 8px; color: #94a3b8; text-align: left; padding-left: 2px;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
                     </tr>
                     {% endfor %}
                 {% endif %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right">TOTALS:</td>
+                    <td colspan="6" style="text-align:right; padding-right: 5px;">TOTALS:</td>
                     <td id="tot_hoso">0.00</td>
                     <td id="tot_hlso">0.00</td>
                     <td></td>
@@ -298,7 +337,6 @@ let selectedRow = null, currentAction = null;
 const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 const baseUrl = window.location.pathname.replace(/\/$/, "");
 
-// Financial Year Change Logic
 function changeFY(val) {
     if(!val) return;
     const url = new URL(window.location.href);
@@ -365,7 +403,6 @@ function applyFilters() {
         }
     });
 
-    // 🔹 SL No Descending Order Logic
     filteredRows.forEach((row, index) => {
         row.querySelector(".slno").innerText = filteredRows.length - index;
     });
@@ -410,27 +447,88 @@ document.getElementById("btnYes").onclick = async () => {
     }
 };
 
+/* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS INTEGRATION */
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.replace('₹','').replace('%','').trim();
+        const field = td.dataset.field;
+        
         if(td.classList.contains("lookup")){
-            const type = td.classList[1]; const opts = lookups[type] || [];
-            td.innerHTML = `<select class="edit-input" data-field="${td.dataset.field}">
-                ${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}
-            </select>`;
+            const type = td.classList[1]; 
+            const opts = lookups[type] || [];
+            
+            let htmlStr = `
+                <div class="searchable-dropdown-container">
+                    <input class="edit-input dropdown-search-input" data-field="${field}" data-orig="${val}" value="${val}" autocomplete="off" oninput="filterInlineDropdown(this)">
+                    <div class="searchable-dropdown-list">
+                        ${opts.map(o => `<div class="searchable-dropdown-item" onclick="selectInlineValue(this, '${o}')">${o}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+            td.innerHTML = htmlStr;
+            
+            const inputEl = td.querySelector('.dropdown-search-input');
+            inputEl.addEventListener('focus', () => {
+                closeAllInlineDropdowns();
+                td.querySelector('.searchable-dropdown-list').style.display = 'block';
+            });
         } else { 
-            td.innerHTML = `<input class="edit-input" data-field="${td.dataset.field}" value="${val}">`; 
+            td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}">`; 
         }
     });
 }
 
+function filterInlineDropdown(input) {
+    const filter = input.value.toLowerCase();
+    const container = input.parentElement;
+    const list = container.querySelector('.searchable-dropdown-list');
+    const items = list.querySelectorAll('.searchable-dropdown-item');
+    list.style.display = 'block';
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        if(item.innerText.toLowerCase().includes(filter)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else { item.style.display = 'none'; }
+    });
+    if(visibleCount === 0) list.style.display = 'none';
+}
+
+function selectInlineValue(element, value) {
+    const container = element.closest('.searchable-dropdown-container');
+    const input = container.querySelector('.dropdown-search-input');
+    input.value = value;
+    container.querySelector('.searchable-dropdown-list').style.display = 'none';
+}
+
+function closeAllInlineDropdowns() {
+    document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('dropdown-search-input') && !e.target.classList.contains('searchable-dropdown-item')) {
+        closeAllInlineDropdowns();
+    }
+});
+
 async function saveEdit() {
     if(!selectedRow) return;
-    const inputs = selectedRow.querySelectorAll(".edit-input");
-    if(!inputs.length) return;
     const payload = { id: selectedRow.dataset.id };
-    inputs.forEach(i => payload[i.dataset.field] = i.value);
+    let changed = false;
+    
+    const inputs = selectedRow.querySelectorAll("input.edit-input");
+    if(!inputs.length) return alert("Enable Edit mode first!");
+    
+    inputs.forEach(i => {
+        if(i.value !== i.dataset.orig) {
+            payload[i.dataset.field || i.parentElement.dataset.field] = i.value;
+            changed = true;
+        }
+    });
+    
+    if(!changed) return location.reload();
     
     try {
         const res = await fetch(`${baseUrl}/update`, { 
@@ -443,6 +541,19 @@ async function saveEdit() {
             location.reload(); 
         }
     } catch(e) { alert("Save failed!"); }
+}
+
+// RUNTIME CLIENT PRINT MATRIX COMPILE
+function triggerLocalPrint() {
+    const activeContractorSelection = document.getElementById("f_contractor").value;
+    const badgeEl = document.getElementById("printContractorLabel");
+    
+    if(activeContractorSelection && activeContractorSelection.trim() !== "") {
+        badgeEl.innerText = activeContractorSelection.toUpperCase();
+    } else {
+        badgeEl.innerText = "ALL CONTRACTORS";
+    }
+    window.print();
 }
 
 async function toggleAudit() {

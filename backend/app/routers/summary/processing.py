@@ -9,82 +9,140 @@ from datetime import date
 from collections import defaultdict
 
 from app.database import get_db
-# Models Imports
+# Models Core Framework Imports
 from app.database.models.processing import (
     GateEntry, RawMaterialPurchasing, DeHeading, 
     Peeling, Soaking, Grading, Production
 )
 from app.database.models.reprocess import Reprocess 
+# 🔥 PRODUCTION DB SOURCE ENFORCED: stock_entry MODEL ACTIVE
 from app.database.models.inventory_management import stock_entry
 from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields
 
-# Floor Balance Service
+# Floor Balance Service Component
 from app.services.floor_balance import get_floor_balance
 
 router = APIRouter(tags=["SUMMARY"])
 templates = Jinja2Templates(directory="app/templates")
 
-# --- Helper Functions for Costing ---
-def get_glaze_factor(glaze_str: str) -> float:
-    glaze_str = str(glaze_str).upper().strip()
-    if "NWNC" in glaze_str:
-        return 1.0
-    digits = re.findall(r'\d+', glaze_str)
-    if digits:
-        glaze_pct = int(digits[0])
-        return (100 - glaze_pct) / 100
-    return 1.0
 
-def get_process_addon(variety: str, freezer: str, purpose: str) -> int:
-    v, f, p = str(variety).upper(), str(freezer).upper(), str(purpose).upper()
-    if "REGLAZE" in p: return 15
-    if any(x in f for x in ["IQF", "BRINE"]):
-        return 75 if "COOK" in v else 60
-    if any(x in f for x in ["BLOCK", "BLAST"]):
-        return 65 if "COOK" in v else 50
-    return 5
+# ============================================================================
+# 🟢 HELPER 1: CONVERT ANY SEMI-FINISHED PRODUCT QUANTITY TO HOSO EQUIVALENT
+# ============================================================================
+def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: str, count: str, species: str, glaze: str = None):
+    if not qty or qty <= 0:
+        return 0.0
 
-# ============================================================
-# HELPER: CALCULATE VALUE BASED ON REVERSE YIELDS (DIVISION)
-# ============================================================
-def calculate_balance_value(db: Session, company_id: str, batch: str, variety: str, count: str, species: str, qty: float, avg_rate: float):
-    if not variety or "HOSO" in variety.upper():
-        return round(qty * avg_rate, 2)
+    qty = float(qty)
+    variety_upper = str(variety or "").upper()
 
-    var_obj = db.query(VarietyTable).filter(
-        VarietyTable.company_id == company_id,
-        VarietyTable.variety_name == variety
-    ).first()
-    
-    p_y = (float(var_obj.peeling_yield) / 100) if var_obj and var_obj.peeling_yield else 1.0
-    s_y = (float(var_obj.soaking_yield) / 100) if var_obj and var_obj.soaking_yield else 1.0
+    # 1. REMOVE GLAZE (Applicable mainly for Reprocess Outputs with 10%, 20%, etc.)
+    if glaze:
+        try:
+            g = str(glaze).replace("%", "").strip()
+            if g.isdigit():
+                glaze_pct = float(g)
+                if glaze_pct > 0:
+                    qty = qty * ((100 - glaze_pct) / 100)
+        except:
+            pass
 
-    h_y = 1.0
+    # 2. FETCH HLSO YIELD FROM DATABASE
+    hlso_yield = 1.0
     if count:
         try:
             nums = re.findall(r'\d+', str(count))
             if nums:
                 last_num = int(nums[-1])
-                match_count = last_num - 1 
-                hlso_m = db.query(HOSO_HLSO_Yields).filter(
-                    HOSO_HLSO_Yields.company_id == company_code,
+                match_count = last_num - 1
+                hlso = db.query(HOSO_HLSO_Yields).filter(
+                    HOSO_HLSO_Yields.company_id == company_id,
                     HOSO_HLSO_Yields.hoso_count == match_count,
                     HOSO_HLSO_Yields.species == species
                 ).first()
-                if hlso_m:
-                    h_y = float(hlso_m.hlso_yield_pct or 100) / 100
+                if hlso and hlso.hlso_yield_pct:
+                    hlso_yield = float(hlso.hlso_yield_pct) / 100
         except:
-            h_y = 1.0
+            hlso_yield = 1.0
 
-    denominator = p_y * s_y * h_y
-    effective_raw_qty = qty / denominator if denominator > 0 else qty
-    
-    return round(effective_raw_qty * avg_rate, 2)
+    # 3. FETCH PEELING YIELD FROM VARIETY TABLE
+    peeling_yield = 1.0
+    var_obj = db.query(VarietyTable).filter(
+        VarietyTable.company_id == company_id, 
+        VarietyTable.variety_name == variety
+    ).first()
+    if var_obj and var_obj.peeling_yield:
+        peeling_yield = float(var_obj.peeling_yield) / 100
 
+    # 4. 🟢 FIXED REVERSED MATH SYSTEM (DIVIDE BY FRACTIONS TO SCALE UP TO HOSO)
+    if "HOSO" in variety_upper:
+        return round(qty, 4)
+    elif "HLSO" in variety_upper:
+        return round(qty / hlso_yield if hlso_yield > 0 else qty, 4)
+    else:
+        # PD, PUD, PTO values scaled up sequentially (e.g. 230 kg turns into ~400 kg)
+        denominator = hlso_yield * peeling_yield
+        return round(qty / denominator if denominator > 0 else qty, 4)
+
+
+# ============================================================================
+# 🟢 HELPER 2: VALUE CALCULATION USING REFERENCE AVG RATE SYSTEM
+# ============================================================================
+def calculate_balance_value(db: Session, company_id: str, batch: str, variety: str, count: str, species: str, qty: float, source_type: str, glaze: str = None):
+    avg_rate = 0.0
+
+    if source_type == "RMP":
+        rmp_items = db.query(RawMaterialPurchasing).filter(
+            RawMaterialPurchasing.company_id == company_id, 
+            RawMaterialPurchasing.batch_number == batch
+        ).all()
+        
+        total_batch_amount = sum(float(item.amount or 0) for item in rmp_items)
+        total_batch_hoso_qty = 0.0
+        
+        # Batch context lookup elements aggregate calculation path
+        for item in rmp_items:
+            total_batch_hoso_qty += get_hoso_equivalent_qty(
+                db, company_id, float(item.received_qty or 0), 
+                item.variety_name, item.count, item.species
+            )
+            
+        if total_batch_hoso_qty > 0:
+            avg_rate = total_batch_amount / total_batch_hoso_qty
+
+    elif source_type == "REPROCESS":
+        rep_items = db.query(Reprocess).filter(
+            Reprocess.company_id == company_id, 
+            Reprocess.new_batch_id == batch
+        ).all()
+        
+        total_batch_amount = sum(float(item.inventory_value or 0) for item in rep_items)
+        total_batch_hoso_qty = 0.0
+        
+        for item in rep_items:
+            glaze_item = getattr(item, 'glaze', None)
+            total_batch_hoso_qty += get_hoso_equivalent_qty(
+                db, company_id, float(item.in_qty or 0), 
+                item.variety, item.grade, item.species, glaze_item
+            )
+            
+        if total_batch_hoso_qty > 0:
+            avg_rate = total_batch_amount / total_batch_hoso_qty
+
+    # True weight multiplication logic setup
+    fb_hoso_qty = get_hoso_equivalent_qty(db, company_id, qty, variety, count, species, glaze)
+    final_value = round(fb_hoso_qty * avg_rate, 2)
+
+    return final_value
+
+
+# ============================================================================
+# MAIN ROUTER ENDPOINT (PROCESSING SUMMARY)
+# ============================================================================
 @router.get("/summary/processing", response_class=HTMLResponse)
 async def get_processing_summary(
     request: Request,
-    fy: str = Query(None),  # FY Filter Param
+    fy: str = Query(None),
     production_for: str = Query(None),
     prod_type: str = Query(None),
     batch: str = Query(None),
@@ -98,7 +156,7 @@ async def get_processing_summary(
     companies_query = db.query(distinct(GateEntry.production_for)).filter(GateEntry.company_id == company_code).all()
     companies = [c[0] for c in companies_query if c[0]]
 
-    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM DATABASE ---
+    # Financial Years Generator Loop Logic
     all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == company_code, GateEntry.date != None).all()
     fy_set = set()
     for d_tuple in all_dates:
@@ -132,7 +190,6 @@ async def get_processing_summary(
     }
     subtotals = {}
 
-    # Strict Rule: FY మరియు మిగతా ప్రైమరీ ఫిల్టర్స్ సెలెక్ట్ చేస్తేనే బాచ్ డ్రాప్‌డౌన్ లోడ్ అవుతుంది
     if fy and production_for and prod_type:
         try:
             start_year = int(fy.split('-')[0])
@@ -158,23 +215,17 @@ async def get_processing_summary(
                 ).all()
             batches = sorted([b[0] for b in batch_query if b[0]])
 
-    # ఒకవేళ బాచ్ కూడా సెలెక్ట్ అయ్యి ఉంటేనే పూర్తి నివేదిక టేబుల్స్ లోడ్ అవుతాయి
     if fy and production_for and prod_type and batch:
-        # Load Tables
+        # Core DB Pipeline Fetch Data Blocks
         rows["deheading"] = db.query(DeHeading).filter(DeHeading.batch_number==batch, DeHeading.company_id==company_code).all()
         rows["peeling"] = db.query(Peeling).filter(Peeling.batch_number==batch, Peeling.company_id==company_code).all()
         rows["soaking"] = db.query(Soaking).filter(Soaking.batch_number==batch, Soaking.company_id==company_code).all()
         rows["production"] = db.query(Production).filter(Production.batch_number==batch, Production.company_id==company_code).all()
         
-        # --- GRADING DETAILS DATA FETCH ---
-        grading_records = db.query(Grading).filter(
-            Grading.batch_number == batch, 
-            Grading.company_id == company_code
-        ).all()
+        grading_records = db.query(Grading).filter(Grading.batch_number == batch, Grading.company_id == company_code).all()
         rows["grading_details"] = grading_records
         card["grading_qty"] = sum(float(g.quantity or 0) for g in grading_records)
 
-        # Pre-fetch Base tables depending on type to use in aggregation
         if prod_type == "RMP":
             rows["gate"] = db.query(GateEntry).filter(GateEntry.batch_number==batch, GateEntry.company_id==company_code).all()
             rows["rmp"] = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.batch_number==batch, RawMaterialPurchasing.company_id==company_code).all()
@@ -188,38 +239,24 @@ async def get_processing_summary(
                 rep = rows["reprocess"][0]
                 card.update({"supplier_name": "INTERNAL REPROCESS", "purchasing_location": rep.location, "receiving_center": rep.production_at, "total_boxes": sum(int(row.no_of_mc or 0) for row in rows["reprocess"])})
 
-        # ============================================================
-        # GRADING REPORT LOGIC (YIELD MAP & DEHEADING MAP)
-        # ============================================================
+        # --- GRADING SUMMARY COMPUTE ENGINE ---
         yield_map = {
             (r.species, str(r.hoso_count)): float(r.hlso_yield_pct or 0) / 100
-            for r in db.query(HOSO_HLSO_Yields)
-            .filter(HOSO_HLSO_Yields.company_id == company_code)
-            .all()
+            for r in db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
         }
 
         deheading_hoso_map = defaultdict(float)
         for r in rows["deheading"]:
-            deheading_hoso_map[
-                (r.batch_number, r.species, str(r.hoso_count))
-            ] += float(r.hoso_qty or 0)
+            deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
 
         grouped = defaultdict(list)
         for r in grading_records:
-            grouped[
-                (
-                    r.batch_number,
-                    r.species,
-                    str(r.hoso_count),
-                    r.variety_name
-                )
-            ].append(r)
+            grouped[(r.batch_number, r.species, str(r.hoso_count), r.variety_name)].append(r)
 
         grading_summary = []
         for (batch_no, species, hoso_count, variety), items in grouped.items():
             graded_qty_sum = sum(float(i.quantity or 0) for i in items)
             base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
-
             yield_factor = yield_map.get((species, hoso_count), 0)
 
             if variety == "HOSO":
@@ -230,37 +267,24 @@ async def get_processing_summary(
                 actual_hoso_qty = 0
 
             workout = (base / graded_qty_sum if graded_qty_sum > 0 else 0)
-
             if variety == "HLSO":
                 workout = workout * 2.2 * yield_factor
 
             yield_pct = (graded_qty_sum / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
-
-            grading_hoso_qty = (
-                graded_qty_sum / yield_factor
-                if variety == "HLSO" and yield_factor > 0
-                else graded_qty_sum
-            )
-
+            grading_hoso_qty = (graded_qty_sum / yield_factor if variety == "HLSO" and yield_factor > 0 else graded_qty_sum)
             diff_kg = (grading_hoso_qty - actual_hoso_qty if variety == "HLSO" else 0)
             diff_pct = (diff_kg / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
 
             grading_summary.append({
-                "species": species,
-                "hoso_count": hoso_count,
-                "variety": variety,
-                "hoso_qty": round(actual_hoso_qty, 2),
-                "graded_qty": round(graded_qty_sum, 2),
-                "workout_count": round(workout, 2),
-                "yield_pct": round(yield_pct, 2),
-                "grading_hoso_qty": round(grading_hoso_qty, 2),
-                "weight_diff_kg": round(diff_kg, 2),
+                "species": species, "hoso_count": hoso_count, "variety": variety,
+                "hoso_qty": round(actual_hoso_qty, 2), "graded_qty": round(graded_qty_sum, 2),
+                "workout_count": round(workout, 2), "yield_pct": round(yield_pct, 2),
+                "grading_hoso_qty": round(grading_hoso_qty, 2), "weight_diff_kg": round(diff_kg, 2),
                 "weight_diff_pct": round(diff_pct, 2)
             })
-
         rows["grading_summary"] = grading_summary
 
-        # --- PRODUCTION SUBTOTALS ---
+        # --- PRODUCTION SUMMARY SUBTOTAL TRACKS ---
         for p in rows["production"]:
             v_name, s_name, b_num = str(p.variety_name or "").strip(), str(p.species or "").strip(), str(p.batch_number or "").strip()
             key = (str(p.production_for or "").strip(), str(p.production_at or "").strip(), s_name, v_name, b_num)
@@ -280,73 +304,69 @@ async def get_processing_summary(
                 expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
                 s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
 
-        rows["stock"] = db.query(stock_entry).filter(stock_entry.batch_number==batch, stock_entry.company_id==company_code, stock_entry.cargo_movement_type == 'IN').all()
+        # 🔥 DIRECT SELECTION FROM stock_entry WITH NO BACKEND RUNTIME CALCULATIONS
+        rows["stock"] = db.query(stock_entry).filter(
+            stock_entry.batch_number == batch, 
+            stock_entry.company_id == company_code,
+            stock_entry.cargo_movement_type == 'IN'
+        ).all()
         
-        # --- FLOOR BALANCE COMBOS ---
+        for r in rows["stock"]:
+            r.product_kg_value = float(r.product_kg_value or 0.0)
+            r.inventory_value = float(r.inventory_value or 0.0)
+
+        # ============================================================================
+        # 🟢 CORRECTED DATA COMBOS GENERATOR (PREVENTS DATA LOSS ACROSS SPECIES)
+        # ============================================================================
         combos = set()
-        v_records = {v.variety_name.lower(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == company_code).all()}
-
-        if prod_type == "RMP":
-            for r in rows["rmp"]: 
-                combos.add((r.batch_number, r.count, r.species, r.variety_name, production_for, r.peeling_at or "Floor", "RMP"))
-            for g in grading_records: 
-                combos.add((g.batch_number, g.hoso_count, g.species, g.variety_name, production_for, g.peeling_at or "Floor", "RMP"))
-            for p in rows["peeling"]:
-                combos.add((p.batch_number, p.hlso_count, p.species, p.variety_name, production_for, p.peeling_at or "Floor", "RMP"))
-        else: 
-            for r in rows["reprocess"]: 
-                combos.add((r.new_batch_id, r.grade, r.species, r.variety, production_for, r.production_at or "Floor", "REPROCESS"))
-
-        # --- FLOOR VALUE & RMP AVG ---
-        rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty), func.sum(RawMaterialPurchasing.amount)).filter(RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.company_id == company_code).first()
-        rmp_avg = float(rmp_stats[1] / rmp_stats[0]) if rmp_stats and rmp_stats[0] and rmp_stats[0] > 0 else 0.0
         
-        total_floor_val = 0
-        for b_id, c_val, s_val, v_name, p_for, loc, s_type in combos:
-            avail = get_floor_balance(db, company_code, loc or "Floor", b_id, str(c_val).strip() if c_val else None, s_val, v_name, production_for=p_for, source_type=s_type)
+        # 1. RMP Items Pool Lookups
+        for r in rows["rmp"]:
+            if r.batch_number:
+                combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+        # 2. Grading Record Items Lookups (Using exact reference layouts map)
+        for r in grading_records:
+            if r.batch_number:
+                combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+        # 3. Peeling Items Lookups
+        for r in rows["peeling"]:
+            if r.batch_number:
+                combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+        # 4. Reprocess Items Lookups
+        for r in rows["reprocess"]:
+            if r.new_batch_id:
+                glaze_val = getattr(r, 'glaze', None)
+                combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS", glaze_val))
+
+        total_floor_val = 0.0
+        for b_id, c_val, s_val, v_name, p_for, loc, s_type, glaze_info in combos:
+            
+            avail = get_floor_balance(
+                db=db, company_id=company_code, location=loc or "Floor", batch=b_id, 
+                count=str(c_val).strip() if c_val else None, species=s_val, 
+                variety=v_name, production_for=p_for, source_type=s_type
+            )
+            
+            avail = round(avail, 2) if avail else 0.0
+            
+            # SHOW ONLY VALID BALANCES (> 0.01)
             if avail > 0.01:
-                val = calculate_balance_value(db, company_code, b_id, v_name, c_val, s_val, avail, rmp_avg)
+                val = calculate_balance_value(
+                    db=db, company_id=company_code, batch=b_id, variety=v_name, 
+                    count=c_val, species=s_val, qty=avail, source_type=s_type, glaze=glaze_info
+                )
                 total_floor_val += val
+                
                 floor_balance_list.append({
                     "peeling_at": loc, "count": c_val or "N/A", "species": s_val or "N/A", 
-                    "variety": v_name, "available_qty": round(avail, 2), "value": val
+                    "variety": v_name, "available_qty": avail, "value": val,
+                    "production_for": p_for if p_for and p_for != "N/A" else "General Stock"
                 })
 
-        # --- LIVE INVENTORY COSTING ---
-        total_rmp_amt = sum(float(r.amount or 0) for r in rows["rmp"])
-        residual_amt = float(total_rmp_amt) - float(total_floor_val)
-        total_hoso_weight = 0
-
-        for r in rows["stock"]:
-            if any(x in str(r.grade).upper() for x in ["BKN", "DC"]):
-                r.product_kg_value, r.inventory_value = 280.0, round(float(r.quantity or 0) * 280.0, 2)
-                residual_amt -= r.inventory_value
-                continue
-            
-            v_m = v_records.get(str(r.variety or "").lower())
-            p_y, s_y = (float(v_m.peeling_yield or 100)/100 if v_m else 1.0), (float(v_m.soaking_yield or 100)/100 if v_m else 1.0)
-            
-            try:
-                l_num = float(re.findall(r'\d+', str(r.grade).split('/')[-1])[0])
-                h_count = l_num / p_y / s_y
-            except: h_count = 0
-                
-            hlso_m = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code, HOSO_HLSO_Yields.hoso_count == round(h_count)).first()
-            h_h_y = (hlso_m.hlso_yield_pct / 100) if hlso_m else 1.0
-            item_yield = (p_y * s_y * h_h_y) if "HOSO" not in str(r.variety).upper() else 0.98
-            
-            r._final_norm_factor = item_yield * get_glaze_factor(r.glaze) * (0.85 if "G2" in str(r.grade).upper() else 1.0)
-            r.rm_eq_weight = float(r.quantity or 0) / r._final_norm_factor if r._final_norm_factor > 0 else 0
-            total_hoso_weight += r.rm_eq_weight
-
-        avg_rm_rate = residual_amt / total_hoso_weight if total_hoso_weight > 0 else 0
-        for r in rows["stock"]:
-            if not any(x in str(r.grade).upper() for x in ["BKN", "DC"]):
-                base_rate = avg_rm_rate / r._final_norm_factor if r._final_norm_factor > 0 else 0
-                r.product_kg_value = round(base_rate + get_process_addon(r.variety, r.freezer, r.purpose or "N/A"), 2)
-                r.inventory_value = round(float(r.quantity or 0) * r.product_kg_value, 2)
-
-        # Final Card Totals
+        # Final Summary Card Mapping Array Data
         card["rmp_qty"] = sum(float(r.received_qty or 0) for r in rows["rmp"])
         card["rmp_amount"] = sum(float(r.amount or 0) for r in rows["rmp"])
         card["reprocess_qty"] = sum(float(r.in_qty or 0) for r in rows["reprocess"])
