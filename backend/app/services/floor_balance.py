@@ -14,7 +14,8 @@ def get_floor_balance(
     species: str,
     variety: str,
     production_for: str = None,
-    source_type: str = "RMP"
+    source_type: str = "RMP",
+    cutoff_datetime=None
 ) -> float:
     
     variety_upper = variety.strip().upper() if variety else ""

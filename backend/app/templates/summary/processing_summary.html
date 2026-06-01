@@ -542,7 +542,7 @@
 </div>
 
 <!-- 3. GRADING SUMMARY CARDS VIEW -->
-<div class="section-title"><i class="fas fa-list-ol" style="color:var(--orange)"></i> GRADING SUMMARY (CARDS VIEW)</div>
+<div class="section-title"><i class="fas fa-list-ol" style="color:var(--orange)"></i> GRADING SUMMARY </div>
 <div id="cardsGrid" class="cards-view-grid"></div>
 
 <!-- Raw Data Bridge Table -->
@@ -965,7 +965,7 @@
 
 <div class="section-title"><i class="fas fa-box-open" style="color:var(--orange)"></i> 7. PRODUCTION PACKING</div>
 <div class="table-wrap">
-    <table>
+    <table class="table table-bordered table-striped text-nowrap">
         <thead>
             <tr>
                 <th class="text-center" style="width:30px">Sl</th>
@@ -975,7 +975,7 @@
                 <th>Prod For</th>
                 <th>Type</th>
                 <th>Species</th>
-                <th>Batch No</th>
+                <th style="min-width: 100px;">Batch No</th>
                 <th>Brand</th>
                 <th>Variety</th>
                 <th>Glaze</th>
@@ -997,7 +997,6 @@
             {% for r in rows.production %}
                 {% set current_key = (r.production_for|string|trim, r.production_at|string|trim, r.species|string|trim, r.variety_name|string|trim, r.batch_number|string|trim) %}
                 
-                <!-- STAGE 2 DYNAMIC LOCAL CALCULATION LOGIC FOR GROSS QUANTITY BASED ON STATED % CONDITIONS -->
                 {% set glaze_clean = r.glaze|string|upper|trim %}
                 {% set gross_qty = r.production_qty|default(0)|float %}
                 {% if "NWNC" not in glaze_clean and "%" in glaze_clean %}
@@ -1082,6 +1081,7 @@
 </div>
 
 <div class="section-title"><i class="fas fa-warehouse" style="color:var(--orange)"></i> 8. STOCK INVENTORY LOG</div>
+<div class="table-wrap">
     <table class="table table-bordered table-striped text-nowrap">
         <thead class="table-dark">
             <tr>
@@ -1181,7 +1181,6 @@
         </tbody>
     </table>
 </div>
-
 <div class="section-title" style="color:var(--danger)"><i class="fas fa-balance-scale"></i> 9. LIVE FLOOR BALANCE</div>
 <div class="table-wrap" style="border: 1.5px solid var(--danger);">
     <table>
