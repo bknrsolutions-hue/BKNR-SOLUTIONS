@@ -109,7 +109,7 @@
         .danger-subtotal { background: #fff1f2 !important; border-top: 1.5px solid #fecaca; }
         .danger-subtotal td { color: #e11d48 !important; font-weight: 800; }
 
-        /* 🟢 EXPLICIT MOBILE 1 & WEB 4 CARDS VIEW CSS */
+        /* GRADING CARDS LAYOUT */
         .cards-view-grid { 
             display: grid; 
             grid-template-columns: 1fr; /* MOBILE: 1 Card per row */
@@ -117,10 +117,10 @@
             margin-top: 10px; 
         }
         @media(min-width: 768px) {
-            .cards-view-grid { grid-template-columns: repeat(2, 1fr); } /* TABLET: 2 Cards */
+            .cards-view-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media(min-width: 1024px) {
-            .cards-view-grid { grid-template-columns: repeat(4, 1fr); } /* WEB/DESKTOP: 4 Cards */
+            .cards-view-grid { grid-template-columns: repeat(4, 1fr); } /* WEB: 4 Cards per row */
         }
 
         .report-card { background: white; border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--orange-accent); }
@@ -157,25 +157,29 @@
         <form method="get" class="filter-form" id="filterForm">
             <div class="input-field">
                 <label>Date Filter</label>
-                <select name="date_filter_type" id="dateFilterType" class="choices-select" onchange="toggleDateInputs()">
+                <select name="date_filter_type" id="dateFilterType" onchange="toggleDateInputs()">
                     <option value="today" {% if selected_date_filter == 'today' or not selected_date_filter %}selected{% endif %}>Today</option>
                     <option value="yesterday" {% if selected_date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
                     <option value="month" {% if selected_date_filter == 'month' %}selected{% endif %}>By Month</option>
                     <option value="between" {% if selected_date_filter == 'between' %}selected{% endif %}>Between Dates</option>
                 </select>
             </div>
+            
             <div class="input-field" id="startDateDiv" style="display:none;">
                 <label>Start Date</label>
                 <input type="date" name="start_date" value="{{ selected_start_date }}">
             </div>
+            
             <div class="input-field" id="endDateDiv" style="display:none;">
                 <label>End Date</label>
                 <input type="date" name="end_date" value="{{ selected_end_date }}">
             </div>
+            
             <div class="input-field" id="monthDiv" style="display:none;">
                 <label>Select Month</label>
                 <input type="month" name="selected_month" value="{{ selected_month }}">
             </div>
+            
             <div class="input-field">
                 <label>Production For</label>
                 <select name="production_for" class="choices-select">
@@ -604,7 +608,7 @@
         <div id="sec-grd" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:35px">Sl</th><th>Batch Number</th><th>Variety Name</th><th>Date</th><th>Time</th><th>Peeling At</th><th>Production For</th><th>Species</th><th>HOSO Count</th><th>Graded Count</th><th class="text-right">Quantity</th><th>Email</th></tr>
+                    <tr><th class="text-center" style="width:35px">Sl</th><th>Batch Number</th><th>Date</th><th>Time</th><th>Peeling At</th><th>Production For</th><th>Species</th><th>HOSO Count</th><th>Variety Name</th><th>Graded Count</th><th class="text-right">Quantity</th><th>Email</th></tr>
                 </thead>
                 <tbody>
                     {% set grd_ns = namespace(curr='', qty=0.0) %}
@@ -615,7 +619,7 @@
                         {% endif %}
                         {% set grd_ns.curr = r.batch_number %}{% set grd_ns.qty = grd_ns.qty + (r.quantity|default(0)|float) %}
                     <tr>
-                        <td class="sl-no">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ r.batch_number }}</td><td><span class="tag">{{ r.variety_name }}</span></td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.peeling_at }}</td><td>{{ r.production_for }}</td><td>{{ r.species }}</td><td>{{ r.hoso_count }}</td><td><b>{{ r.graded_count }}</b></td><td class="qty-cell">{{ "%.2f"|format(r.quantity|float) }} KG</td><td>{{ r.email }}</td>
+                        <td class="sl-no">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ r.batch_number }}</td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.peeling_at }}</td><td>{{ r.production_for }}</td><td>{{ r.species }}</td><td>{{ r.hoso_count }}</td><td><span class="tag">{{ r.variety_name }}</span></td><td><b>{{ r.graded_count }}</b></td><td class="qty-cell">{{ "%.2f"|format(r.quantity|float) }} KG</td><td>{{ r.email }}</td>
                     </tr>
                     {% if loop.last %}<tr class="subtotal-row"><td colspan="10" class="text-right">SUBTOTAL (Batch: {{ grd_ns.curr }}):</td><td class="qty-cell">{{ "%.2f"|format(grd_ns.qty) }} KG</td><td></td></tr>{% endif %}
                     {% else %}<tr><td colspan="12" class="text-center text-muted">No Grading entries found.</td></tr>{% endfor %}
@@ -689,26 +693,93 @@
         <div id="sec-prod" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Variety Name</th><th>Date</th><th>Time</th><th>Production At</th><th>Production For</th><th>Production Type</th><th>Brand</th><th>Species</th><th>Glaze</th><th>Freezer</th><th>Packing Style</th><th>Grade</th><th class="text-right">No of MC</th><th class="text-right">Loose</th><th class="text-right" style="color:var(--accent-blue);">Gross Qty</th><th class="text-right">Production Qty</th><th>Target Yield%</th><th>Diff Qty</th><th>Diff%</th><th>Email</th></tr>
+                    <tr><th class="text-center" style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Type</th><th>Species</th><th>Batch No</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th><th class="text-right">MC</th><th class="text-right">Loose</th><th class="text-right" style="background:#eef2ff; color:#312e81;">Gross Qty</th><th class="text-right">Prod Qty</th><th class="text-right">Yield %</th><th class="text-right">Diff</th><th>User</th></tr>
                 </thead>
                 <tbody>
-                    {% set prod_ns = namespace(curr='', mc=0, loose=0, gross=0.0, qty=0.0) %}
+                    {% set p_ns = namespace(last_key=None) %}
+                    {% set grand_prod = namespace(mc=0, loose=0, qty=0.0, gross=0.0) %}
                     {% for r in rows.production %}
-                        {% set item_combo = (r.batch_number|string|trim) ~ " - " ~ (r.variety_name|string|trim) %}
+                        {% set current_key = (r.production_for|string|trim, r.production_at|string|trim, r.species|string|trim, r.variety_name|string|trim, r.batch_number|string|trim) %}
+                        
                         {% set glaze_clean = r.glaze|string|upper|trim %}
                         {% set gross_qty = r.production_qty|default(0)|float %}
-                        {% if "NWNC" not in glaze_clean and "%" in glaze_clean %}{% set digits = glaze_clean.replace("%","").strip() %}{% if digits.isdigit() and digits|int < 100 %}{% set gross_qty = (r.production_qty|default(0)|float) / ((100 - digits|int) / 100) %}{% endif %}{% endif %}
-
-                        {% if prod_ns.curr != '' and prod_ns.curr != item_combo %}
-                            <tr class="subtotal-row"><td colspan="14" class="text-right">SUBTOTAL ({{ prod_ns.curr }}):</td><td class="text-right">{{ prod_ns.mc }}</td><td class="text-right">{{ prod_ns.loose }}</td><td class="text-right" style="color:var(--accent-blue);">{{ "%.2f"|format(prod_ns.gross) }}</td><td class="qty-cell">{{ "%.2f"|format(prod_ns.qty) }}</td><td colspan="4"></td></tr>
-                            {% set prod_ns.mc=0 %}{% set prod_ns.loose=0 %}{% set prod_ns.gross=0.0 %}{% set prod_ns.qty=0.0 %}
+                        {% if "NWNC" not in glaze_clean and "%" in glaze_clean %}
+                            {% set digits = glaze_clean.replace("%","").strip() %}
+                            {% if digits.isdigit() %}
+                                {% set glaze_pct = digits|int %}
+                                {% if glaze_pct < 100 %}
+                                    {% set gross_qty = (r.production_qty|default(0)|float) / ((100 - glaze_pct) / 100) %}
+                                {% endif %}
+                            {% endif %}
                         {% endif %}
-                        {% set prod_ns.curr = item_combo %}{% set prod_ns.mc = prod_ns.mc + (r.no_of_mc|default(0)|int) %}{% set prod_ns.loose = prod_ns.loose + (r.loose|default(0)|int) %}{% set prod_ns.gross = prod_ns.gross + gross_qty %}{% set prod_ns.qty = prod_ns.qty + (r.production_qty|default(0)|float) %}
-                    <tr>
-                        <td class="sl-no">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ r.batch_number }}</td><td><span class="tag">{{ r.variety_name }}</span></td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.production_at }}</td><td>{{ r.production_for }}</td><td>{{ r.production_type }}</td><td>{{ r.brand }}</td><td>{{ r.species }}</td><td>{{ r.glaze }}</td><td>{{ r.freezer }}</td><td>{{ r.packing_style }}</td><td><b>{{ r.grade }}</b></td><td class="text-right">{{ r.no_of_mc }}</td><td class="text-right">{{ r.loose }}</td><td class="text-right" style="color:var(--accent-blue); background:#eff6ff; font-weight:800;">{{ "%.2f"|format(gross_qty) }}</td><td class="qty-cell">{{ r.production_qty }}</td><td>{{ r.target_yield_percent }}%</td><td>{{ r.diff_qty }}</td><td>{{ r.diff_percent }}%</td><td>{{ r.email }}</td>
+
+                        {% set grand_prod.mc = grand_prod.mc + (r.no_of_mc|default(0)|int) %}
+                        {% set grand_prod.loose = grand_prod.loose + (r.loose|default(0)|int) %}
+                        {% set grand_prod.qty = grand_prod.qty + (r.production_qty|default(0)|float) %}
+                        {% set grand_prod.gross = grand_prod.gross + gross_qty %}
+
+                        {% if p_ns.last_key and p_ns.last_key != current_key %}
+                            {% set s = subtotals.get(p_ns.last_key, {}) %}
+                            <tr class="subtotal-row">
+                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ p_ns.last_key[4] }}):</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="qty-column">{{ s.get('prod_qty', 0) }}</td>
+                                <td class="text-right {{ 'diff-pos' if s.get('diff_yield_perc', 0) >= 0 else 'diff-neg' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
+                                <td class="text-right {{ 'diff-pos' if s.get('diff_qty', 0) >= 0 else 'diff-neg' }}">{{ s.get('diff_qty', 0) }}</td>
+                                <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
+                            </tr>
+                        {% endif %}
+
+                        <tr>
+                            <td class="sl-no">{{ loop.index }}</td>
+                            <td>{{ r.date }}</td>
+                            <td>{{ r.time }}</td>
+                            <td>{{ r.production_at }}</td>
+                            <td>{{ r.production_for }}</td>
+                            <td>{{ r.production_type }}</td>
+                            <td>{{ r.species }}</td>
+                            <td style="font-weight: 700; color: var(--accent);">{{ r.batch_number }}</td>
+                            <td>{{ r.brand }}</td>
+                            <td><span class="tag">{{ r.variety_name }}</span></td>
+                            <td>{{ r.glaze }}</td>
+                            <td>{{ r.freezer }}</td>
+                            <td>{{ r.packing_style }}</td>
+                            <td>{{ r.grade }}</td>
+                            <td class="text-right">{{ r.no_of_mc }}</td>
+                            <td class="text-right">{{ r.loose }}</td>
+                            <td class="text-right" style="font-weight:700; color:#312e81; background:#f5f3ff;">{{ "%.2f"|format(gross_qty) }}</td>
+                            <td class="qty-column">{{ r.production_qty }}</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">-</td>
+                            <td style="font-size:8.5px; color: #64748b;">{{ r.email }}</td>
+                        </tr>
+
+                        {% set p_ns.last_key = current_key %}
+                        
+                        {% if loop.last %}
+                            {% set s = subtotals.get(current_key, {}) %}
+                            <tr class="subtotal-row">
+                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ current_key[4] }}):</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="text-right">-</td>
+                                <td class="qty-column">{{ s.get('prod_qty', 0) }}</td>
+                                <td class="text-right {{ 'diff-pos' if s.get('diff_yield_perc', 0) >= 0 else 'diff-neg' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
+                                <td class="text-right {{ 'diff-pos' if s.get('diff_qty', 0) >= 0 else 'diff-neg' }}">{{ s.get('diff_qty', 0) }}</td>
+                                <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b;">
+                        <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">GRAND TOTAL PRODUCTION:</td>
+                        <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.mc }}</td>
+                        <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.loose }}</td>
+                        <td class="text-right" style="font-weight:800; color:#312e81; background:#eeebff;">{{ "%.2f"|format(grand_prod.gross) }}</td>
+                        <td class="qty-column" style="color:#b45309; background:#fff9db;">{{ "%.2f"|format(grand_prod.qty) }}</td>
+                        <td colspan="3"></td>
                     </tr>
-                    {% if loop.last %}<tr class="subtotal-row"><td colspan="14" class="text-right">SUBTOTAL ({{ prod_ns.curr }}):</td><td class="text-right">{{ prod_ns.mc }}</td><td class="text-right">{{ prod_ns.loose }}</td><td class="text-right" style="color:var(--accent-blue);">{{ "%.2f"|format(prod_ns.gross) }}</td><td class="qty-cell">{{ "%.2f"|format(prod_ns.qty) }}</td><td colspan="4"></td></tr>{% endif %}
-                    {% else %}<tr><td colspan="22" class="text-center text-muted">No Production entries found.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -721,32 +792,99 @@
         </div>
         <div id="sec-stk" class="table-wrap toggle-content" style="display: none;">
             <table class="table table-bordered table-striped text-nowrap">
-                <thead style="background:var(--primary-dark); color:white;">
-                    <tr><th style="background:var(--primary-dark); color:white;" class="sl-no">Sl.No</th><th style="background:var(--primary-dark); color:white;">Batch Number</th><th style="background:var(--primary-dark); color:white;">Variety</th><th style="background:var(--primary-dark); color:white;">Species</th><th style="background:var(--primary-dark); color:white;">Location</th><th style="background:var(--primary-dark); color:white;">Production At</th><th style="background:var(--primary-dark); color:white;">Production For</th><th style="background:var(--primary-dark); color:white;">PO Number</th><th style="background:var(--primary-dark); color:white;">Purpose</th><th style="background:var(--primary-dark); color:white;">Movement Type</th><th style="background:var(--primary-dark); color:white;">Brand</th><th style="background:var(--primary-dark); color:white;">Freezer</th><th style="background:var(--primary-dark); color:white;">Packing Style</th><th style="background:var(--primary-dark); color:white;">Glaze</th><th style="background:var(--primary-dark); color:white;">Grade</th><th style="background:var(--primary-dark); color:white;" class="text-right">No of MC</th><th style="background:var(--primary-dark); color:white;" class="text-right">Loose</th><th style="background:var(--primary-dark); color:white;" class="qty-column text-right">Quantity (KG)</th><th style="background:var(--primary-dark); color:white;" class="text-right">Product Rate</th><th style="background:var(--primary-dark); color:white;" class="money-column text-right">Inventory Value</th><th style="background:var(--primary-dark); color:white;">HLSO</th><th style="background:var(--primary-dark); color:white;">HOSO</th><th style="background:var(--primary-dark); color:white;">Ref Rate</th></tr>
+                <thead class="table-dark">
+                    <tr>
+                        <th class="sl-no">Sl.No</th>
+                        <th>Species</th>
+                        <th>Location</th>
+                        <th>Production At</th>
+                        <th>Production For</th>
+                        <th>PO Number</th>
+                        <th>Purpose </th>
+                        <th>Movement Type</th>
+                        <th>Brand</th>
+                        <th>Freezer</th>
+                        <th>Packing Style</th>
+                        <th>Variety</th>
+                        <th>Grade</th>
+                        <th class="text-right">No of MC</th>
+                        <th class="text-right">Loose</th>
+                        <th class="qty-column text-right">Quantity (KG)</th>
+                        <th class="money-column text-right">Inventory Value</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {% set stk_ns = namespace(curr='', qty=0.0, val=0.0, mc=0, loose=0) %}
-                    {% for row in rows.stock|sort(attribute='variety') %}
-                        {% if stk_ns.curr != '' and stk_ns.curr != row.variety %}
-                            <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
-                                <td colspan="15" class="text-right">SUBTOTAL ({{ stk_ns.curr }}):</td><td class="text-right" style="background-color: #f1f5f9;">{{ stk_ns.mc }}</td><td class="text-right" style="background-color: #f1f5f9;">{{ stk_ns.loose }}</td><td class="qty-cell text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(stk_ns.qty) }}</td><td style="background-color: #f1f5f9;"></td><td class="money-cell text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(stk_ns.val) }}</td><td colspan="3"></td>
-                            </tr>
-                            {% set stk_ns.qty=0.0 %}{% set stk_ns.val=0.0 %}{% set stk_ns.mc=0 %}{% set stk_ns.loose=0 %}
-                        {% endif %}
-                        {% set stk_ns.curr = row.variety %}{% set stk_ns.qty = stk_ns.qty + (row.quantity | float if row.quantity else 0.0) %}{% set stk_ns.val = stk_ns.val + (row.inventory_value | float if row.inventory_value else 0.0) %}{% set stk_ns.mc = stk_ns.mc + (row.no_of_mc | int if row.no_of_mc else 0) %}{% set stk_ns.loose = stk_ns.loose + (row.loose | int if row.loose else 0) %}
-                    <tr>
-                        <td class="sl-no">{{ loop.index }}</td><td><b style="color:var(--accent-blue);">{{ row.batch_number }}</b></td><td><span class="tag">{{ row.variety or 'N/A' }}</span></td><td>{{ row.species or 'N/A' }}</td><td>{{ row.location or 'N/A' }}</td><td>{{ row.production_at }}</td><td>{{ row.production_for }}</td><td>{{ row.po_number or '-' }}</td><td>{{ row.purpose or '-' }}</td><td><span class="badge {{ 'bg-success' if row.cargo_movement_type == 'IN' else 'bg-danger' }}">{{ row.cargo_movement_type }}</span></td><td>{{ row.brand or 'N/A' }}</td><td>{{ row.freezer or 'N/A' }}</td><td>{{ row.packing_style or 'N/A' }}</td><td>{{ row.glaze or 'N/A' }}</td><td><b>{{ row.grade or 'N/A' }}</b></td><td class="text-right">{{ row.no_of_mc or 0 }}</td><td class="text-right">{{ row.loose or 0 }}</td><td class="qty-cell text-right">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td><td class="text-right">₹ {{ "%.2f"|format(row.product_kg_value|default(0.0)) }}</td><td class="money-cell text-right">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td><td>{{ row.hlso_count|default(0.0) }}</td><td>{{ row.hoso_count|default(0.0) }}</td><td>{{ row.sales_reference_rate|default(0.0) }}</td>
-                    </tr>
-                    {% if loop.last %}
-                        <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
-                            <td colspan="15" class="text-right">SUBTOTAL ({{ stk_ns.curr }}):</td><td class="text-right" style="background-color: #f1f5f9;">{{ stk_ns.mc }}</td><td class="text-right" style="background-color: #f1f5f9;">{{ stk_ns.loose }}</td><td class="qty-cell text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(stk_ns.qty) }}</td><td style="background-color: #f1f5f9;"></td><td class="money-cell text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(stk_ns.val) }}</td><td colspan="3"></td>
-                        </tr>
-                    {% endif %}
-                    {% else %}<tr><td colspan="23" class="text-center text-muted">No Stock Inventory Entries Found.</td></tr>{% endfor %}
+                    {% set ns_stock = namespace(current_variety='', variety_qty=0, variety_val=0, variety_mc=0, variety_loose=0) %}
+                    {% set grand_stock = namespace(qty=0.0, val=0.0, mc=0, loose=0) %}
                     
-                    {% if rows.stock %}
-                    <tr style="background:#f0fdf4 !important; border-top:2px double #16a34a; font-weight: 800;">
-                        <td colspan="15" class="text-right" style="color:#14532d;">GRAND TOTAL STOCK LOG:</td><td class="text-right" style="color:#14532d;">{{ card.stock_mc }}</td><td class="text-right" style="color:#14532d;">{{ card.stock_loose }}</td><td class="qty-cell text-right" style="background:#dcfce7; color:#14532d;">{{ "%.2f"|format(card.stock_qty) }}</td><td style="background:#dcfce7;"></td><td class="money-cell text-right" style="color:#14532d !important;">₹ {{ "{:,.2f}".format(card.stock_amount) }}</td><td colspan="3"></td>
+                    {% for row in rows.stock|sort(attribute='variety') %}
+                        {% set grand_stock.qty = grand_stock.qty + (row.quantity | float if row.quantity else 0.0) %}
+                        {% set grand_stock.val = grand_stock.val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                        {% set grand_stock.mc = grand_stock.mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                        {% set grand_stock.loose = grand_stock.loose + (row.loose | int if row.loose else 0) %}
+
+                        {% if ns_stock.current_variety != '' and ns_stock.current_variety != row.variety %}
+                            <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
+                                <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
+                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
+                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
+                                <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                                <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
+                            </tr>
+                            {% set ns_stock.variety_qty = 0 %}{% set ns_stock.variety_val = 0 %}{% set ns_stock.variety_mc = 0 %}{% set ns_stock.variety_loose = 0 %}
+                        {% endif %}
+                        
+                        <tr>
+                            <td class="sl-no">{{ loop.index }}</td>
+                            <td>{{ row.species or 'N/A' }}</td>
+                            <td>{{ row.location or 'N/A' }}</td>
+                            <td>{{ row.production_at or 'N/A' }}</td>
+                            <td>{{ row.production_for or 'N/A' }}</td>
+                            <td>{{ row.po_number or 'N/A' }}</td>
+                            <td>{{ row.purpose or 'N/A' }}</td>
+                            <td><span class="badge {{ 'bg-success' if row.cargo_movement_type == 'IN' else 'bg-danger' }}">{{ row.cargo_movement_type }}</span></td>
+                            <td>{{ row.brand or 'N/A' }}</td>
+                            <td>{{ row.freezer or 'N/A' }}</td>
+                            <td>{{ row.packing_style or 'N/A' }}</td>
+                            <td><span class="tag">{{ row.variety or 'N/A' }}</span></td>
+                            <td>{{ row.grade or 'N/A' }}</td>
+                            <td class="text-right">{{ row.no_of_mc or 0 }}</td>
+                            <td class="text-right">{{ row.loose or 0 }}</td>
+                            <td class="qty-column text-right">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td>
+                            <td class="money-column text-right">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td>
+                        </tr>
+                        
+                        {% set ns_stock.current_variety = row.variety %}
+                        {% set ns_stock.variety_qty = ns_stock.variety_qty + (row.quantity | float if row.quantity else 0.0) %}
+                        {% set ns_stock.variety_val = ns_stock.variety_val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                        {% set ns_stock.variety_mc = ns_stock.variety_mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                        {% set ns_stock.variety_loose = ns_stock.variety_loose + (row.loose | int if row.loose else 0) %}
+                        
+                        {% if loop.last %}
+                            <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
+                                <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
+                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
+                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
+                                <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                                <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
+                            </tr>
+                        {% endif %}
+                    {% else %}
+                        <tr>
+                            <td colspan="17" class="text-center text-muted py-4">
+                                <i class="fas fa-box-open d-block mb-2" style="font-size: 2rem;"></i>
+                                No Active Stock Inventory Found in Cold Storage For This Timeframe.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    
+                    {% if rows.stock and rows.stock|length > 0 %}
+                    <tr class="subtotal-row" style="background:#f0fdf4 !important; border-top:2px double #16a34a; font-weight: 800;">
+                        <td colspan="13" style="text-align:right; color:#14532d;">GRAND TOTAL STOCK LOG:</td>
+                        <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.mc }}</td>
+                        <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.loose }}</td>
+                        <td class="qty-column text-right" style="color:#14532d; background:#dcfce7;">{{ "%.2f"|format(grand_stock.qty) }}</td>
+                        <td class="money-column text-right" style="color:#14532d; background:#dcfce7;">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -762,16 +900,41 @@
         <div id="sec-open-floor" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Species</th><th>Location / Peeling At</th><th>Variety</th><th>Count / Grade</th><th class="text-right" style="color:#475569">Opening Qty (KG)</th><th class="text-right" style="color:#475569">Opening Value (₹)</th></tr>
+                    <tr style="background:#f1f5f9">
+                        <th class="text-center" style="width:30px">Sl</th>
+                        <th>Batch Number</th>
+                        <th>Species</th>
+                        <th>Location/Peeling At</th>
+                        <th>Variety</th>
+                        <th>Count/Grade</th>
+                        <th class="text-right" style="color:#475569">Opening Qty (KG)</th>
+                        <th class="text-right" style="color:#475569">Value (₹)</th>
+                    </tr>
                 </thead>
                 <tbody>
+                    {% set tot_open_floor = namespace(qty=0.0, val=0.0) %}
                     {% for row in rows.opening_floor_balance %}
+                        {% set tot_open_floor.qty = tot_open_floor.qty + (row.available_qty|default(0)|float) %}
+                        {% set tot_open_floor.val = tot_open_floor.val + (row.value|default(0)|float) %}
                     <tr>
-                        <td class="sl-no" style="background:#e2e8f0; color:#475569;">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td><td>{{ row.species }}</td><td>{{ row.peeling_at }}</td><td><span class="tag">{{ row.variety }}</span></td><td><b>{{ row.count }}</b></td><td class="qty-cell">{{ "%.2f"|format(row.available_qty) }}</td><td class="money-cell" style="color:#475569 !important;">₹ {{ "{:,.2f}".format(row.value) }}</td>
+                        <td class="sl-no" style="background:#e2e8f0; color:#475569;">{{ loop.index }}</td>
+                        <td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
+                        <td>{{ row.species }}</td>
+                        <td>{{ row.peeling_at }}</td>
+                        <td><span class="tag" style="background:#f1f5f9; color:#475569;">{{ row.variety }}</span></td>
+                        <td><b>{{ row.count }}</b></td>
+                        <td class="qty-column" style="color:#334155;">{{ "%.2f"|format(row.available_qty) }}</td>
+                        <td class="money-column" style="color:#475569">₹ {{ "{:,.2f}".format(row.value) }}</td>
                     </tr>
-                    {% else %}<tr><td colspan="8" class="text-center text-muted">No Stock at Opening Cut-off Time.</td></tr>{% endfor %}
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock at Opening Cut-off Time.</td></tr>
+                    {% endfor %}
                     {% if rows.opening_floor_balance %}
-                    <tr class="subtotal-row"><td colspan="6" class="text-right">TOTAL OPENING FLOOR BALANCE:</td><td class="qty-cell">{{ "%.2f"|format(card.floor_opening_qty) }}</td><td class="money-cell" style="color:#475569 !important;">₹ {{ "{:,.2f}".format(card.floor_opening_val) }}</td></tr>
+                    <tr class="subtotal-row" style="background:#f1f5f9 !important; border-top:1.5px solid #cbd5e1;">
+                        <td colspan="6" style="text-align:right; font-weight:800; color:#475569;">TOTAL OPENING FLOOR BALANCE:</td>
+                        <td class="qty-column" style="color:#334155; background:#e2e8f0;">{{ "%.2f"|format(tot_open_floor.qty) }}</td>
+                        <td class="money-column" style="color:#475569;">₹ {{ "{:,.2f}".format(tot_open_floor.val) }}</td>
+                    </tr>
                     {% endif %}
                 </tbody>
             </table>

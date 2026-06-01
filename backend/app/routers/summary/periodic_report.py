@@ -73,9 +73,8 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
         if tot_qty > 0: avg_rate = tot_amt / tot_qty
     return round(get_hoso_equivalent_qty(db, company_id, qty, variety, count, species, glaze) * avg_rate, 2)
 
-
 # ============================================================================
-# 🟢 HELPER 3: DYNAMIC DATE + TIME COMBINED BOUNDARY ENGINE
+# 🟢 HELPER 3: DYNAMIC DATE + TIME COMBINED BOUNDARY ENGINE (FALLBACK)
 # ============================================================================
 def calculate_time_bound_floor_balance(
     db: Session, company_id: str, location: str, batch: str, count: str, 
@@ -88,38 +87,22 @@ def calculate_time_bound_floor_balance(
 
     def apply_filters(query_obj, model_obj, is_repro=False):
         q = query_obj.filter(model_obj.company_id == company_id)
-        
         if hasattr(model_obj, 'date') and hasattr(model_obj, 'time'):
-            q = q.filter(
-                or_(
-                    model_obj.date < cutoff_date_str,
-                    and_(model_obj.date == cutoff_date_str, model_obj.time <= cutoff_time_str)
-                )
-            )
+            q = q.filter(or_(model_obj.date < cutoff_date_str, and_(model_obj.date == cutoff_date_str, model_obj.time <= cutoff_time_str)))
         elif hasattr(model_obj, 'date'):
             q = q.filter(model_obj.date <= cutoff_date_str)
-        
-        if is_repro:
-            q = q.filter(
-                model_obj.production_at == location,
-                model_obj.new_batch_id == batch,
-                func.trim(cast(model_obj.grade, sa_String)) == clean_count,
-                model_obj.species == species,
-                model_obj.variety == variety
-            )
+        if is_repro: q = q.filter(model_obj.production_at == location, model_obj.new_batch_id == batch, func.trim(cast(model_obj.grade, sa_String)) == clean_count, model_obj.species == species, model_obj.variety == variety)
         else:
             if hasattr(model_obj, 'peeling_at'): q = q.filter(model_obj.peeling_at == location)
             elif hasattr(model_obj, 'production_at'): q = q.filter(model_obj.production_at == location)
             q = q.filter(model_obj.batch_number == batch, model_obj.species == species)
             if hasattr(model_obj, 'variety_name'): q = q.filter(model_obj.variety_name == variety_upper)
             elif hasattr(model_obj, 'variety'): q = q.filter(model_obj.variety == variety_upper)
-
         if hasattr(model_obj, 'production_for'):
             if production_for and production_for != "N/A": q = q.filter(model_obj.production_for == production_for)
             elif production_for == "N/A": q = q.filter((model_obj.production_for == None) | (model_obj.production_for == ""))
         return q
 
-    # STEP 1: MAIN INWARD
     main_inward_qty = 0.0
     if source_type == "REPROCESS":
         in_q = apply_filters(db.query(func.coalesce(func.sum(Reprocess.in_qty), 0)), Reprocess, True)
@@ -128,7 +111,6 @@ def calculate_time_bound_floor_balance(
         rmp_q = apply_filters(db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)), RawMaterialPurchasing)
         main_inward_qty = float(rmp_q.filter(func.trim(cast(RawMaterialPurchasing.count, sa_String)) == clean_count).scalar() or 0)
 
-    # STEP 2: COMMON IMPACTS (SOAKING)
     s_in = apply_filters(db.query(func.coalesce(func.sum(Soaking.in_qty), 0)), Soaking)
     soaking_in = float(s_in.filter(func.trim(cast(Soaking.in_count, sa_String)) == clean_count).scalar() or 0)
 
@@ -138,7 +120,6 @@ def calculate_time_bound_floor_balance(
     base_stock = main_inward_qty + soaking_rejection - soaking_in
     available = 0.0
 
-    # STEP 3: VARIETY SPECIFIC LOGIC
     if variety_upper == "HOSO":
         g_p = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
         g_m = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.hoso_count, sa_String)) == clean_count).scalar() or 0
@@ -151,8 +132,6 @@ def calculate_time_bound_floor_balance(
             func.trim(cast(Peeling.hlso_count, sa_String)) == clean_count
         )
         p_q = p_q.filter(or_(Peeling.date < cutoff_date_str, and_(Peeling.date == cutoff_date_str, Peeling.time <= cutoff_time_str)))
-        if production_for and production_for != "N/A": p_q = p_q.filter(Peeling.production_for == production_for)
-        elif production_for == "N/A": p_q = p_q.filter((Peeling.production_for == None) | (Peeling.production_for == ""))
         p_u = p_q.scalar() or 0
         available = base_stock + float(g_h) - float(p_u)
     else:
@@ -163,20 +142,19 @@ def calculate_time_bound_floor_balance(
 
 
 # ============================================================================
-# 🟢 MAIN PERIODIC REPORT ROUTER ENDPOINT
+# 🟢 MAIN PERIODIC REPORT ROUTER ENDPOINT (OPTIMIZED ⚡)
 # ============================================================================
 @router.get("/periodic-report", response_class=HTMLResponse)
 async def get_periodic_summary_report(
     request: Request,
-    date_filter_type: Optional[str] = Query("today"),
-    selected_month: Optional[str] = Query(None),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    production_for: Optional[str] = Query(None),
-    supplier_name: Optional[str] = Query(None),
-    contractor_name: Optional[str] = Query(None),
-    batch: Optional[str] = Query(None),
-    prod_type: Optional[str] = Query("RMP"),
+    date_filter_type: str = Query("today"),
+    selected_month: str = Query(None),
+    start_date: str = Query(None),
+    end_date: str = Query(None),
+    fy: str = Query(None),
+    production_for: str = Query(None),
+    prod_type: str = Query("RMP"),
+    batch: str = Query(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -204,108 +182,151 @@ async def get_periodic_summary_report(
         res_start_dt, res_end_dt = today_dt, today_dt
 
     # ------------------------------------------------------------------------
-    # 🕒 RESOLVE EXACT TIME-BOUND CUTOFF BOUNDARIES (09:00:00 AM Constraint)
+    # 🕒 TIME-BOUND CUTOFF BOUNDARIES (08:59:59 AM)
     # ------------------------------------------------------------------------
-    # Opening Balance Layer: Up to First Filtering Day at 08:59:59 AM
     opening_cutoff_dt = datetime.combine(res_start_dt, time(8, 59, 59))
-    
-    # Closing Balance Layer: Up to Next Day after End Date at 08:59:59 AM
     closing_cutoff_dt = datetime.combine(res_end_dt + timedelta(days=1), time(8, 59, 59))
+    
+    db_start_date = res_start_dt.strftime("%Y-%m-%d")
+    db_end_date = res_end_dt.strftime("%Y-%m-%d")
 
-    # Dropdowns Loader
     companies = [c[0] for c in db.query(distinct(GateEntry.production_for)).filter(GateEntry.company_id == company_code).all() if c[0]]
-    suppliers = [s[0] for s in db.query(distinct(GateEntry.supplier_name)).filter(GateEntry.company_id == company_code).all() if s[0]]
-    contractors = [c[0] for c in db.query(distinct(DeHeading.contractor)).filter(DeHeading.company_id == company_code).all() if c[0]]
-    batches = sorted([b[0] for b in db.query(distinct(GateEntry.batch_number)).filter(GateEntry.company_id == company_code, GateEntry.date >= res_start_dt, GateEntry.date <= res_end_dt).all() if b[0]])
 
-    # Data logs container
-    gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code, GateEntry.date >= res_start_dt, GateEntry.date <= res_end_dt).order_by(GateEntry.supplier_name)
-    rmp_q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.date >= res_start_dt, RawMaterialPurchasing.date <= res_end_dt).order_by(RawMaterialPurchasing.supplier_name)
-    rep_q = db.query(Reprocess).filter(Reprocess.company_id == company_code, Reprocess.date >= res_start_dt, Reprocess.date <= res_end_dt)
-    deh_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date >= res_start_dt, DeHeading.date <= res_end_dt).order_by(DeHeading.contractor)
-    pel_q = db.query(Peeling).filter(Peeling.company_id == company_code, Peeling.date >= res_start_dt, Peeling.date <= res_end_dt).order_by(Peeling.contractor_name)
-    soak_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.date >= res_start_dt, Soaking.date <= res_end_dt).order_by(Soaking.batch_number)
-    prod_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= res_start_dt, Production.date <= res_end_dt).order_by(Production.batch_number)
-    grd_q = db.query(Grading).filter(Grading.company_id == company_code, Grading.date >= res_start_dt, Grading.date <= res_end_dt).order_by(Grading.batch_number)
-    stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.date >= res_start_dt, stock_entry.date <= res_end_dt).order_by(stock_entry.variety)
+    # Financial Years Generation
+    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == company_code, GateEntry.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        current_year = d.year
+        if d.month >= 4: fy_str = f"{current_year}-{str(current_year + 1)[2:]}"
+        else: fy_str = f"{current_year - 1}-{str(current_year)[2:]}"
+        fy_set.add(fy_str)
+    financial_years = sorted(list(fy_set), reverse=True)
 
-    if production_for:
-        gate_q, rmp_q, rep_q, deh_q, pel_q, prod_q, stk_q = [q.filter(func.trim(m.production_for) == func.trim(production_for)) for q, m in [(gate_q, GateEntry), (rmp_q, RawMaterialPurchasing), (rep_q, Reprocess), (deh_q, DeHeading), (pel_q, Peeling), (prod_q, Production), (stk_q, stock_entry)]]
-    if supplier_name:
-        gate_q = gate_q.filter(func.trim(GateEntry.supplier_name) == func.trim(supplier_name))
-        rmp_q = rmp_q.filter(func.trim(RawMaterialPurchasing.supplier_name) == func.trim(supplier_name))
-    if contractor_name:
-        deh_q = deh_q.filter(func.trim(DeHeading.contractor) == func.trim(contractor_name))
-        pel_q = pel_q.filter(func.trim(Peeling.contractor_name) == func.trim(contractor_name))
-    if batch:
-        gate_q, rmp_q, deh_q, pel_q, soak_q, prod_q, grd_q, stk_q = [q.filter(m.batch_number == batch) if m != Reprocess else q.filter(m.new_batch_id == batch) for q, m in [(gate_q, GateEntry), (rmp_q, RawMaterialPurchasing), (deh_q, DeHeading), (pel_q, Peeling), (soak_q, Soaking), (prod_q, Production), (grd_q, Grading), (stk_q, stock_entry)]]
-
+    batches = []
+    card = defaultdict(float)
+    card["supplier_name"] = "N/A"
+    card["purchasing_location"] = "N/A"
+    card["receiving_center"] = "N/A"
+    card["vehicle_number"] = "N/A"
+    card["challan_number"] = "N/A"
+    card["gate_pass_number"] = "N/A"
+    
     rows = {
-        "gate": gate_q.all(), "rmp": rmp_q.all(), "deheading": deh_q.all(), "peeling": pel_q.all(), 
-        "soaking": soak_q.all(), "production": prod_q.all(), "stock": stk_q.all(), "reprocess": rep_q.all(), 
-        "grading_details": grd_q.all(), "grading_summary": []
+        "gate": [], "rmp": [], "deheading": [], "peeling": [], 
+        "soaking": [], "production": [], "stock": [], "reprocess": [],
+        "grading_details": [], "grading_summary": [], "opening_floor_balance": [], "closing_floor_balance": []
     }
+    subtotals = {}
 
-    # Extract historical matrix combinations across records safely
-    all_historic_rmp = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_code).all()
-    all_historic_grd = db.query(Grading).filter(Grading.company_id == company_code).all()
-    all_historic_pel = db.query(Peeling).filter(Peeling.company_id == company_code).all()
-    all_historic_rep = db.query(Reprocess).filter(Reprocess.company_id == company_code).all()
+    # 🟢 DYNAMIC DATE RANGE QUERIES (Applies to all tables)
+    gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code, GateEntry.date >= db_start_date, GateEntry.date <= db_end_date)
+    rmp_q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.date >= db_start_date, RawMaterialPurchasing.date <= db_end_date)
+    rep_q = db.query(Reprocess).filter(Reprocess.company_id == company_code, Reprocess.date >= db_start_date, Reprocess.date <= db_end_date)
+    deh_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date >= db_start_date, DeHeading.date <= db_end_date)
+    pel_q = db.query(Peeling).filter(Peeling.company_id == company_code, Peeling.date >= db_start_date, Peeling.date <= db_end_date)
+    soak_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.date >= db_start_date, Soaking.date <= db_end_date)
+    prod_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= db_start_date, Production.date <= db_end_date)
+    grd_q = db.query(Grading).filter(Grading.company_id == company_code, Grading.date >= db_start_date, Grading.date <= db_end_date)
+    stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.cargo_movement_type == 'IN', stock_entry.date >= db_start_date, stock_entry.date <= db_end_date)
 
-    combos = set()
-    for r in all_historic_rmp:
-        if r.batch_number: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
-    for r in all_historic_grd:
-        if r.batch_number: combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
-    for r in all_historic_pel:
-        if r.batch_number: combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
-    for r in all_historic_rep:
-        if r.new_batch_id: combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS", getattr(r, 'glaze', None)))
+    # 🟢 Apply 'Production For' Filter
+    if production_for:
+        gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+        rmp_q = rmp_q.filter(func.trim(RawMaterialPurchasing.production_for) == func.trim(production_for))
+        rep_q = rep_q.filter(func.trim(Reprocess.production_for) == func.trim(production_for))
+        deh_q = deh_q.filter(func.trim(DeHeading.production_for) == func.trim(production_for))
+        pel_q = pel_q.filter(func.trim(Peeling.production_for) == func.trim(production_for))
+        soak_q = soak_q.filter(func.trim(Soaking.production_for) == func.trim(production_for))
+        prod_q = prod_q.filter(func.trim(Production.production_for) == func.trim(production_for))
+        grd_q = grd_q.filter(func.trim(Grading.production_for) == func.trim(production_for))
+        stk_q = stk_q.filter(func.trim(stock_entry.production_for) == func.trim(production_for))
 
-    closing_floor_balance_list, opening_floor_balance_list = [], []
-    total_opening_val, total_closing_val = 0.0, 0.0
+    # 🟢 Fetch Batches Dropdown List (After Date & Production For Filters)
+    if prod_type == "RMP":
+        batches = sorted([b[0] for b in rmp_q.with_entities(distinct(RawMaterialPurchasing.batch_number)).all() if b[0]])
+        if not batches:
+            batches = sorted([b[0] for b in gate_q.with_entities(distinct(GateEntry.batch_number)).all() if b[0]])
+    else:
+        batches = sorted([b[0] for b in rep_q.with_entities(distinct(Reprocess.new_batch_id)).all() if b[0]])
 
-    for b_id, c_val, s_val, v_name, p_for, loc, s_type, glaze_info in combos:
-        # 🟢 CLOSING BALANCE SYSTEM (Evaluates up to Next Day 08:59:59 AM)
-        closing_avail = calculate_time_bound_floor_balance(db, company_code, loc or "Floor", b_id, c_val, s_val, v_name, p_for, s_type, closing_cutoff_dt)
-        if closing_avail > 0.01:
-            val = calculate_balance_value(db, company_code, b_id, v_name, c_val, s_val, closing_avail, s_type, glaze_info)
-            total_closing_val += val
-            closing_floor_balance_list.append({"batch_number": b_id, "peeling_at": loc, "count": c_val or "N/A", "species": s_val or "N/A", "variety": v_name, "available_qty": closing_avail, "value": val})
+    # 🟢 Apply 'Batch' Filter if User Selected One
+    if batch:
+        gate_q = gate_q.filter(GateEntry.batch_number == batch)
+        rmp_q = rmp_q.filter(RawMaterialPurchasing.batch_number == batch)
+        rep_q = rep_q.filter(Reprocess.new_batch_id == batch)
+        deh_q = deh_q.filter(DeHeading.batch_number == batch)
+        pel_q = pel_q.filter(Peeling.batch_number == batch)
+        soak_q = soak_q.filter(Soaking.batch_number == batch)
+        prod_q = prod_q.filter(Production.batch_number == batch)
+        grd_q = grd_q.filter(Grading.batch_number == batch)
+        stk_q = stk_q.filter(stock_entry.batch_number == batch)
 
-        # 🟢 OPENING BALANCE SYSTEM (Evaluates up to Filter Start Day 08:59:59 AM)
-        opening_avail = calculate_time_bound_floor_balance(db, company_code, loc or "Floor", b_id, c_val, s_val, v_name, p_for, s_type, opening_cutoff_dt)
-        if opening_avail > 0.01:
-            val = calculate_balance_value(db, company_code, b_id, v_name, c_val, s_val, opening_avail, s_type, glaze_info)
-            total_opening_val += val
-            opening_floor_balance_list.append({"batch_number": b_id, "peeling_at": loc, "count": c_val or "N/A", "species": s_val or "N/A", "variety": v_name, "available_qty": opening_avail, "value": val})
-            
-    rows["closing_floor_balance"] = closing_floor_balance_list
-    rows["opening_floor_balance"] = opening_floor_balance_list
+    # 🟢 Execute the Final Queries to Fetch the Rows
+    rows["gate"] = gate_q.all()
+    rows["rmp"] = rmp_q.all()
+    rows["reprocess"] = rep_q.all()
+    rows["deheading"] = deh_q.all()
+    rows["peeling"] = pel_q.all()
+    rows["soaking"] = soak_q.all()
+    rows["production"] = prod_q.all()
+    rows["grading_details"] = grd_q.all()
+    rows["stock"] = stk_q.all()
 
-    # Grading summary & Production subtotals engine loops execution
+    # Calculate Data Tracking Defaults for Supplier Details
+    if rows["gate"]:
+        card["supplier_name"] = rows["gate"][0].supplier_name
+        card["purchasing_location"] = rows["gate"][0].purchasing_location
+        card["receiving_center"] = rows["gate"][0].receiving_center
+        card["vehicle_number"] = rows["gate"][0].vehicle_number
+        card["challan_number"] = rows["gate"][0].challan_number
+        card["gate_pass_number"] = rows["gate"][0].gate_pass_number
+    elif rows["rmp"]:
+        card["supplier_name"] = rows["rmp"][0].supplier_name
+    elif prod_type == "REPROCESS" and rows["reprocess"]:
+        rep = rows["reprocess"][0]
+        card.update({"supplier_name": "INTERNAL REPROCESS", "purchasing_location": rep.location, "receiving_center": rep.production_at})
+
+    # 🟢 IN-MEMORY OPTIMIZED LOOKUPS (Zero extra DB Hits in Loops!)
     yield_map = {(r.species, str(r.hoso_count)): float(r.hlso_yield_pct or 0) / 100 for r in db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()}
-    deheading_hoso_map = defaultdict(float)
-    for r in rows["deheading"]: deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
+    
+    var_records = db.query(VarietyTable).filter(VarietyTable.company_id == company_code).all()
+    var_map = {str(v.variety_name).strip().upper(): float(v.soaking_yield or 0) for v in var_records}
 
-    grouped_grading = defaultdict(list)
-    for r in rows["grading_details"]: grouped_grading[(r.batch_number, r.species, str(r.hoso_count), r.variety_name)].append(r)
+    # Aggregate Deheading
+    deheading_hoso_map = defaultdict(float)
+    for r in rows["deheading"]: 
+        deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
+
+    # Aggregate Soaking into Memory
+    soaking_map = defaultdict(float)
+    for s in rows["soaking"]:
+        k = (str(s.batch_number or "").strip(), str(s.variety_name or "").strip(), str(s.species or "").strip())
+        soaking_map[k] += float(s.in_qty or 0) - float(s.rejection_qty or 0)
+
+    # --- GRADING SUMMARY LOGIC ---
+    grouped = defaultdict(list)
+    for r in rows["grading_details"]: 
+        grouped[(r.batch_number, r.species, str(r.hoso_count), r.variety_name)].append(r)
 
     grading_summary = []
-    for (b_num, species, hoso_count, variety), items in grouped_grading.items():
+    for (batch_no, species, hoso_count, variety), items in grouped.items():
         graded_qty_sum = sum(float(i.quantity or 0) for i in items)
         base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
         yield_factor = yield_map.get((species, hoso_count), 0)
-        actual_hoso_qty = graded_qty_sum if variety == "HOSO" else deheading_hoso_map.get((b_num, species, hoso_count), 0)
+
+        actual_hoso_qty = graded_qty_sum if variety == "HOSO" else deheading_hoso_map.get((batch_no, species, hoso_count), 0)
+
         workout = (base / graded_qty_sum if graded_qty_sum > 0 else 0)
         if variety == "HLSO": workout = workout * 2.2 * yield_factor
+
         yield_pct = (graded_qty_sum / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
         grading_hoso_qty = (graded_qty_sum / yield_factor if variety == "HLSO" and yield_factor > 0 else graded_qty_sum)
         diff_kg = (grading_hoso_qty - actual_hoso_qty if variety == "HLSO" else 0)
         diff_pct = (diff_kg / actual_hoso_qty * 100 if actual_hoso_qty > 0 else 0)
 
         grading_summary.append({
-            "batch_number": b_num, "species": species, "hoso_count": hoso_count, "variety": variety,
+            "batch_number": batch_no, "species": species, "hoso_count": hoso_count, "variety": variety,
             "hoso_qty": round(actual_hoso_qty, 2), "graded_qty": round(graded_qty_sum, 2),
             "workout_count": round(workout, 2), "yield_pct": round(yield_pct, 2),
             "grading_hoso_qty": round(grading_hoso_qty, 2), "weight_diff_kg": round(diff_kg, 2),
@@ -313,67 +334,192 @@ async def get_periodic_summary_report(
         })
     rows["grading_summary"] = grading_summary
 
+    # --- PRODUCTION SUBTOTALS & YIELD DIFF LOGIC ---
     subtotals = {}
     for p in rows["production"]:
         v_name, s_name, b_num = str(p.variety_name or "").strip(), str(p.species or "").strip(), str(p.batch_number or "").strip()
         key = (str(p.production_for or "").strip(), str(p.production_at or "").strip(), s_name, v_name, b_num)
         
         if key not in subtotals:
-            var_data = db.query(VarietyTable).filter(VarietyTable.company_id == company_code, func.trim(VarietyTable.variety_name) == v_name).first()
-            target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
-            soaking_in = db.query(func.sum(Soaking.in_qty - Soaking.rejection_qty)).filter(Soaking.company_id == company_code, Soaking.batch_number == b_num, func.trim(Soaking.variety_name) == v_name, func.trim(Soaking.species) == s_name).scalar() or 0.0
+            target_yield = var_map.get(v_name.upper(), 0.0)
+            soaking_in = soaking_map.get((b_num, v_name, s_name), 0.0)
             subtotals[key] = {"prod_qty": 0.0, "target_yield": target_yield, "soaking_in": float(soaking_in), "actual_yield": 0.0, "diff_yield_perc": 0.0, "diff_qty": 0.0}
         subtotals[key]["prod_qty"] += float(p.production_qty or 0)
 
-    for key in subtotals:
+    for p in rows["production"]:
+        v_name, s_name, b_num = str(p.variety_name or "").strip(), str(p.species or "").strip(), str(p.batch_number or "").strip()
+        key = (str(p.production_for or "").strip(), str(p.production_at or "").strip(), s_name, v_name, b_num)
         s = subtotals[key]
+        
+        p.target_yield_percent = s["target_yield"]
+        
         if s["soaking_in"] > 0:
             s["actual_yield"] = round((s["prod_qty"] / s["soaking_in"]) * 100, 2)
             s["diff_yield_perc"] = round(s["actual_yield"] - s["target_yield"], 2)
             expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
             s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
+            
+            if s["prod_qty"] > 0:
+                row_ratio = float(p.production_qty or 0) / s["prod_qty"]
+                p.diff_qty = round(s["diff_qty"] * row_ratio, 2)
+                p.diff_percent = s["diff_yield_perc"]
+            else:
+                p.diff_qty = 0.0; p.diff_percent = 0.0
+        else:
+            s["actual_yield"] = 0.0; s["diff_yield_perc"] = 0.0; s["diff_qty"] = 0.0
+            p.diff_qty = 0.0; p.diff_percent = 0.0
 
-    # KPI Sync Map updates
-    card = defaultdict(float)
-    card["floor_opening_qty"] = round(sum(f["available_qty"] for f in opening_floor_balance_list), 2)
-    card["floor_opening_val"] = round(total_opening_val, 2)
-    card["floor_closing_qty"] = round(sum(f["available_qty"] for f in closing_floor_balance_list), 2)
-    card["floor_closing_val"] = round(total_closing_val, 2)
+    # Format stock numbers
+    for r in rows["stock"]: 
+        r.product_kg_value = float(r.product_kg_value or 0.0)
+        r.inventory_value = float(r.inventory_value or 0.0)
+
+    # ============================================================================
+    # 🚀 FAST IN-MEMORY FLOOR BALANCE SNAPSHOT EXTRACTION 
+    # ============================================================================
+    opening_floor_balance_list = []
+    closing_floor_balance_list = []
+    total_open_floor_val = 0.0
+    total_floor_val = 0.0
+
+    open_date_str = opening_cutoff_dt.strftime("%Y-%m-%d")
+    open_time_str = opening_cutoff_dt.strftime("%H:%M:%S")
     
+    close_date_str = closing_cutoff_dt.strftime("%Y-%m-%d")
+    close_time_str = closing_cutoff_dt.strftime("%H:%M:%S")
+
+    # 🟢 1. OPENING BALANCE MAP
+    opening_query = db.query(FloorBalance).filter(FloorBalance.company_id == company_code)
+    if production_for: opening_query = opening_query.filter(func.trim(FloorBalance.production_for) == func.trim(production_for))
+    if batch: opening_query = opening_query.filter(FloorBalance.batch_number == batch)
+    
+    raw_opening_records = opening_query.filter(
+        or_(
+            FloorBalance.date < open_date_str,
+            and_(FloorBalance.date == open_date_str, FloorBalance.time <= open_time_str)
+        )
+    ).all()
+
+    latest_open_map = {}
+    for r in raw_opening_records:
+        key = (r.batch_number, r.location, r.species, r.variety, r.count)
+        r_dt = f"{r.date} {r.time}" if r.date and r.time else "0000-00-00 00:00:00"
+        if key not in latest_open_map or r_dt > latest_open_map[key]['dt']:
+            latest_open_map[key] = {'record': r, 'dt': r_dt}
+
+    for item in latest_open_map.values():
+        r = item['record']
+        if r.available_qty and float(r.available_qty) > 0.01:
+            val = float(r.inventory_value or 0.0)
+            total_open_floor_val += val
+            opening_floor_balance_list.append({
+                "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A", 
+                "variety": r.variety, "available_qty": float(r.available_qty or 0.0), "value": val, "production_for": r.production_for
+            })
+
+    # 🟢 2. CLOSING BALANCE MAP
+    closing_query = db.query(FloorBalance).filter(FloorBalance.company_id == company_code)
+    if production_for: closing_query = closing_query.filter(func.trim(FloorBalance.production_for) == func.trim(production_for))
+    if batch: closing_query = closing_query.filter(FloorBalance.batch_number == batch)
+    
+    raw_closing_records = closing_query.filter(
+        or_(
+            FloorBalance.date < close_date_str,
+            and_(FloorBalance.date == close_date_str, FloorBalance.time <= close_time_str)
+        )
+    ).all()
+
+    latest_close_map = {}
+    for r in raw_closing_records:
+        key = (r.batch_number, r.location, r.species, r.variety, r.count)
+        r_dt = f"{r.date} {r.time}" if r.date and r.time else "0000-00-00 00:00:00"
+        if key not in latest_close_map or r_dt > latest_close_map[key]['dt']:
+            latest_close_map[key] = {'record': r, 'dt': r_dt}
+
+    for item in latest_close_map.values():
+        r = item['record']
+        if r.available_qty and float(r.available_qty) > 0.01:
+            val = float(r.inventory_value or 0.0)
+            total_floor_val += val
+            closing_floor_balance_list.append({
+                "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A", 
+                "variety": r.variety, "available_qty": float(r.available_qty or 0.0), "value": val, "production_for": r.production_for
+            })
+
+    # 🔥 FALLBACK (If Database FloorBalance table is completely empty but transactions exist)
+    if not closing_floor_balance_list and not opening_floor_balance_list and (rows["rmp"] or rows["reprocess"]):
+        combos = set()
+        for r in rows["rmp"]: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+        for r in rows["grading_details"]: combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+        for r in rows["peeling"]: combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+        for r in rows["reprocess"]: combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS", getattr(r, 'glaze', None)))
+
+        for b_id, c_val, s_val, v_name, p_for, loc, s_type, glaze_info in combos:
+            avail = calculate_time_bound_floor_balance(db, company_code, loc or "Floor", b_id, c_val, s_val, v_name, p_for, s_type, closing_cutoff_dt)
+            if avail > 0.01:
+                val = calculate_balance_value(db, company_code, b_id, v_name, c_val, s_val, avail, s_type, glaze_info)
+                total_floor_val += val
+                closing_floor_balance_list.append({
+                    "batch_number": b_id, "peeling_at": loc, "count": c_val or "N/A", "species": s_val or "N/A", 
+                    "variety": v_name, "available_qty": avail, "value": val, "production_for": p_for
+                })
+            
+            open_avail = calculate_time_bound_floor_balance(db, company_code, loc or "Floor", b_id, c_val, s_val, v_name, p_for, s_type, opening_cutoff_dt)
+            if open_avail > 0.01:
+                open_val = calculate_balance_value(db, company_code, b_id, v_name, c_val, s_val, open_avail, s_type, glaze_info)
+                total_open_floor_val += open_val
+                opening_floor_balance_list.append({
+                    "batch_number": b_id, "peeling_at": loc, "count": c_val or "N/A", "species": s_val or "N/A", 
+                    "variety": v_name, "available_qty": open_avail, "value": open_val, "production_for": p_for
+                })
+
+    rows["closing_floor_balance"] = closing_floor_balance_list
+    rows["opening_floor_balance"] = opening_floor_balance_list
+
+    # 🟢 FIX: ASSIGN KPI CARD METRICS DYNAMICALLY (Whether batch is selected or not)
     card["gate_boxes"] = sum(int(r.no_of_material_boxes or 0) for r in rows["gate"])
     card["rmp_qty"] = sum(float(r.received_qty or 0) for r in rows["rmp"])
     card["rmp_amount"] = sum(float(r.amount or 0) for r in rows["rmp"])
+    card["reprocess_qty"] = sum(float(r.in_qty or 0) for r in rows["reprocess"])
+    card["reprocess_amount"] = sum(float(r.inventory_value or 0) for r in rows["reprocess"])
+    
+    # 🔥 FIXED: These variables now properly compute regardless of the `if batch:` filter
     card["deh_hoso"] = sum(float(d.hoso_qty or 0) for d in rows["deheading"])
     card["deh_hlso"] = sum(float(d.hlso_qty or 0) for d in rows["deheading"])
     card["grd_qty"] = sum(float(g.quantity or 0) for g in rows["grading_details"])
     card["pel_peeled"] = sum(float(p.peeled_qty or 0) for p in rows["peeling"])
-    card["soak_in"] = sum(float(s.in_qty or 0) for s in rows["soaking"])
-    card["soak_rej"] = sum(float(s.rejection_qty or 0) for s in rows["soaking"])
+    
+    card["soaking_qty"] = sum(float(s.in_qty or 0) for s in rows["soaking"])
+    card["chemical_qty"] = sum(float(s.chemical_qty or 0) for s in rows["soaking"])
+    card["salt_qty"] = sum(float(s.salt_qty or 0) for s in rows["soaking"])
     card["production_qty"] = sum(float(pr.production_qty or 0) for pr in rows["production"])
-    
-    gross_total = 0.0
-    for pr in rows["production"]:
-        g_val = float(pr.production_qty or 0)
-        glz = str(pr.glaze or "").upper().strip()
-        if "NWNC" not in glz and "%" in glz:
-            dg = glz.replace("%", "").strip()
-            if dg.isdigit() and int(dg) < 100: g_val = g_val / ((100 - int(dg)) / 100)
-        gross_total += g_val
-    card["prod_gross"] = gross_total
-    
     card["stock_qty"] = sum(float(st.quantity or 0) for st in rows["stock"])
     card["stock_amount"] = sum(float(st.inventory_value or 0) for st in rows["stock"])
-    card["stock_mc"] = sum(int(st.no_of_mc or 0) for st in rows["stock"])
-    card["stock_loose"] = sum(int(st.loose or 0) for st in rows["stock"])
+    
+    card["floor_qty"] = round(total_open_floor_val, 2)
+    card["floor_amount"] = round(total_open_floor_val, 2)
+    card["floor_closing_qty"] = round(sum(f["available_qty"] for f in closing_floor_balance_list), 2)
+    card["floor_closing_val"] = round(total_floor_val, 2)
+    card["floor_opening_qty"] = round(sum(f["available_qty"] for f in opening_floor_balance_list), 2)
+    card["floor_opening_val"] = round(total_open_floor_val, 2)
 
     return templates.TemplateResponse(
-        request=request, name="summary/periodic_summary.html",
+        request=request, name="summary/periodic_summary.html", 
         context={
-            "companies": companies, "suppliers": suppliers, "contractors": contractors, "batches": batches,
-            "selected_date_filter": date_filter_type, "selected_month": selected_month,
-            "selected_start_date": start_date, "selected_end_date": end_date,
-            "selected_company": production_for, "selected_supplier": supplier_name,
-            "selected_contractor": contractor_name, "selected_batch": batch, "selected_prod_type": prod_type,
-            "rows": rows, "card": card, "subtotals": subtotals
+            "financial_years": financial_years,
+            "selected_fy": fy,
+            "selected_date_filter": date_filter_type,
+            "selected_month": selected_month,
+            "selected_start_date": start_date,
+            "selected_end_date": end_date,
+            "companies": companies, 
+            "batches": batches, 
+            "selected_company": production_for, 
+            "selected_prod_type": prod_type, 
+            "selected_batch": batch, 
+            "rows": rows, 
+            "card": card, 
+            "subtotals": subtotals,
+            "hoso_floor_balance": closing_floor_balance_list
         }
     )
