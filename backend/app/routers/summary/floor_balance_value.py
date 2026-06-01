@@ -1,19 +1,18 @@
-# ============================================================================
-# 🟢 FIXED: FLOOR BALANCE VALUE ROUTER (WITH REVERSED MATH SCALING ENGINE)
-# ============================================================================
-
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import re
+from datetime import datetime
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields
 from app.services.floor_balance import get_floor_balance
+# Imported FloorBalance database model
+from app.database.models.floor_balance import FloorBalance 
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 templates = Jinja2Templates(directory="app/templates")
@@ -28,7 +27,6 @@ def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: s
     qty = float(qty)
     variety_upper = str(variety or "").upper()
 
-    # 1. REMOVE GLAZE TRACKERS
     if glaze:
         try:
             g = str(glaze).replace("%", "").strip()
@@ -39,7 +37,6 @@ def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: s
         except:
             pass
 
-    # 2. FETCH MASTER HLSO YIELD PERCENTAGE FROM CRITERIA DB
     hlso_yield = 1.0
     if count:
         try:
@@ -57,7 +54,6 @@ def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: s
         except:
             hlso_yield = 1.0
 
-    # 3. FETCH PEELING YIELD PERCENTAGE FROM VARIETY TABLE
     peeling_yield = 1.0
     var_obj = db.query(VarietyTable).filter(
         VarietyTable.company_id == company_id, 
@@ -66,13 +62,11 @@ def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: s
     if var_obj and var_obj.peeling_yield:
         peeling_yield = float(var_obj.peeling_yield) / 100
 
-    # 4. 🟢 THE MATH FIX: DIVIDE BY FRACTIONAL YIELDS TO ACCURATELY SCALE UP WEIGHTS
     if "HOSO" in variety_upper:
         return round(qty, 4)
     elif "HLSO" in variety_upper:
         return round(qty / hlso_yield if hlso_yield > 0 else qty, 4)
     else:
-        # PD, PUD, PTO values correctly scaled upwards (e.g., 230kg raw input converts into ~400kg HOSO base)
         denominator = hlso_yield * peeling_yield
         return round(qty / denominator if denominator > 0 else qty, 4)
 
@@ -83,7 +77,6 @@ def get_hoso_equivalent_qty(db: Session, company_id: str, qty: float, variety: s
 def calculate_balance_value(db: Session, company_id: str, batch: str, variety: str, count: str, species: str, qty: float, source_type: str, glaze: str = None):
     avg_rate = 0.0
 
-    # 🟢 FIX: Loop through each item inside pool to avoid fractional breakdown distortion
     if source_type == "RMP":
         rmp_items = db.query(RawMaterialPurchasing).filter(
             RawMaterialPurchasing.company_id == company_id, 
@@ -121,7 +114,6 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
         if total_batch_hoso_qty > 0:
             avg_rate = total_batch_amount / total_batch_hoso_qty
 
-    # Calculate actual floor value context balance based on its raw scaled dynamic weight
     fb_hoso_qty = get_hoso_equivalent_qty(db, company_id, qty, variety, count, species, glaze)
     final_value = round(fb_hoso_qty * avg_rate, 2)
 
@@ -129,11 +121,67 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
 
 
 # ============================================================================
-# 🟢 STEP 3: MAIN REPORT ENDPOINT (STRICT FILTER ON QTY > 0.01)
+# 🟢 HELPER 3: SAVE OR UPDATE FLOOR BALANCE PERSISTENCE CORE ENGINE
+# ============================================================================
+def save_floor_balance(
+    db: Session, company_id: str, location: str, production_for: str,
+    batch: str, source: str, species: str, variety: str, count: str,
+    qty: float, value: float, email: str
+):
+    now = datetime.utcnow()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M:%S")
+
+    # Composite Unique Core Parameters Filtering Matrix
+    row = db.query(FloorBalance).filter(
+        FloorBalance.company_id == company_id,
+        FloorBalance.location == location,
+        FloorBalance.production_for == production_for,
+        FloorBalance.batch_number == batch,
+        FloorBalance.source_type == source,
+        FloorBalance.species == species,
+        FloorBalance.variety == variety,
+        FloorBalance.count == str(count)
+    ).first()
+
+    if row:
+        row.available_qty = qty
+        row.inventory_value = value
+        row.last_transaction = "SNAPSHOT"
+        row.last_updated = now
+        row.date = current_date
+        row.time = current_time
+        row.email = email
+    else:
+        db.add(
+            FloorBalance(
+                company_id=company_id,
+                location=location,
+                production_for=production_for,
+                batch_number=batch,
+                source_type=source,
+                species=species,
+                variety=variety,
+                count=str(count),
+                available_qty=qty,
+                inventory_value=value,
+                last_transaction="SNAPSHOT",
+                last_updated=now,
+                date=current_date,
+                time=current_time,
+                email=email
+            )
+        )
+
+
+# ============================================================================
+# 🟢 STEP 4: MAIN REPORT & STORAGE ENGINE ENDPOINT
 # ============================================================================
 @router.get("/floor_balance_value", response_class=HTMLResponse)
 def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
+    user_email = request.session.get("email") or request.session.get("user_email") or "System"
+    
     if not company_id: 
         return RedirectResponse("/auth/login", status_code=303)
 
@@ -165,7 +213,6 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
     rows_batch = []
     for batch, count, species_val, variety, prod_for, location, s_type, glaze in combos:
         
-        # Fetch current stock balance from floor balance engine
         qty = get_floor_balance(
             db=db,
             company_id=company_id,
@@ -180,23 +227,42 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
         
         qty = round(qty, 2) if qty else 0.0
         
-        # Strict dynamic display visibility block logic filter
+        # Strict dynamic save & display filter block logic
         if qty > 0.01:
             val = calculate_balance_value(db, company_id, batch, variety, count, species_val, qty, s_type, glaze)
+            prod_for_clean = prod_for if prod_for and prod_for != "N/A" else "General Stock"
+
+            # Execute Persistence Mapping directly into target table
+            save_floor_balance(
+                db=db,
+                company_id=company_id,
+                location=location,
+                production_for=prod_for_clean,
+                batch=batch,
+                source=s_type,
+                species=species_val,
+                variety=variety,
+                count=count,
+                qty=qty,
+                value=val,
+                email=user_email
+            )
             
             rows_batch.append({
                 "batch": batch,
                 "variety": variety,
                 "count": count,
                 "species": species_val,
-                "production_for": prod_for if prod_for and prod_for != "N/A" else "General Stock",
+                "production_for": prod_for_clean,
                 "location": location,
                 "available_qty": qty,
                 "value": val,
                 "source": s_type
             })
 
-    # Sorting Hierarchy: Location -> Production For -> Batch Number
+    # Single operational commit block execution for optimum performance
+    db.commit()
+
     rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
 
     return templates.TemplateResponse(
