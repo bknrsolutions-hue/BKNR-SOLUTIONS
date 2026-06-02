@@ -63,6 +63,7 @@ def grading_report(
     grading_base_query = db.query(Grading).filter(Grading.company_id == company_id)
     
     rows = []
+    detailed_rows = [] # 🟢 Added purely for Frontend Inline Edit/Delete
     selected_year = None
 
     # CRITICAL CHANGE: Only process and fetch data if 'fy' parameter is explicitly provided
@@ -77,6 +78,13 @@ def grading_report(
         # Apply date filters to target execution data
         grading_rows = grading_base_query.filter(Grading.date >= start_date, Grading.date <= end_date).all()
         deheading_rows = deheading_base_query.filter(DeHeading.date >= start_date, DeHeading.date <= end_date).all()
+
+        # 🟢 Extracting detailed rows for JS to use in Card View Edits
+        for raw_row in grading_rows:
+            d = {k: getattr(raw_row, k) for k in raw_row.__dict__ if not k.startswith('_')}
+            if 'date' in d and d['date']: d['date'] = str(d['date'])
+            if 'time' in d and d['time']: d['time'] = str(d['time'])
+            detailed_rows.append(d)
 
         # 3. Yield Map Preparation
         yield_map = {
@@ -176,6 +184,7 @@ def grading_report(
         name="reports/grading_report.html",
         context={
             "rows": rows,
+            "detailed_rows": detailed_rows, # 🟢 Linked for Frontend Edit/Delete stability
             "selected_fy": fy,
             "fy_years": unique_fy_years,
             "batches": get_unique_options("batch_number"),

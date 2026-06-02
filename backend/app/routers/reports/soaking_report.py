@@ -151,30 +151,25 @@ async def update_soaking_row(
 
     return {"status": "no_changes"}
 
-# ------------------------------------------------------------
-# 3. FETCH AUDIT HISTORY
-# ------------------------------------------------------------
+# ============================================================
+# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# ============================================================
 @router.get("/audit_all")
 async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db)):
-    comp_code = str(request.session.get("company_code"))
-    
+    comp_code = request.session.get("company_code")
     logs = (
         db.query(AuditLog, Soaking.batch_number)
         .join(Soaking, AuditLog.record_id == Soaking.id)
         .filter(AuditLog.table_name == "soaking", AuditLog.company_id == comp_code)
-        .order_by(AuditLog.edited_at.desc())
-        .limit(100).all()
+        .order_by(AuditLog.edited_at.desc()).limit(100).all()
     )
-    
-    return [
-        {
-            "timestamp": log.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"),
-            "user": log.AuditLog.edited_by.split('@')[0] if log.AuditLog.edited_by else "System",
-            "batch": log.batch_number,
-            "action": f"Changed {log.AuditLog.field_name.replace('_', ' ').title()}",
-            "details": f"'{log.AuditLog.old_value}' → '{log.AuditLog.new_value}'"
-        } for log in logs
-    ]
+    return [{
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0],
+        "batch": l.batch_number,
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
+    } for l in logs]
 
 # ------------------------------------------------------------
 # 4. EXPORT EXCEL

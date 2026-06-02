@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct, cast, String
+from sqlalchemy import func, distinct, cast, String, Integer
 from datetime import date, datetime
 
 from app.database import get_db
@@ -217,7 +217,31 @@ def save_soaking(
     if in_qty > (avail + 0.05):
         return JSONResponse({"error": f"Insufficient balance at {production_at}. Available: {avail}, Needed: {in_qty}"}, status_code=400)
 
-    final_sintex = sintex_number if not (rejection_qty > 0 and in_qty == 0) else None
+    # =====================================================
+    # DAY WISE SINTEX NUMBER
+    # Every Day Starts From 1
+    # =====================================================
+    IST = pytz.timezone("Asia/Kolkata")
+    today_dt = datetime.now(IST).date()
+
+    if rejection_qty > 0 and in_qty == 0:
+        final_sintex = None
+    else:
+        last_entry = (
+            db.query(Soaking)
+            .filter(
+                Soaking.company_id == company_id,
+                Soaking.date == today_dt,
+                Soaking.sintex_number.isnot(None)
+            )
+            .order_by(Soaking.id.desc())
+            .first()
+        )
+
+        if last_entry and str(last_entry.sintex_number).isdigit():
+            final_sintex = str(int(last_entry.sintex_number) + 1)
+        else:
+            final_sintex = "1"
 
     entry = Soaking(
         sintex_number=final_sintex, batch_number=clean_batch, variety_name=variety_name, 
@@ -227,8 +251,8 @@ def save_soaking(
         chemical_qty=round(in_qty * chemical_percent / 100, 2),
         salt_percent=salt_percent, salt_qty=round(in_qty * salt_percent / 100, 2),
         species=species_name, production_at=production_at, production_for=production_for,
-        company_id=company_id, email=email, date=date.today(), 
-        time=datetime.now().time(), status="Pending"
+        company_id=company_id, email=email, date=today_dt, 
+        time=datetime.now(IST).time(), status="Pending"
     )
     db.add(entry)
     db.commit()

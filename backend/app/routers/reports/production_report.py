@@ -152,6 +152,7 @@ def production_report_page(
             "datetime": datetime 
         }
     )
+
 # ------------------------------------------------------------
 # UPDATE WITH AUDIT LOG & GLAZE ADJUSTMENT
 # ------------------------------------------------------------
@@ -237,6 +238,7 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
             raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "no_changes"}
+
 # ------------------------------------------------------------
 # DELETE RECORD
 # ------------------------------------------------------------
@@ -258,26 +260,25 @@ def delete_production(request: Request, payload: dict = Body(...), db: Session =
         return {"status": "success"}
     return {"status": "error", "message": "Record not found"}
 
-# ------------------------------------------------------------
-# VIEW AUDIT HISTORY
-# ------------------------------------------------------------
+# ============================================================
+# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# ============================================================
 @router.get("/audit_all")
-def get_production_audit(request: Request, db: Session = Depends(get_db)):
-    comp_code = str(request.session.get("company_code"))
-    logs = db.query(AuditLog, Production.batch_number)\
-        .join(Production, AuditLog.record_id == Production.id)\
-        .filter(AuditLog.table_name == "production", AuditLog.company_id == comp_code)\
-        .order_by(desc(AuditLog.edited_at)).limit(100).all()
-    
-    return JSONResponse([
-        {
-            "timestamp": l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"),
-            "batch": batch,
-            "field": l.AuditLog.field_name.replace('_', ' ').title(),
-            "details": f"'{l.AuditLog.old_value}' → '{l.AuditLog.new_value}'",
-            "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System"
-        } for l, batch in logs
-    ])
+async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    logs = (
+        db.query(AuditLog, Production.batch_number)
+        .join(Production, AuditLog.record_id == Production.id)
+        .filter(AuditLog.table_name == "production", AuditLog.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc()).limit(100).all()
+    )
+    return [{
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0],
+        "batch": l.batch_number,
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
+    } for l in logs]
 
 # ------------------------------------------------------------
 # EXCEL EXPORT

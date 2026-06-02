@@ -603,21 +603,16 @@ function handleSintexLogic() {
         sintexField.value = ""; sintexField.required = false; sintexField.placeholder = "Disabled for Rejection Only";
     } else if(inQty > 0) {
         sintexField.required = true;
-        if(!sintexField.value) getNextSintexNumber();
+        getNextSintexNumber();
     }
 }
 
+// =====================================================
+// SINTEX VALUE ENFORCEMENT ENGINE
+// 100% Locked on Database Auto Generation Sequence
+// =====================================================
 function getNextSintexNumber() {
-    const compVal = document.getElementById('f_comp').value;
-    const sintexField = document.getElementById('f_sintex');
-    if(!compVal) { sintexField.value = ""; return; }
-    let companyEntries = todayEntries.filter(e => e.comp === compVal);
-    let maxNum = 0;
-    companyEntries.forEach(e => {
-        let num = parseInt(e.sintex);
-        if(!isNaN(num) && num > maxNum) num = num;
-    });
-    sintexField.value = maxNum + 1;
+    document.getElementById("f_sintex").value = "AUTO";
 }
 
 function validateQty() {

@@ -43,7 +43,7 @@ select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10p
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px; user-select:none;}
 
 .menu-list{
  position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
@@ -69,6 +69,7 @@ tbody td{
  padding:6px 2px; font-size:9px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+ position: relative;
 }
 
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
@@ -101,7 +102,8 @@ tr.selected{background:#dbeafe !important;}
 /* SEARCHABLE INLINE DROPDOWN EMBEDDED STRUCTURES */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
-    position: absolute; left: 0; top: 100%; right: 0; max-height: 140px; overflow-y: auto;
+    position: fixed; /* 🟢 Fixed overflow issue */
+    max-height: 140px; overflow-y: auto;
     background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -141,7 +143,6 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
 </head>
 <body>
 
-<!-- REALTIME PRINT HEAD BLOCK COMPILER -->
 <div class="print-header-block">
     <div style="text-align: left;">
         <h2 style="margin:0; font-size:15px; color:#0f172a; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
@@ -345,9 +346,6 @@ function changeFY(val) {
     window.location.href = url.toString();
 }
 
-function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
-document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
-
 function selectRow(tr) { 
     if(tr.classList.contains('empty-state')) return;
     allRows.forEach(r => r.classList.remove("selected")); 
@@ -451,6 +449,10 @@ document.getElementById("btnYes").onclick = async () => {
 /* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS INTEGRATION */
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
+    
+    // Close the 3-dot menu smoothly when Edit starts
+    document.getElementById("mainMenu").style.display = "none";
+    
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.replace('₹','').replace('%','').trim();
         const field = td.dataset.field;
@@ -472,12 +474,22 @@ function enableEdit() {
             const inputEl = td.querySelector('.dropdown-search-input');
             inputEl.addEventListener('focus', () => {
                 closeAllInlineDropdowns();
-                td.querySelector('.searchable-dropdown-list').style.display = 'block';
+                const listEl = td.querySelector('.searchable-dropdown-list');
+                
+                // Fixed position calculations to overcome table overflow hidden clipping
+                const rect = inputEl.getBoundingClientRect();
+                listEl.style.top = (rect.bottom + 2) + "px";
+                listEl.style.left = rect.left + "px";
+                listEl.style.width = rect.width + "px";
+                listEl.style.display = 'block';
             });
         } else { 
             td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}">`; 
         }
     });
+    
+    // Auto close dropdown when table scrolls
+    document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
 function filterInlineDropdown(input) {
@@ -508,11 +520,28 @@ function closeAllInlineDropdowns() {
     document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
 }
 
+// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
 document.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('dropdown-search-input') && !e.target.classList.contains('searchable-dropdown-item')) {
+    // 1. Close Inline Searchable Dropdowns if clicked outside
+    if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
     }
+    
+    // 2. Manage 3-Dot Menu
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu) {
+        if (e.target.closest('.dots')) {
+            return;
+        }
+        mainMenu.style.display = "none";
+    }
 });
+
+function toggleMenu(e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    const m = document.getElementById("mainMenu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
+}
 
 async function saveEdit() {
     if(!selectedRow) return;

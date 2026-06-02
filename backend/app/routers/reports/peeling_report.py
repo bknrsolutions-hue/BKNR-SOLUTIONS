@@ -394,9 +394,9 @@ def peeling_monthly_bill(
     return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
 
 
-# ------------------------------------------------------------
-# 4. AUDIT & DELETION DATA STREAM ENGINE
-# ------------------------------------------------------------
+# ============================================================
+# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# ============================================================
 @router.get("/audit_all")
 async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")

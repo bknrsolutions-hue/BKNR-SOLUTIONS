@@ -187,7 +187,6 @@ body {
 
 .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* 🌟 Sticky Header Configuration */
 .app-header {
     height: var(--header-h); 
     background: rgba(255, 255, 255, 0.95);
@@ -257,20 +256,10 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
 }
 
 @media (max-width: 600px) {
-    .main-page-footer {
-        font-size: 9px;
-        gap: 6px;
-    }
-    .company-header-title {
-        font-size: 13px;
-        padding-left: 8px;
-    }
-    .app-header {
-        padding: 0 12px;
-    }
-    .header-right-actions {
-        gap: 8px;
-    }
+    .main-page-footer { font-size: 9px; gap: 6px; }
+    .company-header-title { font-size: 13px; padding-left: 8px; }
+    .app-header { padding: 0 12px; }
+    .header-right-actions { gap: 8px; }
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -307,7 +296,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
             <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Open Menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <!-- 🌟 ఈ భాగంలో కంపెనీ నేమ్ వచ్చేలా చేసాను (ఒకవేళ సెషన్‌లో పేరు లేకపోతే కోడ్ చూపిస్తుంది) -->
             <div class="company-header-title">
                 {{ request.session.get('company_name') or request.session.get('company_code') }}
             </div>
@@ -337,7 +325,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; }
 const permissions = {{ request.session.get('permissions')|tojson }};
 function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
 
-// Searchable Dropdown Columns Injection Logic
+// [2026-01-24] Searchable Columns Setup on frame load
 function initializeSearchableColumns(doc) {
     const selects = doc.querySelectorAll('select');
     selects.forEach(select => {
@@ -347,13 +335,13 @@ function initializeSearchableColumns(doc) {
     });
 }
 
-// Fixed Matrix Data Configuration Mapping With Clean Format Keys
+// 🏢 Corporate Standard Layout Realignment
 const organizedMenu = [
     {
         pillarName: "Core ERP Operations",
         categories: [
             {
-                title: "Live Dashboards",
+                title: "Dashboards",
                 icon: "fa-chart-pie",
                 items: [
                     ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-line', 'Processing Dashboard', 'Live'],
@@ -382,10 +370,86 @@ const organizedMenu = [
         ]
     },
     {
+        pillarName: "Sales & Export Management",
+        categories: [
+            {
+                title: "Export Operations",
+                icon: "fa-ship",
+                items: [
+                    ['export_shipments', '/exports/shipments', 'fa-ship', 'Export Shipments', 'EXP'],
+                    ['container_stuffing', '/exports/container_stuffing', 'fa-truck-ramp-box', 'Container Stuffing', 'OPS']
+                ]
+            },
+            {
+                title: "Export Documentation",
+                icon: "fa-file-invoice",
+                items: [
+                    ['commercial_invoice', '/exports/commercial_invoice', 'fa-file-invoice', 'Commercial Invoice', 'DOC'],
+                    ['packing_list', '/exports/packing_list', 'fa-box', 'Packing List', 'DOC'],
+                    ['shipping_bill', '/exports/shipping_bill', 'fa-file-contract', 'Shipping Bill', 'DOC'],
+                    ['bill_of_lading', '/exports/bill_of_lading', 'fa-anchor', 'Bill Of Lading', 'DOC']
+                ]
+            },
+            {
+                title: "Export Compliance",
+                icon: "fa-shield-halved",
+                items: [
+                    ['health_certificate', '/exports/health_certificate', 'fa-certificate', 'Health Certificate', 'CERT']
+                ]
+            }
+        ]
+    },
+    {
+        pillarName: "Finance & Accounts",
+        categories: [
+            {
+                title: "Receivables",
+                icon: "fa-money-bill-trend-up",
+                items: [
+                    ['customer_receivables', '/finance/customer_receivables', 'fa-money-bill-transfer', 'Customer Receivables', 'AR']
+                ]
+            },
+            {
+                title: "Payables",
+                icon: "fa-money-check-dollar",
+                items: [
+                    ['vendor_payments', '/finance/vendor_payments', 'fa-money-check-dollar', 'Vendor Payments', 'AP'],
+                    ['expense_vouchers', '/finance/expense_vouchers', 'fa-file-circle-dollar', 'Expense Vouchers', 'EXP']
+                ]
+            },
+            {
+                title: "Banking",
+                icon: "fa-building-columns",
+                items: [
+                    ['bank_transactions', '/finance/bank_transactions', 'fa-building-columns', 'Bank Transactions', 'BANK'],
+                    ['payment_receipts', '/finance/payment_receipts', 'fa-receipt', 'Payment Receipts', 'PAY']
+                ]
+            },
+            {
+                title: "Accounting",
+                icon: "fa-book",
+                items: [
+                    ['journal_entries', '/finance/journal_entries', 'fa-book', 'Journal Entries', 'JV'],
+                    ['ledger_master', '/finance/ledger_master', 'fa-book-open', 'Ledger Master', 'LEDGER']
+                ]
+            },
+            {
+                title: "Executive Finance (Future)",
+                icon: "fa-chart-line",
+                items: [
+                    ['buyer_aging', '/finance/buyer_aging', 'fa-clock', 'Buyer Aging Summary', 'AR'],
+                    ['cash_flow', '/finance/cash_flow', 'fa-money-bill-wave', 'Cash Flow', 'CASH'],
+                    ['profit_loss', '/finance/profit_loss', 'fa-chart-column', 'Profit & Loss', 'P&L'],
+                    ['erp_alerts', '/finance/alerts', 'fa-triangle-exclamation', 'ERP Alerts', 'ALERT']
+                ]
+            }
+        ]
+    },
+    {
         pillarName: "Data & Intelligence",
         categories: [
             {
-                title: "Operation Reports",
+                title: "Reports",
                 icon: "fa-file-chart-column",
                 items: [
                     ['gate_entry_report', '/reports/gate_entry', 'fa-file-lines', 'Gate Entry Report', 'Logs'],
@@ -418,22 +482,10 @@ const organizedMenu = [
         ]
     },
     {
-        pillarName: "Corporate Finance & HR",
+        pillarName: "HR & Administration",
         categories: [
             {
-                title: "Bills & Operations",
-                icon: "fa-receipt",
-                items: [
-                    ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills', 'Exp'],
-                    ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption', 'Exp'],
-                    ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging', 'Exp'],
-                    ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight', 'Exp'],
-                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
-                    ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
-                ]
-            },
-            {
-                title: "HRMS Portal",
+                title: "HRMS",
                 icon: "fa-users-gear",
                 items: [
                     ['employee_registration', '/attendance/employee/register', 'fa-id-card', 'Staff Registration', 'HR'],
@@ -443,11 +495,18 @@ const organizedMenu = [
                     ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
                     ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR']
                 ]
+            },
+            {
+                title: "User Management",
+                icon: "fa-user-lock",
+                items: [
+                    ['add_user', '/admin/add_user', 'fa-user-plus', 'User Configuration', 'Admin']
+                ]
             }
         ]
     },
     {
-        pillarName: "Master Setup & Admin",
+        pillarName: "Master Setup",
         categories: [
             {
                 title: "Criteria Masters",
@@ -481,13 +540,6 @@ const organizedMenu = [
                     ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers', 'Config'],
                     ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors', 'Config']
                 ]
-            },
-            {
-                title: "Administration",
-                icon: "fa-user-lock",
-                items: [
-                    ['add_user', '/admin/add_user', 'fa-user-plus', 'User Management', 'Admin']
-                ]
             }
         ]
     }
@@ -513,7 +565,6 @@ function renderOrganizedMenu() {
         let pillarHtml = `<div class="pillar-block"><div class="pillar-title">${pillar.pillarName}</div>`;
         let hasVisibleCategory = false;
         pillar.categories.forEach(cat => {
-            // Evaluates permissions consistently since all elements now match the 5-item signature structure mapping
             let allowedItems = cat.items.filter(item => allow(item[0]));
             if (allowedItems.length === 0) return;
             hasVisibleCategory = true;
@@ -543,8 +594,14 @@ function renderOrganizedMenu() {
 
 function handleMenuClick(element) {
     const isOpen = element.classList.contains('open');
-    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('open'));
-    if(!isOpen) element.classList.add('open');
+    const submenu = element.nextElementSibling;
+    
+    // Smooth accordion collapse/expand handling
+    if(isOpen) {
+        element.classList.remove('open');
+    } else {
+        element.classList.add('open');
+    }
 }
 
 function toggleSidebar(shouldOpen) {
@@ -573,17 +630,11 @@ async function logout(){
 
 window.onload = () => {
     renderOrganizedMenu();
-    // Safe sequential evaluation matching correct operational layouts maps
     if(allow("processing_dashboard")) {
         loadPage('/dashboard/processing_dashboard');
     } else if(allow("inventory_dashboard")) {
         loadPage('/dashboard/inventory_dashboard');
-    } else if(allow("hr_dashboard")) {
-        loadPage('/dashboard/hr_dashboard');
-    } else if(allow("costing_dashboard")) {
-        loadPage('/dashboard/costing_dashboard');
     } else {
-        // Fallback trace sequence if no dashboard permissions match
         const firstSubmenuItem = document.querySelector('.submenu-item');
         if(firstSubmenuItem) {
             firstSubmenuItem.click();

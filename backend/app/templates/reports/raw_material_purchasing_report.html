@@ -48,7 +48,7 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px; user-select:none;}
 
 .menu-list{
  position:absolute; right:0; top:30px; width:200px; background:#fff; border:1px solid var(--border);
@@ -99,8 +99,7 @@ tr.selected{background:#dbeafe !important;}
     width: 100%;
 }
 .searchable-dropdown-list {
-    position: absolute;
-    left: 0; top: 100%; right: 0;
+    position: fixed; /* 🟢 Fixed overflow issue */
     max-height: 150px; overflow-y: auto;
     background: #fff; border: 1px solid var(--accent);
     z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -356,8 +355,12 @@ function applyFilters() {
     avg_net_rate.innerText = netRec > 0 ? (netAmt/netRec).toFixed(2) : "0.00";
 }
 
+// 🟢 SEARCHABLE INLINE DROPDOWN LOGIC FIXED
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
+    
+    // Close the 3-dot menu smoothly when Edit starts
+    document.getElementById("mainMenu").style.display = "none";
     
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.trim(); 
@@ -380,12 +383,22 @@ function enableEdit() {
             const inputEl = td.querySelector('.dropdown-search-input');
             inputEl.addEventListener('focus', () => {
                 closeAllInlineDropdowns();
-                td.querySelector('.searchable-dropdown-list').style.display = 'block';
+                const listEl = td.querySelector('.searchable-dropdown-list');
+                
+                // Fixed position calculations to overcome table overflow hidden clipping
+                const rect = inputEl.getBoundingClientRect();
+                listEl.style.top = (rect.bottom + 2) + "px";
+                listEl.style.left = rect.left + "px";
+                listEl.style.width = rect.width + "px";
+                listEl.style.display = 'block';
             });
         } else { 
             td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" value="${val}">`; 
         }
     });
+    
+    // Auto close dropdown when table scrolls
+    document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
 function filterInlineDropdown(input) {
@@ -419,11 +432,28 @@ function closeAllInlineDropdowns() {
     document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
 }
 
+// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
 document.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('dropdown-search-input') && !e.target.classList.contains('searchable-dropdown-item')) {
+    // 1. Close Inline Searchable Dropdowns if clicked outside
+    if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
     }
+    
+    // 2. Manage 3-Dot Menu
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu) {
+        if (e.target.closest('.dots')) {
+            return;
+        }
+        mainMenu.style.display = "none";
+    }
 });
+
+function toggleMenu(e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    const m = document.getElementById("mainMenu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
+}
 
 async function saveEdit() {
     if(!selectedRow) return;
@@ -446,14 +476,12 @@ async function deleteRowAction() {
     if(res.ok) location.reload();
 }
 
-function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
 function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
 function askConfirm(action) { currentAction = action; document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; document.getElementById("confirmModal").style.display = "flex"; }
 
 document.getElementById("btnYes").onclick = () => {
     closeModal();
     
-    // 🟢 DYNAMIC EXCLUSION & EXTRACTION SYSTEM FROM ACTIVE ELEMENT FIELDS
     const visibleIds = [...document.querySelectorAll("#tbody tr[data-id]")].map(tr => tr.dataset.id).join(",");
     const fy = document.getElementById('f_fy').value;
     const batch = document.getElementById('f_batch').value;
@@ -463,7 +491,6 @@ document.getElementById("btnYes").onclick = () => {
     const hsn = document.getElementById('f_hsn').value;
     const production = document.getElementById('f_production').value;
 
-    // Build optimized query selector string parameters
     let qStr = `fy=${fy}&ids=${visibleIds}`;
     if(batch) qStr += `&batch=${encodeURIComponent(batch)}`;
     if(supplier) qStr += `&supplier=${encodeURIComponent(supplier)}`;
@@ -475,7 +502,6 @@ document.getElementById("btnYes").onclick = () => {
     if (currentAction === 'delete_row') {
         deleteRowAction();
     } else if (currentAction === 'print_table') {
-        // 🟢 FIXED: INSTEAD OF WINDOW.PRINT(), REDIRECT TO FULL PRINT TEMPLATE
         window.open(`${baseUrl}/print_table?${qStr}`, '_blank');
     } else if (currentAction.startsWith('excel') || currentAction.startsWith('pdf') || currentAction === 'print_summary') {
         const actionMap = {
@@ -499,7 +525,6 @@ function toggleAudit() {
     }
 }
 
-document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 [f_from, f_to, f_batch, f_supplier, f_variety, f_peeling, f_hsn, f_production].forEach(el => el.onchange = applyFilters);
 searchBox.oninput = applyFilters;
 applyFilters();

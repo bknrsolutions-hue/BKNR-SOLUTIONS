@@ -229,10 +229,9 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            {% if is_admin %}
+            <!-- Edit & Delete are now available unconditionally -->
             <div onclick="enableEdit()">✏️ Edit Row (Detailed Only)</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
-            {% endif %}
             <div onclick="toggleAudit()">📜 Full Audit History</div>
             <hr>
             <b>📋 Export Options</b>
@@ -240,9 +239,7 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF</div>
             <hr>
-            {% if is_admin %}
             <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Row</div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -674,17 +671,66 @@ function toggleAudit() {
     }
 }
 
+// FULLY FUNCTIONAL MODAL LOGIC FOR EXPORT AND DELETE
 function askConfirm(action) { 
     if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
     currentAction = action; 
-    confirmMsg.innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()} Request?`; 
-    confirmModal.style.display = "flex"; 
+    
+    if (action === 'delete_row') {
+        if(!selectedRow || !selectedRow.parentElement.id.includes("detailedBody")) {
+            return alert("To delete, please switch to 'Detailed View' and click on a specific row.");
+        }
+    }
+    
+    document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()} Request?`; 
+    document.getElementById("confirmModal").style.display = "flex"; 
 }
-function closeModal() { confirmModal.style.display = "none"; }
-btnYes.onclick = () => { closeModal(); if(currentAction==='print_table') window.print(); };
 
-function toggleMenu(e) { e.stopPropagation(); mainMenu.style.display = mainMenu.style.display==="block"?"none":"block"; }
-document.onclick = () => { if(document.getElementById("mainMenu")) mainMenu.style.display="none"; }
+function closeModal() { document.getElementById("confirmModal").style.display = "none"; }
+
+document.getElementById("btnYes").onclick = async () => { 
+    closeModal(); 
+    
+    const fy = document.getElementById("f_fy").value;
+    const batch = document.getElementById("f_batch").value || "";
+    const species = document.getElementById("f_species").value || "";
+    const variety = document.getElementById("f_variety").value || "";
+    const count = document.getElementById("f_count").value || "";
+    
+    const params = new URLSearchParams({
+        fy: fy, batch: batch, species: species, variety: variety, hoso_count: count
+    });
+
+    if (currentAction === 'print_table') {
+        window.print(); 
+    } 
+    else if (currentAction === 'excel_table') {
+        window.location.href = `${baseUrl}/export_excel?${params.toString()}`;
+    } 
+    else if (currentAction === 'pdf_table') {
+        window.location.href = `${baseUrl}/export_pdf?${params.toString()}`;
+    } 
+    else if (currentAction === 'delete_row') {
+        try {
+            const res = await fetch(`${baseUrl}/delete`, { 
+                method:"POST", 
+                headers:{"Content-Type":"application/json"}, 
+                body:JSON.stringify({ id: selectedRow.dataset.id }) 
+            });
+            if(res.ok) {
+                alert("Record deleted successfully.");
+                loadDetailedData(); // Reload the detailed table
+            } else {
+                alert("Failed to delete record.");
+            }
+        } catch (err) {
+            alert("Server connection failed.");
+        }
+    }
+};
+
+function toggleMenu(e) { e.stopPropagation(); document.getElementById("mainMenu").style.display = document.getElementById("mainMenu").style.display==="block"?"none":"block"; }
+document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
 window.onload = () => {
     applyFilters();

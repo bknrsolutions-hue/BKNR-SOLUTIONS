@@ -53,7 +53,7 @@ select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus 
 
 /* Dropdown Menu */
 .menu-box { position: relative; }
-.dots { width: 28px; height: 28px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; background: #fff; font-size: 14px; color: var(--text-muted); transition: all 0.2s; }
+.dots { width: 28px; height: 28px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; background: #fff; font-size: 14px; color: var(--text-muted); transition: all 0.2s; user-select: none; }
 .dots:hover { background: var(--table-header); color: var(--primary); border-color: #cbd5e1; }
 .menu-list { position: absolute; right: 0; top: 34px; width: 240px; background: #fff; border: 1px solid var(--border); border-radius: 8px; display: none; z-index: 5000; box-shadow: var(--shadow-md); padding: 4px 0; }
 .menu-list div { padding: 8px 16px; font-size: 11px; font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
@@ -110,9 +110,16 @@ tr.selected td { color: #0369a1; font-weight: 600; }
 
 .calc-cell { font-weight: 700; color: var(--accent); background: #f8fafc; }
 
-/* In-line Editable Searchable Fields */
+/* 🌟 SEARCHABLE INLINE DROPDOWN CORE STYLING */
 .edit-input { width: 100%; font-size: 11px; font-weight: 500; border: 1px solid var(--accent); padding: 4px; text-align: center; outline: none; border-radius: 4px; background: #fff; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15); }
-select.edit-input { text-align-last: center; cursor: pointer; }
+.searchable-dropdown-container { position: relative; width: 100%; }
+.searchable-dropdown-list {
+    position: fixed; /* Fixed overflow issue */
+    max-height: 140px; overflow-y: auto;
+    background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+}
+.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
 
 tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 12px 6px; color: var(--primary); border-right: 1px solid var(--border); }
 
@@ -126,10 +133,48 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2
 
 /* Side Audit Feed */
 .audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; border-left: 1px solid var(--border); display: none; flex-direction: column; z-index: 5500; box-shadow: -10px 0 25px -5px rgba(0,0,0,0.1); }
+
+/* ================= HARD PRINTER ENGINE COMPILE SYSTEM (FIXED TFOOT ISSUE) ================= */
+@media print {
+    @page { size: A4 landscape; margin: 5mm; }
+    body { background: #fff; height: auto; overflow: visible; color: #000; display: block !important; }
+    .header, .actions, .menu-box, .audit-panel, button, #confirmModal, .view-btns { display: none !important; }
+    
+    /* Display Block overrides Flexbox truncation during print */
+    .section { border: none; margin: 0; padding: 0; overflow: visible; display: block !important; box-shadow: none !important; }
+    .table-wrap { overflow: visible; width: 100%; display: block !important; height: auto !important; }
+    
+    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
+    
+    /* Table structure declarations to force headers/footers to behave */
+    thead { display: table-header-group !important; }
+    tfoot { display: table-footer-group !important; }
+    tr { page-break-inside: avoid !important; }
+    
+    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 5px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
+    
+    /* FIXED: position static removes the 'sticky' ghosting in print mode */
+    tfoot td { position: static !important; background: #f1f5f9 !important; border: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    
+    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 12px; }
+}
+.print-header-block { display: none; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 <body>
+
+<div class="print-header-block">
+    <div style="text-align: left;">
+        <h2 style="margin:0; font-size:16px; color:#0f172a; font-weight:800; text-transform:uppercase;">{{ request.session.get('company_name', 'BKNR ENTERPRISES') }} ERP</h2>
+        <div style="margin:2px 0 0 0; font-size:10px; font-weight:bold; color:#475569;">PRODUCTION & YIELD REPORT SUMMARY</div>
+    </div>
+    <div style="text-align: right; font-size: 9px; font-weight: bold; line-height: 1.4;">
+        <div style="color:#2563eb; font-size:10px; text-transform:uppercase;">REPORT VIEW: <span id="printScopeLabel">SUBTOTAL MATRIX</span></div>
+        <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">System Printed Ledger Engine Instance</div>
+    </div>
+</div>
 
 <div class="header">
     <div class="header-top">
@@ -168,10 +213,8 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            {% if is_admin %}
             <div onclick="enableEdit()">✏️ Edit Selected Row</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
-            {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
             <hr><b>📋 Export Options</b>
             <div onclick="window.print()">🖨 Print Current View</div>
@@ -179,7 +222,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2
             <div onclick="askConfirm('pdf_table')">📥 Download PDF Report</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel Filtered</div>
             <hr>
-            {% if is_admin %}<div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Selected Row</div>{% endif %}
+            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Selected Row</div>
         </div>
     </div>
 </div>
@@ -367,7 +410,23 @@ let selectedRow=null,currentAction=null,currentViewMode='summary';
 const baseUrl=window.location.pathname.replace(/\/$/,"");
 
 function changeFY(val){if(!val)return;const url=new URL(window.location.href);url.searchParams.set('fy',val);window.location.href=url.toString();}
-function switchView(mode,btn){document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentViewMode=mode;selectedRow=null;document.querySelectorAll("tr").forEach(r=>r.classList.remove("selected"));if(mode==='summary'){document.getElementById("summaryTable").style.display="table";document.getElementById("detailTable").style.display="none";}else{document.getElementById("summaryTable").style.display="none";document.getElementById("detailTable").style.display="table";}applyFilters();}
+function switchView(mode,btn){
+    document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentViewMode=mode;selectedRow=null;
+    document.querySelectorAll("tr").forEach(r=>r.classList.remove("selected"));
+    const scopeLabel = document.getElementById("printScopeLabel");
+    if(mode==='summary'){
+        document.getElementById("summaryTable").style.display="table";
+        document.getElementById("detailTable").style.display="none";
+        if(scopeLabel) scopeLabel.innerText = "SUBTOTAL MATRIX";
+    }else{
+        document.getElementById("summaryTable").style.display="none";
+        document.getElementById("detailTable").style.display="table";
+        if(scopeLabel) scopeLabel.innerText = "DETAILED PRODUCTION";
+    }
+    applyFilters();
+}
 
 function parseAndColorize(){
  document.querySelectorAll(".color-track").forEach(td => {
@@ -412,25 +471,112 @@ function applyFilters(){
  parseAndColorize();
 }
 
-function toggleMenu(e){e.stopPropagation();const m=document.getElementById("mainMenu");m.style.display=m.style.display==="block"?"none":"block";}
-document.onclick=()=>{if(document.getElementById("mainMenu"))document.getElementById("mainMenu").style.display="none";}
 function selectRow(tr){if(tr.classList.contains('subtotal-row')) return;document.querySelectorAll("#summaryTbody tr,#detailTbody tr").forEach(r=>r.classList.remove("selected"));tr.classList.add("selected");selectedRow=tr;}
 
-function enableEdit(){
- if(!selectedRow)return alert("Select a row first!");
- selectedRow.querySelectorAll(".editable, .lookup").forEach(td=>{
-  const val=td.innerText.trim(),field=td.dataset.field;
-  if(td.classList.contains("lookup")){
-   const type=td.classList[1],opts=lookups[type]||[];
-   td.innerHTML=`<select class="edit-input" data-field="${field}">${opts.map(o=>`<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;
-  }else{td.innerHTML=`<input class="edit-input" data-field="${field}" value="${val}">`;}
- });
+/* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS INTEGRATION */
+function enableEdit() {
+    if(!selectedRow) return alert("Select a row first!");
+    
+    // Close the 3-dot menu smoothly when Edit starts
+    document.getElementById("mainMenu").style.display = "none";
+    
+    selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
+        const val = td.innerText.trim();
+        const field = td.dataset.field;
+        
+        if(td.classList.contains("lookup")){
+            const type = td.classList[1]; 
+            const opts = lookups[type] || [];
+            
+            let htmlStr = `
+                <div class="searchable-dropdown-container">
+                    <input class="edit-input dropdown-search-input" data-field="${field}" data-orig="${val}" value="${val}" autocomplete="off" oninput="filterInlineDropdown(this)">
+                    <div class="searchable-dropdown-list">
+                        ${opts.map(o => `<div class="searchable-dropdown-item" onclick="selectInlineValue(this, '${o}')">${o}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+            td.innerHTML = htmlStr;
+            
+            const inputEl = td.querySelector('.dropdown-search-input');
+            inputEl.addEventListener('focus', () => {
+                closeAllInlineDropdowns();
+                const listEl = td.querySelector('.searchable-dropdown-list');
+                
+                // Fixed position calculations to overcome table overflow hidden clipping
+                const rect = inputEl.getBoundingClientRect();
+                listEl.style.top = (rect.bottom + 2) + "px";
+                listEl.style.left = rect.left + "px";
+                listEl.style.width = rect.width + "px";
+                listEl.style.display = 'block';
+            });
+        } else { 
+            td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}">`; 
+        }
+    });
+    
+    // Auto close dropdown when table scrolls
+    document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
+
+function filterInlineDropdown(input) {
+    const filter = input.value.toLowerCase();
+    const container = input.parentElement;
+    const list = container.querySelector('.searchable-dropdown-list');
+    const items = list.querySelectorAll('.searchable-dropdown-item');
+    list.style.display = 'block';
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        if(item.innerText.toLowerCase().includes(filter)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else { item.style.display = 'none'; }
+    });
+    if(visibleCount === 0) list.style.display = 'none';
+}
+
+function selectInlineValue(element, value) {
+    const container = element.closest('.searchable-dropdown-container');
+    const input = container.querySelector('.dropdown-search-input');
+    input.value = value;
+    container.querySelector('.searchable-dropdown-list').style.display = 'none';
+}
+
+function closeAllInlineDropdowns() {
+    document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
+}
+
+// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
+document.addEventListener('click', function(e) {
+    // 1. Close Inline Searchable Dropdowns if clicked outside
+    if (!e.target.closest('.searchable-dropdown-container')) {
+        closeAllInlineDropdowns();
+    }
+    
+    // 2. Manage 3-Dot Menu 
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu) {
+        if (e.target.closest('.dots')) return;
+        mainMenu.style.display = "none";
+    }
+});
+
+function toggleMenu(e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    const m = document.getElementById("mainMenu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
+}
+
 async function saveEdit(){
- if(!selectedRow)return;const inputs=selectedRow.querySelectorAll(".edit-input");if(!inputs.length)return alert("Enable edit mode first!");
- const payload={id:selectedRow.dataset.id};inputs.forEach(i=>payload[i.dataset.field]=i.value);
+ if(!selectedRow)return;
+ const inputs=selectedRow.querySelectorAll("input.edit-input");
+ if(!inputs.length)return alert("Enable edit mode first!");
+ const payload={id:selectedRow.dataset.id};
+ inputs.forEach(i=>payload[i.dataset.field]=i.value);
  try{const res=await fetch(`${baseUrl}/update`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});if(res.ok)location.reload();}catch(e){alert("Save failed!");}
 }
+
 function askConfirm(action){currentAction=action;document.getElementById("confirmMsg").innerText=`Confirm ${action.replace(/_/g,' ').toUpperCase()}?`;document.getElementById("confirmModal").style.display="flex";}
 function closeModal(){document.getElementById("confirmModal").style.display="none";}
 document.getElementById("btnYes").onclick=async()=>{
@@ -441,16 +587,31 @@ document.getElementById("btnYes").onclick=async()=>{
   const res=await fetch(`${baseUrl}/delete`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:selectedRow.dataset.id})});if(res.ok)location.reload();
  }
 };
-async function toggleAudit(){
- const panel=document.getElementById("auditPanel");panel.style.display=panel.style.display==="flex"?"none":"flex";if(panel.style.display==="none")return;
- const content=document.getElementById("auditContent");content.innerHTML="Loading...";const res=await fetch(`${baseUrl}/audit_all`);const logs=await res.json();
- content.innerHTML=logs.map(l=>`<div style="border-left:2px solid var(--accent);margin-bottom:5px;background:#fff;padding:8px;font-size:10px;"><b>${l.timestamp}</b> | Batch: ${l.batch}<br>Updated: ${l.field||'Record'}<br><small>By: ${l.user}</small></div>`).join('');
+
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
+    panel.style.display = "flex";
+    const content = document.getElementById("auditContent");
+    content.innerHTML = "Loading...";
+    try {
+        const res = await fetch(`${baseUrl}/audit_all`);
+        const logs = await res.json();
+        content.innerHTML = logs.map(l => `
+            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px; font-size:10px;">
+                <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
+                ${l.action}: ${l.details}<br>
+                <small>By: ${l.user}</small>
+            </div>`).join('');
+    } catch(e) { content.innerHTML = "Error loading logs."; }
 }
+
 function fillFilters(){
  const sets={brand:new Set(),variety:new Set(),freezer:new Set(),type:new Set(),production:new Set()};
  document.querySelectorAll(".sum-data-row").forEach(r=>{sets.brand.add(r.dataset.brand);sets.variety.add(r.dataset.variety);sets.freezer.add(r.dataset.freezer);sets.type.add(r.dataset.type);sets.production.add(r.dataset.pf);});
  Object.keys(sets).forEach(k=>{const sel=document.getElementById(`f_${k}`);if(sel)[...sets[k]].sort().forEach(v=>{if(v)sel.innerHTML+=`<option value="${v}">${v}</option>`;});});
 }
+
 window.onload=()=>{fillFilters();applyFilters();};
 </script>
 <script src="/static/js/global-loader.js"></script>

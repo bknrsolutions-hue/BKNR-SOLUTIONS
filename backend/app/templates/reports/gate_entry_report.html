@@ -32,7 +32,7 @@ select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px soli
 .actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px; user-select:none;}
 .menu-list{
  position:absolute; right:0; top:30px; width:200px; background:#fff; border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
@@ -67,7 +67,8 @@ tr.selected{background:#dbeafe !important;}
 /* SEARCHABLE INLINE DROPDOWN EMBEDDED STRUCTURES */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
-    position: absolute; left: 0; top: 100%; right: 0; max-height: 140px; overflow-y: auto;
+    position: fixed;
+    max-height: 140px; overflow-y: auto;
     background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -95,7 +96,6 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     tbody td { border: 1px solid #000 !important; font-size: 8.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
     tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     
-    /* Dynamic Embedded Print Header Architecture */
     .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 12px; }
 }
 .print-header-block { display: none; }
@@ -156,13 +156,15 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            {% if is_admin %}<div onclick="enableEdit()">✏️ Edit Selected Row</div><div onclick="saveEdit()">💾 Save Changes</div>{% endif %}
+            <div onclick="enableEdit()">✏️ Edit Selected Row</div>
+            <div onclick="saveEdit()">💾 Save Changes</div>
             <div onclick="toggleAudit()">📜 View Audit Logs</div>
             <hr>
             <div onclick="triggerLocalPrint()">🖨️ Print Native Table</div>
             <div onclick="exportAction('pdf')">📄 Export PDF</div>
             <div onclick="exportAction('excel')">📊 Export Excel</div>
-            {% if is_admin %}<hr><div onclick="deleteRow()" style="color:red">🗑 Delete Record</div>{% endif %}
+            <hr>
+            <div onclick="deleteRow()" style="color:red">🗑 Delete Record</div>
         </div>
     </div>
 </div>
@@ -176,10 +178,11 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                     <th class="w-dt">Date</th>
                     <th class="w-tm">Time</th>
                     <th class="w-bt">Batch No</th>
-                    <th class="w-ch">Challan</th>
-                    <th class="w-fc">Factory</th>
+                    <th class="w-ch">Challan No</th>
+                    <th class="w-fc">Factory Name</th>
+                    <th class="w-fc">Gatepass No</th>
                     <th class="w-sp">Supplier Name</th>
-                    <th class="w-lc">Location</th>
+                    <th class="w-lc">PR Location</th>
                     <th class="w-bx">Mat.</th>
                     <th class="w-bx">Emp.</th>
                     <th class="w-bx">Ice</th>
@@ -204,6 +207,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
                         <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
                         <td class="editable" data-field="challan_number">{{ r.challan_number }}</td>
                         <td class="lookup factory" data-field="receiving_center">{{ r.receiving_center }}</td>
+                        <td class="editable" data-field="gate_pass_number">{{ r.gate_pass_number }}</td>
                         <td class="lookup supplier" data-field="supplier_name">{{ r.supplier_name }}</td>
                         <td class="lookup location" data-field="purchasing_location">{{ r.purchasing_location }}</td>
                         <td class="editable mat-box" data-field="no_of_material_boxes">{{ r.no_of_material_boxes }}</td>
@@ -300,6 +304,10 @@ function applyFilters() {
 // SEARCHABLE INLINE DROPDOWN HANDLERS 
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
+    
+    // Close the 3-dot menu smoothly when Edit starts
+    document.getElementById("mainMenu").style.display = "none";
+    
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
         const val = td.innerText.trim();
         const field = td.dataset.field;
@@ -321,12 +329,19 @@ function enableEdit() {
             const inputEl = td.querySelector('.dropdown-search-input');
             inputEl.addEventListener('focus', () => {
                 closeAllInlineDropdowns();
-                td.querySelector('.searchable-dropdown-list').style.display = 'block';
+                const listEl = td.querySelector('.searchable-dropdown-list');
+                const rect = inputEl.getBoundingClientRect();
+                listEl.style.top = (rect.bottom + 2) + "px";
+                listEl.style.left = rect.left + "px";
+                listEl.style.width = rect.width + "px";
+                listEl.style.display = 'block';
             });
         } else { 
             td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}">`; 
         }
     });
+    
+    document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
 function filterInlineDropdown(input) {
@@ -357,11 +372,32 @@ function closeAllInlineDropdowns() {
     document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
 }
 
+// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
 document.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('dropdown-search-input') && !e.target.classList.contains('searchable-dropdown-item')) {
+    // 1. Close Inline Searchable Dropdowns if clicked outside
+    if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
     }
+    
+    // 2. Manage 3-Dot Menu 
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu) {
+        // If they click on the dots EXACTLY, do nothing here (toggleMenu handles it)
+        if (e.target.closest('.dots')) {
+            return;
+        }
+        // If they click anywhere else (including selecting an option), hide the menu
+        mainMenu.style.display = "none";
+    }
 });
+
+// 🟢 NEW TOGGLE MENU LOGIC
+function toggleMenu(e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    const m = document.getElementById("mainMenu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
+}
+
 
 async function saveEdit() {
     if(!selectedRow) return;
@@ -379,11 +415,10 @@ async function saveEdit() {
     });
     
     if(!changed) return location.reload();
-    const res = await fetch("/gate_entry/update", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    const res = await fetch("/reports/gate_entry/update", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
     if(res.ok) location.reload(); else alert("Update Failed!");
 }
 
-// CLIENT-SIDE NATIVE HARD PRINT COMPILE HANDLER
 function triggerLocalPrint() {
     const activeSupplierSelection = document.getElementById("f_supplier").value;
     const badgeEl = document.getElementById("printSupplierLabel");
@@ -398,41 +433,30 @@ function triggerLocalPrint() {
 
 async function deleteRow() {
     if(!selectedRow || !confirm("Delete this record permanently?")) return;
-    const res = await fetch("/gate_entry/delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
+    const res = await fetch("/reports/gate_entry/delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
     if(res.ok) location.reload();
 }
 
-// 🟢 FIXED EXPORT ACTION - PREFIXED WITH /reports TO MATCH THE APIROUTER INITIALIZATION LOGIC
 function exportAction(type) {
     const fy = document.getElementById("f_fy").value;
     if(!fy || fy.trim() === "") { 
         return alert("Select Financial Year first!"); 
     }
     
-    // Capture user filters state parameters
     const supplier = document.getElementById("f_supplier").value || "";
     const factory = document.getElementById("f_factory").value || "";
     
-    // Construct strict URL destination matrix matching routing layer
     const baseUrl = `/reports/gate_entry/export_${type}`;
-    const params = new URLSearchParams({
-        fy: fy,
-        supplier: supplier,
-        factory: factory
-    });
+    const params = new URLSearchParams({ fy: fy, supplier: supplier, factory: factory });
     
-    const finalUrl = `${baseUrl}?${params.toString()}`;
-    console.log(`Routing stream redirecting target to: ${finalUrl}`);
-    
-    window.location.href = finalUrl;
+    window.location.href = `${baseUrl}?${params.toString()}`;
 }
 
-function toggleMenu(e) { e.stopPropagation(); const m = document.getElementById("mainMenu"); m.style.display = m.style.display==="block"?"none":"block"; }
 function toggleAudit() {
     const p = document.getElementById("auditPanel");
     p.style.display = p.style.display==="flex"?"none":"flex";
     if(p.style.display==="flex") {
-        fetch("/gate_entry/audit").then(r=>r.json()).then(data=>{
+        fetch("/reports/gate_entry/audit").then(r=>r.json()).then(data=>{
             document.getElementById("auditContent").innerHTML = data.map(l=>`
                 <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
                     <b>REC ID: ${l.record_id}</b> | ${l.time}<br>

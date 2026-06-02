@@ -107,7 +107,8 @@ tr.selected{background:#eef2ff !important; border-left: 3px solid var(--accent);
 /* SEARCHABLE INLINE DROPDOWN CORE STYLING */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
-    position: absolute; left: 0; top: 100%; right: 0; max-height: 140px; overflow-y: auto;
+    position: fixed; /* 🟢 Fixed overflow issue */
+    max-height: 140px; overflow-y: auto;
     background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -477,12 +478,22 @@ function enableEdit() {
             const inputEl = td.querySelector('.dropdown-search-input');
             inputEl.addEventListener('focus', () => {
                 closeAllInlineDropdowns();
-                td.querySelector('.searchable-dropdown-list').style.display = 'block';
+                const listEl = td.querySelector('.searchable-dropdown-list');
+                
+                // 🟢 Fixed position calculations to overcome table overflow hidden clipping
+                const rect = inputEl.getBoundingClientRect();
+                listEl.style.top = (rect.bottom + 2) + "px";
+                listEl.style.left = rect.left + "px";
+                listEl.style.width = rect.width + "px";
+                listEl.style.display = 'block';
             });
         } else { 
             td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}" oninput="recalcRow(this)">`; 
         }
     });
+    
+    // 🟢 Auto close dropdown when table scrolls
+    document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
 function filterInlineDropdown(input) {
