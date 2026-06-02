@@ -136,6 +136,7 @@ tr.selected{ background: #eff6ff !important; }
   .mobile-card-list { display: block !important; }
 }
 </style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 
 <body>
@@ -432,7 +433,8 @@ function printRow(){
        p { margin: 8px 0; font-size: 14px; }
        b { color: #111; width: 150px; display: inline-block; }
      </style>
-   </head>
+   <link rel="stylesheet" href="/static/css/global-loader.css">
+</head>
    <body>
      <h2>Contractor Profile Dossier</h2>
      <p><b>System ID:</b> #${d.id}</p>
@@ -452,7 +454,8 @@ function printRow(){
      <p><b>Bank Engine:</b> ${d.bank}</p>
      <p><b>Account Number:</b> ${d.acc}</p>
      <p><b>IFSC Clearance:</b> ${d.ifsc}</p>
-   </body>
+   <script src="/static/js/global-loader.js"></script>
+</body>
    </html>
  `);
  win.document.close();
@@ -480,5 +483,6 @@ window.onclick = function(event) {
 }
 </script>
 
+<script src="/static/js/global-loader.js"></script>
 </body>
 </html>

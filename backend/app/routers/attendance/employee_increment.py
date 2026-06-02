@@ -246,7 +246,8 @@ def print_increment_voucher(request: Request, record_id: int, db: Session = Depe
             td {{ padding: 10px; border-bottom: 1px solid #ddd; font-size: 14px; }}
             .bold {{ font-weight: bold; }}
         </style>
-    </head>
+    <link rel="stylesheet" href="/static/css/global-loader.css">
+</head>
     <body onload="window.print()">
         <div class="voucher">
             <div class="title">BKNR ERP - SALARY INCREMENT VOUCHER</div>
@@ -262,7 +263,8 @@ def print_increment_voucher(request: Request, record_id: int, db: Session = Depe
                 <tr><td class="bold">Approved By:</td><td>{record.approved_by}</td></tr>
             </table>
         </div>
-    </body>
+    <script src="/static/js/global-loader.js"></script>
+</body>
     </html>
     """
 

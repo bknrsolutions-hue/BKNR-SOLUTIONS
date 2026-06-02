@@ -122,6 +122,7 @@ input[readonly]{ background:#f8fafc; color: var(--primary); font-weight: 700; }
     .header-titles h2 { font-size: 20px; }
 }
 </style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 
 <body>
@@ -419,5 +420,6 @@ window.onclick = () => document.getElementById("dropdownMenu").style.display = "
 
 {% if message %}<script>Swal.fire({icon:'success', title:'Saved', timer:1500, showConfirmButton:false});</script>{% endif %}
 
+<script src="/static/js/global-loader.js"></script>
 </body>
 </html>

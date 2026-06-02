@@ -113,6 +113,7 @@ tr.selected { background: #eff6ff !important; }
   .btn { width: 100%; }
 }
 </style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 
 <body>
@@ -430,7 +431,8 @@ function printSelected(){
   const d = selectedElement.dataset;
 
   const p = window.open("","_blank");
-  p.document.write("<html><head><title>Print Report</title><style>body{font-family:sans-serif;padding:15px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;font-size:12px;}</style></head><body>");
+  p.document.write("<html><head><title>Print Report</title><style>body{font-family:sans-serif;padding:15px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;font-size:12px;}</style><link rel="stylesheet" href="/static/css/global-loader.css">
+</head><body>");
   p.document.write("<h3>Buyer Agent Profile Information</h3>");
   p.document.write("<table>");
   p.document.write("<tr><td><b>ID</b></td><td>"+d.id+"</td><td><b>Agent Name</b></td><td>"+d.name+"</td></tr>");
@@ -441,7 +443,8 @@ function printSelected(){
   p.document.write("<tr><td><b>IFSC Code</b></td><td>"+(d.ifsc||'-')+"</td><td><b>Log Date</b></td><td>"+(d.date||'-')+"</td></tr>");
   p.document.write("<tr><td><b>Log Time</b></td><td>"+(d.time||'-')+"</td><td><b>Created By</b></td><td>"+(d.email||'-')+"</td></tr>");
   p.document.write("<tr><td><b>Company ID</b></td><td colspan='3'>"+(d.cid||'-')+"</td></tr>");
-  p.document.write("</table></body></html>");
+  p.document.write("</table><script src="/static/js/global-loader.js"></script>
+</body></html>");
   p.document.close();
   p.print();
 }
@@ -486,5 +489,6 @@ window.onclick = () => {
 }
 </script>
 
+<script src="/static/js/global-loader.js"></script>
 </body>
 </html>

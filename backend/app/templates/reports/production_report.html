@@ -127,6 +127,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 11px; border-top: 2
 /* Side Audit Feed */
 .audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; border-left: 1px solid var(--border); display: none; flex-direction: column; z-index: 5500; box-shadow: -10px 0 25px -5px rgba(0,0,0,0.1); }
 </style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 <body>
 
@@ -452,5 +453,6 @@ function fillFilters(){
 }
 window.onload=()=>{fillFilters();applyFilters();};
 </script>
+<script src="/static/js/global-loader.js"></script>
 </body>
 </html>
