@@ -1,25 +1,30 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Create Loader
-    const loader = document.createElement("div");
-    loader.id = "globalLoader";
+    let loader = document.getElementById("globalLoader");
 
-    loader.innerHTML = `
-        <div class="loader-spinner"></div>
-        <div class="loader-text">Loading...</div>
-    `;
+    if (!loader) {
+        loader = document.createElement("div");
+        loader.id = "globalLoader";
 
-    document.body.appendChild(loader);
+        loader.innerHTML = `
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Loading...</div>
+        `;
 
-    // Page Loaded
-    window.addEventListener("load", () => {
+        document.body.appendChild(loader);
+    }
+
+    // Hide after page fully loaded
+    setTimeout(() => {
         loader.style.display = "none";
-    });
+    }, 300);
 
-    // Link Click
+    // All links
     document.querySelectorAll("a").forEach(link => {
-        link.addEventListener("click", () => {
-            const href = link.getAttribute("href");
+
+        link.addEventListener("click", function () {
+
+            const href = this.getAttribute("href");
 
             if (
                 href &&
@@ -28,14 +33,29 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
                 loader.style.display = "flex";
             }
+
         });
+
     });
 
-    // Form Submit
+    // Forms
     document.querySelectorAll("form").forEach(form => {
+
         form.addEventListener("submit", () => {
             loader.style.display = "flex";
         });
+
     });
+
+});
+
+// Browser navigation
+window.addEventListener("beforeunload", () => {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (loader) {
+        loader.style.display = "flex";
+    }
 
 });
