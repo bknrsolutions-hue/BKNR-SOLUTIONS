@@ -1,41 +1,100 @@
-// Show immediately
-const loader = document.createElement("div");
+// ======================================================
+// BKNR ERP GLOBAL LOADER
+// ======================================================
 
-loader.id = "globalLoader";
+document.addEventListener("DOMContentLoaded", function () {
 
-loader.innerHTML = `
-<div class="loader-spinner"></div>
-<div class="loader-text">Loading...</div>
-`;
+    let loader = document.getElementById("globalLoader");
 
-document.body.appendChild(loader);
+    if (!loader) {
 
-// Hide only after ALL page resources loaded
-window.addEventListener("load", function () {
+        loader = document.createElement("div");
 
+        loader.id = "globalLoader";
+
+        loader.innerHTML = `
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Loading...</div>
+        `;
+
+        document.body.appendChild(loader);
+    }
+
+    // Hide loader after page fully rendered
     loader.style.display = "none";
 
 });
 
-// Show on navigation
-document.addEventListener("click", function(e){
 
-    const link = e.target.closest("a");
+// ======================================================
+// PAGE NAVIGATION LOADER
+// ======================================================
 
-    if(
-        link &&
-        link.href &&
-        !link.href.includes("#") &&
-        !link.href.startsWith("javascript:")
-    ){
+window.addEventListener("beforeunload", function () {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (loader) {
         loader.style.display = "flex";
     }
 
 });
 
-// Show on form submit
-document.addEventListener("submit", function(){
 
-    loader.style.display = "flex";
+// ======================================================
+// AJAX / FETCH LOADER
+// ======================================================
 
-});
+const originalFetch = window.fetch;
+
+window.fetch = async (...args) => {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (loader) {
+        loader.style.display = "flex";
+    }
+
+    try {
+
+        const response = await originalFetch(...args);
+
+        return response;
+
+    } catch (error) {
+
+        throw error;
+
+    } finally {
+
+        if (loader) {
+            loader.style.display = "none";
+        }
+
+    }
+};
+
+
+// ======================================================
+// OPTIONAL: MANUAL CONTROL
+// ======================================================
+
+window.showLoader = function () {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (loader) {
+        loader.style.display = "flex";
+    }
+
+};
+
+window.hideLoader = function () {
+
+    const loader = document.getElementById("globalLoader");
+
+    if (loader) {
+        loader.style.display = "none";
+    }
+
+};
