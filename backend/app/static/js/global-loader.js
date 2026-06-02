@@ -1,61 +1,41 @@
-document.addEventListener("DOMContentLoaded", () => {
+// Show immediately
+const loader = document.createElement("div");
 
-    let loader = document.getElementById("globalLoader");
+loader.id = "globalLoader";
 
-    if (!loader) {
-        loader = document.createElement("div");
-        loader.id = "globalLoader";
+loader.innerHTML = `
+<div class="loader-spinner"></div>
+<div class="loader-text">Loading...</div>
+`;
 
-        loader.innerHTML = `
-            <div class="loader-spinner"></div>
-            <div class="loader-text">Loading...</div>
-        `;
+document.body.appendChild(loader);
 
-        document.body.appendChild(loader);
-    }
+// Hide only after ALL page resources loaded
+window.addEventListener("load", function () {
 
-    // Hide after page fully loaded
-    setTimeout(() => {
-        loader.style.display = "none";
-    }, 300);
-
-    // All links
-    document.querySelectorAll("a").forEach(link => {
-
-        link.addEventListener("click", function () {
-
-            const href = this.getAttribute("href");
-
-            if (
-                href &&
-                !href.startsWith("#") &&
-                !href.startsWith("javascript:")
-            ) {
-                loader.style.display = "flex";
-            }
-
-        });
-
-    });
-
-    // Forms
-    document.querySelectorAll("form").forEach(form => {
-
-        form.addEventListener("submit", () => {
-            loader.style.display = "flex";
-        });
-
-    });
+    loader.style.display = "none";
 
 });
 
-// Browser navigation
-window.addEventListener("beforeunload", () => {
+// Show on navigation
+document.addEventListener("click", function(e){
 
-    const loader = document.getElementById("globalLoader");
+    const link = e.target.closest("a");
 
-    if (loader) {
+    if(
+        link &&
+        link.href &&
+        !link.href.includes("#") &&
+        !link.href.startsWith("javascript:")
+    ){
         loader.style.display = "flex";
     }
+
+});
+
+// Show on form submit
+document.addEventListener("submit", function(){
+
+    loader.style.display = "flex";
 
 });
