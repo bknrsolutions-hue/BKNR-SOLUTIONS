@@ -106,6 +106,9 @@ from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.periodic_report import router as periodic_report_router
 from app.routers.summary.inventory_costing import router as summary_inventory_costing_router
 from app.routers.summary.floor_balance_value import router as summary_floor_balance_value_router
+from app.routers import data_management
+
+
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
 application.include_router(menu_router)
@@ -124,6 +127,7 @@ application.include_router(summary_processing_router)
 application.include_router(periodic_report_router)
 application.include_router(summary_inventory_costing_router)
 application.include_router(summary_floor_balance_value_router)
+application.include_router(data_management.router)
 # Bills prefix
 application.include_router(bills_router, prefix="/api")
 

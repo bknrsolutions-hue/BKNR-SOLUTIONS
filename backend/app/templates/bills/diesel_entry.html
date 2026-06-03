@@ -46,11 +46,28 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
   display: flex; 
   flex-direction: column; 
   gap: 2px; 
-  flex: 0 0 180px; /* ఆల్ ఫిల్టర్స్ మరియు సెర్చ్ బాక్స్ ఒకే సైజు లో ఉండటానికి */
+  flex: 0 0 180px; 
   min-width: 180px; 
 }
 .filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
-.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 30px; }
+
+/* 🟢 PERFECT ALIGNMENT FOR FILTER SELECTS */
+.filter-item input, .filter-item select { 
+    padding: 4px 8px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 11px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    background: #fff; 
+    color: var(--text); 
+    height: 30px; 
+    appearance: auto;
+    -webkit-appearance: auto;
+    cursor: pointer;
+    text-align: left;
+}
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
@@ -107,8 +124,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
-.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* 🟢 PERFECT ALIGNMENT FOR FORM INPUTS/SELECTS */
+.field input, .field select { 
+    padding: 8px 10px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 12px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    color: var(--primary); 
+    background: #fff;
+    appearance: auto;
+    -webkit-appearance: auto;
+    text-align: left;
+}
+.field select { cursor: pointer; }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
@@ -127,11 +160,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 <div class="header-dash">
     <div class="header-titles"><h2>Diesel Stock Ledger</h2></div>
-    <!-- ⚡ CHANGED: NET EXPENSE TO AVAILABLE QTY -->
     <div class="grand-total" id="gt_display">AVAILABLE QTY: 0.00 Ltr</div>
 </div>
 
-<!-- 📊 ULTRA-COMPACT FILTERS GRID BAR (FIXED SIZES) -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -145,14 +176,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </select>
     </div>
 
-    <!-- ⚡ CHANGED: SEARCH ITEM HAS SAME FIXED SIZE NOW -->
     <div class="filter-item">
         <label>Search Bar</label>
         <input type="text" id="searchBox" placeholder="Search GRN, Bill, Vendor...">
     </div>
 </div>
 
-<!-- 🧾 ACTIONS HEADER -->
 <div class="section-header">
     <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
@@ -171,7 +200,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </div>
 </div>
 
-<!-- 📋 COMPACT DATA TABLE -->
 <div class="table-wrap">
     <table class="main-table" id="mainTable">
         <thead>
@@ -237,7 +265,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </table>
 </div>
 
-<!-- 📦 STOCK IN (GRN) MODAL -->
 <div class="modal" id="modalIN">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -253,7 +280,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>Location Unit</label>
                     <select id="in_unit_id" onchange="lookupLastStock(this.value, 'IN')" required>
-                        <option value="">-- SELECT LOCATION --</option>
+                        <option value="" disabled selected>-- SELECT LOCATION --</option>
                         {% for l in locations %}<option value="{{ l.id }}">{{ l.production_at }}</option>{% endfor %}
                     </select>
                 </div>
@@ -269,14 +296,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Expected Closing (Ltr)</label><input type="number" step="any" id="in_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
             </div>
             <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
-                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal('IN')">Cancel</button>
-                <button type="submit" class="btn-add" style="background:var(--success); flex: 1;">Submit GRN</button>
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1; justify-content: center;" onclick="closeModal('IN')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:var(--success); flex: 1; justify-content: center;">Submit GRN</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- 📦 STOCK OUT (CONSUMPTION) MODAL -->
 <div class="modal" id="modalOUT">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -292,7 +318,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>Location Unit</label>
                     <select id="out_unit_id" onchange="lookupLastStock(this.value, 'OUT')" required>
-                        <option value="">-- SELECT LOCATION --</option>
+                        <option value="" disabled selected>-- SELECT LOCATION --</option>
                         {% for l in locations %}<option value="{{ l.id }}">{{ l.production_at }}</option>{% endfor %}
                     </select>
                 </div>
@@ -302,14 +328,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Calculated Closing Stock</label><input type="number" id="out_closing" readonly style="background:#f1f5f9; font-weight:700;"></div>
             </div>
             <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
-                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal('OUT')">Cancel</button>
-                <button type="submit" class="btn-add" style="background:#f59e0b; flex: 1;">Submit Consumption</button>
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1; justify-content: center;" onclick="closeModal('OUT')">Cancel</button>
+                <button type="submit" class="btn-add" style="background:#f59e0b; flex: 1; justify-content: center;">Submit Consumption</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
     <div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:11px;">FUEL TRANSACTION HISTORY LOGS</b>
@@ -367,7 +392,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const rows = document.querySelectorAll("#tableBody .data-row");
         let visibleRows = [];
         
-        // ⚡ FIX: AVAILABLE QTY కి కౌంటర్ సెట్ చేయడం (మొదటి విజిబుల్ రో యొక్క క్లోజింగ్ స్టాక్)
+        // ⚡ AVAILABLE QTY calculation from latest visible row
         let latestClosingStock = 0;
 
         rows.forEach(r => {
@@ -379,7 +404,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             }
         });
 
-        // వరుస క్రమం అమరిక మరియు టాప్ రో లో ఉన్న క్లోజింగ్ బాలెన్స్ ని రీడ్ చేయడం
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
             if (index === 0) {
@@ -388,8 +412,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         });
 
         document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
-        
-        // ⚡ DISPLAY: AVAILABLE QTY ని లేటెస్ట్ రికార్డ్ నుండి చూపిస్తుంది
         document.getElementById("gt_display").innerText = "AVAILABLE QTY: " + latestClosingStock.toLocaleString('en-IN', {minimumFractionDigits:2}) + " Ltr";
     }
 
@@ -452,11 +474,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('out_closing').value = rem >= 0 ? rem.toFixed(2) : "0.00";
     }
 
+    /* 🟢 NEW LOG ENTRY (FY Check Removed) */
     function openModal(mode) {
-        if(!document.getElementById("f_fy").value) {
-            Swal.fire("FY Required", "Please select a Financial Year first before executing fuel transactions.", "warning");
-            return;
-        }
         document.getElementById(mode === 'IN' ? 'formIn' : 'formOut').reset();
         document.getElementById(mode === 'IN' ? 'in_entry_date' : 'out_date').value = new Date().toISOString().substring(0, 10);
         if(mode === 'IN') {

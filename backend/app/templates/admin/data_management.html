@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Data Management Center | BKNR ERP</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
+
+<style>
+/* Only structural utilities specific to this page layout; base UI styling is driven by bknr-standard.css */
+.container {
+    width: 96%;
+    max-width: 1600px;
+    margin: 15px auto;
+}
+
+.page-header {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.page-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--primary, #143465);
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 6px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+.actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.table-wrap {
+    overflow: auto;
+    margin-top: 10px;
+}
+
+/* Status contextual states */
+.status-success {
+    color: #16a34a;
+    font-weight: 700;
+}
+.status-failed {
+    color: #dc2626;
+    font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="page-header">
+        <div class="page-title">
+            DATA IMPORT / EXPORT CENTER
+        </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="card-grid">
+        <div class="card">
+            <div class="card-title">Total Imports</div>
+            <div class="card-value">0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Records Imported</div>
+            <div class="card-value">0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Failed Records</div>
+            <div class="card-value">0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Last Import</div>
+            <div class="card-value">--</div>
+        </div>
+    </div>
+
+    <!-- DOWNLOAD TEMPLATE -->
+    <div class="section">
+        <div class="section-title">
+            DOWNLOAD IMPORT TEMPLATE
+        </div>
+        <div class="actions">
+            <a href="/data-management/template/gate_entry" class="btn btn-primary">
+                <i class="fa fa-download"></i> Gate Entry
+            </a>
+            <a href="/data-management/template/raw_material" class="btn btn-primary">
+                <i class="fa fa-download"></i> Raw Material
+            </a>
+            <a href="/data-management/template/grading" class="btn btn-primary">
+                <i class="fa fa-download"></i> Grading
+            </a>
+            <a href="/data-management/template/peeling" class="btn btn-primary">
+                <i class="fa fa-download"></i> Peeling
+            </a>
+            <a href="/data-management/template/soaking" class="btn btn-primary">
+                <i class="fa fa-download"></i> Soaking
+            </a>
+            <a href="/data-management/template/production" class="btn btn-primary">
+                <i class="fa fa-download"></i> Production
+            </a>
+        </div>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="section">
+        <div class="section-title">
+            IMPORT DATA
+        </div>
+        <form action="/data-management/import" method="POST" enctype="multipart/form-data">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Module</label>
+                    <select name="module" required>
+                        <option value="">Select Module</option>
+                        <option value="gate_entry">Gate Entry</option>
+                        <option value="raw_material">Raw Material Purchasing</option>
+                        <option value="grading">Grading</option>
+                        <option value="peeling">Peeling</option>
+                        <option value="soaking">Soaking</option>
+                        <option value="production">Production</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Excel File</label>
+                    <input type="file" name="excel_file" accept=".xlsx,.xls" required>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn btn-success">
+                    <i class="fa fa-upload"></i> Import Data
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="section">
+        <div class="section-title">
+            EXPORT DATA
+        </div>
+        <form action="/data-management/export" method="POST">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Module</label>
+                    <select name="module">
+                        <option value="gate_entry">Gate Entry</option>
+                        <option value="raw_material">Raw Material Purchasing</option>
+                        <option value="grading">Grading</option>
+                        <option value="peeling">Peeling</option>
+                        <option value="soaking">Soaking</option>
+                        <option value="production">Production</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>From Date</label>
+                    <input type="date" name="from_date">
+                </div>
+                <div class="field">
+                    <label>To Date</label>
+                    <input type="date" name="to_date">
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fa fa-file-excel"></i> Export Excel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- IMPORT HISTORY -->
+    <div class="section">
+        <div class="section-title">
+            IMPORT HISTORY
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Module</th>
+                        <th>Records</th>
+                        <th>Status</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td class="status-success">Ready</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/js/global-loader.js"></script>
+</body>
+</html>

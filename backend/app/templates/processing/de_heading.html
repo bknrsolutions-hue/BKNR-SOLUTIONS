@@ -57,14 +57,18 @@
             font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
         }
 
-        .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; min-height: 250px; }
+        /* 🟢 FIXED: Dashboard Alignment Properties */
+        .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; align-items: stretch; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 2; min-width: 0; }
+        
+        #chartPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
         @media(max-width: 1024px) {
             .main-dashboard { flex-direction: column; padding: 10px; }
-            .dashboard-grid { width: 100% !important; grid-template-columns: 1fr !important; }
-            .panel { width: 100% !important; margin-bottom: 10px; }
+            .dashboard-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; flex: unset; }
+            #chartPanel { width: 100%; flex: unset; }
         }
 
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; width: 65%; }
         .panel { background: #fff; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
         
@@ -134,7 +138,7 @@
         <label>Company</label>
         <input list="dash_comp_list" id="dashboard_company_filter" oninput="updateDashboard()" placeholder="Search Company...">
         <datalist id="dash_comp_list">
-            {% for p in prod_for_list %}<option value="{{p}}">{% endfor %}
+            {% for p in prod_for_list %}<option value="{{p}}"></option>{% endfor %}
         </datalist>
     </div>
 
@@ -142,7 +146,7 @@
         <label>Location</label>
         <input list="dash_loc_list" id="dashboard_location_filter" oninput="updateDashboard()" placeholder="Search Location...">
         <datalist id="dash_loc_list">
-            {% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}
+            {% for loc in peeling_locations %}<option value="{{loc}}"></option>{% endfor %}
         </datalist>
     </div>
 
@@ -150,7 +154,7 @@
         <label>Species</label>
         <input list="dash_species_list" id="dashboard_species_filter" oninput="updateDashboard()" placeholder="Search Species...">
         <datalist id="dash_species_list">
-            {% for s in species %}<option value="{{ s }}">{% endfor %}
+            {% for s in species %}<option value="{{ s }}"></option>{% endfor %}
         </datalist>
     </div>
 </div>
@@ -183,7 +187,7 @@
     
     <div class="panel" id="chartPanel">
         <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
-        <div style="flex-grow:1; display:flex; align-items:center; justify-content:center; padding:15px; min-height: 250px;">
+        <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; padding: 15px;">
             <canvas id="countStackedBar"></canvas>
         </div>
     </div>
@@ -236,21 +240,21 @@
                     <label>Production For</label>
                     <input list="prod_for_list_data" name="production_for" id="form_production_for" onchange="loadBatches()" placeholder="Search Company..." required autocomplete="off">
                     <datalist id="prod_for_list_data">
-                        {% for p in prod_for_list %}<option value="{{p}}">{% endfor %}
+                        {% for p in prod_for_list %}<option value="{{p}}"></option>{% endfor %}
                     </datalist>
                 </div>
                 <div class="field">
                     <label>Location</label>
                     <input list="loc_list_data" name="deheading_at" id="form_loc" onchange="loadBatches()" placeholder="Search Location..." required autocomplete="off">
                     <datalist id="loc_list_data">
-                        {% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}
+                        {% for loc in peeling_locations %}<option value="{{loc}}"></option>{% endfor %}
                     </datalist>
                 </div>
                 <div class="field">
                     <label>Species</label>
                     <input list="species_list_data" name="species" id="form_species" onchange="checkFloor()" placeholder="Search Species..." required autocomplete="off">
                     <datalist id="species_list_data">
-                        {% for s in species %}<option value="{{s}}">{% endfor %}
+                        {% for s in species %}<option value="{{s}}"></option>{% endfor %}
                     </datalist>
                 </div>
                 <div class="field">
@@ -274,7 +278,7 @@
                     <label>Contractor</label>
                     <input list="contractor_list_data" name="contractor" id="f_contractor" onchange="getRate()" placeholder="Search Contractor..." required autocomplete="off">
                     <datalist id="contractor_list_data">
-                        {% for c in contractors %}<option value="{{c}}">{% endfor %}
+                        {% for c in contractors %}<option value="{{c}}"></option>{% endfor %}
                     </datalist>
                 </div>
                 <div class="field"><label>Rate / Kg</label><input type="number" name="rate_per_kg" id="f_rate" readonly></div>
@@ -294,7 +298,6 @@ const rawFloorData = {{ hoso_floor_balance | safe if hoso_floor_balance else '[]
 let chartInstance = null;
 let selectedId = null;
 
-// కలర్ కోడింగ్ ఫంక్షన్
 const getLocationColor = (loc) => {
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
     let hash = 0;
@@ -466,7 +469,7 @@ async function loadBatches() {
     .then(data => {
         const dl = document.getElementById('batch_list_data');
         dl.innerHTML = '';
-        if(data.batches) data.batches.forEach(b => dl.innerHTML += `<option value="${b}">`);
+        if(data.batches) data.batches.forEach(b => dl.innerHTML += `<option value="${b}"></option>`);
         document.getElementById('form_batch').value = '';
         document.getElementById('form_count').value = '';
         document.getElementById('count_list_data').innerHTML = '';
@@ -485,7 +488,7 @@ async function loadCounts() {
     .then(data => {
         const dl = document.getElementById('count_list_data');
         dl.innerHTML = '';
-        if(data.counts) data.counts.forEach(c => dl.innerHTML += `<option value="${c}">`);
+        if(data.counts) data.counts.forEach(c => dl.innerHTML += `<option value="${c}"></option>`);
         document.getElementById('form_count').value = '';
         checkFloor(); 
     });

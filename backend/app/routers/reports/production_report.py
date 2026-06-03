@@ -36,13 +36,13 @@ def get_company_info(db: Session, comp_code: str):
     return (c.company_name or "", c.address or "") if c else ("", "")
 
 # ------------------------------------------------------------
-# MAIN REPORT PAGE (WITH FY FILTER & AUTO-CALCULATED SUB-TOTALS)
+# MAIN REPORT PAGE (WITH DUAL GROUPING SUB-TOTALS)
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 def production_report_page(
     request: Request,
-    fy: str = Query(None), # Financial Year parameter
+    fy: str = Query(None),
     from_date: str = "",
     to_date: str = "",
     db: Session = Depends(get_db)
@@ -54,73 +54,88 @@ def production_report_page(
         return RedirectResponse("/auth/login", status_code=302)
 
     comp_code = str(comp_code)
-    rows = []
-    subtotals = {}
+    
+    # Base Query
+    q = db.query(Production).filter(Production.company_id == comp_code)
 
     if fy:
-        # Financial Year Logic (e.g., FY 2024 is April 2024 to March 2025)
         start_year = int(fy)
         end_year = start_year + 1
-        
-        q = db.query(Production).filter(
-            Production.company_id == comp_code,
+        q = q.filter(
             Production.date >= f"{start_year}-04-01",
             Production.date <= f"{end_year}-03-31"
         )
 
-        if from_date:
-            try: q = q.filter(Production.date >= date.fromisoformat(from_date))
-            except: pass
-        if to_date:
-            try: q = q.filter(Production.date <= date.fromisoformat(to_date))
-            except: pass
+    if from_date:
+        try: q = q.filter(Production.date >= date.fromisoformat(from_date))
+        except: pass
+    if to_date:
+        try: q = q.filter(Production.date <= date.fromisoformat(to_date))
+        except: pass
 
-        rows = q.order_by(desc(Production.date), desc(Production.id)).all()
+    all_data = q.all()
 
-        # ------------------------------------------------------------
-        # SUB-TOTALS & DYNAMIC CALCULATIONS LOGIC
-        # Grouping by: Production For, Production At, Species, Variety, Batch
-        # ------------------------------------------------------------
-        for r in rows:
-            key = (r.production_for, r.production_at, r.species, r.variety_name, r.batch_number)
-            
-            if key not in subtotals:
-                # 1. Lookup Target Yield (Soaking Yield) from Varieties table
-                var_data = db.query(varieties).filter(
-                    varieties.company_id == comp_code,
-                    varieties.variety_name == r.variety_name
-                ).first()
-                target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
+    # ============================================================
+    # 1. SUMMARY TABLE LOGIC (Grouped by: At, For, Batch, Variety, Grade)
+    # ============================================================
+    summary_rows = sorted(all_data, key=lambda x: (
+        x.production_at or "", 
+        x.production_for or "", 
+        x.batch_number or "", 
+        x.variety_name or "", 
+        x.grade or ""
+    ))
 
-                # 2. Get Soaking In-Qty Sum for this Batch/Variety combo
-                soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
-                    Soaking.company_id == comp_code,
-                    Soaking.batch_number == r.batch_number,
-                    Soaking.variety_name == r.variety_name
-                ).scalar() or 0.0
+    summary_subtotals = {}
+    for r in summary_rows:
+        key = (r.production_at, r.production_for, r.batch_number, r.variety_name, r.grade)
+        
+        if key not in summary_subtotals:
+            var_data = db.query(varieties).filter(
+                varieties.company_id == comp_code,
+                varieties.variety_name == r.variety_name
+            ).first()
+            target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
 
-                subtotals[key] = {
-                    "prod_qty": 0.0,
-                    "target_yield": target_yield,
-                    "soaking_in": float(soaking_in),
-                    "actual_yield": 0.0,
-                    "diff_yield_perc": 0.0,
-                    "diff_qty": 0.0
-                }
-            
-            subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+            soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
+                Soaking.company_id == comp_code,
+                Soaking.batch_number == r.batch_number,
+                Soaking.variety_name == r.variety_name
+            ).scalar() or 0.0
 
-        # 3. Finalize Calculations for each subtotal group
-        for key in subtotals:
-            s = subtotals[key]
-            if s["soaking_in"] > 0:
-                s["actual_yield"] = round((s["prod_qty"] / s["soaking_in"]) * 100, 2)
-                # Difference Yield % = Actual Yield - Target Yield
-                s["diff_yield_perc"] = round(s["actual_yield"] - s["target_yield"], 2)
-                # Difference Qty Calculation based on yield gap
-                # Formula: (In Qty * Target Yield %) - Production Qty
-                expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
-                s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
+            summary_subtotals[key] = {
+                "mc": 0, "loose": 0, "prod_qty": 0.0,
+                "target_yield": target_yield,
+                "soaking_in": float(soaking_in),
+                "actual_yield": 0.0, "diff_yield_perc": 0.0, "diff_qty": 0.0
+            }
+        
+        summary_subtotals[key]["mc"] += float(r.no_of_mc or 0)
+        summary_subtotals[key]["loose"] += float(r.loose or 0)
+        summary_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+
+    for key, s in summary_subtotals.items():
+        if s["soaking_in"] > 0:
+            s["actual_yield"] = round((s["prod_qty"] / s["soaking_in"]) * 100, 2)
+            s["diff_yield_perc"] = round(s["actual_yield"] - s["target_yield"], 2)
+            expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
+            s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
+
+    # ============================================================
+    # 2. DETAILED TABLE LOGIC (Grouped by: Date)
+    # ============================================================
+    detail_rows = sorted(all_data, key=lambda x: (x.date or date.min, x.time or datetime.min.time()), reverse=True)
+    
+    detail_subtotals = {}
+    for r in detail_rows:
+        key = r.date
+        if key not in detail_subtotals:
+            detail_subtotals[key] = {"mc": 0, "loose": 0, "prod_qty": 0.0}
+        
+        detail_subtotals[key]["mc"] += float(r.no_of_mc or 0)
+        detail_subtotals[key]["loose"] += float(r.loose or 0)
+        detail_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+
 
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
@@ -131,8 +146,10 @@ def production_report_page(
         request=request,
         name="reports/production_report.html",
         context={
-            "rows": rows,
-            "subtotals": subtotals, # Passed to HTML for rendering subtotal rows
+            "summary_rows": summary_rows,         # Added for Tab 1
+            "summary_subtotals": summary_subtotals, 
+            "detail_rows": detail_rows,           # Added for Tab 2
+            "detail_subtotals": detail_subtotals,
             "selected_fy": fy,
             "from_date": from_date,
             "to_date": to_date,
@@ -193,7 +210,6 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                 )
                 db.add(audit)
                 
-                # Numeric field handling
                 if f in ["no_of_mc", "loose"]:
                     setattr(row, f, float(payload[f] or 0))
                 else:
@@ -201,7 +217,6 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                 has_changes = True
 
     if has_changes:
-        # 1. Base Production Quantity calculation based on Packing Style
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
             packing_styles.packing_style == row.packing_style
@@ -214,20 +229,16 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
         else:
             base_qty = 0.0
 
-        # 2. 🔥 GLAZE ADJUSTMENT LOGIC
         final_production_qty = base_qty
         glaze_text = str(row.glaze or "").strip().upper()
 
         if "NWNC" not in glaze_text:
-            # Safely extract numbers (e.g., '20%' -> 20.0)
             import re
             match = re.search(r'(\d+\.?\d*)', glaze_text)
             glaze_percent = float(match.group(1)) if match else 0.0
-            
             if glaze_percent > 0:
                 final_production_qty = final_production_qty * ((100 - glaze_percent) / 100)
 
-        # 3. Save with 3 decimal precision
         row.production_qty = round(final_production_qty, 3)
 
         try:
@@ -261,10 +272,10 @@ def delete_production(request: Request, payload: dict = Body(...), db: Session =
     return {"status": "error", "message": "Record not found"}
 
 # ============================================================
-# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# AUDIT HISTORY, EXPORTS
 # ============================================================
 @router.get("/audit_all")
-async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db)):
+async def get_all_production_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     logs = (
         db.query(AuditLog, Production.batch_number)
@@ -280,9 +291,6 @@ async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 
-# ------------------------------------------------------------
-# EXCEL EXPORT
-# ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids: str = Query(None), from_date: str = "", to_date: str = ""):
     comp_code = str(request.session.get("company_code"))
@@ -316,9 +324,6 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
         headers={"Content-Disposition": "attachment; filename=Production_Report.xlsx"}
     )
 
-# ------------------------------------------------------------
-# PDF EXPORT (FOR PRINT & DOWNLOAD)
-# ------------------------------------------------------------
 @router.get("/export_pdf")
 def export_production_pdf(
     request: Request, 

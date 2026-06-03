@@ -99,18 +99,26 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
   color:var(--muted);
   text-transform: uppercase;
 }
+
+/* 🟢 PERFECT FIELD ALIGNMENT FOR SELECT AND INPUTS */
 .field input, .field select{
-  padding:10px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  font-size:13px;
-  background:#fff;
+  width: 100%;
+  height: 40px; 
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
   outline: none;
   transition: 0.2s;
-  height: 40px;
-  width: 100%;
+  appearance: auto;
+  -webkit-appearance: auto;
 }
-.field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.field select { cursor: pointer; }
+.field select:invalid { color: var(--muted); }
 
 /* ACTIONS */
 .actions{
@@ -251,7 +259,7 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
       <label>Factory Name</label>
       <input list="factory_list" name="receiving_center" id="receiving_dd" required placeholder="Search/Type..." autocomplete="off">
       <datalist id="factory_list">
-        {% for p in peeling_ats %}<option value="{{p}}">{% endfor %}
+        {% for p in peeling_ats %}<option value="{{p}}"></option>{% endfor %}
       </datalist>
     </div>
 
@@ -259,7 +267,7 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
       <label>Supplier Name</label>
       <input list="supp_list" name="supplier_name" id="supplier_dd" required placeholder="Search/Type..." autocomplete="off">
       <datalist id="supp_list">
-        {% for s in suppliers %}<option value="{{s}}">{% endfor %}
+        {% for s in suppliers %}<option value="{{s}}"></option>{% endfor %}
       </datalist>
     </div>
 
@@ -267,7 +275,7 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
       <label>Location</label>
       <input list="loc_list" name="purchasing_location" id="location_dd" required placeholder="Search/Type..." autocomplete="off">
       <datalist id="loc_list">
-        {% for l in locations %}<option value="{{l}}">{% endfor %}
+        {% for l in locations %}<option value="{{l}}"></option>{% endfor %}
       </datalist>
     </div>
 
@@ -275,7 +283,7 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
       <label>Vehicle Number</label>
       <input list="veh_list" name="vehicle_number" id="vehicle_dd" required placeholder="Search/Type..." autocomplete="off">
       <datalist id="veh_list">
-        {% for v in vehicles %}<option value="{{v}}">{% endfor %}
+        {% for v in vehicles %}<option value="{{v}}"></option>{% endfor %}
       </datalist>
     </div>
 

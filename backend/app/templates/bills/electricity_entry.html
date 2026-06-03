@@ -54,7 +54,24 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
   min-width: 180px;
 }
 .filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
-.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 30px; }
+
+/* 🟢 PERFECT ALIGNMENT FOR FILTER SELECTS */
+.filter-item input, .filter-item select { 
+    padding: 4px 8px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 11px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    background: #fff; 
+    color: var(--text); 
+    height: 30px; 
+    appearance: auto;
+    -webkit-appearance: auto;
+    cursor: pointer;
+    text-align: left;
+}
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 .btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
@@ -109,8 +126,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
-.field input:focus, .field select:focus { border-color: var(--accent); }
+
+/* 🟢 PERFECT ALIGNMENT FOR FORM SELECTS */
+.field input, .field select { 
+    padding: 8px 10px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 12px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    color: var(--primary); 
+    background: #fff;
+    appearance: auto;
+    -webkit-appearance: auto;
+    text-align: left;
+}
+.field select { cursor: pointer; }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
@@ -132,7 +165,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL COST: ₹ 0.00</div>
 </div>
 
-<!-- 📊 ULTRA-COMPACT FILTERS GRID BAR -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -159,7 +191,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
 
-<!-- 🧾 ACTIONS HEADER -->
 <div class="section-header">
     <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
@@ -177,14 +208,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </div>
 </div>
 
-<!-- 📋 COMPACT DATA TABLE -->
 <div class="table-wrap">
     <table class="main-table" id="mainTable">
         <thead>
             <tr>
                 <th width="40">Sl</th>
-                <th>Reading Date</th>
-                <th>Location Unit</th>
+                <th class="text-left">Reading Date</th>
+                <th class="text-left">Location Unit</th>
                 <th class="text-right">Opening KWH</th>
                 <th class="text-right">Closing KWH</th>
                 <th class="text-right">Consumed Units</th>
@@ -210,8 +240,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     onclick="selectRow(this, '{{ row.id }}')">
                     
                     <td class="slno">0</td>
-                    <td>{{ row.reading_date }}</td>
-                    <td style="font-weight:700;">{{ row.location_name or row.unit_id }}</td>
+                    <td class="text-left">{{ row.reading_date }}</td>
+                    <td class="text-left" style="font-weight:700;">{{ row.location_name or row.unit_id }}</td>
                     <td class="text-right">{{ "{:,.2f}".format(row.opening_kwh or 0) }}</td>
                     <td class="text-right">{{ "{:,.2f}".format(row.closing_kwh or 0) }}</td>
                     <td class="text-right" style="color:var(--success); font-weight:700;">{{ "{:,.2f}".format(row.closing_kwh - row.opening_kwh) }}</td>
@@ -224,7 +254,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </table>
 </div>
 
-<!-- 📦 ENTRY FORM OVERLAY MODAL -->
 <div class="modal" id="entryModal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -236,7 +265,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>Location Unit</label>
                     <select id="modalUnitId" onchange="lookupLastReading(this.value)" required>
-                        <option value="">-- SELECT LOCATION --</option>
+                        <option value="" disabled selected>-- SELECT LOCATION --</option>
                         {% for u in units %}<option value="{{ u.id }}">{{ u.production_at }}</option>{% endfor %}
                     </select>
                 </div>
@@ -273,14 +302,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </div>
             
             <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
-                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add" style="flex: 1;">Post Log Entry</button>
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1; justify-content: center;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1; justify-content: center;">Post Log Entry</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
     <div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:11px;">ELECTRICITY RECORD HISTORY LOGS</b>
@@ -407,10 +435,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     }
 
     function openModal() {
-        if(!document.getElementById("f_fy").value) {
-            Swal.fire("FY Required", "Please select a Financial Year first before creating new electricity entries.", "warning");
-            return;
-        }
         document.getElementById("elecEntryForm").reset();
         document.getElementById("modalReadingDate").value = new Date().toISOString().substring(0, 10);
         document.getElementById('modalOpeningKwh').value = "0.00";

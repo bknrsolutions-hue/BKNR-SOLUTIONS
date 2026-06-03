@@ -39,7 +39,24 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 }
 .filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 130px; max-width: 180px; }
 .filter-item label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 34px; }
+
+/* 🟢 PERFECT ALIGNMENT FOR SELECT BOXES */
+.filter-item input, .filter-item select { 
+    padding: 6px 10px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 12px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    background: #fff; 
+    color: var(--text); 
+    height: 34px; 
+    appearance: auto;
+    -webkit-appearance: auto;
+    text-align: left;
+    cursor: pointer;
+}
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
@@ -89,8 +106,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+
+/* 🟢 PERFECT ALIGNMENT FOR FORM INPUTS/SELECTS */
+.field input, .field select { 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid var(--border); 
+    font-size: 13px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    color: var(--primary); 
+    background: #fff;
+    appearance: auto;
+    -webkit-appearance: auto;
+    text-align: left;
+}
 .field input:focus, .field select:focus { border-color: var(--accent); }
+.field select { cursor: pointer; }
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
@@ -112,7 +145,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL FREIGHT: ₹ 0.00</div>
 </div>
 
-<!-- 📊 COMPACT FILTERS GRID BAR (FIXED SMALL SIZE) -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -132,7 +164,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </div>
 </div>
 
-<!-- 🧾 ACTIONS HEADER -->
 <div class="section-header">
     <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
     <div style="display:flex; align-items:center;">
@@ -153,7 +184,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </div>
 </div>
 
-<!-- 📋 COMPACT DATA TABLE -->
 <div class="table-wrap">
     <table class="main-table" id="mainTable">
         <thead>
@@ -207,7 +237,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     </table>
 </div>
 
-<!-- 📦 ENTRY FORM OVERLAY MODAL -->
 <div class="modal" id="entryModal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -290,14 +319,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </div>
             
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
-                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add" style="flex: 1;">Save Logistics</button>
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1; justify-content: center;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1; justify-content: center;">Save Logistics</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
     <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:12px;">LOGISTICS EDIT HISTORY LOGS</b>
@@ -402,11 +430,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('modalGrandTotal').innerText = "₹ " + grand.toLocaleString('en-IN', {minimumFractionDigits: 2});
     }
 
+    /* 🟢 REMOVED: Check for Financial Year selection before opening modal */
     function openModal() {
-        if(!document.getElementById("f_fy").value) {
-            Swal.fire("FY Required", "Please select a Financial Year first before writing container data elements ledger entry.", "warning");
-            return;
-        }
         document.getElementById("containerForm").reset();
         document.getElementById("modalTitle").innerText = "New Logistics Entry";
         document.getElementById("modalEntryId").value = "";

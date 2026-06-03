@@ -124,13 +124,13 @@ tr.selected-row td { background: #eff6ff !important; }
     .form-row-linear { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
     .f-sl { grid-column: span 1; }
     .f-dt { grid-column: span 1; }
-    .form-row-linear .field:not(.f-sl):not(.f-dt) { grid-column: span 2; } /* పెద్ద డ్రాప్‌డౌన్‌లు ఫుల్ విడ్త్ అవుతాయి */
-    .field input, .field select { height: 36px; font-size: 12px; } /* మొబైల్ టచ్ ఫ్రెండ్లీ సైజ్ */
+    .form-row-linear .field:not(.f-sl):not(.f-dt) { grid-column: span 2; } 
+    .field input, .field select { height: 36px; font-size: 12px; } 
 
     /* --- MOBILE ITEMS TABLE CARD FIX --- */
     .items-table-wrap { border: none; margin-top: 16px; }
     .items-table { min-width: 100%; display: block; }
-    .items-table thead { display: none; } /* టేబుల్ హెడర్ దాచేస్తాం */
+    .items-table thead { display: none; } 
     .items-table tbody { display: block; width: 100%; }
     
     .items-table tbody tr { 
@@ -154,7 +154,6 @@ tr.selected-row td { background: #eff6ff !important; }
     }
     .items-table td:last-child { border-bottom: none !important; justify-content: center; padding-top: 10px; }
     
-    /* లెఫ్ట్ సైడ్ లేబుల్స్ ని ఇన్జెక్ట్ చేయడం */
     .items-table td::before { 
         content: attr(data-label); 
         font-weight: 800; 
@@ -167,7 +166,6 @@ tr.selected-row td { background: #eff6ff !important; }
     .items-table td select, .items-table td input { width: 60% !important; height: 32px; font-size: 11px; text-align: left; }
     .btn-remove { width: 100%; height: 32px; font-size: 11px; display: flex; gap: 6px; justify-content: center; align-items: center; }
     
-    /* ఫామ్ బాటమ్ బటన్స్ */
     .section div[style*="justify-content: space-between"] { flex-direction: column; gap: 10px; align-items: stretch !important; }
     .btn-add-row { width: 100%; }
     .section div[style*="display:flex; gap:6px;"] { flex-direction: column; gap: 8px; }
@@ -183,7 +181,7 @@ tr.selected-row td { background: #eff6ff !important; }
 
 <div class="header-dash">
   <div class="header-titles"><h2><i class="fa-solid fa-layer-group me-2"></i>Pending Orders Engine Ledger</h2></div>
-  <div class="grand-total" id="gt_display">TOTAL VAL: $ 0.00</div>
+  <div class="grand-total" id="gt_display">TOTAL: 0 MC</div>
 </div>
 
 <div class="filter-bar">
@@ -502,7 +500,7 @@ function applyFilters() {
 
     let visibleRows = [];
     let uniquePos = [];
-    let runningTotal = 0;
+    let runningTotalMc = 0;
     let totalLineCount = 0;
 
     rows.forEach(r => {
@@ -581,7 +579,7 @@ function applyFilters() {
         subTr.className = 'subtotal-row';
         
         let avgExch = subCount > 0 ? (subExch / subCount) : 0;
-        runningTotal += subPrice;
+        runningTotalMc += subMc;
         
         subTr.innerHTML = `
             <td style="text-align:left;" colspan="3"><strong>SUBTOTAL (PO: ${poNo})</strong></td>
@@ -615,7 +613,7 @@ function applyFilters() {
     }
 
     document.getElementById("rowCount").innerText = `${totalLineCount} LINE ITEMS FOUND`;
-    document.getElementById("gt_display").innerText = "TOTAL VAL: $ " + runningTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById("gt_display").innerHTML = `TOTAL: ${runningTotalMc.toLocaleString()} MC`;
 }
 
 function resetFilters() {

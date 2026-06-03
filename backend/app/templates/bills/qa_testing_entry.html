@@ -39,14 +39,35 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 }
 .filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 130px; max-width: 180px; }
 .filter-item label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input, .filter-item select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; background: #fff; color: var(--text); height: 34px; }
+
+/* 🟢 PERFECT ALIGNMENT FOR INPUTS & SELECTS */
+.filter-item input, .filter-item select { 
+    padding: 6px 12px; 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    font-size: 12px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    background: #fff; 
+    color: var(--text); 
+    height: 34px; 
+    text-align: left;
+}
+.filter-item select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 10px auto;
+    cursor: pointer;
+}
 
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
-
-/* Compact Clear Button alignment to match the small inputs */
 .filter-bar .btn-add { height: 34px; padding: 0 15px; border-radius: 6px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
 
-/* Extra Compact View for Mobile Screens */
 @media(max-width: 600px) {
   .filter-bar { padding: 8px; gap: 6px; }
   .filter-item { min-width: 110px; max-width: 100%; flex: 1; }
@@ -85,7 +106,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
 .empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.6; }
 
-/* --- MODAL MANAGEMENT (4-COLUMN PURCHASE STYLE GRID) --- */
+/* --- MODAL MANAGEMENT --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
 .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
@@ -95,7 +116,30 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .field { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; outline: none; width: 100%; color: var(--primary); }
+
+/* 🟢 PERFECT ALIGNMENT FOR MODAL INPUTS & SELECTS */
+.field input, .field select { 
+    padding: 10px 12px; 
+    border-radius: 8px; 
+    border: 1px solid var(--border); 
+    font-size: 13px; 
+    font-weight: 600; 
+    outline: none; 
+    width: 100%; 
+    color: var(--primary); 
+    background: #fff;
+    text-align: left;
+}
+.field select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 12px auto;
+    cursor: pointer;
+}
 .field input:focus, .field select:focus { border-color: var(--accent); }
 
 /* --- AUDIT PANEL --- */
@@ -118,7 +162,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     <div class="grand-total" id="gt_display">TOTAL TESTING AMOUNT: ₹ 0.00</div>
 </div>
 
-<!-- 📊 COMPACT FILTERS GRID BAR (FIXED SMALL SIZE) -->
+<!-- 📊 COMPACT FILTERS GRID BAR -->
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
@@ -166,8 +210,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th width="40">Sl</th>
                 <th>Testing Date</th>
                 <th>Batch Number</th>
-                <th>Product Name</th>
-                <th>External Lab</th>
+                <th class="text-left">Product Name</th>
+                <th class="text-left">External Lab</th>
                 <th>Report Ref</th>
                 <th class="text-right">Base Cost</th>
                 <th class="text-right">Grand Total</th>
@@ -223,7 +267,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>Product Nomenclature</label>
                     <select id="modalProductId" required>
-                        <option value="">-- SELECT PRODUCT --</option>
+                        <option value="" disabled selected>-- SELECT PRODUCT --</option>
                         {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
                     </select>
                 </div>
@@ -236,7 +280,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>External Lab Facility</label>
                     <select id="modalLabId" required>
-                        <option value="">-- SELECT LAB FACILITY --</option>
+                        <option value="" disabled selected>-- SELECT LAB FACILITY --</option>
                         {% for lab in labs %}<option value="{{ lab.id }}">{{ lab.name }}</option>{% endfor %}
                     </select>
                 </div>
@@ -268,8 +312,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </div>
             
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap: wrap;">
-                <button type="button" class="btn-add" style="background:var(--muted); flex: 1;" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add" style="flex: 1;">Post QA Charges</button>
+                <button type="button" class="btn-add" style="background:var(--muted); flex: 1; justify-content: center;" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add" style="flex: 1; justify-content: center;">Post QA Charges</button>
             </div>
         </form>
     </div>
@@ -285,7 +329,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 </div>
 
 <script>
-    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/qa' : '/qa';
     let globalSelectedId = null;
 
@@ -349,7 +392,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             }
         });
 
-        // Sl No dynamic decrement ordering sequence assignment logic
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
         });
@@ -374,10 +416,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     }
 
     function openModal() {
-        if(!document.getElementById("f_fy").value) {
-            Swal.fire("FY Required", "Please select a Financial Year first before writing technical lab audit metrics.", "warning");
-            return;
-        }
         document.getElementById("qaForm").reset();
         document.getElementById("modalTestDate").value = new Date().toISOString().substring(0, 10);
         document.getElementById('modalGrandTotal').innerText = "₹ 0.00";
