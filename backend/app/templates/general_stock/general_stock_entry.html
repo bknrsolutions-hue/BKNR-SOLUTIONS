@@ -43,11 +43,22 @@ label {
   text-transform: uppercase; margin-bottom: 6px;
 }
 
+/* 🟢 FIXED: Select and Input Box uniform text alignment and sizing */
 select, input {
-  padding: 10px; border: 1px solid var(--border);
-  border-radius: 8px; font-size: 13px; background: #fff;
-  transition: all 0.2s; outline: none;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  transition: all 0.2s;
+  outline: none;
+  appearance: auto;
 }
+
 select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 input[readonly] { background: #f9fafb; cursor: not-allowed; color: var(--muted); }
 
@@ -58,9 +69,9 @@ input[readonly] { background: #f9fafb; cursor: not-allowed; color: var(--muted);
 /* Buttons */
 .btn {
   background: var(--primary); color: white; border: none;
-  padding: 12px 25px; border-radius: 8px; font-size: 13px;
+  height: 40px; padding: 0 25px; border-radius: 8px; font-size: 13px;
   font-weight: 700; cursor: pointer; transition: 0.2s;
-  text-transform: uppercase;
+  text-transform: uppercase; display: flex; align-items: center; justify-content: center;
 }
 .btn:hover { background: var(--accent); transform: translateY(-1px); }
 
@@ -205,7 +216,7 @@ tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accen
         <input type="number" id="minimumLevel" name="minimum_level" step="0.01" min="0" oninput="checkStockLevel()">
       </div>
 
-      <div class="col actions">
+      <div class="col actions" style="justify-content: flex-end; align-items: flex-end; display: flex;">
         <button class="btn" type="submit">SAVE</button>
       </div>
     </div>
@@ -262,7 +273,6 @@ tr.selected { background: #eff6ff !important; border-left: 4px solid var(--accen
 </table>
 {% endif %}
 
-<!-- ADD NEW MODAL -->
 <div id="addNewModal" class="modal-overlay">
   <div class="modal">
     <h3 id="modalTitle">Add New</h3>
@@ -336,7 +346,11 @@ document.addEventListener("DOMContentLoaded",()=>{
   });
 });
 
-dots.onclick=()=>{menuBox.style.display=(menuBox.style.display==="block")?"none":"block";};
+if(document.getElementById('dots')) {
+    document.getElementById('dots').onclick=()=>{
+        menuBox.style.display=(menuBox.style.display==="block")?"none":"block";
+    };
+}
 
 /* -------------------------------------------- */
 /* EDIT */

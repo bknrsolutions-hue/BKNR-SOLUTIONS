@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>BUYER AGENTS MASTER</title>
+<title>BUYER AGENTS MASTER – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -13,104 +13,174 @@
 :root{
   --primary: #143465;
   --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #dc2626;
+  --border: #e2e8f0;
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --muted: #64748b;
+  --danger: #ef4444;
 }
-
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 30px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:#fff; padding:10px 15px;
+  background:#fff; padding:8px 12px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
-.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
+.header-titles h2{ margin:0; font-size:13px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
 
 /* ================= FORM CONTAINER ================= */
 .form-container {
-  width: 95%; max-width: 1400px; margin: 10px auto;
-  background: #fff; padding: 15px 20px; border-radius: 8px;
+  width: 96%; max-width: 1400px; margin: 6px auto;
+  background: #fff; padding: 12px 16px; border-radius: 8px;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  display: none; 
 }
 
-.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
-@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(4, 1fr); } }
-
-.field { display: flex; flex-direction: column; }
-.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
-
-label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
-input, select {
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: #fff;
-  outline: none; width: 100%; transition: 0.2s;
+/* MOBILE FIRST DEFAULT VERTICAL LAYOUT */
+.grid {
+  display: flex;
+  flex-direction: column !important;
+  gap: 10px;
+  margin-bottom: 8px;
 }
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
-/* CONTROL ACTIONS HEAD */
+/* DESKTOP MATRIX ALIGNMENT SYSTEM */
+@media(min-width: 768px) {
+  .grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(180px, 1fr)) !important; 
+  }
+  .grid-title-full {
+    grid-column: 1 / -1 !important; 
+  }
+  .grid-span-2 {
+    grid-column: span 2 !important;
+  }
+  .grid-span-4 {
+    grid-column: span 4 !important;
+  }
+}
+
+.form-title-inner { 
+  font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; 
+  margin: 12px 0 6px; border-bottom: 1px dashed var(--border); 
+  padding-bottom: 4px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.3px;
+  width: 100%;
+}
+.grid > .form-title-inner:first-child { margin-top: 2px; }
+
+.field { display: flex; flex-direction: column; width: 100% !important; }
+label { font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.2px; }
+
+input, select, textarea {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; background: #fff;
+  transition: all 0.15s ease; outline: none; height: 34px; width: 100% !important;
+  color: var(--text);
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); 
+}
+textarea { resize: none; height: 34px; }
+
+/* ================= CONTROL ACTIONS HEADER ================= */
 .table-header-bar {
-  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  width: 96%; max-width: 1400px; margin: 12px auto 6px;
   display: flex; justify-content: space-between; align-items: center;
   position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; letter-spacing: 0.2px; }
 
 .top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-.btn {
-  background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+/* 🟢 UNIFIED BUTTON STYLES FOR ADD NEW AND SAVE */
+.btn, .btn-toggle {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
 }
-.btn-clear { background: #f1f5f9; color: var(--muted); }
-.btn:hover { background: var(--accent); }
+
+.btn-primary {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary:hover {
+    background: var(--accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+}
+
+.btn-clear {
+    background: #e2e8f0 !important; 
+    color: var(--muted) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.btn-clear:hover {
+    background: #cbd5e1 !important;
+    transform: translateY(-1px);
+}
+
+.btn-toggle:active { transform: scale(0.98); }
+
+.actions { text-align: center; margin-top: 12px; display: flex; justify-content: center; gap: 8px; width: 100%; }
+@media(min-width: 768px) {
+  .actions { grid-column: 1 / -1 !important; margin-top: 15px; }
+}
+@media(max-width: 480px) {
+  .actions { flex-direction: column-reverse; gap: 8px; }
+  .btn, .btn-toggle { width: 100% !important; height: 36px; padding: 0 !important; line-height: 1; }
+}
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
 .menu-container { position: relative; display: none; }
-.dots-trigger { background: #003366; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 5px; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+.dots-trigger { background: var(--primary); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 34px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden; padding: 2px; }
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.menu-item { padding: 8px 12px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: all 0.1s; text-align: left; }
+.menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
-/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+/* ================= COMPACT TABLE AREA ================= */
+.table-wrap { width: 96%; max-width: 1400px; margin: 0 auto 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
-
-th {
-  background: #f1f5f9; color: #475569; padding: 8px 6px;
-  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
-  text-align: center; white-space: nowrap;
-}
-td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+th, td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
 tr:hover { background: #f8fbff; cursor: pointer; }
 tr.selected { background: #eff6ff !important; }
 
-/* MOBILE CARD LIST */
-.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); }
+/* ================= MOBILE CARD LIST ================= */
+.mobile-card-list { display: none; width: 96%; margin: 4px auto 30px; }
+.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.15s ease; position: relative; }
+.data-card.selected { border: 1.5px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; font-size: 11px; gap: 8px; }
+.card-row:last-child { margin-bottom: 0; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; padding-top: 1px; }
+.card-val { font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
 
 @media(max-width: 1024px){
-  .table-wrap { display: none; }
-  .mobile-card-list { display: block; }
-  .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -124,17 +194,18 @@ tr.selected { background: #eff6ff !important; }
   <div class="header-titles">
       <h2>Buyer Agents Master</h2>
   </div>
+  <div style="font-size:10px; font-weight:700; color: var(--muted)">BKNR ERP</div>
 </div>
 
-<!-- FORM -->
 <form onsubmit="submitBuyerAgent(event)" id="agentForm">
   <div class="form-container" id="formSection">
-    
-    <div class="form-grid">
-      <div class="form-title-inner"><i class="fa-solid fa-id-card"></i> Profile Info</div>
+    <div class="grid">
+      
+      <div class="form-title-inner grid-title-full"><i class="fa-solid fa-id-card"></i> Profile Info</div>
+      
       <div class="field">
         <label>Agent Name</label>
-        <input type="text" id="agent_name" required placeholder="Name">
+        <input type="text" id="agent_name" required placeholder="Full Name">
       </div>
       <div class="field">
         <label>Agent Email</label>
@@ -142,22 +213,21 @@ tr.selected { background: #eff6ff !important; }
       </div>
       <div class="field">
         <label>Phone Number</label>
-        <input type="text" id="phone" placeholder="Phone">
+        <input type="text" id="phone" placeholder="Phone Number">
       </div>
       <div class="field">
         <label>Service For</label>
         <input list="service_list" id="service_for" required placeholder="Select Type..." onfocus="this.value=''">
         <datalist id="service_list">
-            <option value="Buyer Agent">
-            <option value="Commission Agent">
-            <option value="Broker">
-            <option value="Local Representative">
+            <option value="Buyer Agent"></option>
+            <option value="Commission Agent"></option>
+            <option value="Broker"></option>
+            <option value="Local Representative"></option>
         </datalist>
       </div>
-    </div>
 
-    <div class="form-grid">
-      <div class="form-title-inner"><i class="fa-solid fa-building-columns"></i> Banking & Statutory Info</div>
+      <div class="form-title-inner grid-title-full"><i class="fa-solid fa-building-columns"></i> Statutory & Banking</div>
+      
       <div class="field">
         <label>GST Number</label>
         <input type="text" id="gst_number" placeholder="GSTIN">
@@ -174,89 +244,97 @@ tr.selected { background: #eff6ff !important; }
         <label>IFSC Code</label>
         <input type="text" id="ifsc" placeholder="IFSC Code">
       </div>
-    </div>
 
-    <div class="form-grid">
-      <div class="field" style="grid-column: 1 / -1;">
+      <div class="field grid-span-4">
         <label>Address</label>
-        <input type="text" id="address" placeholder="Address">
+        <textarea id="address" placeholder="Complete Address..."></textarea>
       </div>
-    </div>
 
-    <!-- Hidden Metadata Structure -->
-    <input type="hidden" id="record_id">
-    <input type="hidden" id="meta_email" value="{{ email }}">
-    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+      <input type="hidden" id="record_id">
+      <input type="hidden" id="meta_email" value="{{ email }}">
+      <input type="hidden" id="meta_company_id" value="{{ company_id }}">
 
-    <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE</button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE DATA</button>
+        <button type="button" class="btn btn-clear" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
+      </div>
+
     </div>
   </div>
 </form>
 
 {% if message %}
-<p style="text-align:center;color:green;font-weight:600;font-size:12px;">{{ message }}</p>
+<p style="text-align:center;color:var(--success);font-weight:700;font-size:12px;margin:10px 0;">{{ message }}</p>
 {% endif %}
 
 {% if today_data %}
 
-<!-- TABLE CONTROL BAR (TITLES + ADD BUTTON + RIGHT 3-DOT MENU) -->
 <div class="table-header-bar">
-    <h3 class="table-title">Agents Data Logs</h3>
+    <h3 class="table-title">Agents Registry Matrix</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
-        <!-- Add New Entry Button -->
+    <div style="display: flex; gap: 8px; align-items: center;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add New</button>
+            <button class="btn-toggle btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Agent</button>
         </div>
 
-        <!-- RIGHT SIDE 3-DOT MENU BUTTON CONTAINER -->
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
-            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Profile</div>
+            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print Sheet</div>
             <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
             <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Record</div>
           </div>
         </div>
     </div>
 </div>
 
-<!-- MOBILE CARD SYSTEM VIEW -->
 <div class="mobile-card-list">
     {% for row in today_data %}
-    <div class="data-card" data-id="{{ row.id }}" 
-         data-name="{{ row.agent_name }}" data-agent-email="{{ row.agent_email }}" data-phone="{{ row.phone }}"
-         data-address="{{ row.address }}" data-service="{{ row.service_for }}"
-         data-gst="{{ row.gst_number }}" data-bank="{{ row.bank_name }}"
-         data-acc="{{ row.account_no }}" data-ifsc="{{ row.ifsc }}"
-         data-date="{{ row.date }}" data-time="{{ row.time }}"
-         data-email="{{ row.email }}" data-cid="{{ row.company_id }}"
-         onclick="selectRowOrCard(this)">
+    
+    {% set row_dict = {
+        "id": row.id,
+        "agent_name": row.agent_name,
+        "agent_email": row.agent_email,
+        "phone": row.phone,
+        "address": row.address,
+        "service_for": row.service_for,
+        "gst_number": row.gst_number,
+        "bank_name": row.bank_name,
+        "account_no": row.account_no,
+        "ifsc": row.ifsc,
+        "date": row.date|string if row.date else "",
+        "time": row.time|string if row.time else "",
+        "email": row.email,
+        "company_id": row.company_id
+    } %}
+
+    <div class="data-card" data-id="{{ row.id }}" data-json='{{ row_dict | tojson }}' onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">Agent ID</span>
+            <span class="card-val">#{{ row.id }}</span>
+        </div>
         <div class="card-row">
             <span class="card-label">Agent Name</span>
             <span class="card-val" style="color:var(--accent);">{{ row.agent_name }}</span>
-        </div>
-        <div class="card-row">
-            <span class="card-label">Agent Email</span>
-            <span class="card-val" style="font-size:10px;">{{ row.agent_email if row.agent_email else '-' }}</span>
         </div>
         <div class="card-row">
             <span class="card-label">Service For</span>
             <span class="card-val">{{ row.service_for }}</span>
         </div>
         <div class="card-row">
-            <span class="card-label">Phone</span>
-            <span class="card-val">{{ row.phone if row.phone else '-' }}</span>
+            <span class="card-label">Contact</span>
+            <span class="card-val">{{ row.phone if row.phone else '-' }} <br><small style="color:var(--muted); font-size:9px;">{{ row.agent_email if row.agent_email else '-' }}</small></span>
+        </div>
+        <div class="card-row" style="border-top:1px dashed #f1f5f9; margin-top:4px; padding-top:4px;">
+            <span class="card-label">GSTIN / Bank</span>
+            <span class="card-val" style="font-size:10px;">{{ row.gst_number if row.gst_number else '-' }} | {{ row.bank_name if row.bank_name else '-' }}</span>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- COMPACT DENSE DESKTOP FULL TABLE VIEW -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
@@ -265,48 +343,52 @@ tr.selected { background: #eff6ff !important; }
         <th>Agent Name</th>
         <th>Agent Email</th>
         <th>Phone</th>
-        <th>Address</th>
         <th>Service For</th>
         <th>GST Number</th>
         <th>Bank Name</th>
         <th>Account No</th>
         <th>IFSC</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Created By</th>
-        <th>Company ID</th>
+        <th>Address</th>
       </tr>
     </thead>
     <tbody>
       {% for row in today_data %}
-      <tr data-id="{{ row.id }}" 
-          data-name="{{ row.agent_name }}" data-agent-email="{{ row.agent_email }}" data-phone="{{ row.phone }}"
-          data-address="{{ row.address }}" data-service="{{ row.service_for }}"
-          data-gst="{{ row.gst_number }}" data-bank="{{ row.bank_name }}"
-          data-acc="{{ row.account_no }}" data-ifsc="{{ row.ifsc }}"
-          data-date="{{ row.date }}" data-time="{{ row.time }}"
-          data-email="{{ row.email }}" data-cid="{{ row.company_id }}"
-          onclick="selectRowOrCard(this)">
-        <td>{{ row.id }}</td>
+      
+      {% set row_dict = {
+          "id": row.id,
+          "agent_name": row.agent_name,
+          "agent_email": row.agent_email,
+          "phone": row.phone,
+          "address": row.address,
+          "service_for": row.service_for,
+          "gst_number": row.gst_number,
+          "bank_name": row.bank_name,
+          "account_no": row.account_no,
+          "ifsc": row.ifsc,
+          "date": row.date|string if row.date else "",
+          "time": row.time|string if row.time else "",
+          "email": row.email,
+          "company_id": row.company_id
+      } %}
+
+      <tr data-id="{{ row.id }}" data-json='{{ row_dict | tojson }}' onclick="selectRowOrCard(this)">
+        <td>#{{ row.id }}</td>
         <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.agent_name }}</td>
-        <td>{{ row.agent_email if row.agent_email else '' }}</td>
+        <td style="color:#0284c7;">{{ row.agent_email if row.agent_email else '' }}</td>
         <td>{{ row.phone if row.phone else '' }}</td>
-        <td style="text-align:left;">{{ row.address if row.address else '' }}</td>
         <td>{{ row.service_for if row.service_for else '' }}</td>
-        <td>{{ row.gst_number if row.gst_number else '' }}</td>
-        <td>{{ row.bank_name if row.bank_name else '' }}</td>
+        <td style="font-family:monospace; font-weight:600;">{{ row.gst_number if row.gst_number else '' }}</td>
+        <td style="font-weight:600; color:#475569;">{{ row.bank_name if row.bank_name else '' }}</td>
         <td>{{ row.account_no if row.account_no else '' }}</td>
-        <td>{{ row.ifsc if row.ifsc else '' }}</td>
-        <td style="color: var(--muted);">{{ row.date if row.date else '' }}</td>
-        <td style="color: var(--muted);">{{ row.time if row.time else '' }}</td>
-        <td>{{ row.email if row.email else '' }}</td>
-        <td>{{ row.company_id if row.company_id else '' }}</td>
+        <td style="font-family:monospace;">{{ row.ifsc if row.ifsc else '' }}</td>
+        <td class="text-left" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">{{ row.address if row.address else '' }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
-
+{% else %}
+  <p style="text-align:center; color:var(--muted); font-size:12px; padding:15px; margin:0;">No Buyer Agents configured in the registry yet.</p>
 {% endif %}
 
 <script>
@@ -380,23 +462,24 @@ document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
 });
 
 /* -------------------------------------
-   EDIT COMPONENT ACTION
+   EDIT COMPONENT ACTION (Using JSON parsing)
 -------------------------------------- */
 function editSelected(){
   if(!selectedElement) return;
-  const d = selectedElement.dataset;
+  const d = JSON.parse(selectedElement.dataset.json);
 
-  document.getElementById("record_id").value = d.id;
-  document.getElementById("agent_name").value = d.name || '';
-  document.getElementById("agent_email").value = d.agentEmail || '';
+  document.getElementById("record_id").value = d.id || '';
+  document.getElementById("agent_name").value = d.agent_name || '';
+  document.getElementById("agent_email").value = d.agent_email || '';
   document.getElementById("phone").value = d.phone || '';
   document.getElementById("address").value = d.address || '';
-  document.getElementById("service_for").value = d.service || '';
-  document.getElementById("gst_number").value = d.gst || '';
-  document.getElementById("bank_name").value = d.bank || '';
-  document.getElementById("account_no").value = d.acc || '';
+  document.getElementById("service_for").value = d.service_for || '';
+  document.getElementById("gst_number").value = d.gst_number || '';
+  document.getElementById("bank_name").value = d.bank_name || '';
+  document.getElementById("account_no").value = d.account_no || '';
   document.getElementById("ifsc").value = d.ifsc || '';
 
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE DATA";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -409,12 +492,12 @@ async function deleteSelected(){
   if(!selectedElement) return;
   
   Swal.fire({
-    title: 'Are you sure?',
-    text: "Delete this agent profile?",
+    title: 'Purge Agent Profile?',
+    text: "This execution clears out the mapped agent matrix.",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: 'var(--danger)',
-    confirmButtonText: 'Yes, delete it!'
+    confirmButtonText: 'Yes, Delete Entity'
   }).then(async (result) => {
     if (result.isConfirmed) {
       const id = selectedElement.dataset.id;
@@ -430,27 +513,46 @@ async function deleteSelected(){
 -------------------------------------- */
 function printSelected(){
   if(!selectedElement) return;
-  const d = selectedElement.dataset;
+  const d = JSON.parse(selectedElement.dataset.json);
 
   const p = window.open("","_blank");
-  p.document.write("<html><head><title>Print Report</title><style>body{font-family:sans-serif;padding:15px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;font-size:12px;}</style><link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
-</head><body>");
-  p.document.write("<h3>Buyer Agent Profile Information</h3>");
-  p.document.write("<table>");
-  p.document.write("<tr><td><b>ID</b></td><td>"+d.id+"</td><td><b>Agent Name</b></td><td>"+d.name+"</td></tr>");
-  p.document.write("<tr><td><b>Agent Email</b></td><td>"+(d.agentEmail||'-')+"</td><td><b>Phone</b></td><td>"+(d.phone||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>Service For</b></td><td>"+(d.service||'-')+"</td><td><b>GSTIN</b></td><td>"+(d.gst||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>Address</b></td><td colspan='3'>"+(d.address||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>Bank Name</b></td><td>"+(d.bank||'-')+"</td><td><b>Account No</b></td><td>"+(d.acc||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>IFSC Code</b></td><td>"+(d.ifsc||'-')+"</td><td><b>Log Date</b></td><td>"+(d.date||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>Log Time</b></td><td>"+(d.time||'-')+"</td><td><b>Created By</b></td><td>"+(d.email||'-')+"</td></tr>");
-  p.document.write("<tr><td><b>Company ID</b></td><td colspan='3'>"+(d.cid||'-')+"</td></tr>");
-  p.document.write("</table><script src="/static/js/global-loader.js"></script>
-</body></html>");
+  p.document.write(`
+    <html>
+    <head>
+      <title>Agent Profile Dossier - ${d.agent_name}</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding:30px; color:#333; line-height: 1.6; }
+        h2 { color: #143465; text-transform: uppercase; border-bottom: 2px solid #143465; padding-bottom: 8px; margin-bottom: 20px;}
+        .section-title { font-weight: bold; color: #3b82f6; text-transform: uppercase; font-size: 13px; margin-top: 20px; border-bottom: 1px dashed #ddd; }
+        p { margin: 8px 0; font-size: 14px; }
+        b { color: #111; width: 150px; display: inline-block; }
+      </style>
+    </head>
+    <body>
+      <h2>Agent Profile Dossier</h2>
+      <p><b>System ID:</b> #${d.id}</p>
+      
+      <div class="section-title">Core Identification</div>
+      <p><b>Agent Name:</b> ${d.agent_name || 'N/A'}</p>
+      <p><b>Service Type:</b> ${d.service_for || 'N/A'}</p>
+      <p><b>Phone Number:</b> ${d.phone || 'N/A'}</p>
+      <p><b>Email Address:</b> ${d.agent_email || 'N/A'}</p>
+      <p><b>Office Address:</b> ${d.address || 'N/A'}</p>
+      
+      <div class="section-title">Statutory & Banking details</div>
+      <p><b>GSTIN Code:</b> ${d.gst_number || 'N/A'}</p>
+      <p><b>Bank Name:</b> ${d.bank_name || 'N/A'}</p>
+      <p><b>Account Number:</b> ${d.account_no || 'N/A'}</p>
+      <p><b>IFSC Clearance:</b> ${d.ifsc || 'N/A'}</p>
+      
+      <div class="section-title">Log Metadata</div>
+      <p><b>Created Date:</b> ${d.date || 'N/A'}</p>
+      <p><b>Created Time:</b> ${d.time || 'N/A'}</p>
+    </body>
+    </html>
+  `);
   p.document.close();
-  p.print();
+  setTimeout(() => { p.print(); }, 500);
 }
 
 function exportPDF(){ printSelected(); }
@@ -460,16 +562,16 @@ function exportPDF(){ printSelected(); }
 -------------------------------------- */
 function exportExcel(){
   if(!selectedElement) return;
-  const d = selectedElement.dataset;
+  const d = JSON.parse(selectedElement.dataset.json);
 
   const headers = "ID\tAgent Name\tAgent Email\tPhone\tAddress\tService For\tGSTIN\tBank Name\tAccount No\tIFSC\tDate\tTime\tCreated By\tCompany ID\n";
-  const rowData = `${d.id}\t${d.name}\t${d.agentEmail||''}\t${d.phone||''}\t${d.address||''}\t${d.service||''}\t${d.gst||''}\t${d.bank||''}\t${d.acc||''}\t${d.ifsc||''}\t${d.date||''}\t${d.time||''}\t${d.email||''}\t${d.cid||''}`;
+  const rowData = `${d.id}\t${d.agent_name}\t${d.agent_email||''}\t${d.phone||''}\t${d.address||''}\t${d.service_for||''}\t${d.gst_number||''}\t${d.bank_name||''}\t${d.account_no||''}\t${d.ifsc||''}\t${d.date||''}\t${d.time||''}\t${d.email||''}\t${d.company_id||''}`;
   
   const blob = new Blob([headers + rowData], {type:"application/vnd.ms-excel"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Agent_${d.name}.xls`;
+  a.download = `Agent_${d.agent_name}.xls`;
   a.click();
 }
 
@@ -480,6 +582,8 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("agentForm").reset();
   document.getElementById("record_id").value = "";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE DATA";
+  
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   
