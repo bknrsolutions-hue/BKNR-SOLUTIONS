@@ -114,6 +114,8 @@ tr.selected { background: #eff6ff !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -286,7 +288,7 @@ tr.selected { background: #eff6ff !important; }
           data-email="{{ row.email }}" data-cid="{{ row.company_id }}"
           onclick="selectRowOrCard(this)">
         <td>{{ row.id }}</td>
-        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.agent_name }}</td>
+        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.agent_name }}</td>
         <td>{{ row.agent_email if row.agent_email else '' }}</td>
         <td>{{ row.phone if row.phone else '' }}</td>
         <td style="text-align:left;">{{ row.address if row.address else '' }}</td>
@@ -432,6 +434,8 @@ function printSelected(){
 
   const p = window.open("","_blank");
   p.document.write("<html><head><title>Print Report</title><style>body{font-family:sans-serif;padding:15px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;font-size:12px;}</style><link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head><body>");
   p.document.write("<h3>Buyer Agent Profile Information</h3>");
   p.document.write("<table>");

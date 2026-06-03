@@ -111,6 +111,8 @@ tr.selected { background: #eff6ff !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -211,7 +213,7 @@ tr.selected { background: #eff6ff !important; }
       {% for row in today_data %}
       <tr data-id="{{ row.id }}" data-name="{{ row.species_name }}" onclick="selectRowOrCard(this)">
         <td>{{ row.id }}</td>
-        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.species_name }}</td>
+        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.species_name }}</td>
         <td style="color:#475569;">{{ row.date }}</td>
         <td style="color:#64748b;">{{ row.time }}</td>
         <td style="color:#0284c7; font-size:11px;">{{ row.email }}</td>

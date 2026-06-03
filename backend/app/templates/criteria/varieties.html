@@ -111,6 +111,8 @@ tr.selected { background: #eff6ff !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -246,7 +248,7 @@ tr.selected { background: #eff6ff !important; }
           data-hoso="{{ row.hoso_to_finished_yield }}"
           onclick="selectRowOrCard(this)">
         <td>{{ row.id }}</td>
-        <td style="font-weight:700; text-align:left; color: var(--accent);">{{ row.variety_name }}</td>
+        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.variety_name }}</td>
         <td style="font-weight:600;">{{ row.peeling_yield }}%</td>
         <td style="font-weight:600;">{{ row.soaking_yield }}%</td>
         <td style="font-weight:700; color:#10b981;">{{ row.hoso_to_finished_yield }}%</td>

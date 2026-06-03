@@ -1,5 +1,3 @@
-# app/routers/criteria/contractors.py
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -14,17 +12,17 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # =====================================================
-# SHOW PAGE
+# SHOW PAGE (COMPANY-WISE FILTERED)
 # =====================================================
 @router.get("/contractors")
 def contractors_page(request: Request, db: Session = Depends(get_db)):
-
     email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
+    # కంపెనీ వైజ్ డేటా ఫిల్టర్ (company_id == company_code)
     rows = (
         db.query(contractors)
         .filter(contractors.company_id == company_code)
@@ -32,7 +30,7 @@ def contractors_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # ✅ FIX: TemplateResponse arguments updated for Python 3.13 / FastAPI latest
+    # TemplateResponse arguments updated for Python 3.13 / FastAPI latest
     return templates.TemplateResponse(
         request=request,
         name="criteria/contractors.html",
@@ -50,27 +48,21 @@ def contractors_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/contractors")
 def save_contractor(
     request: Request,
-
     contractor_name: str = Form(...),
     phone: str = Form(""),
     contractor_email: str = Form(""),
     address: str = Form(""),
-
     gst_number: str = Form(""),
     gst_percent: float | None = Form(None),
     gst_applicable_from: str = Form(""),
-
     bank_name: str = Form(""),
     account_no: str = Form(""),
     ifsc: str = Form(""),
-
     date: str = Form(...),
     time: str = Form(...),
     id: str = Form(""),
-
     db: Session = Depends(get_db)
 ):
-
     session_email = request.session.get("email")
     company_code = request.session.get("company_code")
 
@@ -87,7 +79,7 @@ def save_contractor(
         except ValueError:
             gst_date = None
 
-    # ---------------- UPDATE ----------------
+    # ---------------- UPDATE EXISTING RECORD ----------------
     if record_id:
         row = (
             db.query(contractors)
@@ -105,35 +97,29 @@ def save_contractor(
         row.phone = phone
         row.contractor_email = contractor_email
         row.address = address
-
         row.gst_number = gst_number
         row.gst_percent = gst_percent
         row.gst_applicable_from = gst_date
-
         row.bank_name = bank_name
         row.account_no = account_no
         row.ifsc = ifsc
-
         row.date = date
         row.time = time
         row.email = session_email
 
-    # ---------------- INSERT (NO DUPLICATE CHECK) ----------------
+    # ---------------- INSERT NEW RECORD ----------------
     else:
         row = contractors(
             contractor_name=contractor_name,
             phone=phone,
             contractor_email=contractor_email,
             address=address,
-
             gst_number=gst_number,
             gst_percent=gst_percent,
             gst_applicable_from=gst_date,
-
             bank_name=bank_name,
             account_no=account_no,
             ifsc=ifsc,
-
             date=date,
             time=time,
             email=session_email,
@@ -141,25 +127,38 @@ def save_contractor(
         )
         db.add(row)
 
-    db.commit()
-    return JSONResponse({"success": True})
+    try:
+        db.commit()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"error": f"Database error: {str(e)}"}, status_code=500)
 
 
 # =====================================================
-# DELETE
+# DELETE (COMPANY-ISOLATED BOUNDS)
 # =====================================================
 @router.post("/contractors/delete/{id}")
 def delete_contractor(id: int, request: Request, db: Session = Depends(get_db)):
-
     company_code = request.session.get("company_code")
 
     if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    db.query(contractors).filter(
-        contractors.id == id,
-        contractors.company_id == company_code
-    ).delete()
+    # వేరే కంపెనీ డేటా డిలీట్ అవ్వకుండా సెక్యూరిటీ చెక్
+    target_row = (
+        db.query(contractors)
+        .filter(contractors.id == id, contractors.company_id == company_code)
+        .first()
+    )
 
-    db.commit()
-    return JSONResponse({"status": "ok"})
+    if not target_row:
+        return JSONResponse({"error": "Record not found or unauthorized"}, status_code=404)
+
+    try:
+        db.delete(target_row)
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"error": f"Database error: {str(e)}"}, status_code=500)

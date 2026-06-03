@@ -1,0 +1,369 @@
+/* ==========================================================
+   BKNR ERP UNIVERSAL UI STANDARD
+   Version 1.1
+========================================================== */
+
+:root{
+
+    /* Colors */
+    --primary:#0f172a;
+    --accent:#2563eb;
+
+    --header-bg:#f1f5f9;
+    --row-even:#f8fafc;
+    --row-hover:#eff6ff;
+
+    --border:#e2e8f0;
+    --text:#0f172a;
+
+    --pending-bg:#fef3c7;
+    --pending-text:#92400e;
+
+    --processing-bg:#dbeafe;
+    --processing-text:#1e40af;
+
+    --completed-bg:#dcfce7;
+    --completed-text:#166534;
+
+    --cancelled-bg:#fee2e2;
+    --cancelled-text:#991b1b;
+}
+
+/* ==========================================================
+   GLOBAL
+========================================================== */
+
+*{
+    box-sizing:border-box;
+    font-family:Inter,Arial,sans-serif;
+}
+
+body{
+    color:var(--text);
+    margin:0;
+    padding:0;
+}
+
+/* ==========================================================
+   PAGE HEADER
+========================================================== */
+
+.header h2{
+    font-size:14px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+/* ==========================================================
+   FILTERS
+========================================================== */
+
+.fbox label{
+    font-size:8px;
+    font-weight:700;
+    text-transform:uppercase;
+    color:#475569;
+}
+
+.fbox select,
+.fbox input,
+#searchBox{
+    height:28px;
+    min-height:28px;
+    font-size:10px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:0 6px;
+}
+
+.fbox textarea{
+    min-height:60px;
+    font-size:10px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px;
+    resize:vertical;
+}
+
+/* ==========================================================
+   TABLE WRAPPER
+========================================================== */
+
+.table-wrap{
+    width:100%;
+    overflow:auto;
+}
+
+.section{
+    background:#ffffff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+}
+
+/* ==========================================================
+   TABLE
+========================================================== */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:auto;
+}
+
+/* ==========================================================
+   TABLE HEADER
+========================================================== */
+
+thead th{
+
+    height:36px;
+    min-height:36px;
+
+    background:var(--header-bg);
+    color:var(--text);
+
+    font-size:9px;
+    font-weight:800;
+
+    text-transform:uppercase;
+    letter-spacing:.3px;
+
+    border:1px solid var(--border);
+    border-bottom:2px solid #cbd5e1;
+
+    padding:4px 6px;
+
+    text-align:center;
+    vertical-align:middle;
+
+    position:sticky;
+    top:0;
+    z-index:5;
+}
+
+/* ==========================================================
+   TABLE BODY
+========================================================== */
+
+tbody td{
+
+    height:32px;
+    min-height:32px;
+
+    font-size:10px;
+    font-weight:500;
+
+    border:1px solid var(--border);
+
+    padding:4px 6px;
+
+    text-align:center;
+    vertical-align:middle;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+tbody tr{
+    background:#ffffff;
+}
+
+tbody tr:nth-child(even){
+    background:var(--row-even);
+}
+
+tbody tr:hover{
+    background:var(--row-hover) !important;
+}
+
+tbody tr.selected{
+    background:#dbeafe !important;
+}
+
+/* ==========================================================
+   TABLE FOOTER
+========================================================== */
+
+tfoot td{
+
+    height:36px;
+    min-height:36px;
+
+    background:var(--header-bg);
+
+    font-size:9px;
+    font-weight:800;
+
+    color:var(--text);
+
+    border:1px solid var(--border);
+    border-top:2px solid #cbd5e1;
+
+    padding:4px 6px;
+
+    text-align:center;
+    vertical-align:middle;
+}
+
+/* ==========================================================
+   ALIGNMENT
+========================================================== */
+
+.text-left{
+    text-align:left !important;
+}
+
+.text-center{
+    text-align:center !important;
+}
+
+.text-right{
+    text-align:right !important;
+}
+
+/* ==========================================================
+   CALCULATED CELLS
+========================================================== */
+
+.calc-cell{
+    background:#f8fafc;
+    color:#2563eb;
+    font-weight:800;
+}
+
+/* ==========================================================
+   STATUS BADGES
+========================================================== */
+
+.bg-pending{
+    background:var(--pending-bg);
+    color:var(--pending-text);
+    font-weight:700;
+}
+
+.bg-processing{
+    background:var(--processing-bg);
+    color:var(--processing-text);
+    font-weight:700;
+}
+
+.bg-completed{
+    background:var(--completed-bg);
+    color:var(--completed-text);
+    font-weight:700;
+}
+
+.bg-cancelled{
+    background:var(--cancelled-bg);
+    color:var(--cancelled-text);
+    font-weight:700;
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+button,
+.btn{
+    font-size:10px;
+    font-weight:700;
+}
+
+/* ==========================================================
+   SCROLLBAR
+========================================================== */
+
+::-webkit-scrollbar{
+    width:8px;
+    height:8px;
+}
+
+::-webkit-scrollbar-track{
+    background:#f8fafc;
+}
+
+::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+    background:#94a3b8;
+}
+
+/* ==========================================================
+   COLUMN WIDTH HELPERS
+========================================================== */
+
+.col-xs{width:60px;}
+.col-sm{width:90px;}
+.col-md{width:120px;}
+.col-lg{width:160px;}
+.col-xl{width:220px;}
+
+/* ==========================================================
+   GLOBAL OVERRIDES
+========================================================== */
+
+label{
+    font-size:8px !important;
+    font-weight:700 !important;
+    text-transform:uppercase !important;
+}
+
+input,
+select{
+    height:28px !important;
+    min-height:28px !important;
+    font-size:10px !important;
+}
+
+textarea{
+    min-height:60px !important;
+    font-size:10px !important;
+    padding:6px !important;
+}
+
+thead th{
+    height:36px !important;
+    min-height:36px !important;
+    font-size:9px !important;
+}
+
+tbody td{
+    height:32px !important;
+    min-height:32px !important;
+    font-size:10px !important;
+}
+
+tfoot td{
+    height:36px !important;
+    min-height:36px !important;
+    font-size:9px !important;
+}
+
+/* ==========================================================
+   PRINT
+========================================================== */
+
+@media print{
+
+    body{
+        zoom:90%;
+    }
+
+    thead th{
+        background:#f1f5f9 !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    tfoot td{
+        background:#f1f5f9 !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+}

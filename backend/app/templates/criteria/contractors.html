@@ -5,7 +5,7 @@
 <title>CONTRACTORS MASTER – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -29,7 +29,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 30px
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
-.header-titles h2{ margin:0; font-size:13px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
+.header-titles h2{ margin:0; color:var(--primary); }
 
 /* ================= FORM CONTAINER ================= */
 .form-container{
@@ -58,20 +58,8 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 30px
 }
 
 .field{ display: flex; flex-direction: column; }
-label{ font-size: 9px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.2px; }
 
-input, select, textarea{
-  padding: 6px 10px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 12px; background: #fff;
-  transition: all 0.15s ease; outline: none; height: 34px; width: 100%;
-  color: var(--text);
-  -webkit-appearance: none;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-textarea{ resize: none; height: 44px; }
+textarea{ resize: vertical; }
 
 /* ================= CONTROL ACTIONS HEAD ================= */
 .table-header-bar {
@@ -114,10 +102,8 @@ textarea{ resize: none; height: 44px; }
 .menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT TABLE AREA ================= */
-.table-wrap { width: 96%; max-width: 1400px; margin: 0 auto 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
-table{ width: 100%; border-collapse: collapse; table-layout: auto; }
-th, td{ padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
-th{ background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
+.table-wrap { width: 96%; max-width: 1400px; margin: 0 auto 20px; }
+
 tr:hover{ background: #f8fbff; cursor: pointer; }
 tr.selected{ background: #eff6ff !important; }
 
@@ -137,6 +123,8 @@ tr.selected{ background: #eff6ff !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -212,8 +200,8 @@ tr.selected{ background: #eff6ff !important; }
          data-phone="{{r.phone}}"
          data-email="{{r.contractor_email}}"
          data-gst="{{r.gst_number}}"
-         data-gstp="{{r.gst_percent}}"
-         data-gstfrom="{{r.gst_applicable_from}}"
+         data-gstp="{{r.gst_percent if r.gst_percent is not none else ''}}"
+         data-gstfrom="{{r.gst_applicable_from if r.gst_applicable_from else ''}}"
          data-bank="{{r.bank_name}}"
          data-acc="{{r.account_no}}"
          data-ifsc="{{r.ifsc}}"
@@ -233,7 +221,7 @@ tr.selected{ background: #eff6ff !important; }
         </div>
         <div class="card-row">
             <span class="card-label">GSTIN / Rate</span>
-            <span class="card-val">{{r.gst_number}} ({{r.gst_percent}}%)</span>
+            <span class="card-val">{{r.gst_number}} ({% if r.gst_percent is not none %}{{r.gst_percent}}{% else %}0{% endif %}%)</span>
         </div>
         <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
             <span class="card-label">Settlement Bank</span>
@@ -272,23 +260,23 @@ tr.selected{ background: #eff6ff !important; }
  data-phone="{{r.phone}}"
  data-email="{{r.contractor_email}}"
  data-gst="{{r.gst_number}}"
- data-gstp="{{r.gst_percent}}"
- data-gstfrom="{{r.gst_applicable_from}}"
+ data-gstp="{{r.gst_percent if r.gst_percent is not none else ''}}"
+ data-gstfrom="{{r.gst_applicable_from if r.gst_applicable_from else ''}}"
  data-bank="{{r.bank_name}}"
  data-acc="{{r.account_no}}"
  data-ifsc="{{r.ifsc}}"
  data-addr="{{r.address}}">
   <td>#{{r.id}}</td>
-  <td style="font-weight:700; text-align:left; color: var(--accent);">{{r.contractor_name}}</td>
+  <td class="text-left" style="font-weight:700;color:var(--accent);">{{r.contractor_name}}</td>
   <td>{{r.phone}}</td>
   <td style="color:#0284c7;">{{r.contractor_email}}</td>
   <td style="font-family:monospace; font-weight:600;">{{r.gst_number}}</td>
-  <td>{{r.gst_percent}}%</td>
-  <td style="color:var(--muted);">{{r.gst_applicable_from}}</td>
+  <td>{% if r.gst_percent is not none %}{{r.gst_percent}}{% else %}0{% endif %}%</td>
+  <td style="color:var(--muted);">{{r.gst_applicable_from if r.gst_applicable_from else ''}}</td>
   <td style="font-weight:600; color:#475569;">{{r.bank_name}}</td>
   <td>{{r.account_no}}</td>
   <td style="font-family:monospace;">{{r.ifsc}}</td>
-  <td style="text-align:left; max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{r.address}}</td>
+  <td class="text-left" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{r.address}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -339,12 +327,14 @@ async function submitContractor(e){
 
  try {
    const response = await fetch("/criteria/contractors", { method: "POST", body: fd });
-   if(response.ok){
+   const result = await response.json();
+
+   if(response.ok && result.success){
      Swal.fire({icon:'success', title:'Contractor Profile Documented!', timer:1200, showConfirmButton:false}).then(()=>{
          location.reload();
      });
    } else {
-     Swal.fire({icon:'error', title:'Operational Pipeline Fault', text:'Failed to save asset records.'});
+     Swal.fire({icon:'error', title:'Operational Pipeline Fault', text: result.error || 'Failed to save asset records.'});
    }
  } catch (err) {
    console.error(err);
@@ -408,8 +398,13 @@ async function deleteRow(){
       const id = selectedElement.dataset.id;
       try {
         const response = await fetch(`/criteria/contractors/delete/${id}`, { method: "POST" });
-        if(response.ok) location.reload(); 
-        else Swal.fire({icon:'error', title:'Access Node Aborted Operation.'});
+        const result = await response.json();
+        
+        if(response.ok && (result.status === "ok" || result.success)) {
+            location.reload(); 
+        } else {
+            Swal.fire({icon:'error', title:'Access Node Aborted Operation.', text: result.error || ''});
+        }
       } catch (err) {
         Swal.fire({icon:'error', title:'Network Node Failure.'});
       }
@@ -434,6 +429,8 @@ function printRow(){
        b { color: #111; width: 150px; display: inline-block; }
      </style>
    <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
    <body>
      <h2>Contractor Profile Dossier</h2>

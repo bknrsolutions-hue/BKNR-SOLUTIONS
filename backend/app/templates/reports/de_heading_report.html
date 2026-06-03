@@ -4,127 +4,165 @@
 <meta charset="UTF-8">
 <title>DE-HEADING REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
- --primary:#0f172a;
- --accent:#2563eb;
- --border:#e2e8f0;
- --bg:#f1f5f9;
- --header:#ffffff;
- --text:#1e293b;
- --text-muted:#64748b;
+ --primary-dark: #0f172a;
+ --sidebar-bg: #ffffff; 
+ --accent-blue: #2563eb; 
+ --accent-glow: #3b82f6;
+ --text-main: #1e293b;
+ --text-muted: #64748b;
+ --bg-light: #f8fafc;
+ --border-color: #e2e8f0;
  --danger: #ef4444;
  --success: #22c55e;
 }
 
-*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
-body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: radial-gradient(circle at top right, #f1f5f9 0%, var(--bg-light) 60%); 
+    height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text-main); 
+}
 
 /* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+.header{ background: #ffffff; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary-dark); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
- gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
+ margin-top:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+ gap:6px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid var(--border-color);
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
-#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+@media (max-width: 600px) {
+    .filters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    #searchBox {
+        grid-column: span 2 !important;
+    }
+}
+
+.fbox{display:flex;flex-direction:column;gap:3px;}
+.fbox label{ font-size:9px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing: 0.5px; }
+
+select,input[type=date],input[type=month],#searchBox{ 
+    padding:6px 8px; font-size:11px; font-weight: 600; border:1px solid var(--border-color); 
+    border-radius:6px; background:#fff; color: var(--text-main); outline:none; transition: all 0.2s;
+}
+select:focus, input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+#searchBox{ grid-column:span 2; border-left:4px solid var(--accent-blue); }
+#f_fy { border: 1.5px solid var(--accent-blue); font-weight: 700; color: var(--accent-blue); }
 
 /* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
-#rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
+.actions{ background:#fff; padding:8px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); }
+#rowCount{ font-size:11px; font-weight:700; color:var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px; user-select:none;}
+.dots{ 
+    width:28px; height:28px; border:1px solid var(--border-color); display:flex; align-items:center; 
+    justify-content:center; border-radius:6px; cursor:pointer; background:#fff; font-size:14px; 
+    user-select:none; color: var(--text-muted); transition: all 0.2s;
+}
+.dots:hover { color: var(--primary-dark); background: #f1f5f9; border-color: #cbd5e1; }
 
 .menu-list{
- position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
- border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+ position:absolute; right:0; top:34px; width:230px; background:#fff; border:1px solid var(--border-color);
+ border-radius:6px; display:none; z-index:5000; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+ overflow: hidden;
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list div{ padding:10px 14px; font-size:11px; font-weight:600; border-bottom:1px solid #f1f5f9; cursor:pointer; color: var(--text-main); }
+.menu-list div:hover{ background:#eff6ff; color:var(--accent-blue); }
+.menu-list b { display: block; padding: 6px 14px; font-size: 9px; font-weight: 800; background: #f8fafc; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.menu-list hr { border: 0; border-top: 1px solid #e2e8f0; margin: 0; }
 
-/* ================= TABLE AREA - FULL WIDTH COMPACT DESIGN WITH ZERO SCREEN OVERRUNS ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; background: #fff; } 
+/* ================= TABLE AREA ================= */
+.section{ flex:1; margin:8px; background:#fff; border:1px solid var(--border-color); border-radius: 8px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.table-wrap{ flex:1; overflow:auto; width: 100%; background: #fff; scrollbar-width: thin; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 100%; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1200px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:9.5px; font-weight:800;
- text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ background:#f8fafc; padding:10px 4px; font-size:10px; font-weight:800;
+ text-transform:uppercase; border-bottom:2px solid var(--border-color);
+ border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10; color: #475569; letter-spacing: 0.5px;
 }
 
 tbody td{
- padding:6px 2px; font-size:9px; border-bottom:1px solid #f1f5f9;
+ padding:8px 4px; font-size:9.5px; font-weight: 600; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- position: relative;
+ position: relative; color: var(--text-main);
 }
 
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
 
 .empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent-blue); opacity: 0.5; }
 
-/* 🌟 BALANCED COLUMN RESPONSIVE WIDTH MATRIX SCALE (TOTAL MATCHES = 100% PERFECT PROPORTIONS) */
-.w-sl { width: 3%; }     
-.w-dt { width: 6.5%; }   
-.w-bt { width: 6.5%; }   
-.w-con { width: 11.5%; } 
-.w-sp { width: 8.5%; }   
-.w-ct { width: 4.5%; }   
-.w-qt { width: 5.5%; }   
-.w-yld { width: 5.5%; }  
-.w-diff { width: 5.5%; } 
-.w-rt { width: 4.5%; }   
-.w-am { width: 7.5%; }   
-.w-loc { width: 8.5%; }  
-.w-pf { width: 8.5%; }   
-.w-em { width: 8.5%; }   
+/* 🌟 BALANCED COLUMN WIDTH SCALE Matrix Proportions */
+.w-sl { width: 3.5%; }     
+.w-dt { width: 7.5%; }   
+.w-bt { width: 7.5%; }   
+.w-con { width: 12.5%; } 
+.w-sp { width: 9.5%; }   
+.w-ct { width: 5.5%; }   
+.w-qt { width: 6.5%; }   
+.w-yld { width: 6.5%; }  
+.w-diff { width: 6.5%; } 
+.w-rt { width: 5.5%; }   
+.w-am { width: 8.5%; }   
+.w-loc { width: 9.5%; }  
+.w-pf { width: 9.5%; }   
+.w-em { width: 9.5%; }   
 
-.yield-cell { font-weight: 800; color: var(--accent); }
-.target-cell { font-weight: 600; color: #64748b; background: #f8fafc; }
+.yield-cell { font-weight: 800; color: var(--accent-blue); }
+.target-cell { font-weight: 700; color: #64748b; background: #f8fafc; }
 .diff-cell { font-weight: 700; }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+.edit-input{ width:100%; font-size:9.5px; font-weight:600; border:1px solid var(--accent-blue); padding:4px; text-align:center; outline:none; border-radius: 4px; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 
 /* SEARCHABLE INLINE DROPDOWN EMBEDDED STRUCTURES */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
-    position: fixed; /* 🟢 Fixed overflow issue */
+    position: fixed; 
     max-height: 140px; overflow-y: auto;
-    background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+    background: #fff; border: 1px solid var(--accent-blue); z-index: 9999; display: none; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); text-align: left; border-radius: 6px;
+    scrollbar-width: thin;
 }
-.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
-.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
+.searchable-dropdown-item { padding: 6px 8px; font-size: 9.5px; font-weight:600; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: var(--text-main); }
+.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent-blue); }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px solid var(--border-color); position:sticky; bottom:0; z-index:10; padding:12px 6px; color:var(--primary-dark); }
 
 /* ================= MODAL & AUDIT ================= */
-#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
+#confirmModal{ position:fixed; inset:0; background:rgba(15, 23, 42, 0.4); display:none; align-items:center; justify-content:center; z-index:6000; backdrop-filter: blur(4px); }
+.modal-content{ background:#fff; padding:24px; border-radius:8px; width:320px; text-align:center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content h4 { font-weight: 800; color: var(--primary-dark); }
+.btn-y{ background:var(--primary-dark); color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; transition: opacity 0.2s; }
+.btn-y:hover { opacity: 0.9; }
+.btn-n{ background:#e2e8f0; color: var(--text-main); border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; margin-left:8px; transition: background 0.2s; }
+.btn-n:hover { background: #cbd5e1; }
 
 .audit-panel{ 
     position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
-    border-left:3px solid var(--primary); display:none; flex-direction:column; 
-    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
+    border-left:3px solid var(--primary-dark); display:none; flex-direction:column; 
+    z-index:5500; box-shadow:-5px 0 25px rgba(0,0,0,0.1); 
 }
 
-/* ================= RUNTIME NATIVE HARD PRINT SYSTEM COMPILE (A4 LANDSCAPE COMPLETE OVERRIDES) ================= */
+@media (max-width: 400px) {
+    .audit-panel { width: 100%; }
+}
+
+/* ================= RUNTIME NATIVE HARD PRINT SYSTEM COMPILE ================= */
 @media print {
     @page { size: A4 landscape; margin: 6mm; }
     body { background: #fff; height: auto; overflow: visible; color: #000; }
@@ -140,6 +178,8 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
 .print-header-block { display: none; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
@@ -157,13 +197,13 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
 <div class="header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>DE-HEADING REPORT</h2>
-        <div style="font-size: 11px; color: var(--text-muted); font-weight:600;">
+        <div style="font-size: 12px; color: var(--text-muted); font-weight:700;">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
     </div>
     <div class="filters">
         <div class="fbox">
-            <label style="color:var(--accent)">Financial Year *</label>
+            <label style="color:var(--accent-blue)">Financial Year *</label>
             <select id="f_fy" onchange="changeFY(this.value)">
                 <option value="">-- SELECT FY --</option>
                 {% set start_yr = 2024 %}
@@ -289,18 +329,18 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
                         <td class="amt-cell" data-val="{{ r.amount }}">₹{{ r.amount }}</td>
                         <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
                         <td class="editable" data-field="production_for">{{ r.production_for }}</td>
-                        <td style="font-size: 8px; color: #94a3b8; text-align: left; padding-left: 2px;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
+                        <td style="font-size: 9px; color: #94a3b8; text-align: left; padding-left: 4px;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
                     </tr>
                     {% endfor %}
                 {% endif %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right; padding-right: 5px;">TOTALS:</td>
+                    <td colspan="6" style="text-align:right; padding-right: 6px;">TOTALS:</td>
                     <td id="tot_hoso">0.00</td>
                     <td id="tot_hlso">0.00</td>
                     <td></td>
-                    <td id="avg_yield" style="color:var(--accent)">0%</td>
+                    <td id="avg_yield" style="color:var(--accent-blue)">0%</td>
                     <td id="avg_diff_pct">0%</td>
                     <td id="tot_diff_kg">0.00</td>
                     <td></td>
@@ -321,11 +361,11 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:12px;">EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
+    <div style="padding:14px; background:var(--primary-dark); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:13px; letter-spacing:0.5px;">EDIT HISTORY LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:22px;">&times;</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:12px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
 
 <script>
@@ -446,11 +486,9 @@ document.getElementById("btnYes").onclick = async () => {
     }
 };
 
-/* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS INTEGRATION */
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
     
-    // Close the 3-dot menu smoothly when Edit starts
     document.getElementById("mainMenu").style.display = "none";
     
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
@@ -476,7 +514,6 @@ function enableEdit() {
                 closeAllInlineDropdowns();
                 const listEl = td.querySelector('.searchable-dropdown-list');
                 
-                // Fixed position calculations to overcome table overflow hidden clipping
                 const rect = inputEl.getBoundingClientRect();
                 listEl.style.top = (rect.bottom + 2) + "px";
                 listEl.style.left = rect.left + "px";
@@ -488,7 +525,6 @@ function enableEdit() {
         }
     });
     
-    // Auto close dropdown when table scrolls
     document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
@@ -520,14 +556,11 @@ function closeAllInlineDropdowns() {
     document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
 }
 
-// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
 document.addEventListener('click', function(e) {
-    // 1. Close Inline Searchable Dropdowns if clicked outside
     if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
     }
     
-    // 2. Manage 3-Dot Menu
     const mainMenu = document.getElementById("mainMenu");
     if (mainMenu) {
         if (e.target.closest('.dots')) {
@@ -573,7 +606,6 @@ async function saveEdit() {
     } catch(e) { alert("Save failed!"); }
 }
 
-// RUNTIME CLIENT PRINT MATRIX COMPILE
 function triggerLocalPrint() {
     const activeContractorSelection = document.getElementById("f_contractor").value;
     const badgeEl = document.getElementById("printContractorLabel");
@@ -595,10 +627,10 @@ async function toggleAudit() {
     const res = await fetch(`${baseUrl}/audit_all`);
     const logs = await res.json();
     content.innerHTML = logs.map(l => `
-        <div style="border-left:2px solid var(--accent); margin-bottom:5px; background:#fff; padding:8px; font-size:10px;">
-            <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
-            ${l.action}: ${l.details}<br>
-            <small>By: ${l.user}</small>
+        <div style="border-left:3px solid var(--accent-blue); margin-bottom:6px; background:#fff; padding:10px; font-size:11px; font-weight:600; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <b style="color: var(--primary-dark);">${l.timestamp}</b> | Batch: ${l.batch}<br>
+            <span style="color: var(--text-main);">${l.action}: ${l.details}</span><br>
+            <small style="color: var(--text-muted); font-size: 9px;">By: ${l.user}</small>
         </div>`).join('');
 }
 

@@ -27,51 +27,51 @@ body{
 }
 
 /* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+.header{ background:var(--header); padding:8px 12px; border-bottom:2px solid var(--primary); }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(105px, 1fr));
- gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
+ margin-top:6px; display:grid;
+ grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));
+ gap:4px; background:#f8fafc; padding:6px; border-radius:4px; border:1px solid var(--border);
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox{display:flex;flex-direction:column;gap:1px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; height:24px; }
+#searchBox{ grid-column:span 2; border-left:3px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:#fff; padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:12px;}
 
 .menu-list{
- position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
+ position:absolute; right:0; top:28px; width:210px; background:#fff; border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+.menu-list div{ padding:6px 10px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list b { display: block; padding: 4px 10px; font-size: 8px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
 /* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; background: #fff; } 
+.section{ flex:1; margin:4px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.table-wrap { flex: 1; overflow: auto; width: 100%; background: #fff; -webkit-overflow-scrolling: touch; } 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 100%; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100px; } 
 
 thead th{
- background:#f8fafc; padding:8px 2px; font-size:9.5px; font-weight:800;
+ background:#f8fafc; padding:6px 2px; font-size:9px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
- color: var(--text); letter-spacing: 0.5px;
+ color: var(--text); letter-spacing: 0.3px;
 }
 
 tbody td{
- padding:8px 4px; font-size:9px; border-bottom:1px solid #f1f5f9;
+ padding:6px 3px; font-size:9px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
  font-weight: 400; 
@@ -80,35 +80,35 @@ tbody td{
 tbody tr:hover{background:#f1f7ff; cursor:pointer;}
 tr.selected{background:#eef2ff !important; border-left: 3px solid var(--accent);}
 
-.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
+.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
+.empty-state i { font-size: 30px; margin-bottom: 10px; color: var(--accent); opacity: 0.5; }
 
-/* 🌟 FRACTIONAL WIDTH COLUMNS MATRIX SYSTEM (TOTAL = 100%) */
+/* 🌟 FRACTIONAL WIDTH COLUMNS MATRIX SYSTEM */
 .w-sl { width: 3%; }       
-.w-dt { width: 6.5%; }     
-.w-bt { width: 6.5%; }     
-.w-con { width: 11%; }     
+.w-dt { width: 7%; }     
+.w-bt { width: 7%; }     
+.w-con { width: 12%; }     
 .w-var { width: 9%; }      
-.w-ct { width: 4.5%; }     
-.w-qt { width: 5.5%; }     
+.w-ct { width: 5%; }     
+.w-qt { width: 6%; }     
 .w-yld { width: 5.5%; }    
 .w-diff { width: 5.5%; }   
-.w-diff-kg { width: 5.5%; }
-.w-rt { width: 4.5%; }     
-.w-am { width: 7.5%; }     
-.w-loc { width: 8.5%; }    
+.w-diff-kg { width: 6%; }
+.w-rt { width: 5%; }     
+.w-am { width: 8%; }     
+.w-loc { width: 9%; }    
 .w-pf { width: 9%; }       
-.w-em { width: 8.5%; }     
+.w-em { width: 8%; }     
 
 .yield-cell { font-weight: 700; color: var(--accent); }
 .amt-cell { font-weight: 600; color: var(--primary); }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; height:20px; }
 
 /* SEARCHABLE INLINE DROPDOWN CORE STYLING */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
-    position: fixed; /* 🟢 Fixed overflow issue */
-    max-height: 140px; overflow-y: auto;
+    position: fixed; 
+    max-height: 120px; overflow-y: auto;
     background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -116,17 +116,17 @@ tr.selected{background:#eef2ff !important; border-left: 3px solid var(--accent);
 
 /* ================= FOOTER ================= */
 tfoot td{ 
-    background:#f8fafc; font-weight:800; font-size:9.5px; color:var(--primary);
-    border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:12px; 
+    background:#f8fafc; font-weight:800; font-size:9px; color:var(--primary);
+    border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:6px 4px; 
 }
 
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
+.modal-content{ background:#fff; padding:15px; border-radius:4px; width:280px; text-align:center; }
+.btn-y{ background:var(--primary); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px; }
+.btn-n{ background:#e2e8f0; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; font-size:11px; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
+    position:fixed; right:0; top:0; bottom:0; width:320px; background:#fff; 
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
@@ -140,24 +140,26 @@ tfoot td{
     .table-wrap { overflow: visible; width: 100%; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
     thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 5px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
     tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 12px; }
+    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
 }
 .print-header-block { display: none; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
 
 <div class="print-header-block">
     <div style="text-align: left;">
-        <h2 style="margin:0; font-size:15px; color:#0f172a; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
-        <div style="margin:2px 0 0 0; font-size:10px; font-weight:bold; color:#475569;">PEELING & QUANTITY VARIANCE REPORT</div>
+        <h2 style="margin:0; font-size:14px; color:#0f172a; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
+        <div style="margin:2px 0 0 0; font-size:9px; font-weight:bold; color:#475569;">PEELING & QUANTITY VARIANCE REPORT</div>
     </div>
-    <div style="text-align: right; font-size: 9px; font-weight: bold; line-height: 1.4;">
-        <div style="color:#2563eb; font-size:10px; text-transform:uppercase;">CONTRACTOR SCOPE: <span id="printScopeLabel">ALL CONTRACTORS</span></div>
+    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.4;">
+        <div style="color:#2563eb; font-size:9px; text-transform:uppercase;">CONTRACTOR SCOPE: <span id="printScopeLabel">ALL CONTRACTORS</span></div>
         <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">System Printed Ledger Engine Instance</div>
     </div>
 </div>
@@ -165,7 +167,7 @@ tfoot td{
 <div class="header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>PEELING REPORT</h2>
-        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
     </div>
@@ -189,7 +191,7 @@ tfoot td{
         <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
         <div class="fbox"><label>Peeling At</label><select id="f_peeling"><option value="">All Locations</option></select></div>
         <div class="fbox"><label>Production For</label><select id="f_prod_for"><option value="">All Production For</option></select></div>
-        <input id="searchBox" placeholder="Search Batch, Contractor, Production For...">
+        <input id="searchBox" placeholder="Search Batch, Contractor...">
     </div>
 </div>
 
@@ -203,16 +205,16 @@ tfoot td{
             <div onclick="saveEdit()">💾 Save Changes</div>
             {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
-            <hr>
+            <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
             <b>📋 Export Options</b>
             <div onclick="executeSystemPrint()">🖨 Print Current View</div>
             <div onclick="askConfirm('pdf_table')">📄 Export Table PDF</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
-            <hr>
+            <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
             <b>🧾 Monthly Bill</b>
             <div onclick="askConfirm('print_bill')">🖨 Print Bill</div>
             <div onclick="askConfirm('pdf_bill')">📩 Download Bill PDF</div>
-            <hr>
+            <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
             {% if is_admin %}
             <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
             {% endif %}
@@ -227,20 +229,20 @@ tfoot td{
                 <tr>
                     <th class="w-sl">#</th>
                     <th class="w-dt">Date</th>
-                    <th class="w-bt">Batch No</th>
+                    <th class="w-bt">Batch</th>
                     <th class="w-con">Contractor</th>
                     <th class="w-var">Variety</th>
-                    <th class="w-ct">HL-Cnt</th>
+                    <th class="w-ct">Count</th>
                     <th class="w-qt">HLSO Kg</th>
                     <th class="w-qt">Peeled Kg</th>
-                    <th class="w-yld">Target %</th>
-                    <th class="w-yld">Actual %</th>
+                    <th class="w-yld">Tgt %</th>
+                    <th class="w-yld">Act %</th>
                     <th class="w-diff">Diff %</th>
                     <th class="w-diff-kg">Diff Kg</th>
                     <th class="w-rt">Rate</th>
                     <th class="w-am">Amount</th>
                     <th class="w-loc">Peeling At</th>
-                    <th class="w-pf">Production For</th>
+                    <th class="w-pf">Prod For</th>
                     <th class="w-em">User</th>
                 </tr>
             </thead>
@@ -250,14 +252,14 @@ tfoot td{
                     <td colspan="17" class="empty-state">
                         <i class="fa-solid fa-calendar-check"></i><br>
                         <b>Financial Year Not Selected</b><br>
-                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view report data.</span>
+                        <span style="font-size: 10px;">Please select a Financial Year from the filter to view report data.</span>
                     </td>
                 </tr>
                 {% else %}
                     {% for r in rows %}
-                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date.strftime('%Y-%m-%d') if r.date else '' }}" onclick="selectRow(this)">
                         <td class="slno"></td>
-                        <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ r.date.strftime('%d-%m-%Y') if r.date else '' }}</td>
                         <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
                         <td class="lookup contractor" data-field="contractor_name">{{ r.contractor_name }}</td>
                         <td class="lookup variety" data-field="variety_name">{{ r.variety_name }}</td>
@@ -279,7 +281,7 @@ tfoot td{
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right; padding-right: 5px;">GRAND TOTALS:</td>
+                    <td colspan="6" style="text-align:right; padding-right: 4px;">TOTALS:</td>
                     <td id="tot_hlso" style="text-align:right">0.00</td>
                     <td id="tot_peeled" style="text-align:right">0.00</td>
                     <td></td>
@@ -297,19 +299,20 @@ tfoot td{
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <h4 id="confirmMsg" style="margin:0 0 12px 0; font-size:13px;"></h4>
         <button class="btn-y" id="btnYes">Yes, Proceed</button>
         <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:12px;">EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
+    <div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:11px;">EDIT HISTORY LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:18px;">×</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
 </div>
+
 
 <script>
 const lookups = {
