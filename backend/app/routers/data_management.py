@@ -210,8 +210,12 @@ async def verify_otp(payload: OTPVerify, request: Request):
 @router.get("/data-management", response_class=HTMLResponse)
 async def data_management(request: Request, db: Session = Depends(get_db)):
     templates = request.app.state.templates
-    return templates.TemplateResponse("admin/data_management.html", {"request": request})
-
+    # ✅ కరెక్ట్ పద్ధతి (కచ్చితంగా 'request=' మరియు 'name=' అని మెన్షన్ చేయండి)
+    return templates.TemplateResponse(
+        request=request, 
+        name="admin/data_management.html", 
+        context={"request": request}
+    )
 @router.get("/data-management/template/master")
 async def download_master_template():
     template_dir = "templates_excel"
