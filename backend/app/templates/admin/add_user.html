@@ -19,6 +19,7 @@
   --border-color: rgba(15, 23, 42, 0.08);
   --input-focus-border: rgba(0, 75, 147, 0.3);
   --table-header: #0f172a;
+  --accent-success: #10b981;
 }
 
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
@@ -31,13 +32,12 @@ body { background: var(--bg-gradient); color: var(--text-main); min-height: 100v
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
-/* Mobile Compact Optimization */
 @media (max-width: 768px) {
   body { padding: 0.5rem; }
   .container { padding: 1rem; }
   .header-zone { flex-direction: column; align-items: flex-start; gap: 10px; }
   .form-grid { grid-template-columns: 1fr !important; }
-  .table-block { overflow-x: auto; }
+  .table-block { overflow-x: auto; overflow-y: visible; padding-bottom: 80px; }
 }
 
 .header-zone { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
@@ -52,42 +52,70 @@ h2 i { color: var(--primary-color); }
 label { font-size: 0.78rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.4rem; letter-spacing: 0.01em; }
 input, select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.88rem; color: var(--text-main); background: #f8fafc; transition: all 0.2s ease; }
 input:focus, select:focus { outline: none; background: #ffffff; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
-input:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+
+.access-checkbox-container { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: background 0.2s; height: 100%; }
+.access-checkbox-container input[type="checkbox"] { width: auto; accent-color: var(--primary-color); }
 
 .perm-wrapper { position: relative; }
 .perm-box { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.88rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; font-weight: 500; }
-.perm-box:hover { background: #f1f5f9; }
-.perm-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.15); border-radius: 8px; margin-top: 6px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1); z-index: 1000; max-height: 350px; overflow-y: auto; padding: 12px; }
+
+.perm-menu { 
+  display: none; 
+  position: absolute; 
+  top: 100%; 
+  left: 0; 
+  width: 100%; 
+  background: #ffffff; 
+  border: 1px solid rgba(15, 23, 42, 0.15); 
+  border-radius: 8px; 
+  margin-top: 6px; 
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); 
+  z-index: 9999; 
+  max-height: 450px; 
+  overflow-y: auto; 
+  padding: 12px; 
+}
+
 .search-container { position: sticky; top: 0; background: #ffffff; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); z-index: 10; }
 .search-container input { padding: 8px 10px; font-size: 0.8rem; }
 .pillar-section { margin-bottom: 10px; border: 1px solid rgba(15, 23, 42, 0.04); border-radius: 6px; overflow: hidden; }
-.pillar-header { background: #f1f5f9; padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.pillar-header { background: #f1f5f9; padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid rgba(15, 23, 42, 0.04); }
 .pillar-header input[type="checkbox"] { width: auto; margin-right: 6px; }
-.category-block { padding-left: 8px; background: #fafafa; }
-.category-title { padding: 6px 12px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.02); }
+.category-block { padding-left: 8px; background: #fafafa; display: none; }
+.category-title { padding: 6px 12px; font-size: 0.78rem; font-weight: 600; color: var(--primary-color); display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.02); margin-top: 4px;}
 .items-grid { padding: 6px 12px 10px 12px; display: grid; grid-template-columns: 1fr; gap: 6px; }
 .item-label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-main); font-weight: 400; cursor: pointer; padding: 2px 0; }
 .item-label input[type="checkbox"] { width: auto; }
 .badge-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #e2e8f0; color: #475569; margin-left: auto; text-transform: uppercase; }
 
-.table-block { background: #ffffff; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
+/* Table Control Header Layer */
+.table-controls { display: flex; justify-content: flex-end; align-items: center; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border-color); border-bottom: none; border-top-left-radius: 10px; border-top-right-radius: 10px; position: relative; margin-top: 15px; }
+.global-action-container { position: relative; display: inline-block; }
+.global-action-btn { background: #ffffff; border: 1px solid var(--border-color); color: var(--text-muted); font-size: 1rem; cursor: not-allowed; padding: 8px 14px; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; opacity: 0.5; }
+.global-action-btn.active { cursor: pointer; opacity: 1; color: var(--primary-color); border-color: var(--primary-color); box-shadow: 0 2px 6px rgba(0, 75, 147, 0.1); }
+
+.global-dropdown-menu { display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.15); box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); border-radius: 6px; z-index: 10000; min-width: 160px; padding: 4px; }
+.global-dropdown-menu button { width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-main); font-size: 0.85rem; font-weight: 500; border-radius: 4px; box-shadow: none; display: flex; align-items: center; gap: 8px; }
+.global-dropdown-menu button:hover { background: #f1f5f9; }
+
+/* Table Component */
+.table-block { background: #ffffff; border: 1px solid var(--border-color); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow: visible; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
 table { width: 100%; border-collapse: collapse; min-width: 800px; }
 th, td { padding: 14px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-th { background: var(--table-header); color: #ffffff; font-weight: 600; letter-spacing: 0.02em; font-size: 0.8rem; text-transform: uppercase; }
+th { background: var(--table-header); color: #ffffff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #f8fafc; }
-.permissions-cell-span { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }
 
-button { background: var(--btn-bg); color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px; }
-button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.15); }
+tr.clickable-user-row { cursor: pointer; transition: background 0.15s; }
+tr.clickable-user-row:hover td { background: #f8fafc; }
+tr.clickable-user-row.selected-row td { background: #e0f2fe !important; border-bottom-color: #bae6fd; }
+
+.permissions-cell-span { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }
+.status-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #d1fae5; color: #065f46; display: inline-flex; align-items: center; gap: 4px; }
+
+button.main-btn { background: var(--btn-bg); color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
+button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.15); }
 .btn-secondary { background: #e2e8f0; color: var(--text-main); }
 .btn-secondary:hover { background: #cbd5e1; }
-.action-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-.action-btn:hover { background: #f1f5f9; color: var(--text-main); }
-.action-container { position: relative; display: inline-block; }
-.dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.1); box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08); border-radius: 6px; z-index: 99; min-width: 130px; padding: 4px; }
-.dropdown-menu button { width: 100%; padding: 8px 12px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-main); font-size: 0.8rem; font-weight: 500; border-radius: 4px; box-shadow: none; }
-.dropdown-menu button:hover { background: #f1f5f9; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -99,9 +127,12 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
 
   <div class="header-zone">
     <h2><i class="fa-solid fa-users-gear"></i> User Management Engine</h2>
-    <button id="triggerFormBtn" onclick="openCreateMode()"><i class="fa-solid fa-plus"></i> Add New User</button>
+    <div style="display: flex; gap: 10px;">
+      <button id="triggerFormBtn" class="main-btn" onclick="openCreateMode()"><i class="fa-solid fa-plus"></i> Add New User</button>
+    </div>
   </div>
 
+  <!-- INPUT FORM SECTION -->
   <div id="formSection" class="form-card" style="display:none;">
     <h3 id="formModeTitle" style="margin-bottom: 15px; color: var(--primary-color); font-size: 1.1rem;">Create New Profile</h3>
     
@@ -131,7 +162,7 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
         </div>
       </div>
 
-      <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+      <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
         <div class="form-group">
           <label>System Role</label>
           <select id="f_role" name="role">
@@ -139,6 +170,15 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
             <option value="admin">System Administrator</option>
           </select>
         </div>
+        
+        <div class="form-group">
+          <label>Security Gateway Privileges</label>
+          <label class="access-checkbox-container">
+            <input type="checkbox" id="f_data_management_access" name="data_management_access" value="true">
+            <span style="font-size: 0.85rem; font-weight: 500;">Data Management Access</span>
+          </label>
+        </div>
+
         <div class="form-group">
           <label>Corporate Company ID</label>
           <input value="{{ company_code }}" readonly>
@@ -156,27 +196,30 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               <input type="text" id="permSearch" placeholder="Search parameters, dashboards, records..." onkeyup="filterPermissions()">
             </div>
 
-            <div class="pillar-section" data-pillar="Live Dashboards & Operations">
+            <!-- PILLAR 1: DASHBOARDS -->
+            <div class="pillar-section" data-pillar="Dashboards">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
-                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Live Dashboards</span>
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 1. Dashboards</span>
                 <i class="fa-solid fa-angle-right"></i>
               </div>
               <div class="category-block">
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="/dashboard/processing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-chart-line"></i> Processing Dashboard <span class="badge-tag">Live</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="/dashboard/inventory_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard <span class="badge-tag">MNC</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="/dashboard/hr_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-user-tie"></i> HR Dashboard <span class="badge-tag">Staff</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="/dashboard/costing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard <span class="badge-tag">Fin</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="processing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-chart-line"></i> Processing Dashboard <span class="badge-tag">LIVE</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="inventory_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard <span class="badge-tag">LIVE</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="hr_command_center" onchange="updateSelectedCount()"><i class="fa-solid fa-user-tie"></i> HR Command Center <span class="badge-tag">LIVE</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="costing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard <span class="badge-tag">LIVE</span></label>
                 </div>
               </div>
             </div>
 
-            <div class="pillar-section" data-pillar="Processing & Warehousing">
+            <!-- PILLAR 2: OPERATIONS -->
+            <div class="pillar-section" data-pillar="Operations">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
-                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Processing & Warehousing</span>
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 2. Operations</span>
                 <i class="fa-solid fa-angle-right"></i>
               </div>
               <div class="category-block">
+                <div class="category-title"><i class="fa-solid fa-gears"></i> Processing</div>
                 <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="gate_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-door-open"></i> Gate Entry <span class="badge-tag">Ops-1</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="raw_material_purchasing" onchange="updateSelectedCount()"><i class="fa-solid fa-truck-ramp-box"></i> RM Purchasing <span class="badge-tag">Ops-2</span></label>
@@ -185,55 +228,25 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
                   <label class="item-label"><input type="checkbox" name="access" value="peeling" onchange="updateSelectedCount()"><i class="fa-solid fa-hand-dots"></i> Peeling <span class="badge-tag">WIP</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="soaking" onchange="updateSelectedCount()"><i class="fa-solid fa-droplet"></i> Soaking <span class="badge-tag">WIP</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="production" onchange="updateSelectedCount()"><i class="fa-solid fa-industry"></i> Production <span class="badge-tag">WIP</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-boxes-stacked"></i> Inventory</div>
+                <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="stock_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry <span class="badge-tag">Stock</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="pending_orders" onchange="updateSelectedCount()"><i class="fa-solid fa-clock-rotate-left"></i> Pending Orders <span class="badge-tag">Orders</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="general_store_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-shop"></i> General Store Entry <span class="badge-tag">Store</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="cold_storage_holding" onchange="updateSelectedCount()"><i class="fa-solid fa-snowflake"></i> Cold Storage Holding <span class="badge-tag">Cold</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="general_store_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-shop"></i> General Store Entry <span class="badge-tag">Store</span></label>
                 </div>
               </div>
             </div>
 
-            <div class="pillar-section" data-pillar="Data & Intelligence">
+            <!-- PILLAR 3: FINANCE -->
+            <div class="pillar-section" data-pillar="Finance">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
-                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Data & Intelligence</span>
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 3. Finance</span>
                 <i class="fa-solid fa-angle-right"></i>
               </div>
               <div class="category-block">
-                <div class="category-title"><i class="fa-solid fa-file-chart-column"></i> Operation Reports</div>
-                <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="gate_entry_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-lines"></i> Gate Entry Report <span class="badge-tag">Logs</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="rmp_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice"></i> RM Purchase Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="de_heading_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-medical"></i> De-Heading Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="grading_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-shield"></i> Grading Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="peeling_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-import"></i> Peeling Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="soaking_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-word"></i> Soaking Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="production_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-export"></i> Production Report <span class="badge-tag">Data</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="floor_balance_report" onchange="updateSelectedCount()"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report <span class="badge-tag">Stock</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="reprocess_report" onchange="updateSelectedCount()"><i class="fa-solid fa-arrows-rotate"></i> Re-Process Report <span class="badge-tag">Logs</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="inventory_report" onchange="updateSelectedCount()"><i class="fa-solid fa-boxes-packing"></i> Stock Status Report <span class="badge-tag">Inv</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="storage_cost_report" onchange="updateSelectedCount()"><i class="fa-solid fa-coins"></i> Storage & Cost Report <span class="badge-tag">Val</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="pending_orders_report" onchange="updateSelectedCount()"><i class="fa-solid fa-clock"></i> Pending Orders Report <span class="badge-tag">Hold</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="sales_report" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Sales Report <span class="badge-tag">Out</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="gs_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-zipper"></i> General Store Report <span class="badge-tag">Store</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="cold_storage_holding_report" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Cold Storage Report <span class="badge-tag">Cold</span></label>
-                </div>
-                <div class="category-title"><i class="fa-solid fa-chart-line"></i> Executive Summaries</div>
-                <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="processing_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-rectangle-list"></i> Batch Summary <span class="badge-tag">Run</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="periodic_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-calendar-days"></i> Periodic Summary <span class="badge-tag">Time</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="inventory_costing" onchange="updateSelectedCount()"><i class="fa-solid fa-calculator"></i> Inventory Costing <span class="badge-tag">Fin</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="floor_balance_value" onchange="updateSelectedCount()"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Value <span class="badge-tag">Val</span></label>
-                </div>
-              </div>
-            </div>
-
-            <div class="pillar-section" data-pillar="Corporate Finance & HR">
-              <div class="pillar-header" onclick="togglePillarCollapse(this)">
-                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Corporate Finance & HR</span>
-                <i class="fa-solid fa-angle-right"></i>
-              </div>
-              <div class="category-block">
-                <div class="category-title"><i class="fa-solid fa-receipt"></i> Bills & Operations</div>
+                <div class="category-title"><i class="fa-solid fa-file-invoice"></i> Commercial Bills</div>
                 <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="electricity_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-bolt"></i> Electricity Bills <span class="badge-tag">Exp</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="diesel_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-gas-pump"></i> Diesel Consumption <span class="badge-tag">Exp</span></label>
@@ -242,7 +255,91 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
                   <label class="item-label"><input type="checkbox" name="access" value="qa_testing" onchange="updateSelectedCount()"><i class="fa-solid fa-microscope"></i> QA Testing Charges <span class="badge-tag">Exp</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="other_expenses" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Other Expenses <span class="badge-tag">Misc</span></label>
                 </div>
-                <div class="category-title"><i class="fa-solid fa-users-gear"></i> HRMS Portal</div>
+                <div class="category-title"><i class="fa-solid fa-money-bill-transfer"></i> Receivables & Payables</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="customer_receivables" onchange="updateSelectedCount()"><i class="fa-solid fa-money-bill-transfer"></i> Customer Receivables <span class="badge-tag">AR</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="vendor_payments" onchange="updateSelectedCount()"><i class="fa-solid fa-money-check-dollar"></i> Vendor Payments <span class="badge-tag">AP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="expense_vouchers" onchange="updateSelectedCount()"><i class="fa-solid fa-file-circle-dollar"></i> Expense Vouchers <span class="badge-tag">VCHR</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-building-columns"></i> Banking & Ledger</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="bank_transactions" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Transactions <span class="badge-tag">BANK</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="payment_receipts" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Payment Receipts <span class="badge-tag">PAY</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="journal_entries" onchange="updateSelectedCount()"><i class="fa-solid fa-book"></i> Journal Entries <span class="badge-tag">JV</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="ledger_master" onchange="updateSelectedCount()"><i class="fa-solid fa-book-open"></i> Ledger Master <span class="badge-tag">LEDGER</span></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- PILLAR 4: EXPORTS -->
+            <div class="pillar-section" data-pillar="Exports">
+              <div class="pillar-header" onclick="togglePillarCollapse(this)">
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 4. Exports</span>
+                <i class="fa-solid fa-angle-right"></i>
+              </div>
+              <div class="category-block">
+                <div class="category-title"><i class="fa-solid fa-ship"></i> Operational Lifecycle</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="export_shipments" onchange="updateSelectedCount()"><i class="fa-solid fa-ship"></i> Export Shipments <span class="badge-tag">EXP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="container_stuffing" onchange="updateSelectedCount()"><i class="fa-solid fa-truck-ramp-box"></i> Container Stuffing <span class="badge-tag">OPS</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="container_logs" onchange="updateSelectedCount()"><i class="fa-solid fa-file-contract"></i> Logistics Container Logs <span class="badge-tag">FRT</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-file-contract"></i> Statutory Documents</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="commercial_invoice" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice"></i> Commercial Invoice <span class="badge-tag">DOC</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="packing_list" onchange="updateSelectedCount()"><i class="fa-solid fa-box"></i> Packing List <span class="badge-tag">DOC</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="shipping_bill" onchange="updateSelectedCount()"><i class="fa-solid fa-file-contract"></i> Shipping Bill <span class="badge-tag">DOC</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="bill_of_lading" onchange="updateSelectedCount()"><i class="fa-solid fa-anchor"></i> Bill Of Lading <span class="badge-tag">DOC</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="health_certificate" onchange="updateSelectedCount()"><i class="fa-solid fa-certificate"></i> Health Certificate <span class="badge-tag">CERT</span></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- PILLAR 5: REPORTS -->
+            <div class="pillar-section" data-pillar="Reports">
+              <div class="pillar-header" onclick="togglePillarCollapse(this)">
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 5. Reports</span>
+                <i class="fa-solid fa-angle-right"></i>
+              </div>
+              <div class="category-block">
+                <div class="category-title"><i class="fa-solid fa-file-chart-column"></i> Processing Reports</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="gate_entry_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-lines"></i> Gate Entry Report <span class="badge-tag">Logs</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="rmp_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice"></i> RM Purchase Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="de_heading_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-medical"></i> De-Heading Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="grading_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-shield"></i> Grading Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="peeling_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-import"></i> Peeling Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="soaking_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-word"></i> Soaking Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="production_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-export"></i> Production Report <span class="badge-tag">Data</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="reprocess_report" onchange="updateSelectedCount()"><i class="fa-solid fa-arrows-rotate"></i> Re-Process Report <span class="badge-tag">Logs</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-boxes-packing"></i> Inventory Reports</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="floor_balance_report" onchange="updateSelectedCount()"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Report <span class="badge-tag">Stock</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="inventory_report" onchange="updateSelectedCount()"><i class="fa-solid fa-boxes-packing"></i> Stock Status Report <span class="badge-tag">Inv</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="pending_orders_report" onchange="updateSelectedCount()"><i class="fa-solid fa-clock"></i> Pending Orders Report <span class="badge-tag">Hold</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="sales_report" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Sales Report <span class="badge-tag">Out</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="gs_report" onchange="updateSelectedCount()"><i class="fa-solid fa-file-zipper"></i> General Store Report <span class="badge-tag">Store</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="cold_storage_holding_report" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Cold Storage Report <span class="badge-tag">Cold</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-calculator"></i> Costing Reports</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="storage_cost_report" onchange="updateSelectedCount()"><i class="fa-solid fa-coins"></i> Storage & Cost Report <span class="badge-tag">Val</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="floor_balance_value" onchange="updateSelectedCount()"><i class="fa-solid fa-scale-balanced"></i> Floor Balance Value <span class="badge-tag">Val</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="inventory_costing" onchange="updateSelectedCount()"><i class="fa-solid fa-calculator"></i> Inventory Costing <span class="badge-tag">Fin</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="periodic_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-calendar-days"></i> Periodic Summary <span class="badge-tag">Time</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="batch_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-rectangle-list"></i> Batch Summary <span class="badge-tag">Run</span></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- PILLAR 6: HRMS -->
+            <div class="pillar-section" data-pillar="HRMS">
+              <div class="pillar-header" onclick="togglePillarCollapse(this)">
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 6. HRMS</span>
+                <i class="fa-solid fa-angle-right"></i>
+              </div>
+              <div class="category-block">
                 <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="employee_registration" onchange="updateSelectedCount()"><i class="fa-solid fa-id-card"></i> Staff Registration <span class="badge-tag">HR</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="employee_increment" onchange="updateSelectedCount()"><i class="fa-solid fa-arrow-trend-up"></i> Increment Details <span class="badge-tag">HR</span></label>
@@ -254,45 +351,63 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
               </div>
             </div>
 
-            <div class="pillar-section" data-pillar="Master Setup & Admin">
+            <!-- PILLAR 7: MASTERS -->
+            <div class="pillar-section" data-pillar="Masters">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
-                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> Master Setup & Admin</span>
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 7. Masters</span>
                 <i class="fa-solid fa-angle-right"></i>
               </div>
               <div class="category-block">
-                <div class="category-title"><i class="fa-solid fa-folder-tree"></i> Criteria Masters</div>
+                <div class="category-title"><i class="fa-solid fa-building"></i> Business Masters</div>
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="suppliers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Suppliers <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="buyers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Buyers <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="buyer_agents" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Buyer Agents <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="species" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Species <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="varieties" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Varieties <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="grades" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Grades <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="glazes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Glazes <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="packing_styles" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Packing Styles <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="chemicals" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Chemicals <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="freezers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Freezers <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="countries" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Countries <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="vehicle_numbers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Vehicle Numbers <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="production_at" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production At <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="peeling_at" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Peeling At <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="production_types" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production Types <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="purposes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Purposes <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="purchasing_locations" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Purchasing Locations <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="grade_to_hoso" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Grade to HOSO <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="hoso_hlso" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> HOSO & HLSO <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="peeling_rates" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Peeling Rates <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="contractors" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Contractors <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="coldstore_locations" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Coldstore Locations <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="production_for" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production For <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="brands" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Brands <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="vendors" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Vendors <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="hsn_codes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> HSN Codes <span class="badge-tag">Config</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="cold_storage" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Cold Storage Master <span class="badge-tag">Config</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="buyers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Buyers <span class="badge-tag">Mstr</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="buyer_agents" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Buyer Agents <span class="badge-tag">Mstr</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="suppliers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Suppliers <span class="badge-tag">Mstr</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="vendors" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Vendors <span class="badge-tag">Mstr</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="countries" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Countries <span class="badge-tag">Mstr</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="brands" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Brands <span class="badge-tag">Mstr</span></label>
                 </div>
-                <div class="category-title"><i class="fa-solid fa-user-lock"></i> Administration</div>
+                <div class="category-title"><i class="fa-solid fa-industry"></i> Production Masters</div>
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="add_user" onchange="updateSelectedCount()"><i class="fa-solid fa-user-plus"></i> User Management <span class="badge-tag">Admin</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="species" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Species <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="varieties" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Varieties <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="grades" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Grades <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="glazes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Glazes <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="packing_styles" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Packing Styles <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="contractors" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Contractors <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="peeling_at" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Peeling At <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="peeling_rates" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Peeling Rates <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="production_at" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production At <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="production_for" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production For <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="production_types" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Production Types <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="chemicals" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Chemicals <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="purposes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Purposes <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="grade_to_hoso" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Grade to HOSO <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="hoso_hlso" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> HOSO & HLSO <span class="badge-tag">Prod</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-boxes-packing"></i> Inventory Masters</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="cold_storage" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Cold Storage Master <span class="badge-tag">InvM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="coldstore_locations" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Coldstore Locations <span class="badge-tag">InvM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="vehicle_numbers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Vehicle Numbers <span class="badge-tag">InvM</span></label>
+                </div>
+                <div class="category-title"><i class="fa-solid fa-coins"></i> Finance Masters</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="hsn_codes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> HSN Codes <span class="badge-tag">FinM</span></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- PILLAR 8: ADMIN -->
+            <div class="pillar-section" data-pillar="Admin">
+              <div class="pillar-header" onclick="togglePillarCollapse(this)">
+                <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 8. Administration</span>
+                <i class="fa-solid fa-angle-right"></i>
+              </div>
+              <div class="category-block">
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="add_user" onchange="updateSelectedCount()"><i class="fa-solid fa-user-gear"></i> User Configuration <span class="badge-tag">Admin</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="data_management" onchange="updateSelectedCount()"><i class="fa-solid fa-database"></i> Data Management <span class="badge-tag">Admin</span></label>
                 </div>
               </div>
             </div>
@@ -302,12 +417,28 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
       </div>
 
       <div style="display:flex; gap:10px; justify-content:flex-end;">
-        <button type="button" class="btn-secondary" onclick="closeFormSection()">Cancel</button>
-        <button type="submit" id="submitFormBtn">Commit & Save User</button>
+        <button type="button" class="btn-secondary main-btn" onclick="closeFormSection()">Cancel</button>
+        <button type="submit" id="submitFormBtn" class="main-btn">Commit & Save User</button>
       </div>
     </form>
   </div>
 
+  <!-- 🌟 TABLE HEADER CONTROLS (గ్లోబల్ 3-Dot మెనూ టేబుల్ పైన) -->
+  <div class="table-controls">
+    <div class="global-action-container">
+      <button id="globalActionBtn" class="global-action-btn" onclick="toggleGlobalDropdown(event)">
+        <span id="menuStatusText" style="font-size: 0.82rem; font-weight: 500;"></span> 
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+      </button>
+      
+      <div id="globalDropdown" class="global-dropdown-menu">
+        <button onclick="triggerEditFromGlobal()"><i class="fa-solid fa-pen-to-square" style="color: var(--primary-color);"></i> Edit Profile</button>
+        <button onclick="triggerDeleteFromGlobal()" style="color:#ef4444;"><i class="fa-solid fa-trash"></i> Delete Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE DATA MANAGEMENT LAYER -->
   <div id="tableSection" class="table-block">
     <table>
       <thead>
@@ -317,134 +448,121 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
           <th>Email Address</th>
           <th>Mobile</th>
           <th>Designation</th>
+          <th>Security Privileges</th>
           <th>Assigned Matrix</th>
-          <th style="width: 60px; text-align: center;">Actions</th>
         </tr>
       </thead>
       <tbody>
       {% for u in existing_users %}
       <tr id="user-row-{{u.id}}" 
+          class="clickable-user-row"
+          onclick="selectRow(event, '{{u.id}}')"
           data-id="{{u.id}}" 
           data-name="{{u.name}}" 
           data-email="{{u.email}}" 
           data-mobile="{{u.mobile}}" 
           data-designation="{{u.designation}}" 
           data-role="{{u.role}}"
+          data-dm-access="{% if u.data_management_access %}true{% else %}false{% endif %}"
           data-permissions="{{u.permissions}}">
         <td><b>{{u.id}}</b></td>
         <td>{{u.name}}</td>
         <td>{{u.email}}</td>
         <td>{{u.mobile}}</td>
         <td>{{u.designation}}</td>
-        <td><span class="permissions-cell-span" title="{{u.permissions}}">{{u.permissions}}</span></td>
-        <td style="text-align: center;">
-          <div class="action-container">
-            <button class="action-btn" onclick="openActionMenu(event, '{{u.id}}')">⋮</button>
-            <div id="menu-{{u.id}}" class="dropdown-menu">
-              <button onclick="triggerEditMode('{{u.id}}')"><i class="fa-solid fa-pen-to-square" style="color: #004b93;"></i> Edit User</button>
-              <form action="/admin/delete_user/{{u.id}}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                <button type="submit" style="color:#dc2626; background:none; box-shadow:none; padding:8px 12px; width:100%; text-align:left;"><i class="fa-solid fa-trash"></i> Delete</button>
-              </form>
-            </div>
-          </div>
+        <td>
+          {% if u.data_management_access %}
+            <span class="status-badge"><i class="fa-solid fa-shield-halved"></i> DM Access</span>
+          {% else %}
+            <span style="color:var(--text-muted); font-size:0.8rem;">Standard</span>
+          {% endif %}
         </td>
+        <td><span class="permissions-cell-span" title="{{u.permissions}}">{{u.permissions if u.permissions else 'None'}}</span></td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
+
 </div>
 
+<!-- Hidden Delete Form -->
+<form id="nativeDeleteForm" method="post" style="display:none;"></form>
+
 <script>
-document.addEventListener("click", function(e) {
-  document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
-  const permMenu = document.getElementById("permMenu");
-  const permBox = document.querySelector(".perm-box");
-  if (
-    permMenu &&
-    permBox &&
-    !permBox.contains(e.target) &&
-    !permMenu.contains(e.target)
-  ) {
-    permMenu.style.display = "none";
+let selectedUserId = null;
+
+// Row క్లిక్ చేసినప్పుడు సెలెక్ట్ అయ్యే లాజిక్
+function selectRow(event, id) {
+  event.stopPropagation();
+  
+  // పాత సెలెక్షన్స్ తీసేయడం
+  document.querySelectorAll('.clickable-user-row').forEach(row => {
+    row.classList.remove('selected-row');
+  });
+
+  // క్లిక్ చేసిన రో ని హైలైట్ చేయడం
+  const selectedRow = document.getElementById(`user-row-${id}`);
+  if(selectedRow) selectedRow.classList.add('selected-row');
+  
+  // పైన ఉన్న బటన్ యాక్టివ్ చేయడం
+  selectedUserId = id;
+  const menuBtn = document.getElementById('globalActionBtn');
+  if(menuBtn) {
+    menuBtn.classList.add('active');
+    document.getElementById('menuStatusText').innerText = `Row #${id} Selected`;
   }
+  
+  // మెనూ ఓపెన్ అయ్యుంటే క్లోజ్ చేయడం
+  document.getElementById('globalDropdown').style.display = 'none';
+}
+
+// టాప్ లో ఉన్న 3-Dot మెనూ ఓపెన్/క్లోజ్ లాజిక్
+function toggleGlobalDropdown(event) {
+  event.stopPropagation();
+  if (!selectedUserId) return;
+
+  const dropdown = document.getElementById('globalDropdown');
+  
+  if (dropdown.style.display === 'block') {
+    dropdown.style.display = 'none';
+  } else {
+    dropdown.style.display = 'block';
+  }
+}
+
+// Global Edit & Delete
+function triggerEditFromGlobal() {
+  if (!selectedUserId) return;
+  document.getElementById('globalDropdown').style.display = 'none';
+  openEditMode(selectedUserId);
+}
+
+function triggerDeleteFromGlobal() {
+  if (!selectedUserId) return;
+  document.getElementById('globalDropdown').style.display = 'none';
+  
+  if(confirm('Are you sure you want to delete this user profile?')) {
+    const deleteForm = document.getElementById('nativeDeleteForm');
+    deleteForm.action = `/admin/delete_user/${selectedUserId}`;
+    deleteForm.submit();
+  }
+}
+
+// డాక్యుమెంట్ పై ఎక్కడ క్లిక్ చేసినా మెనూలు క్లోజ్ అవ్వడం
+document.addEventListener('click', () => {
+  const globalDropdown = document.getElementById('globalDropdown');
+  if(globalDropdown) globalDropdown.style.display = 'none';
+  
+  const permMenu = document.getElementById('permMenu');
+  if(permMenu) permMenu.style.display = 'none';
 });
 
-function openActionMenu(event, id) {
-  event.stopPropagation();
-  document.querySelectorAll(".dropdown-menu").forEach(menu => menu.style.display = "none");
-  const activeMenu = document.getElementById("menu-" + id);
-  if (activeMenu) { activeMenu.style.display = "block"; }
-}
-
-function openCreateMode() {
-  document.getElementById("userMainForm").reset();
-  document.getElementById("userMainForm").action = "/admin/add_user";
-  document.getElementById("edit_user_id").value = "";
-  document.getElementById("f_email").disabled = false;
-  document.getElementById("formModeTitle").innerText = "Create New User Profile";
-  document.getElementById("submitFormBtn").innerText = "Commit & Save User";
-  document.getElementById("f_password").placeholder = "";
-  document.getElementById("f_password").value = "";
-  document.querySelectorAll('.items-grid input[type="checkbox"]').forEach(cb => cb.checked = false);
-  document.querySelectorAll('.pillar-header input[type="checkbox"]').forEach(cb => cb.checked = false);
-  updateSelectedCount();
-  showFormCard();
-}
-
-function triggerEditMode(id) {
-  const row = document.getElementById("user-row-" + id);
-  if (!row) return;
-  const name = row.getAttribute("data-name");
-  const email = row.getAttribute("data-email");
-  const mobile = row.getAttribute("data-mobile");
-  const designation = row.getAttribute("data-designation");
-  const role = row.getAttribute("data-role") || "user";
-  const permissionsStr = row.getAttribute("data-permissions") || ""; 
-
-  document.getElementById("edit_user_id").value = id;
-  document.getElementById("f_name").value = name;
-  document.getElementById("f_email").value = email;
-  document.getElementById("f_mobile").value = mobile;
-  document.getElementById("f_designation").value = designation;
-  document.getElementById("f_role").value = role;
-  document.getElementById("f_password").value = "";
-  document.getElementById("f_password").placeholder = "Leave empty to keep current password";
-  document.getElementById("userMainForm").action = "/admin/edit_user/" + id;
-  document.getElementById("formModeTitle").innerText = "Modify Existing Profile (ID: " + id + ")";
-  document.getElementById("submitFormBtn").innerText = "Update Matrix Permissions";
-
-  const permList = permissionsStr ? permissionsStr.split(",").map(p => p.trim()) : [];
-  document.querySelectorAll('.items-grid input[name="access"]').forEach(cb => {
-    cb.checked = permList.includes(cb.value);
-  });
-  
-  document.querySelectorAll('.pillar-section').forEach(section => {
-    const totalKids = section.querySelectorAll('.items-grid input[name="access"]').length;
-    const checkedKids = section.querySelectorAll('.items-grid input[name="access"]:checked').length;
-    const masterCb = section.querySelector('.pillar-header input[type="checkbox"]');
-    if (masterCb) { masterCb.checked = (totalKids === checkedKids && totalKids > 0); }
-  });
-  
-  updateSelectedCount();
-  showFormCard();
-}
-
-function showFormCard() {
-  document.getElementById("formSection").style.display = "block";
-  document.getElementById("tableSection").style.opacity = "0.4";
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function closeFormSection() {
-  document.getElementById("formSection").style.display = "none";
-  document.getElementById("tableSection").style.opacity = "1";
-}
-
+// Ecosystem Permissions & UI Logic
 function togglePermMenu(event) {
   event.stopPropagation();
-  const menu = document.getElementById("permMenu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
+  const menu = document.getElementById('permMenu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
 function togglePillarCollapse(header) {
@@ -459,22 +577,18 @@ function togglePillarCollapse(header) {
   }
 }
 
-function selectEntirePillar(event, masterCheckbox) {
+function selectEntirePillar(event, checkbox) {
   event.stopPropagation();
-  const pillarSection = masterCheckbox.closest('.pillar-section');
-  const childCheckboxes = pillarSection.querySelectorAll('.items-grid input[type="checkbox"]');
-  childCheckboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+  const section = checkbox.closest('.pillar-section');
+  const items = section.querySelectorAll('.items-grid input[type="checkbox"]');
+  items.forEach(item => item.checked = checkbox.checked);
   updateSelectedCount();
 }
 
 function updateSelectedCount() {
-  const totalChecked = document.querySelectorAll('.items-grid input[name="access"]:checked').length;
-  const label = document.getElementById("selectedCountLabel");
-  if(totalChecked > 0) {
-    label.innerHTML = `<b style="color:var(--primary-color);">${totalChecked} Parameters Active</b>`;
-  } else {
-    label.innerText = "Select System Permissions";
-  }
+  const checkboxes = document.querySelectorAll('.items-grid input[name="access"]:checked');
+  const label = document.getElementById('selectedCountLabel');
+  label.innerText = checkboxes.length === 0 ? "Select System Permissions" : `${checkboxes.length} Parameters Selected`;
 }
 
 function filterPermissions() {
@@ -508,7 +622,61 @@ function filterPermissions() {
   });
 }
 
-document.querySelectorAll(".category-block").forEach(block => block.style.display = "none");
+// Open Form View for New Profile Registration
+function openCreateMode() {
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('formModeTitle').innerText = "Create New Profile";
+  document.getElementById('userMainForm').action = "/admin/add_user";
+  document.getElementById('edit_user_id').value = "";
+  document.getElementById('userMainForm').reset();
+  
+  document.querySelectorAll('.items-grid input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.pillar-header input[type="checkbox"]').forEach(cb => cb.checked = false);
+  
+  updateSelectedCount();
+  window.scrollTo({ top: document.getElementById('formSection').offsetTop, behavior: 'smooth' });
+}
+
+// Open Form View for Updating Records
+function openEditMode(id) {
+  const row = document.getElementById(`user-row-${id}`);
+  if(!row) return;
+
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('formModeTitle').innerText = `Edit Profile Context (User: #${id})`;
+  document.getElementById('userMainForm').action = `/admin/edit_user/${id}`;
+  document.getElementById('edit_user_id').value = id;
+  
+  document.getElementById('f_name').value = row.getAttribute('data-name');
+  document.getElementById('f_designation').value = row.getAttribute('data-designation');
+  document.getElementById('f_email').value = row.getAttribute('data-email');
+  document.getElementById('f_mobile').value = row.getAttribute('data-mobile');
+  document.getElementById('f_password').value = "";
+  document.getElementById('f_password').placeholder = "Leave empty to keep current password";
+  document.getElementById('f_role').value = row.getAttribute('data-role');
+  document.getElementById('f_data_management_access').checked = row.getAttribute('data-dm-access') === 'true';
+
+  // Permissions Data Population
+  const perms = (row.getAttribute('data-permissions') || '').split(',').map(p => p.trim());
+  document.querySelectorAll('.items-grid input[name="access"]').forEach(cb => {
+    cb.checked = perms.includes(cb.value);
+  });
+  
+  // Update parent pillar checkboxes
+  document.querySelectorAll('.pillar-section').forEach(section => {
+    const totalKids = section.querySelectorAll('.items-grid input[name="access"]').length;
+    const checkedKids = section.querySelectorAll('.items-grid input[name="access"]:checked').length;
+    const masterCb = section.querySelector('.pillar-header input[type="checkbox"]');
+    if (masterCb) { masterCb.checked = (totalKids === checkedKids && totalKids > 0); }
+  });
+  
+  updateSelectedCount();
+  window.scrollTo({ top: document.getElementById('formSection').offsetTop, behavior: 'smooth' });
+}
+
+function closeFormSection() {
+  document.getElementById('formSection').style.display = 'none';
+}
 </script>
 
 <script src="/static/js/global-loader.js"></script>

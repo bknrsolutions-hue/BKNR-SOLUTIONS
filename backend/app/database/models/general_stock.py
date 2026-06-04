@@ -22,7 +22,7 @@ class GeneralStock(Base):
     time = Column(Time, default=datetime.now().time)
 
     email = Column(String)
-    company_id = Column(Integer)
+    company_id = Column(String(50), index=True)
 # ================ 2) GENERAL STORE ITEMS MASTER (SEPARATE TABLE) ================
 class GeneralStoreItems(Base):
     __tablename__ = "general_store_items"
@@ -37,4 +37,4 @@ class GeneralStoreItems(Base):
     created_time = Column(Time, default=datetime.now().time)
     
     email = Column(String)
-    company_id = Column(Integer)
+    company_id = Column(String(50), index=True)

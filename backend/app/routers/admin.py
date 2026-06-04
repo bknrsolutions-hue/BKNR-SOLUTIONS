@@ -262,8 +262,6 @@ def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
 # ==========================================================
 # 📊 🛡️ SECURE PROTECTED DASHBOARD SUITE ENFORCEMENT ROUTE EXAMPLES
 # ==========================================================
-# Ippudu eae custom dynamic analytics dashboards payload router block context loads references sequence run ayina,
-# payload auto routing access interceptor block parameters direct verify automatic mapping secure output control map generate chesthadhi.
 @router.get("/dashboard-analytics", response_class=HTMLResponse)
 def dashboard_analytics_view(request: Request, current_session: dict = Depends(check_dashboard_access), db: Session = Depends(get_db)):
     """

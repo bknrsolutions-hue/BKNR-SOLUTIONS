@@ -2,25 +2,21 @@ from fastapi import APIRouter, Request, Depends, UploadFile, File, Form, HTTPExc
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import text, or_
+from sqlalchemy import text
 from app.database import get_db
 
 import os
-import json
+import pandas as pd
+import numpy as np
+from datetime import datetime
 import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import pandas as pd
-import numpy as np
-from datetime import datetime
 
 # =====================================================
 # 🟢 1. ALL MODELS IMPORTS
 # =====================================================
-# Users & Company for OTP validation
-from app.database.models.users import User, Company
-
 # Processing
 from app.database.models.processing import GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production, AuditLog as ProcessingAuditLog
 from app.database.models.reprocess import Reprocess
@@ -62,31 +58,99 @@ ALL_MODELS = {
     "EmployeeSalaryAdvance": EmployeeSalaryAdvance
 }
 
-
 # =====================================================
-# 🟢 3. HISTORY LOGGING HELPER
+# 🟢 3. OTP SECURITY LOGIC (Real Email DB Integration)
 # =====================================================
-HISTORY_LOG_FILE = os.path.join(os.getcwd(), "data_management_history.json")
+OTP_STORE = {}
 
-def log_data_action(comp_code, action_type, module_name, status, message):
-    log_entry = {
-        "company_code": comp_code,
-        "type": action_type,
-        "module": module_name,
-        "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        "status": status,
-        "details": message
+class OTPRequest(BaseModel):
+    action: str
+    module: str
+
+class OTPVerify(BaseModel):
+    action: str
+    otp: str
+
+@router.post("/data-management/generate-otp")
+async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return {"success": False, "error": "Session Expired"}
+
+    try:
+        query = text("SELECT email FROM users WHERE company_id = :cc AND role = 'Admin' LIMIT 1")
+        result = db.execute(query, {"cc": comp_code}).fetchone()
+        
+        if result and result[0]:
+            admin_email = result[0]
+        else:
+            return {"success": False, "error": "Admin email not found in database for this company."}
+    except Exception as e:
+        print(f"DB Error Fetching Email: {e}")
+        admin_email = "admin@bknrsolutions.com"  # Fallback
+
+    otp = str(random.randint(100000, 999999))
+    session_id = request.session.get("session_id", comp_code) 
+    OTP_STORE[f"{session_id}_{payload.action}"] = otp
+
+    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_PORT = 587
+    SENDER_EMAIL = "bknr.solutions@gmail.com"  
+    SENDER_PASSWORD = "aaim dsqz jpbg sosx"          
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = admin_email
+        msg['Subject'] = f"Security Alert: OTP for {payload.action.upper()}"
+
+        body = f"""
+        Hello Admin,
+        
+        A request to {payload.action.upper()} data for the '{payload.module}' module was initiated.
+        
+        Your security OTP is: {otp}
+        
+        If you did not request this, please secure your account immediately.
+        
+        Regards,
+        BKNR ERP System
+        """
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"\n🔒 OTP Generated: {otp} (Intended for {admin_email})\n")
+
+    except Exception as e:
+        print(f"Email Error: {e}")
+        return {"success": False, "error": "Failed to send OTP email. Please check SMTP settings."}
+
+    return {
+        "success": True, 
+        "message": f"Security OTP sent to {admin_email}. Please verify to continue."
     }
-    logs = []
-    if os.path.exists(HISTORY_LOG_FILE):
-        try:
-            with open(HISTORY_LOG_FILE, "r") as f:
-                logs = json.load(f)
-        except: pass
-    logs.append(log_entry)
-    with open(HISTORY_LOG_FILE, "w") as f:
-        json.dump(logs, f, indent=4)
 
+@router.post("/data-management/verify-otp")
+async def verify_otp(payload: OTPVerify, request: Request):
+    comp_code = request.session.get("company_code")
+    session_id = request.session.get("session_id", comp_code)
+    
+    key = f"{session_id}_{payload.action}"
+    stored_otp = OTP_STORE.get(key)
+
+    if not stored_otp:
+        return {"success": False, "error": "OTP Expired or Not Requested."}
+
+    if payload.otp == stored_otp:
+        del OTP_STORE[key]
+        return {"success": True, "message": "OTP Verified Successfully!"}
+    else:
+        return {"success": False, "error": "Invalid OTP. Please try again."}
 
 # =====================================================
 # 🟢 4. COMMON HELPER FUNCTIONS
@@ -122,90 +186,8 @@ def generate_export_response(comp_code, module_name, export_logic, db):
 
     return FileResponse(filepath, filename=filename, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-
 # =====================================================
-# 🟢 5. OTP SECURITY LOGIC
-# =====================================================
-OTP_STORE = {}
-
-class OTPRequest(BaseModel):
-    action: str
-    module: str
-
-class OTPVerify(BaseModel):
-    action: str
-    otp: str
-
-@router.post("/data-management/generate-otp")
-async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code")
-    if not comp_code: return {"success": False, "error": "Session Expired"}
-
-    try:
-        company = db.query(Company).filter(Company.company_code == comp_code).first()
-        if not company: return {"success": False, "error": "Company not found."}
-
-        all_users = db.query(User).filter(User.company_id == company.id).all()
-        authorized_emails = []
-
-        for u in all_users:
-            perms = u.permissions or ""
-            has_attr_access = getattr(u, 'data_management_access', False)
-            if u.role == 'admin' or "data_management" in perms or has_attr_access:
-                if u.email:
-                    authorized_emails.append(u.email)
-    except Exception as e:
-        print(f"Error fetching users: {e}")
-        authorized_emails = []
-
-    if not authorized_emails:
-        return {"success": False, "error": f"No authorized data managers found for {comp_code}."}
-
-    otp = str(random.randint(100000, 999999))
-    session_id = request.session.get("session_id", comp_code) 
-    OTP_STORE[f"{session_id}_{payload.action}"] = otp
-
-    SMTP_SERVER = "smtp.gmail.com"
-    SMTP_PORT = 587
-    SENDER_EMAIL = "bknr.solutions@gmail.com"  
-    SENDER_PASSWORD = "aaim dsqz jpbg sosx"          
-    sent_count = 0
-
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        for email_id in authorized_emails:
-            try:
-                msg = MIMEMultipart()
-                msg['From'] = SENDER_EMAIL
-                msg['To'] = email_id
-                msg['Subject'] = f"🔒 SECURITY GATEWAY: OTP for {payload.action.upper()}"
-                body = f"OTP: {otp}\nModule: {payload.module.upper()}\nCompany: {comp_code}"
-                msg.attach(MIMEText(body, 'plain'))
-                server.send_message(msg)
-                sent_count += 1
-            except: pass
-        server.quit()
-    except:
-        return {"success": False, "error": "System SMTP failed."}
-
-    return {"success": True, "message": f"OTP sent to {sent_count} admins."}
-
-@router.post("/data-management/verify-otp")
-async def verify_otp(payload: OTPVerify, request: Request):
-    comp_code = request.session.get("company_code")
-    session_id = request.session.get("session_id", comp_code)
-    key = f"{session_id}_{payload.action}"
-    
-    if OTP_STORE.get(key) == payload.otp:
-        del OTP_STORE[key]
-        return {"success": True, "message": "OTP Verified!"}
-    return {"success": False, "error": "Invalid OTP."}
-
-
-# =====================================================
-# 🟢 6. PAGE RENDER & TEMPLATE DOWNLOAD
+# 🟢 5. PAGE RENDER & TEMPLATE DOWNLOAD
 # =====================================================
 @router.get("/data-management", response_class=HTMLResponse)
 async def data_management(request: Request, db: Session = Depends(get_db)):
@@ -226,9 +208,8 @@ async def download_master_template():
             pd.DataFrame(columns=columns).to_excel(writer, sheet_name=sheet_name, index=False)
     return FileResponse(file_path, filename="BKNR_Master_Template.xlsx", media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-
 # =====================================================
-# 🟢 7. SEGREGATED EXPORT ROUTES (7 MODULES)
+# 🟢 6. SEGREGATED EXPORT ROUTES (7 MODULES)
 # =====================================================
 @router.post("/export/processing")
 async def export_processing(request: Request, db: Session = Depends(get_db)):
@@ -241,7 +222,6 @@ async def export_processing(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(Soaking).filter(Soaking.company_id == cc).all(), "Soaking")
         export_sheet(writer, db.query(Production).filter(Production.company_id == cc).all(), "Production")
         export_sheet(writer, db.query(Reprocess).filter(Reprocess.company_id == cc).all(), "Reprocess")
-        log_data_action(cc, "EXPORT", "Processing Module", "Success", "Exported Processing records")
     return generate_export_response(get_comp_code(request), "Processing", logic, db)
 
 @router.post("/export/inventory")
@@ -252,7 +232,6 @@ async def export_inventory(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(sales_dispatch).filter(sales_dispatch.company_id == cc).all(), "SalesDispatch")
         export_sheet(writer, db.query(cold_storage_holding).filter(cold_storage_holding.company_id == cc).all(), "ColdStorageHolding")
         export_sheet(writer, db.query(cold_storage).filter(cold_storage.company_id == cc).all(), "ColdStorageMaster")
-        log_data_action(cc, "EXPORT", "Inventory Module", "Success", "Exported Inventory records")
     return generate_export_response(get_comp_code(request), "Inventory", logic, db)
 
 @router.post("/export/bills")
@@ -264,15 +243,17 @@ async def export_bills(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(DieselLog).all(), "DieselLog") 
         export_sheet(writer, db.query(QATestingLog).all(), "QATestingLog") 
         export_sheet(writer, db.query(OtherExpense).all(), "OtherExpense")
-        log_data_action(cc, "EXPORT", "Bills Module", "Success", "Exported Commercial Bills")
     return generate_export_response(get_comp_code(request), "Bills", logic, db)
 
 @router.post("/export/general-stock")
 async def export_general_stock(request: Request, db: Session = Depends(get_db)):
     def logic(writer, db, cc):
-        export_sheet(writer, db.query(GeneralStock).filter(GeneralStock.company_id == cc).all(), "GeneralStock")
-        export_sheet(writer, db.query(GeneralStoreItems).filter(GeneralStoreItems.company_id == cc).all(), "GeneralStoreItems")
-        log_data_action(cc, "EXPORT", "General Stock Module", "Success", "Exported General Stock records")
+        try:
+            comp_id_int = int(cc.replace("BKNR", ""))
+        except:
+            comp_id_int = cc
+        export_sheet(writer, db.query(GeneralStock).filter(GeneralStock.company_id == comp_id_int).all(), "GeneralStock")
+        export_sheet(writer, db.query(GeneralStoreItems).filter(GeneralStoreItems.company_id == comp_id_int).all(), "GeneralStoreItems")
     return generate_export_response(get_comp_code(request), "GeneralStock", logic, db)
 
 @router.post("/export/payments")
@@ -286,7 +267,6 @@ async def export_payments(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(LedgerMaster).filter(LedgerMaster.company_id == cc).all(), "LedgerMaster")
         export_sheet(writer, db.query(PaymentReceipt).filter(PaymentReceipt.company_id == cc).all(), "PaymentReceipt")
         export_sheet(writer, db.query(ERPAlertEngine).filter(ERPAlertEngine.company_id == cc).all(), "ERPAlertEngine")
-        log_data_action(cc, "EXPORT", "Finance/Payments Module", "Success", "Exported Financial records")
     return generate_export_response(get_comp_code(request), "Payments", logic, db)
 
 @router.post("/export/masters")
@@ -303,7 +283,6 @@ async def export_masters(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(suppliers).filter(suppliers.company_id == cc).all(), "Suppliers")
         export_sheet(writer, db.query(species).filter(species.company_id == cc).all(), "Species")
         export_sheet(writer, db.query(hsn_codes).filter(hsn_codes.company_id == cc).all(), "HSNCodes")
-        log_data_action(cc, "EXPORT", "Masters Module", "Success", "Exported System Masters")
     return generate_export_response(get_comp_code(request), "Masters", logic, db)
 
 @router.post("/export/hrms")
@@ -314,12 +293,10 @@ async def export_hrms(request: Request, db: Session = Depends(get_db)):
         export_sheet(writer, db.query(EmployeeIncrement).all(), "EmployeeIncrement")
         export_sheet(writer, db.query(EmployeeStatutoryMaster).filter(EmployeeStatutoryMaster.company_id == cc).all(), "StatutoryMaster")
         export_sheet(writer, db.query(EmployeeSalaryAdvance).filter(EmployeeSalaryAdvance.company_id == cc).all(), "SalaryAdvance")
-        log_data_action(cc, "EXPORT", "HRMS Module", "Success", "Exported HRMS records")
     return generate_export_response(get_comp_code(request), "HRMS", logic, db)
 
-
 # =====================================================
-# 🟢 8. DYNAMIC MAPPING IMPORT LOGIC
+# 🟢 7. DYNAMIC MAPPING IMPORT LOGIC
 # =====================================================
 class ImportMappingPayload(BaseModel):
     filename: str
@@ -370,7 +347,7 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
             return {"success": False, "error": "Invalid database table selected."}
 
         df = pd.read_excel(filepath, sheet_name=payload.sheet_name)
-        df = df.where(pd.notnull(df), None)
+        df = df.replace({pd.NaT: None, np.nan: None})
 
         records_to_insert = []
         for index, row in df.iterrows():
@@ -378,13 +355,18 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
             for db_col, excel_col in payload.mapping.items():
                 if excel_col and excel_col in df.columns:
                     val = row[excel_col]
-                    record_data[db_col] = val
+                    
+                    if isinstance(val, (pd.Timestamp, datetime)):
+                        record_data[db_col] = val.to_pydatetime().date()
+                    else:
+                        record_data[db_col] = val
 
             if hasattr(ModelClass, "company_id") and "company_id" not in record_data:
                 if payload.table_name in ["GeneralStock", "GeneralStoreItems"]:
-                    import re
-                    digits = re.sub(r'\D', '', str(comp_code))
-                    record_data["company_id"] = int(digits) if digits else 0
+                    try:
+                        record_data["company_id"] = int(comp_code.replace("BKNR", ""))
+                    except:
+                        record_data["company_id"] = comp_code
                 else:
                     record_data["company_id"] = comp_code
 
@@ -393,31 +375,13 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
         db.add_all(records_to_insert)
         db.commit()
 
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
-        # 🌟 LOG IMPORT SUCCESS
-        msg = f"Successfully dynamically mapped and imported {len(records_to_insert)} records."
-        log_data_action(comp_code, "IMPORT", payload.table_name, "Success", msg)
+        os.remove(filepath)
 
         return {"success": True, "rows_imported": len(records_to_insert), "table": payload.table_name}
     except Exception as e:
         db.rollback()
-        # 🌟 LOG IMPORT FAILURE
-        log_data_action(comp_code, "IMPORT", payload.table_name, "Failed", str(e))
         return {"success": False, "error": str(e)}
 
 @router.get("/data-management/history")
-async def import_history(request: Request):
-    comp_code = request.session.get("company_code")
-    logs = []
-    if os.path.exists(HISTORY_LOG_FILE):
-        try:
-            with open(HISTORY_LOG_FILE, "r") as f:
-                all_logs = json.load(f)
-                logs = [l for l in all_logs if l.get("company_code") == comp_code]
-        except Exception as e:
-            pass
-            
-    logs.reverse() 
-    return {"success": True, "history": logs}
+async def import_history():
+    return {"success": True, "history": []}

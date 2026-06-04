@@ -1,332 +1,281 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from datetime import datetime, timedelta
-import random, json, os, requests, secrets
-from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-load_dotenv()
 
 from app.database import get_db
-from app.database.models.users import Company, User, OTPTable
-from app.security.password_handler import hash_password, verify_password
+from app.database.models.users import User, Company
+from app.security.password_handler import hash_password
 
-# =====================================================
-router = APIRouter(prefix="/auth", tags=["AUTH"])
+# ==========================================================
+# CONFIG & INITIALIZATION PARAMETERS
+# ==========================================================
+router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="app/templates")
-# =====================================================
 
-# ================= BREVO CONFIG =================
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+SESSION_EXPIRY_MIN = 30  # ⏱️ 30 min session timeout trace limit
 
-SENDER_EMAIL = "bknr.solutions@gmail.com"
-SENDER_NAME = "BKNR ERP"
 
-OTP_EXPIRY_MIN = 10
-RESET_EXPIRY_MIN = 30
-
-
-# ================= EMAIL FUNCTION =================
-def send_email(to_email: str, subject: str, html: str):
-    if not BREVO_API_KEY:
-        raise HTTPException(500, "Email service not configured")
-
-    payload = {
-        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html
-    }
-
-    headers = {
-        "api-key": BREVO_API_KEY,
-        "content-type": "application/json"
-    }
-
-    res = requests.post(BREVO_URL, json=payload, headers=headers)
-    if res.status_code >= 400:
-        raise HTTPException(500, "Email sending failed")
-
-    print("✅ Email sent:", to_email)
-
-
-# ================= REQUEST MODELS =================
-class RegisterReq(BaseModel):
-    company_name: str
-    user_name: str
-    designation: str
-    address: str
-    mobile: str
-    email: str
-
-
-class OTPReq(BaseModel):
-    email: str
-    otp: str
-
-
-class PasswordReq(BaseModel):
-    email: str
-    password: str
-
-
-class LoginReq(BaseModel):
-    company_id: str
-    email: str
-    password: str
-
-
-class ForgotReq(BaseModel):
-    email: str
-
-
-# =====================================================
-# REGISTER → SEND OTP
-# =====================================================
-@router.post("/register")
-def register(data: RegisterReq, db: Session = Depends(get_db)):
-
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(400, "Email already registered")
-
-    otp = str(random.randint(1000, 9999))
-
-    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
-    db.add(OTPTable(
-        email=data.email,
-        otp=otp,
-        extra=json.dumps(data.dict()),
-        is_used=False,
-        created_at=datetime.now()
-    ))
-    db.commit()
-
-    send_email(
-        data.email,
-        "BKNR ERP – OTP Verification",
-        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
-    )
-
-    return {"message": "OTP sent"}
-
-
-# =====================================================
-# VERIFY OTP
-# =====================================================
-@router.post("/verify-otp")
-def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
-
-    rec = db.query(OTPTable).filter(
-        OTPTable.email == data.email,
-        OTPTable.otp == data.otp,
-        OTPTable.is_used.is_(False)
-    ).first()
-
-    if not rec or datetime.now() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
-        raise HTTPException(400, "OTP expired or invalid")
-
-    rec.is_used = True
-    db.commit()
-
-    return {"message": "OTP verified"}
-
-
-# =====================================================
-# SET PASSWORD
-# =====================================================
-@router.post("/set-password")
-def set_password(data: PasswordReq, db: Session = Depends(get_db)):
-
-    rec = db.query(OTPTable).filter(
-        OTPTable.email == data.email,
-        OTPTable.is_used.is_(True)
-    ).first()
-
-    if not rec:
-        raise HTTPException(400, "OTP not verified")
-
-    extra = json.loads(rec.extra)
-
-    company = db.query(Company).filter(Company.email == extra["email"]).first()
-    if not company:
-        company = Company(
-            company_name=extra["company_name"],
-            address=extra["address"],
-            email=extra["email"],
-            company_code=extra["company_name"][:4].upper() + str(random.randint(1000, 9999)),
-            is_active=True
-        )
-        db.add(company)
-        db.commit()
-        db.refresh(company)
-
-    user = User(
-        company_id=company.id,
-        name=extra["user_name"],
-        designation=extra["designation"],
-        email=extra["email"],
-        mobile=extra["mobile"],
-        password=hash_password(data.password),
-        role="admin",
-        permissions="ALL",
-        is_verified=True
-    )
-
-    db.add(user)
-    db.commit()
-
-    return {"company_id": company.company_code}
-
-
-# =====================================================
-# LOGIN
-# =====================================================
-@router.post("/login")
-def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
-
-    company = db.query(Company).filter(
-        Company.company_code == data.company_id
-    ).first()
-    if not company:
-        raise HTTPException(400, "Invalid Company ID")
-
-    user = db.query(User).filter(
-        User.email == data.email,
-        User.company_id == company.id
-    ).first()
-
-    if not user or not verify_password(data.password, user.password):
-        raise HTTPException(400, "Invalid credentials")
-
-    # ✅ SESSION SET
-    request.session.update({
-        "email": user.email,
-        "company_id": company.id,
-        "company_code": company.company_code,
-        "company_name": company.company_name,
-        "name": user.name,
-        "role": user.role,
-        "permissions": user.permissions
-    })
-
-    # ✅ COOKIE RESPONSE
-    response = JSONResponse({
-        "status": "success",
-        "message": "Login Successful"
-    })
-
-    response.set_cookie(
-        key="session",
-        value="active",
-        httponly=True
-    )
-
-    return response
-
-# =====================================================
-# FORGOT PASSWORD
-# =====================================================
-@router.post("/forgot-password")
-def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
-
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user:
-        raise HTTPException(404, "Email not registered")
-
-    token = secrets.token_urlsafe(32)
-
-    db.query(OTPTable).filter(OTPTable.email == data.email).delete()
-    db.add(OTPTable(
-        email=data.email,
-        otp=token,
-        is_used=False,
-        created_at=datetime.now()
-    ))
-    db.commit()
-
-    reset_link = f"{request.base_url}auth/reset-password?token={token}"
-
-    send_email(
-        data.email,
-        "BKNR ERP – Reset Password",
-        f"<a href='{reset_link}'>Reset Password</a>"
-    )
-
-    return {"message": "Reset link sent"}
-
-
-# =====================================================
-# RESET PASSWORD PAGE
-# =====================================================
-@router.get("/reset-password", response_class=HTMLResponse)
-def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
-
-    rec = db.query(OTPTable).filter(
-        OTPTable.otp == token,
-        OTPTable.is_used.is_(False)
-    ).first()
-
-    if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
-        return HTMLResponse("<h3>Link expired</h3>")
-
-    return templates.TemplateResponse(
-        request=request,
-        name="reset_password.html",
-        context={"token": token}
-    )
-
-
-# =====================================================
-# RESET PASSWORD SAVE
-# =====================================================
-@router.post("/reset-password")
-def reset_password(
-    token: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-
-    rec = db.query(OTPTable).filter(
-        OTPTable.otp == token,
-        OTPTable.is_used.is_(False)
-    ).first()
-
-    if not rec:
-        raise HTTPException(400, "Invalid link")
-
-    user = db.query(User).filter(User.email == rec.email).first()
-    if not user:
-        raise HTTPException(404, "User not found")
-
-    user.password = hash_password(password)
-    rec.is_used = True
-
-    db.commit()
-
-    return RedirectResponse("/", status_code=303)
-
-
-# =====================================================
-# 🚀 BEST LOGOUT VERSION (Clears Session, Cookie & Cache)
-# =====================================================
-@router.get("/logout")
-def logout(request: Request):
-
-    # 1. Clear server-side session
-    request.session.clear()
-
-    # 2. Prepare redirect response
-    response = RedirectResponse("/", status_code=303)
-
-    # 3. Delete authentication cookies
-    response.delete_cookie("session")
-
-    # 4. Strict Cache-Control headers to prevent Back-button caching
+# ==========================================================
+# 🛡️ ANTI-CACHE HEADERS SECURITY LAYER INTERACTION HELPER
+# ==========================================================
+def apply_no_cache_headers(response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
-
     return response
+
+
+# ==========================================================
+# 🔒 STRICT SYSTEM ACCESS PERMISSION VERIFICATION LAYER
+# ==========================================================
+def check_dashboard_access(request: Request):
+    """
+    Strict security dependency layer structure verifying active session bounds, 
+    multi-company isolation matrices alignment constraints, and dashboard permissions validation rules map.
+    """
+    session_data = request.session
+    if not session_data or "last_activity" not in session_data:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Session layout template profile mapping error or expired token context.")
+
+    # Validation rules mapping check loop execution timestamps definitions
+    last_activity_str = session_data.get("last_activity")
+    try:
+        last_activity = datetime.fromisoformat(last_activity_str)
+    except Exception:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Session verification metadata encryption mismatch sequence detected.")
+
+    # 30 min session timeout verification structure bounds check allocation
+    if datetime.now() > last_activity + timedelta(minutes=SESSION_EXPIRY_MIN):
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Inactivity runtime window verification threshold trace execution timeout breach.")
+
+    # Update session activity sliding rules threshold window trace setup parameters
+    request.session["last_activity"] = datetime.now().isoformat()
+
+    # Core permission data array layout matrix verification matching block
+    user_role = session_data.get("role")
+    permissions_str = session_data.get("permissions", "")
+
+    # Clean character string splitting layout trace array variables mapping logic check values
+    allowed_routes = [p.strip() for p in permissions_str.split(",") if p.strip()]
+
+    # Global master administrator bypass rule settings check blocks execution
+    if user_role == "admin" or "ALL" in allowed_routes:
+        return session_data
+
+    # Match active dashboard operational context identifier validation rules engine arrays
+    if "dashboard" not in allowed_routes and "Dashboard" not in allowed_routes:
+        raise HTTPException(status_code=403, detail="Access Authorization Exception: Account credentials do not possess target dashboard access privileges mapping specifications.")
+
+    return session_data
+
+
+# ==========================================================
+# PAGE VIEW – USER MANAGEMENT ENGINE (ADD/EDIT IN ONE PAGE)
+# ==========================================================
+@router.get("/add_user", response_class=HTMLResponse)
+def add_user_page(request: Request, db: Session = Depends(get_db)):
+    logged_email = request.session.get("email")
+    company_code = request.session.get("company_code")   # example: BKNR5647
+
+    if not logged_email or not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    # Company Wise Data Filter configuration boundary schema mapping
+    company = db.query(Company).filter(
+        Company.company_code == company_code
+    ).first()
+
+    if not company:
+        return RedirectResponse("/", status_code=302)
+
+    # Strictly fetch rows filtered inside multi-company structural domain scope
+    users = (
+        db.query(User)
+        .filter(User.company_id == company.id)
+        .order_by(User.id.desc())
+        .all()
+    )
+
+    response = templates.TemplateResponse(
+        request=request, 
+        name="admin/add_user.html", 
+        context={"existing_users": users, "company_code": company_code}
+    )
+    return apply_no_cache_headers(response)
+
+
+# ==========================================================
+# SAVE USER (CREATE ACTION WITH EXPLICIT ACCESS FLAGS)
+# ==========================================================
+@router.post("/add_user")
+def save_user(
+    request: Request,
+    full_name: str = Form(...),
+    designation: str = Form(...),
+    email: str = Form(...),
+    mobile: str = Form(...),
+    password: str = Form("123456"),
+    role: str = Form("user"),
+    access: list[str] = Form([]),
+    data_management_access: bool = Form(False),  # 🔒 New Permission Checkbox Field
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    # Company wise multi-tenant schema isolation validation checks mapping logic block execution sequences
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    if not company:
+        return RedirectResponse("/", status_code=302)
+
+    # Unique parameters verification strictly mapped bounded to target tenant ecosystem identity boundary
+    if db.query(User).filter(User.email == email, User.company_id == company.id).first():
+        return RedirectResponse("/admin/add_user?msg=Email Exists", status_code=302)
+
+    if db.query(User).filter(User.mobile == mobile, User.company_id == company.id).first():
+        return RedirectResponse("/admin/add_user?msg=Mobile Exists", status_code=302)
+
+    permissions_csv = ",".join(access)
+
+    new_user = User(
+        company_id=company.id,
+        name=full_name,
+        designation=designation,
+        email=email,
+        mobile=mobile,
+        password=hash_password(password if password else "123456"),
+        role=role,
+        permissions=permissions_csv,
+        data_management_access=data_management_access,  # Bind explicit data access flag
+        is_verified=True,
+        created_at=datetime.now()
+    )
+
+    db.add(new_user)
+    db.commit()
+
+    response = RedirectResponse("/admin/add_user?msg=User Saved", status_code=302)
+    return apply_no_cache_headers(response)
+
+
+# ==========================================================
+# COMMIT MODIFY USER (EDIT ACTION WITH EXPLICIT ACCESS FLAGS)
+# ==========================================================
+@router.post("/edit_user/{uid}")
+def edit_user(
+    uid: int, 
+    request: Request,
+    full_name: str = Form(...),
+    designation: str = Form(...),
+    email: str = Form(...),
+    mobile: str = Form(...),
+    password: str = Form(None), # Optional field in frontend UI
+    role: str = Form(...),
+    access: list[str] = Form([]),
+    data_management_access: bool = Form(False),  # 🔒 New Permission Checkbox Field
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    if not company:
+        return RedirectResponse("/", status_code=302)
+
+    # Find target profile and isolate boundary inside target client tenant scope
+    user = db.query(User).filter(
+        User.id == uid,
+        User.company_id == company.id
+    ).first()
+
+    if not user:
+        return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
+
+    # Cross-validation validation to avoid email overlapping duplicates
+    email_check = db.query(User).filter(
+        User.email == email, 
+        User.company_id == company.id,
+        User.id != uid
+    ).first()
+    if email_check:
+        return RedirectResponse("/admin/add_user?msg=Email Already Assigned", status_code=302)
+
+    # Cross-validation validation to avoid mobile overlapping duplicates
+    mobile_check = db.query(User).filter(
+        User.mobile == mobile, 
+        User.company_id == company.id,
+        User.id != uid
+    ).first()
+    if mobile_check:
+        return RedirectResponse("/admin/add_user?msg=Mobile Already Assigned", status_code=302)
+
+    # Bind request stream objects to data structures
+    user.name = full_name
+    user.designation = designation
+    user.email = email
+    user.mobile = mobile
+    user.role = role
+    user.permissions = ",".join(access)
+    user.data_management_access = data_management_access  # Dynamic update on access matrix
+
+    # If the operator specified a new pass string, inject security layer overhead
+    if password and password.strip() != "":
+        user.password = hash_password(password.strip())
+
+    db.commit()
+    response = RedirectResponse("/admin/add_user?msg=Updated Successfully", status_code=302)
+    return apply_no_cache_headers(response)
+
+
+# ==========================================================
+# DELETE USER TERMINATION
+# ==========================================================
+@router.post("/delete_user/{uid}")
+def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    if not company:
+        return RedirectResponse("/", status_code=302)
+
+    # Strict enterprise database mapping check filter alignment
+    user = db.query(User).filter(
+        User.id == uid,
+        User.company_id == company.id
+    ).first()
+
+    if not user:
+        return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
+
+    db.delete(user)
+    db.commit()
+
+    response = RedirectResponse("/admin/add_user?msg=User Deleted", status_code=302)
+    return apply_no_cache_headers(response)
+
+
+# ==========================================================
+# 📊 🛡️ SECURE PROTECTED DASHBOARD SUITE ENFORCEMENT ROUTE EXAMPLES
+# ==========================================================
+@router.get("/dashboard-analytics", response_class=HTMLResponse)
+def dashboard_analytics_view(request: Request, current_session: dict = Depends(check_dashboard_access), db: Session = Depends(get_db)):
+    """
+    Example metric endpoint layout binding protecting secure data fields metrics calculations maps layer logic engine.
+    """
+    company_id = current_session.get("company_id")
+    
+    response = templates.TemplateResponse(
+        request=request,
+        name="admin/dashboard_analytics.html",
+        context={"company_code": current_session.get("company_code")}
+    )
+    return apply_no_cache_headers(response)

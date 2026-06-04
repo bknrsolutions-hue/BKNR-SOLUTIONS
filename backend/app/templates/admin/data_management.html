@@ -1,255 +1,464 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
+<title>DATA MANAGEMENT - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Data Management Center | BKNR ERP</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-/* Only structural utilities specific to this page layout; base UI styling is driven by bknr-standard.css */
-.container {
-    width: 96%;
-    max-width: 1600px;
-    margin: 15px auto;
+:root{
+  --primary:#143465; --accent:#3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success:#166534; --danger:#dc2626;
 }
 
-.page-header {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
+*{box-sizing:border-box; font-family:'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; overflow-x:hidden;}
+
+/* --- HEADER --- */
+.header-dash {
+  background:#fff; padding:15px 25px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  position:sticky; top:0; z-index:100;
+}
+.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight:800;}
+.badge-info { background:var(--primary); color:#fff; padding:6px 15px; border-radius:8px; font-size:12px; font-weight:700;}
+
+/* --- CONTAINERS --- */
+.dashboard-container {
+    max-width:1200px; margin:30px auto; padding:0 20px;
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:25px;
 }
 
-.page-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: #0f172a;
-    text-transform: uppercase;
+/* --- CARDS --- */
+.data-card {
+    background:var(--card); border-radius:12px; border:1px solid var(--border);
+    padding:25px; box-shadow:0 4px 6px rgba(0,0,0,0.03); margin-bottom: 25px;
 }
+.data-card h3 {
+    margin-top:0; color:var(--primary); font-size:16px; 
+    display:flex; align-items:center; gap:10px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; margin-bottom: 15px;
+}
+.data-card p { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:20px;}
 
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-    margin-bottom: 15px;
+/* --- EXPORT MODULE GRID (7 Buttons) --- */
+.export-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+.btn-module { 
+    background:#f8fafc; color:var(--primary); border:1px solid var(--border); 
+    padding:10px 15px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; 
+    display:flex; align-items:center; gap:8px; justify-content:flex-start; transition:0.2s;
 }
+.btn-module:hover { background:var(--primary); color:#fff; border-color:var(--primary); transform: translateY(-1px);}
 
-.section {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
-}
+/* --- TWO COLUMN GRID FOR IMPORT --- */
+.import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+@media(max-width: 800px) { .import-grid { grid-template-columns: 1fr; } }
 
-.section-title {
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    color: var(--primary, #143465);
-    border-bottom: 1px dashed #e2e8f0;
-    padding-bottom: 6px;
+/* --- FORM FIELDS --- */
+.field { display:flex; flex-direction:column; gap:6px; margin-bottom:15px;}
+.field label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;}
+.field input, .field select { 
+    padding:10px 12px; border-radius:8px; border:1px solid var(--border); 
+    font-size:13px; font-weight:600; outline:none; width:100%; color:var(--primary); 
+    background:#fff; appearance:auto; -webkit-appearance:auto; text-align:left; cursor:pointer;
 }
+.field input[type="file"] { border: 2px dashed var(--accent); padding: 15px; background: #eff6ff; }
+.field input:focus, .field select:focus { border-color: var(--accent); }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 12px;
-}
+/* --- BUTTONS --- */
+.btn-primary { background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s;}
+.btn-primary:hover { background:#2563eb;}
+.btn-outline { background:#f8fafc; color:#10b981; border:1px solid #10b981; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s; margin-top: 15px;}
+.btn-outline:hover { background:#d1fae5;}
 
-.field {
-    display: flex;
-    flex-direction: column;
-}
+/* --- MAPPING TABLE UI --- */
+.mapping-area { display: none; margin-top: 25px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.map-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.map-table th { background: var(--primary); color: #fff; padding: 12px; font-size: 12px; text-align: left; }
+.map-table td { padding: 10px; border-bottom: 1px solid #edf2f7; font-size: 13px; font-weight: 600; color: var(--text); }
+.map-table select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); width: 100%; font-size: 12px; font-weight: 600; background: #f4f6f9; cursor: pointer; }
 
-.actions {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.table-wrap {
-    overflow: auto;
-    margin-top: 10px;
-}
-
-/* Status contextual states */
-.status-success {
-    color: #16a34a;
-    font-weight: 700;
-}
-.status-failed {
-    color: #dc2626;
-    font-weight: 700;
-}
+/* --- HISTORY TABLE --- */
+.history-section { max-width:1200px; margin:0 auto; padding:0 20px;}
+.history-table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; margin-top:15px;}
+.history-table th { background:#f8fafc; padding:12px; border-bottom:2px solid var(--border); color:var(--muted); text-transform:uppercase; font-weight:700;}
+.history-table td { padding:12px; border-bottom:1px solid #edf2f7; color:var(--primary); font-weight:600;}
+.empty-state { text-align:center; padding:40px; color:var(--muted); font-size:13px;}
 </style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
+
 <body>
 
-<div class="container">
-
-    <div class="page-header">
-        <div class="page-title">
-            DATA IMPORT / EXPORT CENTER
-        </div>
-    </div>
-
-    <!-- KPI CARDS -->
-    <div class="card-grid">
-        <div class="card">
-            <div class="card-title">Total Imports</div>
-            <div class="card-value">0</div>
-        </div>
-        <div class="card">
-            <div class="card-title">Records Imported</div>
-            <div class="card-value">0</div>
-        </div>
-        <div class="card">
-            <div class="card-title">Failed Records</div>
-            <div class="card-value">0</div>
-        </div>
-        <div class="card">
-            <div class="card-title">Last Import</div>
-            <div class="card-value">--</div>
-        </div>
-    </div>
-
-    <!-- DOWNLOAD TEMPLATE -->
-    <div class="section">
-        <div class="section-title">
-            DOWNLOAD IMPORT TEMPLATE
-        </div>
-        <div class="actions">
-            <a href="/data-management/template/gate_entry" class="btn btn-primary">
-                <i class="fa fa-download"></i> Gate Entry
-            </a>
-            <a href="/data-management/template/raw_material" class="btn btn-primary">
-                <i class="fa fa-download"></i> Raw Material
-            </a>
-            <a href="/data-management/template/grading" class="btn btn-primary">
-                <i class="fa fa-download"></i> Grading
-            </a>
-            <a href="/data-management/template/peeling" class="btn btn-primary">
-                <i class="fa fa-download"></i> Peeling
-            </a>
-            <a href="/data-management/template/soaking" class="btn btn-primary">
-                <i class="fa fa-download"></i> Soaking
-            </a>
-            <a href="/data-management/template/production" class="btn btn-primary">
-                <i class="fa fa-download"></i> Production
-            </a>
-        </div>
-    </div>
-
-    <!-- IMPORT -->
-    <div class="section">
-        <div class="section-title">
-            IMPORT DATA
-        </div>
-        <form action="/data-management/import" method="POST" enctype="multipart/form-data">
-            <div class="form-grid">
-                <div class="field">
-                    <label>Module</label>
-                    <select name="module" required>
-                        <option value="">Select Module</option>
-                        <option value="gate_entry">Gate Entry</option>
-                        <option value="raw_material">Raw Material Purchasing</option>
-                        <option value="grading">Grading</option>
-                        <option value="peeling">Peeling</option>
-                        <option value="soaking">Soaking</option>
-                        <option value="production">Production</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Excel File</label>
-                    <input type="file" name="excel_file" accept=".xlsx,.xls" required>
-                </div>
-            </div>
-            <div class="actions">
-                <button type="submit" class="btn btn-success">
-                    <i class="fa fa-upload"></i> Import Data
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- EXPORT -->
-    <div class="section">
-        <div class="section-title">
-            EXPORT DATA
-        </div>
-        <form action="/data-management/export" method="POST">
-            <div class="form-grid">
-                <div class="field">
-                    <label>Module</label>
-                    <select name="module">
-                        <option value="gate_entry">Gate Entry</option>
-                        <option value="raw_material">Raw Material Purchasing</option>
-                        <option value="grading">Grading</option>
-                        <option value="peeling">Peeling</option>
-                        <option value="soaking">Soaking</option>
-                        <option value="production">Production</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>From Date</label>
-                    <input type="date" name="from_date">
-                </div>
-                <div class="field">
-                    <label>To Date</label>
-                    <input type="date" name="to_date">
-                </div>
-            </div>
-            <div class="actions">
-                <button type="submit" class="btn btn-warning">
-                    <i class="fa fa-file-excel"></i> Export Excel
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- IMPORT HISTORY -->
-    <div class="section">
-        <div class="section-title">
-            IMPORT HISTORY
-        </div>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Module</th>
-                        <th>Records</th>
-                        <th>Status</th>
-                        <th>User</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td class="status-success">Ready</td>
-                        <td>-</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
+<div class="header-dash">
+    <div class="header-titles"><h2>Master Data Management</h2></div>
+    <div class="badge-info"><i class="fa-solid fa-server"></i> ERP Migration Center</div>
 </div>
 
+<div class="dashboard-container">
+    
+    <div class="data-card">
+        <h3><i class="fa-solid fa-file-export" style="color:var(--success)"></i> Export Module Data</h3>
+        <p>Download structured Excel backups for specific modules. Each download contains the respective sheets for that department.</p>
+        
+        <div class="export-grid">
+            <button class="btn-module" onclick="triggerSecureExport('Processing', '/export/processing')"><i class="fa-solid fa-industry" style="color:#f59e0b;"></i> Processing</button>
+            <button class="btn-module" onclick="triggerSecureExport('Inventory', '/export/inventory')"><i class="fa-solid fa-boxes-stacked" style="color:#3b82f6;"></i> Inventory</button>
+            <button class="btn-module" onclick="triggerSecureExport('Bills', '/export/bills')"><i class="fa-solid fa-file-invoice-dollar" style="color:#10b981;"></i> Bills</button>
+            <button class="btn-module" onclick="triggerSecureExport('General Stock', '/export/general-stock')"><i class="fa-solid fa-pallet" style="color:#6366f1;"></i> General Stock</button>
+            <button class="btn-module" onclick="triggerSecureExport('Payments', '/export/payments')"><i class="fa-solid fa-money-check-dollar" style="color:#ef4444;"></i> Payments</button>
+            <button class="btn-module" onclick="triggerSecureExport('Masters', '/export/masters')"><i class="fa-solid fa-database" style="color:#8b5cf6;"></i> Masters Data</button>
+            <button class="btn-module" style="grid-column: span 2; justify-content: center;" onclick="triggerSecureExport('HRMS', '/export/hrms')"><i class="fa-solid fa-users-gear" style="color:#ec4899;"></i> HRMS & Payroll</button>
+        </div>
+
+        <button class="btn-outline" onclick="window.location.href='/data-management/template/master'">
+            <i class="fa-solid fa-file-excel"></i> Download Blank Import Template
+        </button>
+    </div>
+
+    <div class="data-card">
+        <h3><i class="fa-solid fa-file-import" style="color:var(--accent)"></i> Advanced Smart Import (Column Mapping)</h3>
+        <p style="font-size:13px; color:var(--muted);">1. Upload Excel File ➔ 2. Select DB Table ➔ 3. Select Excel Sheet ➔ 4. Map Columns & Save</p>
+
+        <div class="import-grid">
+            <div>
+                <div class="field">
+                    <label>Step 1: Upload Excel File (.xlsx)</label>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls">
+                    <button class="btn-primary" style="margin-top:10px;" onclick="uploadAndInspect()"><i class="fa-solid fa-magnifying-glass"></i> Inspect File</button>
+                </div>
+                <div class="field" id="tableDiv" style="display:none; margin-top: 20px;">
+                    <label>Step 2: Select Database Table</label>
+                    <select id="dbTable" onchange="renderMappingUI()">
+                        <option value="">-- Choose Target Table --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="sheetDiv" style="display:none; border-left: 1px solid var(--border); padding-left: 20px;">
+                <div class="field">
+                    <label>Step 3: Select Excel Sheet</label>
+                    <select id="excelSheet" onchange="renderMappingUI()">
+                        <option value="">-- Choose Sheet from File --</option>
+                    </select>
+                </div>
+                <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #a7f3d0; font-size: 12px; color: #065f46; font-weight: 600;">
+                    <i class="fa-solid fa-circle-info"></i> After selecting a sheet, the column mapping interface will appear below.
+                </div>
+            </div>
+        </div>
+
+        <div class="mapping-area" id="mappingArea">
+            <h4 style="margin-top:0; color:var(--primary); font-size:14px;">Step 4: Map Excel Columns to Database Columns</h4>
+            <table class="map-table">
+                <thead>
+                    <tr>
+                        <th width="50%">Database Field Name</th>
+                        <th width="50%">Matching Excel Column</th>
+                    </tr>
+                </thead>
+                <tbody id="mapTbody">
+                </tbody>
+            </table>
+            <button class="btn-primary" style="margin-top:20px; background:var(--success);" onclick="triggerSecureImport()">
+                <i class="fa-solid fa-floppy-disk"></i> Save & Import Data
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="history-section">
+    <div class="data-card">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Import History</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Module</th>
+                    <th>File Name</th>
+                    <th>Rows Imported</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <tr><td colspan="5" class="empty-state">No recent data imports found.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🟢 OTP VERIFICATION WRAPPER
+    // ==========================================
+    async function secureActionWithOTP(actionType, moduleName, callback) {
+        const confirmResult = await Swal.fire({
+            title: 'Security Clearance Required',
+            text: `Are you sure you want to ${actionType} data for the ${moduleName} module? An OTP will be sent to the Admin email.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Send OTP'
+        });
+
+        if (!confirmResult.isConfirmed) return;
+
+        Swal.fire({ title: 'Sending OTP...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        try {
+            const otpRes = await fetch('/data-management/generate-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: actionType, module: moduleName })
+            });
+            const otpData = await otpRes.json();
+            
+            if (!otpData.success) {
+                return Swal.fire('Error', otpData.error, 'error');
+            }
+
+            const { value: userOtp } = await Swal.fire({
+                title: 'Enter Admin OTP',
+                text: otpData.message,
+                input: 'text',
+                inputPlaceholder: 'Enter 6-digit OTP',
+                inputAttributes: { maxlength: 6, autocapitalize: 'off', autocorrect: 'off' },
+                showCancelButton: true,
+                confirmButtonText: 'Verify & Proceed',
+                confirmButtonColor: '#166534',
+                preConfirm: (otp) => {
+                    if (!otp || otp.length !== 6) {
+                        Swal.showValidationMessage('Please enter a valid 6-digit OTP');
+                    }
+                    return otp;
+                }
+            });
+
+            if (!userOtp) return;
+
+            Swal.fire({ title: 'Verifying...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+            const verifyRes = await fetch('/data-management/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: actionType, otp: userOtp })
+            });
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+                callback();
+            } else {
+                Swal.fire('Verification Failed', verifyData.error, 'error');
+            }
+        } catch(e) {
+            Swal.fire('Network Error', 'Failed to communicate with server for security check.', 'error');
+        }
+    }
+
+    // ==========================================
+    // 🟢 SECURED EXPORT LOGIC
+    // ==========================================
+    function triggerSecureExport(moduleName, endpointUrl) {
+        secureActionWithOTP('export', moduleName, () => {
+            executeModuleExport(moduleName, endpointUrl);
+        });
+    }
+
+    async function executeModuleExport(moduleName, endpointUrl) {
+        Swal.fire({
+            title: `Exporting ${moduleName}...`,
+            text: `Extracting data from ${moduleName} module.`,
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const response = await fetch(endpointUrl, { method: 'POST' });
+            if (!response.ok) throw new Error("Export failed or unauthorized.");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            
+            let filename = `BKNR_${moduleName}_Export.xlsx`;
+            const disposition = response.headers.get('content-disposition');
+            
+            // Fixed Regex line to prevent Javascript syntax errors
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            Swal.fire("Success!", `${moduleName} export downloaded successfully.`, "success");
+        } catch (error) {
+            Swal.fire("Export Failed", error.message, "error");
+        }
+    }
+
+    // ==========================================
+    // 🟢 SECURED IMPORT LOGIC
+    // ==========================================
+    let dbSchema = {};
+    let uploadedFilename = "";
+    let excelSheetsData = {};
+
+    window.onload = async function() {
+        try {
+            const res = await fetch('/data-management/db-schema');
+            const data = await res.json();
+            if(data.success) {
+                dbSchema = data.tables;
+                const tableSelect = document.getElementById("dbTable");
+                for (const table in dbSchema) {
+                    tableSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                }
+            }
+            // Load history table if available
+            loadHistory();
+        } catch(e) { console.error("Failed to load schema."); }
+    };
+
+    async function uploadAndInspect() {
+        const fileInput = document.getElementById('excelFile');
+        if(!fileInput.files[0]) return Swal.fire("Warning", "Select a file first.", "warning");
+
+        const formData = new FormData();
+        formData.append("excel_file", fileInput.files[0]);
+
+        Swal.showLoading();
+        try {
+            const res = await fetch('/data-management/inspect-file', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if(data.success) {
+                uploadedFilename = data.filename;
+                excelSheetsData = data.sheets;
+
+                const sheetSelect = document.getElementById("excelSheet");
+                sheetSelect.innerHTML = `<option value="">-- Choose Sheet --</option>`;
+                for(const sheet in excelSheetsData) {
+                    sheetSelect.innerHTML += `<option value="${sheet}">${sheet}</option>`;
+                }
+
+                document.getElementById('tableDiv').style.display = "block";
+                document.getElementById('sheetDiv').style.display = "block";
+                Swal.close();
+            } else {
+                Swal.fire("Error", data.error, "error");
+            }
+        } catch(e) { Swal.fire("Error", "Failed to inspect file.", "error"); }
+    }
+
+    function renderMappingUI() {
+        const table = document.getElementById("dbTable").value;
+        const sheet = document.getElementById("excelSheet").value;
+
+        if(!table || !sheet) {
+            document.getElementById("mappingArea").style.display = "none";
+            return;
+        }
+
+        const dbCols = dbSchema[table];
+        const excelCols = excelSheetsData[sheet];
+        const tbody = document.getElementById("mapTbody");
+        tbody.innerHTML = "";
+
+        dbCols.forEach(dbCol => {
+            let optionsHTML = `<option value="">-- Skip / Do Not Import --</option>`;
+            excelCols.forEach(exCol => {
+                const selected = (dbCol.toLowerCase() === exCol.toLowerCase()) ? "selected" : "";
+                optionsHTML += `<option value="${exCol}" ${selected}>${exCol}</option>`;
+            });
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-transform: capitalize;">${dbCol.replace(/_/g, ' ')} <small style="color:var(--muted)">(${dbCol})</small></td>
+                    <td><select class="col-mapper" data-dbcol="${dbCol}">${optionsHTML}</select></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById("mappingArea").style.display = "block";
+    }
+
+    function triggerSecureImport() {
+        const table = document.getElementById("dbTable").value;
+        if(!table) return Swal.fire("Warning", "Select a database table to import into.", "warning");
+        
+        secureActionWithOTP('import', table, () => {
+            executeImport();
+        });
+    }
+
+    async function executeImport() {
+        const table = document.getElementById("dbTable").value;
+        const sheet = document.getElementById("excelSheet").value;
+        
+        let mappingData = {};
+        document.querySelectorAll(".col-mapper").forEach(select => {
+            if(select.value) mappingData[select.dataset.dbcol] = select.value;
+        });
+
+        if(Object.keys(mappingData).length === 0) return Swal.fire("Warning", "Please map at least one column.", "warning");
+
+        Swal.fire({ title: 'Importing...', text: 'Inserting records into database.', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+        try {
+            const res = await fetch('/data-management/execute-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: uploadedFilename,
+                    table_name: table,
+                    sheet_name: sheet,
+                    mapping: mappingData
+                })
+            });
+
+            const result = await res.json();
+            if(result.success) {
+                Swal.fire("Import Successful!", `Successfully inserted ${result.rows_imported} rows into ${result.table}.`, "success").then(() => {
+                    location.reload(); 
+                });
+            } else {
+                Swal.fire("Import Failed", result.error, "error");
+            }
+        } catch(e) { Swal.fire("Error", "Server error during import.", "error"); }
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/data-management/history');
+            const data = await res.json();
+            const tbody = document.getElementById("historyBody");
+            
+            if (data.success && data.history && data.history.length > 0) {
+                tbody.innerHTML = "";
+                data.history.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.timestamp || '-'}</td>
+                            <td>${item.module || '-'}</td>
+                            <td>${item.filename || '-'}</td>
+                            <td>${item.rows_imported || 0}</td>
+                            <td><span style="color:var(--success)">Success</span></td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) { console.error("Could not fetch history"); }
+    }
+</script>
 <script src="/static/js/global-loader.js"></script>
 </body>
 </html>
