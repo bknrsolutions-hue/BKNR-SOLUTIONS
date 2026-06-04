@@ -14,5 +14,29 @@
         "date": "2026-06-04 10:19:15",
         "status": "Success",
         "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "UNDO IMPORT",
+        "module": "GeneralStock",
+        "date": "2026-06-04 12:59:36",
+        "status": "Failed",
+        "details": "(psycopg2.errors.UndefinedFunction) operator does not exist: character varying = integer\nLINE 3: WHERE general_stock.company_id = 2162 ORDER BY general_stock...\n                                       ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n\n[SQL: SELECT general_stock.id AS general_stock_id \nFROM general_stock \nWHERE general_stock.company_id = %(company_id_1)s ORDER BY general_stock.id DESC \n LIMIT %(param_1)s]\n[parameters: {'company_id_1': 2162, 'param_1': 24}]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "GeneralStock",
+        "date": "2026-06-04 13:02:43",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "UNDO IMPORT",
+        "module": "GeneralStock",
+        "date": "2026-06-04 13:10:13",
+        "status": "Success",
+        "details": "Reverted last import. Deleted 24 records."
     }
 ]

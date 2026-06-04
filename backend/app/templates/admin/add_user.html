@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>User Management - BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -32,14 +32,6 @@ body { background: var(--bg-gradient); color: var(--text-main); min-height: 100v
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
-@media (max-width: 768px) {
-  body { padding: 0.5rem; }
-  .container { padding: 1rem; }
-  .header-zone { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .form-grid { grid-template-columns: 1fr !important; }
-  .table-block { overflow-x: auto; overflow-y: visible; padding-bottom: 80px; }
-}
-
 .header-zone { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 h2 { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; display: flex; align-items: center; gap: 10px; }
 h2 i { color: var(--primary-color); }
@@ -60,20 +52,9 @@ input:focus, select:focus { outline: none; background: #ffffff; border-color: va
 .perm-box { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.88rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; font-weight: 500; }
 
 .perm-menu { 
-  display: none; 
-  position: absolute; 
-  top: 100%; 
-  left: 0; 
-  width: 100%; 
-  background: #ffffff; 
-  border: 1px solid rgba(15, 23, 42, 0.15); 
-  border-radius: 8px; 
-  margin-top: 6px; 
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); 
-  z-index: 9999; 
-  max-height: 450px; 
-  overflow-y: auto; 
-  padding: 12px; 
+  display: none; position: absolute; top: 100%; left: 0; width: 100%; background: #ffffff; 
+  border: 1px solid rgba(15, 23, 42, 0.15); border-radius: 8px; margin-top: 6px; 
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); z-index: 9999; max-height: 450px; overflow-y: auto; padding: 12px; 
 }
 
 .search-container { position: sticky; top: 0; background: #ffffff; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); z-index: 10; }
@@ -99,9 +80,9 @@ input:focus, select:focus { outline: none; background: #ffffff; border-color: va
 .global-dropdown-menu button:hover { background: #f1f5f9; }
 
 /* Table Component */
-.table-block { background: #ffffff; border: 1px solid var(--border-color); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow: visible; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
+.table-block { background: #ffffff; border: 1px solid var(--border-color); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow-x: auto; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
 table { width: 100%; border-collapse: collapse; min-width: 800px; }
-th, td { padding: 14px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+th, td { padding: 14px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
 th { background: var(--table-header); color: #ffffff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
 tr:last-child td { border-bottom: none; }
 
@@ -116,6 +97,40 @@ button.main-btn { background: var(--btn-bg); color: #ffffff; border: none; paddi
 button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.15); }
 .btn-secondary { background: #e2e8f0; color: var(--text-main); }
 .btn-secondary:hover { background: #cbd5e1; }
+
+
+/* =========================================
+   📱 MOBILE COMPACT OPTIMIZATION 
+   ========================================= */
+@media (max-width: 768px) {
+  body { padding: 0.35rem; }
+  .container { padding: 0.75rem; border-radius: 8px; border: none; box-shadow: none; background: transparent; }
+  
+  /* Header & Form Compress */
+  .header-zone { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 0.75rem; padding-bottom: 0.5rem; }
+  h2 { font-size: 1.25rem; }
+  .header-zone div { display: flex; flex-direction: column; }
+  button.main-btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.9rem; }
+  
+  .form-card { padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  .form-grid { grid-template-columns: 1fr !important; gap: 0.75rem; margin-bottom: 1rem; }
+  .perm-menu { max-height: 250px; }
+  
+  /* Table Controls Compress */
+  .table-controls { padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border-color); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .global-action-container { width: 100%; display: block; }
+  .global-action-btn { width: 100%; justify-content: space-between; padding: 12px; font-size: 0.9rem; }
+  .global-dropdown-menu { position: static; width: 100%; box-shadow: none; margin-top: 8px; border: 1px solid var(--border-color); }
+
+  /* 🌟 SCROLLABLE TABLE OPTIMIZATION FOR MOBILE 🌟 */
+  .table-block { 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+    border-radius: 0 0 8px 8px;
+    border-top: none;
+  }
+  table { min-width: 900px; } /* Ensures table content doesn't shrink and remains scrollable */
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -196,7 +211,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               <input type="text" id="permSearch" placeholder="Search parameters, dashboards, records..." onkeyup="filterPermissions()">
             </div>
 
-            <!-- PILLAR 1: DASHBOARDS -->
             <div class="pillar-section" data-pillar="Dashboards">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 1. Dashboards</span>
@@ -212,7 +226,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 2: OPERATIONS -->
             <div class="pillar-section" data-pillar="Operations">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 2. Operations</span>
@@ -239,7 +252,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 3: FINANCE -->
             <div class="pillar-section" data-pillar="Finance">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 3. Finance</span>
@@ -271,7 +283,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 4: EXPORTS -->
             <div class="pillar-section" data-pillar="Exports">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 4. Exports</span>
@@ -295,7 +306,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 5: REPORTS -->
             <div class="pillar-section" data-pillar="Reports">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 5. Reports</span>
@@ -333,7 +343,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 6: HRMS -->
             <div class="pillar-section" data-pillar="HRMS">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 6. HRMS</span>
@@ -351,7 +360,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 7: MASTERS -->
             <div class="pillar-section" data-pillar="Masters">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 7. Masters</span>
@@ -398,7 +406,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
               </div>
             </div>
 
-            <!-- PILLAR 8: ADMIN -->
             <div class="pillar-section" data-pillar="Admin">
               <div class="pillar-header" onclick="togglePillarCollapse(this)">
                 <span><input type="checkbox" onclick="selectEntirePillar(event, this)"> 8. Administration</span>

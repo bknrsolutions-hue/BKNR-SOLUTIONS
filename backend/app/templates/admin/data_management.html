@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>DATA MANAGEMENT - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,7 @@
 <style>
 :root{
   --primary:#143465; --accent:#3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success:#166534; --danger:#dc2626;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success:#166534; --danger:#dc2626; --warning:#f59e0b;
 }
 
 *{box-sizing:border-box; font-family:'Inter', sans-serif;}
@@ -38,13 +38,15 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
     background:var(--card); border-radius:12px; border:1px solid var(--border);
     padding:25px; box-shadow:0 4px 6px rgba(0,0,0,0.03); margin-bottom: 25px;
 }
+.data-card.danger-zone { border-top: 4px solid var(--danger); }
+
 .data-card h3 {
     margin-top:0; color:var(--primary); font-size:16px; 
     display:flex; align-items:center; gap:10px; border-bottom:2px solid #f1f5f9; padding-bottom:10px; margin-bottom: 15px;
 }
 .data-card p { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:20px;}
 
-/* --- EXPORT MODULE GRID (7 Buttons) --- */
+/* --- EXPORT MODULE GRID --- */
 .export-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
 .btn-module { 
     background:#f8fafc; color:var(--primary); border:1px solid var(--border); 
@@ -55,7 +57,6 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
 
 /* --- TWO COLUMN GRID FOR IMPORT --- */
 .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-@media(max-width: 800px) { .import-grid { grid-template-columns: 1fr; } }
 
 /* --- FORM FIELDS --- */
 .field { display:flex; flex-direction:column; gap:6px; margin-bottom:15px;}
@@ -71,22 +72,59 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
 /* --- BUTTONS --- */
 .btn-primary { background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s;}
 .btn-primary:hover { background:#2563eb;}
+
+.btn-warning { background:var(--warning); color:#fff; border:none; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s;}
+.btn-warning:hover { background:#d97706;}
+
+.btn-danger { background:var(--danger); color:#fff; border:none; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s;}
+.btn-danger:hover { background:#b91c1c;}
+
 .btn-outline { background:#f8fafc; color:#10b981; border:1px solid #10b981; padding:12px 20px; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-size:13px; transition:0.2s; margin-top: 15px;}
 .btn-outline:hover { background:#d1fae5;}
 
 /* --- MAPPING TABLE UI --- */
 .mapping-area { display: none; margin-top: 25px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-.map-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
-.map-table th { background: var(--primary); color: #fff; padding: 12px; font-size: 12px; text-align: left; }
+.map-table-container { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.map-table { width: 100%; border-collapse: collapse; background: #fff; min-width: 500px; }
+.map-table th { background: var(--primary); color: #fff; padding: 12px; font-size: 12px; text-align: left; white-space: nowrap;}
 .map-table td { padding: 10px; border-bottom: 1px solid #edf2f7; font-size: 13px; font-weight: 600; color: var(--text); }
 .map-table select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); width: 100%; font-size: 12px; font-weight: 600; background: #f4f6f9; cursor: pointer; }
 
 /* --- HISTORY TABLE --- */
 .history-section { max-width:1200px; margin:0 auto; padding:0 20px;}
-.history-table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; margin-top:15px;}
-.history-table th { background:#f8fafc; padding:12px; border-bottom:2px solid var(--border); color:var(--muted); text-transform:uppercase; font-weight:700;}
-.history-table td { padding:12px; border-bottom:1px solid #edf2f7; color:var(--primary); font-weight:600;}
+.history-table-container { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.history-table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; background: #fff; min-width: 600px;}
+.history-table th { background:#f8fafc; padding:12px; border-bottom:2px solid var(--border); color:var(--muted); text-transform:uppercase; font-weight:700; white-space: nowrap;}
+.history-table td { padding:12px; border-bottom:1px solid #edf2f7; color:var(--primary); font-weight:600; white-space: nowrap;}
 .empty-state { text-align:center; padding:40px; color:var(--muted); font-size:13px;}
+
+
+/* =========================================
+   📱 MOBILE COMPACT OPTIMIZATION 
+   ========================================= */
+@media(max-width: 800px) { 
+    .import-grid { grid-template-columns: 1fr; gap: 15px; } 
+    #sheetDiv { border-left: none; padding-left: 0; padding-top: 15px; border-top: 1px solid var(--border); }
+}
+
+@media(max-width: 600px) {
+    body { padding-bottom: 20px; }
+    .header-dash { flex-direction: column; gap: 10px; padding: 12px 15px; align-items: flex-start; }
+    .header-titles h2 { font-size: 16px; }
+    
+    .dashboard-container { grid-template-columns: 1fr; margin: 15px auto; padding: 0 10px; gap: 15px; }
+    .data-card { padding: 15px; margin-bottom: 0; }
+    
+    .export-grid { grid-template-columns: 1fr; gap: 8px; }
+    .btn-module { padding: 12px; font-size: 13px; }
+    .btn-module[style*="grid-column"] { grid-column: span 1 !important; }
+    
+    .mapping-area { padding: 12px; margin-top: 15px; }
+    .history-section { padding: 0 10px; margin-top: 15px; }
+    
+    /* Stack Emergency Buttons on Mobile */
+    .danger-action-grid { grid-template-columns: 1fr !important; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
@@ -152,56 +190,106 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
         </div>
 
         <div class="mapping-area" id="mappingArea">
-            <h4 style="margin-top:0; color:var(--primary); font-size:14px;">Step 4: Map Excel Columns to Database Columns</h4>
-            <table class="map-table">
-                <thead>
-                    <tr>
-                        <th width="50%">Database Field Name</th>
-                        <th width="50%">Matching Excel Column</th>
-                    </tr>
-                </thead>
-                <tbody id="mapTbody">
-                </tbody>
-            </table>
+            <h4 style="margin-top:0; color:var(--primary); font-size:14px; margin-bottom: 12px;">Step 4: Map Excel Columns to Database Columns</h4>
+            <div class="map-table-container">
+                <table class="map-table">
+                    <thead>
+                        <tr>
+                            <th width="50%">Database Field Name</th>
+                            <th width="50%">Matching Excel Column</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mapTbody">
+                    </tbody>
+                </table>
+            </div>
             <button class="btn-primary" style="margin-top:20px; background:var(--success);" onclick="triggerSecureImport()">
                 <i class="fa-solid fa-floppy-disk"></i> Save & Import Data
             </button>
         </div>
-
     </div>
+    
+    <div class="data-card danger-zone">
+        <h3 style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Data Recovery & Cleanup</h3>
+        <p style="font-size:13px; color:var(--muted);">Select a database table to revert your last import mistake or permanently clear the table. Requires Admin OTP verification.</p>
+        
+        <div class="field">
+            <label>Select Table</label>
+            <select id="clearDbTable">
+                <option value="">-- Choose Target Table --</option>
+            </select>
+        </div>
+        
+        <div class="danger-action-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+            <button class="btn-warning" onclick="triggerSecureUndo()">
+                <i class="fa-solid fa-rotate-left"></i> Undo Last Import
+            </button>
+            <button class="btn-danger" onclick="triggerSecureClear()">
+                <i class="fa-solid fa-trash-can"></i> Clear Entire Table
+            </button>
+        </div>
+    </div>
+
 </div>
 
 <div class="history-section">
     <div class="data-card">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Import History</h3>
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Module</th>
-                    <th>File Name</th>
-                    <th>Rows Imported</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="historyBody">
-                <tr><td colspan="5" class="empty-state">No recent data imports found.</td></tr>
-            </tbody>
-        </table>
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Data Actions History</h3>
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Module / Table</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr><td colspan="5" class="empty-state">No recent data actions found.</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
+    let dbSchema = {};
+    let uploadedFilename = "";
+    let excelSheetsData = {};
+
+    window.onload = async function() {
+        try {
+            const res = await fetch('/data-management/db-schema');
+            const data = await res.json();
+            if(data.success) {
+                dbSchema = data.tables;
+                const tableSelect = document.getElementById("dbTable");
+                const clearSelect = document.getElementById("clearDbTable");
+                for (const table in dbSchema) {
+                    tableSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                    clearSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                }
+            }
+            loadHistory();
+        } catch(e) { console.error("Failed to load schema."); }
+    };
+
     // ==========================================
     // 🟢 OTP VERIFICATION WRAPPER
     // ==========================================
     async function secureActionWithOTP(actionType, moduleName, callback) {
+        let actionColor = '#3b82f6';
+        if(actionType === 'clear') actionColor = '#dc2626';
+        if(actionType === 'undo') actionColor = '#f59e0b';
+
         const confirmResult = await Swal.fire({
             title: 'Security Clearance Required',
-            text: `Are you sure you want to ${actionType} data for the ${moduleName} module? An OTP will be sent to the Admin email.`,
-            icon: 'warning',
+            text: `Are you sure you want to ${actionType} data for ${moduleName}? An OTP will be sent to the Admin email.`,
+            icon: actionType === 'export' ? 'info' : 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3b82f6',
+            confirmButtonColor: actionColor,
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, Send OTP'
         });
@@ -268,13 +356,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
     }
 
     async function executeModuleExport(moduleName, endpointUrl) {
-        Swal.fire({
-            title: `Exporting ${moduleName}...`,
-            text: `Extracting data from ${moduleName} module.`,
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
+        Swal.fire({ title: `Exporting ${moduleName}...`, text: `Extracting data...`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
         try {
             const response = await fetch(endpointUrl, { method: 'POST' });
             if (!response.ok) throw new Error("Export failed or unauthorized.");
@@ -287,47 +369,22 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
             
             let filename = `BKNR_${moduleName}_Export.xlsx`;
             const disposition = response.headers.get('content-disposition');
-            
-            // Fixed Regex line to prevent Javascript syntax errors
             if (disposition && disposition.indexOf('attachment') !== -1) {
                 const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
                 if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
             }
-            
             a.download = filename;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             
-            Swal.fire("Success!", `${moduleName} export downloaded successfully.`, "success");
-        } catch (error) {
-            Swal.fire("Export Failed", error.message, "error");
-        }
+            Swal.fire("Success!", `${moduleName} export downloaded.`, "success").then(() => loadHistory());
+        } catch (error) { Swal.fire("Export Failed", error.message, "error"); }
     }
 
     // ==========================================
     // 🟢 SECURED IMPORT LOGIC
     // ==========================================
-    let dbSchema = {};
-    let uploadedFilename = "";
-    let excelSheetsData = {};
-
-    window.onload = async function() {
-        try {
-            const res = await fetch('/data-management/db-schema');
-            const data = await res.json();
-            if(data.success) {
-                dbSchema = data.tables;
-                const tableSelect = document.getElementById("dbTable");
-                for (const table in dbSchema) {
-                    tableSelect.innerHTML += `<option value="${table}">${table}</option>`;
-                }
-            }
-            // Load history table if available
-            loadHistory();
-        } catch(e) { console.error("Failed to load schema."); }
-    };
-
     async function uploadAndInspect() {
         const fileInput = document.getElementById('excelFile');
         if(!fileInput.files[0]) return Swal.fire("Warning", "Select a file first.", "warning");
@@ -362,11 +419,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
     function renderMappingUI() {
         const table = document.getElementById("dbTable").value;
         const sheet = document.getElementById("excelSheet").value;
-
-        if(!table || !sheet) {
-            document.getElementById("mappingArea").style.display = "none";
-            return;
-        }
+        if(!table || !sheet) { document.getElementById("mappingArea").style.display = "none"; return; }
 
         const dbCols = dbSchema[table];
         const excelCols = excelSheetsData[sheet];
@@ -379,25 +432,15 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
                 const selected = (dbCol.toLowerCase() === exCol.toLowerCase()) ? "selected" : "";
                 optionsHTML += `<option value="${exCol}" ${selected}>${exCol}</option>`;
             });
-
-            tbody.innerHTML += `
-                <tr>
-                    <td style="text-transform: capitalize;">${dbCol.replace(/_/g, ' ')} <small style="color:var(--muted)">(${dbCol})</small></td>
-                    <td><select class="col-mapper" data-dbcol="${dbCol}">${optionsHTML}</select></td>
-                </tr>
-            `;
+            tbody.innerHTML += `<tr><td style="text-transform: capitalize;">${dbCol.replace(/_/g, ' ')} <small style="color:var(--muted)">(${dbCol})</small></td><td><select class="col-mapper" data-dbcol="${dbCol}">${optionsHTML}</select></td></tr>`;
         });
-
         document.getElementById("mappingArea").style.display = "block";
     }
 
     function triggerSecureImport() {
         const table = document.getElementById("dbTable").value;
         if(!table) return Swal.fire("Warning", "Select a database table to import into.", "warning");
-        
-        secureActionWithOTP('import', table, () => {
-            executeImport();
-        });
+        secureActionWithOTP('import', table, () => { executeImport(); });
     }
 
     async function executeImport() {
@@ -410,32 +453,76 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
         });
 
         if(Object.keys(mappingData).length === 0) return Swal.fire("Warning", "Please map at least one column.", "warning");
-
-        Swal.fire({ title: 'Importing...', text: 'Inserting records into database.', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        Swal.fire({ title: 'Importing...', text: 'Inserting records...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 
         try {
             const res = await fetch('/data-management/execute-import', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: uploadedFilename,
-                    table_name: table,
-                    sheet_name: sheet,
-                    mapping: mappingData
-                })
+                body: JSON.stringify({ filename: uploadedFilename, table_name: table, sheet_name: sheet, mapping: mappingData })
             });
 
             const result = await res.json();
             if(result.success) {
-                Swal.fire("Import Successful!", `Successfully inserted ${result.rows_imported} rows into ${result.table}.`, "success").then(() => {
-                    location.reload(); 
-                });
+                Swal.fire("Import Successful!", `Successfully inserted ${result.rows_imported} rows.`, "success").then(() => location.reload());
             } else {
                 Swal.fire("Import Failed", result.error, "error");
             }
         } catch(e) { Swal.fire("Error", "Server error during import.", "error"); }
     }
 
+    // ==========================================
+    // 🟢 SECURED RECOVERY & CLEAR LOGIC (UNDO)
+    // ==========================================
+    function triggerSecureUndo() {
+        const table = document.getElementById("clearDbTable").value;
+        if(!table) return Swal.fire("Warning", "Select a database table first.", "warning");
+        secureActionWithOTP('undo', table, () => { executeUndo(table); });
+    }
+
+    async function executeUndo(table) {
+        Swal.fire({ title: 'Undoing Import...', text: 'Reverting last imported records...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        try {
+            const res = await fetch('/data-management/undo-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ table_name: table })
+            });
+            const result = await res.json();
+            if(result.success) {
+                Swal.fire("Reverted!", `Successfully removed the last imported ${result.rows_deleted} records from ${result.table}.`, "success").then(() => location.reload());
+            } else {
+                Swal.fire("Failed", result.error, "error");
+            }
+        } catch(e) { Swal.fire("Error", "Server error during undo.", "error"); }
+    }
+
+    function triggerSecureClear() {
+        const table = document.getElementById("clearDbTable").value;
+        if(!table) return Swal.fire("Warning", "Select a database table to clear.", "warning");
+        secureActionWithOTP('clear', table, () => { executeClear(table); });
+    }
+
+    async function executeClear(table) {
+        Swal.fire({ title: 'Clearing Data...', text: 'Permanently deleting all records...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+        try {
+            const res = await fetch('/data-management/clear-table', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ table_name: table })
+            });
+            const result = await res.json();
+            if(result.success) {
+                Swal.fire("Cleared!", `Successfully deleted ${result.rows_deleted} records from ${result.table}.`, "success").then(() => location.reload());
+            } else {
+                Swal.fire("Failed", result.error, "error");
+            }
+        } catch(e) { Swal.fire("Error", "Server error during cleanup.", "error"); }
+    }
+
+    // ==========================================
+    // 🟢 LOAD HISTORY
+    // ==========================================
     async function loadHistory() {
         try {
             const res = await fetch('/data-management/history');
@@ -445,13 +532,20 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; ove
             if (data.success && data.history && data.history.length > 0) {
                 tbody.innerHTML = "";
                 data.history.forEach(item => {
+                    let badgeColor = '';
+                    if(item.type === 'EXPORT') badgeColor = 'color:#3b82f6;';
+                    else if(item.type === 'CLEAR') badgeColor = 'color:#dc2626;';
+                    else if(item.type === 'UNDO IMPORT') badgeColor = 'color:#f59e0b;';
+                    else badgeColor = 'color:#10b981;'; // IMPORT
+
+                    let statusColor = item.status === 'Success' ? 'color:var(--success)' : 'color:var(--danger)';
                     tbody.innerHTML += `
                         <tr>
-                            <td>${item.timestamp || '-'}</td>
+                            <td>${item.date || '-'}</td>
+                            <td><b style="${badgeColor}">${item.type || '-'}</b></td>
                             <td>${item.module || '-'}</td>
-                            <td>${item.filename || '-'}</td>
-                            <td>${item.rows_imported || 0}</td>
-                            <td><span style="color:var(--success)">Success</span></td>
+                            <td>${item.details || '-'}</td>
+                            <td><span style="${statusColor}">${item.status}</span></td>
                         </tr>
                     `;
                 });

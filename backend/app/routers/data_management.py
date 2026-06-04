@@ -14,6 +14,7 @@ from email.mime.multipart import MIMEMultipart
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import re
 
 # =====================================================
 # 🟢 1. ALL MODELS IMPORTS
@@ -210,12 +211,12 @@ async def verify_otp(payload: OTPVerify, request: Request):
 @router.get("/data-management", response_class=HTMLResponse)
 async def data_management(request: Request, db: Session = Depends(get_db)):
     templates = request.app.state.templates
-    # ✅ కరెక్ట్ పద్ధతి (కచ్చితంగా 'request=' మరియు 'name=' అని మెన్షన్ చేయండి)
     return templates.TemplateResponse(
         request=request, 
         name="admin/data_management.html", 
         context={"request": request}
     )
+    
 @router.get("/data-management/template/master")
 async def download_master_template():
     template_dir = "templates_excel"
@@ -274,6 +275,7 @@ async def export_bills(request: Request, db: Session = Depends(get_db)):
 @router.post("/export/general-stock")
 async def export_general_stock(request: Request, db: Session = Depends(get_db)):
     def logic(writer, db, cc):
+        # 🌟 FIX: Removed extract_company_id, using 'cc' directly
         export_sheet(writer, db.query(GeneralStock).filter(GeneralStock.company_id == cc).all(), "GeneralStock")
         export_sheet(writer, db.query(GeneralStoreItems).filter(GeneralStoreItems.company_id == cc).all(), "GeneralStoreItems")
         log_data_action(cc, "EXPORT", "General Stock Module", "Success", "Exported General Stock records")
@@ -331,6 +333,9 @@ class ImportMappingPayload(BaseModel):
     sheet_name: str
     mapping: dict
 
+class ClearTablePayload(BaseModel):
+    table_name: str
+
 @router.get("/data-management/db-schema")
 async def get_db_schema():
     schema = {}
@@ -385,12 +390,8 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
                     record_data[db_col] = val
 
             if hasattr(ModelClass, "company_id") and "company_id" not in record_data:
-                if payload.table_name in ["GeneralStock", "GeneralStoreItems"]:
-                    import re
-                    digits = re.sub(r'\D', '', str(comp_code))
-                    record_data["company_id"] = int(digits) if digits else 0
-                else:
-                    record_data["company_id"] = comp_code
+                # 🌟 FIX: Directly assign VNBK2162 to company_id
+                record_data["company_id"] = comp_code
 
             records_to_insert.append(ModelClass(**record_data))
 
@@ -400,16 +401,115 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
         if os.path.exists(filepath):
             os.remove(filepath)
 
-        # 🌟 LOG IMPORT SUCCESS
         msg = f"Successfully dynamically mapped and imported {len(records_to_insert)} records."
         log_data_action(comp_code, "IMPORT", payload.table_name, "Success", msg)
 
         return {"success": True, "rows_imported": len(records_to_insert), "table": payload.table_name}
     except Exception as e:
         db.rollback()
-        # 🌟 LOG IMPORT FAILURE
         log_data_action(comp_code, "IMPORT", payload.table_name, "Failed", str(e))
         return {"success": False, "error": str(e)}
+
+
+# =====================================================
+# 🟢 9. UNDO & CLEAR TABLE (EMERGENCY CLEANUP)
+# =====================================================
+@router.post("/data-management/undo-import")
+async def undo_last_import(payload: ClearTablePayload, request: Request, db: Session = Depends(get_db)):
+    comp_code = get_comp_code(request)
+    ModelClass = ALL_MODELS.get(payload.table_name)
+    if not ModelClass:
+        return {"success": False, "error": "Invalid database table selected."}
+
+    logs = []
+    if os.path.exists(HISTORY_LOG_FILE):
+        try:
+            with open(HISTORY_LOG_FILE, "r") as f:
+                logs = json.load(f)
+        except Exception:
+            pass
+
+    import_logs = [
+        l for l in logs 
+        if l.get("company_code") == comp_code 
+        and l.get("type") == "IMPORT" 
+        and l.get("module") == payload.table_name 
+        and l.get("status") == "Success"
+    ]
+
+    if not import_logs:
+        return {"success": False, "error": "No recent successful import found in history to undo."}
+
+    last_import = import_logs[-1] 
+    details = last_import.get("details", "")
+
+    # Regex to find number in "imported X records"
+    match = re.search(r'imported (\d+) records', details.lower())
+    if not match:
+        return {"success": False, "error": "Could not determine how many rows to delete from history log."}
+    
+    rows_to_delete = int(match.group(1))
+    if rows_to_delete <= 0:
+        return {"success": False, "error": "Zero rows were imported in the last session."}
+
+    try:
+        query = db.query(ModelClass.id)
+        db_columns = [c.name for c in ModelClass.__table__.columns]
+        
+        # 🌟 FIX: Directly use VNBK2162 (comp_code) string for safe match
+        if "company_id" in db_columns:
+            query = query.filter(ModelClass.company_id == comp_code)
+        
+        top_ids = query.order_by(ModelClass.id.desc()).limit(rows_to_delete).all()
+        ids_to_delete = [row[0] for row in top_ids]
+        
+        if not ids_to_delete:
+            return {"success": False, "error": "No database records found to delete."}
+
+        deleted_count = db.query(ModelClass).filter(ModelClass.id.in_(ids_to_delete)).delete(synchronize_session=False)
+        db.commit()
+
+        msg = f"Reverted last import. Deleted {deleted_count} records."
+        log_data_action(comp_code, "UNDO IMPORT", payload.table_name, "Success", msg)
+
+        return {"success": True, "rows_deleted": deleted_count, "table": payload.table_name}
+
+    except Exception as e:
+        db.rollback()
+        log_data_action(comp_code, "UNDO IMPORT", payload.table_name, "Failed", str(e))
+        return {"success": False, "error": str(e)}
+
+@router.post("/data-management/clear-table")
+async def clear_table_data(payload: ClearTablePayload, request: Request, db: Session = Depends(get_db)):
+    comp_code = get_comp_code(request)
+    ModelClass = ALL_MODELS.get(payload.table_name)
+
+    if not ModelClass:
+        return {"success": False, "error": "Invalid database table selected."}
+
+    try:
+        db_columns = [c.name for c in ModelClass.__table__.columns]
+        query = db.query(ModelClass)
+
+        # 🌟 FIX: Directly use VNBK2162 (comp_code) string for safe match
+        if "company_id" in db_columns:
+            query = query.filter(ModelClass.company_id == comp_code)
+        else:
+            return {"success": False, "error": "Action denied. Cannot bulk delete global shared tables."}
+
+        deleted_count = query.delete(synchronize_session=False)
+        db.commit()
+
+        msg = f"Permanently deleted all {deleted_count} records from table."
+        log_data_action(comp_code, "CLEAR", payload.table_name, "Success", msg)
+
+        return {"success": True, "rows_deleted": deleted_count, "table": payload.table_name}
+
+    except Exception as e:
+        db.rollback()
+        log_data_action(comp_code, "CLEAR", payload.table_name, "Failed", str(e))
+        return {"success": False, "error": str(e)}
+
 
 @router.get("/data-management/history")
 async def import_history(request: Request):
