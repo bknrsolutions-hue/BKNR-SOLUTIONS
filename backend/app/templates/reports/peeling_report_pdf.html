@@ -5,7 +5,7 @@
 <title>PEELING BILL | BKNR ERP</title>
 
 <style>
-body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; color: #1e293b; background: #fff; }
+body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; color: #1e293b; background: var(--card-bg); }
 h2 { text-align: center; color: #0f172a; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; font-size: 16px; letter-spacing: 0.5px; }
 .subtitle { text-align: center; font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
 
@@ -44,7 +44,7 @@ tfoot td { font-weight: bold; background: #f1f5f9; color: #0f172a; border-top: 2
 /* ================= HARD PRINTER CONFIGURATION ================= */
 @media print {
     @page { size: A4 landscape; margin: 5mm; }
-    body { margin: 0; background: #fff; color: #000; font-size: 8.5px; }
+    body { margin: 0; background: var(--card-bg); color: #000; font-size: 8.5px; }
     th { background: #0f172a !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     tfoot td { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     tbody tr:nth-child(even) { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

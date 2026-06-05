@@ -5,14 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>BKNR ERP | Corporate Inventory Intelligence</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<!-- 🌟 SYNC THEME WITH PARENT 🌟 -->
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    window.addEventListener('load', syncTheme);
+</script>
+
 <style>
+    /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
     :root {
+        /* LIGHT MODE */
         --bg: #f1f5f9; 
         --panel: #ffffff;
+        --card-bg: #ffffff;
         --primary: #0f172a;
         --accent: #2563eb;
         --accent-light: #eff6ff;
@@ -26,12 +43,67 @@
         --reprocess-light: #f5f3ff;
         --fresh: #0891b2;
         --fresh-light: #ecfeff;
+        --orange: #ea580c;
         --border: #e2e8f0; 
         --text: #0f172a; 
         --sub: #475569; 
         --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
         --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.04);
         --radius: 12px;
+        --header-bg: rgba(255, 255, 255, 0.85);
+
+        --table-th-bg: #f8fafc;
+        --table-td-border: #f1f5f9;
+        
+        --kpi-opening-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); --kpi-opening-bd: #bfdbfe; --kpi-opening-text: #1e40af;
+        --kpi-closing-bg: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); --kpi-closing-bd: #bbf7d0; --kpi-closing-text: #065f46;
+        --kpi-sales-bg: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); --kpi-sales-bd: #fbcfe8; --kpi-sales-text: #991b1b;
+        --kpi-rep-bg: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); --kpi-rep-bd: #ffedd5; --kpi-rep-text: #92400e;
+        --kpi-fresh-bg: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); --kpi-fresh-bd: #e9d5ff; --kpi-fresh-text: #5b21b6;
+        --kpi-reg-bg: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); --kpi-reg-bd: #80deea; --kpi-reg-text: #006064;
+        --kpi-dead-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); --kpi-dead-bd: #fca5a5; --kpi-dead-text: #c53030;
+        --kpi-mc-bg: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); --kpi-mc-bd: #ccfbf1; --kpi-mc-text: #0369a1;
+        --kpi-val: #000000;
+    }
+
+    [data-theme="dark"] {
+        /* DARK MODE */
+        --bg: #0f172a; 
+        --panel: #1e293b;
+        --card-bg: #1e293b;
+        --primary: #f8fafc;
+        --accent: #60a5fa;
+        --accent-light: rgba(59, 130, 246, 0.2);
+        --success: #22c55e;
+        --success-light: rgba(22, 163, 74, 0.15);
+        --warning: #fbbf24;
+        --warning-light: rgba(245, 158, 11, 0.15);
+        --danger: #ef4444;
+        --danger-light: rgba(225, 29, 72, 0.15);
+        --reprocess: #a78bfa;
+        --reprocess-light: rgba(124, 58, 237, 0.15);
+        --fresh: #22d3ee;
+        --fresh-light: rgba(6, 182, 212, 0.15);
+        --orange: #f97316;
+        --border: #334155; 
+        --text: #f8fafc; 
+        --sub: #94a3b8; 
+        --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --header-bg: rgba(15, 23, 42, 0.85);
+
+        --table-th-bg: #0f172a;
+        --table-td-border: #1e293b;
+
+        --kpi-opening-bg: rgba(37, 99, 235, 0.15); --kpi-opening-bd: rgba(37, 99, 235, 0.3); --kpi-opening-text: #60a5fa;
+        --kpi-closing-bg: rgba(22, 163, 74, 0.15); --kpi-closing-bd: rgba(22, 163, 74, 0.3); --kpi-closing-text: #4ade80;
+        --kpi-sales-bg: rgba(219, 39, 119, 0.15); --kpi-sales-bd: rgba(219, 39, 119, 0.3); --kpi-sales-text: #f472b6;
+        --kpi-rep-bg: rgba(234, 88, 12, 0.15); --kpi-rep-bd: rgba(234, 88, 12, 0.3); --kpi-rep-text: #fb923c;
+        --kpi-fresh-bg: rgba(124, 58, 237, 0.15); --kpi-fresh-bd: rgba(124, 58, 237, 0.3); --kpi-fresh-text: #a78bfa;
+        --kpi-reg-bg: rgba(6, 182, 212, 0.15); --kpi-reg-bd: rgba(6, 182, 212, 0.3); --kpi-reg-text: #22d3ee;
+        --kpi-dead-bg: rgba(220, 38, 38, 0.15); --kpi-dead-bd: rgba(220, 38, 38, 0.3); --kpi-dead-text: #f87171;
+        --kpi-mc-bg: rgba(14, 165, 233, 0.15); --kpi-mc-bd: rgba(14, 165, 233, 0.3); --kpi-mc-text: #38bdf8;
+        --kpi-val: #f8fafc;
     }
 
     * {
@@ -46,10 +118,11 @@
         color: var(--text);
         font-size: 11px;
         -webkit-font-smoothing: antialiased;
+        transition: background 0.3s ease, color 0.3s ease;
     }
 
     .header {
-        background: rgba(255, 255, 255, 0.85);
+        background: var(--header-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
@@ -58,6 +131,7 @@
         top: 0;
         z-index: 999;
         box-shadow: var(--shadow-sm);
+        transition: background 0.3s, border-color 0.3s;
     }
 
     .header-top {
@@ -75,6 +149,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s;
     }
 
     .header-title h1 i {
@@ -92,25 +167,27 @@
         background: var(--accent-light);
         color: var(--accent);
         font-weight: 700;
-        border: 1px solid #bfdbfe;
+        border: 1px solid var(--border);
         font-size: 10px;
         white-space: nowrap;
+        transition: 0.3s;
     }
 
     .badge:last-child {
-        background: var(--primary);
+        background: var(--accent);
         color: #fff;
-        border-color: var(--primary);
+        border-color: var(--accent);
     }
 
     .filters {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 10px;
-        background: #f8fafc;
+        background: var(--card-bg);
         padding: 10px;
         border-radius: 8px;
         border: 1px solid var(--border);
+        transition: 0.3s;
     }
 
     .fbox {
@@ -126,6 +203,7 @@
         font-weight: 800;
         padding-left: 2px;
         letter-spacing: 0.5px;
+        color: var(--sub);
     }
 
     /* Searchable Dropdown Layout Styling */
@@ -139,13 +217,14 @@
         border-radius: 6px;
         padding: 7px 8px;
         font-size: 11px;
-        background: #fff;
+        background: var(--bg);
         cursor: pointer;
         font-weight: 600;
         color: var(--text);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        transition: 0.3s;
     }
 
     .dropdown-search-wrapper {
@@ -154,11 +233,11 @@
         top: 100%;
         left: 0;
         right: 0;
-        background: #ffffff;
+        background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: 6px;
         margin-top: 4px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         z-index: 1000;
         max-height: 250px;
         overflow-y: auto;
@@ -173,8 +252,9 @@
         outline: none;
         position: sticky;
         top: 0;
-        background: #fff;
+        background: var(--card-bg);
         z-index: 10;
+        color: var(--text);
     }
 
     .dropdown-options-list {
@@ -202,11 +282,12 @@
         border-radius: 6px;
         padding: 7px 8px;
         font-size: 11px;
-        background: #fff;
+        background: var(--bg);
         outline: none;
         width: 100%;
         color: var(--text);
         font-weight: 600;
+        transition: 0.3s;
     }
 
     .kpi-grid {
@@ -221,7 +302,7 @@
     .kpi-card {
         border-radius: var(--radius);
         padding: 14px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+        box-shadow: var(--shadow-sm);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         display: flex;
         flex-direction: column;
@@ -232,7 +313,7 @@
 
     .kpi-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        box-shadow: var(--shadow-md);
     }
 
     .kpi-card h4 {
@@ -249,6 +330,7 @@
         font-weight: 800;
         line-height: 1.2;
         letter-spacing: -0.5px;
+        color: var(--kpi-val);
     }
 
     .kpi-card .amt-sub {
@@ -258,42 +340,45 @@
         padding: 3px 6px;
         border-radius: 4px;
         display: inline-block;
-        background: rgba(255, 255, 255, 0.7);
+        background: var(--bg);
         width: fit-content;
+        opacity: 0.8;
     }
 
-    .kpi-opening { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; color: #1e40af; }
-    .kpi-opening .value { color: #000; } .kpi-opening h4 { color: var(--sub); }
+    .kpi-opening { background: var(--kpi-opening-bg); border: 1px solid var(--kpi-opening-bd); color: var(--kpi-opening-text); }
+    .kpi-opening h4 { color: var(--kpi-opening-text); }
     
-    .kpi-closing { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; color: #065f46; }
-    .kpi-closing .value { color: #000; } .kpi-closing h4 { color: var(--sub); }
+    .kpi-closing { background: var(--kpi-closing-bg); border: 1px solid var(--kpi-closing-bd); color: var(--kpi-closing-text); }
+    .kpi-closing h4 { color: var(--kpi-closing-text); }
 
-    .kpi-sales { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; color: #991b1b; }
-    .kpi-sales .value { color: #000; } .kpi-sales h4 { color: var(--sub); }
+    .kpi-sales { background: var(--kpi-sales-bg); border: 1px solid var(--kpi-sales-bd); color: var(--kpi-sales-text); }
+    .kpi-sales h4 { color: var(--kpi-sales-text); }
 
-    .kpi-reprocess { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; color: #92400e; }
-    .kpi-reprocess .value { color: #000; } .kpi-reprocess h4 { color: var(--sub); }
+    .kpi-reprocess { background: var(--kpi-rep-bg); border: 1px solid var(--kpi-rep-bd); color: var(--kpi-rep-text); }
+    .kpi-reprocess h4 { color: var(--kpi-rep-text); }
 
-    .kpi-fresh { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; color: #5b21b6; }
-    .kpi-fresh .value { color: #000; } .kpi-fresh h4 { color: var(--sub); }
+    .kpi-fresh { background: var(--kpi-fresh-bg); border: 1px solid var(--kpi-fresh-bd); color: var(--kpi-fresh-text); }
+    .kpi-fresh h4 { color: var(--kpi-fresh-text); }
 
-    .kpi-reglaze { background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border: 1px solid #80deea; color: #006064; }
-    .kpi-reglaze .value { color: #000; } .kpi-reglaze h4 { color: var(--sub); }
+    .kpi-reglaze { background: var(--kpi-reg-bg); border: 1px solid var(--kpi-reg-bd); color: var(--kpi-reg-text); }
+    .kpi-reglaze h4 { color: var(--kpi-reg-text); }
 
-    .kpi-dead { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; color: #c53030; }
-    .kpi-dead .value { color: #000; } .kpi-dead h4 { color: var(--sub); }
+    .kpi-dead { background: var(--kpi-dead-bg); border: 1px solid var(--kpi-dead-bd); color: var(--kpi-dead-text); }
+    .kpi-dead h4 { color: var(--kpi-dead-text); }
 
-    .kpi-mc { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; color: #0369a1; }
-    .kpi-mc .value { color: #000; } .kpi-mc h4 { color: var(--sub); }
+    .kpi-mc { background: var(--kpi-mc-bg); border: 1px solid var(--kpi-mc-bd); color: var(--kpi-mc-text); }
+    .kpi-mc h4 { color: var(--kpi-mc-text); }
 
     .tabs {
         display: flex;
         gap: 4px;
         padding: 4px;
         margin: 0 16px 12px;
-        background: #e2e8f0;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
         border-radius: 8px;
         max-width: fit-content;
+        transition: 0.3s;
     }
 
     .tab-btn {
@@ -310,8 +395,8 @@
     }
 
     .tab-btn.active {
-        background: #fff;
-        color: var(--primary);
+        background: var(--bg);
+        color: var(--accent);
         box-shadow: var(--shadow-sm);
     }
 
@@ -331,15 +416,17 @@
         margin-bottom: 20px; 
         overflow: hidden;
         box-shadow: var(--shadow-sm);
+        transition: 0.3s;
     }
     
     .panel-header {
         padding: 14px 16px;
         border-bottom: 1px solid var(--border);
-        background: #ffffff;
+        background: var(--card-bg);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        transition: 0.3s;
     }
 
     .panel-header h3 {
@@ -359,7 +446,7 @@
         border: none;
         padding: 6px 12px;
         border-radius: 6px;
-        background: var(--primary);
+        background: var(--accent);
         color: #fff;
         font-weight: 700;
         cursor: pointer;
@@ -367,7 +454,10 @@
         align-items: center;
         gap: 6px;
         font-size: 10px;
+        transition: 0.2s;
     }
+
+    .action-btn:hover { opacity: 0.9; }
 
     .excel-btn { background: var(--success); }
 
@@ -386,7 +476,7 @@
     .rm-table th { 
         text-align: left; 
         padding: 8px 10px; 
-        background: #f8fafc; 
+        background: var(--table-th-bg); 
         color: var(--sub); 
         font-size: 9.5px; 
         text-transform: uppercase; 
@@ -396,31 +486,34 @@
         position: sticky;
         top: 0;
         z-index: 20;
+        transition: 0.3s;
     }
     
     .rm-table td { 
         padding: 8px 10px; 
-        border-bottom: 1px solid #f1f5f9; 
+        border-bottom: 1px solid var(--table-td-border); 
         font-weight: 700; 
-        color: #1e293b; 
+        color: var(--text); 
+        transition: 0.3s;
     }
     
     .rm-table tbody tr:hover { 
-        background: #f8fafc; 
+        background: var(--table-th-bg); 
     }
 
     .grand-total-row {
-        background: #e2e8f0 !important;
+        background: var(--table-th-bg) !important;
         position: sticky;
         bottom: 0;
         z-index: 30;
-        box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+        transition: 0.3s;
     }
 
     .grand-total-row td {
-        border-top: 1px solid var(--primary) !important;
+        border-top: 1px solid var(--accent) !important;
         border-bottom: none !important;
-        color: var(--primary) !important;
+        color: var(--accent) !important;
         padding: 8px 10px !important;
         font-weight: 800 !important;
         font-size: 10px !important;
@@ -432,11 +525,11 @@
             position: sticky;
             left: 0;
             z-index: 25;
-            background: #fff;
+            background: var(--card-bg);
             box-shadow: 2px 0 5px rgba(0,0,0,0.04);
         }
         .rm-table th:nth-child(4) {
-            background: #f8fafc;
+            background: var(--table-th-bg);
         }
     }
 
@@ -449,12 +542,13 @@
     }
 
     .chart-box {
-        background: #fff;
+        background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 16px;
         height: 320px;
         box-shadow: var(--shadow-sm);
+        transition: 0.3s;
     }
 
     .chart-box h3 {
@@ -473,12 +567,13 @@
     }
 
     .age-card {
-        background: #fff;
+        background: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 20px 14px;
         text-align: center;
         box-shadow: var(--shadow-sm);
+        transition: 0.3s;
     }
 
     .age-card h4 {
@@ -494,12 +589,13 @@
         margin-top: 8px; 
         font-weight: 800;
         color: var(--primary);
+        transition: 0.3s;
     }
 
-    .age-green { background: var(--success-light); color: var(--success); padding: 3px 8px; border-radius: 6px; border: 1px solid #bbf7d0; }
-    .age-yellow { background: var(--warning-light); color: var(--warning); padding: 3px 8px; border-radius: 6px; border: 1px solid #fef08a; }
-    .age-orange { background: #fff7ed; color: #ea580c; padding: 3px 8px; border-radius: 6px; border: 1px solid #ffedd5; }
-    .age-red { background: var(--danger-light); color: var(--danger); padding: 3px 8px; border-radius: 6px; border: 1px solid #fecaca; }
+    .age-green { background: var(--success-light); color: var(--success); padding: 3px 8px; border-radius: 6px; }
+    .age-yellow { background: var(--warning-light); color: var(--warning); padding: 3px 8px; border-radius: 6px; }
+    .age-orange { background: rgba(234, 88, 12, 0.15); color: #ea580c; padding: 3px 8px; border-radius: 6px; }
+    .age-red { background: var(--danger-light); color: var(--danger); padding: 3px 8px; border-radius: 6px; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -733,8 +829,8 @@
                         data-reprocess-val="{{ row.reprocess_value|default(0) }}">
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
                         <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
-                        <td align="right" style="color:#16a34a;">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:#dc2626;">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                        <td align="right" style="color:var(--success);">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:var(--danger);">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
+                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--accent);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
                         <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
                         <td>
                             {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
@@ -777,7 +873,7 @@
                     {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
                     <tr>
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--primary);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
+                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--accent);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -806,6 +902,19 @@
 </div>
 
 <script>
+// Watch for dynamic theme changes instantly without reload
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            // CSS handles visual switch automatically, but charts need explicit re-rendering
+            if(window.chartsInstance) {
+                renderCharts();
+            }
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 // Toggle View Logic for Searchable Custom Dropdowns
 function toggleSearchDropdown(id) {
     // Close other opened dropdown wrappers first to protect overlay stack
@@ -935,17 +1044,45 @@ function exportToExcel(tableID, fileName){
     XLSX.writeFile(wb, fileName + ".xlsx");
 }
 
-window.onload = function(){
-    new Chart(document.getElementById('fyChart'), {
+let fyChartInst = null;
+let varChartInst = null;
+window.chartsInstance = true; // flag to signify charts are loaded
+
+function renderCharts() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const chartTextColor = isDark ? '#94a3b8' : '#475569';
+    const chartGridColor = isDark ? '#334155' : '#f1f5f9';
+    
+    if(fyChartInst) fyChartInst.destroy();
+    if(varChartInst) varChartInst.destroy();
+
+    fyChartInst = new Chart(document.getElementById('fyChart'), {
         type:'bar',
-        data:{ labels: {{ fy_labels|tojson if fy_labels else '[]' }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson if fy_opening else '[]' }}, backgroundColor:'#2563eb' },{ label:'Closing', data: {{ fy_closing|tojson if fy_closing else '[]' }}, backgroundColor:'#10b981' }] },
-        options:{ responsive:true, maintainAspectRatio:false }
+        data:{ labels: {{ fy_labels|tojson if fy_labels else '[]' }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson if fy_opening else '[]' }}, backgroundColor:'#3b82f6' },{ label:'Closing', data: {{ fy_closing|tojson if fy_closing else '[]' }}, backgroundColor:'#10b981' }] },
+        options:{ 
+            responsive:true, 
+            maintainAspectRatio:false,
+            plugins: { legend: { labels: { color: chartTextColor } } },
+            scales: {
+                x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
+                y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }
+            }
+        }
     });
-    new Chart(document.getElementById('varietyChart'), {
+
+    varChartInst = new Chart(document.getElementById('varietyChart'), {
         type:'doughnut',
-        data:{ labels: {{ variety_labels|tojson if variety_labels else '[]' }}, datasets:[{ data: {{ variety_values|tojson if variety_values else '[]' }}, backgroundColor:['#0f172a','#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed'] }] },
-        options:{ responsive:true, maintainAspectRatio:false }
+        data:{ labels: {{ variety_labels|tojson if variety_labels else '[]' }}, datasets:[{ data: {{ variety_values|tojson if variety_values else '[]' }}, backgroundColor:['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'], borderColor: isDark ? '#1e293b' : '#fff' }] },
+        options:{ 
+            responsive:true, 
+            maintainAspectRatio:false,
+            plugins: { legend: { position: 'right', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } }
+        }
     });
+}
+
+window.onload = function(){
+    renderCharts();
 }
 </script>
 <script src="/static/js/global-loader.js"></script>

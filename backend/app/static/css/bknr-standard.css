@@ -1,425 +1,687 @@
 /* ==========================================================
-   BKNR ERP UNIVERSAL UI STANDARD
-   Version 1.1
+   BKNR ERP UNIVERSAL UI STANDARD (DARK MODE FIRST)
+   Version 3.0 - Enterprise Theme Enforcer (Full Version)
 ========================================================== */
 
-:root{
+/* ==========================================================
+   1. THEME VARIABLES (DARK DEFAULT, LIGHT OVERRIDE)
+========================================================== */
+:root {
+    /* DEFAULT: DARK MODE */
+    --primary: #3b82f6;
+    --accent: #60a5fa;
 
-    /* Colors */
-    --primary:#0f172a;
-    --accent:#2563eb;
+    --bg: #0f172a;
+    --card-bg: #1e293b;
 
-    --header-bg:#f1f5f9;
-    --row-even:#f8fafc;
-    --row-hover:#eff6ff;
+    --header-bg: #1e293b;
+    --row-even: #172554;
+    --row-hover: #1e40af;
 
-    --border:#e2e8f0;
-    --text:#0f172a;
+    --border: #334155;
 
-    --pending-bg:#fef3c7;
-    --pending-text:#92400e;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
 
-    --processing-bg:#dbeafe;
-    --processing-text:#1e40af;
+    --pending-bg: #78350f;
+    --pending-text: #fde68a;
 
-    --completed-bg:#dcfce7;
-    --completed-text:#166534;
+    --processing-bg: #1e3a8a;
+    --processing-text: #bfdbfe;
 
-    --cancelled-bg:#fee2e2;
-    --cancelled-text:#991b1b;
+    --completed-bg: #14532d;
+    --completed-text: #bbf7d0;
+
+    --cancelled-bg: #7f1d1d;
+    --cancelled-text: #fecaca;
+}
+
+[data-theme="light"] {
+    /* OVERRIDE: LIGHT MODE */
+    --primary: #0f172a;
+    --accent: #2563eb;
+
+    --bg: #f1f5f9;
+    --card-bg: #ffffff;
+
+    --header-bg: #f8fafc;
+    --row-even: #f8fafc;
+    --row-hover: #eff6ff;
+
+    --border: #e2e8f0;
+
+    --text: #0f172a;
+    --text-muted: #475569;
+
+    --pending-bg: #fef3c7;
+    --pending-text: #92400e;
+
+    --processing-bg: #dbeafe;
+    --processing-text: #1e40af;
+
+    --completed-bg: #dcfce7;
+    --completed-text: #166534;
+
+    --cancelled-bg: #fee2e2;
+    --cancelled-text: #991b1b;
 }
 
 /* ==========================================================
-   GLOBAL
+   2. GLOBAL THEME ENFORCER (FORCE SYNC ACROSS ERP)
 ========================================================== */
 
-*{
-    box-sizing:border-box;
-    font-family:Inter,Arial,sans-serif;
+* {
+    box-sizing: border-box;
+    font-family: Inter, Arial, sans-serif;
 }
 
-body{
-    color:var(--text);
-    margin:0;
-    padding:0;
+html, body, main, section, article, aside, nav, header, footer, div {
+    color: var(--text);
+}
+
+body {
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Force Cards / Panels */
+.card, .section, .panel, .widget, .content, .content-card, 
+.form-card, .dashboard-card, .kpi-card, .modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* Force Tables */
+table, thead, tbody, tfoot, tr, td, th {
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+thead th { background: var(--header-bg) !important; }
+tbody tr { background: var(--card-bg) !important; }
+tbody tr:nth-child(even) { background: var(--row-even) !important; }
+tbody tr:hover { background: var(--row-hover) !important; }
+tbody tr.selected { background: var(--processing-bg) !important; }
+
+/* Force Forms */
+input, select, textarea {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--text-muted) !important;
+}
+
+option {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+
+/* Links & Buttons Enforcer */
+a { color: var(--accent) !important; }
+
+button, .btn {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* Modals */
+.modal, .modal-dialog, .modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+
+/* Bootstrap / Legacy Classes Override */
+.bg-white, .bg-light { background: var(--card-bg) !important; }
+.text-dark, .text-black { color: var(--text) !important; }
+.border, .border-top, .border-bottom, .border-start, .border-end { border-color: var(--border) !important; }
+
+/* Inline Style Killer (Hacks for Legacy Code) */
+[style*="background:var(--card-bg)"], [style*="background: var(--card-bg)"], [style*="background:white"],
+[style*="background: white"], [style*="background:var(--card-bg)fff"], [style*="background: var(--card-bg)fff"] {
+    background: var(--card-bg) !important;
+}
+
+[style*="color:#000"], [style*="color: #000"], [style*="color:black"],
+[style*="color: black"], [style*="color:#000000"], [style*="color: #000000"] {
+    color: var(--text) !important;
 }
 
 /* ==========================================================
-   PAGE HEADER
+   3. SPECIFIC UI COMPONENTS (HEADERS, INPUTS, TABLES)
 ========================================================== */
 
-.header h2{
-    font-size:14px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.5px;
+/* Page Header */
+.header h2 {
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
 }
 
-/* ==========================================================
-   FILTERS
-========================================================== */
-
-.fbox label{
-    font-size:8px;
-    font-weight:700;
-    text-transform:uppercase;
-    color:#475569;
+/* Filters & Inputs Setup */
+.fbox label {
+    font-size: 8px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted);
 }
 
-.fbox select,
-.fbox input,
-#searchBox{
-    height:28px;
-    min-height:28px;
-    font-size:10px;
-    border:1px solid var(--border);
-    border-radius:4px;
-    padding:0 6px;
+.fbox select, .fbox input, #searchBox {
+    height: 28px !important;
+    min-height: 28px !important;
+    font-size: 10px !important;
+    border-radius: 4px;
+    padding: 0 6px;
 }
 
-.fbox textarea{
-    min-height:60px;
-    font-size:10px;
-    border:1px solid var(--border);
-    border-radius:4px;
-    padding:6px;
-    resize:vertical;
+.fbox textarea {
+    min-height: 60px !important;
+    font-size: 10px !important;
+    border-radius: 4px;
+    padding: 6px !important;
+    resize: vertical;
 }
 
-/* ==========================================================
-   TABLE WRAPPER
-========================================================== */
-
+/* Table Wrapper */
 .table-wrap{
-    width:100%;
-    overflow:auto;
+    background: var(--card-bg) !important;
+} width: 100%; overflow: auto; }
+.section { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+
+/* Table Structure */
+thead th {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 9px !important;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    padding: 4px 6px;
+    text-align: center;
+    vertical-align: middle;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid var(--border) !important;
 }
 
-.section{
-    background:#ffffff;
-    border:1px solid var(--border);
-    border-radius:8px;
-    overflow:hidden;
+tbody td {
+    height: 32px !important;
+    min-height: 32px !important;
+    font-size: 10px !important;
+    font-weight: 500;
+    padding: 4px 6px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
+tfoot td {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 9px !important;
+    font-weight: 800;
+    padding: 4px 6px;
+    text-align: center;
+    vertical-align: middle;
+    border-top: 2px solid var(--border) !important;
+}
+
+/* Inline Edit Inputs */
+.edit-input, tbody td select, tbody td input, .searchable-dropdown-container select {
+    width: 100% !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    text-align-last: center !important;
+    border: 1px solid var(--accent) !important;
+    padding: 0 4px !important;
+}
+
+/* Alignment Utilities */
+.text-left { text-align: left !important; }
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+
+/* Column Widths */
+.col-xs { width: 60px; }
+.col-sm { width: 90px; }
+.col-md { width: 120px; }
+.col-lg { width: 160px; }
+.col-xl { width: 220px; }
 
 /* ==========================================================
-   TABLE
+   4. STATUS BADGES & SPECIAL CELLS
 ========================================================== */
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    table-layout:auto;
+.calc-cell {
+    background: var(--row-even) !important;
+    color: var(--accent) !important;
+    font-weight: 800;
 }
+
+.bg-pending { background: var(--pending-bg) !important; color: var(--pending-text) !important; font-weight: 700; }
+.bg-processing { background: var(--processing-bg) !important; color: var(--processing-text) !important; font-weight: 700; }
+.bg-completed { background: var(--completed-bg) !important; color: var(--completed-text) !important; font-weight: 700; }
+.bg-cancelled { background: var(--cancelled-bg) !important; color: var(--cancelled-text) !important; font-weight: 700; }
 
 /* ==========================================================
-   TABLE HEADER
+   5. BUTTON STYLES (PRIMARY & ACTIONS)
 ========================================================== */
 
-thead th{
-
-    height:36px;
-    min-height:36px;
-
-    background:var(--header-bg);
-    color:var(--text);
-
-    font-size:9px;
-    font-weight:800;
-
-    text-transform:uppercase;
-    letter-spacing:.3px;
-
-    border:1px solid var(--border);
-    border-bottom:2px solid #cbd5e1;
-
-    padding:4px 6px;
-
-    text-align:center;
-    vertical-align:middle;
-
-    position:sticky;
-    top:0;
-    z-index:5;
-}
-
-/* ==========================================================
-   TABLE BODY
-========================================================== */
-
-tbody td{
-
-    height:32px;
-    min-height:32px;
-
-    font-size:10px;
-    font-weight:500;
-
-    border:1px solid var(--border);
-
-    padding:4px 6px;
-
-    text-align:center;
-    vertical-align:middle;
-
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-
-tbody tr{
-    background:#ffffff;
-}
-
-tbody tr:nth-child(even){
-    background:var(--row-even);
-}
-
-tbody tr:hover{
-    background:var(--row-hover) !important;
-}
-
-tbody tr.selected{
-    background:#dbeafe !important;
-}
-
-/* ==========================================================
-   INLINE EDIT LOOKUPS & INPUTS (FORCE CENTER ALIGNMENT)
-========================================================== */
-
-.edit-input,
-tbody td select,
-tbody td input,
-.searchable-dropdown-container select {
-
-    width:100% !important;
-
-    height:28px !important;
-    min-height:28px !important;
-
-    font-size:10px !important;
-    font-weight:600 !important;
-
-    text-align:center !important;
-    text-align-last:center !important;
-
-    border:1px solid var(--accent) !important;
-
-    padding:0 4px !important
-
-/* ==========================================================
-   TABLE FOOTER
-========================================================== */
-
-tfoot td{
-
-    height:36px;
-    min-height:36px;
-
-    background:var(--header-bg);
-
-    font-size:9px;
-    font-weight:800;
-
-    color:var(--text);
-
-    border:1px solid var(--border);
-    border-top:2px solid #cbd5e1;
-
-    padding:4px 6px;
-
-    text-align:center;
-    vertical-align:middle;
-}
-
-/* ==========================================================
-   ALIGNMENT
-========================================================== */
-
-.text-left{
-    text-align:left !important;
-}
-
-.text-center{
-    text-align:center !important;
-}
-
-.text-right{
-    text-align:right !important;
-}
-
-/* ==========================================================
-   CALCULATED CELLS
-========================================================== */
-
-.calc-cell{
-    background:#f8fafc;
-    color:#2563eb;
-    font-weight:800;
-}
-
-/* ==========================================================
-   STATUS BADGES
-========================================================== */
-
-.bg-pending{
-    background:var(--pending-bg);
-    color:var(--pending-text);
-    font-weight:700;
-}
-
-.bg-processing{
-    background:var(--processing-bg);
-    color:var(--processing-text);
-    font-weight:700;
-}
-
-.bg-completed{
-    background:var(--completed-bg);
-    color:var(--completed-text);
-    font-weight:700;
-}
-
-.bg-cancelled{
-    background:var(--cancelled-bg);
-    color:var(--cancelled-text);
-    font-weight:700;
-}
-
-/* ==========================================================
-   BUTTONS (UNIFIED SAVE & ADD NEW STYLES)
-========================================================== */
-
-button,
-.btn{
+button, .btn {
     font-size: 10px;
     font-weight: 700;
     padding: 8px 16px;
     border-radius: 4px;
-    border: 1px solid var(--border);
-    background: #ffffff;
-    color: var(--text);
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: uppercase;
 }
 
-button:hover, .btn:hover {
-    background: #f8fafc;
-}
+button:hover, .btn:hover { background: var(--row-even) !important; }
 
-/* 🟢 Same Color for Save and Add New Buttons across all forms */
-.btn-primary,
-.btn-save,
-.btn-add,
-.save {
+/* Action Buttons (Save/Primary/Add) */
+.btn-primary, .btn-save, .btn-add, .save {
     background: var(--primary) !important;
     color: #ffffff !important;
     border: none !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.btn-primary:hover,
-.btn-save:hover,
-.btn-add:hover,
-.save:hover {
+.btn-primary:hover, .btn-save:hover, .btn-add:hover, .save:hover {
     background: var(--accent) !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
 }
 
 /* ==========================================================
-   SCROLLBAR
+   6. SCROLLBAR
 ========================================================== */
 
-::-webkit-scrollbar{
-    width:8px;
-    height:8px;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-::-webkit-scrollbar-track{
-    background:#f8fafc;
-}
+/* ==========================================================
+   7. SWEETALERT 2 DARK MODE OVERRIDE
+========================================================== */
 
-::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
+.swal2-popup {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
 }
-
-::-webkit-scrollbar-thumb:hover{
-    background:#94a3b8;
+.swal2-title, .swal2-html-container {
+    color: var(--text) !important;
+}
+.swal2-confirm {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+.swal2-input, .swal2-select, .swal2-textarea {
+    background: var(--bg) !important;
+    color: var(--text) !important;
 }
 
 /* ==========================================================
-   COLUMN WIDTH HELPERS
+   8. BROWSER DEFAULT OVERRIDES (CHROME, CALENDAR, SELECTS)
 ========================================================== */
 
-.col-xs{width:60px;}
-.col-sm{width:90px;}
-.col-md{width:120px;}
-.col-lg{width:160px;}
-.col-xl{width:220px;}
-
-/* ==========================================================
-   GLOBAL OVERRIDES
-========================================================== */
-
-label{
-    font-size:8px !important;
-    font-weight:700 !important;
-    text-transform:uppercase !important;
+/* Kill Chrome Autofill White Background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--bg) inset !important;
+    -webkit-text-fill-color: var(--text) !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
-input,
-select{
-    height:28px !important;
-    min-height:28px !important;
-    font-size:10px !important;
+/* Force Dark Datepicker (Calendar Icon) */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
 }
 
-textarea{
-    min-height:60px !important;
-    font-size:10px !important;
-    padding:6px !important;
+/* Select Dropdowns */
+select option {
+    background-color: var(--card-bg) !important;
+    color: var(--text) !important;
 }
 
-thead th{
-    height:36px !important;
-    min-height:36px !important;
-    font-size:9px !important;
-}
-
-tbody td{
-    height:32px !important;
-    min-height:32px !important;
-    font-size:10px !important;
-}
-
-tfoot td{
-    height:36px !important;
-    min-height:36px !important;
-    font-size:9px !important;
+/* Disabled Inputs */
+input:disabled, select:disabled, textarea:disabled {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-muted) !important;
+    border-color: var(--border) !important;
 }
 
 /* ==========================================================
-   PRINT
+   9. PRINT OPTIMIZATIONS (ALWAYS LIGHT MODE FOR PRINT)
 ========================================================== */
 
-@media print{
-
-    body{
-        zoom:90%;
+@media print {
+    body {
+        zoom: 90%;
+        background: var(--card-bg)fff !important;
+        color: #000000 !important;
     }
 
-    thead th{
-        background:#f1f5f9 !important;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-    }
+    * { color: #000000 !important; }
 
-    tfoot td{
-        background:#f1f5f9 !important;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
+    thead th, tfoot td {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
+    
+    tbody tr, .section, .card {
+        background: var(--card-bg)fff !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
+    }
+}
+/* ==========================================================
+   BKNR ERP - THE ULTIMATE THEME ENFORCER
+========================================================== */
+
+/* 🌟 FORCE DARK VARIABLES ON ANY HTML THAT HAS data-theme="dark" 🌟 */
+html[data-theme="dark"], 
+html[data-theme="dark"] :root {
+    --primary: #3b82f6 !important;
+    --accent: #60a5fa !important;
+    
+    /* Overriding their local variables */
+    --bg: #0f172a !important;
+    --panel: #1e293b !important;
+    --card-bg: #1e293b !important;
+    --header-bg: #1e293b !important;
+    --border: #334155 !important;
+    
+    --text: #f8fafc !important;
+    --sub: #94a3b8 !important;
+    --text-muted: #94a3b8 !important;
+
+    --row-even: #172554 !important;
+    --row-hover: #1e40af !important;
+}
+
+/* 🌟 UNIVERSAL BACKGROUND & TEXT KILLER 🌟 */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .section,
+html[data-theme="dark"] .filters,
+html[data-theme="dark"] .rm-summary-box,
+html[data-theme="dark"] .panel-header,
+html[data-theme="dark"] .chart-box,
+html[data-theme="dark"] .age-card,
+html[data-theme="dark"] .tabs,
+html[data-theme="dark"] .dropdown-search-wrapper,
+html[data-theme="dark"] .dropdown-display-box {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* 🌟 KPI CARDS ENFORCER (KILLS HARDCODED GRADIENTS) 🌟 */
+html[data-theme="dark"] .kpi-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+}
+html[data-theme="dark"] .kpi-card h4, 
+html[data-theme="dark"] .kpi-card .value,
+html[data-theme="dark"] .age-card h2,
+html[data-theme="dark"] .age-card h4 {
+    color: var(--text) !important;
+}
+html[data-theme="dark"] .kpi-card .amt-sub {
+    background: rgba(255,255,255,0.1) !important;
+    color: var(--accent) !important;
+}
+
+/* 🌟 TABLE ENFORCER 🌟 */
+html[data-theme="dark"] table,
+html[data-theme="dark"] th,
+html[data-theme="dark"] td {
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+html[data-theme="dark"] thead th {
+    background: var(--header-bg) !important;
+}
+html[data-theme="dark"] tbody tr {
+    background: var(--card-bg) !important;
+}
+html[data-theme="dark"] tbody tr:hover {
+    background: var(--row-hover) !important;
+}
+html[data-theme="dark"] .grand-total-row {
+    background: var(--bg) !important;
+}
+
+/* 🌟 INPUTS & DROPDOWNS ENFORCER 🌟 */
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* 🌟 LIGHT MODE OVERRIDES 🌟 */
+html[data-theme="light"], 
+html[data-theme="light"] :root {
+    --bg: #f1f5f9 !important;
+    --panel: #ffffff !important;
+    --card-bg: #ffffff !important;
+    --text: #0f172a !important;
+    --sub: #475569 !important;
+    --border: #e2e8f0 !important;
+}
+html[data-theme="light"] body,
+html[data-theme="light"] .rm-summary-box,
+html[data-theme="light"] .chart-box,
+html[data-theme="light"] .age-card {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+/* ==========================================================
+   🌟 ULTIMATE OVERRIDE FOR STICKY COLUMNS, MERGED CELLS & CARDS 🌟
+========================================================== */
+
+/* 1. FORCE CARDS TO BE DARK (Covers all variations) */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .kpi-card,
+html[data-theme="dark"] .chart-box,
+html[data-theme="dark"] .rm-summary-box,
+html[data-theme="dark"] .age-card,
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .white-bg {
+    background-color: var(--card-bg) !important;
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* 2. FORCE TABLE CELLS (TD/TH) TO BE DARK (Kills Sticky Column White Backgrounds) */
+html[data-theme="dark"] table th,
+html[data-theme="dark"] table td,
+html[data-theme="dark"] .rm-table th,
+html[data-theme="dark"] .rm-table td,
+html[data-theme="dark"] th[style*="sticky"],
+html[data-theme="dark"] td[style*="sticky"],
+html[data-theme="dark"] .sticky-col {
+    background-color: var(--card-bg) !important; 
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+/* 3. RESTORE TABLE HEADER COLOR FOR STICKY HEADERS */
+html[data-theme="dark"] table thead th,
+html[data-theme="dark"] .rm-table thead th {
+    background-color: var(--header-bg) !important;
+    background: var(--header-bg) !important;
+}
+
+/* 4. RESTORE ALTERNATE ROW COLORS (Because we forced all TDs to be card-bg) */
+html[data-theme="dark"] table tbody tr:nth-child(even) td,
+html[data-theme="dark"] .rm-table tbody tr:nth-child(even) td {
+    background-color: var(--row-even) !important;
+    background: var(--row-even) !important;
+}
+
+/* 5. GRAND TOTAL & HIGHLIGHTED ROWS */
+html[data-theme="dark"] .grand-total-row,
+html[data-theme="dark"] .grand-total-row td {
+    background-color: var(--bg) !important;
+    background: var(--bg) !important;
+    color: var(--accent) !important;
+}
+
+/* 6. DEAD STOCK / WARNING ROWS */
+html[data-theme="dark"] .dead-row,
+html[data-theme="dark"] .dead-row td {
+    background-color: var(--cancelled-bg) !important;
+    background: var(--cancelled-bg) !important;
+    color: var(--cancelled-text) !important;
+}
+html[data-theme="dark"] .header,
+html[data-theme="dark"] .filters,
+html[data-theme="dark"] .panel-header,
+html[data-theme="dark"] .dropdown-display-box,
+html[data-theme="dark"] .dropdown-search-wrapper,
+html[data-theme="dark"] .chart-box,
+html[data-theme="dark"] .age-card,
+html[data-theme="dark"] .tabs,
+html[data-theme="dark"] .rm-table th,
+html[data-theme="dark"] .rm-table td,
+html[data-theme="dark"] .rm-table td:nth-child(4),
+html[data-theme="dark"] .rm-table th:nth-child(4) {
+
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .rm-table thead th {
+    background: var(--header-bg) !important;
+}
+html[data-theme="dark"] *{
+    scrollbar-color:#475569 #0f172a;
+}
+
+html[data-theme="dark"] [style*="#fff"],
+html[data-theme="dark"] [style*="#ffffff"],
+html[data-theme="dark"] [style*="white"]{
+    background:var(--card-bg) !important;
+    color:var(--text) !important;
+}
+
+html[data-theme="dark"] .value,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6{
+    color:var(--text) !important;
+}
+html[data-theme="dark"] iframe{
+
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .header-top,
+html[data-theme="dark"] .filters,
+html[data-theme="dark"] .section,
+html[data-theme="dark"] .summary-card,
+html[data-theme="dark"] .chart-box,
+html[data-theme="dark"] .floor-box,
+html[data-theme="dark"] .att-card{
+
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] table,
+html[data-theme="dark"] thead,
+html[data-theme="dark"] tbody,
+html[data-theme="dark"] tfoot,
+html[data-theme="dark"] tr,
+html[data-theme="dark"] td,
+html[data-theme="dark"] th{
+
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] thead th,
+html[data-theme="dark"] .row-location{
+
+    background: var(--header-bg) !important;
+}
+/* FORCE DARK MODE FOR ALL DASHBOARDS */
+
+html[data-theme="dark"] .header-dash,
+html[data-theme="dark"] .filter-section,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .table-wrap,
+html[data-theme="dark"] .section-header,
+html[data-theme="dark"] #dropdownMenu {
+
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] th,
+html[data-theme="dark"] thead,
+html[data-theme="dark"] thead th {
+
+    background: var(--header-bg) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] td,
+html[data-theme="dark"] tr {
+
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] .company-row,
+html[data-theme="dark"] .location-row,
+html[data-theme="dark"] .drill-row,
+html[data-theme="dark"] .subtotal-row {
+
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] .panel-title {
+
+    background: var(--header-bg) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] hr {
+
+    border-color: var(--border) !important;
 }

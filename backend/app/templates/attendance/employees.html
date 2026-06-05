@@ -19,7 +19,7 @@
         /* ====== HEADER ====== */
         .header{ 
             position: sticky; top:0; z-index: 100;
-            background:#fff; padding:12px 15px; border-bottom:1px solid var(--border);
+            background:var(--card-bg); padding:12px 15px; border-bottom:1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; 
         }
         .header h2{ margin:0; color:var(--primary); font-weight:800; font-size: 16px; }
@@ -27,7 +27,7 @@
 
         /* ====== FILTER BAR ====== */
         .filter-section {
-            background: #fff; margin: 10px 15px; padding: 10px 12px;
+            background: var(--card-bg); margin: 10px 15px; padding: 10px 12px;
             border-radius: 8px; border: 1px solid var(--border);
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
@@ -47,12 +47,12 @@
             width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: #fff; margin: 0 auto; width: 100%; height: 100%; max-width: 100%; max-height: 100vh; overflow-y: auto; position: relative;
+            background: var(--card-bg); margin: 0 auto; width: 100%; height: 100%; max-width: 100%; max-height: 100vh; overflow-y: auto; position: relative;
         }
         @media(min-width: 768px) {
             .modal-content { margin: 30px auto; width: 95%; max-width: 1300px; height: auto; max-height: 90vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 10; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card-bg); z-index: 10; }
         .close-modal { font-size: 24px; cursor: pointer; color: var(--muted); }
 
         /* ====== FORM GRID ====== */
@@ -68,7 +68,7 @@
         label{ font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing: 0.5px;}
         input,select,textarea{ width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; transition: 0.2s; }
         textarea{min-height:60px; resize: vertical;}
-        input[readonly]{background:#f8fafc; font-weight:700; color: var(--primary); cursor: not-allowed;}
+        input[readonly]{background:var(--header-bg); font-weight:700; color: var(--primary); cursor: not-allowed;}
         .hidden{display:none}
 
         /* ====== MODAL ACTIONS ====== */
@@ -81,7 +81,7 @@
         .table-header-tool h3 { margin: 0; font-size: 13px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
 
         .table-wrap{
-            margin: 4px 10px 40px; background:#fff; border-radius: 8px;
+            margin: 4px 10px 40px; background:var(--card-bg); border-radius: 8px;
             border:1px solid var(--border); overflow: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             -webkit-overflow-scrolling: touch;
         }
@@ -108,8 +108,8 @@
         .status-badge { padding: 2px 5px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
 
         #threeDotsMenu{ position:relative; display: none; }
-        .menu-trigger { background: #fff; border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-        #dropdownMenu{ display:none; position:absolute; right:0; top: 32px; background:#fff; border:1px solid var(--border); border-radius:8px; width:180px; box-shadow:0 4px 12px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+        .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        #dropdownMenu{ display:none; position:absolute; right:0; top: 32px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; width:180px; box-shadow:0 4px 12px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
         .menu-item{ padding:10px 12px; font-size:12px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
         .menu-item:hover{background:#f1f5ff; color: var(--accent);}
     </style>
@@ -220,7 +220,7 @@
                     <div class="field" id="resignDateField" style="{% if not edit_data or edit_data.status != 'RESIGNED' %}display:none;{% endif %}"><label>Resignation Date</label><input name="resignation_date" value="{{ edit_data.resignation_date if edit_data else '' }}" type="date"></div>
 
                     <div class="section-title"><i class="fa-solid fa-money-bill-wave"></i> 3. Salary Structure</div>
-                    <div class="field"><label>Gross Salary</label><input name="current_salary" id="gross_salary" value="{{ edit_data.current_salary if edit_data else '0.00' }}" readonly style="background:#fff9e6; font-weight:bold; color:var(--primary);"></div>
+                    <div class="field"><label>Gross Salary</label><input name="current_salary" id="gross_salary" value="{{ edit_data.current_salary if edit_data else '0.00' }}" readonly style="background:var(--card-bg)9e6; font-weight:bold; color:var(--primary);"></div>
                     <div class="field"><label>Basic Salary</label><input name="basic_salary" class="sal-input" value="{{ edit_data.basic_salary if edit_data else '0.00' }}" type="number" step="0.01"></div>
                     <div class="field"><label>H.R.A</label><input name="hra" class="sal-input" value="{{ edit_data.hra if edit_data else '0.00' }}" type="number" step="0.01"></div>
                     <div class="field"><label>Conveyance</label><input name="conveyance_allowance" class="sal-input" value="{{ edit_data.conveyance_allowance if edit_data else '0.00' }}" type="number" step="0.01"></div>
@@ -292,12 +292,12 @@
                 <th style="width: 100px;">Joining Date</th>
                 <th style="width: 100px;">Location</th>
                 <th style="width: 120px;">Reporting To</th>
-                <th style="background:#fff9e6; border-left: 2px solid #fde68a; width: 100px;">Gross Total</th>
-                <th style="background:#fff9e6; width: 90px;">Basic</th>
-                <th style="background:#fff9e6; width: 90px;">HRA</th>
-                <th style="background:#fff9e6; width: 90px;">Conveyance</th>
-                <th style="background:#fff9e6; width: 90px;">Other Exp.</th>
-                <th style="background:#fff9e6; width: 80px;">TDS (%)</th>
+                <th style="background:var(--card-bg)9e6; border-left: 2px solid #fde68a; width: 100px;">Gross Total</th>
+                <th style="background:var(--card-bg)9e6; width: 90px;">Basic</th>
+                <th style="background:var(--card-bg)9e6; width: 90px;">HRA</th>
+                <th style="background:var(--card-bg)9e6; width: 90px;">Conveyance</th>
+                <th style="background:var(--card-bg)9e6; width: 90px;">Other Exp.</th>
+                <th style="background:var(--card-bg)9e6; width: 80px;">TDS (%)</th>
                 <th style="background:#f0f7ff; border-left: 2px solid #bae6fd; width: 120px;">Bank Name</th>
                 <th style="background:#f0f7ff; width: 140px;">Account No</th>
                 <th style="background:#f0f7ff; width: 100px;">IFSC Code</th>
@@ -333,12 +333,12 @@
                 <td>{{ e.joining_date }}</td>
                 <td>{{ e.location }}</td>
                 <td>{{ e.reporting_to }}</td>
-                <td style="background:#fffdf5; font-weight: 700; color: var(--success);">{{ e.current_salary }}</td>
-                <td style="background:#fffdf5;">{{ e.basic_salary }}</td>
-                <td style="background:#fffdf5;">{{ e.hra }}</td>
-                <td style="background:#fffdf5;">{{ e.conveyance_allowance }}</td>
-                <td style="background:#fffdf5;">{{ e.other_expenses }}</td>
-                <td style="background:#fffdf5;">{{ e.tds }}</td>
+                <td style="background:var(--card-bg)df5; font-weight: 700; color: var(--success);">{{ e.current_salary }}</td>
+                <td style="background:var(--card-bg)df5;">{{ e.basic_salary }}</td>
+                <td style="background:var(--card-bg)df5;">{{ e.hra }}</td>
+                <td style="background:var(--card-bg)df5;">{{ e.conveyance_allowance }}</td>
+                <td style="background:var(--card-bg)df5;">{{ e.other_expenses }}</td>
+                <td style="background:var(--card-bg)df5;">{{ e.tds }}</td>
                 <td style="background:#f8fbff; text-align: left;">{{ e.bank_name }}</td>
                 <td style="background:#f8fbff;">{{ e.account_number }}</td>
                 <td style="background:#f8fbff;">{{ e.ifsc_code }}</td>

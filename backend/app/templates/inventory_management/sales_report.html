@@ -9,22 +9,87 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
+<!-- 🌟 SYNC THEME WITH PARENT 🌟 -->
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    window.addEventListener('load', syncTheme);
+</script>
+
 <style>
+/* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
 :root {
+    /* LIGHT MODE */
     --primary: #4338ca; --primary-light: #eef2ff; --secondary: #0ea5e9;
     --success: #059669; --danger: #dc2626; --warning: #d97706;
-    --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+    --bg: #f8fafc; --panel: #ffffff; --card-bg: #ffffff; --border: #e2e8f0;
     --text-main: #0f172a; --text-sub: #64748b;
+    --header-bg: rgba(255, 255, 255, 0.9);
+
+    /* KPI Backgrounds & Icons */
+    --bg-rev: #f5f7ff; --bd-rev: #e0e7ff; --ic-rev: #4338ca;
+    --bg-pl: #f0fdf4; --bd-pl: #dcfce7; --ic-pl: #15803d;
+    --bg-debt: #fef5f5; --bd-debt: #fee2e2; --ic-debt: #b91c1c; 
+    --bg-yield: #f0fdfa; --bd-yield: #ccfbf1; --ic-yield: #0d9488;
+    --bg-cost: #fffbeb; --bd-cost: #fef3c7; --ic-cost: #b45309; 
+    --bg-pk: #fafafa; --bd-pk: #e4e4e7; --ic-pk: #52525b;
+    --bg-qty: #faf5ff; --bd-qty: #f3e8ff; --ic-qty: #6b21a8;
+    --bg-inv: #fdf2f8; --bd-inv: #fce7f3; --ic-inv: #be185d;
+
+    --chart-bg: #ffffff;
+    --table-th-bg: #f1f5f9;
+    --table-td-border: #f8fafc;
+    --merged-bg: #fafbfc;
+    --subtotal-bg: #f8fafc;
+
+    --pill-recv-bg: #ecfdf5; --pill-recv-col: #065f46; --pill-recv-bd: #a7f3d0;
+    --pill-unpd-bg: #fff1f2; --pill-unpd-col: #9f1239; --pill-unpd-bd: #fecdd3;
+}
+
+[data-theme="dark"] {
+    /* DARK MODE OVERRIDES */
+    --primary: #818cf8; --primary-light: rgba(99, 102, 241, 0.15); --secondary: #38bdf8;
+    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+    --bg: #0f172a; --panel: #1e293b; --card-bg: #1e293b; --border: #334155;
+    --text-main: #f8fafc; --text-sub: #94a3b8;
+    --header-bg: rgba(15, 23, 42, 0.9);
+
+    /* Dark KPI Backgrounds */
+    --bg-rev: rgba(67, 56, 202, 0.15); --bd-rev: rgba(67, 56, 202, 0.3); --ic-rev: #818cf8;
+    --bg-pl: rgba(21, 128, 61, 0.15); --bd-pl: rgba(21, 128, 61, 0.3); --ic-pl: #4ade80;
+    --bg-debt: rgba(185, 28, 28, 0.15); --bd-debt: rgba(185, 28, 28, 0.3); --ic-debt: #f87171;
+    --bg-yield: rgba(13, 148, 136, 0.15); --bd-yield: rgba(13, 148, 136, 0.3); --ic-yield: #2dd4bf;
+    --bg-cost: rgba(180, 83, 9, 0.15); --bd-cost: rgba(180, 83, 9, 0.3); --ic-cost: #fbbf24;
+    --bg-pk: rgba(82, 82, 91, 0.15); --bd-pk: rgba(82, 82, 91, 0.3); --ic-pk: #a1a1aa;
+    --bg-qty: rgba(107, 33, 168, 0.15); --bd-qty: rgba(107, 33, 168, 0.3); --ic-qty: #c084fc;
+    --bg-inv: rgba(190, 24, 93, 0.15); --bd-inv: rgba(190, 24, 93, 0.3); --ic-inv: #f472b6;
+
+    --chart-bg: #1e293b;
+    --table-th-bg: #0f172a;
+    --table-td-border: #1e293b;
+    --merged-bg: #1e293b;
+    --subtotal-bg: #0f172a;
+
+    --pill-recv-bg: rgba(6, 95, 70, 0.2); --pill-recv-col: #34d399; --pill-recv-bd: #059669;
+    --pill-unpd-bg: rgba(159, 18, 57, 0.2); --pill-unpd-col: #fb7185; --pill-unpd-bd: #e11d48;
 }
 
 * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.5; }
+body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.5; transition: background 0.3s, color 0.3s; }
 
 /* STICKY HEADER & DYNAMIC FILTERS */
 .header { 
-    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+    background: var(--header-bg); backdrop-filter: blur(10px);
     padding: 12px 16px; border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 1000;
+    transition: background 0.3s, border-color 0.3s;
 }
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .header h1 { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0; }
@@ -38,113 +103,94 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 
 .filter-select, .search-input { 
     padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); 
-    font-size: 10px; font-weight: 700; background: #fff; outline: none; transition: 0.2s;
-    height: 32px;
+    font-size: 10px; font-weight: 700; background: var(--card-bg); color: var(--text-main);
+    outline: none; transition: 0.2s; height: 32px;
 }
 .filter-select:focus, .search-input:focus { border-color: var(--primary); }
 
 /* PREMIUM COMPACT KPI CONTAINER */
 .kpi-container { 
-    display: grid; 
-    grid-template-columns: repeat(8, 1fr); 
-    gap: 10px; 
-    padding: 14px 16px; 
-    background: #f8fafc;
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; 
+    padding: 14px 16px; background: var(--bg);
 }
 .kpi-box { 
-    padding: 12px 14px; 
-    border-radius: 12px; 
-    min-width: 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    transition: all 0.2s ease-in-out;
-    min-height: 96px;
-    height: 96px;
-    width: 100%;
+    padding: 12px 14px; border-radius: 12px; min-width: 140px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; transition: all 0.2s ease-in-out;
+    min-height: 96px; height: 96px; width: 100%;
 }
-.kpi-box:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-}
+.kpi-box:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
 
-.bg-rev   { background: #f5f7ff; border: 1px solid #e0e7ff; }
-.bg-pl    { background: #f0fdf4; border: 1px solid #dcfce7; }
-.bg-debt  { background: #fff5f5; border: 1px solid #fee2e2; }
-.bg-yield { background: #f0fdfa; border: 1px solid #ccfbf1; }
-.bg-cost  { background: #fffbeb; border: 1px solid #fef3c7; }
-.bg-pk    { background: #fafafa; border: 1px solid #e4e4e7; }
-.bg-qty   { background: #faf5ff; border: 1px solid #f3e8ff; }
-.bg-inv   { background: #fdf2f8; border: 1px solid #fce7f3; }
+.bg-rev   { background: var(--bg-rev); border: 1px solid var(--bd-rev); }
+.bg-pl    { background: var(--bg-pl); border: 1px solid var(--bd-pl); }
+.bg-debt  { background: var(--bg-debt); border: 1px solid var(--bd-debt); }
+.bg-yield { background: var(--bg-yield); border: 1px solid var(--bd-yield); }
+.bg-cost  { background: var(--bg-cost); border: 1px solid var(--bd-cost); }
+.bg-pk    { background: var(--bg-pk); border: 1px solid var(--bd-pk); }
+.bg-qty   { background: var(--bg-qty); border: 1px solid var(--bd-qty); }
+.bg-inv   { background: var(--bg-inv); border: 1px solid var(--bd-inv); }
 
 .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.kpi-title { font-size: 8.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-title { font-size: 8.5px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
 
 .kpi-icon {
-    font-size: 10px; width: 22px; height: 22px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 6px; background: rgba(255, 255, 255, 0.7);
+    font-size: 10px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: var(--card-bg); opacity: 0.9;
 }
-.bg-rev .kpi-icon   { color: #4338ca; }
-.bg-pl .kpi-icon    { color: #15803d; }
-.bg-debt .kpi-icon  { color: #b91c1c; }
-.bg-yield .kpi-icon { color: #0d9488; }
-.bg-cost .kpi-icon  { color: #b45309; }
-.bg-pk .kpi-icon    { color: #52525b; }
-.bg-qty .kpi-icon   { color: #6b21a8; }
-.bg-inv .kpi-icon   { color: #be185d; }
+.bg-rev .kpi-icon   { color: var(--ic-rev); }
+.bg-pl .kpi-icon    { color: var(--ic-pl); }
+.bg-debt .kpi-icon  { color: var(--ic-debt); }
+.bg-yield .kpi-icon { color: var(--ic-yield); }
+.bg-cost .kpi-icon  { color: var(--ic-cost); }
+.bg-pk .kpi-icon    { color: var(--ic-pk); }
+.bg-qty .kpi-icon   { color: var(--ic-qty); }
+.bg-inv .kpi-icon   { color: var(--ic-inv); }
 
-.kpi-val { font-size: 15px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px; line-height: 1.2; }
-.kpi-meta { font-size: 9px; font-weight: 700; margin-top: 6px; display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 5px; width: fit-content; background: rgba(255, 255, 255, 0.6); color: #475569; }
+.kpi-val { font-size: 15px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; line-height: 1.2; }
+.kpi-meta { font-size: 9px; font-weight: 700; margin-top: 6px; display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 5px; width: fit-content; background: var(--bg); color: var(--text-sub); }
 
-.badge-neutral { color: #475569; }
-.badge-success { background: #dcfce7 !important; color: #15803d; }
-.badge-danger { background: #fee2e2 !important; color: #b91c1c; }
-.badge-info { background: #e0f2fe !important; color: #0369a1; }
+.badge-neutral { background: var(--bg) !important; color: var(--text-sub); }
+.badge-success { background: var(--bg-pl) !important; color: var(--ic-pl) !important; }
+.badge-danger { background: var(--bg-debt) !important; color: var(--ic-debt) !important; }
+.badge-info { background: var(--bg-yield) !important; color: var(--ic-yield) !important; }
 
 /* CHARTS */
 .charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 16px 16px; }
-.chart-box { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); height: 200px; }
+.chart-box { background: var(--chart-bg); padding: 12px; border-radius: 12px; border: 1px solid var(--border); height: 200px; transition: background 0.3s, border-color 0.3s; }
 .chart-header { font-size: 10px; font-weight: 800; margin-bottom: 12px; color: var(--text-main); border-left: 3px solid var(--primary); padding-left: 8px; }
 .canvas-container { height: 140px; position: relative; }
 
 /* COMPACT DATA TABLE */
 .data-container { padding: 0 16px 20px; }
-.table-panel { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.table-panel { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .table-scroll { overflow: auto; max-height: 500px; }
 table { width: 100%; border-collapse: collapse; min-width: 2000px; } 
 
 thead th { 
-    background: #f1f5f9; color: var(--text-sub); font-size: 9.5px; font-weight: 800;
+    background: var(--table-th-bg); color: var(--text-sub); font-size: 9.5px; font-weight: 800;
     padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--border);
     position: sticky; top: 0; z-index: 100; white-space: nowrap;
 }
-tbody td { padding: 5px 4px; border-bottom: 1px solid #f8fafc; text-align: center; font-weight: 500; font-size: 10px; white-space: nowrap; }
+tbody td { padding: 5px 4px; border-bottom: 1px solid var(--table-td-border); text-align: center; font-weight: 500; font-size: 10px; white-space: nowrap; color: var(--text-main); }
 
-/* Merged Cell Styling for Premium Look */
 tbody td.merged-cell { 
-    background: #fafbfc; 
-    font-weight: 600; 
-    border-bottom: 1px solid var(--border) !important;
-    border-right: 1px solid #f1f5f9;
+    background: var(--merged-bg); font-weight: 600; 
+    border-bottom: 1px solid var(--border) !important; border-right: 1px solid var(--table-td-border);
     vertical-align: middle;
 }
-tbody td.sl-no-merged { 
-    color: var(--primary); 
-    font-weight: 700;
-}
+tbody td.sl-no-merged { color: var(--primary); font-weight: 700; }
 
-.inp-edit { width: 48px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; text-align: center; font-weight: 800; background: var(--bg); font-size: 10px; }
+.inp-edit { width: 48px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; text-align: center; font-weight: 800; background: var(--bg); color: var(--text-main); font-size: 10px; outline: none; }
+.inp-edit:focus { border-color: var(--primary); }
 
-.status-pill { padding: 2px 4px; border-radius: 4px; font-weight: 800; font-size: 9px; border: 1px solid transparent; cursor: pointer; outline: none; }
-.pill-received { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
-.pill-unpaid { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+.status-pill { padding: 2px 4px; border-radius: 4px; font-weight: 800; font-size: 9px; cursor: pointer; outline: none; }
+.pill-received { background: var(--pill-recv-bg); color: var(--pill-recv-col); border: 1px solid var(--pill-recv-bd); }
+.pill-unpaid { background: var(--pill-unpd-bg); color: var(--pill-unpd-col); border: 1px solid var(--pill-unpd-bd); }
 
-.subtotal-row { background-color: #f8fafc; font-weight: 700; border-top: 1px solid var(--border); border-bottom: 2px solid var(--border); }
-.subtotal-row td { color: #1e293b; font-size: 10.5px; padding: 5px 4px; white-space: nowrap; }
+.subtotal-row { background-color: var(--subtotal-bg); font-weight: 700; border-top: 1px solid var(--border); border-bottom: 2px solid var(--border); }
+.subtotal-row td { color: var(--text-main); font-size: 10.5px; padding: 5px 4px; white-space: nowrap; }
 
-#msg { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: none; z-index: 2000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+#msg { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: none; z-index: 2000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
 
 @media (max-width: 1400px) { .kpi-container { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
 @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; gap: 10px; } .header h1 { font-size: 13px; } }
@@ -258,7 +304,7 @@ tbody td.sl-no-merged {
                 <table>
                     <thead>
                         <tr>
-                            <th>#</th><th>Invoice No</th><th>Date</th><th>Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO No</th><th>Container</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing</th><th>MC</th><th>KG</th><th style="background:#eef2ff">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:#fff1f2">Profit/Loss</th><th>Status</th><th>Company</th>
+                            <th>#</th><th>Invoice No</th><th>Date</th><th>Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO No</th><th>Container</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing</th><th>MC</th><th>KG</th><th style="background:var(--primary-light)">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:var(--pill-unpd-bg)">Profit/Loss</th><th>Status</th><th>Company</th>
                         </tr>
                     </thead>
                     <tbody id="tbody">
@@ -272,7 +318,6 @@ tbody td.sl-no-merged {
                                 data-countryname="{{ s.country }}" data-grade="{{ s.grade }}" 
                                 data-variety="{{ s.variety }}" data-inv="{{ s.invoice_no }}" data-po="{{ s.po_number }}">
                                 
-                                <!-- డైనమిక్ మెర్జింగ్ కి అనుగుణంగా ఐడెంటిఫైయర్స్ యాడ్ చేసాం -->
                                 <td class="m-sl"></td>
                                 <td class="m-inv"><strong>{{ s.invoice_no }}</strong></td>
                                 <td class="m-date">{{ s.invoice_date }}</td>
@@ -294,7 +339,7 @@ tbody td.sl-no-merged {
                                 <td class="v-st">₹ {{ "{:,.2f}".format(s.stock_value) }}</td>
                                 <td class="v-fr">₹ {{ "{:,.2f}".format(s.freight_cost) }}</td>
                                 <td class="v-pk">₹ {{ "{:,.2f}".format(s.packing_cost) }}</td>
-                                <td class="v-pl" style="font-weight:800; color:{{ 'var(--success)' if s.profit_loss >= 0 else 'var(--danger)' }}">₹ {{ "{:,.2f}".format(s.profit_loss) }}</td>
+                                <td class="v-pl" style="font-weight:800; color:{{ 'var(--ic-pl)' if s.profit_loss >= 0 else 'var(--ic-debt)' }}">₹ {{ "{:,.2f}".format(s.profit_loss) }}</td>
                                 <td>
                                     <select onchange="updateRow('{{ s.id }}', 'status', this.value)" class="status-pill {{ 'pill-received' if s.status == 'Received' else 'pill-unpaid' }}">
                                         <option value="Unpaid" {% if s.status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
@@ -313,6 +358,16 @@ tbody td.sl-no-merged {
 </div>
 
 <script>
+// Watch for dynamic theme changes instantly without reload
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            runAnalytics(); // Re-render charts dynamically with new colors
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 let charts = {};
 Chart.register(ChartDataLabels);
 
@@ -378,13 +433,11 @@ function getFYDates(fyStartYear) {
     return { start, end };
 }
 
-// టేబుల్ లో నిర్దేశిత కాలమ్స్ ని రీసెట్ చేసే సహాయక ఫంక్షన్
 function resetMergedCell(tr, className) {
     let cell = tr.querySelector('.' + className);
     if (!cell) {
         cell = document.createElement('td');
         cell.className = className;
-        // టేబుల్ హెడర్ ఆర్డర్ ప్రకారం సరైన పొజిషన్ లో ఇన్సర్ట్ చేయడం
         if(className === 'm-sl') tr.insertBefore(cell, tr.firstChild);
         else if(className === 'm-inv') tr.insertBefore(cell, tr.children[1]);
         else if(className === 'm-date') tr.insertBefore(cell, tr.children[2]);
@@ -416,7 +469,6 @@ function runAnalytics() {
         fyRange = getFYDates(fyF);
     }
 
-    // మునుపటి సబ్‌టోటల్స్ మరియు పాత మెర్జింగ్ ఎఫెక్ట్స్ క్లియర్ చేయడం
     document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
     
     const mergeClasses = ['m-sl', 'm-inv', 'm-date', 'm-po', 'm-cont', 'm-sbill'];
@@ -466,7 +518,6 @@ function runAnalytics() {
             d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
             d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
             
-            // చార్ట్ కి సరిగ్గా మ్యాప్ అవ్వడానికి ఇన్వాయిస్ నంబర్ రీట్రీవ్ లాజిక్
             let invLabel = tr.querySelector('.m-inv') ? tr.querySelector('.m-inv').innerText : tr.dataset.inv;
             d.timeline.labels.push(invLabel); d.timeline.rev.push(rev); d.timeline.pl.push(pl);
         } else {
@@ -474,7 +525,6 @@ function runAnalytics() {
         }
     });
 
-    // MULTI-COLUMN DYNAMIC ROWSPAN MERGING
     let totalGroups = uniqueInvs.length;
     let groupCounts = {};
     visibleRows.forEach(tr => {
@@ -490,7 +540,6 @@ function runAnalytics() {
             let groupIndex = uniqueInvs.indexOf(inv);
             let spanCount = groupCounts[inv];
             
-            // గ్రూప్‌లో ఇది మొదటి రో కాబట్టి వాల్యూస్ సెట్ చేసి 'rowspan' ఇస్తున్నాం
             let slCell = tr.querySelector('.m-sl');
             slCell.innerText = totalGroups - groupIndex;
             slCell.setAttribute('rowspan', spanCount);
@@ -517,7 +566,6 @@ function runAnalytics() {
             sbillCell.className = "m-sbill merged-cell";
 
         } else {
-            // గ్రూప్‌లోని తదుపరి రోస్ నుండి ఈ సెల్స్ ని రిమూవ్ చేస్తున్నాం (మెర్జ్డ్ సెల్ కవర్ చేస్తుంది)
             tr.querySelector('.m-sl').remove();
             tr.querySelector('.m-inv').remove();
             tr.querySelector('.m-date').remove();
@@ -527,7 +575,6 @@ function runAnalytics() {
         }
     });
 
-    // SUBTOTAL INSERTER LOGIC
     let currentInv = null;
     let subMc = 0, subKg = 0, subUsd = 0, subInr = 0, subSt = 0, subFr = 0, subPk = 0, subPl = 0;
 
@@ -546,7 +593,7 @@ function runAnalytics() {
             <td style="font-weight:800;">₹ ${subSt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td style="font-weight:800;">₹ ${subFr.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td style="font-weight:800;">₹ ${subPk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td style="font-weight:800; color:${subPl >= 0 ? 'var(--success)' : 'var(--danger)'}">₹ ${subPl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td style="font-weight:800; color:${subPl >= 0 ? 'var(--ic-pl)' : 'var(--ic-debt)'}">₹ ${subPl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td></td><td></td>
         `;
         afterRow.parentNode.insertBefore(subTr, afterRow.nextSibling);
@@ -602,15 +649,15 @@ function updateKPIs(d) {
         marginEl.innerText = marginPct + "% Margin";
         if (d.pl >= 0) {
             marginEl.className = "kpi-meta badge-success";
-            document.getElementById('k_pl').style.color = "#15803d";
+            document.getElementById('k_pl').style.color = "var(--ic-pl)";
         } else {
             marginEl.className = "kpi-meta badge-danger";
-            document.getElementById('k_pl').style.color = "#b91c1c";
+            document.getElementById('k_pl').style.color = "var(--ic-debt)";
         }
     } else {
         marginEl.innerText = "0% Margin";
         marginEl.className = "kpi-meta badge-neutral";
-        document.getElementById('k_pl').style.color = "#0f172a";
+        document.getElementById('k_pl').style.color = "var(--text-main)";
     }
 
     const ceiEl = document.getElementById('k_cei');
@@ -620,34 +667,38 @@ function updateKPIs(d) {
         if (collectedPct >= 80) ceiEl.className = "kpi-meta badge-success";
         else if (collectedPct >= 50) ceiEl.className = "kpi-meta badge-neutral";
         else ceiEl.className = "kpi-meta badge-danger";
-        document.getElementById('k_debt').style.color = d.unpaid > 0 ? "#b91c1c" : "#0f172a";
+        document.getElementById('k_debt').style.color = d.unpaid > 0 ? "var(--ic-debt)" : "var(--text-main)";
     } else {
         ceiEl.innerText = "0% Collected";
         ceiEl.className = "kpi-meta badge-neutral";
-        document.getElementById('k_debt').style.color = "#0f172a";
+        document.getElementById('k_debt').style.color = "var(--text-main)";
     }
 }
 
 function renderCharts(d) {
-    const cp = { datalabels: { display: true, color: '#475569', font: { weight: '800', size: 8 }, formatter: (v) => v > 10000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
-    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 6, font: { size: 8, weight: '700' } } } };
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const chartTextColor = isDark ? '#94a3b8' : '#475569';
+    const chartGridColor = isDark ? '#334155' : '#f1f5f9';
+
+    const cp = { datalabels: { display: true, color: chartTextColor, font: { weight: '800', size: 8 }, formatter: (v) => v > 10000 ? (v/100000).toFixed(1) + 'L' : v.toLocaleString(), anchor: 'end', align: 'top' }, legend: { display: false } };
+    const dp = { ...cp, datalabels: { ...cp.datalabels, color: '#fff', formatter: (v, ctx) => { let s = ctx.dataset.data.reduce((a, b) => a + b, 0); return s > 0 ? ((v * 100) / s).toFixed(0) + "%" : ""; }, align: 'center' }, legend: { display: true, position: 'right', labels: { boxWidth: 6, font: { size: 8, weight: '700' }, color: chartTextColor } } };
 
     if(charts.cDay) charts.cDay.destroy();
     const sortedDates = Object.keys(d.dayTrend).sort();
     charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
         type: 'line', data: { labels: sortedDates, datasets: [{ data: sortedDates.map(k=>d.dayTrend[k]), borderColor: '#4338ca', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.03)' }] }, 
-        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 } } } } } 
+        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 }, color: chartTextColor } } } } 
     });
 
     if(charts.cCountry) charts.cCountry.destroy();
     charts.cCountry = new Chart(document.getElementById('c_country'), { 
-        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4338ca', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'] }] }, 
+        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#4338ca', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444'], borderColor: isDark ? '#1e293b' : '#fff' }] }, 
         options: { maintainAspectRatio: false, cutout: '70%', plugins: dp } 
     });
 
     if(charts.c2) charts.c2.destroy();
     charts.c2 = new Chart(document.getElementById('c_variety'), { 
-        type: 'pie', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'] }] }, 
+        type: 'pie', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444', '#3b82f6'], borderColor: isDark ? '#1e293b' : '#fff' }] }, 
         options: { maintainAspectRatio: false, plugins: dp } 
     });
 
@@ -655,20 +706,20 @@ function renderCharts(d) {
     const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
         type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#0ea5e9', borderRadius: 4 }] }, 
-        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false }, x: { ticks: { font: { size: 8 } } } } } 
+        options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false }, x: { ticks: { font: { size: 8 }, color: chartTextColor }, grid: { color: chartGridColor } } } } 
     });
 
     if(charts.c4) charts.c4.destroy();
     const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
     charts.c4 = new Chart(document.getElementById('c_buyer'), { 
         type: 'bar', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: '#6366f1', borderRadius: 4 }] }, 
-        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { ticks: { font: { size: 8 } } } } } 
+        options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { ticks: { font: { size: 8 }, color: chartTextColor }, grid: { color: chartGridColor } } } } 
     });
 
     if(charts.c5) charts.c5.destroy();
     charts.c5 = new Chart(document.getElementById('c_line'), { 
         type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#0ea5e9', borderWidth: 1.5, tension: 0.3 }, { label: 'P&L', data: d.timeline.pl, borderColor: '#10b981', borderWidth: 1.5, tension: 0.3 }] }, 
-        options: { maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: { size: 8 } } }, datalabels: { display: false } }, scales: { y: { display: false }, x: { ticks: { font: { size: 7 } } } } } 
+        options: { maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: { size: 8 }, color: chartTextColor } }, datalabels: { display: false } }, scales: { y: { display: false }, x: { ticks: { font: { size: 7 }, color: chartTextColor }, grid: { color: chartGridColor } } } } 
     });
 }
 

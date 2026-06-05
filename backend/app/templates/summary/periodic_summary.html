@@ -1,146 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Executive KPI Summary | BKNR ERP</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Executive KPI Summary | BKNR ERP</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-    <style>
-        :root {
-            --primary-dark: #0f172a;
-            --slate-bg: #f1f5f9; 
-            --card-bg: #ffffff;
-            --accent-blue: #1d4ed8;
-            --border-color: #e2e8f0;
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --radius-premium: 12px;
-            --radius-md: 8px;
-            --orange-accent: #ea580c;
-        }
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    window.addEventListener('load', syncTheme);
+</script>
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--slate-bg);
-            color: var(--text-main); 
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            padding: 8px;
-        }
+<style>
+/* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
+:root {
+    /* LIGHT MODE (DEFAULT) */
+    --primary-dark: #0f172a;
+    --slate-bg: #f1f5f9; 
+    --card-bg: #ffffff;
+    --accent-blue: #1d4ed8;
+    --border-color: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-value: #000000;
+    
+    --radius-premium: 12px;
+    --radius-md: 8px;
+    --orange-accent: #ea580c;
+    --danger: #dc2626;
+    --success: #16a34a;
 
-        .dashboard-container { width: 100%; max-width: 1600px; margin: 0 auto; }
-        @media(min-width: 768px) { body { padding: 16px; } }
+    --kpi-rmp-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); --kpi-rmp-bd: #bfdbfe; --kpi-rmp-text: #2563eb;
+    --kpi-prod-bg: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); --kpi-prod-bd: #e9d5ff; --kpi-prod-text: #7c3aed;
+    --kpi-stk-bg: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); --kpi-stk-bd: #ccfbf1; --kpi-stk-text: #0d9488;
+    --kpi-danger-bg: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); --kpi-danger-bd: #fecaca; --kpi-danger-text: #e11d48;
 
-        /* HEADER */
-        .header-panel {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius-premium); margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); border: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-            border-left: 4px solid var(--accent-blue);
-        }
-        .header-title h2 { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; }
-        .header-title p { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    --table-header-bg: #f8fafc;
+    --table-hover-bg: #f8fafc;
+    --qty-cell-bg: #eff6ff;
+    --tag-bg: #f1f5f9;
+    --subtotal-bg: #eff6ff;
+    --subtotal-bd: #bfdbfe;
+    --subtotal-text: #1e40af;
 
-        .btn-action { background: var(--slate-bg); color: var(--text-main); border: none; padding: 6px 12px; border-radius: var(--radius-md); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
-        .btn-action:hover { background: #e2e8f0; }
-        .btn-sync { background: var(--primary-dark); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .btn-reset { background: #e2e8f0; color: #1e293b; text-decoration: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; display: inline-block; }
+    --danger-sub-bg: #fff1f2;
+    --danger-sub-bd: #fecaca;
+}
 
-        /* FILTER PANEL */
-        .filter-panel { background: var(--card-bg); padding: 12px 16px; border-radius: var(--radius-premium); margin-bottom: 12px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); border: 1px solid var(--border-color); }
-        .filter-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-        .input-field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
-        .input-field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-        .input-field input, .input-field select { padding: 6px 10px; border: 1px solid var(--border-color); background: #f8fafc; border-radius: var(--radius-md); font-size: 11px; font-weight: 600; color: var(--text-main); outline: none; width: 100%; height: 34px; }
-        
-        .choices__inner { background-color: #f8fafc !important; border: 1px solid var(--border-color) !important; border-radius: var(--radius-md) !important; min-height: 34px !important; padding: 3px 8px !important; font-size: 11px !important; font-weight: 600 !important; color: var(--text-main) !important; }
-        .choices__list--dropdown { font-size: 11px !important; z-index: 99 !important; }
+[data-theme="dark"] {
+    /* DARK MODE OVERRIDES */
+    --primary-dark: #f8fafc;
+    --slate-bg: #0f172a; 
+    --card-bg: #1e293b;
+    --accent-blue: #60a5fa;
+    --border-color: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-value: #f8fafc;
+    
+    --orange-accent: #f97316;
+    --danger: #ef4444;
+    --success: #22c55e;
 
-        /* KPI GRID */
-        .kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
-        @media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(8, 1fr); } }
+    --kpi-rmp-bg: rgba(37, 99, 235, 0.15); --kpi-rmp-bd: rgba(37, 99, 235, 0.3); --kpi-rmp-text: #60a5fa;
+    --kpi-prod-bg: rgba(124, 58, 237, 0.15); --kpi-prod-bd: rgba(124, 58, 237, 0.3); --kpi-prod-text: #a78bfa;
+    --kpi-stk-bg: rgba(13, 148, 136, 0.15); --kpi-stk-bd: rgba(13, 148, 136, 0.3); --kpi-stk-text: #2dd4bf;
+    --kpi-danger-bg: rgba(225, 29, 72, 0.15); --kpi-danger-bd: rgba(225, 29, 72, 0.3); --kpi-danger-text: #fb7185;
 
-        .ref-kpi-card { padding: 12px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); cursor: pointer; }
-        .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1); }
-        .ref-kpi-meta { font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; }
-        .ref-kpi-value { font-size: 14px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
+    --table-header-bg: #0f172a;
+    --table-hover-bg: #0f172a;
+    --qty-cell-bg: rgba(59, 130, 246, 0.1);
+    --tag-bg: #334155;
+    --subtotal-bg: rgba(59, 130, 246, 0.2);
+    --subtotal-bd: rgba(59, 130, 246, 0.4);
+    --subtotal-text: #60a5fa;
 
-        .kpi-rmp { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; }
-        .kpi-rmp .ref-kpi-value { color: #2563eb; }
-        .kpi-prod { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border-color: #e9d5ff; }
-        .kpi-prod .ref-kpi-value { color: #7c3aed; }
-        .kpi-stock { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border-color: #ccfbf1; }
-        .kpi-stock .ref-kpi-value { color: #0d9488; }
-        .kpi-danger { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border-color: #fecaca !important; }
-        .kpi-danger .ref-kpi-value { color: #e11d48 !important; }
+    --danger-sub-bg: rgba(225, 29, 72, 0.2);
+    --danger-sub-bd: rgba(225, 29, 72, 0.4);
+}
 
-        /* SECTIONS & TABLES */
-        .section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 12px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); border: 1px solid var(--border-color); margin-bottom: 12px; }
-        .section-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 6px; transition: background 0.2s; border-left: 3px solid var(--orange-accent); }
-        .section-header:hover { background: #f8fafc; }
-        .section-header-left { display: flex; align-items: center; gap: 8px; }
-        .toggle-icon { color: var(--text-muted); font-size: 12px; transition: transform 0.2s; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: var(--slate-bg);
+    color: var(--text-main); 
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    padding: 8px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
 
-        .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 6px 8px; font-size: 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #e2e8f0; text-align: center; vertical-align: middle; white-space: nowrap; }
-        th { background: #f8fafc; color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 9px; }
-        tr:hover td { background-color: #f8fafc; }
-        
-        .text-left { text-align: left !important; }
-        .text-right { text-align: right !important; }
-        .qty-cell { font-weight: 800; color: #0f172a; background: #fffdf5; text-align: right !important; }
-        .money-cell { color: #16a34a; font-weight: 800; text-align: right !important; }
-        .sl-no { font-weight: 800; color: var(--text-muted); background: #f8fafc; width: 30px; }
-        .tag { background: #f1f5f9; color: var(--text-main); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid #cbd5e1; display: inline-block; }
+.dashboard-container { width: 100%; max-width: 1600px; margin: 0 auto; }
+@media(min-width: 768px) { body { padding: 16px; } }
 
-        .subtotal-row { background: #eff6ff !important; border-top: 1px solid #bfdbfe; border-bottom: 1px solid #bfdbfe; }
-        .subtotal-row td { color: #1e40af !important; font-weight: 800; }
-        .danger-subtotal { background: #fff1f2 !important; border-top: 1.5px solid #fecaca; }
-        .danger-subtotal td { color: #e11d48 !important; font-weight: 800; }
+/* HEADER */
+.header-panel {
+    background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius-premium); margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    border-left: 4px solid var(--accent-blue);
+    transition: background 0.3s, border-color 0.3s;
+}
+.header-title h2 { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; color: var(--text-main); }
+.header-title p { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 
-        /* GRADING CARDS LAYOUT */
-        .cards-view-grid { 
-            display: grid; 
-            grid-template-columns: 1fr; /* MOBILE: 1 Card per row */
-            gap: 12px; 
-            margin-top: 10px; 
-        }
-        @media(min-width: 768px) {
-            .cards-view-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media(min-width: 1024px) {
-            .cards-view-grid { grid-template-columns: repeat(4, 1fr); } /* WEB: 4 Cards per row */
-        }
+.btn-action { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--radius-md); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
+.btn-action:hover { background: var(--border-color); }
+.btn-sync { background: var(--accent-blue); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-sync:hover { opacity: 0.9; }
+.btn-reset { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; display: inline-block; transition: 0.2s; }
+.btn-reset:hover { background: var(--border-color); }
 
-        .report-card { background: white; border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--orange-accent); }
-        .card-top { background: #f8fafc; padding: 6px 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .card-body { padding: 8px; flex: 1; }
-        .card-body-summary { display: flex; justify-content: space-between; font-size: 9.5px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; }
-        .card-footer { background: #f8fafc; padding: 6px 8px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 9.5px; }
-        .card-body-title { margin-bottom: 4px; font-size: 9.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+/* FILTER PANEL */
+.filter-panel { background: var(--card-bg); padding: 12px 16px; border-radius: var(--radius-premium); margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border-color); transition: background 0.3s, border-color 0.3s; }
+.filter-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.input-field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
+.input-field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.input-field input, .input-field select { padding: 6px 10px; border: 1px solid var(--border-color); background: var(--slate-bg); border-radius: var(--radius-md); font-size: 11px; font-weight: 600; color: var(--text-main); outline: none; width: 100%; height: 34px; transition: 0.3s;}
+.input-field input:focus, .input-field select:focus { border-color: var(--accent-blue); }
 
-        @media print { 
-            .filter-panel, .btn-action, .btn-sync, .btn-reset, .toggle-icon { display: none !important; } 
-            body { background: #fff; padding: 0; } 
-            .section-card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; }
-            .toggle-content { display: block !important; } 
-            .cards-view-grid { display: grid !important; }
-        }
-    </style>
+.choices__inner { background-color: var(--slate-bg) !important; border: 1px solid var(--border-color) !important; border-radius: var(--radius-md) !important; min-height: 34px !important; padding: 3px 8px !important; font-size: 11px !important; font-weight: 600 !important; color: var(--text-main) !important; transition: 0.3s; }
+.choices__list--dropdown { font-size: 11px !important; z-index: 99 !important; background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+.choices__list--dropdown .choices__item--selectable.is-highlighted { background-color: var(--slate-bg) !important; color: var(--accent-blue) !important;}
+
+/* KPI GRID */
+.kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+@media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
+@media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(8, 1fr); } }
+
+.ref-kpi-card { padding: 12px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.2s ease; border: 1px solid var(--border-color); background: var(--card-bg); cursor: pointer; }
+.ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
+.ref-kpi-meta { font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; }
+.ref-kpi-value { font-size: 14px; font-weight: 800; color: var(--text-value); margin-top: 4px; letter-spacing: -0.5px; }
+
+.kpi-rmp { background: var(--kpi-rmp-bg) !important; border-color: var(--kpi-rmp-bd) !important; }
+.kpi-rmp .ref-kpi-value { color: var(--kpi-rmp-text) !important; }
+.kpi-prod { background: var(--kpi-prod-bg) !important; border-color: var(--kpi-prod-bd) !important; }
+.kpi-prod .ref-kpi-value { color: var(--kpi-prod-text) !important; }
+.kpi-stock { background: var(--kpi-stk-bg) !important; border-color: var(--kpi-stk-bd) !important; }
+.kpi-stock .ref-kpi-value { color: var(--kpi-stk-text) !important; }
+.kpi-danger { background: var(--kpi-danger-bg) !important; border-color: var(--kpi-danger-bd) !important; }
+.kpi-danger .ref-kpi-value { color: var(--kpi-danger-text) !important; }
+
+/* SECTIONS & TABLES */
+.section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 12px; transition: background 0.3s, border-color 0.3s;}
+.section-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 6px; transition: background 0.2s; border-left: 3px solid var(--orange-accent); }
+.section-header:hover { background: var(--slate-bg); }
+.section-header-left { display: flex; align-items: center; gap: 8px; }
+.toggle-icon { color: var(--text-muted); font-size: 12px; transition: transform 0.2s; }
+
+.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+table { width: 100%; border-collapse: collapse; min-width: 600px; }
+th, td { padding: 6px 8px; font-size: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: middle; white-space: nowrap; color: var(--text-main);}
+th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 9px; }
+tr:hover td { background-color: var(--table-hover-bg); }
+
+.text-left { text-align: left !important; }
+.text-right { text-align: right !important; }
+.qty-cell { font-weight: 800; color: var(--text-main); background: var(--qty-cell-bg); text-align: right !important; }
+.money-cell { color: var(--success); font-weight: 800; text-align: right !important; }
+.sl-no { font-weight: 800; color: var(--text-muted); background: var(--table-header-bg); width: 30px; }
+.tag { background: var(--tag-bg); color: var(--text-main); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid var(--border-color); display: inline-block; }
+
+.subtotal-row { background: var(--subtotal-bg) !important; border-top: 1px solid var(--subtotal-bd); border-bottom: 1px solid var(--subtotal-bd); }
+.subtotal-row td { color: var(--subtotal-text) !important; font-weight: 800; }
+.danger-subtotal { background: var(--danger-sub-bg) !important; border-top: 1.5px solid var(--danger-sub-bd); }
+.danger-subtotal td { color: var(--kpi-danger-text) !important; font-weight: 800; }
+
+/* GRADING CARDS LAYOUT */
+.cards-view-grid { 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 12px; 
+    margin-top: 10px; 
+}
+@media(min-width: 768px) { .cards-view-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width: 1024px) { .cards-view-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.report-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--orange-accent); transition: 0.3s;}
+.card-top { background: var(--table-header-bg); padding: 6px 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+.card-body { padding: 8px; flex: 1; }
+.card-body-summary { display: flex; justify-content: space-between; font-size: 9.5px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; margin-bottom: 6px; }
+.card-footer { background: var(--table-header-bg); padding: 6px 8px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 9.5px; }
+.card-body-title { margin-bottom: 4px; font-size: 9.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+
+@media print { 
+    .filter-panel, .btn-action, .btn-sync, .btn-reset, .toggle-icon { display: none !important; } 
+    body { background: var(--card-bg); padding: 0; } 
+    .section-card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; }
+    .toggle-content { display: block !important; } 
+    .cards-view-grid { display: grid !important; }
+}
+</style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
@@ -276,10 +343,10 @@
             <div class="section-header-left"><i class="fas fa-balance-scale"></i> 9. LIVE FLOOR BALANCE (CLOSING)</div>
             <i id="icon-sec-close-floor" class="fas fa-chevron-down toggle-icon"></i>
         </div>
-        <div id="sec-close-floor" class="table-wrap toggle-content" style="display: none; border-color: #fecaca;">
+        <div id="sec-close-floor" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr style="background:#fff1f2;">
+                    <tr style="background:var(--danger-sub-bg);">
                         <th class="text-center" style="width:30px">Sl</th>
                         <th>Batch Number</th>
                         <th>Species</th>
@@ -293,13 +360,13 @@
                 <tbody>
                     {% for row in rows.closing_floor_balance %}
                     <tr>
-                        <td class="sl-no" style="background:#fff1f2; color:var(--danger)">{{ loop.index }}</td>
+                        <td class="sl-no" style="background:var(--danger-sub-bg); color:var(--danger)">{{ loop.index }}</td>
                         <td style="font-weight:800; color:var(--danger);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
                         <td>{{ row.species }}</td>
                         <td>{{ row.peeling_at }}</td>
-                        <td><span class="tag" style="background:#fef2f2; color:#991b1b; border-color:#fca5a5;">{{ row.variety }}</span></td>
+                        <td><span class="tag" style="background:var(--danger-sub-bg); color:var(--danger); border-color:var(--danger-sub-bd);">{{ row.variety }}</span></td>
                         <td><b>{{ row.count }}</b></td>
-                        <td class="qty-cell" style="color:var(--danger); background:#fff1f2;">{{ "%.2f"|format(row.available_qty) }}</td>
+                        <td class="qty-cell" style="color:var(--danger); background:var(--danger-sub-bg);">{{ "%.2f"|format(row.available_qty) }}</td>
                         <td class="money-cell" style="color:var(--danger)">₹ {{ "{:,.2f}".format(row.value) }}</td>
                     </tr>
                     {% else %}
@@ -308,7 +375,7 @@
                     {% if rows.closing_floor_balance %}
                     <tr class="danger-subtotal">
                         <td colspan="6" class="text-right">TOTAL CLOSING FLOOR BALANCE:</td>
-                        <td class="qty-cell" style="background:#ffe4e6;">{{ "%.2f"|format(card.floor_closing_qty) }}</td>
+                        <td class="qty-cell" style="background:var(--danger-sub-bg);">{{ "%.2f"|format(card.floor_closing_qty) }}</td>
                         <td class="money-cell" style="color:var(--danger) !important;">₹ {{ "{:,.2f}".format(card.floor_closing_val) }}</td>
                     </tr>
                     {% endif %}
@@ -424,14 +491,14 @@
                     <tr>
                         <th rowspan="2" style="vertical-align: middle;">Species</th>
                         <th rowspan="2" style="vertical-align: middle;">Variety</th>
-                        <th colspan="3" class="text-center" style="background: #f1f5f9;">DE-HEADING</th>
-                        <th colspan="3" class="text-center" style="background: #fff7ed;">PEELING</th>
-                        <th colspan="3" class="text-center" style="background: #f0fdf4;">PRODUCTION</th>
+                        <th colspan="3" class="text-center" style="background: var(--table-header-bg);">DE-HEADING</th>
+                        <th colspan="3" class="text-center" style="background: var(--table-header-bg);">PEELING</th>
+                        <th colspan="3" class="text-center" style="background: var(--table-header-bg);">PRODUCTION</th>
                     </tr>
                     <tr>
-                        <th style="background: #f1f5f9;" class="text-right">In</th><th style="background: #f1f5f9;" class="text-right">Out</th><th style="background: #f1f5f9;" class="text-right">Yield (Diff)</th>
-                        <th style="background: #fff7ed;" class="text-right">In</th><th style="background: #fff7ed;" class="text-right">Out</th><th style="background: #fff7ed;" class="text-right">Yield (Diff)</th>
-                        <th style="background: #f0fdf4;" class="text-right">In</th><th style="background: #f0fdf4;" class="text-right">Out</th><th style="background: #f0fdf4;" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -459,11 +526,11 @@
                             <td class="text-left" style="font-weight: 800;">{{ s_match }}</td>
                             <td><span class="tag">{{ v_match }}</span></td>
                             <td class="text-right">{{ "%.2f"|format(ns.di) }}</td><td class="text-right">{{ "%.2f"|format(ns.do) }}</td>
-                            <td class="text-right">{% if ns.di > 0 %}{{ "%.2f"|format((ns.do / ns.di) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ '#16a34a' if ns.d_diff >= 0 else '#dc2626' }}; font-weight:800;">{{ "%.2f"|format(ns.d_diff) }}</span>)</td>
+                            <td class="text-right">{% if ns.di > 0 %}{{ "%.2f"|format((ns.do / ns.di) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.d_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.d_diff) }}</span>)</td>
                             <td class="text-right">{{ "%.2f"|format(ns.pi) }}</td><td class="text-right">{{ "%.2f"|format(ns.po) }}</td>
-                            <td class="text-right">{% if ns.pi > 0 %}{{ "%.2f"|format((ns.po / ns.pi) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ '#16a34a' if ns.p_diff >= 0 else '#dc2626' }}; font-weight:800;">{{ "%.2f"|format(ns.p_diff) }}</span>)</td>
+                            <td class="text-right">{% if ns.pi > 0 %}{{ "%.2f"|format((ns.po / ns.pi) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.p_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.p_diff) }}</span>)</td>
                             <td class="text-right">{{ "%.2f"|format(ns.si) }}</td><td class="text-right">{{ "%.2f"|format(ns.pro) }}</td>
-                            <td class="text-right">{% if ns.si > 0 %}{{ "%.2f"|format((ns.pro / ns.si) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ '#16a34a' if ns.total_prod_diff >= 0 else '#dc2626' }}; font-weight:800;">{{ "%.2f"|format(ns.total_prod_diff) }}</span>)</td>
+                            <td class="text-right">{% if ns.si > 0 %}{{ "%.2f"|format((ns.pro / ns.si) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.total_prod_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.total_prod_diff) }}</span>)</td>
                         </tr>
                     {% endfor %}
                     {% if grouping %}
@@ -696,7 +763,7 @@
         <div id="sec-prod" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Type</th><th>Species</th><th>Batch No</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th><th class="text-right">MC</th><th class="text-right">Loose</th><th class="text-right" style="background:#eef2ff; color:#312e81;">Gross Qty</th><th class="text-right">Prod Qty</th><th class="text-right">Yield %</th><th class="text-right">Diff</th><th>User</th></tr>
+                    <tr><th class="text-center" style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Type</th><th>Species</th><th>Batch No</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th><th class="text-right">MC</th><th class="text-right">Loose</th><th class="text-right" style="color:var(--accent-blue);">Gross Qty</th><th class="text-right">Prod Qty</th><th class="text-right">Yield %</th><th class="text-right">Diff</th><th>User</th></tr>
                 </thead>
                 <tbody>
                     {% set p_ns = namespace(last_key=None) %}
@@ -728,9 +795,9 @@
                                 <td class="text-right">-</td>
                                 <td class="text-right">-</td>
                                 <td class="text-right">-</td>
-                                <td class="qty-column">{{ s.get('prod_qty', 0) }}</td>
-                                <td class="text-right {{ 'diff-pos' if s.get('diff_yield_perc', 0) >= 0 else 'diff-neg' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
-                                <td class="text-right {{ 'diff-pos' if s.get('diff_qty', 0) >= 0 else 'diff-neg' }}">{{ s.get('diff_qty', 0) }}</td>
+                                <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
+                                <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
+                                <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
                                 <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
                             </tr>
                         {% endif %}
@@ -743,7 +810,7 @@
                             <td>{{ r.production_for }}</td>
                             <td>{{ r.production_type }}</td>
                             <td>{{ r.species }}</td>
-                            <td style="font-weight: 700; color: var(--accent);">{{ r.batch_number }}</td>
+                            <td style="font-weight: 700; color: var(--accent-blue);">{{ r.batch_number }}</td>
                             <td>{{ r.brand }}</td>
                             <td><span class="tag">{{ r.variety_name }}</span></td>
                             <td>{{ r.glaze }}</td>
@@ -752,11 +819,11 @@
                             <td>{{ r.grade }}</td>
                             <td class="text-right">{{ r.no_of_mc }}</td>
                             <td class="text-right">{{ r.loose }}</td>
-                            <td class="text-right" style="font-weight:700; color:#312e81; background:#f5f3ff;">{{ "%.2f"|format(gross_qty) }}</td>
-                            <td class="qty-column">{{ r.production_qty }}</td>
+                            <td class="text-right" style="font-weight:700; color:var(--accent-blue);">{{ "%.2f"|format(gross_qty) }}</td>
+                            <td class="qty-cell">{{ r.production_qty }}</td>
                             <td class="text-right">-</td>
                             <td class="text-right">-</td>
-                            <td style="font-size:8.5px; color: #64748b;">{{ r.email }}</td>
+                            <td style="font-size:8.5px; color: var(--text-muted);">{{ r.email }}</td>
                         </tr>
 
                         {% set p_ns.last_key = current_key %}
@@ -768,19 +835,19 @@
                                 <td class="text-right">-</td>
                                 <td class="text-right">-</td>
                                 <td class="text-right">-</td>
-                                <td class="qty-column">{{ s.get('prod_qty', 0) }}</td>
-                                <td class="text-right {{ 'diff-pos' if s.get('diff_yield_perc', 0) >= 0 else 'diff-neg' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
-                                <td class="text-right {{ 'diff-pos' if s.get('diff_qty', 0) >= 0 else 'diff-neg' }}">{{ s.get('diff_qty', 0) }}</td>
+                                <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
+                                <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
+                                <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
                                 <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
                             </tr>
                         {% endif %}
                     {% endfor %}
-                    <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b;">
-                        <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">GRAND TOTAL PRODUCTION:</td>
-                        <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.mc }}</td>
-                        <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.loose }}</td>
-                        <td class="text-right" style="font-weight:800; color:#312e81; background:#eeebff;">{{ "%.2f"|format(grand_prod.gross) }}</td>
-                        <td class="qty-column" style="color:#b45309; background:#fff9db;">{{ "%.2f"|format(grand_prod.qty) }}</td>
+                    <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:2px double var(--orange-accent);">
+                        <td colspan="14" style="text-align:right; font-weight:800; color:var(--orange-accent);">GRAND TOTAL PRODUCTION:</td>
+                        <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.mc }}</td>
+                        <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.loose }}</td>
+                        <td class="text-right" style="font-weight:800; color:var(--accent-blue);">{{ "%.2f"|format(grand_prod.gross) }}</td>
+                        <td class="qty-cell" style="color:var(--orange-accent);">{{ "%.2f"|format(grand_prod.qty) }}</td>
                         <td colspan="3"></td>
                     </tr>
                 </tbody>
@@ -794,8 +861,8 @@
             <i id="icon-sec-stk" class="fas fa-chevron-down toggle-icon"></i>
         </div>
         <div id="sec-stk" class="table-wrap toggle-content" style="display: none;">
-            <table class="table table-bordered table-striped text-nowrap">
-                <thead class="table-dark">
+            <table>
+                <thead>
                     <tr>
                         <th class="sl-no">Sl.No</th>
                         <th>Species</th>
@@ -812,8 +879,8 @@
                         <th>Grade</th>
                         <th class="text-right">No of MC</th>
                         <th class="text-right">Loose</th>
-                        <th class="qty-column text-right">Quantity (KG)</th>
-                        <th class="money-column text-right">Inventory Value</th>
+                        <th class="qty-cell text-right">Quantity (KG)</th>
+                        <th class="money-cell text-right">Inventory Value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -827,12 +894,12 @@
                         {% set grand_stock.loose = grand_stock.loose + (row.loose | int if row.loose else 0) %}
 
                         {% if ns_stock.current_variety != '' and ns_stock.current_variety != row.variety %}
-                            <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
+                            <tr class="subtotal-row">
                                 <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
-                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
-                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
-                                <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
-                                <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
+                                <td class="text-right">{{ ns_stock.variety_mc }}</td>
+                                <td class="text-right">{{ ns_stock.variety_loose }}</td>
+                                <td class="qty-cell">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                                <td class="money-cell">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
                             </tr>
                             {% set ns_stock.variety_qty = 0 %}{% set ns_stock.variety_val = 0 %}{% set ns_stock.variety_mc = 0 %}{% set ns_stock.variety_loose = 0 %}
                         {% endif %}
@@ -845,7 +912,7 @@
                             <td>{{ row.production_for or 'N/A' }}</td>
                             <td>{{ row.po_number or 'N/A' }}</td>
                             <td>{{ row.purpose or 'N/A' }}</td>
-                            <td><span class="badge {{ 'bg-success' if row.cargo_movement_type == 'IN' else 'bg-danger' }}">{{ row.cargo_movement_type }}</span></td>
+                            <td><span class="tag" style="background: {{ 'var(--kpi-pl-bg)' if row.cargo_movement_type == 'IN' else 'var(--kpi-danger-bg)' }}; color: {{ 'var(--success)' if row.cargo_movement_type == 'IN' else 'var(--danger)' }}">{{ row.cargo_movement_type }}</span></td>
                             <td>{{ row.brand or 'N/A' }}</td>
                             <td>{{ row.freezer or 'N/A' }}</td>
                             <td>{{ row.packing_style or 'N/A' }}</td>
@@ -853,8 +920,8 @@
                             <td>{{ row.grade or 'N/A' }}</td>
                             <td class="text-right">{{ row.no_of_mc or 0 }}</td>
                             <td class="text-right">{{ row.loose or 0 }}</td>
-                            <td class="qty-column text-right">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td>
-                            <td class="money-column text-right">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td>
+                            <td class="qty-cell">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td>
+                            <td class="money-cell">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td>
                         </tr>
                         
                         {% set ns_stock.current_variety = row.variety %}
@@ -864,12 +931,12 @@
                         {% set ns_stock.variety_loose = ns_stock.variety_loose + (row.loose | int if row.loose else 0) %}
                         
                         {% if loop.last %}
-                            <tr class="subtotal-row" style="background-color: #f8fafc; font-weight: bold;">
+                            <tr class="subtotal-row">
                                 <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
-                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_mc }}</td>
-                                <td class="text-right" style="background-color: #f1f5f9;">{{ ns_stock.variety_loose }}</td>
-                                <td class="qty-column text-right" style="background-color: #f1f5f9;">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
-                                <td class="money-column text-right" style="background-color: #f1f5f9;">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
+                                <td class="text-right">{{ ns_stock.variety_mc }}</td>
+                                <td class="text-right">{{ ns_stock.variety_loose }}</td>
+                                <td class="qty-cell">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
+                                <td class="money-cell">₹ {{ "{:,.2f}".format(ns_stock.variety_val) }}</td>
                             </tr>
                         {% endif %}
                     {% else %}
@@ -882,12 +949,12 @@
                     {% endfor %}
                     
                     {% if rows.stock and rows.stock|length > 0 %}
-                    <tr class="subtotal-row" style="background:#f0fdf4 !important; border-top:2px double #16a34a; font-weight: 800;">
-                        <td colspan="13" style="text-align:right; color:#14532d;">GRAND TOTAL STOCK LOG:</td>
-                        <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.mc }}</td>
-                        <td class="text-right" style="color:#14532d; background:#dcfce7;">{{ grand_stock.loose }}</td>
-                        <td class="qty-column text-right" style="color:#14532d; background:#dcfce7;">{{ "%.2f"|format(grand_stock.qty) }}</td>
-                        <td class="money-column text-right" style="color:#14532d; background:#dcfce7;">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
+                    <tr class="subtotal-row" style="background:var(--kpi-pl-bg) !important; border-top:2px double var(--success); font-weight: 800;">
+                        <td colspan="13" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK LOG:</td>
+                        <td class="text-right" style="color:var(--success);">{{ grand_stock.mc }}</td>
+                        <td class="text-right" style="color:var(--success);">{{ grand_stock.loose }}</td>
+                        <td class="qty-cell" style="color:var(--success);">{{ "%.2f"|format(grand_stock.qty) }}</td>
+                        <td class="money-cell" style="color:var(--success);">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -903,15 +970,15 @@
         <div id="sec-open-floor" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr style="background:#f1f5f9">
+                    <tr style="background:var(--table-header-bg)">
                         <th class="text-center" style="width:30px">Sl</th>
                         <th>Batch Number</th>
                         <th>Species</th>
                         <th>Location/Peeling At</th>
                         <th>Variety</th>
                         <th>Count/Grade</th>
-                        <th class="text-right" style="color:#475569">Opening Qty (KG)</th>
-                        <th class="text-right" style="color:#475569">Value (₹)</th>
+                        <th class="text-right" style="color:var(--text-muted)">Opening Qty (KG)</th>
+                        <th class="text-right" style="color:var(--text-muted)">Value (₹)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -920,23 +987,23 @@
                         {% set tot_open_floor.qty = tot_open_floor.qty + (row.available_qty|default(0)|float) %}
                         {% set tot_open_floor.val = tot_open_floor.val + (row.value|default(0)|float) %}
                     <tr>
-                        <td class="sl-no" style="background:#e2e8f0; color:#475569;">{{ loop.index }}</td>
+                        <td class="sl-no">{{ loop.index }}</td>
                         <td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
                         <td>{{ row.species }}</td>
                         <td>{{ row.peeling_at }}</td>
-                        <td><span class="tag" style="background:#f1f5f9; color:#475569;">{{ row.variety }}</span></td>
+                        <td><span class="tag">{{ row.variety }}</span></td>
                         <td><b>{{ row.count }}</b></td>
-                        <td class="qty-column" style="color:#334155;">{{ "%.2f"|format(row.available_qty) }}</td>
-                        <td class="money-column" style="color:#475569">₹ {{ "{:,.2f}".format(row.value) }}</td>
+                        <td class="qty-cell">{{ "%.2f"|format(row.available_qty) }}</td>
+                        <td class="money-cell" style="color:var(--text-muted)">₹ {{ "{:,.2f}".format(row.value) }}</td>
                     </tr>
                     {% else %}
                     <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock at Opening Cut-off Time.</td></tr>
                     {% endfor %}
                     {% if rows.opening_floor_balance %}
-                    <tr class="subtotal-row" style="background:#f1f5f9 !important; border-top:1.5px solid #cbd5e1;">
-                        <td colspan="6" style="text-align:right; font-weight:800; color:#475569;">TOTAL OPENING FLOOR BALANCE:</td>
-                        <td class="qty-column" style="color:#334155; background:#e2e8f0;">{{ "%.2f"|format(tot_open_floor.qty) }}</td>
-                        <td class="money-column" style="color:#475569;">₹ {{ "{:,.2f}".format(tot_open_floor.val) }}</td>
+                    <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:1.5px solid var(--border-color);">
+                        <td colspan="6" style="text-align:right; font-weight:800; color:var(--text-muted);">TOTAL OPENING FLOOR BALANCE:</td>
+                        <td class="qty-cell">{{ "%.2f"|format(tot_open_floor.qty) }}</td>
+                        <td class="money-cell" style="color:var(--text-muted);">₹ {{ "{:,.2f}".format(tot_open_floor.val) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -944,7 +1011,9 @@
         </div>
     </div>
 
-</div> <table id="rawGradingSummaryTable" style="display:none;">
+</div> 
+
+<table id="rawGradingSummaryTable" style="display:none;">
     <tbody>
         {% for r in rows.grading_summary %}
         <tr><td>{{ loop.index }}</td><td>{{ r.batch_number }}</td><td>{{ r.species }}</td><td>{{ r.hoso_count }}</td><td>{{ r.variety }}</td><td>{{ r.hoso_qty }}</td><td>{{ r.graded_qty }}</td><td>{{ r.workout_count }}</td><td>{{ r.yield_pct }}%</td><td>{{ r.grading_hoso_qty }}</td><td>{{ r.weight_diff_kg }}</td><td>{{ r.weight_diff_pct }}%</td></tr>
@@ -953,15 +1022,25 @@
 </table>
 
 <script>
+// Watch for dynamic theme changes instantly without reload
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            // CSS handles visual switch, js logic runs if specific re-rendering required.
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 function toggleDateInputs() {
     const filterType = document.getElementById("dateFilterType").value;
     const startDiv = document.getElementById("startDateDiv");
     const endDiv = document.getElementById("endDateDiv");
     const monthDiv = document.getElementById("monthDiv");
     if(startDiv && endDiv && monthDiv) {
-        startDiv.style.display = (filterType === "between") ? "block" : "none";
-        endDiv.style.display = (filterType === "between") ? "block" : "none";
-        monthDiv.style.display = (filterType === "month") ? "block" : "none";
+        startDiv.style.display = (filterType === "between") ? "flex" : "none";
+        endDiv.style.display = (filterType === "between") ? "flex" : "none";
+        monthDiv.style.display = (filterType === "month") ? "flex" : "none";
     }
 }
 
@@ -1025,13 +1104,13 @@ document.addEventListener("DOMContentLoaded", function() {
             let subTableBodyHTML = ""; let cardTotalQuantity = 0;
 
             if(subRows.length === 0) {
-                subTableBodyHTML = `<tr><td colspan="2" style="color:#64748b; font-style:italic; text-align:center; padding: 6px 4px;">No details</td></tr>`;
+                subTableBodyHTML = `<tr><td colspan="2" style="color:var(--text-muted); font-style:italic; text-align:center; padding: 6px 4px;">No details</td></tr>`;
             } else {
                 subRows.forEach(row => {
                     let finalCount = row.graded_count ?? '-'; let finalQty = parseFloat(row.quantity ?? 0); cardTotalQuantity += finalQty;
-                    subTableBodyHTML += `<tr><td style="border-bottom:1px solid #f1f5f9; padding:4px; text-align:center;">${finalCount}</td><td style="border-bottom:1px solid #f1f5f9; padding:4px; text-align:right; color:var(--accent-blue); font-weight:700;">${finalQty.toFixed(2)} KG</td></tr>`;
+                    subTableBodyHTML += `<tr><td style="border-bottom:1px solid var(--border-color); padding:4px; text-align:center;">${finalCount}</td><td style="border-bottom:1px solid var(--border-color); padding:4px; text-align:right; color:var(--accent-blue); font-weight:700;">${finalQty.toFixed(2)} KG</td></tr>`;
                 });
-                subTableBodyHTML += `<tr style="background:#f8fafc; font-weight:800;"><td style="padding:4px;">Total:</td><td style="padding:4px; text-align:right; color:#1e40af;">${cardTotalQuantity.toFixed(2)} KG</td></tr>`;
+                subTableBodyHTML += `<tr style="background:var(--table-header-bg); font-weight:800;"><td style="padding:4px;">Total:</td><td style="padding:4px; text-align:right; color:var(--accent-blue);">${cardTotalQuantity.toFixed(2)} KG</td></tr>`;
             }
             
             const cardHTML = `
@@ -1043,7 +1122,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
                         <div style="text-align:right;">
                             <span style="font-size:8px; color:var(--text-muted); display:block; font-weight:800;">HOSO COUNT</span>
-                            <b style="font-size:12px; color:var(--brand);">${hosoCount}</b>
+                            <b style="font-size:12px; color:var(--text-main);">${hosoCount}</b>
                         </div>
                     </div>
                     <div class="card-body">

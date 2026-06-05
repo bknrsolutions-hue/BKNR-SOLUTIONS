@@ -20,7 +20,7 @@
 
         /* HEADER - COMPACT FOR MOBILE */
         .header {
-            position: sticky; top: 0; z-index: 1000; background: #fff; padding: 10px 15px;
+            position: sticky; top: 0; z-index: 1000; background: var(--card-bg); padding: 10px 15px;
             border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
         }
         .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
@@ -28,7 +28,7 @@
 
         /* UNIFIED FILTER BAR - HORIZONTAL SCROLL ON MOBILE */
         .filter-bar {
-            background: #fff; margin: 10px; padding: 12px; border-radius: 10px;
+            background: var(--card-bg); margin: 10px; padding: 12px; border-radius: 10px;
             border: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-end;
             overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
@@ -39,7 +39,7 @@
         .filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
         .filter-field.search-field { min-width: 220px; flex: 2; }
         .filter-field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .filter-field input, .filter-field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: #fff; }
+        .filter-field input, .filter-field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); }
 
         /* LAYOUT GRID - RESPONSIVE */
         .row-grid { display: flex; flex-direction: column; gap: 10px; margin: 0 10px 10px; }
@@ -54,7 +54,9 @@
         .sub-total-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-left: 5px; }
 
         /* TABLE STYLES - COMPACT & SCROLLABLE */
-        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-wrap{
+    background: var(--card-bg) !important;
+} overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 600px; } 
         
         #reqTable { min-width: 2500px; } 
@@ -78,7 +80,7 @@
 
         /* MODAL RESPONSIVENESS */
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: flex-end; justify-content: center; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 15px 15px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px 15px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; }
         
         /* FORM GRID - SINGLE COLUMN ON MOBILE */
         .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -86,12 +88,12 @@
         
         .field { display: flex; flex-direction: column; gap: 3px; }
         .field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-        .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; background: #fff; }
+        .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; background: var(--card-bg); }
 
         /* ACTION MENU */
         #menuWrap { position: relative; }
-        .menu-trigger { background: #fff; border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
-        #menuBox { display: none; position: absolute; right: 0; top: 32px; background: #fff; border: 1px solid var(--border); border-radius: 8px; width: 130px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; }
+        .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+        #menuBox { display: none; position: absolute; right: 0; top: 32px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; width: 130px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; }
         .menu-item { padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
         tr.selected { background: #eff6ff !important; outline: 1px solid var(--accent); }
     </style>
@@ -231,7 +233,7 @@
             <table id="reqTable">
                 <thead>
                     <tr>
-                        <th>Sl</th><th>Company</th><th>PO Number</th><th>Buyer</th><th>Ship Date</th><th>Packing Style</th><th>Brand</th><th>Sps</th><th>Var</th><th>CG%</th><th>WG%</th><th>Grd</th><th>NW Grd</th><th>Pcs</th><th>Ord MC</th><th>Stk MC</th><th class="pnd-mc-col">Pnd MC</th><th class="calc-col">Net Cnt</th><th class="calc-col">HL Cnt</th><th class="calc-col">HOSO Cnt</th><th>Ord Qty</th><th>Avl Stk</th><th>Utilized</th><th>Ref Stock</th><th>Pnd Prd</th><th style="background:#fff7ed; color:#c2410c;">REQ HLSO</th><th style="background:#fff7ed; color:#c2410c;">REQ HOSO</th>
+                        <th>Sl</th><th>Company</th><th>PO Number</th><th>Buyer</th><th>Ship Date</th><th>Packing Style</th><th>Brand</th><th>Sps</th><th>Var</th><th>CG%</th><th>WG%</th><th>Grd</th><th>NW Grd</th><th>Pcs</th><th>Ord MC</th><th>Stk MC</th><th class="pnd-mc-col">Pnd MC</th><th class="calc-col">Net Cnt</th><th class="calc-col">HL Cnt</th><th class="calc-col">HOSO Cnt</th><th>Ord Qty</th><th>Avl Stk</th><th>Utilized</th><th>Ref Stock</th><th>Pnd Prd</th><th style="background:var(--card-bg)7ed; color:#c2410c;">REQ HLSO</th><th style="background:var(--card-bg)7ed; color:#c2410c;">REQ HOSO</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -239,11 +241,11 @@
                     {% for po_no, records in grouped_req %}
                         {% set first_row = records[0] %}
                         <tr class="group-row" data-company="{{ first_row.company_name }}">
-                            <td colspan="16" style="background:#fff7ed; color:#121d9a;">
+                            <td colspan="16" style="background:var(--card-bg)7ed; color:#121d9a;">
                                 <i class="fa-solid fa-file-invoice"></i> PO: <b>{{ po_no }}</b> | {{ first_row.buyer }}
                             </td>
                             <td class="pnd-mc-col">{{ (records | sum(attribute='no_of_mc') - records | sum(attribute='stock_mc'|default(0))) | round(0) | int }}</td>
-                            <td colspan="10" style="background:#fff7ed;"></td>
+                            <td colspan="10" style="background:var(--card-bg)7ed;"></td>
                         </tr>
                         {% for row in records %}
                         <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}" data-freezer="" data-grade="{{ row.grade }}">

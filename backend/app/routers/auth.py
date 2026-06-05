@@ -201,18 +201,18 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
-    # ✅ SESSION SET
+    # ✅ SESSION SET (🌟 ADDED company_name TO SESSION TO MATCH CORRESPONDING RECON MATRICES)
     request.session.update({
         "email": user.email,
         "company_id": company.id,
         "company_code": company.company_code,
-        "company_name": company.company_name,
+        "company_name": company.company_name,  # ఇక్కడ కంపెనీ నేమ్ కూడా సెషన్ లో సేవ్ అవుతుంది!
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions
     })
 
-    # ✅ COOKIE RESPONSE
+    # ✅ COOKIE RESPONSE (VERY IMPORTANT 🔥)
     response = JSONResponse({
         "status": "success",
         "message": "Login Successful"
@@ -310,23 +310,9 @@ def reset_password(
 
 
 # =====================================================
-# 🚀 BEST LOGOUT VERSION (Clears Session, Cookie & Cache)
+# LOGOUT
 # =====================================================
 @router.get("/logout")
 def logout(request: Request):
-
-    # 1. Clear server-side session
     request.session.clear()
-
-    # 2. Prepare redirect response
-    response = RedirectResponse("/", status_code=303)
-
-    # 3. Delete authentication cookies
-    response.delete_cookie("session")
-
-    # 4. Strict Cache-Control headers to prevent Back-button caching
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-
-    return response
+    return RedirectResponse("/", status_code=303)

@@ -20,7 +20,7 @@
   
   /* HEADER */
   .header {
-    background: #fff; padding: 12px 20px;
+    background: var(--card-bg); padding: 12px 20px;
     border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 100;
@@ -31,7 +31,7 @@
   /* FILTER BAR */
   .filter-section {
     margin: 15px 20px; display: flex; align-items: center; gap: 15px;
-    background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card-bg); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);
   }
   .filter-section label { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
   
@@ -41,8 +41,10 @@
   }
 
   /* TABLE AREA */
-  .table-wrap {
-    margin: 0 20px 20px; background: #fff; border-radius: 10px;
+  .table-wrap{
+    background: var(--card-bg) !important;
+}
+    margin: 0 20px 20px; background: var(--card-bg); border-radius: 10px;
     border: 1px solid var(--border); overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   }
@@ -69,7 +71,9 @@
 
   @media (max-width: 768px) {
     .filter-section { flex-direction: column; align-items: flex-start; }
-    .table-wrap { overflow-x: auto; }
+    .table-wrap{
+    background: var(--card-bg) !important;
+} overflow-x: auto; }
   }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">

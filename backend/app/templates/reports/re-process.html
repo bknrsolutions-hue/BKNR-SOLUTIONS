@@ -32,19 +32,19 @@ body{
 .filters{
  margin-top:8px; display:grid;
  grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
- gap:8px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);
+ gap:8px; background:var(--header-bg); padding:10px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= CORPORATE TABS STRUCT ================= */
 .tabs-container {
     display: flex;
-    background: #ffffff;
+    background: var(--card-bg);
     padding: 0 15px;
     border-bottom: 2px solid var(--primary);
 }
@@ -77,13 +77,13 @@ select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px soli
 }
 
 /* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1400px; } 
 
 thead th{
- background:#f8fafc; padding:12px 4px; font-size:10px; font-weight:700;
+ background:var(--header-bg); padding:12px 4px; font-size:10px; font-weight:700;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
  color: var(--text); letter-spacing: 0.5px; text-align: center;
@@ -118,14 +118,16 @@ tbody tr:hover:not(.row-date-group){background:#f1f7ff; cursor:pointer;}
 
 /* ================= FOOTER ================= */
 tfoot td{ 
-    background:#f8fafc; font-weight:800; font-size:11px; color:var(--primary);
+    background:var(--header-bg); font-weight:800; font-size:11px; color:var(--primary);
     border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:12px; 
 }
 
 @media print {
     .header, .filters, .tabs-container { display: none !important; }
     .section { border: none !important; margin: 0 !important; }
-    .table-wrap { overflow: visible !important; }
+    .table-wrap{
+    background: var(--card-bg) !important;
+} overflow: visible !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
 }
 </style>

@@ -11,7 +11,7 @@
 :root{ --primary:#143465; --secondary: #1e293b; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9; --card:#ffffff; --text:#1f2937; --muted:#64748b; }
 *{box-sizing:border-box;font-family: 'Inter', sans-serif;}
 body{ margin:0; background:var(--bg); color:var(--text); }
-.header{ padding:16px 25px; border-bottom:1px solid var(--border); background:#fff; display: flex; justify-content: space-between; align-items: center; }
+.header{ padding:16px 25px; border-bottom:1px solid var(--border); background:var(--card-bg); display: flex; justify-content: space-between; align-items: center; }
 .header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
 .section{ margin:18px; background:var(--card); padding:22px; border-radius:14px; border:1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
@@ -32,7 +32,7 @@ body{ margin:0; background:var(--bg); color:var(--text); }
     font-size: 13px; 
     font-family: inherit;
     color: var(--text);
-    background: #fff; 
+    background: var(--card-bg); 
     outline: none; 
     transition: 0.2s; 
     appearance: auto;
@@ -41,7 +41,7 @@ body{ margin:0; background:var(--bg); color:var(--text); }
 .field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 .hidden{display:none}
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{ padding:10px 24px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:#fff; transition: 0.2s; }
+.btn{ padding:10px 24px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--card-bg); transition: 0.2s; }
 .btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
 .btn-search { background: var(--secondary); color: #fff; border: none; }
 .table-container { width: 100%; overflow-x: auto; margin-top: 18px; border-radius: 8px; border: 1px solid var(--border); }
@@ -203,7 +203,7 @@ input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; 
     <div style="margin-top: 20px;"><button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button></div>
     <div class="table-container">
         <table id="reportTable" class="hidden">
-        <thead><tr><th>Location</th><th>Batch Number</th><th>Available MC</th><th>Available Loose</th><th style="background: #fff4f4;">OUT MC</th><th style="background: #fff4f4;">OUT Loose</th></tr></thead>
+        <thead><tr><th>Location</th><th>Batch Number</th><th>Available MC</th><th>Available Loose</th><th style="background: var(--card-bg)4f4;">OUT MC</th><th style="background: var(--card-bg)4f4;">OUT Loose</th></tr></thead>
         <tbody id="reportRows"></tbody>
         </table>
     </div>

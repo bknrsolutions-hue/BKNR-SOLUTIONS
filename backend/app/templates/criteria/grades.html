@@ -26,7 +26,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:#fff; padding:10px 15px;
+  background:var(--card-bg); padding:10px 15px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
@@ -35,7 +35,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px
 /* ================= FORM CONTAINER ================= */
 .form-container {
   width: 95%; max-width: 1400px; margin: 10px auto;
-  background: #fff; padding: 15px 20px; border-radius: 8px;
+  background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   display: none;
@@ -49,7 +49,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px
 label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
 input {
   padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: #fff;
+  border-radius: 6px; font-size: 13px; background: var(--card-bg);
   outline: none; width: 100%; transition: 0.2s;
 }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
@@ -83,7 +83,9 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 .menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap { width: 95%; max-width: 1400px; margin: 0 auto 40px; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+.table-wrap{
+    background: var(--card-bg) !important;
+} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
@@ -97,14 +99,16 @@ tr.selected { background: #eff6ff !important; }
 
 /* MOBILE CARD LIST */
 .mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
+.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
 .data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
 .card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
 .card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
 .card-val { font-weight: 700; color: var(--primary); }
 
 @media(max-width: 1024px){
-  .table-wrap { display: none; }
+  .table-wrap{
+    background: var(--card-bg) !important;
+} display: none; }
   .mobile-card-list { display: block; }
   .form-container, .table-header-bar { width: 95%; }
   .actions { flex-direction: column; }

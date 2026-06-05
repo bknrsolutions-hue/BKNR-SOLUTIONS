@@ -10,22 +10,62 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-:root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626; --warning: #d97706;
+:root {
+  --primary: #143465; 
+  --accent: #3b82f6; 
+  --border: #d6dde7; 
+  --bg: #f4f6f9;
+  --card: #ffffff; 
+  --text: #1f2937; 
+  --muted: #64748b; 
+  --success: #166534; 
+  --danger: #dc2626; 
+  --warning: #d97706;
+  
+  --card-hover: #f8fafc;
+  --sub-bg: #eff6ff;
+  --table-border: #edf2f7;
+  --text-heading: #143465;
+  --input-bg: #ffffff;
+}
+
+/* DARK MODE DESIGN OVERRIDES */
+body.dark-mode {
+  --primary: #60a5fa; 
+  --accent: #3b82f6; 
+  --border: #334155; 
+  --bg: #0f172a;       
+  --card: #1e293b;     
+  --text: #f8fafc;     
+  --muted: #94a3b8;    
+  --success: #22c55e; 
+  --danger: #ef4444; 
+  --warning: #f59e0b;
+  
+  --card-hover: #334155;
+  --sub-bg: #1e2640;   
+  --table-border: #334155;
+  --text-heading: #f8fafc;
+  --input-bg: #0f172a;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 60px; overflow-x: hidden; transition: background 0.2s, color 0.2s;}
 
 /* --- HEADER --- */
 .header-dash {
-  background: #fff; padding: 15px 25px; border-bottom: 1px solid var(--border);
+  background: var(--card); padding: 15px 25px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:18px; color:var(--primary); font-weight: 800;}
-#clock { background: #eff6ff; color: var(--accent); padding: 6px 20px; border-radius: 20px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; }
+.header-titles h2{margin:0; font-size:18px; color:var(--text-heading); font-weight: 800;}
+#clock { background: var(--sub-bg); color: var(--accent); padding: 6px 20px; border-radius: 20px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; }
+
+.theme-toggle-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; 
+  padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+}
+.theme-toggle-btn:hover { color: var(--accent); background: var(--card-hover); }
 
 @media(max-width:800px){ 
     .header-dash { flex-direction: column; gap: 10px; text-align: center; }
@@ -37,25 +77,26 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 @media(max-width:600px){ .stats-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .stat-card { 
-    background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); 
+    background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); 
     display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     cursor: pointer; transition: 0.2s;
 }
 .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-.stat-card.active { border: 2px solid var(--accent); background: #f0f7ff; }
+.stat-card.active { border: 2px solid var(--accent); background: var(--sub-bg); }
 .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
 .stat-info h4 { margin: 0; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.stat-info h2 { margin: 2px 0 0; font-size: 18px; font-weight: 800; color: var(--primary); }
+.stat-info h2 { margin: 2px 0 0; font-size: 18px; font-weight: 800; color: var(--text-heading); }
 
 /* --- MAIN LAYOUT --- */
 .main-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px 25px; align-items: start; }
 @media(max-width:1024px){ .main-layout { grid-template-columns: 1fr; } }
 
 /* --- LEFT TERMINAL CONTROL --- */
-.control-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+.control-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: sticky; top: 90px; }
 .id-input { 
     width: 100%; padding: 12px; font-size: 20px; font-weight: 800; border: 2px solid var(--border); 
-    border-radius: 10px; text-align: center; margin-bottom: 15px; outline: none; transition: 0.2s; color: var(--primary);
+    border-radius: 10px; text-align: center; margin-bottom: 15px; outline: none; transition: 0.2s; 
+    color: var(--text-heading); background: var(--input-bg);
 }
 .id-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -70,27 +111,44 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 /* --- SUMMARY BLOCKS --- */
 .summary-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
 @media(max-width:600px){ .summary-section { grid-template-columns: 1fr; } }
-.sub-table-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 15px; max-height: 180px; overflow-y: auto; }
+.sub-table-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 15px; max-height: 200px; overflow-y: auto; }
 .sub-table-card h3 { margin: 0 0 10px; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 800; }
 .mini-table { width: 100%; font-size: 11px; border-collapse: collapse; }
 .mini-table tr { cursor: pointer; }
-.mini-table tr:hover { background: #f8fafc; }
+.mini-table tr:hover { background: var(--card-hover); }
 .mini-table th { text-align: left; padding: 4px; color: var(--muted); border-bottom: 1px solid var(--border); }
-.mini-table td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; font-weight: 600; color: var(--primary); }
-.active-filter-row { background: #eff6ff !important; color: var(--accent) !important; }
+.mini-table td { padding: 6px 4px; border-bottom: 1px solid var(--table-border); font-weight: 600; color: var(--text-heading); }
+.active-filter-row { background: var(--sub-bg) !important; color: var(--accent) !important; }
 
 /* --- RIGHT MAIN TABLE LAYOUT --- */
 .section-header { padding: 5px 0 10px; display: flex; justify-content: space-between; align-items: center; }
 #threeDotsMenu { position: relative; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
-.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-heading); }
+.menu-item:hover { background: var(--card-hover); color: var(--accent); }
 
-.table-wrap { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+/* CLEAN TABLE WRAPPER - NATURAL PAGE SCROLLING */
+.table-wrap { 
+    background: var(--card); 
+    border-radius: 12px; 
+    border: 1px solid var(--border); 
+    overflow-x: auto; /* Horizontal scroll for columns if needed */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+    margin-bottom: 20px;
+}
 .main-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 900px; text-align: center; }
-.main-table thead th { background: #f8fafc; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.main-table tbody td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+
+/* FIXED THEAD DURING PAGE SCROLL */
+.main-table thead th { 
+    background: var(--card-hover); 
+    padding: 12px 10px; 
+    border-bottom: 2px solid var(--border); 
+    color: var(--muted); 
+    text-transform: uppercase; 
+    font-weight: 700; 
+}
+.main-table tbody td { padding: 12px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-heading); font-weight: 600; }
 
 /* Timeline Stream Badges */
 .chip { font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; }
@@ -98,10 +156,18 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 .c-out { color: #92400e; background: #fef3c7; }
 .c-exit { color: #991b1b; background: #fee2e2; }
 
+body.dark-mode .c-in { color: #22c55e; background: #14532d; }
+body.dark-mode .c-out { color: #fbbf24; background: #78350f; }
+body.dark-mode .c-exit { color: #f87171; background: #7f1d1d; }
+
 .badge { padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .s-open { background: #dcfce7; color: #166534; }
 .s-away { background: #fef3c7; color: #92400e; }
 .s-closed { background: #f1f5f9; color: #475569; }
+
+body.dark-mode .s-open { background: #14532d; color: #22c55e; }
+body.dark-mode .s-away { background: #78350f; color: #fbbf24; }
+body.dark-mode .s-closed { background: #334155; color: #cbd5e1; }
 
 .duty-label { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
 .dt-double { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
@@ -110,30 +176,38 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 .dt-absent { color: var(--danger); background: #fef2f2; border: 1px solid #fecaca; }
 .dt-onduty { color: var(--accent); background: #eff6ff; border: 1px solid #bfdbfe; }
 
+body.dark-mode .dt-double { color: #c084fc; background: #2e1065; border-color: #581c87; }
+body.dark-mode .dt-single { color: #4ade80; background: #064e3b; border-color: #065f46; }
+body.dark-mode .dt-half { color: #fbbf24; background: #451a03; border-color: #78350f; }
+body.dark-mode .dt-absent { color: #f87171; background: #4c0519; border-color: #881337; }
+body.dark-mode .dt-onduty { color: #60a5fa; background: #1e3a8a; border-color: #1e40af; }
+
 /* --- AUDIT PANEL --- */
 .audit-panel { 
-    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card); 
     border-left: 3px solid var(--primary); display: none; flex-direction: column; 
-    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: background 0.2s;
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
 
 <div class="header-dash">
     <div class="header-titles"><h2>Live Gate Terminal System</h2></div>
-    <div id="clock">00:00:00</div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="themeToggle" class="theme-toggle-btn" title="Toggle Theme Layout">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+        <div id="clock">00:00:00</div>
+    </div>
 </div>
 
-<!-- 📊 ACTIVE STATS READOUT COUNTERS -->
 <div class="stats-grid">
     <div class="stat-card active" id="card-ALL" onclick="setFilter('ALL', 'STATUS')">
-        <div class="stat-icon" style="background: var(--primary);"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-icon" style="background: #143465;"><i class="fa-solid fa-users"></i></div>
         <div class="stat-info"><h4>TOTAL ACTIVE</h4><h2 id="stat-total">0</h2></div>
     </div>
     <div class="stat-card" id="card-OPEN" onclick="setFilter('OPEN', 'STATUS')">
@@ -158,7 +232,6 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     </div>
 </div>
 
-<!-- 📦 MAIN SYSTEM LAYOUT GRID -->
 <div class="main-layout">
     <div class="control-card">
         <label style="font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 6px; text-align: center;">Scan Employee Identity</label>
@@ -171,8 +244,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
         </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; overflow: hidden;">
-        <!-- 📊 REALTIME SUMMARIES -->
+    <div style="display: flex; flex-direction: column;">
         <div class="summary-section">
             <div class="sub-table-card">
                 <h3>Department Metrics Summary</h3>
@@ -190,9 +262,8 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
             </div>
         </div>
 
-        <!-- 🧾 ACTIONS LIST CONTEXT -->
         <div class="section-header">
-            <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--primary);">0 RECORD LOG LINES FOUND</div>
+            <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--text-heading);">0 RECORD LOG LINES FOUND</div>
             <div id="threeDotsMenu">
                 <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                 <div id="dropdownMenu">
@@ -203,7 +274,6 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
             </div>
         </div>
 
-        <!-- 📋 REALTIME DATA ATTENDANCE GRID -->
         <div class="table-wrap">
             <table class="main-table">
                 <thead>
@@ -221,22 +291,44 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     </div>
 </div>
 
-<!-- ================= AUDIT PANEL ================= -->
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+    <div style="padding:12px; background:#143465; color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:12px;">PUNCH TRANSACTION TELEMETRY ARCHIVE</b>
         <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:var(--bg);"></div>
 </div>
 
 <script>
-    // 🔍 AUTOMATIC ROUTE PREFIX DETECTOR
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/attendance' : '/attendance';
     
     let rawData = [];
     let filterVal = 'ALL';
     let filterType = 'STATUS';
+
+    const themeToggleBtn = document.getElementById("themeToggle");
+    
+    function initTheme() {
+        const storedTheme = localStorage.getItem("gate-terminal-theme");
+        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        
+        if (storedTheme === "dark" || (!storedTheme && systemPrefersDark)) {
+            document.body.classList.add("dark-mode");
+            themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        } else {
+            document.body.classList.remove("dark-mode");
+            themeToggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        }
+    }
+
+    themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        const isDark = document.body.classList.contains("dark-mode");
+        localStorage.setItem("gate-terminal-theme", isDark ? "dark" : "light");
+        themeToggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+    });
+
+    initTheme();
 
     setInterval(() => { 
         document.getElementById("clock").innerText = new Date().toLocaleTimeString("en-GB"); 
@@ -342,12 +434,12 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
             body.innerHTML += `
                 <tr class="data-row">
                     <td class="text-left" style="padding-left:15px;">
-                        <div style="font-weight:800; color:var(--primary); font-size:12px;">${r.employee_id}</div>
+                        <div style="font-weight:800; color:var(--text-heading); font-size:12px;">${r.employee_id}</div>
                         <div style="font-size:10px; color:var(--muted); margin-top:2px;"><b>${r.employee_name}</b></div>
                         <div style="font-size:9px; color:var(--accent); margin-top:1px;">${r.department} &bull; ${r.designation}</div>
                     </td>
                     <td><div style="display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap">${timeline}</div></td>
-                    <td class="text-right" style="font-weight:800; color:var(--primary); font-size:12px;">${parseFloat(r.working_hours).toFixed(2)} <span style="font-size:9px; color:var(--muted)">HRS</span></td>
+                    <td class="text-right" style="font-weight:800; color:var(--text-heading); font-size:12px;">${parseFloat(r.working_hours).toFixed(2)} <span style="font-size:9px; color:var(--muted)">HRS</span></td>
                     <td><span class="duty-label ${dtClass}">${r.status === 'CLOSED' ? r.duty_type : 'ON-DUTY'}</span></td>
                     <td><span class="badge s-${r.status.toLowerCase()}">${r.status}</span></td>
                 </tr>`;
@@ -390,9 +482,9 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
             const logs = await res.json();
             if(Array.isArray(logs) && logs.length > 0) {
                 content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05); color:var(--text);">
                         <b>${l.timestamp}</b> | Action Scope: ${l.invoice_no}<br>
-                        <small style="color:var(--primary); font-weight:600;">${l.details}</small><br>
+                        <small style="color:var(--accent); font-weight:600;">${l.details}</small><br>
                         <small style="color:var(--muted)">Operator Terminal: ${l.user}</small>
                     </div>`).join('');
             } else {
@@ -404,7 +496,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 
     loadData();
-    setInterval(loadData, 15000); // 15 Seconds Polling Engine Loop Injection
+    setInterval(loadData, 15000);
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

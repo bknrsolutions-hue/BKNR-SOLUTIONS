@@ -24,24 +24,24 @@ body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction
 
 .filters{
  margin-top:6px; display:grid; grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));
- gap:4px; background:#f8fafc; padding:6px; border-radius:4px; border:1px solid var(--border);
+ gap:4px; background:var(--header-bg); padding:6px; border-radius:4px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:1px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; height:24px; }
+select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:24px; }
 #searchBox{ grid-column:span 2; border-left:3px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:12px;}
+.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:12px;}
 
 .menu-list{
- position:absolute; right:0; top:28px; width:210px; background:#fff; border:1px solid var(--border);
+ position:absolute; right:0; top:28px; width:210px; background:var(--card-bg); border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 .menu-list div{ padding:6px 10px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
@@ -50,7 +50,7 @@ select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size
 .menu-list hr{ border:0; border-top:1px solid var(--border); margin:0; }
 
 /* ================= TABLE AREA ================= */
-.section{ flex:1; margin:4px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.section{ flex:1; margin:4px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width:100%; position:relative; -webkit-overflow-scrolling:touch; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width:1300px; } 
@@ -67,7 +67,7 @@ tbody td{
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); background: #fff; }
+.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); background: var(--card-bg); }
 .empty-state i { font-size: 30px; margin-bottom: 10px; color: var(--accent); opacity: 0.5; }
 
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
@@ -87,22 +87,22 @@ tr.selected{background:#eef2ff !important; border-left:3px solid var(--accent);}
 .searchable-dropdown-list {
     position: fixed; 
     max-height: 120px; overflow-y: auto;
-    background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+    background: var(--card-bg); border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
 .searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); }
+tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); }
 
 /* ================= MODAL & AUDIT ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:15px; border-radius:4px; width:280px; text-align:center; }
+.modal-content{ background:var(--card-bg); padding:15px; border-radius:4px; width:280px; text-align:center; }
 .btn-y{ background:var(--primary); color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px; }
 .btn-n{ background:#e2e8f0; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; font-size:11px; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:320px; background:#fff; 
+    position:fixed; right:0; top:0; bottom:0; width:320px; background:var(--card-bg); 
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
@@ -115,10 +115,12 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
 /* ================= HARD PRINTER ENGINE COMPILE SYSTEM ================= */
 @media print {
     @page { size: A4 landscape; margin: 5mm; }
-    body { background: #fff; height: auto; overflow: visible; color: #000; display: block !important; }
+    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; display: block !important; }
     .header, .actions, .menu-box, .audit-panel, button, #confirmModal { display: none !important; }
     .section { border: none; margin: 0; padding: 0; overflow: visible; display: block !important; }
-    .table-wrap { overflow: visible; width: 100%; display: block !important; height: auto !important; }
+    .table-wrap{
+    background: var(--card-bg) !important;
+} overflow: visible; width: 100%; display: block !important; height: auto !important; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
     thead { display: table-header-group !important; }
     tfoot { display: table-footer-group !important; }
@@ -301,7 +303,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:9.5px; border-top:2px s
         <b style="font-size:11px;">📜 EDIT HISTORY LOGS</b>
         <span onclick="toggleAudit()" style="cursor:pointer; font-size:18px;">×</span>
     </div>
-    <div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:var(--header-bg);"></div>
 </div>
 
 
@@ -438,7 +440,7 @@ async function toggleAudit() {
         const res = await fetch(`${baseUrl}/audit_all`);
         const logs = await res.json();
         content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:#fff; padding:8px; font-size:10px;">
+            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:4px; background:var(--card-bg); padding:8px; font-size:10px;">
                 <b>${l.timestamp}</b> | Batch: ${l.batch}<br>
                 ${l.action}: ${l.details}<br>
                 <small>By: ${l.user}</small>

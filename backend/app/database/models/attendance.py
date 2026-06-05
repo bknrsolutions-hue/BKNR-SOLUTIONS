@@ -212,3 +212,25 @@ class EmployeeSalaryAdvance(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
 
+class Shift(Base):
+    __tablename__ = "shifts"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    company_id = Column(String, nullable=False, index=True)
+    company_name = Column(String(255), nullable=False)
+
+    shift_name = Column(String(100), nullable=False, index=True)
+
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+
+    break_minutes = Column(Integer, default=0)
+
+    is_night_shift = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+
+    date = Column(Date)
+    time = Column(Time)
+
+    email = Column(String(255))

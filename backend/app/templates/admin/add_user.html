@@ -7,97 +7,157 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<script>
+    function syncThemeFromParent() {
+        try {
+            if (window.parent && window.parent.document) {
+                const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+            }
+        } catch(e) {}
+    }
+    syncThemeFromParent();
+    window.addEventListener('load', syncThemeFromParent);
+</script>
+
 <style>
+/* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
 :root {
+  /* LIGHT MODE (DEFAULT) */
   --primary-color: #004b93;
   --btn-bg: #002b5c;
   --btn-hover: #001a3a;
   --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%);
+  --glass-bg: rgba(255, 255, 255, 0.85);
   --card-bg: #ffffff;
   --text-main: #0f172a;
   --text-muted: #475569;
   --border-color: rgba(15, 23, 42, 0.08);
+  --input-bg: #f8fafc;
   --input-focus-border: rgba(0, 75, 147, 0.3);
   --table-header: #0f172a;
-  --accent-success: #10b981;
+  --table-header-text: #ffffff;
+  
+  --pillar-bg: #f1f5f9;
+  --category-bg: #fafafa;
+  --category-title-bg: rgba(15, 23, 42, 0.02);
+  --badge-bg: #e2e8f0;
+  --row-hover: #f8fafc;
+  --row-selected: #e0f2fe;
+  --row-selected-border: #bae6fd;
+  --perm-span-bg: #f1f5f9;
+  
+  --badge-success-bg: #d1fae5;
+  --badge-success-text: #065f46;
+  --shadow-color: rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="dark"] {
+  /* DARK MODE OVERRIDES */
+  --primary-color: #60a5fa;
+  --btn-bg: #2563eb;
+  --btn-hover: #3b82f6;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --glass-bg: rgba(30, 41, 59, 0.85);
+  --card-bg: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --input-bg: #0f172a;
+  --input-focus-border: rgba(96, 165, 250, 0.3);
+  --table-header: #0f172a;
+  --table-header-text: #94a3b8;
+  
+  --pillar-bg: #0f172a;
+  --category-bg: #1e293b;
+  --category-title-bg: rgba(255, 255, 255, 0.02);
+  --badge-bg: #334155;
+  --row-hover: #0f172a;
+  --row-selected: rgba(59, 130, 246, 0.2);
+  --row-selected-border: rgba(59, 130, 246, 0.4);
+  --perm-span-bg: #0f172a;
+  
+  --badge-success-bg: rgba(16, 185, 129, 0.2);
+  --badge-success-text: #34d399;
+  --shadow-color: rgba(0, 0, 0, 0.3);
 }
 
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding: 2rem; }
+body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding: 2rem; transition: background 0.3s, color 0.3s; }
 
 .container {
   width: 100%; max-width: 1400px; margin: 0 auto;
-  background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  padding: 2.5rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 2.5rem; border-radius: 12px; border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px var(--shadow-color);
+  transition: background 0.3s, border-color 0.3s;
 }
 
 .header-zone { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
 h2 { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; display: flex; align-items: center; gap: 10px; }
 h2 i { color: var(--primary-color); }
 
-.form-card { background: #ffffff; border: 1px solid var(--border-color); padding: 2rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.form-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 2rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 4px 15px var(--shadow-color); animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); transition: background 0.3s, border-color 0.3s; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
 .form-group { display: flex; flex-direction: column; }
 label { font-size: 0.78rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.4rem; letter-spacing: 0.01em; }
-input, select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.88rem; color: var(--text-main); background: #f8fafc; transition: all 0.2s ease; }
-input:focus, select:focus { outline: none; background: #ffffff; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
+input, select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.88rem; color: var(--text-main); background: var(--input-bg); transition: all 0.2s ease; }
+input:focus, select:focus { outline: none; background: var(--card-bg); border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
 
-.access-checkbox-container { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: background 0.2s; height: 100%; }
+.access-checkbox-container { display: flex; align-items: center; gap: 10px; background: var(--input-bg); padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: background 0.2s; height: 100%; }
 .access-checkbox-container input[type="checkbox"] { width: auto; accent-color: var(--primary-color); }
 
 .perm-wrapper { position: relative; }
-.perm-box { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.88rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; font-weight: 500; }
+.perm-box { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); font-size: 0.88rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; font-weight: 500; }
 
 .perm-menu { 
-  display: none; position: absolute; top: 100%; left: 0; width: 100%; background: #ffffff; 
-  border: 1px solid rgba(15, 23, 42, 0.15); border-radius: 8px; margin-top: 6px; 
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); z-index: 9999; max-height: 450px; overflow-y: auto; padding: 12px; 
+  display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--card-bg); 
+  border: 1px solid var(--border-color); border-radius: 8px; margin-top: 6px; 
+  box-shadow: 0 10px 30px var(--shadow-color); z-index: 9999; max-height: 450px; overflow-y: auto; padding: 12px; 
 }
 
-.search-container { position: sticky; top: 0; background: #ffffff; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); z-index: 10; }
+.search-container { position: sticky; top: 0; background: var(--card-bg); padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); z-index: 10; }
 .search-container input { padding: 8px 10px; font-size: 0.8rem; }
-.pillar-section { margin-bottom: 10px; border: 1px solid rgba(15, 23, 42, 0.04); border-radius: 6px; overflow: hidden; }
-.pillar-header { background: #f1f5f9; padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid rgba(15, 23, 42, 0.04); }
+.pillar-section { margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+.pillar-header { background: var(--pillar-bg); padding: 8px 12px; font-size: 0.82rem; font-weight: 700; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid var(--border-color); }
 .pillar-header input[type="checkbox"] { width: auto; margin-right: 6px; }
-.category-block { padding-left: 8px; background: #fafafa; display: none; }
-.category-title { padding: 6px 12px; font-size: 0.78rem; font-weight: 600; color: var(--primary-color); display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.02); margin-top: 4px;}
+.category-block { padding-left: 8px; background: var(--category-bg); display: none; }
+.category-title { padding: 6px 12px; font-size: 0.78rem; font-weight: 600; color: var(--primary-color); display: flex; align-items: center; gap: 6px; background: var(--category-title-bg); margin-top: 4px;}
 .items-grid { padding: 6px 12px 10px 12px; display: grid; grid-template-columns: 1fr; gap: 6px; }
 .item-label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-main); font-weight: 400; cursor: pointer; padding: 2px 0; }
 .item-label input[type="checkbox"] { width: auto; }
-.badge-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #e2e8f0; color: #475569; margin-left: auto; text-transform: uppercase; }
+.badge-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--badge-bg); color: var(--text-muted); margin-left: auto; text-transform: uppercase; }
 
 /* Table Control Header Layer */
-.table-controls { display: flex; justify-content: flex-end; align-items: center; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border-color); border-bottom: none; border-top-left-radius: 10px; border-top-right-radius: 10px; position: relative; margin-top: 15px; }
+.table-controls { display: flex; justify-content: flex-end; align-items: center; padding: 12px 16px; background: var(--input-bg); border: 1px solid var(--border-color); border-bottom: none; border-top-left-radius: 10px; border-top-right-radius: 10px; position: relative; margin-top: 15px; }
 .global-action-container { position: relative; display: inline-block; }
-.global-action-btn { background: #ffffff; border: 1px solid var(--border-color); color: var(--text-muted); font-size: 1rem; cursor: not-allowed; padding: 8px 14px; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; opacity: 0.5; }
-.global-action-btn.active { cursor: pointer; opacity: 1; color: var(--primary-color); border-color: var(--primary-color); box-shadow: 0 2px 6px rgba(0, 75, 147, 0.1); }
+.global-action-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 1rem; cursor: not-allowed; padding: 8px 14px; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; opacity: 0.5; }
+.global-action-btn.active { cursor: pointer; opacity: 1; color: var(--primary-color); border-color: var(--primary-color); box-shadow: 0 2px 6px var(--input-focus-border); }
 
-.global-dropdown-menu { display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.15); box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); border-radius: 6px; z-index: 10000; min-width: 160px; padding: 4px; }
+.global-dropdown-menu { display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: 0 10px 25px var(--shadow-color); border-radius: 6px; z-index: 10000; min-width: 160px; padding: 4px; }
 .global-dropdown-menu button { width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; color: var(--text-main); font-size: 0.85rem; font-weight: 500; border-radius: 4px; box-shadow: none; display: flex; align-items: center; gap: 8px; }
-.global-dropdown-menu button:hover { background: #f1f5f9; }
+.global-dropdown-menu button:hover { background: var(--row-hover); }
 
 /* Table Component */
-.table-block { background: #ffffff; border: 1px solid var(--border-color); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow-x: auto; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01); }
+.table-block { background: var(--card-bg); border: 1px solid var(--border-color); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow-x: auto; box-shadow: 0 4px 15px var(--shadow-color); }
 table { width: 100%; border-collapse: collapse; min-width: 800px; }
 th, td { padding: 14px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-th { background: var(--table-header); color: #ffffff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+th { background: var(--table-header); color: var(--table-header-text); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
 tr:last-child td { border-bottom: none; }
 
 tr.clickable-user-row { cursor: pointer; transition: background 0.15s; }
-tr.clickable-user-row:hover td { background: #f8fafc; }
-tr.clickable-user-row.selected-row td { background: #e0f2fe !important; border-bottom-color: #bae6fd; }
+tr.clickable-user-row:hover td { background: var(--row-hover); }
+tr.clickable-user-row.selected-row td { background: var(--row-selected) !important; border-bottom-color: var(--row-selected-border); }
 
-.permissions-cell-span { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }
-.status-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #d1fae5; color: #065f46; display: inline-flex; align-items: center; gap: 4px; }
+.permissions-cell-span { display: inline-block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; background: var(--perm-span-bg); padding: 2px 8px; border-radius: 4px; }
+.status-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--badge-success-bg); color: var(--badge-success-text); display: inline-flex; align-items: center; gap: 4px; }
 
 button.main-btn { background: var(--btn-bg); color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
 button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.15); }
-.btn-secondary { background: #e2e8f0; color: var(--text-main); }
-.btn-secondary:hover { background: #cbd5e1; }
-
+.btn-secondary { background: var(--badge-bg); color: var(--text-main); }
+.btn-secondary:hover { background: var(--border-color); }
 
 /* =========================================
    📱 MOBILE COMPACT OPTIMIZATION 
@@ -147,7 +207,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
     </div>
   </div>
 
-  <!-- INPUT FORM SECTION -->
   <div id="formSection" class="form-card" style="display:none;">
     <h3 id="formModeTitle" style="margin-bottom: 15px; color: var(--primary-color); font-size: 1.1rem;">Create New Profile</h3>
     
@@ -415,6 +474,7 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                 <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="add_user" onchange="updateSelectedCount()"><i class="fa-solid fa-user-gear"></i> User Configuration <span class="badge-tag">Admin</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="data_management" onchange="updateSelectedCount()"><i class="fa-solid fa-database"></i> Data Management <span class="badge-tag">Admin</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="shifts" onchange="updateSelectedCount()"><i class="fa-solid fa-clock"></i> Shift Master <span class="badge-tag">Admin</span></label>
                 </div>
               </div>
             </div>
@@ -430,7 +490,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
     </form>
   </div>
 
-  <!-- 🌟 TABLE HEADER CONTROLS (గ్లోబల్ 3-Dot మెనూ టేబుల్ పైన) -->
   <div class="table-controls">
     <div class="global-action-container">
       <button id="globalActionBtn" class="global-action-btn" onclick="toggleGlobalDropdown(event)">
@@ -445,7 +504,6 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
     </div>
   </div>
 
-  <!-- TABLE DATA MANAGEMENT LAYER -->
   <div id="tableSection" class="table-block">
     <table>
       <thead>
@@ -493,26 +551,31 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
 
 </div>
 
-<!-- Hidden Delete Form -->
 <form id="nativeDeleteForm" method="post" style="display:none;"></form>
 
 <script>
+// Watch for dynamic theme changes instantly without reload
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            // CSS variables automatically handle the color switch
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 let selectedUserId = null;
 
-// Row క్లిక్ చేసినప్పుడు సెలెక్ట్ అయ్యే లాజిక్
 function selectRow(event, id) {
   event.stopPropagation();
   
-  // పాత సెలెక్షన్స్ తీసేయడం
   document.querySelectorAll('.clickable-user-row').forEach(row => {
     row.classList.remove('selected-row');
   });
 
-  // క్లిక్ చేసిన రో ని హైలైట్ చేయడం
   const selectedRow = document.getElementById(`user-row-${id}`);
   if(selectedRow) selectedRow.classList.add('selected-row');
   
-  // పైన ఉన్న బటన్ యాక్టివ్ చేయడం
   selectedUserId = id;
   const menuBtn = document.getElementById('globalActionBtn');
   if(menuBtn) {
@@ -520,11 +583,9 @@ function selectRow(event, id) {
     document.getElementById('menuStatusText').innerText = `Row #${id} Selected`;
   }
   
-  // మెనూ ఓపెన్ అయ్యుంటే క్లోజ్ చేయడం
   document.getElementById('globalDropdown').style.display = 'none';
 }
 
-// టాప్ లో ఉన్న 3-Dot మెనూ ఓపెన్/క్లోజ్ లాజిక్
 function toggleGlobalDropdown(event) {
   event.stopPropagation();
   if (!selectedUserId) return;
@@ -538,7 +599,6 @@ function toggleGlobalDropdown(event) {
   }
 }
 
-// Global Edit & Delete
 function triggerEditFromGlobal() {
   if (!selectedUserId) return;
   document.getElementById('globalDropdown').style.display = 'none';
@@ -556,7 +616,6 @@ function triggerDeleteFromGlobal() {
   }
 }
 
-// డాక్యుమెంట్ పై ఎక్కడ క్లిక్ చేసినా మెనూలు క్లోజ్ అవ్వడం
 document.addEventListener('click', () => {
   const globalDropdown = document.getElementById('globalDropdown');
   if(globalDropdown) globalDropdown.style.display = 'none';
@@ -565,7 +624,6 @@ document.addEventListener('click', () => {
   if(permMenu) permMenu.style.display = 'none';
 });
 
-// Ecosystem Permissions & UI Logic
 function togglePermMenu(event) {
   event.stopPropagation();
   const menu = document.getElementById('permMenu');
@@ -629,7 +687,6 @@ function filterPermissions() {
   });
 }
 
-// Open Form View for New Profile Registration
 function openCreateMode() {
   document.getElementById('formSection').style.display = 'block';
   document.getElementById('formModeTitle').innerText = "Create New Profile";
@@ -644,7 +701,6 @@ function openCreateMode() {
   window.scrollTo({ top: document.getElementById('formSection').offsetTop, behavior: 'smooth' });
 }
 
-// Open Form View for Updating Records
 function openEditMode(id) {
   const row = document.getElementById(`user-row-${id}`);
   if(!row) return;
@@ -663,13 +719,11 @@ function openEditMode(id) {
   document.getElementById('f_role').value = row.getAttribute('data-role');
   document.getElementById('f_data_management_access').checked = row.getAttribute('data-dm-access') === 'true';
 
-  // Permissions Data Population
   const perms = (row.getAttribute('data-permissions') || '').split(',').map(p => p.trim());
   document.querySelectorAll('.items-grid input[name="access"]').forEach(cb => {
     cb.checked = perms.includes(cb.value);
   });
   
-  // Update parent pillar checkboxes
   document.querySelectorAll('.pillar-section').forEach(section => {
     const totalKids = section.querySelectorAll('.items-grid input[name="access"]').length;
     const checkedKids = section.querySelectorAll('.items-grid input[name="access"]:checked').length;

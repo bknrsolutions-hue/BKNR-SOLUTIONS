@@ -20,28 +20,28 @@ body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 .filters{
  margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
+ gap:5px; background:var(--header-bg); padding:8px; border-radius:6px; border:1px solid var(--border);
 }
 .fbox{display:flex;flex-direction:column;gap:2px;}
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
-select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
+select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; }
 #searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ACTIONS */
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:var(--card-bg); padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px; user-select:none;}
+.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:14px; user-select:none;}
 .menu-list{
- position:absolute; right:0; top:30px; width:200px; background:#fff; border:1px solid var(--border);
+ position:absolute; right:0; top:30px; width:200px; background:var(--card-bg); border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 .menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
 
 /* TABLE AREA */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; } 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1300px; } 
 thead th{
@@ -69,17 +69,17 @@ tr.selected{background:#dbeafe !important;}
 .searchable-dropdown-list {
     position: fixed;
     max-height: 140px; overflow-y: auto;
-    background: #fff; border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+    background: var(--card-bg); border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
 .searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
 .searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
 
 /* FOOTER */
-tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
 
 /* AUDIT PANEL */
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; 
+    position:fixed; right:0; top:0; bottom:0; width:380px; background:var(--card-bg); 
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
@@ -87,10 +87,12 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
 /* RUNTIME NATIVE HARD PRINT COMPILE STYLES (A4 LANDSCAPE OVERRIDES) */
 @media print {
     @page { size: A4 landscape; margin: 8mm; }
-    body { background: #fff; height: auto; overflow: visible; color: #000; }
+    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
     .header, .actions, .menu-box, .audit-panel, button { display: none !important; }
     .section { border: none; margin: 0; padding: 0; overflow: visible; }
-    .table-wrap { overflow: visible; width: 100%; }
+    .table-wrap{
+    background: var(--card-bg) !important;
+} overflow: visible; width: 100%; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
     thead th { background: #0f172a !important; color: #fff !important; font-size: 8.5px; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     tbody td { border: 1px solid #000 !important; font-size: 8.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
@@ -237,7 +239,7 @@ tfoot td{ background:#f8fafc; font-weight:800; font-size:10px; border-top:2px so
     <div style="padding:12px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b>AUDIT HISTORY</b><span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:var(--header-bg);"></div>
 </div>
 
 <script>

@@ -38,5 +38,21 @@
         "date": "2026-06-04 13:10:13",
         "status": "Success",
         "details": "Reverted last import. Deleted 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "GeneralStock",
+        "date": "2026-06-04 13:14:07",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "UNDO IMPORT",
+        "module": "GeneralStock",
+        "date": "2026-06-04 13:14:55",
+        "status": "Success",
+        "details": "Reverted last import. Deleted 24 records."
     }
 ]

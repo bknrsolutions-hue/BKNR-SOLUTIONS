@@ -27,7 +27,7 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
 /* HEADER */
 .header{
   position:sticky;top:0;z-index:100;
-  background:#fff;
+  background:var(--card-bg);
   padding:16px 25px;
   border-bottom:1px solid var(--border);
   display: flex;
@@ -110,7 +110,7 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
   font-size: 13px;
   font-family: inherit;
   color: var(--text);
-  background: #fff;
+  background: var(--card-bg);
   outline: none;
   transition: 0.2s;
   appearance: auto;
@@ -139,7 +139,7 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
   font-weight:700;
   cursor:pointer;
   border:1px solid var(--border);
-  background:#fff;
+  background:var(--card-bg);
   transition: 0.2s;
 }
 .btn-primary{
@@ -172,12 +172,14 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
   -webkit-overflow-scrolling: touch;
 }
 @media(max-width: 600px) {
-  .table-wrap { margin: 10px; border-radius: 12px; }
+  .table-wrap{
+    background: var(--card-bg) !important;
+} margin: 10px; border-radius: 12px; }
 }
 
 table{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1200px;}
 thead th{
-  background:#f8fafc;
+  background:var(--header-bg);
   padding:14px 10px;
   border-bottom: 1px solid var(--border);
   color: #475569;
@@ -190,14 +192,14 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
 /* MENU */
 #threeDotsMenu{ position:relative; display: none; }
 .menu-trigger {
-  background: #fff; border: 1px solid var(--border);
+  background: var(--card-bg); border: 1px solid var(--border);
   width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
 }
 #dropdownMenu{
   display:none;
   position:absolute;
   right:0; top: 40px;
-  background:#fff;
+  background:var(--card-bg);
   border:1px solid var(--border);
   border-radius:10px;
   width:160px;

@@ -23,19 +23,21 @@
         select, input { padding: 5px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; outline: none; background: white; }
         #searchBox { grid-column: span 2; border-left: 3px solid var(--accent); }
 
-        .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border); }
+        .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 10px 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
         .s-card { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid var(--border); border-left: 4px solid var(--border); }
         .s-card span { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .s-card b { font-size: 16px; display: block; margin-top: 2px; }
         .blue { border-left-color: var(--accent); } .red { border-left-color: var(--danger); } .green { border-left-color: var(--success); }
 
-        .tabs { display: flex; background: #fff; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 20px; }
+        .tabs { display: flex; background: var(--card-bg); padding: 0 15px; border-bottom: 1px solid var(--border); gap: 20px; }
         .tab { padding: 12px 5px; font-size: 11px; font-weight: 800; cursor: pointer; border-bottom: 3px solid transparent; color: #64748b; text-transform: uppercase; }
         .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        .section { flex: 1; margin: 5px; background: #fff; border: 1px solid var(--border); display: none; overflow: hidden; flex-direction: column; }
+        .section { flex: 1; margin: 5px; background: var(--card-bg); border: 1px solid var(--border); display: none; overflow: hidden; flex-direction: column; }
         .section.active { display: flex; }
-        .table-wrap { flex: 1; overflow: auto; }
+        .table-wrap{
+    background: var(--card-bg) !important;
+} flex: 1; overflow: auto; }
         
         table { width: 100%; border-collapse: collapse; min-width: 1800px; table-layout: fixed; }
         thead th { background: #f1f5f9; padding: 10px; font-size: 10px; font-weight: 800; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); color: var(--primary); }

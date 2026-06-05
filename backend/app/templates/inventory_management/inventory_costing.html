@@ -6,8 +6,24 @@
     <title>Inventory Analysis | {{ company_name or 'COMPANY' }} ERP</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        function syncTheme() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                    document.documentElement.setAttribute("data-theme", pTheme);
+                }
+            } catch(e) {}
+        }
+        syncTheme();
+        window.addEventListener('load', syncTheme);
+    </script>
+
     <style>
+        /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
         :root {
+            /* LIGHT MODE */
             --brand-primary: #0f172a;
             --brand-accent: #2563eb;
             --bg-main: #f8fafc;
@@ -20,6 +36,76 @@
             --orange: #ea580c;
             --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
             --card-header-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            
+            --th-bg: #f8fafc;
+            --tr-hover: #f8fafc;
+            --input-bg: #f8fafc;
+            
+            --move-in-bg: #f0fdf4;
+            --move-out-bg: #fef2f2;
+            --qty-bold-bg: transparent;
+            --val-bold-bg: #f0fdf4;
+            
+            --glaze-badge-bg: rgba(37, 99, 235, 0.25);
+            --glaze-badge-text: #93c5fd;
+            --glaze-badge-border: rgba(37, 99, 235, 0.3);
+            
+            --move-box-bg: #f8fafc;
+            --move-box-hover: #f1f5f9;
+            --move-title-in: #15803d;
+            --move-title-out: #b91c1c;
+            --stat-row-border: #f1f5f9;
+            --s-value-text: #0f172a;
+            
+            --card-footer-bg: #f0fdf4;
+            --card-footer-border: #dcfce7;
+            --footer-main-val: #166534;
+            --fs-label: #15803d;
+            
+            --stat-group-border: #f1f5f9;
+        }
+
+        [data-theme="dark"] {
+            /* DARK MODE OVERRIDES */
+            --brand-primary: #f8fafc;
+            --brand-accent: #60a5fa;
+            --bg-main: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --in-color: #4ade80;
+            --out-color: #f87171;
+            --orange: #f97316;
+            --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+            --card-header-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            
+            --th-bg: #0f172a;
+            --tr-hover: #0f172a;
+            --input-bg: #0f172a;
+            
+            --move-in-bg: rgba(22, 163, 74, 0.2);
+            --move-out-bg: rgba(225, 29, 72, 0.2);
+            --qty-bold-bg: rgba(59, 130, 246, 0.1);
+            --val-bold-bg: rgba(22, 163, 74, 0.15);
+
+            --glaze-badge-bg: rgba(96, 165, 250, 0.2);
+            --glaze-badge-text: #93c5fd;
+            --glaze-badge-border: rgba(96, 165, 250, 0.4);
+
+            --move-box-bg: #0f172a;
+            --move-box-hover: #1e293b;
+            --move-title-in: #4ade80;
+            --move-title-out: #f87171;
+            --stat-row-border: #334155;
+            --s-value-text: #f8fafc;
+            
+            --card-footer-bg: #0f172a;
+            --card-footer-border: #334155;
+            --footer-main-val: #4ade80;
+            --fs-label: #22c55e;
+            
+            --stat-group-border: #334155;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -35,6 +121,7 @@
             font-size: 9.5px; 
             line-height: 1.3; 
             overflow: hidden; 
+            transition: background 0.3s, color 0.3s;
         }
 
         header { 
@@ -47,9 +134,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-shrink: 0; /* హెడర్ సైజ్ తగ్గకుండా ఫిక్స్డ్ గా ఉండటానికి */
+            flex-shrink: 0; 
+            transition: 0.3s;
         }
-        .logo-section h1 { margin: 0; font-size: 13px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 4px solid var(--orange); padding-left: 8px; }
+        .logo-section h1 { margin: 0; font-size: 13px; font-weight: 800; color: var(--brand-primary); letter-spacing: -0.5px; border-left: 4px solid var(--orange); padding-left: 8px; transition: 0.3s;}
 
         /* ================= FILTERS CONTAINER ================= */
         .control-bar { 
@@ -63,22 +151,23 @@
             margin-bottom: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.01);
             flex-shrink: 0;
+            transition: 0.3s;
         }
 
-        .nav-tabs { display: flex; background: #f1f5f9; padding: 3px; border-radius: 6px; width: max-content; }
+        .nav-tabs { display: flex; background: var(--input-bg); padding: 3px; border-radius: 6px; width: max-content; transition: 0.3s;}
         .tab-btn { padding: 5px 14px; border: none; background: transparent; font-size: 9px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: 0.2s; }
-        .tab-btn.active { background: var(--brand-primary); color: white; }
+        .tab-btn.active { background: var(--brand-primary); color: var(--bg-main); }
 
         .filters-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; width: 100%; }
         .fbox { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
-        .fbox label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+        .fbox label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; transition: 0.3s;}
 
         .search-wrapper { position: relative; width: 100%; }
-        .search-wrapper i { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; }
-        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); height: 28px; }
-        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: #fff; width: 100%; color: var(--brand-primary); height: 28px; cursor: pointer; }
+        .search-wrapper i { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; transition: 0.3s;}
+        .search-input { width: 100%; padding: 4px 6px 4px 24px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 10px; font-weight: 600; outline: none; border-left: 3px solid var(--brand-accent); height: 28px; background: var(--card-bg); color: var(--text-main); transition: 0.3s;}
+        .select-filter { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 600; outline: none; background: var(--card-bg); width: 100%; color: var(--brand-primary); height: 28px; cursor: pointer; transition: 0.3s;}
 
-        .fy-select-premium { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; outline: none; background: #f8fafc; width: 100%; color: var(--brand-accent); border-left: 3px solid var(--brand-accent); cursor: pointer; height: 28px; }
+        .fy-select-premium { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; outline: none; background: var(--input-bg); width: 100%; color: var(--brand-accent); border-left: 3px solid var(--brand-accent); cursor: pointer; height: 28px; transition: 0.3s;}
         .dashboard-fields-wrapper { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-width: max-content; }
 
         /* 🌟 Main కంటెంట్ బాడీ లోపల ఉన్న స్పేస్ మొత్తాన్ని ఆక్యుపై చేస్తుంది */
@@ -94,7 +183,7 @@
 
         /* ================= TABLE DESIGN ================= */
         .table-container { 
-            background: white; 
+            background: var(--card-bg); 
             border-radius: 6px; 
             border: 1px solid var(--border-color); 
             overflow: hidden; 
@@ -102,6 +191,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            transition: 0.3s;
         }
         
         /* 🌟 టేబుల్ బాక్స్ కి కరెక్ట్ హైట్ ఇచ్చి లోపలే స్క్రోల్ అయ్యేలా సెట్ చేశాం */
@@ -114,17 +204,17 @@
         }
         
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
-        th { background: #f8fafc; padding: 6px 4px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #475569; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 20; white-space: nowrap; }
-        td { padding: 5px 4px; font-size: 9px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; font-weight: 600; }
-        tr:hover td { background-color: #f8fafc; }
+        th { background: var(--th-bg); padding: 6px 4px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 20; white-space: nowrap; transition: 0.3s;}
+        td { padding: 5px 4px; font-size: 9px; border-bottom: 1px solid var(--border-color); text-align: center; white-space: nowrap; font-weight: 600; color: var(--text-main); transition: 0.3s;}
+        tr:hover td { background-color: var(--tr-hover); }
         
-        .sticky-id { position: sticky; left: 0; background: white !important; z-index: 5; border-right: 1px solid var(--border-color); width: 30px; color: var(--text-muted); font-size: 8.5px; }
-        .sticky-batch { position: sticky; left: 30px; background: white !important; z-index: 5; border-right: 2px solid var(--border-color); color: var(--brand-accent); font-weight: 700; }
+        .sticky-id { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 5; border-right: 1px solid var(--border-color); width: 30px; color: var(--text-muted); font-size: 8.5px; }
+        .sticky-batch { position: sticky; left: 30px; background: var(--card-bg) !important; z-index: 5; border-right: 2px solid var(--border-color); color: var(--brand-accent); font-weight: 700; }
 
-        .move-in { background: #f0fdf4 !important; color: var(--in-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; }
-        .move-out { background: #fef2f2 !important; color: var(--out-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; }
-        .qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: #fffdf5; }
-        .val-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: #f0fdf4; color: var(--in-color); }
+        .move-in { background: var(--move-in-bg) !important; color: var(--in-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; transition: 0.3s;}
+        .move-out { background: var(--move-out-bg) !important; color: var(--out-color) !important; font-weight: 800; padding: 2px 5px; border-radius: 3px; font-size: 8px; transition: 0.3s;}
+        .qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: var(--qty-bold-bg); transition: 0.3s;}
+        .val-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; background: var(--val-bold-bg); color: var(--in-color); transition: 0.3s;}
 
         /* ================= PREMIUM GRADE DASHBOARD CARDS ================= */
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; padding: 2px; }
@@ -137,19 +227,19 @@
         }
 
         .grade-card { 
-            background: white; 
+            background: var(--card-bg); 
             border-radius: 10px; 
-            border: 1px solid #e2e8f0; 
+            border: 1px solid var(--border-color); 
             overflow: hidden; 
             display: flex; 
             flex-direction: column; 
             box-shadow: var(--card-shadow); 
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background 0.3s, border-color 0.3s;
         }
         .grade-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-            border-color: #cbd5e1;
+            box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+            border-color: var(--brand-accent);
         }
         
         .card-head { 
@@ -160,45 +250,47 @@
             align-items: center; 
             color: #fff;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
         }
         .grade-title { font-size: 12px; font-weight: 800; letter-spacing: 0.3px; color: #f8fafc; }
-        .glaze-badge { background: rgba(37, 99, 235, 0.25); color: #93c5fd; padding: 2px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.3); letter-spacing: 0.2px; }
+        .glaze-badge { background: var(--glaze-badge-bg); color: var(--glaze-badge-text); padding: 2px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 700; border: 1px solid var(--glaze-badge-border); letter-spacing: 0.2px; transition: 0.3s;}
         
-        .card-body { padding: 14px; background: #ffffff; }
-        .variety-label { font-size: 11px; font-weight: 800; color: var(--brand-accent); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
-        .variety-label::before { content: ''; display: inline-block; width: 4px; height: 11px; background: var(--brand-accent); border-radius: 2px; }
+        .card-body { padding: 14px; background: var(--card-bg); transition: 0.3s;}
+        .variety-label { font-size: 11px; font-weight: 800; color: var(--brand-accent); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; transition: 0.3s;}
+        .variety-label::before { content: ''; display: inline-block; width: 4px; height: 11px; background: var(--brand-accent); border-radius: 2px; transition: 0.3s;}
         
         .movement-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .move-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px; transition: background 0.2s ease; }
-        .move-box:hover { background: #f1f5f9; }
+        .move-box { background: var(--move-box-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; transition: background 0.2s ease, border-color 0.3s; }
+        .move-box:hover { background: var(--move-box-hover); }
         .move-box.in { border-left: 3.5px solid var(--in-color); }
         .move-box.out { border-left: 3.5px solid var(--out-color); }
         
         .move-title { font-size: 8.5px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 3px; }
-        .move-box.in .move-title { color: #15803d; }
-        .move-box.out .move-title { color: #b91c1c; }
+        .move-box.in .move-title { color: var(--move-title-in); }
+        .move-box.out .move-title { color: var(--move-title-out); }
         
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; font-size: 9.5px; align-items: center; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid var(--stat-row-border); padding-bottom: 4px; font-size: 9.5px; align-items: center; transition: 0.3s;}
         .stat-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
-        .s-label { color: var(--text-muted); font-weight: 600; }
-        .s-value { font-weight: 700; color: #0f172a; }
+        .s-label { color: var(--text-muted); font-weight: 600; transition: 0.3s;}
+        .s-value { font-weight: 700; color: var(--s-value-text); transition: 0.3s;}
 
         .card-footer { 
-            background: #f0fdf4; 
+            background: var(--card-footer-bg); 
             padding: 10px 14px; 
-            border-top: 1px solid #dcfce7; 
+            border-top: 1px solid var(--card-footer-border); 
             display: grid; 
             grid-template-columns: 1fr 1fr 1.1fr; 
             gap: 6px; 
             align-items: center; 
+            transition: 0.3s;
         }
         .footer-stat { display: flex; flex-direction: column; }
-        .footer-main-val { font-size: 11px; font-weight: 800; color: #166534; }
-        .fs-label { font-size: 7.5px; font-weight: 800; color: #15803d; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.2px; }
+        .footer-main-val { font-size: 11px; font-weight: 800; color: var(--footer-main-val); transition: 0.3s;}
+        .fs-label { font-size: 7.5px; font-weight: 800; color: var(--fs-label); text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.2px; transition: 0.3s;}
 
         /* ================= 🌟 STICKY STATUS FOOTER ================= */
         .status-footer { 
-            background: white; 
+            background: var(--card-bg); 
             padding: 10px 15px; 
             border-radius: 6px; 
             border: 1px solid var(--border-color); 
@@ -208,28 +300,27 @@
             font-size: 9.5px; 
             font-weight: 700; 
             align-items: center; 
-            box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.05); 
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05); 
             position: sticky;
             bottom: 0;
             z-index: 100; /* టేబుల్ డేటా ఫుటర్ వెనుక నుండి స్క్రోల్ అవుతుంది */
             margin-top: auto; 
             flex-shrink: 0;
+            transition: background 0.3s, border-color 0.3s;
         }
-        .stat-group { display: flex; align-items: center; gap: 12px; border-right: 2px solid #f1f5f9; padding-right: 12px; }
+        .stat-group { display: flex; align-items: center; gap: 12px; border-right: 2px solid var(--stat-group-border); padding-right: 12px; transition: 0.3s;}
         .stat-group:last-child { border: none; }
         .stat-item { display: flex; flex-direction: column; }
-        .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
-        .stat-val { color: var(--brand-primary); font-weight: 800; }
+        .stat-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; transition: 0.3s;}
+        .stat-val { color: var(--brand-primary); font-weight: 800; transition: 0.3s;}
 
-        @media print { .header-container, .table-container, .control-bar, .nav-tabs { display: none !important; } body{background:#fff; padding:0;} }
+        @media print { .header, .table-container, .control-bar, .nav-tabs { display: none !important; } body{background:var(--card-bg); padding:0;} }
     </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
-<header>
+<header class="header">
     <div class="logo-section">
         <h1>Inventory Analysis</h1>
     </div>
@@ -321,7 +412,7 @@
                             <th>Brand</th>
                             <th>Species</th>
                             <th>Variety</th>
-                            <th style="background:#eff6ff">Grade</th>
+                            <th style="background:var(--qty-bold-bg)">Grade</th>
                             <th>Glaze</th>
                             <th>Freezer</th>
                             <th>Packing</th>
@@ -350,7 +441,7 @@
                             <td>{{ r.brand }}</td>
                             <td>{{ r.species }}</td>
                             <td style="text-align:left; padding-left:4px;">{{ r.variety }}</td>
-                            <td style="font-weight: 800; color: var(--brand-accent); background: #eff6ff;">{{ r.grade }}</td>
+                            <td style="font-weight: 800; color: var(--brand-accent); background: var(--qty-bold-bg);">{{ r.grade }}</td>
                             <td>{{ r.glaze }}</td>
                             <td>{{ r.freezer }}</td>
                             <td style="text-align:left; padding-left:4px;">{{ r.packing_style }}</td>
@@ -391,11 +482,21 @@
     </div>
     <div class="stat-group" style="border:none">
         <div class="stat-item"><span class="stat-label">Available Stock</span><span id="stat_qty" class="stat-val" style="color:var(--brand-accent)">0.00 Kg</span></div>
-        <div class="stat-item"><span class="stat-label">Avg Rate</span><span id="stat_avg_rate" class="stat-val" style="color:#b45309">₹0.00</span></div>
+        <div class="stat-item"><span class="stat-label">Avg Rate</span><span id="stat_avg_rate" class="stat-val" style="color:var(--warning)">₹0.00</span></div>
         <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0</span></div>
     </div>
 </div>
 <script>
+    // Observe theme mutations to trigger specific visual recalcs if needed
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === "data-theme") {
+                // CSS handles colors automatically
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+
     document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
     let currentView = 'table';
@@ -582,10 +683,10 @@
         const groupedEntries = Object.values(groups);
         if(groupedEntries.length === 0) {
             container.innerHTML = `
-                <div class="empty-dashboard">
-                    <i class="fas fa-search-minus"></i>
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fas fa-search-minus" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i>
                     <h3>No grade metrics found</h3>
-                    <p>Try changing filters or company verification criteria.</p>
+                    <p style="font-size: 11px;">Try changing filters or company verification criteria.</p>
                 </div>`;
             return;
         }
@@ -613,17 +714,17 @@
                 <div class="card-body">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                         <div class="variety-label">${g.variety}</div>
-                        <div style="font-size:8.5px; font-weight:800; color:var(--text-muted); background:#f1f5f9; padding:1px 4px; border-radius:3px;">${g.species}</div>
+                        <div style="font-size:8.5px; font-weight:800; color:var(--text-muted); background:var(--tag-bg); padding:1px 4px; border-radius:3px; border: 1px solid var(--border-color);">${g.species}</div>
                     </div>
                     <div class="movement-section">
                         <div class="move-box in">
-                            <span class="move-title" style="color:var(--in-color)">Stock IN</span>
+                            <span class="move-title">Stock IN</span>
                             <div class="stat-row"><span class="s-label">Qty</span><span class="s-value">${g.inQty.toFixed(2)}</span></div>
                             <div class="stat-row"><span class="s-label">Avg Rate</span><span class="s-value">₹${inAvg}</span></div>
                             <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(g.inVal).toLocaleString('en-IN')}</span></div>
                         </div>
                         <div class="move-box out">
-                            <span class="move-title" style="color:var(--out-color)">Stock OUT</span>
+                            <span class="move-title">Stock OUT</span>
                             <div class="stat-row"><span class="s-label">Qty</span><span class="s-value">${g.outQty.toFixed(2)}</span></div>
                             <div class="stat-row"><span class="s-label">Avg Rate</span><span class="s-value">₹${outAvg}</span></div>
                             <div class="stat-row"><span class="s-label">Value</span><span class="s-value">₹${Math.round(Math.abs(g.outVal)).toLocaleString('en-IN')}</span></div>
@@ -632,7 +733,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="footer-stat"><span class="fs-label">Balance</span><span class="footer-main-val">${availQty.toFixed(2)} Kg</span></div>
-                    <div class="footer-stat"><span class="fs-label">Avail Avg</span><span class="footer-main-val" style="color:#b45309">₹${availAvg}</span></div>
+                    <div class="footer-stat"><span class="fs-label" style="color:var(--warning)">Avail Avg</span><span class="footer-main-val" style="color:var(--warning)">₹${availAvg}</span></div>
                     <div class="footer-stat" style="text-align:right"><span class="fs-label">Stock Value</span><span class="footer-main-val">₹${Math.round(availVal).toLocaleString('en-IN')}</span></div>
                 </div>`;
             container.appendChild(card);

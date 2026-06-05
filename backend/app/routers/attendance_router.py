@@ -6,7 +6,8 @@ from app.routers.attendance.analytics import router as analytics_router
 from app.routers.attendance.salary_reports import router as salary_router
 from app.routers.attendance.tax_master import router as tax_master_router
 from app.routers.attendance.salary_advance import router as salary_advance_router
-from app.routers.attendance.employee_increment import router as increment_router  # ✅ ADD
+from app.routers.attendance.employee_increment import router as increment_router  # ✅ A
+from app.routers.attendance.shifts import router as shifts_router
 
 router = APIRouter()
 
@@ -20,7 +21,10 @@ attendance_api.include_router(daily_router)           # /attendance/daily/*
 attendance_api.include_router(tax_master_router)      # /attendance/tax-master
 attendance_api.include_router(salary_advance_router) 
  # /attendance/salary-advance ✅
-attendance_api.include_router(increment_router)       # /attendance/employee-increment ✅
+attendance_api.include_router(increment_router)   
+    # /attendance/employee-increment ✅
+attendance_api.include_router(shifts_router)      
+    # /attendance/shifts ✅
 
 # ==================================================
 # 2️⃣ INCLUDE INTO MAIN ROUTER

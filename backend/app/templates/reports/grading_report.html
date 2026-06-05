@@ -7,154 +7,193 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<!-- 🌟 SYNC THEME WITH PARENT 🌟 -->
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    window.addEventListener('load', syncTheme);
+</script>
+
 <style>
-:root{
- --primary:#0f172a;
- --accent:#2563eb;
- --border:#e2e8f0;
- --bg:#f1f5f9;
- --header:#ffffff;
- --text:#1e293b;
- --text-muted:#64748b;
- --danger: #ef4444;
- --success: #22c55e;
+/* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
+:root {
+    --primary: #0f172a;
+    --accent: #2563eb;
+    --border: #e2e8f0;
+    --bg: #f1f5f9;
+    --header: #ffffff;
+    --header-bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    
+    --hover-bg: #f0f9ff;
+    --selected-bg: #dbeafe;
+    --highlight-bg: #eff6ff;
+    --badge-border: #bfdbfe;
+    
+    --radius-premium: 8px;
 }
 
-*{box-sizing:border-box;font-family: 'Inter', Arial, sans-serif;}
-body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+[data-theme="dark"] {
+    --primary: #f8fafc;
+    --accent: #60a5fa;
+    --border: #334155;
+    --bg: #0f172a;
+    --header: #1e293b;
+    --header-bg: #0f172a;
+    --card-bg: #1e293b;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    
+    --hover-bg: #172554;
+    --selected-bg: rgba(59, 130, 246, 0.2);
+    --highlight-bg: rgba(59, 130, 246, 0.1);
+    --badge-border: rgba(59, 130, 246, 0.3);
+}
+
+* { box-sizing: border-box; font-family: 'Inter', Arial, sans-serif; }
+body {
+    margin: 0; background: var(--bg); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden; color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+.header { background: var(--header); padding: 10px 15px; border-bottom: 2px solid var(--accent); transition: background 0.3s ease; }
+.header h2 { margin: 0; font-size: 14px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
 
-.view-tabs{ display: flex; gap: 15px; margin-top: 10px; border-bottom: 1px solid var(--border); }
-.tab{ padding: 8px 15px; font-size: 11px; font-weight: 700; cursor: pointer; color: #64748b; text-transform: uppercase; border-bottom: 3px solid transparent; }
-.tab.active{ color: var(--accent); border-bottom-color: var(--accent); }
+.view-tabs { display: flex; gap: 15px; margin-top: 10px; border-bottom: 1px solid var(--border); }
+.tab { padding: 8px 15px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--text-muted); text-transform: uppercase; border-bottom: 3px solid transparent; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
- gap:5px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid var(--border);
+.filters {
+    margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 5px; background: var(--header-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border);
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
+.fbox { display: flex; flex-direction: column; gap: 2px; }
+.fbox label { font-size: 8px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:#fff; outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+select, input[type=date], input[type=month], #searchBox { 
+    padding: 4px; font-size: 10px; border: 1px solid var(--border); border-radius: 4px; 
+    background: var(--card-bg); color: var(--text); outline: none; 
+}
+#searchBox { grid-column: span 2; border-left: 4px solid var(--accent); }
 
-/* FY Dropdown Specific */
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* ================= ACTIONS ================= */
-.actions{ background:#fff; padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
-#rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
+.actions { background: var(--card-bg); padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); }
 
-.menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:#fff; font-size:14px;}
+.menu-box { position: relative; }
+.dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 14px; }
 
-.menu-list{
- position:absolute; right:0; top:30px; width:230px; background:#fff; border:1px solid var(--border);
- border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+.menu-list {
+    position: absolute; right: 0; top: 30px; width: 230px; background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 4px; display: none; z-index: 5000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list div { padding: 8px 12px; font-size: 10px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); }
+.menu-list div:hover { background: var(--highlight-bg); color: var(--accent); }
+.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: var(--header-bg); color: var(--text-muted); text-transform: uppercase; }
 
-/* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:#fff; border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+/* ================= TABLE AREA (WITH SCROLL FIX) ================= */
+.section { flex: 1; margin: 5px; background: var(--card-bg); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 6px; }
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; } 
+.table-wrap { 
+    flex: 1; 
+    overflow-y: auto; 
+    overflow-x: auto !important; /* Forces horizontal scroll */
+    width: 100%; 
+    -webkit-overflow-scrolling: touch; /* Smooth mobile scrolling */
+} 
 
-#summaryContent table,
-#detailedContent table{ min-width: 1150px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; } 
+#summaryContent table, #detailedContent table { min-width: 1150px; } /* Ensures width doesn't squeeze */
 
-thead th{
- background:#f1f5f9; padding:8px 4px; font-size:10px; font-weight:800;
- text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
- text-align:center;
+thead th {
+    background: var(--header-bg); padding: 8px 4px; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+    text-align: center; color: var(--text);
 }
 
-tbody td{
- padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
- white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+tbody td {
+    padding: 6px 4px; font-size: 9.5px; border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border); text-align: center; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
-tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
+tbody tr:hover { background: var(--hover-bg); cursor: pointer; }
+tr.selected { background: var(--selected-bg) !important; }
+tr.subtotal { background: var(--header-bg); font-weight: 800; color: var(--primary); }
 
-/* Empty State Styling */
-.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: var(--card-bg); }
 .empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent); opacity: 0.5; }
 
-/* Optimized Column Widths */
+/* Column Widths */
 .w-sl { width: 45px; } .w-bt { width: 95px; } .w-sp { width: 120px; } 
 .w-ct { width: 85px; } .w-vr { width: 100px; } .w-qt { width: 95px; }
 
-.qty-link{ color: var(--accent); font-weight: 700; text-decoration: underline; cursor: pointer; }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+.qty-link { color: var(--accent); font-weight: 700; text-decoration: underline; cursor: pointer; }
+.edit-input { width: 100%; font-size: 10px; border: 1px solid var(--accent); padding: 2px; text-align: center; outline: none; background: var(--bg); color: var(--text); }
 
-/* Expansion Row Style Standardizations */
-.expand-row{ background: #fbfcfe; display: none; }
-.expand-box{ padding: 8px; border: 1px solid var(--accent); border-radius: 4px; margin: 5px; background: #fff; overflow-x: auto; }
+/* Expansion Row (Breakdown) */
+.expand-row { background: var(--bg); display: none; }
+.expand-box { padding: 8px; border: 1px solid var(--accent); border-radius: 4px; margin: 5px; background: var(--card-bg); overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-/* ================= CARD VIEW STYLES (MOBILE FIT) ================= */
+/* ================= CARD VIEW STYLES ================= */
 .cards-grid {
- display: grid; 
- grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
- gap: 8px; padding: 8px; overflow-y: auto; height: 100%; background: #f1f5f9;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
+    gap: 8px; padding: 8px; overflow-y: auto; height: 100%; background: var(--bg);
 }
 .report-card {
- background: #fff; border: 1px solid var(--border); border-radius: 5px;
- display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
- border-top: 3px solid var(--primary);
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 5px;
+    display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-top: 3px solid var(--accent);
 }
 .card-top {
- background: #f8fafc; padding: 6px 10px; 
- border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700;
- display: flex; justify-content: space-between; align-items: center;
+    background: var(--header-bg); padding: 6px 10px; 
+    border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700;
+    display: flex; justify-content: space-between; align-items: center;
 }
 .card-top .left-info { display: flex; flex-direction: column; gap: 1px; color: var(--primary); }
-.card-top .right-info { text-align: right; font-size: 10.5px; color: var(--accent); background: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe; }
-.card-top .badge { color: #64748b; font-size: 9px; font-weight: 600; text-transform: uppercase; }
+.card-top .right-info { text-align: right; font-size: 10.5px; color: var(--accent); background: var(--highlight-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--badge-border); }
+.card-top .badge { color: var(--text-muted); font-size: 9px; font-weight: 600; text-transform: uppercase; }
 
 .card-body { padding: 6px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.card-body-summary { display: flex; justify-content: space-between; font-size: 10.5px; background: #f8fafc; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 1px; }
+.card-body-summary { display: flex; justify-content: space-between; font-size: 10.5px; background: var(--header-bg); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 1px; }
 .card-body-title { font-size: 9px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 2px; margin-bottom: 2px; text-transform: uppercase;}
 
-.card-details-table{
-    width:100% !important;
-    border-collapse:collapse !important;
-    margin-bottom:0 !important;
-    border:1px solid #e2e8f0 !important;
-    min-width:unset !important;
-    table-layout:fixed !important;
-}
-.card-details-table th { font-size: 9.5px; color: #475569; padding: 6px 4px; background: #f1f5f9; font-weight: 800; border: 1px solid #e2e8f0; text-transform: uppercase; text-align: center; }
-.card-details-table td { font-size: 9.5px; font-weight: 700; color: var(--text); padding: 6px 4px; border: 1px solid #e2e8f0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-details-table .card-subtotal-row td { background: #f8fafc; font-weight: 800; color: var(--accent); border-top: 1.5px solid var(--border); }
+.card-details-table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 0 !important; border: 1px solid var(--border) !important; table-layout: fixed !important; }
+.card-details-table th { font-size: 9.5px; color: var(--text-muted); padding: 6px 4px; background: var(--header-bg); font-weight: 800; border: 1px solid var(--border); text-transform: uppercase; text-align: center; }
+.card-details-table td { font-size: 9.5px; font-weight: 700; color: var(--text); padding: 6px 4px; border: 1px solid var(--border); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-details-table .card-subtotal-row td { background: var(--header-bg); font-weight: 800; color: var(--accent); border-top: 1.5px solid var(--border); }
 
-/* Card Footer Grid */
 .card-footer {
- background: #f8fafc; padding: 6px 10px; border-top: 1px solid var(--border);
- display: grid; grid-template-columns: 1fr 1fr; gap: 4px 6px; font-size: 9.5px;
+    background: var(--header-bg); padding: 6px 10px; border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 6px; font-size: 9.5px;
 }
-.footer-item { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+.footer-item { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
 .footer-item:nth-last-child(-n+2) { border-bottom: none; padding-bottom: 0; }
 
 /* ================= MODAL & AUDIT ================= */
-#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:#fff; padding:20px; border-radius:6px; width:300px; text-align:center; }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:5px; }
+#confirmModal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: none; align-items: center; justify-content: center; z-index: 6000; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 6px; border: 1px solid var(--border); width: 300px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.btn-y { background: var(--accent); color: #fff; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-n { background: var(--border); color: var(--text); border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 5px; }
 
-.audit-panel{ position:fixed; right:0; top:0; bottom:0; width:380px; background:#fff; border-left:3px solid var(--primary); display:none; flex-direction:column; z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); }
+.audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card-bg); border-left: 3px solid var(--accent); display: none; flex-direction: column; z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.3); }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -231,22 +270,22 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            <!-- Edit & Delete are now available unconditionally -->
             <div onclick="enableEdit()">✏️ Edit Row (Detailed Only)</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
             <div onclick="toggleAudit()">📜 Full Audit History</div>
-            <hr>
+            <hr style="border-top:1px solid var(--border); margin:4px 0;">
             <b>📋 Export Options</b>
             <div onclick="askConfirm('print_table')">🖨 Print Table</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF</div>
-            <hr>
-            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Row</div>
+            <hr style="border-top:1px solid var(--border); margin:4px 0;">
+            <div onclick="askConfirm('delete_row')" style="color:var(--danger)">🗑 Delete Row</div>
         </div>
     </div>
 </div>
 
 <div class="section">
+    <!-- SUMMARY VIEW -->
     <div id="summaryContent" class="table-wrap">
         <table>
             <thead>
@@ -270,7 +309,7 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
                 <tr>
                     <td colspan="12" class="empty-state">
                         <i class="fa-solid fa-calendar-check"></i><br>
-                        <b>Financial Year Not Selected</b><br>
+                        <b style="color:var(--text);">Financial Year Not Selected</b><br>
                         <span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span>
                     </td>
                 </tr>
@@ -298,6 +337,7 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
         </table>
     </div>
 
+    <!-- DETAILED VIEW -->
     <div id="detailedContent" class="table-wrap" style="display:none;">
         <table id="detailedTable">
             <thead><tr id="detailedHeader"></tr></thead>
@@ -305,34 +345,46 @@ tr.subtotal{ background:#f8fafc; font-weight:800; color:var(--primary); }
         </table>
     </div>
 
+    <!-- CARD VIEW -->
     <div id="cardContent" class="table-wrap" style="display:none; height:100%;">
         <div class="cards-grid" id="cardsGrid"></div>
     </div>
 </div>
 
+<!-- CONFIRM MODAL -->
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px; color:var(--primary);"></h4>
         <button class="btn-y" id="btnYes">Yes, Proceed</button>
         <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
+<!-- AUDIT PANEL -->
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px;background:var(--primary);color:#fff;display:flex;justify-content:space-between;align-items:center;">
+    <div style="padding:12px; background:var(--accent); color:#fff; display:flex; justify-content:space-between; align-items:center;">
         <b style="font-size:12px;">FULL AUDIT HISTORY</b>
-        <span onclick="toggleAudit()" style="cursor:pointer;font-size:20px;">×</span>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:20px;">×</span>
     </div>
-    <div id="auditContent" style="padding:10px;overflow:auto;flex:1;background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:10px; overflow:auto; flex:1; background:var(--bg);"></div>
 </div>
 
 <script>
+// Watch for dynamic theme changes instantly without reload
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            // Re-render JS elements if necessary, CSS vars handle the rest!
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 let selectedRow = null, currentAction = null;
 const allRows = [...document.querySelectorAll("#summaryBody tr.data-row:not(.subtotal)")];
 const baseUrl = "/reports/grading_report";
 let allDetailedData = []; 
 
-// Financial Year Change Logic
 function changeFY(val) {
     if(!val) {
         window.location.href = window.location.pathname;
@@ -377,12 +429,12 @@ function loadDetailedData() {
         return Promise.resolve();
     }
     
-    body.innerHTML = "<tr><td colspan='12'>Loading Session Data Logs...</td></tr>";
+    body.innerHTML = "<tr><td colspan='12' style='padding:20px; color:var(--text-muted);'>Loading Session Data Logs...</td></tr>";
 
     return fetch(`${baseUrl}/details?source=all&batch=&species=&hoso_count=&variety=`)
     .then(r=>r.json()).then(data => {
         allDetailedData = data; 
-        if(!data.length) return body.innerHTML = "<tr><td colspan='12'>No Detailed Data Log Found</td></tr>";
+        if(!data.length) return body.innerHTML = "<tr><td colspan='12' style='padding:20px; color:var(--text-muted);'>No Detailed Data Log Found</td></tr>";
         
         const keys = [
             "id", "date", "time", "peeling_at", "production_for", 
@@ -390,9 +442,7 @@ function loadDetailedData() {
             "graded_count", "quantity", "email"
         ];
         
-        head.innerHTML = keys.map(k => {
-            return `<th>${k.replace(/_/g,' ')}</th>`;
-        }).join('');
+        head.innerHTML = keys.map(k => `<th>${k.replace(/_/g,' ')}</th>`).join('');
 
         body.innerHTML = data.map(row => `
             <tr data-id="${row.id}" onclick="selectRow(this)">
@@ -465,7 +515,7 @@ function renderCardsView() {
             let cardTotalQuantity = 0;
 
             if(subRows.length === 0) {
-                subTableBodyHTML = `<tr><td colspan="2" style="color:#64748b; font-style:italic; text-align:center; padding: 6px 4px; font-size: 9.5px;">No breakdown details available</td></tr>`;
+                subTableBodyHTML = `<tr><td colspan="2" style="color:var(--text-muted); font-style:italic; text-align:center; padding: 6px 4px; font-size: 9.5px;">No breakdown details available</td></tr>`;
             } else {
                 subRows.forEach(row => {
                     let finalCount = row.graded_count ?? '-';
@@ -477,20 +527,22 @@ function renderCardsView() {
                     
                     subTableBodyHTML += `
                     <tr>
-                        <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center;">${finalCount}</td>
-                        <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center; color:var(--accent); font-weight:700;">${finalQty.toFixed(2)} KG</td>
+                        <td style="border:1px solid var(--border); padding:6px 4px; font-size:9.5px; text-align:center;">${finalCount}</td>
+                        <td style="border:1px solid var(--border); padding:6px 4px; font-size:9.5px; text-align:center; color:var(--accent); font-weight:700;">${finalQty.toFixed(2)} KG</td>
                      </tr>
                     `;
                 });
                 
                 subTableBodyHTML += `
                 <tr class="card-subtotal-row">
-                    <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:right; font-weight:800; text-transform:uppercase;">Total:</td>
-                    <td style="border:1px solid #e2e8f0; padding:6px 4px; font-size:9.5px; text-align:center; font-weight:800;">${cardTotalQuantity.toFixed(2)} KG</td>
+                    <td style="border:1px solid var(--border); padding:6px 4px; font-size:9.5px; text-align:right; font-weight:800; text-transform:uppercase;">Total:</td>
+                    <td style="border:1px solid var(--border); padding:6px 4px; font-size:9.5px; text-align:center; font-weight:800;">${cardTotalQuantity.toFixed(2)} KG</td>
                 </tr>
                 `;
             }
             
+            const diffColor = parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)';
+
             const cardHTML = `
                 <div class="report-card">
                     <div class="card-top">
@@ -499,35 +551,30 @@ function renderCardsView() {
                             <div class="badge">${species} | ${variety}</div>
                         </div>
                         <div class="right-info">
-                            <span style="font-size:8px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">HOSO Count</span>
+                            <span style="font-size:8px; color:var(--text-muted); display:block; font-weight:700; text-transform:uppercase;">HOSO Count</span>
                             <b>${hosoCount}</b>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="card-body-summary">
-                            <span style="color:#64748b; font-weight:600;">Actual HOSO Qty:</span>
+                            <span style="color:var(--text-muted); font-weight:600;">Actual HOSO Qty:</span>
                             <span style="font-weight:800; color:var(--primary);">${actualHoso} KG</span>
                         </div>
                         <div class="card-body-title">Graded Details Breakdown</div>
-                        <div style="border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; overflow:hidden;">
+                        <div style="border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); overflow:hidden;">
                             <table class="card-details-table">
                                 <thead>
-                                    <tr>
-                                        <th style="width: 50%;">Count</th>
-                                        <th style="width: 50%;">Quantity</th>
-                                    </tr>
+                                    <tr><th style="width: 50%;">Count</th><th style="width: 50%;">Quantity</th></tr>
                                 </thead>
-                                <tbody>
-                                    ${subTableBodyHTML}
-                                </tbody>
+                                <tbody>${subTableBodyHTML}</tbody>
                             </table>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="footer-item"><span style="color:#64748b;">Workout:</span> <b>${workoutCount}</b></div>
-                        <div class="footer-item"><span style="color:#64748b;">Yield:</span> <b>${yieldPct}</b></div>
-                        <div class="footer-item"><span style="color:#64748b;">Grading HOSO:</span> <b>${gradingHoso}</b></div>
-                        <div class="footer-item"><span style="color:#64748b;">Diff:</span> <b style="color:${parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)'}">${diffKg} (${diffPct})</b></div>
+                        <div class="footer-item"><span style="color:var(--text-muted);">Workout:</span> <b>${workoutCount}</b></div>
+                        <div class="footer-item"><span style="color:var(--text-muted);">Yield:</span> <b>${yieldPct}</b></div>
+                        <div class="footer-item"><span style="color:var(--text-muted);">Grading HOSO:</span> <b>${gradingHoso}</b></div>
+                        <div class="footer-item"><span style="color:var(--text-muted);">Diff:</span> <b style="color:${diffColor}">${diffKg} (${diffPct})</b></div>
                     </div>
                 </div>
             `;
@@ -575,7 +622,6 @@ function applyFilters() {
         }
     });
     
-    // SL No Re-assignment Descending Framework Loop
     let filteredDataRows = allRows.filter(r => r.style.display !== "none");
     filteredDataRows.forEach((row, index) => {
         row.querySelector(".slno").innerText = filteredDataRows.length - index;
@@ -596,7 +642,7 @@ function expandRow(el, source, batch, species, count, variety) {
     fetch(`${baseUrl}/details?source=${source}&batch=${batch}&species=${species}&hoso_count=${count}&variety=${variety}`)
     .then(r=>r.json()).then(data => {
         if(!data || !data.length) {
-            sub.querySelector(".expand-box").innerHTML = "<div style='padding:6px 4px; font-size:9.5px; color:#64748b; text-align:center;'>No breakdown dataset found.</div>";
+            sub.querySelector(".expand-box").innerHTML = "<div style='padding:6px 4px; font-size:9.5px; color:var(--text-muted); text-align:center;'>No breakdown dataset found.</div>";
             return;
         }
 
@@ -618,7 +664,7 @@ function expandRow(el, source, batch, species, count, variety) {
         
         let html = `<table style="width:100%; border:1px solid var(--border); font-size:9.5px; border-collapse:collapse; table-layout:fixed; text-align:center;"><thead><tr>`;
         keys.forEach(k => {
-            html += `<th style="background:#f1f5f9; padding:6px 4px; border:1px solid #e2e8f0; text-transform:uppercase; font-weight:800; text-align:center;">${k.replace(/_/g,' ')}</th>`;
+            html += `<th style="background:var(--header-bg); color:var(--text); padding:6px 4px; border:1px solid var(--border); text-transform:uppercase; font-weight:800; text-align:center;">${k.replace(/_/g,' ')}</th>`;
         });
         
         html += `</tr></thead><tbody>`;
@@ -631,7 +677,7 @@ function expandRow(el, source, batch, species, count, variety) {
                         displayValue = k.includes('percent') ? parsed.toFixed(2) + '%' : parsed.toFixed(2);
                     }
                 }
-                return `<td style="border:1px solid #f1f5f9; padding:6px 4px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayValue}</td>`;
+                return `<td style="border:1px solid var(--border); padding:6px 4px; color:var(--text); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayValue}</td>`;
             }).join('')}</tr>`;
         });
         sub.querySelector(".expand-box").innerHTML = html + `</tbody></table>`;
@@ -663,8 +709,8 @@ function toggleAudit() {
     if(p.style.display === "flex") {
         fetch(`${baseUrl}/audit`).then(r=>r.json()).then(data => {
             document.getElementById("auditContent").innerHTML = data.map(l => `
-                <div style="font-size:10px; border-bottom:1px solid var(--border); padding:8px 0; line-height:1.4;">
-                    <b>ID Ref: ${l.record_id}</b> | ${l.edited_at}<br>
+                <div style="font-size:10px; border-bottom:1px solid var(--border); padding:8px 0; line-height:1.4; color:var(--text);">
+                    <b>ID Ref: ${l.record_id}</b> | <span style="color:var(--text-muted);">${l.edited_at}</span><br>
                     Field: <span style="color:var(--accent); font-weight:700;">${l.field_name}</span> | By: ${l.edited_by}<br>
                     <span style="color:var(--danger); text-decoration:line-through;">${l.old_value}</span> → <span style="color:var(--success); font-weight:bold;">${l.new_value}</span>
                 </div>
@@ -673,7 +719,6 @@ function toggleAudit() {
     }
 }
 
-// FULLY FUNCTIONAL MODAL LOGIC FOR EXPORT AND DELETE
 function askConfirm(action) { 
     if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
     currentAction = action; 
@@ -721,7 +766,7 @@ document.getElementById("btnYes").onclick = async () => {
             });
             if(res.ok) {
                 alert("Record deleted successfully.");
-                loadDetailedData(); // Reload the detailed table
+                loadDetailedData();
             } else {
                 alert("Failed to delete record.");
             }
@@ -734,9 +779,7 @@ document.getElementById("btnYes").onclick = async () => {
 function toggleMenu(e) { e.stopPropagation(); document.getElementById("mainMenu").style.display = document.getElementById("mainMenu").style.display==="block"?"none":"block"; }
 document.onclick = () => { if(document.getElementById("mainMenu")) document.getElementById("mainMenu").style.display="none"; }
 
-window.onload = () => {
-    applyFilters();
-};
+window.onload = () => { applyFilters(); };
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

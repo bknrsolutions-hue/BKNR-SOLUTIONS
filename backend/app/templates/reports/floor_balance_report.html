@@ -10,25 +10,60 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    // విండో రీసైజ్/లోడ్ అయినప్పుడు కూడా చెక్ చేయడానికి
+    window.addEventListener('load', syncTheme);
+</script>
+
 <style>
+/* 🌟 THEME VARIABLES (DARK FIRST) 🌟 */
 :root {
- --primary-dark: #0f172a;
- --accent-blue: #2563eb;
- --border-color: #e2e8f0;
- --border-ultra-light: #f1f5f9;
- --slate-bg: #f8fafc;
- --card-bg: #ffffff;
- --text-main: #334155;
- --text-muted: #64748b;
- --radius-premium: 8px;
+    --primary-dark: #f8fafc;
+    --accent-blue: #60a5fa;
+    --border-color: #334155;
+    --border-ultra-light: #1e293b;
+    --slate-bg: #0f172a;
+    --card-bg: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    
+    --hover-bg: #172554;
+    --location-bg: #0f172a;
+    --location-border: #3b82f6;
+    
+    --radius-premium: 8px;
+}
+
+[data-theme="light"] {
+    --primary-dark: #0f172a;
+    --accent-blue: #2563eb;
+    --border-color: #e2e8f0;
+    --border-ultra-light: #f1f5f9;
+    --slate-bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #334155;
+    --text-muted: #64748b;
+    
+    --hover-bg: #f8fafc;
+    --location-bg: #f1f5f9;
+    --location-border: #0f172a;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
- background: var(--slate-bg); height: 100vh;
- display: flex; flex-direction: column; overflow: hidden; 
- color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;
- -webkit-font-smoothing: antialiased;
+    background: transparent; height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden; 
+    color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
 .dashboard-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100%; }
@@ -50,13 +85,17 @@ body {
 @media(min-width: 992px) { .fbox { width: 100%; } }
 .fbox label { font-size: 7.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
-select, input { padding: 5px 6px; font-size: 10.5px; font-weight: 600; color: var(--primary-dark); border: 1px solid var(--border-color); border-radius: 4px; outline: none; background: var(--slate-bg); width: 100%; }
-select:focus, input:focus { border-color: var(--accent-blue); background: #fff; }
-#searchBox { border-left: 2px solid var(--accent-blue); background: #fff; }
+select, input { 
+    padding: 5px 6px; font-size: 10.5px; font-weight: 600; color: var(--text-main); 
+    border: 1px solid var(--border-color); border-radius: 4px; outline: none; 
+    background: var(--slate-bg); width: 100%; 
+}
+select:focus, input:focus { border-color: var(--accent-blue); }
+#searchBox { border-left: 2px solid var(--accent-blue); }
 
 /* ================= MAIN CONTENT AREA ================= */
-.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.header-top { background: var(--card-bg); padding: 8px 10px; border-bottom: 1px solid var(--border-ultra-light); display: flex; justify-content: space-between; align-items: center; }
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--slate-bg); }
+.header-top { background: var(--card-bg); padding: 8px 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
 .header-top h2 { margin: 0; font-size: 10px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.04em; }
 #rowCount { font-size: 8px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
 
@@ -83,34 +122,32 @@ thead th {
 @media(min-width: 768px) { thead th { font-size: 9px; padding: 8px 4px; } }
 
 tbody td {
-    padding: 6px 3px; font-size: 8.5px; border-bottom: 1px solid var(--border-ultra-light);
-    border-right: 1px solid var(--border-ultra-light); text-align: center;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #1e293b;
+    padding: 6px 3px; font-size: 8.5px; border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: var(--text-main);
 }
 @media(min-width: 768px) { tbody td { font-size: 10.5px; padding: 8px 6px; } }
 
-tbody tr:hover:not(.row-location):not(.row-batch-total) { background: #f8fafc; cursor: pointer; }
-tr.selected { background: #eff6ff !important; }
+tbody tr:hover:not(.row-location):not(.row-batch-total) { background: var(--hover-bg); cursor: pointer; }
+tr.selected { background: rgba(59, 130, 246, 0.1) !important; }
 
-.row-location { background: #f1f5f9 !important; font-weight: 800; }
-.row-location td { color: var(--primary-dark) !important; padding: 6px 8px; font-size: 9px; text-transform: uppercase; border-left: 3px solid var(--primary-dark); text-align: left !important; }
+.row-location { background: var(--location-bg) !important; font-weight: 800; }
+.row-location td { color: var(--primary-dark) !important; padding: 6px 8px; font-size: 9px; text-transform: uppercase; border-left: 3px solid var(--location-border); text-align: left !important; }
 @media(min-width: 768px) { .row-location td { font-size: 11px; padding: 8px 12px; } }
 
-.row-batch-total { background: #ffffff !important; color: var(--text-muted) !important; font-weight: 700; }
+.row-batch-total { background: var(--card-bg) !important; color: var(--text-muted) !important; font-weight: 700; }
 .row-batch-total td { border-bottom: 1px solid var(--border-color) !important; }
 .subtotal-label { text-align: right !important; padding-right: 8px !important; text-transform: uppercase; font-size: 7.5px; color: var(--text-muted); }
 @media(min-width: 768px) { .subtotal-label { font-size: 8.5px; padding-right: 16px !important; } }
 .qty-bold { text-align: right !important; font-weight: 800; color: var(--primary-dark) !important; padding-right: 4px !important; }
 @media(min-width: 768px) { .qty-bold { padding-right: 12px !important; } }
 
-.badge { padding: 1px 3px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: var(--text-main); }
+.badge { padding: 1px 3px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); }
 
 tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); }
 @media(min-width: 768px) { tfoot td { font-size: 11.5px; padding: 12px; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -179,7 +216,7 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                     <tbody id="tbody">
                         {% set ns = namespace(sl=1, grand_total=0) %}
                         
-                        {# Advanced Pure UI Grouping Engine: Group by Location first, then by Batch #}
+                        {# Group by Location first, then by Batch #}
                         {% for loc, loc_group in rows_batch|groupby('location') %}
                             <tr class="row-location" data-loc="{{ loc }}">
                                 <td colspan="8">{{ loc | upper }}</td>
@@ -188,7 +225,6 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                             {% for batch, batch_group in loc_group|groupby('batch') %}
                                 {% set batch_ns = namespace(subtotal=0) %}
                                 
-                                {# Inside this exact location, print all matching batch rows #}
                                 {% for r in batch_group %}
                                     <tr class="data-row" onclick="selectRow(this)"
                                         data-loc="{{ loc }}" 
@@ -210,7 +246,6 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                                     {% set ns.grand_total = ns.grand_total + r.available_qty %}
                                 {% endfor %}
                                 
-                                {# Print Subtotal precisely directly below this batch cluster inside this location #}
                                 <tr class="row-batch-total" data-loc="{{ loc }}" data-batch="{{ batch }}">
                                     <td colspan="7" class="subtotal-label">Batch [{{ batch }}] Total:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(batch_ns.subtotal) }}</td>
@@ -231,6 +266,17 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
 </div>
 
 <script>
+// MutationObserver to catch dynamic theme changes
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "data-theme") {
+            const newTheme = document.documentElement.getAttribute("data-theme");
+            // Theme already applied by CSS variables, nothing extra needed
+        }
+    });
+});
+observer.observe(document.documentElement, { attributes: true });
+
 function selectRow(tr) {
     document.querySelectorAll("#tbody tr").forEach(r => r.classList.remove("selected"));
     tr.classList.add("selected");
@@ -246,7 +292,6 @@ function filterTable() {
     const rows = document.querySelectorAll(".data-row");
     let net = 0, visibleCount = 0;
 
-    // Evaluate main items rows visibility matrix
     rows.forEach(r => {
         const match = (!locF || r.dataset.loc.toLowerCase() === locF) &&
                       (!typeF || r.dataset.source.toLowerCase() === typeF) &&
@@ -261,7 +306,6 @@ function filterTable() {
         }
     });
 
-    // Dynamic Client-side recalculation of specific location's nested batch sub-totals
     const batchTotals = document.querySelectorAll(".row-batch-total");
     batchTotals.forEach(tr => {
         const currentLoc = tr.dataset.loc;
@@ -285,7 +329,6 @@ function filterTable() {
         }
     });
 
-    // Toggle parent location nodes visibility based on active children nodes state
     document.querySelectorAll(".row-location").forEach(tr => {
         const hasVisible = [...rows].some(r => r.dataset.loc === tr.dataset.loc && r.style.display !== "none");
         tr.style.display = hasVisible ? "" : "none";
@@ -295,7 +338,6 @@ function filterTable() {
     document.getElementById("rowCount").innerText = visibleCount + " Items Displayed";
 }
 
-// Boot process initialization
 filterTable();
 </script>
 

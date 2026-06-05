@@ -20,7 +20,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- ULTRA-COMPACT HEADER --- */
 .header-dash {
-  background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--border);
+  background: var(--card-bg); padding: 10px 20px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
@@ -34,7 +34,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- MICRO FILTERS BAR (FIXED & SHRUNK) --- */
 .filter-bar { 
-  background: #fff; 
+  background: var(--card-bg); 
   padding: 8px 20px; 
   border-bottom: 1px solid var(--border); 
   display: flex; 
@@ -64,7 +64,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     font-weight: 600; 
     outline: none; 
     width: 100%; 
-    background: #fff; 
+    background: var(--card-bg); 
     color: var(--text); 
     height: 30px; 
     appearance: auto;
@@ -89,15 +89,19 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- THREE DOTS UNIVERSAL MENU --- */
 #threeDotsMenu { position: relative; display: none; margin-right: 8px; }
-.menu-trigger { background: #fff; border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 11px; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card-bg); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 
 /* --- RESPONSIVE MAIN TABLE --- */
-.table-wrap { margin: 0 20px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
-@media(max-width:800px){ .table-wrap { margin: 0 10px 20px; } }
+.table-wrap{
+    background: var(--card-bg) !important;
+} margin: 0 20px 20px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+@media(max-width:800px){ .table-wrap{
+    background: var(--card-bg) !important;
+} margin: 0 10px 20px; } }
 
 .main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 950px; }
 .main-table thead th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; font-size: 10px; }
@@ -118,7 +122,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 /* --- MODAL MANAGEMENT --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 95%; max-width: 850px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 95%; max-width: 850px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -137,7 +141,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     outline: none; 
     width: 100%; 
     color: var(--primary); 
-    background: #fff;
+    background: var(--card-bg);
     appearance: auto;
     -webkit-appearance: auto;
     text-align: left;
@@ -147,7 +151,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
-    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: #fff; 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card-bg); 
     border-left: 3px solid var(--primary); display: none; flex-direction: column; 
     z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
 }
@@ -314,7 +318,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <b style="font-size:11px;">ELECTRICITY RECORD HISTORY LOGS</b>
         <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:18px; font-weight:bold;">&times;</span>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:#f8fafc;"></div>
+    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:var(--header-bg);"></div>
 </div>
 
 <script>
@@ -470,7 +474,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             const logs = await res.json();
             if(Array.isArray(logs) && logs.length > 0) {
                 content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:#fff; padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card-bg); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                         <b>${l.timestamp}</b> | Unit Location: ${l.invoice_no}<br>
                         Action Description: ${l.action}<br>
                         <small>Trace Data: ${l.details}</small><br>

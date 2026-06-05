@@ -1,31 +1,51 @@
-#globalLoader{
-    position:fixed;
-    inset:0;
-    background:rgba(255,255,255,.95);
-    z-index:999999;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
+/* 🌟 THEME VARIABLES FOR LOADER 🌟 */
+:root {
+    --loader-bg: rgba(255, 255, 255, 0.95);
+    --loader-spin-base: #e5e7eb;
+    --loader-spin-top: #2563eb;
+    --loader-text: #0f172a;
 }
 
-.loader-spinner{
-    width:60px;
-    height:60px;
-    border:5px solid #e5e7eb;
-    border-top:5px solid #2563eb;
-    border-radius:50%;
-    animation:spin 1s linear infinite;
+[data-theme="dark"] {
+    --loader-bg: rgba(15, 23, 42, 0.95);
+    --loader-spin-base: #334155;
+    --loader-spin-top: #60a5fa;
+    --loader-text: #f8fafc;
 }
 
-.loader-text{
-    margin-top:15px;
-    font-size:15px;
-    font-weight:600;
+/* 🌟 LOADER STYLES 🌟 */
+#globalLoader {
+    position: fixed;
+    inset: 0;
+    background: var(--loader-bg);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.3s ease;
 }
 
-@keyframes spin{
-    100%{
-        transform:rotate(360deg);
+.loader-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--loader-spin-base);
+    border-top: 5px solid var(--loader-spin-top);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transition: border-color 0.3s ease;
+}
+
+.loader-text {
+    margin-top: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--loader-text);
+    transition: color 0.3s ease;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
     }
 }

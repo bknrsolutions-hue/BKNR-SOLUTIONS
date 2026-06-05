@@ -18,7 +18,9 @@ body {
 }
 
 /* టేబుల్స్ ఫిక్స్ */
-.table-wrap {
+.table-wrap{
+    background: var(--card-bg) !important;
+}
     width: 100% !important;
     overflow-x: auto !important;
     display: block !important;
