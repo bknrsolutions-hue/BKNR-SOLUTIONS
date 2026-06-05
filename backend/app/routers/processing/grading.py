@@ -201,25 +201,45 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
 # -----------------------------------------------------
 @router.post("/grading")
 def save_grading(
-    request: Request, batch_number: str = Form(...), hoso_count: str = Form(...),
-    variety_name: str = Form(...), graded_count: str = Form(...),
-    quantity: float = Form(...), species_val: str = Form(...),
-    peeling_at: str = Form(...), production_for: str = Form(...),
+    request: Request,
+    batch_number: str = Form(...),
+    hoso_count: str = Form(...),
+    variety_name: str = Form(...),
+    graded_count: str = Form(...),
+    quantity: float = Form(...),
+    species_val: str = Form(...),
+    peeling_at: str = Form(...),
+    production_for: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    company_code, email = request.session.get("company_code"), request.session.get("email")
-    if not company_code: return RedirectResponse("/auth/login", status_code=303)
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
 
-    db.add(Grading(
-        batch_number=batch_number, hoso_count=hoso_count, variety_name=variety_name,
-        graded_count=graded_count, quantity=quantity, species=species_val,
-        peeling_at=peeling_at, production_for=production_for,
-        date=date.today(), time=datetime.now().time(), email=email, company_id=company_code
-    ))
+    if not company_code:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    grading = Grading(
+        batch_number=batch_number,
+        hoso_count=hoso_count,
+        variety_name=variety_name,
+        graded_count=graded_count,
+        quantity=quantity,
+        species=species_val,
+        peeling_at=peeling_at,
+        production_for=production_for,
+        date=date.today(),
+        time=datetime.now().time(),
+        email=email,
+        company_id=company_code
+    )
+
+    db.add(grading)
     db.commit()
-    request.session["message"] = "✔ Grading Saved Successfully!"
-    return RedirectResponse("/processing/grading", status_code=303)
+    db.refresh(grading)
 
+    request.session["message"] = "✔ Grading Saved Successfully!"
+
+    return RedirectResponse("/processing/grading", status_code=303)
 # -----------------------------------------------------
 # POST: UPDATE GRADING
 # -----------------------------------------------------
