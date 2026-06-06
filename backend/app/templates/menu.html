@@ -320,9 +320,9 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
         <div class="brand-wrapper">
             <div class="brand-title">
                 <i class="fa-solid fa-layer-group"></i> 
-                BKNR ERP 2.0
+                MY ERP 
             </div>
-            <div class="brand-subtitle">Premium Edition</div>
+            <div class="brand-subtitle">MENU</div>
         </div>
         <button class="close-sidebar-btn" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
     </div>
@@ -530,49 +530,10 @@ const menuData = [
                     ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
                     ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
                 ]
-            },
-            {
-                name: "Receivables & Payables",
-                items: [
-                    ['customer_receivables', '/finance/customer_receivables', 'fa-money-bill-transfer', 'Customer Receivables', 'AR'],
-                    ['vendor_payments', '/finance/vendor_payments', 'fa-money-check-dollar', 'Vendor Payments', 'AP'],
-                    ['expense_vouchers', '/finance/expense_vouchers', 'fa-file-circle-dollar', 'Expense Vouchers', 'VCHR']
-                ]
-            },
-            {
-                name: "Banking & Ledger",
-                items: [
-                    ['bank_transactions', '/finance/bank_transactions', 'fa-building-columns', 'Bank Transactions', 'BANK'],
-                    ['payment_receipts', '/finance/payment_receipts', 'fa-receipt', 'Payment Receipts', 'PAY'],
-                    ['journal_entries', '/finance/journal_entries', 'fa-book', 'Journal Entries', 'JV'],
-                    ['ledger_master', '/finance/ledger_master', 'fa-book-open', 'Ledger Master', 'LEDGER']
-                ]
             }
         ]
     },
-    {
-        title: "EXPORTS",
-        subgroups: [
-            {
-                name: "Operational Lifecycle",
-                items: [
-                    ['export_shipments', '/exports/shipments', 'fa-ship', 'Export Shipments', 'EXP'],
-                    ['container_stuffing', '/exports/container_stuffing', 'fa-truck-ramp-box', 'Container Stuffing', 'OPS'],
-                    ['container_logs', '/exports/container_logs', 'fa-file-contract', 'Logistics Container Logs', 'FRT']
-                ]
-            },
-            {
-                name: "Statutory Documents",
-                items: [
-                    ['commercial_invoice', '/exports/commercial_invoice', 'fa-file-invoice', 'Commercial Invoice', 'DOC'],
-                    ['packing_list', '/exports/packing_list', 'fa-box', 'Packing List', 'DOC'],
-                    ['shipping_bill', '/exports/shipping_bill', 'fa-file-contract', 'Shipping Bill', 'DOC'],
-                    ['bill_of_lading', '/exports/bill_of_lading', 'fa-anchor', 'Bill Of Lading', 'DOC'],
-                    ['health_certificate', '/exports/health_certificate', 'fa-certificate', 'Health Certificate', 'CERT']
-                ]
-            }
-        ]
-    },
+
     {
         title: "REPORTS",
         subgroups: [
@@ -677,7 +638,6 @@ const menuData = [
         title: "ADMIN",
         items: [
             ['add_user', '/admin/add_user', 'fa-user-gear', 'User Configuration', 'Admin'],
-            ['shifts', '/attendance/shifts', 'fa-clock', 'Shift Master', 'Admin'],
             ['data_management','/data-management','fa-database','Data Management','Admin']
         ]
     }

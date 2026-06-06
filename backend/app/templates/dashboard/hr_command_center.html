@@ -13,28 +13,47 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+  /* ==========================================================
+     🌟 LIGHT MODE (DEFAULT)
+  ========================================================== */
   :root {
-    --primary-dark: #0f172a;
     --slate-bg: #f1f5f9; 
     --card-bg: #ffffff;
-    --accent-blue: #1d4ed8;
     --border-color: #e2e8f0;
     --text-main: #0f172a;
-    --text-muted: #475569;
+    --text-muted: #64748b;
+    --hover-bg: rgba(0, 0, 0, 0.03);
+    --chart-grid: #e2e8f0;
+    
+    --accent-blue: #3b82f6;
+    --emerald: #10b981;
+    --rose: #f43f5e;
+    --amber: #f59e0b;
+    --indigo: #6366f1;
+    
     --radius-premium: 12px;
     --radius-md: 8px;
-    
-    /* State Assets */
-    --emerald: #0d9488;
-    --emerald-light: #f0fdf4;
-    --rose: #e11d48;
-    --rose-light: #fff1f2;
-    --amber: #d97706;
-    --amber-light: #fffbeb;
-    --indigo: #4f46e5;
-    --indigo-light: #eef2ff;
   }
 
+  /* ==========================================================
+     🌙 DARK MODE (TRIGGERED BY DATA-THEME OR CLASS)
+  ========================================================== */
+  html[data-theme="dark"], 
+  body[data-theme="dark"], 
+  [data-theme="dark"],
+  .dark-mode {
+    --slate-bg: #0f172a; 
+    --card-bg: #1e293b;
+    --border-color: #334155;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --hover-bg: rgba(255, 255, 255, 0.04);
+    --chart-grid: #334155;
+  }
+
+  /* ==========================================================
+     GLOBAL STYLES
+  ========================================================== */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { 
     font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -45,6 +64,7 @@
     padding: 12px 8px;
     font-size: 11px;
     line-height: 1.4;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   .dashboard-container { 
@@ -60,80 +80,28 @@
     padding: 14px 20px;
     border-radius: var(--radius-premium);
     margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    transition: all 0.3s ease;
   }
 
-  .header-title h2 {
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
-    text-transform: uppercase;
-  }
-
-  .header-title p {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  .date-badge {
-    font-size: 10px;
-    font-weight: 700;
-    background: var(--slate-bg);
-    color: var(--accent-blue);
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-  }
+  .header-title h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; }
+  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .date-badge { font-size: 10px; font-weight: 700; background: var(--slate-bg); color: var(--accent-blue); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
 
   /* RISK COMPLIANCE REGISTRY */
-  .alert-box {
-    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-    padding: 12px 16px;
-    border-radius: var(--radius-premium);
-    margin-bottom: 12px;
-    border: 1px solid #fecaca;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
-    width: 100%;
-  }
-  .alert-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--rose);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid #fecaca;
-    padding-bottom: 6px;
-  }
-  .alert-item {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    color: #991b1b;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(225, 29, 72, 0.05);
-  }
+  .alert-box { background: rgba(225, 29, 72, 0.05); padding: 12px 16px; border-radius: var(--radius-premium); margin-bottom: 12px; border: 1px solid rgba(225, 29, 72, 0.2); width: 100%; }
+  .alert-title { font-size: 11px; font-weight: 800; color: var(--rose); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(225, 29, 72, 0.2); padding-bottom: 6px; }
+  .alert-item { display: flex; gap: 6px; align-items: center; color: var(--rose); font-size: 11px; font-weight: 700; padding: 4px 0; border-bottom: 1px solid rgba(225, 29, 72, 0.1); }
   .alert-item:last-child { border-bottom: none; }
 
-  /* STRUCTURED REFERENCE KPI GRID (12 SYSTEM METRICS) */
-  .kpi-matrix-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-  }
+  /* STRUCTURED REFERENCE KPI GRID */
+  .kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
   @media(min-width:480px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
   @media(min-width:768px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
   @media(min-width:1024px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
@@ -141,39 +109,25 @@
   .ref-kpi-card {
     padding: 14px 14px; 
     border-radius: var(--radius-premium); 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    display: flex; flex-direction: column; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-    border: 1px solid #e2e8f0;
+    background: var(--card-bg); 
+    border: 1px solid var(--border-color);
   }
-  .ref-kpi-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
-  }
+  .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
+  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ref-kpi-value { font-size: 19px; font-weight: 800; color: var(--text-main); margin-top: 4px; letter-spacing: -0.5px; }
 
-  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-  .ref-kpi-value { font-size: 19px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
-
-  /* Premium Gradients for Specific Logic States */
-  .profit-card { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important; border: 1px solid #bbf7d0 !important; }
-  .profit-card .ref-kpi-value { color: #16a34a !important; }
-  
-  .loss-card { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border: 1px solid #fecaca !important; }
-  .loss-card .ref-kpi-value { color: #e11d48 !important; }
-  
-  .warning-card { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important; border: 1px solid #ffd8a8 !important; }
-  .warning-card .ref-kpi-value { color: #ea580c !important; }
+  .profit-card { background: rgba(16, 185, 129, 0.05) !important; border: 1px solid rgba(16, 185, 129, 0.2) !important; }
+  .profit-card .ref-kpi-value { color: var(--emerald) !important; }
+  .loss-card { background: rgba(244, 63, 94, 0.05) !important; border: 1px solid rgba(244, 63, 94, 0.2) !important; }
+  .loss-card .ref-kpi-value { color: var(--rose) !important; }
+  .warning-card { background: rgba(245, 158, 11, 0.05) !important; border: 1px solid rgba(245, 158, 11, 0.2) !important; }
+  .warning-card .ref-kpi-value { color: var(--amber) !important; }
 
   /* CORE LAYOUT GRID */
-  .core-layout-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+  .core-layout-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
   @media(min-width:768px){.core-layout-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }}
   @media(min-width:1024px){.core-layout-grid { grid-template-columns: repeat(3, 1fr); }}
   @media(min-width:1400px){.core-layout-grid { grid-template-columns: repeat(4, 1fr); }}
@@ -181,110 +135,50 @@
   @media(min-width:768px){.col-span-full { grid-column: 1 / -1; }}
 
   .section-card {
-    background: var(--card-bg);
-    border-radius: var(--radius-premium);
-    padding: 16px 14px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-width: 0;
+    background: var(--card-bg); border-radius: var(--radius-premium); padding: 16px 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color);
+    display: flex; flex-direction: column; width: 100%; min-width: 0;
   }
+  .section-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
 
-  .section-header {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-main);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 6px;
-  }
-
-  /* HIGHLY COMPACT BORDERLESS ROWS */
-  .data-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 9px 12px;
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #1e293b;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  .data-row:nth-child(even) { background: #f8fafc; }
+  .data-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-size: 11.5px; font-weight: 700; color: var(--text-main); border-bottom: 1px solid var(--slate-bg); }
+  .data-row:nth-child(even) { background: var(--hover-bg); }
   .data-row span:first-child { color: var(--text-muted); font-weight: 600; }
   .data-row span:last-child { font-weight: 700; color: var(--text-main); }
+  .anchor-total-row { font-weight: 800; background: var(--slate-bg) !important; margin-top: auto; padding: 10px 14px; border-radius: var(--radius-md); border-bottom: none; font-size: 11px; }
 
-  .anchor-total-row {
-    font-weight: 800;
-    background: var(--primary-dark) !important;
-    color: #fff !important;
-    margin-top: auto;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border-bottom: none;
-    font-size: 11px;
-  }
-  .anchor-total-row span { color: #fff !important; }
-
-  /* HIGH-FINISH TABLES */
-  .table-wrap{
-    background: var(--card-bg) !important;
-}
-    width: 100%; 
-    overflow-x: auto; 
-    -webkit-overflow-scrolling: touch; 
-    border: 1px solid var(--border-color); 
-    border-radius: var(--radius-md);
-  }
+  /* TABLES */
+  .table-wrap{ background: var(--card-bg) !important; width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
   table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-  th { background: #f8fafc; padding: 10px 12px; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
-  td { padding: 10px 12px; border-bottom: 1px solid #f8fafc; font-size: 11.5px; font-weight: 600; vertical-align: middle; color: var(--text-main); }
+  th { background: var(--slate-bg); padding: 10px 12px; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); font-size: 11.5px; font-weight: 600; color: var(--text-main); }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background: #f8fafc; }
+  tr:hover { background: var(--hover-bg); }
   .text-right { text-align: right; }
 
-  /* SEARCHABLE COLUMN DROPDOWN COMPONENTS */
+  /* DROPDOWNS */
   .th-searchable { position: relative; }
   .th-header-content { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
   .col-filter-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; font-size: 10px; }
   .col-filter-btn:hover, .col-filter-btn.active { color: var(--accent-blue); }
-  .col-dropdown-panel {
-    display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border: 1px solid var(--border-color);
-    border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 8px; z-index: 100; min-width: 150px; text-transform: none;
-  }
-  .col-dropdown-panel input {
-    width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 6px; outline: none; background: #f8fafc;
-  }
+  .col-dropdown-panel { display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 8px; z-index: 100; min-width: 150px; text-transform: none; }
+  .col-dropdown-panel input { width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 6px; outline: none; background: var(--slate-bg); color: var(--text-main); }
   .col-dropdown-panel input:focus { border-color: var(--accent-blue); }
   .col-dropdown-options { max-height: 120px; overflow-y: auto; }
   .col-dropdown-option { padding: 6px; font-size: 11px; cursor: pointer; border-radius: 4px; color: var(--text-main); font-weight: 600; }
   .col-dropdown-option:hover { background: var(--slate-bg); }
 
-  /* CONTEMPORARY FILTER ENGINE BAR */
-  .filter-bar { background: #f8fafc; padding: 10px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color); }
-  .filter-bar select, .filter-bar input {
-    padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 600;
-    background: var(--card-bg); color: var(--text-main); outline: none; transition: border-color 0.2s;
-  }
+  /* FILTER BAR */
+  .filter-bar { background: var(--slate-bg); padding: 10px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color); }
+  .filter-bar select, .filter-bar input { padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 600; background: var(--card-bg); color: var(--text-main); outline: none; }
   .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent-blue); }
   #tableSearchInput { flex: 2; min-width: 200px; font-weight: 500; }
 
-  /* PREMIUM SLICK PROGRESS METRICS */
+  /* CHARTS & MISC */
   .gauge-container { margin-bottom: 8px; }
-  .progress-track { width: 100%; background: #e2e8f0; height: 6px; border-radius: 10px; overflow: hidden; margin-top: 4px; }
-  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease-in-out; }
-
-  /* CHARTS CONFINEMENT */
+  .progress-track { width: 100%; background: var(--slate-bg); height: 6px; border-radius: 10px; overflow: hidden; margin-top: 4px; border: 1px solid var(--border-color); }
+  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
   .chart-box { height: 135px; position: relative; width: 100%; margin-top: auto; padding-top: 6px; }
-
-  /* BADGES */
   .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -295,7 +189,6 @@
 
 <div class="dashboard-container">
 
-  <!-- 🏢 CORPORATE HEADER SYSTEM -->
   <div class="header-panel">
     <div class="header-title">
       <h2>HR DASHBOARD</h2>
@@ -304,7 +197,6 @@
     <div class="date-badge"><i class="fa-solid fa-server"></i> Platform View: {{ production_for }}</div>
   </div>
 
-  <!-- 📊 PREMIUM EXECUTIVE METRICS (12 TILES) -->
   <div class="kpi-matrix-grid">
     <div class="ref-kpi-card"><div class="ref-kpi-meta">Total Staff</div><div class="ref-kpi-value">{{ total_employees }}</div></div>
     <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Active Staff</div><div class="ref-kpi-value">{{ active_employees }}</div></div>
@@ -320,10 +212,8 @@
     <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Structural Net Payroll</div><div class="ref-kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
   </div>
 
-  <!-- 🏛️ CONTROL MATRIX INTERACTION NODES -->
   <div class="core-layout-grid">
 
-    <!-- 1. GENDER DEMOGRAPHICS -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-pie-chart" style="color:var(--accent-blue);"></i> Workforce Demographics</div>
       <div class="chart-box"><canvas id="genderChart"></canvas></div>
@@ -334,13 +224,11 @@
       </div>
     </div>
 
-    <!-- 2. ATTENDANCE STREAM INTELLIGENCE -->
     <div class="section-card span-large-2">
       <div class="section-header"><i class="fa-solid fa-chart-line" style="color:var(--emerald);"></i> 30-Day Attendance Velocity Flow</div>
       <div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div>
     </div>
 
-    <!-- 3. LIFECYCLE WIDGET -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-cake-candles" style="color:var(--rose);"></i> Lifecycle Incidents</div>
       <div style="font-size:9.5px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Birthdays Today</div>
@@ -349,7 +237,6 @@
       {% if anniversary_actives %}{% for a in anniversary_actives %}<div class="data-row"><span style="color:var(--emerald); font-weight: 700;">{{ a.employee_name }}</span><span>{{ a.designation }}</span></div>{% endfor %}{% else %}<p style="color:var(--text-muted); padding:4px 12px; font-weight: 600;">No milestones logs today.</p>{% endif %}
     </div>
 
-    <!-- 4. DEPARTMENT METRIC INDEX -->
     <div class="section-card span-large-2">
       <div class="section-header"><i class="fa-solid fa-network-wired" style="color:var(--accent-blue);"></i> Department Allocation Matrix</div>
       <div class="table-wrap">
@@ -366,13 +253,11 @@
       </div>
     </div>
 
-    <!-- 5. PRODUCTIVITY GAUGES -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-stopwatch" style="color: var(--amber);"></i> Labor Productivity Scale</div>
       <div class="chart-box"><canvas id="prodChart"></canvas></div>
     </div>
 
-    <!-- 6. STATUTORY COMPLIANCE BAR -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-shield-halved" style="color:var(--emerald);"></i> Regulatory Coverage Analytics</div>
       <div class="gauge-container" style="margin-top:4px;">
@@ -387,18 +272,16 @@
       <div class="data-row"><span>Annualized Attrition Index</span><span style="color:var(--rose); font-weight: 800;">{{ attrition_rate }}%</span></div>
     </div>
 
-    <!-- 7. CAPITAL ADVANCE FINANCES -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-wallet" style="color:var(--amber);"></i> Advance Capital Control Book</div>
       <div class="data-row"><span>Total Ledger Disbursed</span><span>₹{{"{:.0f}".format(adv_aggregates.issued or 0)}}</span></div>
       <div class="data-row"><span>Total Recovered Pool</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(adv_aggregates.recovered or 0)}}</span></div>
-      <div class="data-row anchor-total-row" style="background: var(--rose) !important;"><span>Net Outstanding Balance</span><span>₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
+      <div class="data-row anchor-total-row" style="background: rgba(244, 63, 94, 0.1) !important; border: 1px solid rgba(244, 63, 94, 0.2);"><span>Net Outstanding Balance</span><span style="color: var(--rose) !important;">₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
       {% for a in adv_outstanding_list %}
       <div class="data-row" style="font-size:10px; border:none; padding:3px 12px;"><span>&bull; {{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
       {% endfor %}
     </div>
 
-    <!-- 8. INCREMENT LOG ATOM -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-arrow-trend-up" style="color:var(--emerald);"></i> Salary Modifications Stream</div>
       <div class="data-row"><span>Total Events (YTD)</span><span>{{ inc_stats.total_inc or 0 }} Trans</span></div>
@@ -410,13 +293,11 @@
       {% endfor %}
     </div>
 
-    <!-- 9. PAYROLL HISTOGRAM STRUCTURE -->
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-money-bill-wave" style="color: var(--indigo);"></i> Payroll Spectrum Spread</div>
       <div class="chart-box"><canvas id="salaryChart"></canvas></div>
     </div>
 
-    <!-- 10. THREAT MITIGATION & COMPLIANCE INDEX -->
     <div class="section-card">
       <div class="alert-box" style="margin-bottom: 0; height: 100%;">
         <div class="alert-title"><i class="fa-solid fa-triangle-exclamation"></i> Threat Mitigation & Compliance Index</div>
@@ -425,12 +306,11 @@
           {% if risk_no_aadhar > 0 %}<div class="alert-item"><i class="fa-solid fa-fingerprint"></i> Identification Void: [Aadhaar Redacted] {{ risk_no_aadhar }} Profiles.</div>{% endif %}
           {% if risk_no_bank > 0 %}<div class="alert-item"><i class="fa-solid fa-building-columns"></i> Bank Account Omission: {{ risk_no_bank }} Profiles.</div>{% endif %}
           {% if risk_missing_statutory > 0 %}<div class="alert-item"><i class="fa-solid fa-gavel"></i> Statutory Setup Void: {{ risk_missing_statutory }} Employees.</div>{% endif %}
-          {% if double_duty_count > 0 %}<div class="alert-item" style="color:var(--rose);"><i class="fa-solid fa-clock"></i> Overtime Breach: {{ double_duty_count }} Alerts.</div>{% endif %}
+          {% if double_duty_count > 0 %}<div class="alert-item"><i class="fa-solid fa-clock"></i> Overtime Breach: {{ double_duty_count }} Alerts.</div>{% endif %}
         </div>
       </div>
     </div>
 
-    <!-- 11. SEARCHABLE MASTER DIRECTORY -->
     <div class="section-card col-span-full">
       <div class="section-header"><i class="fa-solid fa-users" style="color:var(--accent-blue);"></i> Master Enterprise Employee Directory</div>
        
@@ -440,7 +320,7 @@
           <select name="type_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All Tiers</option><option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option><option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option></select>
           <select name="status_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All System States</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option></select>
           <input type="text" id="tableSearchInput" onkeyup="searchTableEngine()" placeholder="🔍 Type to filter rows dynamically across records...">
-          <a href="/hr/hr_command_center" style="font-size:11px; font-weight:700; padding:6px 12px; text-decoration:none; color:var(--text-muted); background:#e2e8f0; border-radius:4px; align-self:center;">Reset</a>
+          <a href="/hr/hr_command_center" style="font-size:11px; font-weight:700; padding:6px 12px; text-decoration:none; color:var(--text-muted); background:var(--border-color); border-radius:4px; align-self:center;">Reset</a>
         </form>
       </div>
 
@@ -449,7 +329,6 @@
           <thead>
             <tr>
               <th>System ID</th>
-              <!-- Searchable Dropdown Columns in Table Headers -->
               <th class="th-searchable">
                 <div class="th-header-content">
                   <span>Staff Target Name</span>
@@ -493,10 +372,10 @@
               <td style="font-weight:700; color: var(--text-main);">{{ emp.employee_name }}</td>
               <td>{{ emp.department or 'N/A' }}</td>
               <td>{{ emp.designation or 'N/A' }}</td>
-              <td><span class="badge" style="background:#f1f5f9; color:#475569;">{{ emp.employee_type }}</span></td>
+              <td><span class="badge" style="background:var(--slate-bg); color:var(--text-muted); border: 1px solid var(--border-color);">{{ emp.employee_type }}</span></td>
               <td>{{ emp.mobile }}</td>
               <td style="font-weight:700;">₹{{"{:,.0f}".format(emp.current_salary)}}</td>
-              <td><span class="badge" style="{% if emp.status == 'ACTIVE' %}background:#ccfbf1; color:#115e59;{% else %}background:#ffe4e6; color:#9f1239;{% endif %}">{{ emp.status }}</span></td>
+              <td><span class="badge" style="{% if emp.status == 'ACTIVE' %}background:rgba(16, 185, 129, 0.1); color:var(--emerald);{% else %}background:rgba(244, 63, 94, 0.1); color:var(--rose);{% endif %}">{{ emp.status }}</span></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -507,55 +386,67 @@
   </div>
 </div>
 
-<!-- 📊 ENGINE INITIALIZATION SYSTEMS -->
 <script>
-// Global Chart.js Defaults configuration for corporate premium aesthetics
+// ==========================================
+// 🎨 DYNAMIC CHART THEME ENGINE (DUAL MODE)
+// ==========================================
+// ఫైల్ లోడ్ అయినప్పుడు CSS వేరియబుల్స్ నుండి కలర్స్ తీసుకుంటుంది (Dark/Light మోడ్స్ కోసం)
+const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+Chart.defaults.color = getCssVar('--text-muted') || '#94a3b8'; 
 Chart.defaults.font.size = 9;
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.weight = '600';
 Chart.defaults.plugins.legend.labels.boxWidth = 8;
+Chart.defaults.borderColor = getCssVar('--chart-grid') || '#334155';
 
+// 1. Gender Demographics Chart
 new Chart(document.getElementById("genderChart"), {
   type: "pie",
   options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 6 } } } },
   data: {
     labels: {{ gender_labels|tojson }},
-    datasets: [{ data: {{ gender_values|tojson }}, backgroundColor: ["#1d4ed8", "#ec4899", "#94a3b8"], borderWidth: 1, borderColor: "#ffffff" }]
+    datasets: [{ data: {{ gender_values|tojson }}, backgroundColor: ["#3b82f6", "#f43f5e", "#94a3b8"], borderWidth: 1, borderColor: "transparent" }] 
   }
 });
 
+// 2. Attendance Velocity Flow Chart
 new Chart(document.getElementById("attendanceTrendChart"), {
   type: "line",
   options: { 
     responsive: true, maintainAspectRatio: false, 
     plugins: { legend: { display: false } },
-    scales: { y: { min: 0, max: 100, grid: { color: "#f1f5f9" }, ticks: { font: { weight: 600 } } }, x: { grid: { display: false }, ticks: { font: { weight: 600 } } } } 
+    scales: { y: { min: 0, max: 100, ticks: { font: { weight: 600 } } }, x: { grid: { display: false }, ticks: { font: { weight: 600 } } } } 
   },
   data: {
     labels: {{ attendance_trend_labels|tojson }},
-    datasets: [{ label: "Attendance Ratio %", data: {{ attendance_trend_data|tojson }}, borderColor: "#0d9488", borderWidth: 2, fill: true, backgroundColor: "rgba(13,148,136,0.02)", tension: 0.15, pointRadius: 1 }]
+    datasets: [{ label: "Attendance Ratio %", data: {{ attendance_trend_data|tojson }}, borderColor: "#10b981", borderWidth: 2, fill: true, backgroundColor: "rgba(16, 185, 129, 0.1)", tension: 0.15, pointRadius: 1 }]
   }
 });
 
+// 3. Labor Productivity Bar Chart
 new Chart(document.getElementById("prodChart"), {
   type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ y: { grid: { color: "#f1f5f9" } }, x:{ grid:{ display:false } } } },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
   data: {
     labels: ["<4h", "4-8h", "8-12h", "12h+"],
-    datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#e11d48", "#1d4ed8", "#0d9488", "#d97706"], borderRadius: 3, barThickness: 15 }]
+    datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b"], borderRadius: 3, barThickness: 15 }]
   }
 });
 
+// 4. Payroll Spectrum Spread Chart
 new Chart(document.getElementById("salaryChart"), {
   type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ y: { grid: { color: "#f1f5f9" } }, x:{ grid:{ display:false } } } },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
   data: {
     labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
-    datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#1d4ed8", "#4f46e5", "#0d9488"], borderRadius: 3, barThickness: 15 }]
+    datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#3b82f6", "#6366f1", "#10b981"], borderRadius: 3, barThickness: 15 }]
   }
 });
 
-// Global tracking object for column specific filters
+// ==========================================
+// 🔍 MASTER FILTERING ENGINE (SEARCH + DROPDOWNS)
+// ==========================================
 const activeColumnFilters = {};
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -583,7 +474,7 @@ function toggleColumnDropdown(e, id) {
 function populateColumnDropdowns() {
   const table = document.getElementById("employeeDataTable");
   const tr = table.getElementsByTagName("tr");
-  const uniqueValues = { 1: new Set(), 2: new Set(), 3: new Set() };
+  const uniqueValues = { 1: new Set(), 2: new Set(), 3: new Set() }; // Targeted Column Indexes
 
   // Collect unique textual records from visible columns
   for (let i = 1; i < tr.length; i++) {
@@ -661,7 +552,7 @@ function executeMasterFilteringEngine() {
     // Check row elements against column scoped parameters
     for (let colIndex in activeColumnFilters) {
       if (td[colIndex]) {
-        const cellText = td[colIndex].textContent.toUpperCase();
+        const cellText = td[colIndex].textContent.trim().toUpperCase();
         if (cellText !== activeColumnFilters[colIndex]) {
           matchesColumns = false;
           break;
@@ -670,7 +561,7 @@ function executeMasterFilteringEngine() {
     }
 
     // Check row matches global input engine text
-    if (globalFilter) {
+    if (globalFilter && matchesColumns) { // Optimization: Checks search only if dropdowns match
       for (let j = 0; j < td.length; j++) {
         if (td[j]) {
           if ((td[j].textContent || td[j].innerText).toUpperCase().indexOf(globalFilter) > -1) {
@@ -690,6 +581,8 @@ function searchTableEngine() {
   executeMasterFilteringEngine();
 }
 </script>
+
 <script src="/static/js/global-loader.js"></script>
+
 </body>
 </html>

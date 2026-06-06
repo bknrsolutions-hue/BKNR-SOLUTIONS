@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Executive KPI Reference Center | BKNR ERP</title>
 
+<!-- Theme Initialization Script to Prevent Flicker -->
+<script>
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -15,6 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+  /* 🌟 LIGHT MODE VARIABLES (DEFAULT) 🌟 */
   :root {
     --primary-dark: #0f172a;
     --slate-bg: #f1f5f9; 
@@ -26,6 +33,68 @@
     --radius-premium: 12px;
     --radius-md: 8px;
     --orange-accent: #ea580c;
+
+    /* Logic Colors */
+    --emerald: #0d9488;
+    --emerald-bg: #f0fdf4;
+    --emerald-border: #bbf7d0;
+
+    --rose: #e11d48;
+    --rose-bg: #fff1f2;
+    --rose-border: #fecaca;
+
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fef3c7;
+
+    --indigo: #4f46e5;
+    --indigo-bg: #eef2ff;
+    --indigo-border: #e0e7ff;
+    
+    /* Structural Elements */
+    --row-hover: #f8fafc;
+    --table-header: #f8fafc;
+    --strip-bg: #f8fafc;
+    --input-bg: #ffffff;
+    --kpi-card-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    --value-text: #000000;
+  }
+
+  /* 🌙 DARK MODE VARIABLES 🌟 */
+  :root[data-theme="dark"] {
+    --primary-dark: #f8fafc; 
+    --slate-bg: #0f172a; 
+    --card-bg: #1e293b;
+    --accent-blue: #3b82f6;
+    --border-color: #334155;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --orange-accent: #f97316;
+
+    /* Logic Colors */
+    --emerald: #10b981;
+    --emerald-bg: rgba(16, 185, 129, 0.05);
+    --emerald-border: rgba(16, 185, 129, 0.2);
+
+    --rose: #f43f5e;
+    --rose-bg: rgba(244, 63, 94, 0.05);
+    --rose-border: rgba(244, 63, 94, 0.2);
+
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.05);
+    --amber-border: rgba(245, 158, 11, 0.2);
+
+    --indigo: #6366f1;
+    --indigo-bg: rgba(99, 102, 241, 0.05);
+    --indigo-border: rgba(99, 102, 241, 0.2);
+    
+    /* Structural Elements */
+    --row-hover: rgba(255, 255, 255, 0.02);
+    --table-header: #0f172a;
+    --strip-bg: #111827;
+    --input-bg: #0f172a;
+    --kpi-card-bg: var(--card-bg);
+    --value-text: #ffffff;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,7 +105,7 @@
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     padding: 12px 8px;
-    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   .dashboard-container { 
@@ -46,42 +115,30 @@
   }
   @media(min-width: 768px) { body { padding: 16px; } }
 
-  /* ULTRA-COMPACT HEADER */
+  /* HEADER */
   .header-panel {
     background: var(--card-bg);
     padding: 14px 20px;
     border-radius: var(--radius-premium);
     margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
+    transition: background-color 0.3s, border-color 0.3s;
   }
 
-  .header-title h2 {
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
-  }
+  .header-title h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: var(--primary-dark); }
+  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
 
-  .header-title p {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  .control-bar {
-    display: flex;
-    gap: 6px;
-  }
-
+  .control-bar { display: flex; gap: 6px; }
   .btn-action {
     background: var(--slate-bg);
     color: var(--text-main);
-    border: none;
+    border: 1px solid var(--border-color);
     padding: 6px 12px;
     border-radius: var(--radius-md);
     font-size: 11px;
@@ -92,9 +149,9 @@
     gap: 4px;
     transition: all 0.2s ease;
   }
-  .btn-action:hover { background: #e2e8f0; }
+  .btn-action:hover { background: var(--border-color); }
 
-  /* ONE-LINE EXECUTIVE QUICK GLANCE */
+  /* QUICK GLANCE STRIP */
   .quick-summary-strip {
     background: var(--card-bg);
     padding: 10px 16px;
@@ -103,7 +160,7 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
   }
   @media(min-width:576px) { .quick-summary-strip { grid-template-columns: repeat(3, 1fr); } }
@@ -112,72 +169,43 @@
   .strip-item {
     text-align: center;
     padding: 8px;
-    background: #f8fafc;
+    background: var(--strip-bg);
     border-radius: var(--radius-md);
-    border: 1px solid #f1f5f9;
+    border: 1px solid var(--border-color);
   }
   .strip-label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .strip-value { font-size: 14px; font-weight: 800; margin-top: 2px; color: #000000; }
+  .strip-value { font-size: 14px; font-weight: 800; margin-top: 2px; color: var(--value-text); }
 
-  /* COMPACT FILTER MATRIX WITH EXTENDED SEARCHABLE SYSTEM */
+  /* FILTER PANEL */
   .filter-panel {
     background: var(--card-bg);
     padding: 12px 20px;
     border-radius: var(--radius-premium);
     margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
   }
-
-  .filter-form {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-  }
-
-  .filter-inputs-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: center;
-    flex: 1;
-  }
-
-  .input-field { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    min-width: 200px;
-  }
-  
-  .input-field label { 
-    font-size: 10px; 
-    font-weight: 800; 
-    color: var(--text-muted); 
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
+  .filter-form { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+  .filter-inputs-wrapper { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; flex: 1; }
+  .input-field { display: flex; align-items: center; gap: 8px; min-width: 200px; }
+  .input-field label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; }
   .input-field input {
     padding: 6px 10px;
     border: 1px solid var(--border-color);
-    background: #f8fafc;
+    background: var(--input-bg);
     border-radius: var(--radius-md);
     font-size: 11px;
     font-weight: 600;
     color: var(--text-main);
     outline: none;
     width: 100%;
+    color-scheme: dark light;
   }
 
   /* Choices.js Dropdown Optimization Overrides */
-  .choices-container-custom {
-    min-width: 260px;
-  }
+  .choices-container-custom { min-width: 260px; }
   .choices__inner {
-    background-color: #f8fafc !important;
+    background-color: var(--input-bg) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-md) !important;
     padding: 2px 8px !important;
@@ -188,10 +216,14 @@
   }
   .choices__list--dropdown {
     font-size: 11px !important;
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
   }
+  .choices__item--choice { color: var(--text-main) !important; }
 
   .btn-sync {
-    background: var(--primary-dark);
+    background: var(--accent-blue);
     color: #fff;
     border: none;
     padding: 8px 16px;
@@ -204,15 +236,9 @@
     align-items: center;
     gap: 6px;
   }
-  .btn-sync:hover { background: var(--accent-blue); }
 
-  /* STRUCTURED REFERENCE KPI GRID */
-  .kpi-matrix-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-  }
+  /* KPI GRID */
+  .kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
   @media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
   @media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
   @media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
@@ -220,69 +246,42 @@
   .ref-kpi-card {
     padding: 14px; 
     border-radius: var(--radius-premium); 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    display: flex; flex-direction: column; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-    border: 1px solid #e2e8f0;
+    background: var(--kpi-card-bg); 
+    border: 1px solid var(--border-color);
   }
-  .ref-kpi-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
-  }
+  .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1); }
+  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; overflow: hidden; }
+  .ref-kpi-value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 4px; letter-spacing: -0.5px; }
 
-  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-  .ref-kpi-value { font-size: 19px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
-
-  .ref-kpi-card[data-ref="rmp_cost"] { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; }
-  .ref-kpi-card[data-ref="rmp_cost"] .ref-kpi-value { color: #2563eb; }
+  /* Logic State Cards */
+  .state-success, .profit-card { background: var(--emerald-bg) !important; border: 1px solid var(--emerald-border) !important; }
+  .state-success .ref-kpi-value, .profit-card .ref-kpi-value { color: var(--emerald) !important; }
   
-  .ref-kpi-card[data-ref="prod_cost"] { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; }
-  .ref-kpi-card[data-ref="prod_cost"] .ref-kpi-value { color: #7c3aed; }
-
-  .ref-kpi-card[data-ref="utility"] { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; }
-  .ref-kpi-card[data-ref="utility"] .ref-kpi-value { color: #0d9488; }
-
-  .ref-kpi-card[data-ref="packaging"] { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; }
-  .ref-kpi-card[data-ref="packaging"] .ref-kpi-value { color: #db2777; }
-
-  .ref-kpi-card[data-ref="gross_sales"] { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; }
-  .ref-kpi-card[data-ref="gross_sales"] .ref-kpi-value { color: #4f46e5; }
-
-  .state-success { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important; border: 1px solid #bbf7d0 !important; }
-  .state-success .ref-kpi-value { color: #16a34a !important; }
+  .state-danger, .loss-card { background: var(--rose-bg) !important; border: 1px solid var(--rose-border) !important; }
+  .state-danger .ref-kpi-value, .loss-card .ref-kpi-value { color: var(--rose) !important; }
   
-  .state-danger { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border: 1px solid #fecaca !important; }
-  .state-danger .ref-kpi-value { color: #e11d48 !important; }
-  
-  .state-warning { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important; border: 1px solid #ffd8a8 !important; }
-  .state-warning .ref-kpi-value { color: #ea580c !important; }
+  .state-warning, .warning-card { background: var(--amber-bg) !important; border: 1px solid var(--amber-border) !important; }
+  .state-warning .ref-kpi-value, .warning-card .ref-kpi-value { color: var(--amber) !important; }
 
-  /* ERROR LOGGING / ALERTS PANEL */
+  /* ALERTS PANEL */
   .exception-box {
-    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    background: var(--rose-bg);
     padding: 10px 16px;
     border-radius: var(--radius-premium);
     margin-bottom: 12px;
-    border: 1px solid #fecaca;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+    border: 1px solid var(--rose-border);
   }
-  .exception-header { font-size: 11px; font-weight: 800; color: #b91c1c; text-transform: uppercase; margin-bottom: 4px; }
-  .exception-item { display: flex; gap: 6px; align-items: center; color: #991b1b; font-size: 11px; font-weight: 700; }
+  .exception-header { font-size: 11px; font-weight: 800; color: var(--rose); text-transform: uppercase; margin-bottom: 4px; }
+  .exception-item { display: flex; gap: 6px; align-items: center; color: var(--rose); font-size: 11px; font-weight: 700; padding: 2px 0;}
 
-  /* COMPACT DATA SECTIONS GRID */
-  .core-layout-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-    margin-bottom: 12px;
-  }
+  /* CORE DATA GRID */
+  .core-layout-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 12px; }
   @media(min-width:768px) { .core-layout-grid { grid-template-columns: repeat(2, 1fr); } }
   @media(min-width:1200px) { .core-layout-grid { grid-template-columns: repeat(3, 1fr); } }
   @media(min-width:1400px) { .core-layout-grid { grid-template-columns: repeat(4, 1fr); } }
-
   .span-2x { grid-column: span 1; }
   @media(min-width:1400px) { .span-2x { grid-column: span 2; } }
   .full-width-block { grid-column: 1 / -1; }
@@ -291,139 +290,54 @@
     background: var(--card-bg);
     border-radius: var(--radius-premium);
     padding: 16px 14px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
   }
-
-  .section-header {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-main);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    letter-spacing: 0.5px;
-  }
+  .section-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px; }
 
   .data-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 9px 12px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #1e293b;
-    border-bottom: 1px solid #f1f5f9;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 12px; font-size: 12px; font-weight: 700;
+    color: var(--text-main); border-bottom: 1px solid var(--border-color);
   }
-  .data-row:nth-child(even) { background: #f8fafc; }
+  .data-row:nth-child(even) { background: var(--row-hover); }
   .data-row span:first-child { color: var(--text-muted); font-weight: 600; }
-  .data-row span:last-child { font-weight: 700; color: var(--text-main); }
+  .data-row span:last-child { font-weight: 700; color: var(--primary-dark); }
 
   .anchor-total-row {
     font-weight: 800;
     background: var(--primary-dark) !important;
-    color: #fff !important;
+    color: var(--slate-bg) !important;
     margin-top: auto;
     padding: 10px 14px;
     border-radius: var(--radius-md);
     border-bottom: none;
+    border: 1px solid var(--border-color);
   }
-  .anchor-total-row span { color: #fff !important; }
+  .anchor-total-row span { color: var(--slate-bg) !important; }
 
-  .visual-holder {
-    position: relative;
-    height: 140px;
-    width: 100%;
-    padding-top: 8px;
-    margin-top: auto;
-  }
+  .visual-holder { position: relative; height: 140px; width: 100%; padding-top: 8px; margin-top: auto; }
 
   .prod-matrix-stack { display: flex; flex-direction: column; gap: 8px; }
   .prod-matrix-row {
-    background: #f8fafc;
+    background: var(--strip-bg);
     padding: 12px 16px;
     border-radius: var(--radius-md);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
     border: 1px solid var(--border-color);
   }
-  .prod-name { font-weight: 800; color: var(--accent-blue); font-size: 12px; }
+  .prod-name { font-weight: 800; color: var(--accent-blue); font-size: 12px; text-transform: uppercase;}
   .prod-sub-meta { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
   .prod-right-metric { text-align: right; }
-  .prod-total-weight { font-weight: 800; font-size: 13px; color: #000000; }
+  .prod-total-weight { font-weight: 800; font-size: 13px; color: var(--value-text); }
   .prod-net-margin { font-size: 11px; font-weight: 700; margin-top: 2px; }
-
-  /* ================= 🚧 ENTERPRISE DEVELOPMENT BLUR OVERLAY ================= */
-  .dev-blur-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(241, 245, 249, 0.5); /* సగం బ్యాక్‌గ్రౌండ్ కనిపిస్తూ మోడరన్‌గా బ్లర్ చేస్తుంది */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    z-index: 99999; /* అన్ని ఎలిమెంట్స్ మరియు డ్రాప్‌డౌన్స్ కంటే పైన ఉంటుంది */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .dev-loader-card {
-    background: var(--primary-dark);
-    color: #ffffff;
-    padding: 20px 32px;
-    border-radius: var(--radius-premium);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
-    max-width: 360px;
-  }
-  .dev-status-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-  }
-  .dev-tools-icon {
-    animation: spinTools 1.5s linear infinite;
-    color: var(--orange-accent);
-  }
-  .dev-loader-card p {
-    margin: 0;
-    color: #94a3b8;
-    font-size: 9.5px;
-    font-weight: 500;
-    line-height: 1.5;
-  }
-  @keyframes spinTools {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  @media print { .dev-blur-overlay { display: none; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
-
-<div class="dev-blur-overlay">
-  <div class="dev-loader-card">
-    <div class="dev-status-title">
-      <i class="fas fa-tools dev-tools-icon fa-lg"></i>
-      <span>Updating Executive Matrix Logics...</span>
-    </div>
-    <p>We are currently configuring advanced costing formulas, variance trackers, and downstream corporate ledgers. This report view will freeze during runtime updates.</p>
-  </div>
-</div>
 
 <div class="dashboard-container">
 
@@ -434,13 +348,13 @@
     </div>
     <div class="control-bar">
       <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
-      <button class="btn-action"><i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Excel</button>
-      <button class="btn-action"><i class="fa-solid fa-file-pdf" style="color:#dc2626;"></i> PDF</button>
+      <button class="btn-action"><i class="fa-solid fa-file-excel" style="color:var(--emerald);"></i> Excel</button>
+      <button class="btn-action"><i class="fa-solid fa-file-pdf" style="color:var(--rose);"></i> PDF</button>
     </div>
   </div>
 
   <div class="quick-summary-strip">
-    <div class="strip-item"><p class="strip-label">EBITDA Pool</p><p class="strip-value" style="color:#16a34a;">₹{{"{:.0f}".format(ebitda)}}</p></div>
+    <div class="strip-item"><p class="strip-label">EBITDA Pool</p><p class="strip-value" style="color:var(--emerald);">₹{{"{:.0f}".format(ebitda)}}</p></div>
     <div class="strip-item"><p class="strip-label">Processing / Kg</p><p class="strip-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</p></div>
     <div class="strip-item"><p class="strip-label">Sales Outflow</p><p class="strip-value">{{"{:.0f}".format(sales_qty)}} Kg</p></div>
     <div class="strip-item"><p class="strip-label">Factory Intake</p><p class="strip-value">{{"{:.0f}".format(prod_qty)}} Kg</p></div>
@@ -470,18 +384,18 @@
   </div>
 
   <div class="kpi-matrix-grid">
-    <div class="ref-kpi-card" data-ref="rmp_cost"><span class="ref-kpi-meta">Raw Material Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</span></div>
-    <div class="ref-kpi-card" data-ref="prod_cost"><span class="ref-kpi-meta">Production Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
-    <div class="ref-kpi-card state-warning" data-ref="conversion_rate"><span class="ref-kpi-meta">Conversion / Kg</span><span class="ref-kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="ref-kpi-card" data-ref="payroll"><span class="ref-kpi-meta">Payroll Resource</span><span class="ref-kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</span></div>
-    <div class="ref-kpi-card" data-ref="utility"><span class="ref-kpi-meta">Utility Expense</span><span class="ref-kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
-    <div class="ref-kpi-card" data-ref="packaging"><span class="ref-kpi-meta">Packaging Supply</span><span class="ref-kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</span></div>
-    <div class="ref-kpi-card" data-ref="logistics"><span class="ref-kpi-meta">Logistics Fleet</span><span class="ref-kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</span></div>
-    <div class="ref-kpi-card" data-ref="inventory_val"><span class="ref-kpi-meta">Inventory Asset</span><span class="ref-kpi-value">₹{{"{:.0f}".format(inventory_value)}}</span></div>
-    <div class="ref-kpi-card" data-ref="gross_sales"><span class="ref-kpi-meta">Gross Sales Pool</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales)}}</span></div>
-    <div class="ref-kpi-card state-warning" data-ref="receivables"><span class="ref-kpi-meta">Arrears Pending</span><span class="ref-kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
-    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}" data-ref="gross_profit"><span class="ref-kpi-meta">Gross Margin</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</span></div>
-    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}" data-ref="net_margin_pct"><span class="ref-kpi-meta">Net Ratio</span><span class="ref-kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Raw Material Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Production Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+    <div class="ref-kpi-card state-warning"><span class="ref-kpi-meta">Conversion / Kg</span><span class="ref-kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Payroll Resource</span><span class="ref-kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Utility Expense</span><span class="ref-kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Packaging Supply</span><span class="ref-kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Logistics Fleet</span><span class="ref-kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Inventory Asset</span><span class="ref-kpi-value">₹{{"{:.0f}".format(inventory_value)}}</span></div>
+    <div class="ref-kpi-card"><span class="ref-kpi-meta">Gross Sales Pool</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales)}}</span></div>
+    <div class="ref-kpi-card state-warning"><span class="ref-kpi-meta">Arrears Pending</span><span class="ref-kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}"><span class="ref-kpi-meta">Gross Margin</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</span></div>
+    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}"><span class="ref-kpi-meta">Net Ratio</span><span class="ref-kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</span></div>
   </div>
 
   <div class="exception-box">
@@ -495,23 +409,23 @@
     <div class="section-card">
       <div class="section-header"><i class="fa-solid fa-sitemap" style="color:var(--accent-blue);"></i> Revenue Deductions</div>
       <div class="data-row"><span>Gross Sales Allocation</span><span>₹{{"{:,.2f}".format(total_sales)}}</span></div>
-      <div class="data-row"><span>(-) Materials Sourcing</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
-      <div class="data-row"><span>(-) Factory Labor Runs</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
-      <div class="data-row"><span>(-) Plant Utilities</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
-      <div class="data-row"><span>(-) Salary Baseline</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
-      <div class="data-row"><span>(-) Packaging Inventory</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
-      <div class="data-row"><span>(-) Supply Chain / Freight</span><span style="color:#e11d48;">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
+      <div class="data-row"><span>(-) Materials Sourcing</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
+      <div class="data-row"><span>(-) Factory Labor Runs</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+      <div class="data-row"><span>(-) Plant Utilities</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+      <div class="data-row"><span>(-) Salary Baseline</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
+      <div class="data-row"><span>(-) Packaging Inventory</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
+      <div class="data-row"><span>(-) Supply Chain / Freight</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
       <div class="data-row anchor-total-row"><span>Net Dynamic Yield</span><span>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:#ea580c;"></i> Target Variance Tracking</div>
-      <div class="data-row" style="font-weight:700; background:var(--primary-dark); color:#fff; border-radius:4px;"><span>Vector Element</span><span>Current MTD</span><span>Variance</span></div>
-      <div class="data-row"><span>Raw Materials</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:#16a34a;">-1.2%</span></div>
-      <div class="data-row"><span>Power & Fuels</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:#e11d48;">+4.1%</span></div>
-      <div class="data-row"><span>Human Capital</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:#16a34a;">0.0%</span></div>
-      <div class="data-row"><span>Freight Logistics</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:#16a34a;">-0.8%</span></div>
-      <div class="data-row anchor-total-row"><span>Index Composite</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:#e11d48;">+1.1%</span></div>
+      <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:var(--orange-accent);"></i> Target Variance Tracking</div>
+      <div class="data-row" style="font-weight:700; background:var(--strip-bg); color:var(--text-main); border-radius:4px;"><span>Vector Element</span><span>Current MTD</span><span>Variance</span></div>
+      <div class="data-row"><span>Raw Materials</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:var(--emerald);">-1.2%</span></div>
+      <div class="data-row"><span>Power & Fuels</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:var(--rose);">+4.1%</span></div>
+      <div class="data-row"><span>Human Capital</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:var(--emerald);">0.0%</span></div>
+      <div class="data-row"><span>Freight Logistics</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:var(--emerald);">-0.8%</span></div>
+      <div class="data-row anchor-total-row"><span>Index Composite</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:var(--rose);">+1.1%</span></div>
     </div>
 
     <div class="section-card">
@@ -529,25 +443,25 @@
     </div>
 
     <div class="section-card span-2x">
-      <div class="section-header"><i class="fa-solid fa-timeline" style="color:#0d9488;"></i> Operational Trajectory Matrix</div>
+      <div class="section-header"><i class="fa-solid fa-timeline" style="color:var(--emerald);"></i> Operational Trajectory Matrix</div>
       <div class="visual-holder"><canvas id="trendLineChart"></canvas></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:#e11d48;"></i> Outstanding Aging Schedule</div>
-      <div class="data-row"><span>Current Frame (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
-      <div class="data-row"><span>Mid Frame (31-60 D)</span><span style="color:#ea580c;">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
-      <div class="data-row"><span>Urgent Warning (61-90 D)</span><span style="color:#f97316;">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
-      <div class="data-row"><span>Risk Recovery (90+ D)</span><span style="color:#e11d48;">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
+      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Outstanding Aging Schedule</div>
+      <div class="data-row"><span>Current Frame (0-30 D)</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
+      <div class="data-row"><span>Mid Frame (31-60 D)</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
+      <div class="data-row"><span>Urgent Warning (61-90 D)</span><span style="color:var(--amber);">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
+      <div class="data-row"><span>Risk Recovery (90+ D)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
       <div class="data-row anchor-total-row"><span>Total Active Book Arrears</span><span>₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-box" style="color:#ea580c;"></i> Inventory Holding Vintage</div>
-      <div class="data-row"><span>Active Fast Turn (0-30 D)</span><span style="color:#16a34a;">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
-      <div class="data-row"><span>Standard Hold (31-60 D)</span><span style="color:#ea580c;">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
-      <div class="data-row"><span>Slow Clearance (61-90 D)</span><span style="color:#f97316;">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
-      <div class="data-row"><span>Stagnant Risk (90+ D)</span><span style="color:#e11d48;">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
+      <div class="section-header"><i class="fa-solid fa-box" style="color:var(--orange-accent);"></i> Inventory Holding Vintage</div>
+      <div class="data-row"><span>Active Fast Turn (0-30 D)</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
+      <div class="data-row"><span>Standard Hold (31-60 D)</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
+      <div class="data-row"><span>Slow Clearance (61-90 D)</span><span style="color:var(--amber);">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
+      <div class="data-row"><span>Stagnant Risk (90+ D)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
       <div class="data-row anchor-total-row"><span>Aggregate Vault Asset</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
     </div>
 
@@ -562,20 +476,20 @@
               <div class="prod-sub-meta">
                 <div>Rev: <strong>₹{{"{:.0f}".format(p.revenue)}}</strong></div>
                 <div>Cost: <strong>₹{{"{:.0f}".format(p.cost)}}</strong></div>
-                <div {% if p.profit < 0 %}style="color:#e11d48;"{% else %}style="color:#16a34a;"{% endif %}>Margin Vol: <strong>₹{{"{:.0f}".format(p.profit)}}</strong></div>
+                <div {% if p.profit < 0 %}style="color:var(--rose);"{% else %}style="color:var(--emerald);"{% endif %}>Margin Vol: <strong>₹{{"{:.0f}".format(p.profit)}}</strong></div>
                 <div>Yield Rate: <strong>₹{{"%.2f"|format(p.profit_per_kg)}}/Kg</strong></div>
               </div>
             </div>
             <div class="prod-right-metric">
               <p class="prod-total-weight">{{ p.qty }} Kg</p>
-              <p class="prod-net-margin" {% if p.profit < 0 %}style="color:#e11d48;"{% else %}style="color:#16a34a;"{% endif %}>
+              <p class="prod-net-margin" {% if p.profit < 0 %}style="color:var(--rose);"{% else %}style="color:var(--emerald);"{% endif %}>
                 Ratio: {% if p.revenue > 0 %}{{"%.2f"|format(((p.revenue - p.cost) / p.revenue) * 100)}}{% else %}0.00{% endif %}%
               </p>
             </div>
           </div>
           {% endfor %}
         {% else %}
-          <div style="text-align:center; color:var(--text-muted); padding:24px; font-weight:600; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="text-align:center; color:var(--text-muted); padding:24px; font-weight:600; background: var(--strip-bg); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             No downstream log files fetched inside current runtime range.
           </div>
         {% endif %}
@@ -586,8 +500,27 @@
 </div>
 
 <script>
+// Keep references to global chart instances
+window.charts = {};
+
+function applyChartTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
+    Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
+    Chart.defaults.font.size = 9;
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.font.weight = '600';
+    Chart.defaults.plugins.legend.labels.boxWidth = 8;
+    
+    // Auto-update charts if they exist
+    Object.values(window.charts).forEach(chart => {
+        if(chart) chart.update();
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-  // Initialize Searchable Choices Dropdown Object for Company Selector Column
+  // Initialize Searchable Choices Dropdown Object
   const element = document.getElementById('searchableCompanyDropdown');
   if (element) {
     new Choices(element, {
@@ -599,13 +532,19 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  // Set initial theme for charts before rendering
+  applyChartTheme();
+
   // Component Load Chart Initialization
-  new Chart(document.getElementById("deptMiniChart"), {
+  window.charts.deptMiniChart = new Chart(document.getElementById("deptMiniChart"), {
     type: "bar",
     options: { 
       responsive: true, maintainAspectRatio: false, 
       plugins: { legend: { display: false } },
-      scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } }
+      scales: { 
+        y: { display: false }, 
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } 
+      }
     },
     data: {
       labels: ["RM", "Proc", "Util", "Pay", "Pack", "Log"],
@@ -618,32 +557,43 @@ document.addEventListener("DOMContentLoaded", function() {
           {{ packaging_cost or 0 }}, 
           {{ logistics_cost or 0 }}
         ],
-        backgroundColor: ["#0f172a", "#1d4ed8", "#0d9488", "#b45309", "#6366f1", "#f43f5e"],
+        backgroundColor: ["#64748b", "#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#f43f5e"],
         borderRadius: 4
       }]
     }
   });
 
   // Dynamic Trajectory Trend Timeline Line Chart Initialization
-  new Chart(document.getElementById("trendLineChart"), {
+  window.charts.trendLineChart = new Chart(document.getElementById("trendLineChart"), {
     type: "line",
     options: { 
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { labels: { boxWidth: 8, font: { size: 10, family: "'Plus Jakarta Sans', sans-serif", weight: 700 } } } },
       scales: { 
-        y: { ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } }, grid: { color: "#f1f5f9" } }, 
+        y: { ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } }, 
         x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } 
       }
     },
     data: {
       labels: {{ (month_labels or [])|tojson }},
       datasets: [
-        { label: "Rev Stream", data: {{ (revenue_trend or [])|tojson }}, borderColor: "#0d9488", backgroundColor: "#0d9488", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
-        { label: "Exp Stream", data: {{ (expense_trend or [])|tojson }}, borderColor: "#e11d48", backgroundColor: "#e11d48", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
-        { label: "Net Pool", data: {{ (profit_trend or [])|tojson }}, borderColor: "#1d4ed8", backgroundColor: "#1d4ed8", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 }
+        { label: "Rev Stream", data: {{ (revenue_trend or [])|tojson }}, borderColor: "#10b981", backgroundColor: "#10b981", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
+        { label: "Exp Stream", data: {{ (expense_trend or [])|tojson }}, borderColor: "#f43f5e", backgroundColor: "#f43f5e", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
+        { label: "Net Pool", data: {{ (profit_trend or [])|tojson }}, borderColor: "#3b82f6", backgroundColor: "#3b82f6", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 }
       ]
     }
   });
+
+  // Observe theme changes from the parent ERP shell to sync charts instantly without reload
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === "data-theme") {
+        applyChartTheme();
+      }
+    });
+  });
+  observer.observe(document.documentElement, { attributes: true });
+
 });
 </script>
 <script src="/static/js/global-loader.js"></script>
