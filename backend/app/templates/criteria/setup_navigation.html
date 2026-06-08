@@ -1,0 +1,19 @@
+{% if request.session.get("setup_completed") != True %}
+
+<div class="setup-nav" style="
+    margin-top:20px;
+    text-align:center;
+">
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        onclick="window.location.href='/criteria/setup/next'">
+
+        NEXT STEP →
+
+    </button>
+
+</div>
+
+{% endif %}

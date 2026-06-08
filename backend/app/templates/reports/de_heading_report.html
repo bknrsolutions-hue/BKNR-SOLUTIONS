@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>DE-HEADING REPORT | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,201 +11,203 @@
 
 <style>
 :root{
- --primary-dark: #0f172a;
- --sidebar-bg: #ffffff; 
- --accent-blue: #2563eb; 
- --accent-glow: #3b82f6;
- --text-main: #1e293b;
- --text-muted: #64748b;
- --bg-light: #f8fafc;
- --border-color: #e2e8f0;
- --danger: #ef4444;
- --success: #22c55e;
+ --primary-dark: #3b82f6; /* Accent blue for interactive highlights */
+ --sidebar-bg: #1e293b; 
+ --accent-blue: #3b82f6; 
+ --accent-glow: #60a5fa;
+ --text-main: #f1f5f9;
+ --text-muted: #94a3b8;
+ --bg-light: #0f172a;
+ --border-color: #334155;
+ --danger: #f87171;
+ --success: #4ade80;
 }
 
 *{box-sizing:border-box; margin:0; padding:0;}
 body{ 
     font-family: 'Plus Jakarta Sans', sans-serif; 
-    background: radial-gradient(circle at top right, #f1f5f9 0%, var(--bg-light) 60%); 
+    background: var(--bg-light); 
     height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text-main); 
 }
 
-/* ================= HEADER & FILTERS ================= */
-.header{ background: var(--card-bg); padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary-dark); text-transform:uppercase; letter-spacing:0.5px; }
+/* ================= HEADER & FILTERS (DARK MODE COMPACT) ================= */
+.header{ background: #1e293b; padding: 8px 12px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--text-main); text-transform:uppercase; letter-spacing:0.5px; }
 
 .filters{
- margin-top:10px; display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
- gap:6px; background:var(--header-bg); padding:10px; border-radius:8px; border:1px solid var(--border-color);
+ margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+ gap:4px; background:#0f172a; padding:8px; border-radius:6px; border:1px solid var(--border-color);
 }
 
-@media (max-width: 600px) {
-    .filters {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    #searchBox {
-        grid-column: span 2 !important;
-    }
-}
-
-.fbox{display:flex;flex-direction:column;gap:3px;}
-.fbox label{ font-size:9px; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing: 0.5px; }
+.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox label{ font-size:8px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing: 0.5px; }
 
 select,input[type=date],input[type=month],#searchBox{ 
-    padding:6px 8px; font-size:11px; font-weight: 600; border:1px solid var(--border-color); 
-    border-radius:6px; background:var(--card-bg); color: var(--text-main); outline:none; transition: all 0.2s;
+    padding:4px 6px; font-size:10px; font-weight: 600; border:1px solid var(--border-color); 
+    border-radius:4px; background:#1e293b; color: var(--text-main); outline:none; transition: all 0.2s;
 }
-select:focus, input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+select:focus, input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25); }
 
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent-blue); }
-#f_fy { border: 1.5px solid var(--accent-blue); font-weight: 700; color: var(--accent-blue); }
+#searchBox{ grid-column:span 2; border-left:3px solid var(--accent-blue); }
+#f_fy { border: 1.5px solid var(--accent-blue); font-weight: 700; color: var(--accent-glow); background: #1e293b; }
+
+/* MOBILE COMPACT FILTERS */
+@media (max-width: 600px) {
+    .header { padding: 6px 8px; }
+    .header h2 { font-size: 11px; }
+    .filters { grid-template-columns: repeat(3, 1fr); padding: 6px; gap: 4px; }
+    #searchBox { grid-column: span 3 !important; }
+    select, input[type=date], input[type=month], #searchBox { font-size: 9.5px; padding: 4px; }
+    .fbox label { font-size: 7.5px; }
+}
 
 /* ================= ACTIONS ================= */
-.actions{ background:var(--card-bg); padding:8px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); }
-#rowCount{ font-size:11px; font-weight:700; color:var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; }
+.actions{ background:#1e293b; padding:6px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); flex-shrink: 0; }
+#rowCount{ font-size:10px; font-weight:700; color:var(--accent-glow); text-transform: uppercase; letter-spacing: 0.5px; }
 
 .menu-box{position:relative;}
 .dots{ 
-    width:28px; height:28px; border:1px solid var(--border-color); display:flex; align-items:center; 
-    justify-content:center; border-radius:6px; cursor:pointer; background:var(--card-bg); font-size:14px; 
+    width:24px; height:24px; border:1px solid var(--border-color); display:flex; align-items:center; 
+    justify-content:center; border-radius:4px; cursor:pointer; background:#1e293b; font-size:12px; 
     user-select:none; color: var(--text-muted); transition: all 0.2s;
 }
-.dots:hover { color: var(--primary-dark); background: #f1f5f9; border-color: #cbd5e1; }
+.dots:hover { color: var(--text-main); background: #334155; border-color: #475569; }
 
 .menu-list{
- position:absolute; right:0; top:34px; width:230px; background:var(--card-bg); border:1px solid var(--border-color);
- border-radius:6px; display:none; z-index:5000; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+ position:absolute; right:0; top:28px; width:200px; background:#1e293b; border:1px solid var(--border-color);
+ border-radius:6px; display:none; z-index:5000; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
  overflow: hidden;
 }
-.menu-list div{ padding:10px 14px; font-size:11px; font-weight:600; border-bottom:1px solid #f1f5f9; cursor:pointer; color: var(--text-main); }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent-blue); }
-.menu-list b { display: block; padding: 6px 14px; font-size: 9px; font-weight: 800; background: #f8fafc; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-.menu-list hr { border: 0; border-top: 1px solid #e2e8f0; margin: 0; }
+.menu-list div{ padding:8px 12px; font-size:10px; font-weight:600; border-bottom:1px solid #334155; cursor:pointer; color: var(--text-main); }
+.menu-list div:hover{ background:#2563eb33; color:var(--accent-glow); }
+.menu-list b { display: block; padding: 6px 12px; font-size: 8.5px; font-weight: 800; background: #0f172a; color: #94a3b8; text-transform: uppercase; }
+.menu-list hr { border: 0; border-top: 1px solid #334155; margin: 0; }
 
-/* ================= TABLE AREA ================= */
-.section{ flex:1; margin:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius: 8px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.table-wrap{ flex:1; overflow:auto; width: 100%; background: var(--card-bg); scrollbar-width: thin; } 
+/* ================= TABLE AREA (SCROLLABLE & COMPACT DARK) ================= */
+.section{ flex:1; margin:6px; background:#1e293b; border:1px solid var(--border-color); border-radius: 6px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+.table-wrap{ 
+    flex:1; overflow:auto; width: 100%; background: #1e293b; 
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin; 
+} 
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1200px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1050px; } 
 
 thead th{
- background:var(--header-bg); padding:10px 4px; font-size:10px; font-weight:800;
+ background:#0f172a; padding:6px 2px; font-size:8.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border-color);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10; color: #475569; letter-spacing: 0.5px;
+ border-right:1px solid #334155; position:sticky; top:0; z-index:10; color: #cbd5e1; letter-spacing: 0.3px;
 }
 
 tbody td{
- padding:8px 4px; font-size:9.5px; font-weight: 600; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
+ padding:5px 2px; font-size:9px; font-weight: 600; border-bottom:1px solid #334155;
+ border-right:1px solid #0f172a; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
  position: relative; color: var(--text-main);
 }
 
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
+tbody tr:hover{background:#2563eb1a; cursor:pointer;}
+tr.selected{background:#2563eb33 !important;}
 
-.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); background: #fcfdfe; }
-.empty-state i { font-size: 40px; margin-bottom: 15px; color: var(--accent-blue); opacity: 0.5; }
+.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); background: #1e293b; }
+.empty-state i { font-size: 30px; margin-bottom: 10px; color: var(--accent-glow); opacity: 0.7; }
 
-/* 🌟 BALANCED COLUMN WIDTH SCALE Matrix Proportions */
-.w-sl { width: 3.5%; }     
-.w-dt { width: 7.5%; }   
-.w-bt { width: 7.5%; }   
-.w-con { width: 12.5%; } 
-.w-sp { width: 9.5%; }   
-.w-ct { width: 5.5%; }   
-.w-qt { width: 6.5%; }   
-.w-yld { width: 6.5%; }  
-.w-diff { width: 6.5%; } 
-.w-rt { width: 5.5%; }   
-.w-am { width: 8.5%; }   
-.w-loc { width: 9.5%; }  
-.w-pf { width: 9.5%; }   
-.w-em { width: 9.5%; }   
+/* 🌟 COMPACT COLUMN WIDTH SCALE */
+.w-sl { width: 3%; }     
+.w-dt { width: 7%; }   
+.w-bt { width: 8%; }   
+.w-con { width: 11%; } 
+.w-sp { width: 9%; }   
+.w-ct { width: 5%; }   
+.w-qt { width: 6%; }   
+.w-yld { width: 6%; }  
+.w-diff { width: 6%; } 
+.w-rt { width: 5%; }   
+.w-am { width: 8%; }   
+.w-loc { width: 9%; }  
+.w-pf { width: 9%; }   
+.w-em { width: 8%; }   
 
-.yield-cell { font-weight: 800; color: var(--accent-blue); }
-.target-cell { font-weight: 700; color: #64748b; background: #f8fafc; }
+.yield-cell { font-weight: 800; color: var(--accent-glow); }
+.target-cell { font-weight: 700; color: #94a3b8; background: #0f172a; }
 .diff-cell { font-weight: 700; }
-.edit-input{ width:100%; font-size:9.5px; font-weight:600; border:1px solid var(--accent-blue); padding:4px; text-align:center; outline:none; border-radius: 4px; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.edit-input{ width:100%; font-size:9px; font-weight:600; border:1px solid var(--accent-blue); padding:3px; text-align:center; outline:none; border-radius: 3px; background:#0f172a; color:#fff; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3); }
 
-/* SEARCHABLE INLINE DROPDOWN EMBEDDED STRUCTURES */
+/* SEARCHABLE INLINE DROPDOWN */
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
     position: fixed; 
-    max-height: 140px; overflow-y: auto;
-    background: var(--card-bg); border: 1px solid var(--accent-blue); z-index: 9999; display: none; 
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); text-align: left; border-radius: 6px;
+    max-height: 120px; overflow-y: auto;
+    background: #1e293b; border: 1px solid var(--accent-blue); z-index: 9999; display: none; 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); text-align: left; border-radius: 4px;
     scrollbar-width: thin;
 }
-.searchable-dropdown-item { padding: 6px 8px; font-size: 9.5px; font-weight:600; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: var(--text-main); }
-.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent-blue); }
+.searchable-dropdown-item { padding: 5px 6px; font-size: 9px; font-weight:600; cursor: pointer; border-bottom: 1px solid #334155; color: var(--text-main); }
+.searchable-dropdown-item:hover { background: #2563eb33; color: var(--accent-glow); }
 
 /* ================= FOOTER ================= */
-tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-top:2px solid var(--border-color); position:sticky; bottom:0; z-index:10; padding:12px 6px; color:var(--primary-dark); }
+tfoot td{ background:#0f172a; font-weight:800; font-size:9px; border-top:2px solid var(--border-color); position:sticky; bottom:0; z-index:10; padding:8px 4px; color:var(--text-main); }
 
 /* ================= MODAL & AUDIT ================= */
-#confirmModal{ position:fixed; inset:0; background:rgba(15, 23, 42, 0.4); display:none; align-items:center; justify-content:center; z-index:6000; backdrop-filter: blur(4px); }
-.modal-content{ background:var(--card-bg); padding:24px; border-radius:8px; width:320px; text-align:center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-.modal-content h4 { font-weight: 800; color: var(--primary-dark); }
-.btn-y{ background:var(--primary-dark); color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; transition: opacity 0.2s; }
+#confirmModal{ position:fixed; inset:0; background:rgba(0, 0, 0, 0.6); display:none; align-items:center; justify-content:center; z-index:6000; backdrop-filter: blur(2px); }
+.modal-content{ background:#1e293b; padding:20px; border-radius:6px; width:280px; text-align:center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); border:1px solid var(--border-color); }
+.modal-content h4 { font-weight: 800; color: var(--text-main); font-size: 13px; }
+.btn-y{ background:var(--accent-blue); color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:700; font-size:11px; transition: opacity 0.2s; }
 .btn-y:hover { opacity: 0.9; }
-.btn-n{ background:#e2e8f0; color: var(--text-main); border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; margin-left:8px; transition: background 0.2s; }
-.btn-n:hover { background: #cbd5e1; }
+.btn-n{ background:#334155; color: var(--text-main); border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:700; font-size:11px; margin-left:8px; transition: background 0.2s; }
+.btn-n:hover { background: #475569; }
 
 .audit-panel{ 
-    position:fixed; right:0; top:0; bottom:0; width:380px; background:var(--card-bg); 
-    border-left:3px solid var(--primary-dark); display:none; flex-direction:column; 
-    z-index:5500; box-shadow:-5px 0 25px rgba(0,0,0,0.1); 
+    position:fixed; right:0; top:0; bottom:0; width:320px; background:#1e293b; 
+    border-left:2px solid var(--accent-blue); display:none; flex-direction:column; 
+    z-index:5500; box-shadow:-5px 0 25px rgba(0,0,0,0.5); 
 }
 
 @media (max-width: 400px) {
     .audit-panel { width: 100%; }
+    .section { margin: 4px; }
 }
 
-/* ================= RUNTIME NATIVE HARD PRINT SYSTEM COMPILE ================= */
+/* ================= PRINT SYSTEM (STAYS LIGHT FOR INK EFFICIENCY) ================= */
 @media print {
-    @page { size: A4 landscape; margin: 6mm; }
-    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
+    @page { size: A4 landscape; margin: 5mm; }
+    body { background: #ffffff; height: auto; overflow: visible; color: #000; }
     .header, .actions, .menu-box, .audit-panel, button, #confirmModal { display: none !important; }
-    .section { border: none; margin: 0; padding: 0; overflow: visible; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible; width: 100%; }
+    .section { border: none; margin: 0; padding: 0; overflow: visible; box-shadow: none; }
+    .table-wrap{ overflow: visible; width: 100%; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
-    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 1px !important; white-space: normal !important; word-wrap: break-word !important; }
-    tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
+    thead th { background: #f1f5f9 !important; color: #000 !important; font-size: 7px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; padding: 4px 1px !important;}
+    tbody td { border: 1px solid #000 !important; font-size: 7px !important; padding: 3px 1px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tfoot td { background: #f1f5f9 !important; border: 1px solid #000 !important; font-size: 7px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
 }
 .print-header-block { display: none; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
 <div class="print-header-block">
     <div style="text-align: left;">
-        <h2 style="margin:0; font-size:15px; color:#0f172a; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
-        <div style="margin:2px 0 0 0; font-size:10px; font-weight:bold; color:#475569;">DE-HEADING & PRODUCTION YIELD MATRIX REPORT</div>
+        <h2 style="margin:0; font-size:12px; color:#000; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
+        <div style="margin:2px 0 0 0; font-size:9px; font-weight:bold; color:#333;">DE-HEADING & PRODUCTION YIELD MATRIX REPORT</div>
     </div>
-    <div style="text-align: right; font-size: 9px; font-weight: bold; line-height: 1.4;">
-        <div style="color:#2563eb; font-size:10px; text-transform:uppercase;">CONTRACTOR: <span id="printContractorLabel">ALL CONTRACTORS</span></div>
-        <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">Generated Realtime Local Client System</div>
+    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.2;">
+        <div style="color:#000; font-size:9px; text-transform:uppercase;">CONTRACTOR: <span id="printContractorLabel">ALL CONTRACTORS</span></div>
+        <div style="font-size:7px; color:#555; font-weight:normal; margin-top:1px;">Generated Realtime Local Client System</div>
     </div>
 </div>
 
 <div class="header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>DE-HEADING REPORT</h2>
-        <div style="font-size: 12px; color: var(--text-muted); font-weight:700;">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight:700;">
             {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
         </div>
     </div>
     <div class="filters">
         <div class="fbox">
-            <label style="color:var(--accent-blue)">Financial Year *</label>
+            <label style="color:var(--accent-glow)">Financial Year *</label>
             <select id="f_fy" onchange="changeFY(this.value)">
                 <option value="">-- SELECT FY --</option>
                 {% set start_yr = 2024 %}
@@ -248,7 +250,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
                 {% for pf in production_for_list %}<option value="{{ pf }}">{{ pf }}</option>{% endfor %}
             </select>
         </div>
-        <input id="searchBox" placeholder="Quick Search Batch, Contractor..." onkeyup="applyFilters()">
+        <input id="searchBox" placeholder="Quick Search..." onkeyup="applyFilters()">
     </div>
 </div>
 
@@ -273,7 +275,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
             <div onclick="askConfirm('pdf_bill')">📩 Download Bill PDF</div>
             <hr>
             {% if is_admin %}
-            <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
+            <div onclick="askConfirm('delete_row')" style="color:var(--danger)">🗑 Delete Record</div>
             {% endif %}
         </div>
     </div>
@@ -299,7 +301,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
                     <th class="w-rt">Rate</th>
                     <th class="w-am">Amount</th>
                     <th class="w-loc">Peeling At</th>
-                    <th class="w-pf">Production For</th>
+                    <th class="w-pf">Prod For</th>
                     <th class="w-em">User</th>
                 </tr>
             </thead>
@@ -308,15 +310,15 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
                 <tr>
                     <td colspan="17" class="empty-state">
                         <i class="fa-solid fa-calendar-check"></i><br>
-                        <b>Financial Year Not Selected</b><br>
-                        <span style="font-size: 11px;">Please select a Financial Year from the filter to view data.</span>
+                        <b style="font-size: 11px;">Financial Year Not Selected</b><br>
+                        <span style="font-size: 9px;">Please select a Financial Year from the filter to view data.</span>
                     </td>
                 </tr>
                 {% else %}
                     {% for r in rows %}
                     <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
                         <td class="slno">{{ (rows|length) - loop.index0 }}</td>
-                        <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ r.date.strftime('%d-%m-%y') }}</td>
                         <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
                         <td class="lookup contractor" data-field="contractor">{{ r.contractor }}</td>
                         <td class="lookup species" data-field="species">{{ r.species }}</td>
@@ -331,18 +333,18 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
                         <td class="amt-cell" data-val="{{ r.amount }}">₹{{ r.amount }}</td>
                         <td class="lookup peeling" data-field="peeling_at">{{ r.peeling_at }}</td>
                         <td class="editable" data-field="production_for">{{ r.production_for }}</td>
-                        <td style="font-size: 9px; color: #94a3b8; text-align: left; padding-left: 4px;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
+                        <td style="font-size: 8px; color: #94a3b8; text-align: left; padding-left: 2px;">{{ r.email.split('@')[0] if r.email else 'Sys' }}</td>
                     </tr>
                     {% endfor %}
                 {% endif %}
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" style="text-align:right; padding-right: 6px;">TOTALS:</td>
+                    <td colspan="6" style="text-align:right; padding-right: 4px;">TOTALS:</td>
                     <td id="tot_hoso">0.00</td>
                     <td id="tot_hlso">0.00</td>
                     <td></td>
-                    <td id="avg_yield" style="color:var(--accent-blue)">0%</td>
+                    <td id="avg_yield" style="color:var(--accent-glow)">0%</td>
                     <td id="avg_diff_pct">0%</td>
                     <td id="tot_diff_kg">0.00</td>
                     <td></td>
@@ -356,18 +358,18 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:9.5px; border-
 
 <div id="confirmModal">
     <div class="modal-content">
-        <h4 id="confirmMsg" style="margin:0 0 15px 0; font-size:14px;"></h4>
+        <h4 id="confirmMsg" style="margin:0 0 10px 0;"></h4>
         <button class="btn-y" id="btnYes">Yes, Proceed</button>
         <button class="btn-n" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:14px; background:var(--primary-dark); color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:13px; letter-spacing:0.5px;">EDIT HISTORY LOGS</b>
-        <span onclick="toggleAudit()" style="cursor:pointer; font-size:22px;">&times;</span>
+    <div style="padding:10px; background:var(--sidebar-bg); border-bottom:1px solid var(--border-color); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:11px; letter-spacing:0.5px;">EDIT LOGS</b>
+        <span onclick="toggleAudit()" style="cursor:pointer; font-size:18px;">&times;</span>
     </div>
-    <div id="auditContent" style="padding:12px; overflow-y:auto; flex:1; background:var(--header-bg);"></div>
+    <div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:#0f172a;"></div>
 </div>
 
 <script>
@@ -448,7 +450,7 @@ function applyFilters() {
         row.querySelector(".slno").innerText = filteredRows.length - index;
     });
 
-    document.getElementById("rowCount").innerText = `${vCount} records found`;
+    document.getElementById("rowCount").innerText = `${vCount} found`;
     document.getElementById("tot_hoso").innerText = hoT.toFixed(2);
     document.getElementById("tot_hlso").innerText = hlT.toFixed(2);
     document.getElementById("tot_amt").innerText = "₹" + aT.toLocaleString('en-IN', {minimumFractionDigits:2});
@@ -459,7 +461,7 @@ function applyFilters() {
 }
 
 function askConfirm(action) { 
-    if(!document.getElementById("f_fy").value) return alert("Please select a Financial Year first!");
+    if(!document.getElementById("f_fy").value) return alert("Select Financial Year first!");
     currentAction = action; 
     document.getElementById("confirmMsg").innerText = `Confirm ${action.replace(/_/g,' ').toUpperCase()}?`; 
     document.getElementById("confirmModal").style.display = "flex"; 
@@ -629,10 +631,10 @@ async function toggleAudit() {
     const res = await fetch(`${baseUrl}/audit_all`);
     const logs = await res.json();
     content.innerHTML = logs.map(l => `
-        <div style="border-left:3px solid var(--accent-blue); margin-bottom:6px; background:var(--card-bg); padding:10px; font-size:11px; font-weight:600; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="border-left:2px solid var(--accent-blue); margin-bottom:4px; background:#1e293b; padding:6px 8px; font-size:9.5px; font-weight:600; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.3);">
             <b style="color: var(--primary-dark);">${l.timestamp}</b> | Batch: ${l.batch}<br>
             <span style="color: var(--text-main);">${l.action}: ${l.details}</span><br>
-            <small style="color: var(--text-muted); font-size: 9px;">By: ${l.user}</small>
+            <small style="color: var(--text-muted); font-size: 8px;">By: ${l.user}</small>
         </div>`).join('');
 }
 

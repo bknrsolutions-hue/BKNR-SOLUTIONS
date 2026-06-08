@@ -1,16 +1,23 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException, Query
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func
 from datetime import datetime
 from collections import defaultdict
 from pydantic import BaseModel
 from typing import List, Optional
 import re
 import json
+from app.services.inventory_summary_service import (
+    InventorySummaryService
+)
+from app.services.production_requirements_service import (
+    ProductionRequirementService
+)
 
 # Database and Models
+from app.database import get_db
 from app.database import get_db
 from app.database.models.inventory_management import pending_orders, sales_dispatch, stock_entry
 from app.database.models.users import Company
@@ -21,11 +28,20 @@ from app.database.models.criteria import (
 )
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 
-router = APIRouter(tags=["SALES REPORT & PENDING ORDERS"])
+# Standardizing Prefix and Tags from Code 2
+router = APIRouter(prefix="/inventory", tags=["PENDING ORDERS & SALES"])
 templates = Jinja2Templates(directory="app/templates")
 
 # -----------------------------------
-# HELPER FUNCTIONS
+# Pydantic Schemas
+# -----------------------------------
+class StatusUpdate(BaseModel):
+    po_number: str
+    status: str
+    invoice_no: Optional[str] = None
+
+# -----------------------------------
+# HELPER FUNCTIONS (From Code 1)
 # -----------------------------------
 def clean_po(val):
     if not val:
@@ -45,15 +61,17 @@ def calculate_pieces(grade_str, manual_pcs):
     return 0
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE
+# 1️⃣ PENDING ORDERS PAGE (GET)
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
+    
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # Fetch unique company names for the dropdown
     prod_names = db.query(production_for.production_for).filter(
         production_for.company_id == company_code,
         production_for.production_for != None
@@ -61,14 +79,17 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
 
     unique_companies = [c[0] for c in prod_names if c[0]]
 
+    # Fetch all pending orders for the table
     rows = db.query(pending_orders).filter(
         pending_orders.company_id == company_code
     ).order_by(pending_orders.sl_no, pending_orders.id).all()
 
+    # Grouping by PO Number for display logic
     po_groups = defaultdict(list)
     for r in rows:
         po_groups[r.po_number].append(r)
 
+    # Logic for Editing an existing PO
     edit_rows = []
     if edit:
         edit_rows = db.query(pending_orders).filter(
@@ -76,6 +97,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             pending_orders.po_number == edit
         ).all()
 
+    # Calculate next serial number
     max_sl = db.query(func.max(pending_orders.sl_no)).filter(
         pending_orders.company_id == company_code
     ).scalar()
@@ -84,6 +106,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if edit_rows:
         next_sl = edit_rows[0].sl_no
 
+    # Helper to fetch dropdown lists
     def get_lookup(model, field_name):
         return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
 
@@ -91,7 +114,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         request=request,
         name="inventory_management/pending_orders.html",
         context={
-            "po_groups": po_groups,
+            "po_groups": dict(po_groups),  # Dict format explicitly for Jinja2 compatibility
             "edit_rows": edit_rows,
             "next_sl": next_sl,
             "unique_companies": unique_companies,
@@ -110,7 +133,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     )
 
 # -------------------------------------------------------------------------
-# 2️⃣ SAVE PENDING ORDERS
+# 2️⃣ SAVE PENDING ORDERS (POST)
 # -------------------------------------------------------------------------
 @router.post("/pending_orders")
 def save_pending_orders(
@@ -139,6 +162,10 @@ def save_pending_orders(
     company_code = request.session.get("company_code")
     email = request.session.get("email")
 
+    if not company_code:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    # Delete existing items for this PO to handle updates (Delete-and-Insert)
     db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
@@ -172,10 +199,25 @@ def save_pending_orders(
         ))
 
     db.commit()
-    return RedirectResponse("/inventory/pending_orders", status_code=303)
 
+    print("PRODUCTION REQUIREMENTS REFRESH")
+    print("COMPANY:", company_code)
+    rows = ProductionRequirementService.refresh_requirements(
+    db=db,
+    company_id=company_code
+)
+    print("ROWS CREATED:", rows)
+
+    request.session["message"] = (
+    f"PO {po_number} saved successfully!"
+    )
+
+    return RedirectResponse(
+    "/inventory/pending_orders",
+    status_code=303
+)
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES
+# 3️⃣ MOVE TO SALES (SALES DISPATCH) (POST)
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -203,15 +245,7 @@ def move_to_sales(
             detail="PO Number not found"
         )
 
-    packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
-
     for item in items:
-        # Pre-calculating quantities/amounts before committing database logs
-        qty_kg = float(item.no_of_mc or 0) * weight_map.get(str(item.packing_style).strip(), 1.0)
-        usd_val = qty_kg * float(item.selling_price or 0)
-        inr_val = usd_val * float(item.exchange_rate or 83.5)
-
         db.add(
             sales_dispatch(
                 company_id=company_code,
@@ -232,12 +266,6 @@ def move_to_sales(
                 grade=item.grade,
                 company_name=item.company_name,
                 exchange_rate=item.exchange_rate,
-                
-                # 🛠️ FIXED: Auto-populating the 3 new tracking columns on dynamic migration
-                sales_quantity=qty_kg,
-                amount_usd=usd_val,
-                amount_inr=inr_val,
-                
                 stock_value=0.0,
                 profit_loss=0.0,
                 freight_cost=0.0,
@@ -265,14 +293,10 @@ def move_to_sales(
     )
 
 # -------------------------------------------------------------------------
-# 4️⃣ SALES REPORT PAGE (UPDATED WITH FINANCIAL YEAR & STORAGE MATRIX)
+# 4️⃣ SALES REPORT PAGE (DYNAMIC CALCULATIONS)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
-def sales_report(
-    request: Request, 
-    fy: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
-):
+def sales_report(request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
@@ -280,19 +304,7 @@ def sales_report(
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
-    # Base Query Construction
-    query = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
-
-    # Financial Year Date Logic (April 1st to March 31st)
-    if fy and fy != "ALL":
-        try:
-            start_date = f"{fy}-04-01"
-            end_date = f"{int(fy) + 1}-03-31"
-            query = query.filter(sales_dispatch.invoice_date.between(start_date, end_date))
-        except ValueError:
-            pass
-
-    sales_data = query.order_by(
+    sales_data = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code).order_by(
         sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no
     ).all()
 
@@ -306,7 +318,8 @@ def sales_report(
         po = clean_po(row.po_number)
         if po:
             val = float(row.inventory_value or 0)
-            if val == 0: val = float(row.quantity or 0) * float(row.product_kg_value or 0)
+            if val == 0: 
+                val = float(row.quantity or 0) * float(row.product_kg_value or 0)
             stock_map[po] = stock_map.get(po, 0) + val
 
     freight_map = {clean_po(c.po_number): float(c.lended_total or 0) for c in db.query(ContainerLog).filter(ContainerLog.company_id == company_code).all() if clean_po(c.po_number)}
@@ -330,14 +343,8 @@ def sales_report(
         p_cost = packing_map.get(sale_po, 0)
         pl = inr - (stock_val + f_cost + p_cost)
 
-        # 🛠️ FIXED: Storing recalculated values including the 3 new tracking columns into the DB object safely
-        s.sales_quantity = qty
-        s.amount_usd = usd
-        s.amount_inr = inr
-        s.stock_value = stock_val
-        s.freight_cost = f_cost
-        s.packing_cost = p_cost
-        s.profit_loss = pl
+        # Sync calculations with backend schema before commit
+        s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
 
         processed.append({
             "sl_no": sl_no, "obj": s, "total_qty_kg": qty, "total_usd": usd, "total_inr": inr,
@@ -350,8 +357,7 @@ def sales_report(
         name="inventory_management/sales_report.html", 
         context={
             "sales_data": processed, 
-            "unique_companies": unique_companies,
-            "selected_fy": fy or ""
+            "unique_companies": unique_companies
         }
     )
 
@@ -376,14 +382,7 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     
     sale_item.exchange_rate = new_rate
     qty_kg = float(sale_item.no_of_mc or 0) * mc_weight
-    total_usd = qty_kg * float(sale_item.price or 0)
-    total_inr = total_usd * new_rate
-    
-    # 🛠️ FIXED: Ensuring real-time modification syncs back to new database tracking columns instantly
-    sale_item.sales_quantity = qty_kg
-    sale_item.amount_usd = total_usd
-    sale_item.amount_inr = total_inr
-    
+    total_inr = (qty_kg * float(sale_item.price or 0)) * new_rate
     sale_item.profit_loss = total_inr - (float(sale_item.stock_value or 0) + 
                                          float(sale_item.freight_cost or 0) + 
                                          float(sale_item.packing_cost or 0))
@@ -396,8 +395,26 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     }
 
 # -------------------------------------------------------------------------
-# 6️⃣ STATUS UPDATE ROUTE (AJAX)
+# 6️⃣ STATUS/PO PROGRESS UPDATE ROUTE (AJAX)
 # -------------------------------------------------------------------------
+@router.post("/update_po_status")
+async def update_po_status(data: StatusUpdate, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    
+    orders = db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        pending_orders.po_number == data.po_number
+    ).all()
+    
+    if not orders:
+        raise HTTPException(status_code=404, detail="PO Not Found")
+        
+    for order in orders:
+        order.progress_steps = data.status
+        
+    db.commit()
+    return {"message": "Status Updated"}
+
 @router.post("/update_status")
 async def update_status(request: Request, db: Session = Depends(get_db)):
     data = await request.json()

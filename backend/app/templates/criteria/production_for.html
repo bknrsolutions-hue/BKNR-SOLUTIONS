@@ -19,6 +19,7 @@
   --muted: #6b7280;
   --danger: #dc2626;
   --success: #10b981;
+  --card-bg: #ffffff;
 }
 
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -33,6 +34,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px
 }
 .header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
 .header-titles p { margin: 2px 0 0; font-size: 11px; color: var(--muted); font-weight: 500; }
+.header-badge { font-size:10px; font-weight:700; color: var(--muted); }
 
 /* ================= FORM CONTAINER ================= */
 .form-container {
@@ -43,94 +45,371 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px
   display: none; /* Initially Hidden */
 }
 
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
-.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.form-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  gap: 12px; 
+  margin-bottom: 15px; 
+}
+
+.form-title-inner { 
+  font-size: 11px; 
+  font-weight: 800; 
+  color: var(--accent); 
+  text-transform: uppercase; 
+  margin-bottom: 8px; 
+  grid-column: 1 / -1; 
+  border-bottom: 1px dashed var(--border); 
+  padding-bottom: 3px; 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+}
 
 .field { display: flex; flex-direction: column; }
-label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
-input, select {
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: var(--card-bg);
-  outline: none; width: 100%; transition: 0.2s; height: 38px;
+label { 
+  font-size: 10px; 
+  font-weight: 700; 
+  color: var(--primary); 
+  text-transform: uppercase; 
+  margin-bottom: 4px; 
 }
-input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+
+input, select {
+  padding: 8px 12px; 
+  border: 1px solid var(--border);
+  border-radius: 6px; 
+  font-size: 13px; 
+  background: var(--card-bg);
+  outline: none; 
+  width: 100%; 
+  transition: 0.2s; 
+  height: 38px;
+  color: var(--text);
+}
+
+input:focus, select:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); 
+}
 
 /* FREEZER BOX */
 .freezer-box {
-  margin-top: 15px; border: 1px solid #e2e8f0;
-  border-radius: 8px; padding: 15px; background: #f8fbff;
+  margin-top: 15px; 
+  border: 1px solid #e2e8f0;
+  border-radius: 8px; 
+  padding: 15px; 
+  background: #f8fbff;
 }
+
 .glaze-row {
-  margin-top: 10px; display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px;
+  margin-top: 10px; 
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); 
+  gap: 10px;
 }
+
 .glaze-cell {
-  background: var(--card-bg); padding: 8px; border-radius: 6px;
-  border: 1px solid var(--border); display: flex; flex-direction: column; transition: 0.2s;
+  background: var(--card-bg); 
+  padding: 8px; 
+  border-radius: 6px;
+  border: 1px solid var(--border); 
+  display: flex; 
+  flex-direction: column; 
+  transition: 0.2s;
 }
+
 .glaze-cell:hover { border-color: var(--accent); }
-.glaze-cell span { font-size: 9px; font-weight: 800; color: var(--muted); text-align: center; margin-bottom: 4px; }
-.glaze-cell input { text-align: center; border: none; font-weight: 700; font-size: 13px; color: var(--primary); outline: none; height: auto; padding: 2px; }
+
+.glaze-cell span { 
+  font-size: 9px; 
+  font-weight: 800; 
+  color: var(--muted); 
+  text-align: center; 
+  margin-bottom: 4px; 
+}
+
+.glaze-cell input { 
+  text-align: center; 
+  border: none; 
+  font-weight: 700; 
+  font-size: 13px; 
+  color: var(--primary); 
+  outline: none; 
+  height: auto; 
+  padding: 2px; 
+}
 
 /* CONTROL ACTIONS HEAD */
 .table-header-bar {
-  width: 95%; max-width: 1400px; margin: 15px auto 5px;
-  display: flex; justify-content: space-between; align-items: center;
+  width: 95%; 
+  max-width: 1400px; 
+  margin: 15px auto 5px;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start;
   position: relative;
+  gap: 10px;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
 
-.top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
-
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-.btn {
-  background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+.table-title { 
+  font-size: 13px; 
+  font-weight: 800; 
+  color: var(--primary); 
+  text-transform: uppercase; 
+  margin: 0; 
+  padding-top: 8px;
 }
-.btn-clear { background: #f1f5f9; color: var(--muted); }
-.btn:hover { background: var(--accent); }
+
+.top-actions { 
+  margin: 0; 
+  display: flex; 
+  flex-direction: column;
+  gap: 8px;
+  justify-content: flex-end; 
+  align-items: flex-end;
+}
+
+/* 🟢 UNIFIED BUTTON STYLES */
+.btn, .btn-toggle {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary:hover {
+    background: var(--accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+}
+
+.btn-accent {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-accent:hover {
+    background: #2563eb !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+}
+
+.btn-clear {
+    background: #e2e8f0 !important; 
+    color: var(--muted) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.btn-clear:hover {
+    background: #cbd5e1 !important;
+    transform: translateY(-1px);
+}
+
+.btn-toggle:active { transform: scale(0.98); }
+
+.actions { 
+  text-align: center; 
+  display: flex; 
+  justify-content: center; 
+  gap: 10px; 
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+@media(max-width: 480px) {
+  .actions { flex-direction: column-reverse; gap: 10px; }
+  .btn { width: 100%; }
+  .top-actions { flex-direction: row; align-items: center; width: 100%; gap: 6px; }
+  .top-actions .btn-toggle { width: 100%; margin: 0; }
+}
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
-.menu-container { position: relative; display: none; }
-.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+.menu-container { 
+  position: relative; 
+  display: none; 
+  margin-top: 8px;
+}
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.dots-trigger { 
+  background: var(--primary); 
+  color: white; 
+  border: none; 
+  width: 34px; 
+  height: 34px; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-size: 16px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  transition: 0.2s;
+}
+
+.dots-trigger:hover { background: var(--accent); }
+
+#dropdownMenu { 
+  display: none; 
+  position: absolute; 
+  right: 0; 
+  top: 38px; 
+  background: var(--card-bg); 
+  border: 1px solid var(--border); 
+  border-radius: 8px; 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+  width: 170px; 
+  z-index: 1000; 
+  overflow: hidden;
+  padding: 2px;
+}
+
+.menu-item { 
+  padding: 10px 14px; 
+  font-size: 12px; 
+  font-weight: 600; 
+  border-radius: 4px;
+  cursor: pointer; 
+  color: var(--text); 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  transition: 0.1s; 
+  text-align: left;
+}
+
+.menu-item:hover { 
+  background: #f1f5f9; 
+  color: var(--accent); 
+}
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap{
-    background: var(--card-bg) !important;
-} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+.table-wrap {
+  background: var(--card-bg) !important;
+  width: 95%; 
+  max-width: 1400px; 
+  margin: 0 auto 40px; 
+  border-radius: 8px; 
+  border: 1px solid var(--border); 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+  overflow-x: auto; 
+}
+
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  table-layout: auto; 
+}
 
 th {
-  background: #f1f5f9; color: #475569; padding: 8px 6px;
-  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
-  text-align: center; white-space: nowrap;
+  background: #f1f5f9; 
+  color: #475569; 
+  padding: 8px 6px;
+  font-size: 10px; 
+  text-transform: uppercase; 
+  border-bottom: 2px solid var(--border);
+  text-align: center; 
+  white-space: nowrap;
 }
-td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
+
+td { 
+  padding: 8px 6px; 
+  border-bottom: 1px solid #f1f5f9; 
+  font-size: 11px; 
+  color: var(--text); 
+  text-align: center; 
+  white-space: nowrap; 
+}
+
 tr:hover { background: #f8fbff; cursor: pointer; }
 tr.selected { background: #eff6ff !important; }
 
+.text-left { text-align: left !important; padding-left: 12px !important; }
+
 /* MOBILE CARD LIST */
-.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); }
+.mobile-card-list { 
+  display: none; 
+  width: 95%; 
+  margin: 10px auto 40px; 
+}
+
+.data-card { 
+  background: var(--card-bg); 
+  border: 1px solid var(--border); 
+  border-radius: 8px; 
+  padding: 12px; 
+  margin-bottom: 10px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.data-card.selected { 
+  border: 2px solid var(--accent); 
+  background: #f0f7ff; 
+}
+
+.card-row { 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 4px; 
+  font-size: 11px; 
+}
+
+.card-label { 
+  color: var(--muted); 
+  font-weight: 600; 
+  font-size: 9px; 
+  text-transform: uppercase; 
+}
+
+.card-val { 
+  font-weight: 700; 
+  color: var(--primary); 
+}
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; 
+  color: var(--muted); 
+  font-size: 12px; 
+  background: var(--card-bg); 
+  padding: 15px; 
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
-  .mobile-card-list { display: block; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
   .form-container, .table-header-bar { width: 95%; }
   .actions { flex-direction: column; }
   .btn { width: 100%; }
+}
+
+@media(max-width: 640px) {
+  .table-header-bar { flex-direction: column; align-items: flex-start; }
+  .top-actions { width: 100%; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -145,6 +424,7 @@ tr.selected { background: #eff6ff !important; }
       <h2>Production For – Costing Master</h2>
       <p>Freezer & Glaze wise costing structure templates</p>
   </div>
+  <div class="header-badge">BKNR ERP</div>
 </div>
 
 <!-- FORM AREA -->
@@ -205,8 +485,8 @@ tr.selected { background: #eff6ff !important; }
     <input type="hidden" name="id" id="record_id">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE STRUCTURE</button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE STRUCTURE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
     </div>
   </div>
 </form>
@@ -217,9 +497,16 @@ tr.selected { background: #eff6ff !important; }
 <div class="table-header-bar">
     <h3 class="table-title">Active Costing Matrices</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Costing Configuration</button>
+            <button class="btn btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Costing Configuration</button>
+            
+            <button 
+                type="button" 
+                class="btn btn-accent" 
+                onclick="window.location.href='/criteria/setup/next'" >
+                NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+            </button>
         </div>
 
         <!-- RIGHT INLINE 3-DOT MENU -->
@@ -227,7 +514,7 @@ tr.selected { background: #eff6ff !important; }
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
             <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Record</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Costing</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Costing</div>
             <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print Row</div>
             <div onclick="exportAction('PDF')" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
             <div onclick="exportAction('Excel')" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
@@ -296,7 +583,7 @@ tr.selected { background: #eff6ff !important; }
           data-peeling="{{ r.peeling_rate_per_kg }}" data-deheading="{{ r.deheading_rate_per_kg }}" data-status="{{ r.status }}" data-free-days="{{ r.free_days }}"
           onclick="selectRowOrCard(this)">
         <td>{{ r.id }}</td>
-        <td style="font-weight:700; text-align:left; color: var(--primary);">{{ r.production_for }}</td>
+        <td class="text-left" style="font-weight:700; color: var(--primary);">{{ r.production_for }}</td>
         <td>{{ r.apply_from }}</td>
         <td style="font-weight:600; color: var(--accent);">{{ r.freezer_name }}</td>
         <td>{{ r.repacking_cost_per_kg }}</td>
@@ -312,6 +599,10 @@ tr.selected { background: #eff6ff !important; }
   </table>
 </div>
 
+{% else %}
+  <div class="empty-state">
+    No Production costing matrix configurations mapped in the system yet.
+  </div>
 {% endif %}
 
 <script>
@@ -328,9 +619,21 @@ function toggleForm() {
     }
 }
 
-/* -------------------------------------
-   SAVE / UPDATE ROUTINE
--------------------------------------- */
+/* DOM INIT */
+document.addEventListener("DOMContentLoaded",()=>{
+  const tableBody = document.querySelector("#dataTable tbody");
+  const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+  if (rows === 0) {
+    document.getElementById("formSection").style.display = "block";
+    const toggle = document.getElementById("toggleActionArea");
+    if (toggle) {
+      toggle.style.display = "none";
+    }
+  }
+});
+
+/* SAVE / UPDATE ROUTINE */
 async function saveRecord(e){
   e.preventDefault();
   const form = document.getElementById("costingForm");
@@ -348,7 +651,7 @@ async function saveRecord(e){
   }
 }
 
-/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
+/* ROW / CARD SELECTION SYNC */
 function selectRowOrCard(el) {
   document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
   
@@ -365,7 +668,7 @@ document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
   d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
-/* ------------------- ACTIONS PIPELINE ------------------- */
+/* ACTIONS PIPELINE */
 function editSelected(){
   if(!selectedElement) return;
   const d = selectedElement.dataset;
@@ -383,8 +686,7 @@ function editSelected(){
   document.getElementById("repacking_cost_per_kg").value = d.repack;
   document.getElementById("rate_per_mc_day").value = d.mc;
   
-  // Note: Dynamic glaze values can be mapped or fetched separately if stored individually in backend.
-  
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE STRUCTURE";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -418,6 +720,7 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("costingForm").reset();
   document.getElementById("record_id").value = "";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE STRUCTURE";
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   

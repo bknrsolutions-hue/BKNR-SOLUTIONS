@@ -1,89 +1,141 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>General Stock Report</title>
+<title>GENERAL STOCK REPORT | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root{
-  --primary: #143465;
-  --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #dc2626;
+:root {
+    --primary: #0f172a;
+    --accent: #2563eb;
+    --border: #e2e8f0;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --header: #ffffff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning: #d97706;
+    --table-header: #f1f5f9;
+    --row-hover: #f0f9ff;
+    --selected-row: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
-*{ box-sizing: border-box; font-family: 'Inter', Segoe UI, sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+* { box-sizing: border-box; font-family: 'Inter', Arial, sans-serif; }
+body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--text); -webkit-font-smoothing: antialiased; }
 
-/* ================= HEADER ================= */
-h2 {
-  background: var(--card-bg); margin: 0; padding: 15px;
-  text-align: center; color: var(--primary);
-  font-size: 18px; font-weight: 800; text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  letter-spacing: 1px;
-}
+/* Header & Controls */
+.header { background: var(--header); padding: 8px 12px; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 20; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+.header h2 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.header h2::before { content: ''; display: inline-block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
 
-/* ================= FILTERS ================= */
-.filter-box{
-  width: 95%; max-width: 1200px; margin: 15px auto;
-  background: var(--card-bg); padding: 12px; border-radius: 10px;
-  border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-}
+/* Filter Bar Optimization */
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 6px; background: var(--card-bg); padding: 0; border: none; }
+.fbox { display: flex; flex-direction: column; gap: 2px; }
+.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
 
-select, input{
-  padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border);
-  font-size: 12px; background: var(--card-bg); outline: none; transition: 0.2s;
-  min-width: 150px; flex: 1;
-}
-select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+select, input[type=date], input[type=month], #searchBox { padding: 4px 6px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); outline: none; transition: all 0.2s ease; height: 24px; width: 100%; }
+select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+#searchBox { grid-column: span 2; border-left: 3px solid var(--accent); font-weight: 500; }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
-button {
-  padding: 7px 18px; background: var(--primary); color: #fff;
-  border: none; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; transition: 0.2s;
-}
-button:hover { background: var(--accent); transform: translateY(-1px); }
+/* Action Toolbar */
+.actions { background: var(--card-bg); padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 15; }
+#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); background: rgba(37, 99, 235, 0.08); padding: 4px 8px; border-radius: 12px; }
 
-/* ================= TABLE ================= */
-table{
-  width: 95%; max-width: 1200px; margin: 0 auto 30px;
-  background: var(--card-bg); border-collapse: collapse;
-  border-radius: 10px; overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  border: 1px solid var(--border);
-}
+/* Dropdown Menu */
+.menu-box { position: relative; }
+.dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 14px; color: var(--text-muted); transition: all 0.2s; user-select: none; }
+.dots:hover { background: var(--table-header); color: var(--primary); border-color: #cbd5e1; }
+.menu-list { position: absolute; right: 0; top: 32px; width: 210px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 5000; box-shadow: var(--shadow-md); padding: 4px 0; }
+.menu-list div { padding: 8px 12px; font-size: 11px; font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.menu-list div:hover { background: #f1f5f9; color: var(--accent); }
+.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.menu-list hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 
-th{
-  background: #f1f5f9; color: #475569; padding: 12px 8px;
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  border-bottom: 2px solid var(--border); text-align: center;
-}
+/* Table Section Setup */
+.section { flex: 1; margin: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-sm); }
+.table-wrap { background: var(--card-bg) !important; flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 1200px; }
 
-td{
-  padding: 10px 8px; font-size: 11.5px;
-  border-bottom: 1px solid #f1f5f9; text-align: center;
-  color: #374151;
-}
+/* Table Styling */
+thead th { background: var(--table-header); padding: 8px 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10; color: #475569; text-align: center; }
+tbody td { padding: 6px 4px; font-size: 9.5px; font-weight: 500; border-bottom: 1px solid var(--border); border-right: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; }
+tbody tr:hover { background: var(--row-hover); cursor: pointer; }
+tr.selected { background: #e0f2fe !important; border-left: 3px solid var(--accent); }
+tr.selected td { color: #0369a1; font-weight: 600; }
 
-tr:hover{ background: #f8fbff; }
+.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); }
+.empty-state i { font-size: 32px; margin-bottom: 10px; color: var(--accent); opacity: 0.4; }
 
-/* Low Stock Alert */
+/* Fixed Proportional Layout Sizing Grid */
+.w-sl{width: 3%;} .w-dt{width: 6.5%;} .w-tm{width: 5.5%;} .w-id{width: 4.5%;}
+.w-grn{width: 8%;}  .w-item{width: 18%;} .w-unit{width: 5%;} .w-mov{width: 6.5%;}
+.w-qty{width: 7%;} .w-open{width: 8%;} .w-avail{width: 8%;} .w-min{width: 7%;}
+
+.calc-cell { font-weight: 700; color: var(--accent); background: #f8fafc; }
+.qty-in { color: var(--success); font-weight: 800; }
+.qty-out { color: var(--danger); font-weight: 800; }
+
 .low {
-  color: var(--danger); font-weight: 800;
-  background: #fef2f2; padding: 3px 8px;
-  border-radius: 4px; display: inline-block;
+  color: var(--warning); font-weight: 800;
+  background: rgba(249, 115, 22, 0.1); padding: 2px 6px;
+  border-radius: 4px; display: inline-block; border: 1px solid var(--warning);
 }
 
-/* Column Tweaks */
-td:nth-child(3) { font-weight: 600; color: var(--primary); text-align: left; padding-left: 15px; } /* Item Name */
+tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 6px 4px; color: var(--primary); border-right: 1px solid var(--border); }
 
+/* ================= HARD PRINTER ENGINE COMPILE SYSTEM ================= */
+@media print {
+    @page { size: A4 landscape; margin: 5mm; }
+    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; display: block !important; }
+    .header, .actions, .menu-box, button { display: none !important; }
+    .section { border: none; margin: 0; padding: 0; overflow: visible; display: block !important; box-shadow: none !important; }
+    .table-wrap { background: var(--card-bg) !important; overflow: visible; width: 100%; display: block !important; height: auto !important; }
+    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
+    thead { display: table-header-group !important; }
+    tfoot { display: table-footer-group !important; }
+    tr { page-break-inside: avoid !important; }
+    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tfoot td { position: static !important; background: #f1f5f9 !important; border: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
+}
+.print-header-block { display: none; }
+
+/* ================= 📱 MOBILE COMPACT STYLES ================= */
 @media (max-width: 768px) {
-  .filter-box { flex-direction: column; align-items: stretch; }
-  table { display: block; overflow-x: auto; }
+    .header { padding: 6px 8px; }
+    .header-top { flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 4px; }
+    .header h2 { font-size: 12px; }
+    
+    .filters { grid-template-columns: repeat(3, 1fr); gap: 4px; max-height: 130px; overflow-y: auto; padding-right: 4px; }
+    #searchBox { grid-column: 1 / -1; margin-top: 2px; }
+    .fbox label { font-size: 7.5px; }
+    select, input[type=date], input[type=month], #searchBox { font-size: 9px; height: 26px; padding: 2px 4px; }
+    
+    .actions { padding: 4px 8px; }
+    #rowCount { font-size: 9px; padding: 2px 8px; }
+    .dots { width: 24px; height: 24px; font-size: 12px; }
+    
+    .section { margin: 2px; border-radius: 4px; }
+    
+    thead th { padding: 6px 2px; font-size: 8px; }
+    tbody td { padding: 6px 2px; font-size: 8.5px; }
+    tfoot td { padding: 6px 2px; font-size: 9px; }
+    
+    table { min-width: 1000px; } 
+}
+
+@media (max-width: 480px) {
+    .filters { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -93,81 +145,266 @@ td:nth-child(3) { font-weight: 600; color: var(--primary); text-align: left; pad
 
 <body>
 
-<h2>📄 GENERAL STOCK REPORT</h2>
-
-<div class="filter-box">
-    <select id="filter_grn" onchange="applyFilter()">
-        <option value="">GRN Filter</option>
-        {% for g in dropdown_grn %}<option>{{g}}</option>{% endfor %}
-    </select>
-
-    <select id="filter_item" onchange="applyFilter()">
-        <option value="">Item</option>
-        {% for i in dropdown_items %}<option>{{i}}</option>{% endfor %}
-    </select>
-
-    <select id="filter_unit" onchange="applyFilter()">
-        <option value="">Unit</option>
-        {% for u in dropdown_unit %}<option>{{u}}</option>{% endfor %}
-    </select>
-
-    <button onclick="resetFilter()">RESET</button>
+<div class="print-header-block">
+    <div style="text-align: left;">
+        <h2 style="margin:0; font-size:14px; color:#0f172a; font-weight:800; text-transform:uppercase;">{{ request.session.get('company_name', 'BKNR ENTERPRISES') }} ERP</h2>
+        <div style="margin:2px 0 0 0; font-size:9px; font-weight:bold; color:#475569;">GENERAL STOCK LEDGER REPORT</div>
+    </div>
+    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.4;">
+        <div style="color:#2563eb; font-size:9px; text-transform:uppercase;">REPORT VIEW: <span id="printScopeLabel">ALL RECORDS</span></div>
+        <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">System Printed Ledger Engine Instance</div>
+    </div>
 </div>
 
+<div class="header">
+    <div class="header-top">
+        <h2><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> GENERAL STOCK REPORT</h2>
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
+            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+        </div>
+    </div>
+    <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% set start_yr = 2024 %}
+                {% set end_yr = 2027 %}
+                {% for y in range(start_yr, end_yr) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox"><label>Month</label><input type="month" id="f_month" onchange="applyFilters()"></div>
+        <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
+        <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
+        <div class="fbox"><label>GRN Number</label><select id="f_grn" onchange="applyFilters()"><option value="">All GRNs</option>{% for g in dropdown_grn %}<option value="{{ g }}">{{ g }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Master Item</label><select id="f_item" onchange="applyFilters()"><option value="">All Items</option>{% for i in dropdown_items %}<option value="{{ i }}">{{ i }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Unit</label><select id="f_unit" onchange="applyFilters()"><option value="">All Units</option>{% for u in dropdown_unit %}<option value="{{ u }}">{{ u }}</option>{% endfor %}</select></div>
+        <div class="fbox"><label>Movement</label>
+            <select id="f_movement" onchange="applyFilters()">
+                <option value="">All Movements</option>
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+            </select>
+        </div>
+        <input id="searchBox" placeholder="Quick Search ID, GRN, Item..." onkeyup="applyFilters()">
+    </div>
+</div>
 
-<table id="reportTable">
-<thead>
-<tr>
-<th>ID</th><th>GRN</th><th>Item</th><th>Unit</th>
-<th>Type</th><th>Qty</th><th>Opening</th>
-<th>Available</th><th>Min</th><th>Date</th><th>Time</th>
-</tr>
-</thead>
-<tbody>
-{% for r in records %}
-<tr>
-<td>{{r.id}}</td>
-<td>{{r.grn_number}}</td>
-<td>{{r.item_name}}</td>
-<td>{{r.unit_name}}</td>
-<td>{{r.movement_type}}</td>
-<td>{{r.quantity}}</td>
-<td>{{r.opening_stock}}</td>
-<td class="{{'low' if r.available_stock < r.minimum_level else ''}}">
-    {{r.available_stock}}
-</td>
-<td>{{r.minimum_level}}</td>
-<td>{{r.date}}</td>
-<td>{{r.time}}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+<div class="actions">
+    <div id="rowCount">0 rows found</div>
+    <div class="menu-box">
+        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+        <div class="menu-list" id="mainMenu">
+            <b>📋 Export Options</b>
+            <div onclick="window.print()"><i class="fa-solid fa-print"></i> Print Current View</div>
+            <div onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel Filtered</div>
+            <hr>
+            <div onclick="resetFilters()"><i class="fa-solid fa-rotate-right"></i> Reset Filters</div>
+        </div>
+    </div>
+</div>
 
+<div class="section">
+    <div class="table-wrap">
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th class="w-sl">#</th>
+                    <th class="w-dt">Date</th>
+                    <th class="w-tm">Time</th>
+                    <th class="w-id">ID</th>
+                    <th class="w-grn">GRN Number</th>
+                    <th class="w-item" style="text-align: left;">Item Name</th>
+                    <th class="w-unit">Unit</th>
+                    <th class="w-mov">Move</th>
+                    <th class="w-qty">Qty</th>
+                    <th class="w-open">Opening</th>
+                    <th class="w-avail">Available</th>
+                    <th class="w-min">Min Lvl</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                {% if not records %}
+                <tr>
+                    <td colspan="12" class="empty-state">
+                        <i class="fa-solid fa-boxes-stacked"></i><br>
+                        <b style="font-size:12px; color:var(--primary);">No Stock Data Found</b><br>
+                        <span style="font-size: 10px;">Select a Financial Year or adjust filters to view records.</span>
+                    </td>
+                </tr>
+                {% else %}
+                    {% for r in records %}
+                    <tr class="data-row" data-date="{{ r.date }}" onclick="selectRow(this)">
+                        <td class="slno"></td>
+                        <td>{{ r.date }}</td>
+                        <td>{{ r.time }}</td>
+                        <td style="color: var(--text-muted);">#{{ r.id }}</td>
+                        <td class="grn-cell" style="font-weight: 700;">{{ r.grn_number }}</td>
+                        <td class="item-cell" style="text-align: left; font-weight: 700; color: var(--primary);">{{ r.item_name }}</td>
+                        <td class="unit-cell">{{ r.unit_name }}</td>
+                        <td class="mov-cell {% if r.movement_type == 'IN' %}qty-in{% else %}qty-out{% endif %}">{{ r.movement_type }}</td>
+                        <td class="qty-val calc-cell" style="text-align: right;">{{ r.quantity }}</td>
+                        <td class="open-val" style="text-align: right;">{{ r.opening_stock }}</td>
+                        <td class="avail-val" style="text-align: right;">
+                            <span class="{{ 'low' if r.available_stock < r.minimum_level and r.available_stock > 0 else '' }}">
+                                {{ r.available_stock }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-muted); text-align: right;">{{ r.minimum_level }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="8" style="text-align:right; padding-right:4px;">PAGE TOTALS:</td>
+                    <td id="tot_qty" style="text-align:right">0.00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
 
 <script>
-function applyFilter(){
-    let grn = filter_grn.value.trim().toLowerCase();
-    let item = filter_item.value.trim().toLowerCase();
-    let unit = filter_unit.value.trim().toLowerCase();
+let selectedRow = null;
+const baseUrl = window.location.pathname.replace(/\/$/, "");
 
-    document.querySelectorAll("#reportTable tbody tr").forEach(row=>{
-        let show=true;
-
-        if(grn && !row.children[1].innerText.toLowerCase().includes(grn)) show=false;
-        if(item && !row.children[2].innerText.toLowerCase().includes(item)) show=false;
-        if(unit && !row.children[3].innerText.toLowerCase().includes(unit)) show=false;
-
-        row.style.display = show ? "" : "none";
-    })
+// Financial Year Change
+function changeFY(val) {
+    if(!val) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', val);
+    window.location.href = url.toString();
 }
 
-function resetFilter(){
-    filter_grn.value="";
-    filter_item.value="";
-    filter_unit.value="";
-    applyFilter();
+// 3-Dot Menu Toggle
+function toggleMenu(e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    const m = document.getElementById("mainMenu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
 }
+
+document.addEventListener('click', function(e) {
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu && !e.target.closest('.dots')) {
+        mainMenu.style.display = "none";
+    }
+});
+
+// Row Selection
+function selectRow(tr) {
+    if(tr.classList.contains('empty-state')) return;
+    document.querySelectorAll(".data-row").forEach(r => r.classList.remove("selected"));
+    tr.classList.add("selected");
+    selectedRow = tr;
+}
+
+// Client-Side Filtering Engine
+function applyFilters() {
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    const fm = document.getElementById("f_month").value;
+    const f1 = document.getElementById("f_from").value;
+    const f2 = document.getElementById("f_to").value;
+    const f_grn = document.getElementById("f_grn").value.toLowerCase();
+    const f_item = document.getElementById("f_item").value.toLowerCase();
+    const f_unit = document.getElementById("f_unit").value.toLowerCase();
+    const f_mov = document.getElementById("f_movement").value.toLowerCase();
+
+    const rows = document.querySelectorAll(".data-row");
+    if(rows.length === 0) return;
+
+    let visibleCount = 0;
+    let qtyT = 0;
+
+    rows.forEach(tr => {
+        const d = tr.dataset.date || '';
+        const grn = tr.querySelector('.grn-cell').innerText.toLowerCase();
+        const item = tr.querySelector('.item-cell').innerText.toLowerCase();
+        const unit = tr.querySelector('.unit-cell').innerText.toLowerCase();
+        const mov = tr.querySelector('.mov-cell').innerText.toLowerCase();
+        const text = tr.innerText.toLowerCase();
+
+        let ok = true;
+        if(fm && !d.startsWith(fm)) ok = false;
+        if(f1 && d < f1) ok = false;
+        if(f2 && d > f2) ok = false;
+        if(f_grn && grn !== f_grn) ok = false;
+        if(f_item && item !== f_item) ok = false;
+        if(f_unit && unit !== f_unit) ok = false;
+        if(f_mov && mov !== f_mov) ok = false;
+        if(q && !text.includes(q)) ok = false;
+
+        if(ok) {
+            tr.style.display = "";
+            visibleCount++;
+            
+            // Reverse Serial Number Logic
+            tr.querySelector('.slno').innerText = ""; 
+            
+            // Totaling Qty (Ignoring IN/OUT sign for absolute total volume manipulated)
+            qtyT += parseFloat(tr.querySelector('.qty-val').innerText) || 0;
+        } else {
+            tr.style.display = "none";
+        }
+    });
+
+    // Assign reverse serial numbers to visible rows
+    const visibleRows = Array.from(rows).filter(r => r.style.display !== 'none');
+    visibleRows.forEach((r, idx) => {
+        r.querySelector('.slno').innerText = visibleRows.length - idx;
+    });
+
+    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
+    document.getElementById("tot_qty").innerText = qtyT.toFixed(2);
+}
+
+function resetFilters() {
+    document.getElementById("f_month").value = "";
+    document.getElementById("f_from").value = "";
+    document.getElementById("f_to").value = "";
+    document.getElementById("f_grn").value = "";
+    document.getElementById("f_item").value = "";
+    document.getElementById("f_unit").value = "";
+    document.getElementById("f_movement").value = "";
+    document.getElementById("searchBox").value = "";
+    applyFilters();
+}
+
+function exportExcel() {
+    let table = document.getElementById("reportTable");
+    let rows = table.querySelectorAll("tr");
+    let csv = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        if(rows[i].style.display === "none" || rows[i].classList.contains('empty-state')) continue;
+        
+        let row = [], cols = rows[i].querySelectorAll("td, th");
+        
+        for (let j = 0; j < cols.length; j++) {
+            let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
+            row.push('"' + data + '"');
+        }
+        csv.push(row.join(","));
+    }
+
+    let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+    let downloadLink = document.createElement("a");
+    downloadLink.download = "BKNR_General_Stock_Ledger.csv";
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+window.onload = () => {
+    applyFilters();
+};
 </script>
 
 <script src="/static/js/global-loader.js"></script>

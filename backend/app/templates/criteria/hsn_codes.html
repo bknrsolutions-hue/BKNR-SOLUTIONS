@@ -26,7 +26,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:var(--card-bg); padding:10px 15px;
+  background:var(--card-bg); padding:12px 15px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
@@ -38,53 +38,56 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px
   background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none; /* Initially Hidden */
+  display: none; /* JS will auto-open if empty */
 }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 15px; }
-.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px; display: flex; align-items: center; gap: 6px;}
 
-.field { display: flex; flex-direction: column; }
+.field { display: flex; flex-direction: column; width: 100%; }
 label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
 input {
   padding: 8px 12px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 13px; background: var(--card-bg);
-  outline: none; width: 100%; transition: 0.2s;
+  outline: none; width: 100%; transition: 0.2s; height: 38px;
 }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
 /* CONTROL ACTIONS HEAD */
 .table-header-bar {
   width: 95%; max-width: 1400px; margin: 15px auto 5px;
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: space-between; align-items: flex-start;
   position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; padding-top: 8px;}
 
-.top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+.top-actions { margin: 0; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; text-transform: uppercase; transition: 0.2s;}
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.actions { text-align: center; display: flex; justify-content: center; gap: 8px; margin-top: 15px; width: 100%; }
 .btn {
   background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+  padding: 10px 24px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px; transition: 0.2s;
 }
-.btn-clear { background: #f1f5f9; color: var(--muted); }
+.btn-clear { background: #e2e8f0; color: var(--muted); }
 .btn:hover { background: var(--accent); }
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
-.menu-container { position: relative; display: none; }
+.menu-container { position: relative; display: none; margin-top: 8px; }
 .dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; padding: 2px;}
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: all 0.1s; text-align: left; }
+.menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap{
-    background: var(--card-bg) !important;
-} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+.table-wrap {
+  background: var(--card-bg) !important;
+  width: 95%; max-width: 1400px; margin: 0 auto 40px; 
+  border-radius: 8px; border: 1px solid var(--border); 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; display: block; 
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
@@ -96,25 +99,23 @@ td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color:
 tr:hover { background: #f8fbff; cursor: pointer; }
 tr.selected { background: #eff6ff !important; }
 
-.badge { font-family: monospace; background: #ecfeff; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
-.gst { background: #ecfdf5; color: #047857; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.badge { font-family: monospace; background: #ecfeff; color: #0369a1; padding: 3px 6px; border-radius: 4px; font-weight: 700; font-size: 12px;}
+.gst { background: #ecfdf5; color: #047857; padding: 3px 6px; border-radius: 4px; font-weight: 700; font-size: 12px;}
 
 /* MOBILE CARD LIST */
 .mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); }
+.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.15s ease; position: relative;}
+.data-card.selected { border: 1.5px solid var(--accent); background: #f0f7ff; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; align-items: flex-start; gap: 8px;}
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; padding-top: 2px;}
+.card-val { font-weight: 700; color: var(--primary); text-align: right;}
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
-  .mobile-card-list { display: block; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
   .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+  .actions { flex-direction: column-reverse; }
+  .btn, .btn-toggle { width: 100% !important; height: 38px; padding: 0 !important; line-height: 1; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -160,25 +161,47 @@ tr.selected { background: #eff6ff !important; }
     <input type="hidden" id="record_id">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE HSN CODE</button>
+      <button class="btn btn-primary" type="submit" id="submitBtn">SAVE HSN CODE</button>
+      
+      {% if today_data %}
+      <button 
+          type="button" 
+          class="btn" 
+          onclick="window.location.href='/criteria/setup/next'" 
+          style="background: var(--accent); color: white; border: none;">
+          NEXT <i class="fa-solid fa-arrow-right"></i>
+      </button>
+      {% endif %}
+
       <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
   </div>
 </form>
 
+{% if today_data %}
 <div class="table-header-bar">
     <h3 class="table-title">Registered HSN Registry</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add HSN Code</button>
+            <button class="btn-toggle" onclick="toggleForm()" style="background: var(--primary);"><i class="fa-solid fa-plus"></i> Add HSN Code</button>
+            
+            {% if today_data %}
+            <button 
+                type="button" 
+                class="btn-toggle" 
+                onclick="window.location.href='/criteria/setup/next'" 
+                style="background: var(--accent); color: white; border: none; width: 100%;">
+                NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            {% endif %}
         </div>
 
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Detail</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Entry</div>
           </div>
         </div>
     </div>
@@ -231,15 +254,32 @@ tr.selected { background: #eff6ff !important; }
         <td style="text-align:left; font-weight:600;">{{ h.description }}</td>
         <td><span class="gst">{{ h.gst_percent }}%</span></td>
         <td style="color:#475569;">{{ h.applicable_from }}</td>
-        <td>{{ h.company_id }}</td>
+        <td style="color:#0284c7; font-size:11px;">{{ h.company_id }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% endif %}
 
 <script>
 let selectedElement = null;
+
+/* -------------------------------------
+   AUTO-OPEN ON EMPTY
+-------------------------------------- */
+window.onload = function() {
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) {
+            toggle.style.display = "none";
+        }
+    }
+}
 
 function toggleForm() {
     const f = document.getElementById("formSection");
@@ -306,6 +346,7 @@ function editSelected(){
   document.getElementById("gst_percent").value = d.gst;
   document.getElementById("applicable_from").value = d.app;
   
+  document.getElementById("submitBtn").innerText = "UPDATE HSN CODE";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -335,6 +376,7 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("hsnForm").reset();
   document.getElementById("record_id").value = "";
+  document.getElementById("submitBtn").innerText = "SAVE HSN CODE";
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   

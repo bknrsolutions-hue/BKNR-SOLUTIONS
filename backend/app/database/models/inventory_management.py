@@ -6,6 +6,8 @@ from sqlalchemy import (
     Date,
     Time,
     Text,
+    DateTime,
+    UniqueConstraint
 )
 from datetime import datetime  # ✅ Idhi kachithanga undali
 from app.database import Base
@@ -197,3 +199,57 @@ class cold_storage(Base, metacolumns):
     # Status
     is_active = Column(String(20), default="ACTIVE") # ACTIVE / INACTIVE
     remarks = Column(Text, nullable=True)
+
+    # --------------------------------------------------------
+   # INVENTORY SUMMARY
+   # --------------------------------------------------------
+class InventorySummary(Base):
+    __tablename__ = "inventory_summary"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    company_id = Column(String(50), index=True)
+
+    species = Column(String(100))
+    variety = Column(String(100))
+    grade = Column(String(100))
+
+    packing_style = Column(String(100))
+    glaze = Column(String(50))
+
+    production_for = Column(String(255))
+    production_at = Column(String(255))
+
+    freezer = Column(String(100))
+
+    available_qty = Column(Float, default=0)
+    available_mc = Column(Float, default=0)
+    available_loose = Column(Float, default=0)
+
+    avg_rate = Column(Float, default=0)
+    inventory_value = Column(Float, default=0)
+
+    reserved_qty = Column(Float, default=0)
+    pending_prod_qty = Column(Float, default=0)
+
+    last_transaction_date = Column(Date)
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id",
+            "species",
+            "variety",
+            "grade",
+            "packing_style",
+            "glaze",
+            "production_for",
+            "production_at",
+            "freezer",
+            name="uq_inventory_summary"
+        ),
+    )

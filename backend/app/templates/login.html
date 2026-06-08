@@ -617,7 +617,7 @@ async function savePassword(){
   }
 }
 
-/* ================= DO LOGIN (WITH HISTORY REPLACEMENT) ================= */
+/* ================= DO LOGIN (WITH HISTORY REPLACEMENT & SETUP ROUTING) ================= */
 async function doLogin(){
   const loginErr = document.getElementById("loginErr");
   loginErr.style.display="none";
@@ -634,8 +634,19 @@ async function doLogin(){
     });
 
     let data = await res.json();
+    
+    // Debugging kosam (ఎలాంటి డేటా వస్తుందో కన్సోల్ లో చూడొచ్చు)
+    console.log("Login Response Data:", data);
+
     if(res.ok){
-      window.location.replace("/home");
+      // బ్యాకెండ్ పంపిన next_page ఉంటే అక్కడికి, లేకపోతే డిఫాల్ట్ గా /home కి
+      if(data.next_page){
+          console.log("Redirecting to Setup Page:", data.next_page);
+          window.location.replace(data.next_page);
+      } else {
+          console.log("Redirecting to Main Dashboard");
+          window.location.replace("/home");
+      }
     } else {
       loginErr.innerHTML = data.detail || "Invalid Credentials";
       loginErr.style.display = "block";

@@ -2,16 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import random, json, os, requests, secrets
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable
 from app.security.password_handler import hash_password, verify_password
+from app.services.setup_service import SetupService
 
 # =====================================================
 router = APIRouter(prefix="/auth", tags=["AUTH"])
@@ -46,7 +49,15 @@ def send_email(to_email: str, subject: str, html: str):
         "content-type": "application/json"
     }
 
-    res = requests.post(BREVO_URL, json=payload, headers=headers)
+    res = requests.post(
+        BREVO_URL,
+        json=payload,
+        headers=headers
+    )
+
+    print("BREVO STATUS:", res.status_code)
+    print("BREVO RESPONSE:", res.text)
+
     if res.status_code >= 400:
         raise HTTPException(500, "Email sending failed")
 
@@ -62,29 +73,25 @@ class RegisterReq(BaseModel):
     mobile: str
     email: str
 
-
 class OTPReq(BaseModel):
     email: str
     otp: str
 
-
 class PasswordReq(BaseModel):
     email: str
     password: str
-
 
 class LoginReq(BaseModel):
     company_id: str
     email: str
     password: str
 
-
 class ForgotReq(BaseModel):
     email: str
 
 
 # =====================================================
-# REGISTER → SEND OTP
+# 1. REGISTER → SEND OTP
 # =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
@@ -104,17 +111,23 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    send_email(
-        data.email,
-        "BKNR ERP – OTP Verification",
-        f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
-    )
+    # =====================================
+    # SEND EMAIL WITH LOCAL DEV FALLBACK
+    # =====================================
+    try:
+        send_email(
+            data.email,
+            "BKNR ERP – OTP Verification",
+            f"<h2>{otp}</h2><p>Valid for {OTP_EXPIRY_MIN} minutes</p>"
+        )
+    except Exception as e:
+        print("EMAIL ERROR:", e)
+        print("OTP =", otp)
 
     return {"message": "OTP sent"}
 
-
 # =====================================================
-# VERIFY OTP
+# 2. VERIFY OTP
 # =====================================================
 @router.post("/verify-otp")
 def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
@@ -133,9 +146,8 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
 
     return {"message": "OTP verified"}
 
-
 # =====================================================
-# SET PASSWORD
+# 3. SET PASSWORD
 # =====================================================
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
@@ -180,59 +192,81 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     return {"company_id": company.company_code}
 
-
 # =====================================================
-# LOGIN
+# 4. LOGIN
 # =====================================================
 @router.post("/login")
 def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
+    company_code = data.company_id.strip().upper()
+    email = data.email.strip()
+
     company = db.query(Company).filter(
-        Company.company_code == data.company_id
+        func.upper(func.trim(Company.company_code)) == company_code
     ).first()
     if not company:
         raise HTTPException(400, "Invalid Company ID")
 
     user = db.query(User).filter(
-        User.email == data.email,
+        User.email == email,
         User.company_id == company.id
     ).first()
 
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
 
-    # ✅ SESSION SET (🌟 ADDED company_name TO SESSION TO MATCH CORRESPONDING RECON MATRICES)
+    # =====================================
+    # GET NEXT MASTER / CHECK SETUP
+    # =====================================
+    setup_completed = SetupService.is_completed(db, company.company_code)
+    next_page = SetupService.get_next_master(db, company.company_code)
+
+    print("================================")
+    print("COMPANY CODE =", company.company_code)
+    print("SETUP COMPLETED =", setup_completed)
+    print("NEXT PAGE =", next_page)
+    print("================================")
+
+    # ఒకవేళ ఇప్పుడే సెటప్ పూర్తయితే, DB లో కూడా అప్‌డేట్ చేయాలి
+    if setup_completed and not company.setup_completed:
+        company.setup_completed = True
+        db.commit()
+
     request.session.update({
         "email": user.email,
         "company_id": company.id,
         "company_code": company.company_code,
-        "company_name": company.company_name,  # ఇక్కడ కంపెనీ నేమ్ కూడా సెషన్ లో సేవ్ అవుతుంది!
+        "company_name": company.company_name,
         "name": user.name,
         "role": user.role,
-        "permissions": user.permissions
+        "permissions": user.permissions,
+        "setup_completed": setup_completed
     })
 
-    # ✅ COOKIE RESPONSE (VERY IMPORTANT 🔥)
+    # క్లీన్ చేసిన సింగిల్ రెస్పాన్స్ 
     response = JSONResponse({
         "status": "success",
-        "message": "Login Successful"
+        "message": "Login Successful",
+        "setup_completed": setup_completed,
+        "next_page": next_page
     })
-
-    response.set_cookie(
-        key="session",
-        value="active",
-        httponly=True
-    )
 
     return response
 
 # =====================================================
-# FORGOT PASSWORD
+# 5. FORGOT PASSWORD
 # =====================================================
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
 
-    user = db.query(User).filter(User.email == data.email).first()
+    print("EMAIL:", data.email)
+
+    user = db.query(User).filter(
+        User.email == data.email
+    ).first()
+
+    print("USER:", user)
+
     if not user:
         raise HTTPException(404, "Email not registered")
 
@@ -249,17 +283,20 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
 
     reset_link = f"{request.base_url}auth/reset-password?token={token}"
 
-    send_email(
-        data.email,
-        "BKNR ERP – Reset Password",
-        f"<a href='{reset_link}'>Reset Password</a>"
-    )
+    # Print link instead of sending email (Dev Mode)
+    print("RESET LINK:", reset_link)
+
+    # పంపాలనుకుంటే అన్‌కామెంట్ చేసుకోండి
+    # send_email(
+    #     data.email,
+    #     "BKNR ERP – Reset Password",
+    #     f"<a href='{reset_link}'>Reset Password</a>"
+    # )
 
     return {"message": "Reset link sent"}
 
-
 # =====================================================
-# RESET PASSWORD PAGE
+# 6. RESET PASSWORD PAGE
 # =====================================================
 @router.get("/reset-password", response_class=HTMLResponse)
 def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
@@ -278,9 +315,8 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
         context={"token": token}
     )
 
-
 # =====================================================
-# RESET PASSWORD SAVE
+# 7. RESET PASSWORD SAVE
 # =====================================================
 @router.post("/reset-password")
 def reset_password(
@@ -308,9 +344,8 @@ def reset_password(
 
     return RedirectResponse("/", status_code=303)
 
-
 # =====================================================
-# LOGOUT
+# 8. LOGOUT
 # =====================================================
 @router.get("/logout")
 def logout(request: Request):

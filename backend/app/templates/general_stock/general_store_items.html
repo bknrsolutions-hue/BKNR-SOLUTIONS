@@ -2,198 +2,334 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>GENERAL STORE – ITEMS MASTER</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITEMS MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  body{font-family:Arial,sans-serif;background:#e6f2ff;margin:0;padding:0;}
-  h2{text-align:center;color:#003366;margin:20px 0;font-weight:700;}
+:root{
+  --primary: #60a5fa; 
+  --accent: #3b82f6;
+  --border: #334155;   
+  --bg: #0f172a;       
+  --card-bg: #1e293b;  
+  --text: #f8fafc;     
+  --muted: #94a3b8;    
+  --danger: #ef4444;
+  --success: #10b981;
+}
 
-  /* Form Container */
-  .form-container{
-    width:90%;max-width:1100px;margin:0 auto;background:var(--card-bg);
-    padding:25px;border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,.15);
-  }
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
 
-  /* ROW = 3 Columns */
-  .row{display:flex;flex-wrap:wrap;gap:15px;justify-content:center;margin-bottom:18px;}
-  .col{
-    flex:1;
-    min-width:30%;
-    max-width:33.33%;
-    display:flex;
-    flex-direction:column;
-  }
-  @media(max-width:768px){ .col{min-width:100%;} }
+/* HEADER */
+.header{
+  position:sticky; top:0; z-index:100;
+  background:var(--card-bg); padding:12px 15px;
+  border-bottom:1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
 
-  label{font-weight:600;color:#003366;margin-bottom:6px;}
-  input{
-    padding:10px;background:#f9fcff;border:1px solid #a3bcd6;
-    border-radius:6px;font-size:14px;
-  }
-  input:focus{outline:none;border-color:#003366;box-shadow:0 0 5px rgba(0,51,102,.3);}
+/* ================= FORM CONTAINER STRUCTURE ================= */
+.form-container {
+  width: 95%; max-width: 1400px; margin: 15px auto;
+  background: var(--card-bg); padding: 20px; border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
 
-  .actions{text-align:center;margin-top:25px;}
-  .btn{
-    background:#003366;color:white;border:none;padding:10px 20px;border-radius:6px;
-    font-weight:600;width:160px;cursor:pointer;
-  }
-  .btn-clear{background:#777;}
-  .btn:hover{opacity:.9;}
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
+@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
 
-  /* Table */
-  table{
-    width:90%;max-width:1100px;margin:10px auto 30px;border-collapse:collapse;
-    background:#f7f7f7;border-radius:8px;overflow:hidden;box-shadow:0 0 8px rgba(0,0,0,.15);
-  }
-  th,td{padding:10px 12px;border-bottom:1px solid #ccc;font-size:14px;text-align:left;}
-  th{background:#003366;color:white;}
-  tr:hover{background:#e0ebff;cursor:pointer;}
-  tr.selected{background:#cce5ff !important;}
+.field { display: flex; flex-direction: column; }
+.form-title-inner { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 5px; display: flex; align-items: center; gap: 6px;}
 
-  .menu-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;}
-  .menu-item:hover{background:#e6f2ff;}
+label { font-size: 10px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 5px; }
+input {
+  padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: #0f172a; color: var(--text);
+  outline: none; width: 100%; transition: 0.2s;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+/* Control Actions Bar */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 20px auto 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 15px; grid-column: 1 / -1; }
+.btn {
+  background: var(--accent); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px; transition: 0.2s;
+}
+.btn-clear { background: #334155; color: #cbd5e1; }
+.btn:hover { background: #2563eb; transform: translateY(-1px); }
+
+/* ================= 3-DOT MENU STRUCTURE ================= */
+.menu-container { position: relative; display: none; }
+.dots-trigger { background: var(--accent); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); width: 170px; z-index: 1000; overflow: hidden; }
+
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: #2563eb; color: #fff; }
+
+/* ================= COMPACT DESKTOP TABLE AREA ================= */
+.table-wrap {
+  background: var(--card-bg) !important;
+  width: 95%; max-width: 1400px; margin: 0 auto 40px; 
+  border-radius: 8px; border: 1px solid var(--border); 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow-x: auto; 
+}
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+
+th {
+  background: #0f172a; color: #cbd5e1; padding: 10px 8px;
+  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
+  text-align: center; white-space: nowrap;
+}
+td { padding: 9px 8px; border-bottom: 1px solid var(--border); font-size: 11px; color: #e2e8f0; text-align: center; white-space: nowrap; }
+tr:hover { background: #334155; cursor: pointer; }
+tr.selected { background: #1e3a8a !important; border-left: 4px solid var(--accent); }
+
+/* ================= MOBILE CARD LIST VIEW ================= */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; }
+.data-card.selected { border: 2px solid var(--accent); background: #1e3a8a; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--text); }
+
+@media(max-width: 1024px){
+  .table-wrap { display: none; }
+  .mobile-card-list { display: block; }
+  .form-container, .table-header-bar { width: 95%; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
+
 <body>
 
-<h2>GENERAL STORE — ITEM MASTER</h2>
+<div class="header">
+  <div class="header-titles">
+      <h2>General Store — Item Master</h2>
+  </div>
+</div>
 
-<!-- ================= FORM ================= -->
-<form onsubmit="submitItem(event)">
+<form id="itemForm" onsubmit="submitItem(event)">
   <div class="form-container">
-    <div class="row">
-      <div class="col">
+    
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-tag"></i> Item Configurations</div>
+      
+      <div class="field">
         <label>Item Name</label>
         <input type="text" id="item_name" required placeholder="Enter Item Name">
       </div>
 
-      <div class="col">
+      <div class="field">
         <label>Unit Name</label>
         <input type="text" id="unit_name" required placeholder="KG / Liters / Box">
       </div>
 
-      <div class="col">
+      <div class="field">
         <label>Minimum Stock Level</label>
-        <input type="number" step="0.01" id="minimum_level" required>
+        <input type="number" step="0.01" id="minimum_level" required placeholder="0.00">
       </div>
     </div>
 
     <div class="actions">
-      <button class="btn" type="submit">SAVE</button>
-      <button class="btn btn-clear" type="reset" onclick="clearForm()">CLEAR</button>
+      <button class="btn" type="submit">SAVE ITEM</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()">CLEAR</button>
     </div>
   </div>
 </form>
 
 {% if items %}
-
-<!-- ========= 3 DOT MENU ========= -->
-<div id="threeDotsMenu" style="display:none;width:90%;max-width:1100px;margin:10px auto;text-align:right;position:relative;">
-  <button id="dotsBtn" style="background:#003366;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:20px;">⋮</button>
-
-  <div id="dropdownMenu" style="display:none;position:absolute;right:0;background:white;border:1px solid #ccc;width:190px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:1000;">
-      <div onclick="editRow()" class="menu-item">✏️ Edit</div>
-      <div onclick="deleteRow()" class="menu-item">🗑️ Delete</div>
-      <div onclick="printRow()" class="menu-item">🖨️ Print</div>
-      <div onclick="exportPDF()" class="menu-item">📄 Export PDF</div>
-      <div onclick="exportExcel()" class="menu-item">📊 Export Excel</div>
-  </div>
+<div class="table-header-bar">
+    <h3 class="table-title">Registered Items List</h3>
+    
+    <div class="menu-container" id="threeDotsMenu">
+      <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+      <div id="dropdownMenu">
+        <div onclick="editRow()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
+        <div onclick="deleteRow()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+        <div onclick="printRow()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
+        <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+        <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+      </div>
+    </div>
 </div>
 
-<!-- ================= TABLE ================= -->
-<table id="itemTable">
-<thead>
-<tr>
-  <th>Item</th>
-  <th>Unit</th>
-  <th>Min Level</th>
-</tr>
-</thead>
-<tbody>
-{% for i in items %}
-<tr data-item="{{i[0]}}" data-unit="{{i[1]}}" data-min="{{i[2]}}">
-  <td>{{i[0]}}</td>
-  <td>{{i[1]}}</td>
-  <td>{{i[2]}}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+<div class="mobile-card-list">
+    {% for i in items %}
+    <div class="data-card" data-item="{{i[0]}}" data-unit="{{i[1]}}" data-min="{{i[2]}}" onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">Item Profile</span>
+            <span class="card-val" style="color:var(--primary);">{{ i[0] }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Measurement Unit</span>
+            <span class="card-val">{{ i[1] }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Minimum Level Alert</span>
+            <span class="card-val" style="color:#f97316;">{{ i[2] }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="table-wrap">
+  <table id="itemTable">
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Unit Name</th>
+        <th>Minimum Stock Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr data-item="{{i[0]}}" data-unit="{{i[1]}}" data-min="{{i[2]}}" onclick="selectRowOrCard(this)">
+        <td class="text-left" style="font-weight:600; color:var(--primary);">{{ i[0] }}</td>
+        <td>{{ i[1] }}</td>
+        <td style="font-weight:700; color:#e2e8f0;">{{ i[2] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 
 <script>
-let selected=null;
+let selectedElement = null;
 
-/* SELECT ROW */
-document.addEventListener("DOMContentLoaded",()=>{
-  document.querySelectorAll("#itemTable tbody tr").forEach(r=>{
-    r.onclick=()=>{
-      document.querySelectorAll("tr").forEach(x=>x.classList.remove("selected"));
-      r.classList.add("selected"); selected=r;
-      document.getElementById("threeDotsMenu").style.display="block";
-    }
-  });
+/* Sync Selection For Row & Cards */
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #itemTable tbody tr").forEach(x => x.classList.remove("selected"));
+  selectedElement = el;
+  
+  // Highlighting matching context elements (both rows and cards targets)
+  const itemKey = el.dataset.item;
+  const unitKey = el.dataset.unit;
+  document.querySelectorAll(`[data-item='${itemKey}'][data-unit='${unitKey}']`).forEach(target => target.classList.add("selected"));
+  
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+/* Dropdown toggler trigger */
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
-/* MENU DROPDOWN */
-document.getElementById('dotsBtn').onclick=()=>{
-  const d=document.getElementById("dropdownMenu");
-  d.style.display= d.style.display==="block"?"none":"block";
-};
-
-/* SAVE ITEM */
+/* Save / Insert Form Submitter */
 async function submitItem(e){
   e.preventDefault();
-  const fd=new FormData();
-  fd.append("item_name",item_name.value);
-  fd.append("unit_name",unit_name.value);
-  fd.append("minimum_level",minimum_level.value);
+  const fd = new FormData();
+  fd.append("item_name", document.getElementById("item_name").value.trim());
+  fd.append("unit_name", document.getElementById("unit_name").value.trim());
+  fd.append("minimum_level", document.getElementById("minimum_level").value);
 
-  const res=await fetch("/general_stock/items/add",{method:"POST",body:fd});
-  if(res.ok) alert("Saved Successfully"), location.reload();
+  const res = await fetch("/general_stock/items/add", { method: "POST", body: fd });
+  if(res.ok) {
+    Swal.fire({icon: 'success', title: 'Saved Successfully', timer: 1200, showConfirmButton: false}).then(() => {
+        location.reload();
+    });
+  } else {
+    Swal.fire({icon: 'error', title: 'Failed to save item configuration'});
+  }
 }
 
-/* EDIT */
+/* Edit Selected Record Row */
 function editRow(){
-  if(!selected) return alert("Select row!");
-  item_name.value=selected.dataset.item;
-  unit_name.value=selected.dataset.unit;
-  minimum_level.value=selected.dataset.min;
-  window.scrollTo({top:0,behavior:"smooth"});
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById("item_name").value = d.item;
+  document.getElementById("unit_name").value = d.unit;
+  document.getElementById("minimum_level").value = d.min;
+  
+  window.scrollTo({top: 0, behavior: "smooth"});
 }
 
-/* DELETE */
+/* Delete Selected Entry Controller */
 async function deleteRow(){
-  if(!selected) return alert("Select row!");
-  if(!confirm("Delete Item?")) return;
-  const res=await fetch(`/general_stock/items/delete/${selected.dataset.item}/${selected.dataset.unit}`,{method:"POST"});
-  if(res.ok) location.reload();
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Are you sure?',
+    text: `Delete master item: ${selectedElement.dataset.item}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const item = selectedElement.dataset.item;
+      const unit = selectedElement.dataset.unit;
+      const res = await fetch(`/general_stock/items/delete/${item}/${unit}`, { method: "POST" });
+      if(res.ok) {
+          location.reload();
+      } else {
+          Swal.fire({icon: 'error', title: 'Delete execution failed'});
+      }
+    }
+  });
 }
 
-/* PRINT + EXPORT */
+/* Printing and Exports Utility Engines */
 function printRow(){
-  if(!selected) return alert("Select row!");
-  const p=window.open(""); p.document.write(
-  `<h3>ITEM DETAILS</h3><p><b>Item:</b> ${selected.dataset.item}</p>
-  <p><b>Unit:</b> ${selected.dataset.unit}</p>
-  <p><b>Min Level:</b> ${selected.dataset.min}</p>`); p.print();
-}
-function exportPDF(){printRow();}
-function exportExcel(){
-  if(!selected) return alert("Select row!");
-  const data=`Item\tUnit\tMin\n${selected.dataset.item}\t${selected.dataset.unit}\t${selected.dataset.min}`;
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data])); a.download="item.xls"; a.click();
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  const p = window.open("", "_blank");
+  p.document.write("<style>body{font-family:sans-serif; padding:20px; color:#333;}</style>");
+  p.document.write("<h2>BKNR ERP — Item Master Profile</h2><hr>");
+  p.document.write(`<p><b>Item Name:</b> ${d.item}</p>`);
+  p.document.write(`<p><b>Standard Unit:</b> ${d.unit}</p>`);
+  p.document.write(`<p><b>Minimum Level Alert:</b> ${d.min}</p>`);
+  p.document.close();
+  p.print();
 }
 
-/* CLEAR */
+function exportPDF(){ printRow(); }
+
+function exportExcel(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  const data = `Item Name\tUnit\tMinimum Level\n${d.item}\t${d.unit}\t${d.min}`;
+  
+  const blob = new Blob([data], {type: "application/vnd.ms-excel"});
+  const a = document.createElement("a"); 
+  a.href = URL.createObjectURL(blob); 
+  a.download = `Item_${d.item}.xls`; 
+  a.click();
+}
+
+/* Clear Form Action Handler */
 function clearForm(){
-  selected=null;
-  document.querySelectorAll("tr.selected").forEach(x=>x.classList.remove("selected"));
-  threeDotsMenu.style.display="none";
+  selectedElement = null;
+  document.getElementById("itemForm").reset();
+  document.querySelectorAll(".data-card, tr.selected").forEach(x => x.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 </script>
 <script src="/static/js/global-loader.js"></script>

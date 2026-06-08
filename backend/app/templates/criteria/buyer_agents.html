@@ -92,12 +92,12 @@ textarea { resize: none; height: 34px; }
 /* ================= CONTROL ACTIONS HEADER ================= */
 .table-header-bar {
   width: 96%; max-width: 1400px; margin: 12px auto 6px;
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: space-between; align-items: flex-start; /* Changed to align-items: flex-start */
   position: relative;
 }
-.table-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; letter-spacing: 0.2px; }
+.table-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; letter-spacing: 0.2px; padding-top: 8px;}
 
-.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.top-actions { margin: 0; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
 
 /* 🟢 UNIFIED BUTTON STYLES FOR ADD NEW AND SAVE */
 .btn, .btn-toggle {
@@ -154,7 +154,7 @@ textarea { resize: none; height: 34px; }
 }
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
-.menu-container { position: relative; display: none; }
+.menu-container { position: relative; display: none; margin-top: 8px;}
 .dots-trigger { background: var(--primary); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
 #dropdownMenu { display: none; position: absolute; right: 0; top: 34px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden; padding: 2px; }
 
@@ -162,9 +162,10 @@ textarea { resize: none; height: 34px; }
 .menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT TABLE AREA ================= */
-.table-wrap{
+.table-wrap {
     background: var(--card-bg) !important;
-} width: 96%; max-width: 1400px; margin: 0 auto 20px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
+    width: 96%; max-width: 1400px; margin: 0 auto 20px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; 
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 th, td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
 th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
@@ -181,9 +182,7 @@ tr.selected { background: #eff6ff !important; }
 .card-val { font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none !important; }
+  .table-wrap { display: none !important; }
   .mobile-card-list { display: block !important; }
 }
 </style>
@@ -258,6 +257,7 @@ tr.selected { background: #eff6ff !important; }
       <input type="hidden" id="meta_email" value="{{ email }}">
       <input type="hidden" id="meta_company_id" value="{{ company_id }}">
 
+      <!-- Form Only Action Buttons -->
       <div class="actions">
         <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE DATA</button>
         <button type="button" class="btn btn-clear" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
@@ -276,9 +276,20 @@ tr.selected { background: #eff6ff !important; }
 <div class="table-header-bar">
     <h3 class="table-title">Agents Registry Matrix</h3>
     
-    <div style="display: flex; gap: 8px; align-items: center;">
+    <div style="display: flex; gap: 8px; align-items: flex-start;">
+        <!-- Add New & Next Buttons Stacked Neatly -->
         <div class="top-actions" id="toggleActionArea">
             <button class="btn-toggle btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Agent</button>
+            
+            {% if today_data %}
+            <button 
+                type="button" 
+                class="btn-toggle" 
+                onclick="window.location.href='/criteria/setup/next'" 
+                style="background: var(--accent); color: white; border: none; width: 100%;">
+                NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            {% endif %}
         </div>
 
         <div class="menu-container" id="threeDotsMenu">
@@ -397,6 +408,34 @@ tr.selected { background: #eff6ff !important; }
 
 <script>
 let selectedElement = null;
+
+/* -------------------------------------
+   AUTO-OPEN ON EMPTY OR LOAD LOCAL DATA
+-------------------------------------- */
+window.onload = function() {
+    // 1. Load LocalStorage Fallback if Jinja tags empty
+    const email = localStorage.getItem("userEmail");
+    const company = localStorage.getItem("companyID");
+    
+    if(document.getElementById("meta_email") && !document.getElementById("meta_email").value) {
+        document.getElementById("meta_email").value = email || "";
+    }
+    if(document.getElementById("meta_company_id") && !document.getElementById("meta_company_id").value) {
+        document.getElementById("meta_company_id").value = company || "";
+    }
+
+    // 2. Setup Wizard Auto-Open Logic
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) {
+            toggle.style.display = "none";
+        }
+    }
+}
 
 function toggleForm() {
     const f = document.getElementById("formSection");

@@ -38,7 +38,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px
   background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none;
+  display: none; /* Keep hidden by default, JS will handle auto-open */
 }
 
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
@@ -76,6 +76,23 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 .btn-clear { background: #f1f5f9; color: var(--muted); }
 .btn:hover { background: var(--accent); }
 
+/* NEXT STEP BUTTON */
+.btn-next { 
+  background: #10b981; 
+  color: white; 
+  padding: 8px 14px; 
+  border-radius: 6px; 
+  font-weight: 700; 
+  border: none; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  font-size: 11px; 
+  text-transform: uppercase; 
+}
+.btn-next:hover { background: #059669; }
+
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
 .menu-container { position: relative; display: none; }
 .dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -85,9 +102,16 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 .menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap{
-    background: var(--card-bg) !important;
-} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+.table-wrap {
+  background: var(--card-bg) !important;
+  width: 95%; 
+  max-width: 1400px; 
+  margin: 0 auto 40px; 
+  border-radius: 8px; 
+  border: 1px solid var(--border); 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+  overflow-x: auto; 
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
@@ -108,9 +132,9 @@ tr.selected { background: #eff6ff !important; }
 .card-val { font-weight: 700; color: var(--primary); }
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
+  .table-wrap { 
+    display: none; 
+  }
   .mobile-card-list { display: block; }
   .form-container, .table-header-bar { width: 95%; }
   .actions { flex-direction: column; }
@@ -130,11 +154,9 @@ tr.selected { background: #eff6ff !important; }
   </div>
 </div>
 
-<!-- FORM AREA -->
 <form onsubmit="submitBuyer(event)" id="buyerForm">
   <div class="form-container" id="formSection">
     
-    <!-- Profile Info Grid -->
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-user-tie"></i> Buyer Profile</div>
       <div class="field">
@@ -143,7 +165,6 @@ tr.selected { background: #eff6ff !important; }
       </div>
     </div>
 
-    <!-- Metadata Hidden Fields -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_email" value="{{ email }}">
     <input type="hidden" id="meta_company_id" value="{{ company_id }}">
@@ -161,16 +182,17 @@ tr.selected { background: #eff6ff !important; }
 
 {% if today_data %}
 
-<!-- CONTROL ACTIONS HEADER BAR -->
 <div class="table-header-bar">
     <h3 class="table-title">Buyer Data Logs</h3>
     
     <div style="display: flex; gap: 10px; align-items: center;">
-        <div class="top-actions" id="toggleActionArea">
-            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Buyer</button>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+            <div class="top-actions" id="toggleActionArea">
+                <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Buyer</button>
+            </div>
+            <button type="button" class="btn-next" onclick="goToNextStep()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
         </div>
 
-        <!-- RIGHT INLINE 3-DOT MENU (TEXT OMITTED) -->
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
@@ -184,7 +206,6 @@ tr.selected { background: #eff6ff !important; }
     </div>
 </div>
 
-<!-- MOBILE VIEW CARD LIST -->
 <div class="mobile-card-list">
     {% for row in today_data %}
     <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.buyer_name }}"
@@ -210,7 +231,6 @@ tr.selected { background: #eff6ff !important; }
     {% endfor %}
 </div>
 
-<!-- COMPACT FULL TABLE VIEW -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
@@ -244,6 +264,20 @@ tr.selected { background: #eff6ff !important; }
 
 <script>
 let selectedElement = null;
+
+// Auto-open form logic for new companies
+window.onload = function() {
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) {
+            toggle.style.display = "none";
+        }
+    }
+}
 
 function toggleForm() {
     const f = document.getElementById("formSection");
@@ -296,6 +330,11 @@ async function submitBuyer(e){
   } else {
     Swal.fire({icon:'error', title:'Save Failed: ' + await res.text()});
   }
+}
+
+/* ------------------- WIZARD NEXT STEP REDIRECTION ------------------- */
+function goToNextStep() {
+  window.location.href = "/home";
 }
 
 /* ------------------- ROW / CARD SELECTION SYNC ------------------- */
@@ -365,7 +404,7 @@ function printSelected(){
   p.print();
 }
 
-function exportPDF(){ printSelected(); }
+UXfunction exportPDF(){ printSelected(); }
 
 function exportExcel(){
   if(!selectedElement) return;

@@ -9,8 +9,15 @@ from pydantic import BaseModel
 from typing import List, Optional
 import re
 import json
+from app.services.inventory_summary_service import (
+    InventorySummaryService
+)
+from app.services.production_requirements_service import (
+    ProductionRequirementService
+)
 
 # Database and Models
+from app.database import get_db
 from app.database import get_db
 from app.database.models.inventory_management import pending_orders, sales_dispatch, stock_entry
 from app.database.models.users import Company
@@ -192,9 +199,23 @@ def save_pending_orders(
         ))
 
     db.commit()
-    request.session["message"] = f"PO {po_number} saved successfully!"
-    return RedirectResponse("/inventory/pending_orders", status_code=303)
 
+    print("PRODUCTION REQUIREMENTS REFRESH")
+    print("COMPANY:", company_code)
+    rows = ProductionRequirementService.refresh_requirements(
+    db=db,
+    company_id=company_code
+)
+    print("ROWS CREATED:", rows)
+
+    request.session["message"] = (
+    f"PO {po_number} saved successfully!"
+    )
+
+    return RedirectResponse(
+    "/inventory/pending_orders",
+    status_code=303
+)
 # -------------------------------------------------------------------------
 # 3️⃣ MOVE TO SALES (SALES DISPATCH) (POST)
 # -------------------------------------------------------------------------

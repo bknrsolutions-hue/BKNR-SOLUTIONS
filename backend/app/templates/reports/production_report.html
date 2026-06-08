@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>PRODUCTION REPORT | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -12,6 +12,7 @@
     --accent: #2563eb;
     --border: #e2e8f0;
     --bg: #f8fafc;
+    --card-bg: #ffffff;
     --header: #ffffff;
     --text: #0f172a;
     --text-muted: #64748b;
@@ -27,57 +28,55 @@
 body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--text); -webkit-font-smoothing: antialiased; }
 
 /* Header & Controls */
-.header { background: var(--header); padding: 8px 12px; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.header h2 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+.header { background: var(--header); padding: 8px 12px; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 20; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+.header h2 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .header h2::before { content: ''; display: inline-block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
 
 .view-btns { display: flex; background: #e2e8f0; padding: 2px; border-radius: 4px; gap: 2px; }
-.v-btn { padding: 4px 10px; font-size: 9px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-radius: 3px; color: var(--text-muted); transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.3px; }
+.v-btn { padding: 4px 10px; font-size: 9px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-radius: 3px; color: var(--text-muted); transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
 .v-btn.active { background: var(--card-bg); color: var(--accent); box-shadow: var(--shadow-sm); }
 .v-btn:hover:not(.active) { color: var(--primary); }
 
 /* Filter Bar Optimization */
-.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 4px; background: var(--card-bg)fff; padding: 0; border: none; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 6px; background: var(--card-bg); padding: 0; border: none; }
 .fbox { display: flex; flex-direction: column; gap: 2px; }
 .fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
 
-select, input[type=date], input[type=month], #searchBox { padding: 4px 6px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); outline: none; transition: all 0.2s ease; height: 24px; }
+select, input[type=date], input[type=month], #searchBox { padding: 4px 6px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); outline: none; transition: all 0.2s ease; height: 24px; width: 100%; }
 select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 #searchBox { grid-column: span 2; border-left: 3px solid var(--accent); font-weight: 500; }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
 /* Action Toolbar */
-.actions { background: var(--card-bg); padding: 4px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); }
-#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); background: rgba(37, 99, 235, 0.08); padding: 2px 8px; border-radius: 12px; }
+.actions { background: var(--card-bg); padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 15; }
+#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); background: rgba(37, 99, 235, 0.08); padding: 4px 8px; border-radius: 12px; }
 
 /* Dropdown Menu */
 .menu-box { position: relative; }
-.dots { width: 24px; height: 24px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 12px; color: var(--text-muted); transition: all 0.2s; user-select: none; }
+.dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 14px; color: var(--text-muted); transition: all 0.2s; user-select: none; }
 .dots:hover { background: var(--table-header); color: var(--primary); border-color: #cbd5e1; }
-.menu-list { position: absolute; right: 0; top: 28px; width: 210px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 5000; box-shadow: var(--shadow-md); padding: 2px 0; }
-.menu-list div { padding: 6px 12px; font-size: 10px; font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.menu-list { position: absolute; right: 0; top: 32px; width: 210px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 5000; box-shadow: var(--shadow-md); padding: 4px 0; }
+.menu-list div { padding: 8px 12px; font-size: 11px; font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 .menu-list div:hover { background: #f1f5f9; color: var(--accent); }
-.menu-list b { display: block; padding: 4px 12px; font-size: 8px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.menu-list hr { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
+.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.menu-list hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 
 /* Table Section Setup */
 .section { flex: 1; margin: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-sm); }
-.table-wrap{
-    background: var(--card-bg) !important;
-} flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+.table-wrap { background: var(--card-bg) !important; flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 1400px; }
 
 /* Table Styling */
-thead th { background: var(--table-header); padding: 6px 2px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10; color: #475569; text-align: center; }
-tbody td { padding: 5px 2px; font-size: 9px; font-weight: 500; border-bottom: 1px solid var(--border); border-right: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; }
+thead th { background: var(--table-header); padding: 8px 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10; color: #475569; text-align: center; }
+tbody td { padding: 6px 4px; font-size: 9.5px; font-weight: 500; border-bottom: 1px solid var(--border); border-right: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; }
 tbody tr:hover:not(.subtotal-row) { background: var(--row-hover); }
 tr.selected { background: #e0f2fe !important; border-left: 3px solid var(--accent); }
 tr.selected td { color: #0369a1; font-weight: 600; }
 
 /* Subtotals and Totals styling */
 .subtotal-row { background: #f8fafc !important; font-weight: 800; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
-.subtotal-row td { font-size: 8.5px; color: var(--primary); border-right: 1px solid var(--border); padding: 5px 2px; text-transform: uppercase; background: #f8fafc; }
+.subtotal-row td { font-size: 9px; color: var(--primary); border-right: 1px solid var(--border); padding: 6px 4px; text-transform: uppercase; background: #f8fafc; }
 .val-pos { color: var(--success) !important; font-weight: 700; }
 .val-neg { color: var(--danger) !important; font-weight: 700; }
 
@@ -85,7 +84,7 @@ tr.selected td { color: #0369a1; font-weight: 600; }
 .empty-state i { font-size: 32px; margin-bottom: 10px; color: var(--accent); opacity: 0.4; }
 
 /* Fixed Proportional Layout Sizing Grid */
-.w-sl{width: 2.5%;} .w-dt{width: 5.5%;} .w-tm{width: 4.5%;} .w-loc{width: 7.5%;}
+.w-sl{width: 3%;} .w-dt{width: 5.5%;} .w-tm{width: 4.5%;} .w-loc{width: 7.5%;}
 .w-pf{width: 7.5%;}  .w-typ{width: 6.5%;} .w-spc{width: 6.5%;} .w-bt{width: 6.5%;}
 .w-brd{width: 6.5%;} .w-var{width: 7.5%;} .w-glz{width: 4.5%;} .w-frz{width: 6.0%;}
 .w-pck{width: 8.5%;} .w-grd{width: 5.5%;} .w-mc{width: 4.0%;}  .w-lse{width: 4.0%;}
@@ -93,27 +92,27 @@ tr.selected td { color: #0369a1; font-weight: 600; }
 
 .calc-cell { font-weight: 700; color: var(--accent); background: #f8fafc; }
 
-/* 🌟 SEARCHABLE INLINE DROPDOWN CORE STYLING */
-.edit-input { width: 100%; font-size: 10px; font-weight: 500; border: 1px solid var(--accent); padding: 2px; text-align: center; outline: none; border-radius: 4px; background: var(--card-bg); height: 20px; }
+/* SEARCHABLE INLINE DROPDOWN CORE STYLING */
+.edit-input { width: 100%; font-size: 10px; font-weight: 500; border: 1px solid var(--accent); padding: 2px; text-align: center; outline: none; border-radius: 4px; background: var(--card-bg); height: 22px; }
 .searchable-dropdown-container { position: relative; width: 100%; }
 .searchable-dropdown-list {
     position: fixed; 
     max-height: 120px; overflow-y: auto;
     background: var(--card-bg); border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
-.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.searchable-dropdown-item { padding: 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
 .searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
 
 tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 6px 4px; color: var(--primary); border-right: 1px solid var(--border); }
 
 /* Modern Modal Windows */
 #confirmModal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 6000; backdrop-filter: blur(2px); }
-.modal-content { background: var(--card-bg); padding: 16px; border-radius: 6px; width: 280px; text-align: center; }
-.btn-y { background: var(--accent); color: #fff; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
-.btn-n { background: #f1f5f9; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin-left: 6px; color: #475569; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 8px; width: 300px; text-align: center; box-shadow: var(--shadow-md); }
+.btn-y { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
+.btn-n { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; margin-left: 8px; color: #475569; }
 
 /* Side Audit Feed */
-.audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 320px; background: var(--card-bg); border-left: 1px solid var(--border); display: none; flex-direction: column; z-index: 5500; box-shadow: -10px 0 25px -5px rgba(0,0,0,0.1); }
+.audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 320px; max-width: 90vw; background: var(--card-bg); border-left: 1px solid var(--border); display: none; flex-direction: column; z-index: 5500; box-shadow: -10px 0 25px -5px rgba(0,0,0,0.1); }
 
 /* ================= HARD PRINTER ENGINE COMPILE SYSTEM ================= */
 @media print {
@@ -121,9 +120,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
     body { background: var(--card-bg); height: auto; overflow: visible; color: #000; display: block !important; }
     .header, .actions, .menu-box, .audit-panel, button, #confirmModal, .view-btns { display: none !important; }
     .section { border: none; margin: 0; padding: 0; overflow: visible; display: block !important; box-shadow: none !important; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible; width: 100%; display: block !important; height: auto !important; }
+    .table-wrap { background: var(--card-bg) !important; overflow: visible; width: 100%; display: block !important; height: auto !important; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
     thead { display: table-header-group !important; }
     tfoot { display: table-footer-group !important; }
@@ -134,6 +131,40 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
     .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
 }
 .print-header-block { display: none; }
+
+/* ================= 📱 MOBILE COMPACT STYLES ================= */
+@media (max-width: 768px) {
+    .header { padding: 6px 8px; }
+    .header-top { flex-direction: column; align-items: stretch; gap: 6px; }
+    .header h2 { font-size: 12px; justify-content: center; margin-bottom: 4px; }
+    
+    .view-btns { justify-content: space-between; }
+    .v-btn { flex: 1; text-align: center; font-size: 8px; padding: 6px 4px; }
+    
+    /* Make filters a 2-column or 3-column scrollable grid on mobile */
+    .filters { grid-template-columns: repeat(3, 1fr); gap: 4px; max-height: 120px; overflow-y: auto; padding-right: 4px; }
+    #searchBox { grid-column: 1 / -1; margin-top: 2px; }
+    .fbox label { font-size: 7.5px; }
+    select, input[type=date], input[type=month], #searchBox { font-size: 9px; height: 26px; padding: 2px 4px; }
+    
+    .actions { padding: 4px 8px; }
+    #rowCount { font-size: 9px; }
+    .dots { width: 24px; height: 24px; font-size: 12px; }
+    
+    .section { margin: 2px; border-radius: 4px; }
+    
+    /* Optimize table density for mobile touch */
+    thead th { padding: 6px 2px; font-size: 8.5px; }
+    tbody td { padding: 6px 2px; font-size: 8.5px; }
+    tfoot td { padding: 6px 2px; font-size: 9px; }
+    
+    /* Allows table to scroll left-right without squishing */
+    table { min-width: 1100px; } 
+}
+
+@media (max-width: 480px) {
+    .filters { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -411,7 +442,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
 </div>
 
 <div id="confirmModal"><div class="modal-content"><h4 id="confirmMsg" style="margin:0 0 12px 0; font-size:13px;"></h4><div style="display:flex; justify-content:center; gap:8px;"><button class="btn-y" id="btnYes">Yes, Proceed</button><button class="btn-n" onclick="closeModal()">Cancel</button></div></div></div>
-<div class="audit-panel" id="auditPanel"><div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;"><b style="font-size:11px;">PRODUCTION EDIT HISTORY</b><span onclick="toggleAudit()" style="cursor:pointer; font-size:18px;">×</span></div><div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:var(--header-bg);"></div></div>
+<div class="audit-panel" id="auditPanel"><div style="padding:10px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;"><b style="font-size:11px;">PRODUCTION EDIT HISTORY</b><span onclick="toggleAudit()" style="cursor:pointer; font-size:18px;">×</span></div><div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:var(--bg);"></div></div>
 
 <script>
 const lookups={brands_list:{{brands_list|tojson or []}},species_list:{{species_list|tojson or []}},varieties_list:{{varieties_list|tojson or []}},grades_list:{{grades_list|tojson or []}},freezers_list:{{freezers_list|tojson or []}},packing_styles_list:{{packing_styles_list|tojson or []}},prod_at_list:{{prod_at_list|tojson or []}},prod_for_list:{{prod_for_list|tojson or []}},prod_types_list:{{prod_types_list|tojson or []}},glazes_list:{{glazes_list|tojson or []}}};
@@ -483,11 +514,9 @@ function applyFilters(){
 
 function selectRow(tr){if(tr.classList.contains('subtotal-row')) return;document.querySelectorAll("#summaryTbody tr,#detailTbody tr").forEach(r=>r.classList.remove("selected"));tr.classList.add("selected");selectedRow=tr;}
 
-/* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS INTEGRATION */
 function enableEdit() {
     if(!selectedRow) return alert("Select a row first!");
     
-    // Close the 3-dot menu smoothly when Edit starts
     document.getElementById("mainMenu").style.display = "none";
     
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
@@ -513,7 +542,6 @@ function enableEdit() {
                 closeAllInlineDropdowns();
                 const listEl = td.querySelector('.searchable-dropdown-list');
                 
-                // Fixed position calculations to overcome table overflow hidden clipping
                 const rect = inputEl.getBoundingClientRect();
                 listEl.style.top = (rect.bottom + 2) + "px";
                 listEl.style.left = rect.left + "px";
@@ -525,7 +553,6 @@ function enableEdit() {
         }
     });
     
-    // Auto close dropdown when table scrolls
     document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
@@ -557,14 +584,10 @@ function closeAllInlineDropdowns() {
     document.querySelectorAll('.searchable-dropdown-list').forEach(list => { list.style.display = 'none'; });
 }
 
-// 🟢 BULLET-PROOF 3-DOT MENU & DROPDOWN EVENT LISTENER
 document.addEventListener('click', function(e) {
-    // 1. Close Inline Searchable Dropdowns if clicked outside
     if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
     }
-    
-    // 2. Manage 3-Dot Menu 
     const mainMenu = document.getElementById("mainMenu");
     if (mainMenu) {
         if (e.target.closest('.dots')) return;

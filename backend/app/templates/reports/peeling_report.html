@@ -59,9 +59,7 @@ select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:4px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{
-    background: var(--card-bg) !important;
-} flex: 1; overflow: auto; width: 100%; background: var(--card-bg); -webkit-overflow-scrolling: touch; } 
+.table-wrap{ flex: 1; overflow: auto; width: 100%; background: var(--card-bg) !important; -webkit-overflow-scrolling: touch; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100px; } 
 
@@ -139,9 +137,7 @@ tfoot td{
     body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
     .header, .actions, .menu-box, .audit-panel, button, #confirmModal { display: none !important; }
     .section { border: none; margin: 0; padding: 0; overflow: visible; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible; width: 100%; }
+    .table-wrap{ background: var(--card-bg) !important; overflow: visible; width: 100%; }
     table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
     thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
@@ -149,6 +145,132 @@ tfoot td{
     .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
 }
 .print-header-block { display: none; }
+
+/* ================= MOBILE COMPACT RESPONSIVE CORE ENGINE ================= */
+@media (max-width: 768px) {
+    body { overflow: hidden; height: 100vh; }
+    .header { padding: 6px 10px; }
+    .header h2 { font-size: 11px; }
+    
+    .filters { 
+        grid-template-columns: repeat(2, 1fr) !important; 
+        gap: 4px; 
+        max-height: 120px; 
+        overflow-y: auto; 
+        padding: 4px;
+    }
+    #searchBox { grid-column: span 2 !important; height: 24px; font-size: 10px; }
+    .fbox label { font-size: 7.5px; }
+    select, input[type=date], input[type=month] { height: 22px; font-size: 9.5px; padding: 2px 4px; }
+    
+    .actions { padding: 4px 10px; }
+    #rowCount { font-size: 9px; }
+    .dots { width: 22px; height: 22px; font-size: 10px; }
+    
+    .section { margin: 2px; }
+    .table-wrap { overflow-y: auto; overflow-x: hidden; padding: 2px; }
+    
+    table { min-width: 100% !important; display: block; }
+    thead { display: none; }
+    tbody { display: block; width: 100%; }
+    
+    tr {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px 8px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-bottom: 6px;
+        padding: 6px 8px;
+        position: relative;
+        box-sizing: border-box;
+        width: 100% !important;
+    }
+    tr.selected { background: #f0f7ff !important; border: 1px solid var(--accent) !important; border-left: 4px solid var(--accent) !important; }
+    
+    td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: left !important;
+        padding: 2px 0 !important;
+        border: none !important;
+        font-size: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Absolute Floating Element for Mobile Record Count Card Index */
+    td.slno {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        font-size: 8px !important;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: #f1f5f9;
+        padding: 1px 4px !important;
+        border-radius: 3px;
+        width: auto !important;
+        min-width: unset !important;
+        display: inline-block !important;
+    }
+    td.slno::before { content: "#"; margin-right: 1px; }
+    
+    /* Expand master text metrics to spans full width inside responsive card block */
+    td[data-field="contractor_name"],
+    td[data-field="variety_name"],
+    td[data-field="peeling_at"] {
+        grid-column: span 2;
+        border-bottom: 1px dashed #e2e8f0 !important;
+        padding-bottom: 4px !important;
+        margin-bottom: 2px;
+    }
+    
+    /* Prepend inline titles dynamically for card layout metrics */
+    td:nth-child(2)::before { content: "Date:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td:nth-child(3)::before { content: "Batch:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="contractor_name"]::before { content: "Contractor:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="variety_name"]::before { content: "Variety:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="hlso_count"]::before { content: "Count:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="hlso_qty"]::before { content: "HLSO Kg:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="peeled_qty"]::before { content: "Peeled Kg:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td.target-val::before { content: "Tgt %:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td.yield-cell::before { content: "Act %:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td.diff-cell::before { content: "Diff %:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td.diff-kg-cell::before { content: "Diff Kg:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="rate"]::before { content: "Rate:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td.amt-cell::before { content: "Amount:"; font-weight: 700; color: var(--primary); font-size: 8px; text-transform: uppercase; }
+    td[data-field="peeling_at"]::before { content: "Peeling At:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td[data-field="production_for"]::before { content: "Prod For:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    td:nth-child(17)::before { content: "User:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    
+    /* Inline Editor Layout Constraints for Mobile Devices */
+    .edit-input { width: 60% !important; height: 20px; font-size: 9.5px; text-align: right; padding: 1px 4px; margin-left: auto; }
+    .searchable-dropdown-container { width: 60% !important; margin-left: auto; }
+    
+    /* Sticky Total Calculation Summary Matrix Drawer */
+    tfoot { display: block; width: 100%; background: var(--header-bg); border-top: 2px solid var(--primary); }
+    tfoot tr { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 4px 8px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
+    tfoot td { display: none !important; border: none !important; padding: 1px 0 !important; font-size: 9px !important; justify-content: space-between !important; align-items: center !important; }
+    
+    tfoot td#tot_hlso, tfoot td#tot_peeled, tfoot td#avg_yield, tfoot td#avg_diff, tfoot td#tot_diff_kg, tfoot td#tot_amt { display: flex !important; width: 100% !important; text-align: right !important; }
+    
+    tfoot td#tot_hlso::before { content: "Tot HLSO:"; font-weight: 700; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    tfoot td#tot_peeled::before { content: "Tot Peeled:"; font-weight: 700; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    tfoot td#avg_yield::before { content: "Avg Yield:"; font-weight: 700; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    tfoot td#avg_diff::before { content: "Avg Diff:"; font-weight: 700; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    tfoot td#tot_diff_kg::before { content: "Tot Diff Kg:"; font-weight: 700; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
+    tfoot td#tot_amt::before { content: "Tot Amount:"; font-weight: 800; color: var(--primary); font-size: 8px; text-transform: uppercase; }
+    
+    tfoot td#tot_amt { grid-column: span 2; border-top: 1px dashed var(--border) !important; padding-top: 4px !important; margin-top: 2px; font-size: 10px !important; }
+    
+    .audit-panel { width: 100% !important; z-index: 99999; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -317,7 +439,6 @@ tfoot td{
     <div id="auditContent" style="padding:8px; overflow-y:auto; flex:1; background:var(--header-bg);"></div>
 </div>
 
-
 <script>
 const lookups = {
     contractor: {{ contractors|tojson or [] }},
@@ -328,7 +449,6 @@ const lookups = {
 let selectedRow = null, currentAction = null;
 const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 
-/* 🌟 ROUTING ENGINE FIXED: Exact dynamic baseline matching prefix with direct path injection */
 const baseUrl = window.location.pathname;
 
 function changeFY(val) {
@@ -444,7 +564,6 @@ document.getElementById("btnYes").onclick = async () => {
     const contractor = document.getElementById("f_contractor").value;
     const month = document.getElementById("f_month").value;
 
-    /* 🌟 FIX: Absolute template context tracking matching '/reports/peeling_report/export_pdf' structure perfectly */
     if (currentAction === 'pdf_table') window.location.href = `${baseUrl}/export_pdf?ids=${ids}`;
     else if (currentAction === 'excel_table') window.location.href = `${baseUrl}/export_excel?ids=${ids}`;
     else if (currentAction === 'print_bill') {
@@ -461,7 +580,6 @@ document.getElementById("btnYes").onclick = async () => {
     }
 };
 
-/* 🌟 SEARCHABLE INLINE DROPDOWN HANDLERS */
 function enableEdit() {
     if(!selectedRow) return alert("Select a row!");
     selectedRow.querySelectorAll(".editable, .lookup").forEach(td => {
@@ -487,7 +605,6 @@ function enableEdit() {
                 closeAllInlineDropdowns();
                 const listEl = td.querySelector('.searchable-dropdown-list');
                 
-                // 🟢 Fixed position calculations to overcome table overflow hidden clipping
                 const rect = inputEl.getBoundingClientRect();
                 listEl.style.top = (rect.bottom + 2) + "px";
                 listEl.style.left = rect.left + "px";
@@ -499,7 +616,6 @@ function enableEdit() {
         }
     });
     
-    // 🟢 Auto close dropdown when table scrolls
     document.querySelector('.table-wrap').addEventListener('scroll', closeAllInlineDropdowns);
 }
 
@@ -641,22 +757,26 @@ function fillFilters() {
     Object.keys(sets).forEach(k => {
         const sel = document.getElementById(`f_${k}`);
         if(sel) {
-            sel.innerHTML = `<option value="">All ${k.replace('_',' ')}s</option>`;
-            [...sets[k]].sort().forEach(v => { if(v) sel.innerHTML += `<option value="${v}">${v}</option>`; });
+            sets[k].forEach(v => {
+                if(v.trim() !== "") {
+                    const opt = document.createElement("option");
+                    opt.value = v; opt.innerText = v;
+                    sel.appendChild(opt);
+                }
+            });
         }
     });
 }
 
-fillFilters();
-const filterEls = [document.getElementById("f_month"), document.getElementById("f_from"), document.getElementById("f_to"), 
-                   document.getElementById("f_batch"), document.getElementById("f_contractor"), document.getElementById("f_variety"), 
-                   document.getElementById("f_peeling"), document.getElementById("f_prod_for")];
+document.getElementById("searchBox").oninput = applyFilters;
+document.querySelectorAll(".filters select, .filters input").forEach(el => {
+    if(el.id !== "f_fy") el.onchange = applyFilters;
+});
 
-filterEls.forEach(el => { if(el) el.onchange = applyFilters; });
-if(document.getElementById("searchBox")) searchBox.oninput = applyFilters;
-
-window.onload = applyFilters;
+window.onload = () => {
+    fillFilters();
+    applyFilters();
+};
 </script>
-<script src="/static/js/global-loader.js"></script>
 </body>
 </html>

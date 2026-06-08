@@ -6,6 +6,8 @@ from sqlalchemy import func, extract, or_, and_
 from datetime import date, timedelta, datetime
 import logging
 
+from urllib3 import request
+
 from app.database import get_db
 from app.database.models.processing import (
     GateEntry, RawMaterialPurchasing, DeHeading, 

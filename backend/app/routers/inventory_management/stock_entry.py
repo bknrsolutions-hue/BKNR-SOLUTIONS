@@ -5,6 +5,12 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct
 from datetime import datetime, date
+from app.services.inventory_summary_service import (
+    InventorySummaryService
+)
+from app.services.production_requirements_service import (
+    ProductionRequirementService
+)
 
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry, pending_orders
@@ -203,7 +209,15 @@ def save_stock_in(
     )
     db.add(entry)
     db.commit()
+    InventorySummaryService.refresh_inventory_summary(
+    db=db,
+    company_id=company_code
+    )
 
+    ProductionRequirementService.refresh_requirements(
+    db=db,
+    company_id=company_code
+  )
     request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 
@@ -328,5 +342,14 @@ def stock_out_save(
         db.add(entry)
 
     db.commit()
+    InventorySummaryService.refresh_inventory_summary(
+    db=db,
+    company_id=company_code
+    )
+
+    ProductionRequirementService.refresh_requirements(
+    db=db,
+    company_id=company_code
+    )
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)

@@ -38,7 +38,7 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 50px
   background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none; /* Initially Hidden */
+  display: none; /* JS handles auto-open */
 }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 15px; }
@@ -56,25 +56,25 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 /* CONTROL ACTIONS HEAD */
 .table-header-bar {
   width: 95%; max-width: 1400px; margin: 15px auto 5px;
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: space-between; align-items: flex-start;
   position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; padding-top: 8px;}
 
-.top-actions { margin: 0; display: flex; justify-content: flex-end; }
+.top-actions { margin: 0; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
 .btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.actions { text-align: center; display: flex; justify-content: center; gap: 8px; margin-top: 15px; width: 100%; }
 .btn {
   background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
+  padding: 10px 24px; border-radius: 6px; font-size: 11px;
   font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
 }
 .btn-clear { background: #f1f5f9; color: var(--muted); }
 .btn:hover { background: var(--accent); }
 
 /* ================= TABLE TOP INLINE 3-DOT MENU ================= */
-.menu-container { position: relative; display: none; }
+.menu-container { position: relative; display: none; margin-top: 8px;}
 .dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 #dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
 
@@ -82,9 +82,12 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 .menu-item:hover { background: #f0f7ff; color: var(--accent); }
 
 /* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap{
+.table-wrap {
     background: var(--card-bg) !important;
-} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+    width: 95%; max-width: 1400px; margin: 0 auto 40px; 
+    border-radius: 8px; border: 1px solid var(--border); 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; display: block; 
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
@@ -105,13 +108,11 @@ tr.selected { background: #eff6ff !important; }
 .card-val { font-weight: 700; color: var(--primary); }
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
-  .mobile-card-list { display: block; }
+  .table-wrap { display: none !important; }
+  .mobile-card-list { display: block !important; }
   .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+  .actions { flex-direction: column-reverse; }
+  .btn, .btn-toggle { width: 100% !important; height: 36px; padding: 0 !important; line-height: 1; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -144,7 +145,18 @@ tr.selected { background: #eff6ff !important; }
     <input type="hidden" id="meta_time">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE VEHICLE</button>
+      <button class="btn btn-primary" type="submit" id="submitBtn">SAVE VEHICLE</button>
+      
+      {% if today_data %}
+      <button 
+          type="button" 
+          class="btn" 
+          onclick="window.location.href='/criteria/setup/next'" 
+          style="background: var(--accent); color: white; border: none;">
+          NEXT <i class="fa-solid fa-arrow-right"></i>
+      </button>
+      {% endif %}
+
       <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
   </div>
@@ -155,9 +167,19 @@ tr.selected { background: #eff6ff !important; }
 <div class="table-header-bar">
     <h3 class="table-title">Registered Fleet Roster</h3>
     
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Vehicle</button>
+            <button class="btn-toggle btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Vehicle</button>
+            
+            {% if today_data %}
+            <button 
+                type="button" 
+                class="btn-toggle" 
+                onclick="window.location.href='/criteria/setup/next'" 
+                style="background: var(--accent); color: white; border: none; width: 100%;">
+                NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            {% endif %}
         </div>
 
         <div class="menu-container" id="threeDotsMenu">
@@ -224,6 +246,22 @@ tr.selected { background: #eff6ff !important; }
 
 <script>
 let selectedElement = null;
+
+/* -------------------------------------
+   AUTO-OPEN ON EMPTY
+-------------------------------------- */
+window.onload = function() {
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) {
+            toggle.style.display = "none";
+        }
+    }
+}
 
 function toggleForm() {
     const f = document.getElementById("formSection");
@@ -304,6 +342,7 @@ function editSelected(){
   document.getElementById("record_id").value = d.id;
   document.getElementById("vehicle_number").value = d.number;
   
+  document.getElementById("submitBtn").innerText = "UPDATE VEHICLE";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -333,6 +372,7 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("vehicleForm").reset();
   document.getElementById("record_id").value = "";
+  document.getElementById("submitBtn").innerText = "SAVE VEHICLE";
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   

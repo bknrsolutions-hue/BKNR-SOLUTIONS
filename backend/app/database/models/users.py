@@ -26,6 +26,9 @@ class Company(Base):
 
     # relationships
     users = relationship("User", back_populates="company")
+    # NEW
+    setup_completed = Column(Boolean, default=False)
+
 
     # self reference (optional use)
     sub_companies = relationship("Company")
@@ -73,3 +76,4 @@ class OTPTable(Base):
     is_used = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+    

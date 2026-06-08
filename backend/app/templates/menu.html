@@ -300,13 +300,37 @@ body {
 
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
+/* 🌟 RESPONSIVE MEDIA QUERIES (FIXED FOR LOGOUT BUTTON VISIBILITY) 🌟 */
 @media (max-width: 1024px) {
     .app-container { padding: 8px; gap: 8px;}
     .iframe-wrapper { border-radius: 16px; }
-    .company-header-badge { font-size: 12px; }
-    .user-profile span { display: none; }
+    
+    /* Truncate company name to prevent pushing right elements out */
+    .company-header-badge { 
+        font-size: 12px; 
+        max-width: 180px; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+    }
+    
+    .user-profile span { display: none; } /* Hide user name */
     .user-profile { padding: 6px; }
     .app-header { padding: 0 16px; border-radius: 16px;}
+}
+
+@media (max-width: 600px) {
+    /* Hide company name completely on mobile to guarantee action buttons fit */
+    .company-header-badge { display: none; } 
+    
+    .header-left-meta { gap: 8px; }
+    .header-right-actions { gap: 8px; }
+    
+    /* Slightly shrink action buttons */
+    .theme-toggle-btn, .logout-btn { width: 36px; height: 36px; font-size: 13px; }
+    .user-profile .avatar { width: 28px; height: 28px; }
+    
+    .app-header { padding: 0 12px; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -759,10 +783,10 @@ function loadPage(url, element) {
     toggleSidebar(false);
 }
 
-async function logout(){
-    if(confirm("Terminate Secure Workspace Session?")) { 
-        await fetch("/auth/logout"); 
-        window.location.href="/"; 
+/* 🌟 REPLACED FETCH LOGOUT WITH window.top.location 🌟 */
+function logout() {
+    if(confirm("Terminate Secure Workspace Session?")) {
+        window.top.location.href = "/auth/logout";
     }
 }
 
