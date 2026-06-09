@@ -23,7 +23,6 @@
 <style>
 /* 🌟 NEXT-LEVEL MENU VARIABLES (DARK MODE FIRST) 🌟 */
 :root {
-    /* DARK MODE DEFAULT */
     --bg-app: #0f172a;             
     --surface-panel: #1e293b;      
     --glass-bg: rgba(30, 41, 59, 0.75); 
@@ -92,7 +91,7 @@ body {
 }
 .sidebar-overlay.show { display: block; opacity: 1; }
 
-/* 🌟 FLOATING SIDEBAR (HIDDEN BY DEFAULT EVERYWHERE) 🌟 */
+/* 🌟 FLOATING SIDEBAR 🌟 */
 .sidebar {
     width: var(--sidebar-w);
     background: var(--surface-panel);
@@ -149,6 +148,9 @@ body {
     padding: 0 32px 8px; 
     font-size: 10px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary);
+}
+.pillar-title.super-admin-title {
+    color: #ef4444;
 }
 
 .menu-wrapper { margin-bottom: 4px; }
@@ -208,6 +210,7 @@ body {
 }
 .submenu-item-row:hover .kpi-badge { color: var(--text-primary); }
 .submenu-item.active .kpi-badge { background: rgba(255,255,255,0.15); color: #FFFFFF; border: none; box-shadow: none;}
+.kpi-badge.super-badge { border-color: #ef4444; color: #ef4444; } 
 
 /* Sidebar Footer */
 .sidebar-footer { padding: 24px; border-top: 1px solid var(--border-light); text-align: center; transition: border-color 0.3s ease;}
@@ -257,7 +260,6 @@ body {
 
 .header-right-actions { display: flex; align-items: center; gap: 16px; }
 
-/* 🌟 THEME TOGGLE BUTTON 🌟 */
 .theme-toggle-btn {
     background: var(--surface-panel); width: 40px; height: 40px; border-radius: 50%;
     color: var(--text-secondary); font-size: 16px; cursor: pointer; 
@@ -289,7 +291,6 @@ body {
 }
 .logout-btn:hover { color: #FF3B30; box-shadow: var(--shadow-float); }
 
-/* 🌟 FLOATING IFRAME WORKSPACE 🌟 */
 .iframe-wrapper {
     flex: 1; background: var(--surface-panel); 
     border-radius: var(--radius-panel); overflow: hidden;
@@ -300,36 +301,21 @@ body {
 
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
-/* 🌟 RESPONSIVE MEDIA QUERIES (FIXED FOR LOGOUT BUTTON VISIBILITY) 🌟 */
 @media (max-width: 1024px) {
     .app-container { padding: 8px; gap: 8px;}
     .iframe-wrapper { border-radius: 16px; }
-    
-    /* Truncate company name to prevent pushing right elements out */
-    .company-header-badge { 
-        font-size: 12px; 
-        max-width: 180px; 
-        white-space: nowrap; 
-        overflow: hidden; 
-        text-overflow: ellipsis; 
-    }
-    
-    .user-profile span { display: none; } /* Hide user name */
+    .company-header-badge { font-size: 12px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-profile span { display: none; } 
     .user-profile { padding: 6px; }
     .app-header { padding: 0 16px; border-radius: 16px;}
 }
 
 @media (max-width: 600px) {
-    /* Hide company name completely on mobile to guarantee action buttons fit */
     .company-header-badge { display: none; } 
-    
     .header-left-meta { gap: 8px; }
     .header-right-actions { gap: 8px; }
-    
-    /* Slightly shrink action buttons */
     .theme-toggle-btn, .logout-btn { width: 36px; height: 36px; font-size: 13px; }
     .user-profile .avatar { width: 28px; height: 28px; }
-    
     .app-header { padding: 0 12px; }
 }
 </style>
@@ -396,12 +382,10 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
     
-    // Update main layout
     document.documentElement.setAttribute("data-theme", newTheme);
     localStorage.setItem("theme", newTheme);
     updateThemeIcon(newTheme);
     
-    // Push the theme to the iframe instantly
     try {
         const frameDoc = document.getElementById('frame').contentDocument || document.getElementById('frame').contentWindow.document;
         if(frameDoc) frameDoc.documentElement.setAttribute("data-theme", newTheme);
@@ -417,24 +401,20 @@ function updateThemeIcon(theme) {
     }
 }
 
-// Set initial icon on load
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem("theme") || "dark";
     updateThemeIcon(savedTheme);
 });
 
-
-// 🌟 MASTER IFRAME INJECTOR (NUCLEAR OPTION) 🌟
+// 🌟 MASTER IFRAME INJECTOR 🌟
 const frame = document.getElementById('frame');
 frame.addEventListener('load', () => {
     try {
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
         
-        // 1. Sync theme to iframe HTML tag
         frameDoc.documentElement.setAttribute("data-theme", currentTheme);
         
-        // 2. Inject bknr-standard.css dynamically with Cache Busting
         if (!frameDoc.getElementById('master-theme-enforcer')) {
             let enforceLink = frameDoc.createElement("link");
             enforceLink.id = "master-theme-enforcer";
@@ -443,7 +423,6 @@ frame.addEventListener('load', () => {
             frameDoc.head.appendChild(enforceLink);
         }
 
-        // 3. Inject Nuclear Dark Mode overrides directly into head
         if (!frameDoc.getElementById('nuclear-dark-mode')) {
             let nuclearStyle = frameDoc.createElement("style");
             nuclearStyle.id = 'nuclear-dark-mode';
@@ -454,47 +433,40 @@ frame.addEventListener('load', () => {
                 html[data-theme="dark"] .kpi-card, 
                 html[data-theme="dark"] .rm-summary-box, 
                 html[data-theme="dark"] .chart-box, 
-                html[data-theme="dark"] .bg-white {
-                    background-color: #1e293b !important;
-                    background: #1e293b !important;
-                    color: #f8fafc !important;
-                    border-color: #334155 !important;
-                }
+                html[data-theme="dark"] .bg-white { background-color: #1e293b !important; background: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
                 html[data-theme="dark"] table th, 
                 html[data-theme="dark"] table td, 
                 html[data-theme="dark"] th[style*="sticky"], 
                 html[data-theme="dark"] td[style*="sticky"],
-                html[data-theme="dark"] .sticky-col {
-                    background-color: #1e293b !important; 
-                    background: #1e293b !important;
-                    color: #f8fafc !important;
-                    border-color: #334155 !important;
-                }
-                html[data-theme="dark"] thead th {
-                    background-color: #0f172a !important;
-                    background: #0f172a !important;
-                }
-                html[data-theme="dark"] .grand-total-row td {
-                    background-color: #0f172a !important;
-                    color: #60a5fa !important;
-                }
+                html[data-theme="dark"] .sticky-col { background-color: #1e293b !important; background: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
+                html[data-theme="dark"] thead th { background-color: #0f172a !important; background: #0f172a !important; }
+                html[data-theme="dark"] .grand-total-row td { background-color: #0f172a !important; color: #60a5fa !important; }
             `;
             frameDoc.head.appendChild(nuclearStyle);
         }
 
-        // Keep your original table search function
         if(typeof initializeSearchableColumns === "function") {
             initializeSearchableColumns(frameDoc);
         }
-        
     } catch(e) {
-        console.warn("Iframe injection blocked (Cross-Origin Policy).");
+        console.warn("Iframe injection blocked.");
     }
 });
 
+// 🌟 BACKEND CONSTANTS FOR ROLE BASED ACCESS 🌟
+const permissions = {{ request.session.get('permissions')|tojson|default("[]") }};
+const currentUserRole = "{{ request.session.get('role', '') }}"; 
+const currentUserEmail = "{{ request.session.get('email', '') }}"; // GET EMAIL FOR OVERRIDE
 
-const permissions = {{ request.session.get('permissions')|tojson }};
-function allow(key){ return permissions.includes("ALL") || permissions.includes(key); }
+// 🔴 MASTER OVERRIDE FOR DEFAULT SUPER ADMIN 🔴
+const isDefaultSuperAdmin = (currentUserEmail === "bknr.solutions@gmail.com");
+
+function allow(key){ 
+    // Super Admin sees everything unconditionally
+    if (isDefaultSuperAdmin) return true;
+    if (!permissions) return false;
+    return permissions.includes("ALL") || permissions.includes(key); 
+}
 
 function initializeSearchableColumns(doc) {
     const selects = doc.querySelectorAll('select');
@@ -505,6 +477,7 @@ function initializeSearchableColumns(doc) {
     });
 }
 
+// 🌟 DYNAMIC MENU DATA 🌟
 const menuData = [
     {
         title: "DASHBOARDS",
@@ -557,7 +530,6 @@ const menuData = [
             }
         ]
     },
-
     {
         title: "REPORTS",
         subgroups: [
@@ -664,6 +636,22 @@ const menuData = [
             ['add_user', '/admin/add_user', 'fa-user-gear', 'User Configuration', 'Admin'],
             ['data_management','/data-management','fa-database','Data Management','Admin']
         ]
+    },
+    {
+        title: "HELP & SUPPORT",
+        items: [
+            ['raise_ticket', '/support/my_tickets', 'fa-ticket', 'My Complaints', 'Help']
+        ]
+    },
+    // 🔴 🌟 SUPER ADMIN EXCLUSIVE PANEL 🌟 🔴
+    {
+        title: "SUPER ADMIN PANEL",
+        roleRequired: "Super Admin", // Condition checked in renderOrganizedMenu
+        items: [
+            ['admin_helpdesk', '/admin/all_tickets', 'fa-headset', 'User Complaints (Helpdesk)', 'Live'],
+            ['manage_support', '/admin/support_team', 'fa-user-shield', 'Add Support Team', 'Config'],
+            ['user_activity', '/admin/activities', 'fa-user-clock', 'User Activity Logs', 'Logs']
+        ]
     }
 ];
 
@@ -674,6 +662,12 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 function renderOrganizedMenu() {
     let html = "";
     menuData.forEach(cat => {
+        // 🔴 CHECK FOR SUPER ADMIN ROLE OR MASTER EMAIL OVERRIDE 🔴
+        if (cat.roleRequired) {
+            const hasRoleAccess = (currentUserRole === cat.roleRequired) || isDefaultSuperAdmin;
+            if (!hasRoleAccess) return; // Skip if no access
+        }
+
         let hasVisible = false;
         
         if (cat.items) {
@@ -684,8 +678,10 @@ function renderOrganizedMenu() {
         
         if (!hasVisible) return;
 
+        const titleClass = cat.roleRequired ? "pillar-title super-admin-title" : "pillar-title";
+
         html += `<div class="pillar-block">
-                   <div class="pillar-title">${cat.title}</div>
+                   <div class="${titleClass}">${cat.title}</div>
                    <div class="menu-wrapper">`;
 
         if (cat.items) {
@@ -694,7 +690,10 @@ function renderOrganizedMenu() {
                 if (!isDisabled && !allow(permissionKey)) return;
                 
                 const disabledClass = isDisabled ? "disabled-link" : "";
-                const badgeClass = isDisabled ? "kpi-badge disabled-badge" : "kpi-badge";
+                
+                const isSuperAdminBlock = cat.roleRequired ? "super-badge" : "";
+                const badgeClass = isDisabled ? `kpi-badge disabled-badge ${isSuperAdminBlock}` : `kpi-badge ${isSuperAdminBlock}`;
+                
                 const clickHandler = isDisabled ? `onclick="loadPage('#', this)"` : `onclick="loadPage('${route}', this)"`;
 
                 html += `<div class="submenu-item-row">
@@ -779,11 +778,9 @@ function loadPage(url, element) {
         }
     }
     
-    // 🌟 Menu is now a drawer, so auto-close it when a link is clicked on ALL devices 🌟
     toggleSidebar(false);
 }
 
-/* 🌟 REPLACED FETCH LOGOUT WITH window.top.location 🌟 */
 function logout() {
     if(confirm("Terminate Secure Workspace Session?")) {
         window.top.location.href = "/auth/logout";

@@ -1,366 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <title>GENERAL STOCK REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<script>
+    function syncTheme() {
+        try {
+            if (window.parent && window.parent.document) {
+                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                document.documentElement.setAttribute("data-theme", pTheme);
+            }
+        } catch(e) {}
+    }
+    syncTheme();
+    window.addEventListener('load', syncTheme);
+</script>
+
 <style>
+/* 🌟 THEME VARIABLES 🌟 */
 :root {
-    --primary: #0f172a;
-    --accent: #2563eb;
-    --border: #e2e8f0;
-    --bg: #f8fafc;
-    --card-bg: #ffffff;
-    --header: #ffffff;
-    --text: #0f172a;
-    --text-muted: #64748b;
-    --danger: #dc2626;
-    --success: #16a34a;
-    --warning: #d97706;
-    --table-header: #f1f5f9;
-    --row-hover: #f0f9ff;
-    --selected-row: #e2e8f0;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-* { box-sizing: border-box; font-family: 'Inter', Arial, sans-serif; }
-body { margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--text); -webkit-font-smoothing: antialiased; }
-
-/* Header & Controls */
-.header { background: var(--header); padding: 8px 12px; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 20; }
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
-.header h2 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.header h2::before { content: ''; display: inline-block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
-
-/* Filter Bar Optimization */
-.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 6px; background: var(--card-bg); padding: 0; border: none; }
-.fbox { display: flex; flex-direction: column; gap: 2px; }
-.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
-
-select, input[type=date], input[type=month], #searchBox { padding: 4px 6px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); outline: none; transition: all 0.2s ease; height: 24px; width: 100%; }
-select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
-#searchBox { grid-column: span 2; border-left: 3px solid var(--accent); font-weight: 500; }
-#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
-
-/* Action Toolbar */
-.actions { background: var(--card-bg); padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 15; }
-#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); background: rgba(37, 99, 235, 0.08); padding: 4px 8px; border-radius: 12px; }
-
-/* Dropdown Menu */
-.menu-box { position: relative; }
-.dots { width: 26px; height: 26px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 14px; color: var(--text-muted); transition: all 0.2s; user-select: none; }
-.dots:hover { background: var(--table-header); color: var(--primary); border-color: #cbd5e1; }
-.menu-list { position: absolute; right: 0; top: 32px; width: 210px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 5000; box-shadow: var(--shadow-md); padding: 4px 0; }
-.menu-list div { padding: 8px 12px; font-size: 11px; font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-.menu-list div:hover { background: #f1f5f9; color: var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.menu-list hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-
-/* Table Section Setup */
-.section { flex: 1; margin: 4px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-sm); }
-.table-wrap { background: var(--card-bg) !important; flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 1200px; }
-
-/* Table Styling */
-thead th { background: var(--table-header); padding: 8px 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10; color: #475569; text-align: center; }
-tbody td { padding: 6px 4px; font-size: 9.5px; font-weight: 500; border-bottom: 1px solid var(--border); border-right: 1px solid #f1f5f9; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; }
-tbody tr:hover { background: var(--row-hover); cursor: pointer; }
-tr.selected { background: #e0f2fe !important; border-left: 3px solid var(--accent); }
-tr.selected td { color: #0369a1; font-weight: 600; }
-
-.empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); }
-.empty-state i { font-size: 32px; margin-bottom: 10px; color: var(--accent); opacity: 0.4; }
-
-/* Fixed Proportional Layout Sizing Grid */
-.w-sl{width: 3%;} .w-dt{width: 6.5%;} .w-tm{width: 5.5%;} .w-id{width: 4.5%;}
-.w-grn{width: 8%;}  .w-item{width: 18%;} .w-unit{width: 5%;} .w-mov{width: 6.5%;}
-.w-qty{width: 7%;} .w-open{width: 8%;} .w-avail{width: 8%;} .w-min{width: 7%;}
-
-.calc-cell { font-weight: 700; color: var(--accent); background: #f8fafc; }
-.qty-in { color: var(--success); font-weight: 800; }
-.qty-out { color: var(--danger); font-weight: 800; }
-
-.low {
-  color: var(--warning); font-weight: 800;
-  background: rgba(249, 115, 22, 0.1); padding: 2px 6px;
-  border-radius: 4px; display: inline-block; border: 1px solid var(--warning);
+    --primary: #4338ca; --primary-light: #eef2ff; --secondary: #0ea5e9;
+    --success: #059669; --danger: #dc2626; --warning: #d97706;
+    --bg: #f8fafc; --panel: #ffffff; --card-bg: #ffffff; --border: #e2e8f0;
+    --text-main: #0f172a; --text-sub: #64748b;
+    --input-bg: #ffffff;
+    --table-th-bg: #f1f5f9; --table-td-border: #f8fafc;
 }
 
-tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 6px 4px; color: var(--primary); border-right: 1px solid var(--border); }
+[data-theme="dark"] {
+    --primary: #818cf8; --primary-light: rgba(99, 102, 241, 0.15); --secondary: #38bdf8;
+    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+    --bg: #0f172a; --panel: #1e293b; --card-bg: #1e293b; --border: #334155;
+    --text-main: #f8fafc; --text-sub: #94a3b8;
+    --input-bg: #0f172a;
+    --table-th-bg: #0f172a; --table-td-border: #1e293b;
+}
 
-/* ================= HARD PRINTER ENGINE COMPILE SYSTEM ================= */
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text-main); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+
+/* HEADER */
+.header { position: sticky; top: 0; z-index: 100; background: var(--card-bg); padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.header-titles h2 { margin: 0; font-size: 16px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* FILTERS GRID */
+.filters { width: 95%; max-width: 1400px; margin: 15px auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.fbox { display: flex; flex-direction: column; gap: 4px; }
+.fbox label { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+
+select, input[type=date], input[type=month], #searchBox { padding: 9px 12px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); outline: none; transition: all 0.2s ease; width: 100%; }
+select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+#searchBox { grid-column: 1 / -1; border-left: 3px solid var(--primary); }
+
+/* Control Actions Bar */
+.table-header-bar { width: 95%; max-width: 1400px; margin: 20px auto 5px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 8px;}
+#rowCount { font-size: 11px; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 4px 10px; border-radius: 12px; }
+
+.menu-container { position: relative; }
+.dots-trigger { background: var(--primary); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 180px; z-index: 1000; overflow: hidden; padding: 2px;}
+.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: var(--primary); color: #fff; }
+
+/* Table Setup */
+.table-wrap { background: var(--card-bg) !important; width: 95%; max-width: 1400px; margin: 0 auto 40px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; min-width: 1100px; }
+th { background: var(--table-th-bg); color: var(--text-sub); padding: 12px 8px; font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border); text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 10;}
+td { padding: 10px 8px; border-bottom: 1px solid var(--table-td-border); font-size: 11px; color: var(--text-main); text-align: center; white-space: nowrap; }
+tr:hover { background: var(--table-th-bg); }
+
+tfoot td { background: var(--table-th-bg); font-weight: 800; font-size: 11px; border-top: 2px solid var(--border); padding: 10px 8px; color: var(--primary); }
+
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+.card-label { color: var(--text-sub); font-weight: 600; font-size: 9px; text-transform: uppercase; }
+.card-val { font-weight: 700; color: var(--text-main); }
+
+@media(max-width: 1024px){ 
+    .table-wrap { display: none; } 
+    .mobile-card-list { display: block; } 
+    .filters { grid-template-columns: repeat(2, 1fr); } 
+}
 @media print {
-    @page { size: A4 landscape; margin: 5mm; }
-    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; display: block !important; }
-    .header, .actions, .menu-box, button { display: none !important; }
-    .section { border: none; margin: 0; padding: 0; overflow: visible; display: block !important; box-shadow: none !important; }
-    .table-wrap { background: var(--card-bg) !important; overflow: visible; width: 100%; display: block !important; height: auto !important; }
-    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
-    thead { display: table-header-group !important; }
-    tfoot { display: table-footer-group !important; }
-    tr { page-break-inside: avoid !important; }
-    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
-    tfoot td { position: static !important; background: #f1f5f9 !important; border: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .print-header-block { display: flex !important; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 10px; }
-}
-.print-header-block { display: none; }
-
-/* ================= 📱 MOBILE COMPACT STYLES ================= */
-@media (max-width: 768px) {
-    .header { padding: 6px 8px; }
-    .header-top { flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 4px; }
-    .header h2 { font-size: 12px; }
-    
-    .filters { grid-template-columns: repeat(3, 1fr); gap: 4px; max-height: 130px; overflow-y: auto; padding-right: 4px; }
-    #searchBox { grid-column: 1 / -1; margin-top: 2px; }
-    .fbox label { font-size: 7.5px; }
-    select, input[type=date], input[type=month], #searchBox { font-size: 9px; height: 26px; padding: 2px 4px; }
-    
-    .actions { padding: 4px 8px; }
-    #rowCount { font-size: 9px; padding: 2px 8px; }
-    .dots { width: 24px; height: 24px; font-size: 12px; }
-    
-    .section { margin: 2px; border-radius: 4px; }
-    
-    thead th { padding: 6px 2px; font-size: 8px; }
-    tbody td { padding: 6px 2px; font-size: 8.5px; }
-    tfoot td { padding: 6px 2px; font-size: 9px; }
-    
-    table { min-width: 1000px; } 
-}
-
-@media (max-width: 480px) {
-    .filters { grid-template-columns: repeat(2, 1fr); }
+    body { background: #fff; color: #000; display: block !important; overflow: visible; }
+    .header, .filters, .table-header-bar, .mobile-card-list { display: none !important; }
+    .table-wrap { display: block !important; box-shadow: none; border: none; width: 100%; margin: 0; overflow: visible; }
+    table { border: 1px solid #000; min-width: 100%; }
+    th, td { border: 1px solid #000 !important; color: #000 !important; white-space: normal; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
 
-<div class="print-header-block">
-    <div style="text-align: left;">
-        <h2 style="margin:0; font-size:14px; color:#0f172a; font-weight:800; text-transform:uppercase;">{{ request.session.get('company_name', 'BKNR ENTERPRISES') }} ERP</h2>
-        <div style="margin:2px 0 0 0; font-size:9px; font-weight:bold; color:#475569;">GENERAL STOCK LEDGER REPORT</div>
-    </div>
-    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.4;">
-        <div style="color:#2563eb; font-size:9px; text-transform:uppercase;">REPORT VIEW: <span id="printScopeLabel">ALL RECORDS</span></div>
-        <div style="font-size:8px; color:#475569; font-weight:normal; margin-top:1px;">System Printed Ledger Engine Instance</div>
-    </div>
-</div>
-
 <div class="header">
-    <div class="header-top">
-        <h2><i class="fa-solid fa-boxes-stacked" style="margin-right: 4px;"></i> GENERAL STOCK REPORT</h2>
-        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
-            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
-        </div>
+  <div class="header-titles">
+      <h2>General Stock Report</h2>
+  </div>
+</div>
+
+<div class="filters">
+    <div class="fbox">
+        <label>Financial Year *</label>
+        <select id="f_fy" onchange="changeFY(this.value)">
+            <option value="">-- ALL FY --</option>
+            {% for y in range(2024, 2027) %}
+            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
     </div>
-    <div class="filters">
-        <div class="fbox">
-            <label style="color:var(--accent)">Financial Year *</label>
-            <select id="f_fy" onchange="changeFY(this.value)">
-                <option value="">-- SELECT FY --</option>
-                {% set start_yr = 2024 %}
-                {% set end_yr = 2027 %}
-                {% for y in range(start_yr, end_yr) %}
-                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
-                {% endfor %}
-            </select>
+    <div class="fbox"><label>Month View</label><input type="month" id="f_month" onchange="applyFilters()"></div>
+    <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
+    <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
+    <div class="fbox"><label>GRN Number</label>
+        <select id="f_grn" onchange="applyFilters()">
+            <option value="">All GRNs</option>
+            {% for g in dropdown_grn %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="fbox"><label>Master Item</label>
+        <select id="f_item" onchange="applyFilters()">
+            <option value="">All Items</option>
+            {% for i in dropdown_items %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="fbox"><label>Unit</label>
+        <select id="f_unit" onchange="applyFilters()">
+            <option value="">All Units</option>
+            {% for u in dropdown_unit %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="fbox"><label>Movement</label>
+        <select id="f_movement" onchange="applyFilters()">
+            <option value="">All Movements</option>
+            <option value="IN">IN</option>
+            <option value="OUT">OUT</option>
+        </select>
+    </div>
+    <input id="searchBox" placeholder="Quick Search GRN, Item Name, ID..." onkeyup="applyFilters()">
+</div>
+
+<div class="table-header-bar">
+    <h3 class="table-title">Stock Ledger Records <span id="rowCount">{{ records|length }} rows</span></h3>
+    <div class="menu-container" id="threeDotsMenu">
+        <button class="dots-trigger" onclick="toggleMenu(event)"><i class="fa-solid fa-ellipsis-v"></i></button>
+        <div id="dropdownMenu">
+            <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print Report</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            <div onclick="resetFilters()" class="menu-item"><i class="fa-solid fa-rotate-right"></i> Reset Filters</div>
         </div>
-        <div class="fbox"><label>Month</label><input type="month" id="f_month" onchange="applyFilters()"></div>
-        <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
-        <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
-        <div class="fbox"><label>GRN Number</label><select id="f_grn" onchange="applyFilters()"><option value="">All GRNs</option>{% for g in dropdown_grn %}<option value="{{ g }}">{{ g }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Master Item</label><select id="f_item" onchange="applyFilters()"><option value="">All Items</option>{% for i in dropdown_items %}<option value="{{ i }}">{{ i }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Unit</label><select id="f_unit" onchange="applyFilters()"><option value="">All Units</option>{% for u in dropdown_unit %}<option value="{{ u }}">{{ u }}</option>{% endfor %}</select></div>
-        <div class="fbox"><label>Movement</label>
-            <select id="f_movement" onchange="applyFilters()">
-                <option value="">All Movements</option>
-                <option value="IN">IN</option>
-                <option value="OUT">OUT</option>
-            </select>
-        </div>
-        <input id="searchBox" placeholder="Quick Search ID, GRN, Item..." onkeyup="applyFilters()">
     </div>
 </div>
 
-<div class="actions">
-    <div id="rowCount">0 rows found</div>
-    <div class="menu-box">
-        <div class="dots" onclick="toggleMenu(event)">⋮</div>
-        <div class="menu-list" id="mainMenu">
-            <b>📋 Export Options</b>
-            <div onclick="window.print()"><i class="fa-solid fa-print"></i> Print Current View</div>
-            <div onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel Filtered</div>
-            <hr>
-            <div onclick="resetFilters()"><i class="fa-solid fa-rotate-right"></i> Reset Filters</div>
-        </div>
+{% if records %}
+<div class="mobile-card-list">
+    {% for row in records %}
+    <div class="data-card filterable-row" data-date="{{ row.date }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}" data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}">
+        <div class="card-row"><span class="card-label">ID / GRN</span><span class="card-val">#{{ row.id }} | {{ row.grn_number }}</span></div>
+        <div class="card-row"><span class="card-label">Item</span><span class="card-val" style="color:var(--primary);">{{ row.item_name }}</span></div>
+        <div class="card-row"><span class="card-label">Movement / Qty</span><span class="card-val" style="font-weight:800; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">{{ row.movement_type }} ({{ row.quantity }})</span></div>
+        <div class="card-row"><span class="card-label">Available Stock</span><span class="card-val">{{ row.available_stock }} {{ row.unit_name }}</span></div>
+        <div class="card-row"><span class="card-label">Date & Time</span><span class="card-val" style="color: var(--text-sub);">{{ row.date }} | {{ row.time }}</span></div>
     </div>
+    {% endfor %}
 </div>
 
-<div class="section">
-    <div class="table-wrap">
-        <table id="reportTable">
-            <thead>
-                <tr>
-                    <th class="w-sl">#</th>
-                    <th class="w-dt">Date</th>
-                    <th class="w-tm">Time</th>
-                    <th class="w-id">ID</th>
-                    <th class="w-grn">GRN Number</th>
-                    <th class="w-item" style="text-align: left;">Item Name</th>
-                    <th class="w-unit">Unit</th>
-                    <th class="w-mov">Move</th>
-                    <th class="w-qty">Qty</th>
-                    <th class="w-open">Opening</th>
-                    <th class="w-avail">Available</th>
-                    <th class="w-min">Min Lvl</th>
-                </tr>
-            </thead>
-            <tbody id="tbody">
-                {% if not records %}
-                <tr>
-                    <td colspan="12" class="empty-state">
-                        <i class="fa-solid fa-boxes-stacked"></i><br>
-                        <b style="font-size:12px; color:var(--primary);">No Stock Data Found</b><br>
-                        <span style="font-size: 10px;">Select a Financial Year or adjust filters to view records.</span>
-                    </td>
-                </tr>
-                {% else %}
-                    {% for r in records %}
-                    <tr class="data-row" data-date="{{ r.date }}" onclick="selectRow(this)">
-                        <td class="slno"></td>
-                        <td>{{ r.date }}</td>
-                        <td>{{ r.time }}</td>
-                        <td style="color: var(--text-muted);">#{{ r.id }}</td>
-                        <td class="grn-cell" style="font-weight: 700;">{{ r.grn_number }}</td>
-                        <td class="item-cell" style="text-align: left; font-weight: 700; color: var(--primary);">{{ r.item_name }}</td>
-                        <td class="unit-cell">{{ r.unit_name }}</td>
-                        <td class="mov-cell {% if r.movement_type == 'IN' %}qty-in{% else %}qty-out{% endif %}">{{ r.movement_type }}</td>
-                        <td class="qty-val calc-cell" style="text-align: right;">{{ r.quantity }}</td>
-                        <td class="open-val" style="text-align: right;">{{ r.opening_stock }}</td>
-                        <td class="avail-val" style="text-align: right;">
-                            <span class="{{ 'low' if r.available_stock < r.minimum_level and r.available_stock > 0 else '' }}">
-                                {{ r.available_stock }}
-                            </span>
-                        </td>
-                        <td style="color: var(--text-muted); text-align: right;">{{ r.minimum_level }}</td>
-                    </tr>
-                    {% endfor %}
-                {% endif %}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="8" style="text-align:right; padding-right:4px;">PAGE TOTALS:</td>
-                    <td id="tot_qty" style="text-align:right">0.00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>GRN Number</th><th>Item Name</th><th>Unit</th><th>Movement</th><th>Qty</th><th>Opening</th><th>Available</th><th>Minimum</th><th>Date</th><th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in records %}
+      <tr class="filterable-row" data-date="{{ row.date }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}" data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}">
+        <td style="color: var(--text-sub);">{{ row.id }}</td>
+        <td style="font-weight:700;">{{ row.grn_number }}</td>
+        <td class="text-left" style="font-weight:600; color:var(--primary);">{{ row.item_name }}</td>
+        <td>{{ row.unit_name }}</td>
+        <td style="font-weight: 700; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">{{ row.movement_type }}</td>
+        <td class="qty-calc" style="font-weight:700;">{{ row.quantity }}</td>
+        <td>{{ row.opening_stock }}</td>
+        <td>{{ row.available_stock }}</td>
+        <td>{{ row.minimum_level }}</td>
+        <td style="color: var(--text-sub);">{{ row.date }}</td>
+        <td style="color: var(--text-sub);">{{ row.time }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="5" style="text-align:right;">PAGE TOTAL QTY:</td>
+            <td id="tot_qty" style="text-align:center">0.00</td>
+            <td colspan="5"></td>
+        </tr>
+    </tfoot>
+  </table>
 </div>
+{% else %}
+<p style="text-align: center; color: var(--text-sub); margin-top: 40px; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+    <i class="fa-solid fa-boxes-stacked" style="font-size: 40px; opacity: 0.3; display: block; margin-bottom: 10px;"></i>
+    No Records Found for the Selected Criteria
+</p>
+{% endif %}
 
 <script>
-let selectedRow = null;
-const baseUrl = window.location.pathname.replace(/\/$/, "");
-
-// Financial Year Change
+// --- Financial Year URL Logic ---
 function changeFY(val) {
-    if(!val) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('fy', val);
+    if (val) url.searchParams.set('fy', val);
+    else url.searchParams.delete('fy');
     window.location.href = url.toString();
 }
 
-// 3-Dot Menu Toggle
+// --- 3-Dot Menu ---
 function toggleMenu(e) {
-    if(e) { e.preventDefault(); e.stopPropagation(); }
-    const m = document.getElementById("mainMenu");
-    m.style.display = (m.style.display === "block") ? "none" : "block";
+    e.stopPropagation();
+    const d = document.getElementById("dropdownMenu");
+    d.style.display = d.style.display === "block" ? "none" : "block";
+}
+window.onclick = function() {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 
-document.addEventListener('click', function(e) {
-    const mainMenu = document.getElementById("mainMenu");
-    if (mainMenu && !e.target.closest('.dots')) {
-        mainMenu.style.display = "none";
-    }
-});
-
-// Row Selection
-function selectRow(tr) {
-    if(tr.classList.contains('empty-state')) return;
-    document.querySelectorAll(".data-row").forEach(r => r.classList.remove("selected"));
-    tr.classList.add("selected");
-    selectedRow = tr;
-}
-
-// Client-Side Filtering Engine
+// --- Bulletproof JS Filter Logic ---
 function applyFilters() {
-    const q = document.getElementById("searchBox").value.toLowerCase();
+    const q = document.getElementById("searchBox").value.toLowerCase().trim();
     const fm = document.getElementById("f_month").value;
     const f1 = document.getElementById("f_from").value;
     const f2 = document.getElementById("f_to").value;
-    const f_grn = document.getElementById("f_grn").value.toLowerCase();
-    const f_item = document.getElementById("f_item").value.toLowerCase();
-    const f_unit = document.getElementById("f_unit").value.toLowerCase();
-    const f_mov = document.getElementById("f_movement").value.toLowerCase();
+    const f_grn = document.getElementById("f_grn").value.toLowerCase().trim();
+    const f_item = document.getElementById("f_item").value.toLowerCase().trim();
+    const f_unit = document.getElementById("f_unit").value.toLowerCase().trim();
+    const f_mov = document.getElementById("f_movement").value.toLowerCase().trim();
 
-    const rows = document.querySelectorAll(".data-row");
-    if(rows.length === 0) return;
+    const allRows = document.querySelectorAll(".filterable-row");
+    if (allRows.length === 0) return;
 
     let visibleCount = 0;
-    let qtyT = 0;
+    let totalQty = 0;
 
-    rows.forEach(tr => {
-        const d = tr.dataset.date || '';
-        const grn = tr.querySelector('.grn-cell').innerText.toLowerCase();
-        const item = tr.querySelector('.item-cell').innerText.toLowerCase();
-        const unit = tr.querySelector('.unit-cell').innerText.toLowerCase();
-        const mov = tr.querySelector('.mov-cell').innerText.toLowerCase();
-        const text = tr.innerText.toLowerCase();
+    allRows.forEach(row => {
+        // Data attributes to the rescue (No more class dependency errors!)
+        const d = row.getAttribute("data-date") || "";
+        const grn = (row.getAttribute("data-grn") || "").toLowerCase();
+        const item = (row.getAttribute("data-item") || "").toLowerCase();
+        const unit = (row.getAttribute("data-unit") || "").toLowerCase();
+        const mov = (row.getAttribute("data-move") || "").toLowerCase();
+        const text = row.innerText.toLowerCase();
 
-        let ok = true;
-        if(fm && !d.startsWith(fm)) ok = false;
-        if(f1 && d < f1) ok = false;
-        if(f2 && d > f2) ok = false;
-        if(f_grn && grn !== f_grn) ok = false;
-        if(f_item && item !== f_item) ok = false;
-        if(f_unit && unit !== f_unit) ok = false;
-        if(f_mov && mov !== f_mov) ok = false;
-        if(q && !text.includes(q)) ok = false;
+        let show = true;
 
-        if(ok) {
-            tr.style.display = "";
-            visibleCount++;
+        if (fm && !d.startsWith(fm)) show = false;
+        if (f1 && d < f1) show = false;
+        if (f2 && d > f2) show = false;
+        if (f_grn && grn !== f_grn) show = false;
+        if (f_item && item !== f_item) show = false;
+        if (f_unit && unit !== f_unit) show = false;
+        if (f_mov && mov !== f_mov) show = false;
+        if (q && !text.includes(q)) show = false;
+
+        if (show) {
+            row.style.display = "";
             
-            // Reverse Serial Number Logic
-            tr.querySelector('.slno').innerText = ""; 
-            
-            // Totaling Qty (Ignoring IN/OUT sign for absolute total volume manipulated)
-            qtyT += parseFloat(tr.querySelector('.qty-val').innerText) || 0;
+            // Only count Desktop Rows for the row count and total sum (to avoid doubling with Mobile Cards)
+            if (row.tagName === 'TR') {
+                visibleCount++;
+                let qtyCell = row.querySelector(".qty-calc");
+                if (qtyCell) {
+                    totalQty += parseFloat(qtyCell.innerText) || 0;
+                }
+            }
         } else {
-            tr.style.display = "none";
+            row.style.display = "none";
         }
     });
 
-    // Assign reverse serial numbers to visible rows
-    const visibleRows = Array.from(rows).filter(r => r.style.display !== 'none');
-    visibleRows.forEach((r, idx) => {
-        r.querySelector('.slno').innerText = visibleRows.length - idx;
-    });
-
-    document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
-    document.getElementById("tot_qty").innerText = qtyT.toFixed(2);
+    document.getElementById("rowCount").innerText = visibleCount + " rows";
+    const tq = document.getElementById("tot_qty");
+    if (tq) tq.innerText = totalQty.toFixed(2);
 }
 
 function resetFilters() {
@@ -376,15 +304,14 @@ function resetFilters() {
 }
 
 function exportExcel() {
-    let table = document.getElementById("reportTable");
+    let table = document.getElementById("dataTable");
+    if (!table) return;
     let rows = table.querySelectorAll("tr");
     let csv = [];
 
     for (let i = 0; i < rows.length; i++) {
-        if(rows[i].style.display === "none" || rows[i].classList.contains('empty-state')) continue;
-        
+        if(rows[i].style.display === "none") continue;
         let row = [], cols = rows[i].querySelectorAll("td, th");
-        
         for (let j = 0; j < cols.length; j++) {
             let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
             row.push('"' + data + '"');
@@ -394,7 +321,7 @@ function exportExcel() {
 
     let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
     let downloadLink = document.createElement("a");
-    downloadLink.download = "BKNR_General_Stock_Ledger.csv";
+    downloadLink.download = "BKNR_General_Stock_Report.csv";
     downloadLink.href = window.URL.createObjectURL(csvFile);
     downloadLink.style.display = "none";
     document.body.appendChild(downloadLink);
@@ -402,11 +329,8 @@ function exportExcel() {
     document.body.removeChild(downloadLink);
 }
 
-window.onload = () => {
-    applyFilters();
-};
+window.onload = () => { applyFilters(); };
 </script>
-
 <script src="/static/js/global-loader.js"></script>
 </body>
 </html>

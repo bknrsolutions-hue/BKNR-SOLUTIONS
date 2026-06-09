@@ -28,6 +28,7 @@ from app.database import engine, Base
 # 🔥 FORCE LOAD ALL MODELS TO REGISTER WITH BASE
 import app.database.models.users
 import app.database.models.criteria
+import app.database.models.helpdesk
 import app.database.models.processing
 import app.database.models.inventory_management
 import app.database.models.general_stock
@@ -124,6 +125,7 @@ application.state.templates = templates
 from app.routers.auth import router as auth_router
 from app.routers.menu import router as menu_router
 from app.routers.criteria_router import router as criteria_router
+from app.routers.helpdesk_router import router as helpdesk_router
 from app.routers.inventory import router as inventory_router
 from app.routers.general_stock import router as general_stock_router
 from app.routers.admin import router as admin_router
@@ -146,6 +148,7 @@ from app.routers import production_requirements
 application.include_router(auth_router)
 application.include_router(menu_router)
 application.include_router(criteria_router)
+application.include_router(helpdesk_router)
 application.include_router(inventory_router)
 application.include_router(general_stock_router)
 application.include_router(admin_router)

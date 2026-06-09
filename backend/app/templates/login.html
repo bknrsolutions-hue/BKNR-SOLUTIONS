@@ -59,12 +59,12 @@ body {
 
 /* Right Column: Ultra-Compact Premium Authentication Gate Matrix */
 .form-side {
-  width: 440px; /* Highly Compact, Streamlined Executive Width */
+  width: 440px; 
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Pushes content and disclaimer apart beautifully */
+  justify-content: space-between; 
   padding: 3.5rem 2.5rem 2rem 2.5rem;
   position: relative;
   height: 100vh;
@@ -75,7 +75,7 @@ body {
 
 .form-container-core {
   width: 100%;
-  margin: auto 0; /* Vertically centers the running card active matrix */
+  margin: auto 0; 
 }
 
 /* Typography Specifications */
@@ -238,7 +238,7 @@ h2 { font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin-botto
 .form-group { margin-bottom: 1.1rem; display: flex; flex-direction: column; }
 label { font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.35rem; display: block; letter-spacing: 0.01em; }
 
-/* Input Fields Configured to Pure Clean Design without text content Inside */
+/* Input Fields Configured to Pure Clean Design */
 input, textarea {
   width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color);
   font-size: 0.88rem; color: var(--text-main); background: #f8fafc; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -252,6 +252,7 @@ button {
   letter-spacing: 0.01em; box-shadow: 0 2px 4px rgba(0, 43, 92, 0.1);
 }
 button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.2); transform: translateY(-0.5px); }
+button:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .link { margin-top: 1.25rem; text-align: center; font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
 .link span { cursor: pointer; color: var(--primary-color); font-weight: 600; }
@@ -269,7 +270,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
 }
 .disclaimer-box strong { color: #64748b; font-weight: 600; }
 
-/* ================= ULTRA COMPACT & PREMIUM MOBILE COMPRESSION ================= */
 @media (max-width: 950px) {
   body { height: auto; min-height: 100vh; }
   .wrapper { flex-direction: column; }
@@ -303,14 +303,12 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
 
 <div class="wrapper">
   
-  <!-- ================= LEFT SIDE: EXECUTIVE VALUE PROPOSITION ================= -->
   <div class="branding-side">
     <h1 class="disc-title-main">BKNR ERP</h1>
     <div class="disc-subtitle-main">Next-Gen Operational Intelligence for Seafood Enterprises</div>
     
     <p class="disc-paragraph">BKNR ERP transforms traditional seafood processing facilities into data-driven, highly optimized enterprise ecosystems. Engineered specifically to meet the high-stakes demands of enterprise executives and CEOs, the platform unifies production tracking, integrated HRMS protocols, cold storage metrics, and deep economic analytics into a single pane of glass.</p>
 
-    <!-- Strategic Highlights Box Grid -->
     <div class="executive-grid">
       <div class="grid-card">
         <h4>Centralized Oversight</h4>
@@ -340,47 +338,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
       <li><strong>Role-Based Delegation:</strong> Empower managers with plant-specific credentials while maintaining complete executive access at the group level.</li>
     </ul>
 
-    <div class="feature-title">2. Real-Time Production & Transformation Intelligence</div>
-    <p class="disc-paragraph">Gain absolute visibility into factory floor activities. The platform traces raw material transformations dynamically, leaving no space for unaccounted inventory leakage.</p>
-    <ul class="feature-list">
-      <li><strong>Dynamic Floor Balance Engines:</strong> Automated tracking arrays compute exact remaining floor balances continuously as stocks advance through processing lines.</li>
-      <li><strong>HOSO to HLSO Conversion Analytics:</strong> Algorithmic transformation loops trace exact yield extractions, weight fluctuations, and de-heading metrics (e.g., Vannamei sizing).</li>
-      <li><strong>Phase Optimization Metrics:</strong> Track efficiency rates across specialized processing stages including De-heading, Peeling, Soaking, and final Packing.</li>
-    </ul>
-
-    <div class="feature-title">3. Smart Inventory & Cold Storage Asset Tracking</div>
-    <p class="disc-paragraph">Protect your margins where it matters most. BKNR ERP provides deep visibility into cold holding spaces to ensure high turnover and asset security.</p>
-    <ul class="feature-list">
-      <li><strong>Holding Tables Integrity:</strong> Deep physical data architecture tracks batch allocations down to individual room placements and freezer maps.</li>
-      <li><strong>Partial Dispatch Resolution:</strong> Sophisticated tracking models automatically manage partial dispatches, maintaining accurate continuous FIFO billing variables.</li>
-      <li><strong>Aging Analysis:</strong> Monitor stock rotation timelines and automated storage expiration metrics to avoid product degradation.</li>
-    </ul>
-
-    <div class="feature-title">4. Financial Costing & Profitability Engine</div>
-    <p class="disc-paragraph">Eliminate estimation from your accounting. Our granular costing algorithms track the exact cost build-up for every processing batch.</p>
-    <ul class="feature-list">
-      <li><strong>Granular Process Billing:</strong> Automatically links raw material purchasing data, processing overheads, and contractor costs to calculate true net cost-per-kilogram.</li>
-      <li><strong>Dual-Mode Storage Costing:</strong> Supports transitions between daily storage calculations and complex monthly bulk configurations.</li>
-      <li><strong>Executive Performance Dashboards:</strong> Access real-time margin evaluations, pending sales requirements, and plant efficiency benchmarks instantaneously on page opening.</li>
-    </ul>
-
-    <div class="feature-title">5. Real-Time HRMS & Manpower Intelligence</div>
-    <p class="disc-paragraph">Maximize labor efficiency and control contractor costs with unified workforce intelligence explicitly integrated into production lines.</p>
-    <ul class="feature-list">
-      <li><strong>Live Manpower Tracking:</strong> Monitor active worker distribution and real-time headcounts directly on the production floor dynamically.</li>
-      <li><strong>Contractor Billing Reconciliation:</strong> Automate contractor cost calculations by mapping piece-rate or shift attendance metrics directly against batch processing outputs.</li>
-      <li><strong>Shift and Yield Correlation:</strong> Evaluate shift-wise productivity and labor expense parameters to pinpoint optimization opportunities.</li>
-    </ul>
-
-    <div class="feature-title">6. High-Velocity Enterprise Interface</div>
-    <p class="disc-paragraph">Engineered for corporate efficiency, minimizing operational friction and maximizing administrative entry speeds.</p>
-    <ul class="feature-list">
-      <li>Intelligent searchable column mechanics across all dropdown tables for ultra-fast data selection.</li>
-      <li>Streamlined data-entry formats optimized for rapid corporate operational input.</li>
-      <li>Universal multi-device accessibility providing responsive interface performance across tablet, mobile, and desktop environments.</li>
-    </ul>
-
-    <!-- ================= HUMAN-CENTRIC COMMITMENT FLAG ================= -->
     <div class="growth-statement">
       <h4>Our Core Commitment</h4>
       <p>"visualising a shared path of technological progress and collective operational excellence."</p>
@@ -389,67 +346,62 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
     <div class="disc-footer">BKNR ERP – Enterprise Security Ecosystem</div>
   </div>
 
-  <!-- ================= RIGHT SIDE: AUTHENTICATION GATEWAY CARDS ================= -->
   <div class="form-side">
     
     <div class="form-container-core">
 
-      <!-- ================= REGISTER ================= -->
       <div id="registerBox" class="card">
         <h2>Company Registration</h2>
         <p class="subtitle">Provide your firm parameters to fetch unique activation keys.</p>
-        <div class="form-group"><label>Company Name</label><input id="company_name" type="text"></div>
-        <div class="form-group"><label>Your Name</label><input id="user_name" type="text"></div>
-        <div class="form-group"><label>Designation</label><input id="designation" type="text"></div>
-        <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel"></div>
-        <div class="form-group"><label>Email Address</label><input id="email" type="email"></div>
-        <div class="form-group"><label>Company Address</label><textarea id="address" rows="2"></textarea></div>
-        <button onclick="sendOTP()">Send OTP</button>
+        <div class="form-group"><label>Company Name</label><input id="company_name" type="text" required></div>
+        <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required></div>
+        <div class="form-group"><label>Designation</label><input id="designation" type="text" required></div>
+        <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
+        <div class="form-group"><label>Email Address</label><input id="email" type="email" required></div>
+        <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" required></textarea></div>
+        
+        <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
         <div id="regErr" class="msg error"></div>
         <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
       </div>
 
-      <!-- ================= OTP ================= -->
       <div id="otpBox" class="card">
         <h2>OTP Verification</h2>
         <p class="subtitle">A 4-digit token handshake has been deployed to your corporate inbox.</p>
         <div class="form-group">
           <label>Enter OTP</label>
-          <input id="otp" maxlength="4" style="text-align: center; font-size: 1.4rem; letter-spacing: 0.3rem;">
+          <input id="otp" maxlength="4" style="text-align: center; font-size: 1.4rem; letter-spacing: 0.3rem;" required>
         </div>
-        <button onclick="verifyOTP()">Verify OTP</button>
+        <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
         <div id="otpErr" class="msg error"></div>
       </div>
 
-      <!-- ================= PASSWORD ================= -->
       <div id="passBox" class="card">
         <h2>Set Login Password</h2>
         <p class="subtitle">Establish structural encryption keys to guard corporate ledgers.</p>
-        <div class="form-group"><label>Password (max 20 chars)</label><input id="pass1" type="password" maxlength="20"></div>
-        <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20"></div>
-        <button onclick="savePassword()">Save Password</button>
+        <div class="form-group"><label>Password (max 20 chars)</label><input id="pass1" type="password" maxlength="20" required></div>
+        <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" required></div>
+        <button id="btn-pass" onclick="savePassword()">Save Password</button>
         <div id="passErr" class="msg error"></div>
         <div id="passOk" class="msg success"></div>
       </div>
 
-      <!-- ================= LOGIN ================= -->
       <div id="loginBox" class="card">
         <h2>Gateway Authentication</h2>
         <p class="subtitle">Provide secure credentials to hook into BKNR architecture pools.</p>
-        <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text"></div>
-        <div class="form-group"><label>Email</label><input id="login_email" type="email"></div>
-        <div class="form-group"><label>Password</label><input id="login_pwd" type="password" maxlength="20"></div>
-        <button onclick="doLogin()">Login</button>
+        <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" required></div>
+        <div class="form-group"><label>Email</label><input id="login_email" type="email" required></div>
+        <div class="form-group"><label>Password</label><input id="login_pwd" type="password" maxlength="20" required></div>
+        <button id="btn-login" onclick="doLogin()">Login</button>
         <div id="loginErr" class="msg error"></div>
         <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
       </div>
 
-      <!-- ================= FORGOT ================= -->
       <div id="forgotBox" class="card">
         <h2>Password Recovery</h2>
         <p class="subtitle">Enter your registered email to request a secure password configuration asset.</p>
-        <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email"></div>
-        <button onclick="sendResetLink()">Send Reset Link</button>
+        <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
+        <button id="btn-forgot" onclick="sendResetLink()">Send Reset Link</button>
         <div id="forgotErr" class="msg error"></div>
         <div id="forgotOk" class="msg success"></div>
         <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
@@ -457,7 +409,6 @@ button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 
 
     </div>
 
-    <!-- ================= MICRO-SIZED PREMIUM LEGAL DISCLAIMER NOTE ================= -->
     <div class="disclaimer-box">
       <strong>⚠️ SECURE WORKSPACE DISCLAIMER:</strong> This enterprise portal is guarded by strict institutional access control mechanisms. All ecosystem interactions are recorded in live ledger contexts. Unauthorized traversal attempts trigger instant endpoint lockouts and network blocklisting. For information security compliance, idle sessions automatically self-terminate after 30 minutes of inactivity to protect localized state data.
     </div>
@@ -508,17 +459,26 @@ function forceSessionLogout() {
   window.location.href = `${BASE}/logout`;
 }
 
-/* ================= REGISTER (SEND OTP) ================= */
+/* ================= 🔴 REGISTER (SEND OTP WITH PYDANTIC ERROR HANDLING) ================= */
 async function sendOTP(){
   const regErr = document.getElementById("regErr");
+  const btn = document.getElementById("btn-reg");
   regErr.style.display = "none";
   
   const emailInput = document.getElementById("email").value.trim();
-  if(!emailInput) {
-    regErr.innerHTML = "Email Address is required";
+  const mobileInput = document.getElementById("mobile").value.trim();
+  
+  // Basic empty check
+  if(!emailInput || !mobileInput || !document.getElementById("company_name").value) {
+    regErr.innerHTML = "Please fill out all required fields.";
     regErr.style.display = "block";
     return;
   }
+
+  // Button Loading State
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Processing...";
+  btn.disabled = true;
 
   try {
     let res = await fetch(`${BASE}/register`, {
@@ -529,20 +489,32 @@ async function sendOTP(){
         user_name: document.getElementById("user_name").value.trim(),
         designation: document.getElementById("designation").value.trim(),
         address: document.getElementById("address").value.trim(),
-        mobile: document.getElementById("mobile").value.trim(),
+        mobile: mobileInput,
         email: emailInput.toLowerCase()
       })
     });
 
     let data = await res.json();
+    
+    // Restore button state
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
     if(res.ok){
       regEmail = emailInput.toLowerCase(); 
       showBox("otpBox");
     } else {
-      regErr.innerHTML = data.detail || "Registration failed";
+      // 🔴 Catch Backend Errors (Pydantic Validation Array OR DB String Error)
+      let errorMsg = "Registration failed";
+      if (data.detail) {
+          errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+      }
+      regErr.innerHTML = errorMsg;
       regErr.style.display = "block";
     }
   } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
     regErr.innerHTML = "Server connection failed.";
     regErr.style.display = "block";
   }
@@ -551,7 +523,12 @@ async function sendOTP(){
 /* ================= OTP VERIFY ================= */
 async function verifyOTP(){
   const otpErr = document.getElementById("otpErr");
+  const btn = document.getElementById("btn-otp");
   otpErr.style.display="none";
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Verifying...";
+  btn.disabled = true;
 
   try {
     let res = await fetch(`${BASE}/verify-otp`, {
@@ -564,6 +541,9 @@ async function verifyOTP(){
     });
 
     let data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
     if(res.ok){
       showBox("passBox");
     } else {
@@ -571,6 +551,8 @@ async function verifyOTP(){
       otpErr.style.display = "block";
     }
   } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
     otpErr.innerHTML = "Server connection failed.";
     otpErr.style.display = "block";
   }
@@ -580,6 +562,7 @@ async function verifyOTP(){
 async function savePassword(){
   const passErr = document.getElementById("passErr");
   const passOk = document.getElementById("passOk");
+  const btn = document.getElementById("btn-pass");
   passErr.style.display="none";
   passOk.style.display="none";
 
@@ -592,6 +575,10 @@ async function savePassword(){
     return;
   }
 
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Saving...";
+  btn.disabled = true;
+
   try {
     let res = await fetch(`${BASE}/set-password`, {
       method: "POST",
@@ -603,6 +590,9 @@ async function savePassword(){
     });
 
     let data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
     if(res.ok){
       passOk.innerHTML = `Account created! Company ID: <b>${data.company_id}</b><br>Please use this ID to Login.`;
       passOk.style.display = "block";
@@ -612,15 +602,22 @@ async function savePassword(){
       passErr.style.display = "block";
     }
   } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
     passErr.innerHTML = "Server connection failed.";
     passErr.style.display = "block";
   }
 }
 
-/* ================= DO LOGIN (WITH HISTORY REPLACEMENT & SETUP ROUTING) ================= */
+/* ================= DO LOGIN ================= */
 async function doLogin(){
   const loginErr = document.getElementById("loginErr");
+  const btn = document.getElementById("btn-login");
   loginErr.style.display="none";
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Authenticating...";
+  btn.disabled = true;
 
   try {
     let res = await fetch(`${BASE}/login`, {
@@ -634,17 +631,13 @@ async function doLogin(){
     });
 
     let data = await res.json();
-    
-    // Debugging kosam (ఎలాంటి డేటా వస్తుందో కన్సోల్ లో చూడొచ్చు)
-    console.log("Login Response Data:", data);
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 
     if(res.ok){
-      // బ్యాకెండ్ పంపిన next_page ఉంటే అక్కడికి, లేకపోతే డిఫాల్ట్ గా /home కి
       if(data.next_page){
-          console.log("Redirecting to Setup Page:", data.next_page);
           window.location.replace(data.next_page);
       } else {
-          console.log("Redirecting to Main Dashboard");
           window.location.replace("/home");
       }
     } else {
@@ -652,6 +645,8 @@ async function doLogin(){
       loginErr.style.display = "block";
     }
   } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
     loginErr.innerHTML = "Server connection failed.";
     loginErr.style.display = "block";
   }
@@ -661,8 +656,13 @@ async function doLogin(){
 async function sendResetLink(){
   const forgotErr = document.getElementById("forgotErr");
   const forgotOk = document.getElementById("forgotOk");
+  const btn = document.getElementById("btn-forgot");
   forgotErr.style.display="none";
   forgotOk.style.display="none";
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Processing...";
+  btn.disabled = true;
 
   try {
     let res = await fetch(`${BASE}/forgot-password`, {
@@ -674,6 +674,9 @@ async function sendResetLink(){
     });
 
     let data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
     if(res.ok){
       forgotOk.innerHTML = "Reset link sent to your email";
       forgotOk.style.display = "block";
@@ -682,6 +685,8 @@ async function sendResetLink(){
       forgotErr.style.display = "block";
     }
   } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
     forgotErr.innerHTML = "Server connection failed.";
     forgotErr.style.display = "block";
   }

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Helpdesk | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --bg-color: #f0f2f5;
+        --panel-bg: #ffffff;
+        --border-color: #e2e8f0;
+        --primary-text: #1e293b;
+        --secondary-text: #64748b;
+        --accent: #ef4444; /* Admin Red Theme */
+        --accent-hover: #dc2626;
+        --admin-msg: #fecaca; /* Light red for admin messages */
+        --user-msg: #ffffff;
+    }
+    
+    [data-theme="dark"] {
+        --bg-color: #0f172a;
+        --panel-bg: #1e293b;
+        --border-color: #334155;
+        --primary-text: #f8fafc;
+        --secondary-text: #94a3b8;
+        --accent: #ef4444;
+        --accent-hover: #dc2626;
+        --admin-msg: #7f1d1d;
+        --user-msg: #334155;
+    }
+
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg-color); color: var(--primary-text); height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { padding: 12px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .header h2 { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--accent); }
+    .header-stats { display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: var(--secondary-text); }
+    .header-stats span { background: var(--bg-color); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border-color); }
+
+    /* Main Container */
+    .main-container { flex: 1; display: flex; overflow: hidden; margin: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--panel-bg); }
+
+    /* Left Sidebar: Ticket List */
+    .ticket-list-panel { width: 380px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); }
+    .search-box { padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; }
+    .search-box input, .search-box select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 12px; font-weight: 500;}
+    .search-box select:focus, .search-box input:focus { border-color: var(--accent); }
+    
+    .tickets-container { flex: 1; overflow-y: auto; }
+    .ticket-card { padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 6px; }
+    .ticket-card:hover { background: var(--bg-color); }
+    .ticket-card.active { background: rgba(239, 68, 68, 0.08); border-left: 4px solid var(--accent); }
+    
+    .ticket-header { display: flex; justify-content: space-between; align-items: center; }
+    .ticket-id { font-size: 12px; font-weight: 800; color: var(--primary-text); }
+    .ticket-date { font-size: 10px; color: var(--secondary-text); font-weight: 600;}
+    .ticket-subject { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--accent); }
+    .ticket-meta { font-size: 11px; color: var(--secondary-text); display: flex; justify-content: space-between; align-items: center; }
+    .company-badge { background: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-weight: 700; border: 1px solid var(--border-color); font-size: 9px;}
+    
+    .status-badge { font-size: 9px; padding: 3px 8px; border-radius: 12px; font-weight: 800; width: fit-content; text-transform: uppercase; letter-spacing: 0.5px;}
+    .status-OPEN { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;}
+    .status-IN_PROGRESS { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d;}
+    .status-RESOLVED { background: #dcfce7; color: #16a34a; border: 1px solid #86efac;}
+
+    /* Right Sidebar: Chat Panel */
+    .chat-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+    
+    .chat-header { padding: 12px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+    .chat-header-info h3 { font-size: 16px; margin: 0; color: var(--primary-text); }
+    .chat-header-meta { font-size: 11px; color: var(--secondary-text); margin-top: 4px; display: flex; gap: 10px; align-items: center;}
+    
+    /* Admin Action Controls */
+    .admin-actions { display: flex; gap: 10px; align-items: center; }
+    .status-select { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); font-size: 12px; font-weight: 700; outline: none; cursor: pointer; }
+    .btn-update { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
+    .btn-update:hover { background: var(--accent-hover); }
+
+    /* 🔴 404 ఎర్రర్ రాకుండా ఇమేజ్ బదులు డాట్ ప్యాటర్న్ సెట్ చేశాను */
+    .chat-box { 
+        flex: 1; 
+        padding: 20px; 
+        overflow-y: auto; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+        background-color: var(--bg-color);
+        background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+        background-size: 20px 20px; 
+    }
+    
+    /* Chat Bubbles */
+    .msg { max-width: 75%; padding: 12px 16px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .msg-admin { background: var(--admin-msg); align-self: flex-end; border-bottom-right-radius: 4px; color: var(--primary-text); }
+    .msg-user { background: var(--user-msg); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border-color); color: var(--primary-text); }
+    .msg-time { font-size: 9px; color: var(--secondary-text); display: block; text-align: right; margin-top: 6px; font-weight: 600;}
+    .msg-sender { font-size: 10px; font-weight: 800; margin-bottom: 4px; display: block; }
+    .msg-user .msg-sender { color: var(--accent); }
+    .msg-admin .msg-sender { color: #0f172a; opacity: 0.7; }
+
+    /* 🔴 QUICK REPLIES CSS */
+    .quick-replies-container { padding: 10px 15px; background: var(--bg-color); border-top: 1px solid var(--border-color); display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .quick-replies-container::-webkit-scrollbar { height: 4px; }
+    .quick-replies-container::-webkit-scrollbar-thumb { background: var(--secondary-text); border-radius: 10px; }
+    .quick-reply-chip { background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--primary-text); padding: 6px 12px; border-radius: 16px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .quick-reply-chip:hover { background: var(--accent); color: white; border-color: var(--accent); transform: translateY(-1px); }
+
+    .chat-input-area { padding: 15px; background: var(--panel-bg); display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color);}
+    .chat-input-area input { flex: 1; padding: 14px 20px; border-radius: 24px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 14px; transition: border 0.2s;}
+    .chat-input-area input:focus { border-color: var(--accent); }
+    .chat-input-area button { background: var(--accent); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+    .chat-input-area button:hover { transform: scale(1.05); background: var(--accent-hover); }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--secondary-text); text-align: center; }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; color: var(--accent); }
+    .hidden { display: none !important; }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="header">
+    <h2><i class="fa-solid fa-user-shield"></i> SUPER ADMIN HELPDESK</h2>
+    <div class="header-stats">
+        <span id="stat-open"><i class="fa-solid fa-circle-exclamation" style="color:#ef4444;"></i> Open: 0</span>
+        <span id="stat-resolved"><i class="fa-solid fa-circle-check" style="color:#22c55e;"></i> Resolved: 0</span>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="ticket-list-panel">
+        <div class="search-box">
+            <input type="text" id="searchTickets" placeholder="🔍 Search ID, Email, Subject..." onkeyup="filterTickets()">
+            <div style="display:flex; gap:8px;">
+                <select id="filterStatus" onchange="filterTickets()">
+                    <option value="ALL">All Status</option>
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                </select>
+            </div>
+        </div>
+        <div class="tickets-container" id="ticketList"></div>
+    </div>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="empty-state" id="emptyState">
+            <i class="fa-solid fa-headset"></i>
+            <h3>Select a ticket from the queue</h3>
+            <p style="font-size: 12px; margin-top: 8px;">Review user issues and provide support resolutions.</p>
+        </div>
+
+        <div id="chatView" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <h3 id="chatSubject">Loading...</h3>
+                    <div class="chat-header-meta">
+                        <span id="chatTicketId" style="font-weight:900; color:var(--primary-text);">TKT-XXX</span>
+                        <span>•</span>
+                        <span id="chatUserEmail"><i class="fa-regular fa-envelope"></i> user@email.com</span>
+                        <span>•</span>
+                        <span id="chatCompany" class="company-badge">CMP</span>
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <select id="updateStatusSelect" class="status-select">
+                        <option value="OPEN">OPEN</option>
+                        <option value="IN_PROGRESS">IN PROGRESS</option>
+                        <option value="RESOLVED">RESOLVED</option>
+                    </select>
+                    <button class="btn-update" onclick="updateTicketStatus()"><i class="fa-solid fa-floppy-disk"></i> Update</button>
+                </div>
+            </div>
+            
+            <div class="chat-box" id="chatBox"></div>
+            
+            <div class="quick-replies-container">
+                <div class="quick-reply-chip" onclick="useQuickReply('Hello! We are currently checking your issue. Please give us a few minutes.')">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Checking Issue
+                </div>
+                <div class="quick-reply-chip" onclick="useQuickReply('Could you please provide more details or screenshots regarding this error?')">
+                    <i class="fa-solid fa-circle-info"></i> Need Details
+                </div>
+                <div class="quick-reply-chip" onclick="useQuickReply('This issue has been escalated to our technical team. We will get back to you shortly.')">
+                    <i class="fa-solid fa-arrow-up-right-dots"></i> Escalated
+                </div>
+                <div class="quick-reply-chip" onclick="useQuickReply('Your issue has been successfully resolved. Please check and confirm.')">
+                    <i class="fa-solid fa-check-double"></i> Resolved
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="hidden" id="activeTicketId">
+                <input type="text" id="replyInput" placeholder="Write an official response to the user..." onkeypress="handleEnter(event)">
+                <button onclick="sendAdminReply()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const allTickets = {{ (tickets_json if tickets_json is defined else []) | tojson | safe }};
+
+function renderTicketList(tickets) {
+    const listEl = document.getElementById("ticketList");
+    listEl.innerHTML = "";
+    
+    document.getElementById("stat-open").innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color:#ef4444;"></i> Open: ${allTickets.filter(t=>t.status==='OPEN').length}`;
+    document.getElementById("stat-resolved").innerHTML = `<i class="fa-solid fa-circle-check" style="color:#22c55e;"></i> Resolved: ${allTickets.filter(t=>t.status==='RESOLVED').length}`;
+
+    if(tickets.length === 0) {
+        listEl.innerHTML = `<div style="padding: 30px 20px; text-align: center; color: var(--secondary-text); font-size: 13px;"><i class="fa-solid fa-inbox" style="font-size:24px; margin-bottom:10px; opacity:0.5;"></i><br>Queue is empty.</div>`;
+        return;
+    }
+
+    tickets.forEach(t => {
+        const safeSubject = (t.subject || "").replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const safeEmail = (t.user_email || "").replace(/'/g, "\\'");
+        
+        listEl.innerHTML += `
+            <div class="ticket-card" id="ticket-card-${t.id}" onclick="openAdminChat(${t.id}, '${t.ticket_number}', '${safeSubject}', '${t.status}', '${safeEmail}', '${t.company_id}')">
+                <div class="ticket-header">
+                    <span class="ticket-id">${t.ticket_number}</span>
+                    <span class="ticket-date">${t.date}</span>
+                </div>
+                <div class="ticket-subject">${t.subject}</div>
+                <div class="ticket-meta">
+                    <span class="status-badge status-${t.status}">${t.status.replace('_', ' ')}</span>
+                    <span class="company-badge"><i class="fa-solid fa-building"></i> ${t.company_id}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function filterTickets() {
+    const q = document.getElementById("searchTickets").value.toLowerCase();
+    const stat = document.getElementById("filterStatus").value;
+    
+    const filtered = allTickets.filter(t => {
+        const matchesQuery = t.ticket_number.toLowerCase().includes(q) || 
+                             t.subject.toLowerCase().includes(q) || 
+                             t.user_email.toLowerCase().includes(q) ||
+                             t.company_id.toLowerCase().includes(q);
+        const matchesStat = stat === "ALL" || t.status === stat;
+        return matchesQuery && matchesStat;
+    });
+    renderTicketList(filtered);
+}
+
+async function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
+    document.getElementById("emptyState").classList.add("hidden");
+    const chatView = document.getElementById("chatView");
+    chatView.classList.remove("hidden");
+    
+    document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`ticket-card-${ticketId}`).classList.add('active');
+
+    document.getElementById("chatSubject").innerText = subject;
+    document.getElementById("chatTicketId").innerText = ticketNum;
+    document.getElementById("chatUserEmail").innerHTML = `<i class="fa-regular fa-envelope"></i> ${email}`;
+    document.getElementById("chatCompany").innerHTML = `<i class="fa-solid fa-building"></i> ${company}`;
+    
+    document.getElementById("activeTicketId").value = ticketId;
+    document.getElementById("updateStatusSelect").value = status;
+    
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = `<div style="text-align:center; color: var(--secondary-text); font-size: 12px; margin-top:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving secure comms...</div>`;
+    
+    try {
+        const response = await fetch(`/admin/get_messages/${ticketId}`);
+        const data = await response.json();
+        
+        chatBox.innerHTML = "";
+        if(data.messages && data.messages.length > 0) {
+            data.messages.forEach(m => {
+                const isAdmin = (m.sender_type === "ADMIN" || m.sender_type === "SUPPORT");
+                const msgClass = isAdmin ? "msg-admin" : "msg-user";
+                const senderName = isAdmin ? "You (Support)" : email;
+                const icon = isAdmin ? '<i class="fa-solid fa-headset"></i>' : '<i class="fa-solid fa-user"></i>';
+                
+                chatBox.innerHTML += `
+                    <div class="msg ${msgClass}">
+                        <span class="msg-sender">${icon} ${senderName}</span>
+                        ${m.message}
+                        <span class="msg-time">${m.time}</span>
+                    </div>
+                `;
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+            chatBox.innerHTML = `<div style="text-align:center; color: var(--secondary-text); font-size: 12px; margin-top:20px;">No messages found in this thread.</div>`;
+        }
+    } catch(e) {
+        chatBox.innerHTML = `<div style="text-align:center; color: #ef4444; font-size: 12px; margin-top:20px;">Failed to load server data.</div>`;
+    }
+}
+
+// 🔴 Quick Reply Function
+function useQuickReply(text) {
+    const input = document.getElementById('replyInput');
+    input.value = text;
+    input.focus();
+}
+
+async function sendAdminReply() {
+    const ticketId = document.getElementById("activeTicketId").value;
+    const inputEl = document.getElementById("replyInput");
+    const message = inputEl.value.trim();
+    
+    if(!message || !ticketId) return;
+    inputEl.value = ""; 
+    
+    const chatBox = document.getElementById("chatBox");
+    const nowTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    chatBox.innerHTML += `
+        <div class="msg msg-admin" style="opacity: 0.7;">
+            <span class="msg-sender"><i class="fa-solid fa-headset"></i> You (Support)</span>
+            ${message}
+            <span class="msg-time">${nowTime} <i class="fa-regular fa-clock"></i></span>
+        </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const formData = new FormData();
+    formData.append("ticket_id", ticketId);
+    formData.append("message", message);
+    formData.append("sender_type", "ADMIN"); 
+
+    try {
+        await fetch("/admin/send_message", { method: "POST", body: formData });
+        
+        const btnId = document.getElementById("chatTicketId").innerText;
+        const subj = document.getElementById("chatSubject").innerText;
+        const stat = document.getElementById("updateStatusSelect").value;
+        const em = document.getElementById("chatUserEmail").innerText.trim();
+        const comp = document.getElementById("chatCompany").innerText.trim();
+        openAdminChat(ticketId, btnId, subj, stat, em, comp);
+        
+    } catch(e) {
+        alert("Transmission failed. Please check network.");
+    }
+}
+
+function handleEnter(e) {
+    if(e.key === "Enter") sendAdminReply();
+}
+
+async function updateTicketStatus() {
+    const ticketId = document.getElementById("activeTicketId").value;
+    const newStatus = document.getElementById("updateStatusSelect").value;
+    
+    if(!ticketId) return;
+
+    const formData = new FormData();
+    formData.append("ticket_id", ticketId);
+    formData.append("status", newStatus);
+
+    try {
+        const res = await fetch("/admin/update_ticket_status", { method: "POST", body: formData });
+        if(res.ok) {
+            const ticketObj = allTickets.find(t => t.id == ticketId);
+            if(ticketObj) ticketObj.status = newStatus;
+            filterTickets();
+            
+            document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
+            const card = document.getElementById(`ticket-card-${ticketId}`);
+            if(card) card.classList.add('active');
+            
+            alert(`Ticket status updated to ${newStatus.replace('_', ' ')}`);
+        } else {
+            alert("Failed to update status.");
+        }
+    } catch(e) {
+        alert("Server error during status update.");
+    }
+}
+
+window.onload = () => {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    
+    renderTicketList(allTickets);
+};
+</script>
+</body>
+</html>

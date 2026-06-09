@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from pydantic import BaseModel
+from sqlalchemy import func, or_
+from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 import random, json, os, requests, secrets
-from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -66,12 +65,16 @@ def send_email(to_email: str, subject: str, html: str):
 
 # ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
-    company_name: str
-    user_name: str
+    company_name: str = Field(..., min_length=2, description="Company name is required")
+    user_name: str = Field(..., min_length=2)
     designation: str
     address: str
-    mobile: str
-    email: str
+    
+    # 🔴 Strict Mobile Number Validation (Exactly 10 digits)
+    mobile: str = Field(..., pattern=r"^[0-9]{10}$", description="Enter a valid 10-digit mobile number")
+    
+    # 🔴 Strict Email Format Validation
+    email: str = Field(..., pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", description="Enter a valid email format")
 
 class OTPReq(BaseModel):
     email: str
@@ -91,21 +94,33 @@ class ForgotReq(BaseModel):
 
 
 # =====================================================
-# 1. REGISTER → SEND OTP
+# 1. REGISTER → SEND OTP (WITH VALIDATIONS)
 # =====================================================
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
 
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(400, "Email already registered")
+    # 🔴 1. Check if Email or Mobile is already registered in the DB
+    existing_user = db.query(User).filter(
+        or_(User.email == data.email, User.mobile == data.mobile)
+    ).first()
 
+    if existing_user:
+        if existing_user.email == data.email:
+            raise HTTPException(status_code=400, detail="This Email ID is already registered. Please go to Login.")
+        if existing_user.mobile == data.mobile:
+            raise HTTPException(status_code=400, detail="This Mobile Number is already registered.")
+
+    # 2. Generate OTP
     otp = str(random.randint(1000, 9999))
+
+    # 3. Handle Extra Data for Pydantic V2/V1 compatibility
+    extra_data = data.model_dump() if hasattr(data, "model_dump") else data.dict()
 
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
     db.add(OTPTable(
         email=data.email,
         otp=otp,
-        extra=json.dumps(data.dict()),
+        extra=json.dumps(extra_data),
         is_used=False,
         created_at=datetime.now()
     ))
@@ -124,7 +139,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
         print("EMAIL ERROR:", e)
         print("OTP =", otp)
 
-    return {"message": "OTP sent"}
+    return {"message": "OTP sent successfully"}
 
 # =====================================================
 # 2. VERIFY OTP
@@ -243,7 +258,6 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "setup_completed": setup_completed
     })
 
-    # క్లీన్ చేసిన సింగిల్ రెస్పాన్స్ 
     response = JSONResponse({
         "status": "success",
         "message": "Login Successful",
@@ -283,10 +297,8 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
 
     reset_link = f"{request.base_url}auth/reset-password?token={token}"
 
-    # Print link instead of sending email (Dev Mode)
     print("RESET LINK:", reset_link)
 
-    # పంపాలనుకుంటే అన్‌కామెంట్ చేసుకోండి
     # send_email(
     #     data.email,
     #     "BKNR ERP – Reset Password",

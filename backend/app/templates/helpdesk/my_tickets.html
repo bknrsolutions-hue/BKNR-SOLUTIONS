@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Complaints | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --bg-color: #f0f2f5;
+        --panel-bg: #ffffff;
+        --border-color: #e2e8f0;
+        --primary-text: #1e293b;
+        --secondary-text: #64748b;
+        --accent: #2563eb;
+        --user-msg: #dcf8c6;
+        --admin-msg: #ffffff;
+    }
+    
+    [data-theme="dark"] {
+        --bg-color: #0f172a;
+        --panel-bg: #1e293b;
+        --border-color: #334155;
+        --primary-text: #f8fafc;
+        --secondary-text: #94a3b8;
+        --accent: #3b82f6;
+        --user-msg: #064e3b;
+        --admin-msg: #334155;
+    }
+
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg-color); color: var(--primary-text); height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { padding: 12px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .header h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .btn-new { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
+    .btn-new:hover { opacity: 0.9; }
+
+    /* Main Container */
+    .main-container { flex: 1; display: flex; overflow: hidden; margin: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--panel-bg); }
+
+    /* Left Sidebar: Ticket List */
+    .ticket-list-panel { width: 350px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+    .search-box { padding: 12px; border-bottom: 1px solid var(--border-color); }
+    .search-box input { width: 100%; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; }
+    
+    .tickets-container { flex: 1; overflow-y: auto; }
+    .ticket-card { padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 4px; }
+    .ticket-card:hover { background: var(--bg-color); }
+    .ticket-card.active { background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent); }
+    
+    .ticket-header { display: flex; justify-content: space-between; align-items: center; }
+    .ticket-id { font-size: 12px; font-weight: 800; color: var(--secondary-text); }
+    .ticket-date { font-size: 10px; color: var(--secondary-text); }
+    .ticket-subject { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 700; width: fit-content; }
+    .status-OPEN { background: #fee2e2; color: #dc2626; }
+    .status-IN_PROGRESS { background: #fef3c7; color: #d97706; }
+    .status-RESOLVED { background: #dcfce7; color: #16a34a; }
+
+    /* Right Sidebar: Chat Panel */
+    .chat-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+    
+    .chat-header { padding: 15px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
+    .chat-header h3 { font-size: 16px; margin: 0; }
+    
+    /* 🔴 404 ఇమేజ్ ఎర్రర్ ఫిక్స్ (డాట్ ప్యాటర్న్) */
+    .chat-box { 
+        flex: 1; 
+        padding: 20px; 
+        overflow-y: auto; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+        background-color: var(--bg-color);
+        background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+    
+    .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .msg-user { background: var(--user-msg); align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-admin { background: var(--admin-msg); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
+    .msg-time { font-size: 9px; color: var(--secondary-text); display: block; text-align: right; margin-top: 4px; }
+
+    .chat-input-area { padding: 15px; background: var(--panel-bg); border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; }
+    .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 14px; }
+    .chat-input-area button { background: var(--accent); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; }
+    .chat-input-area button:hover { transform: scale(1.05); }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--secondary-text); text-align: center; }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* Modal for New Ticket */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal { background: var(--panel-bg); width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal h3 { margin-bottom: 16px; font-size: 18px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--secondary-text); margin-bottom: 6px; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-family: inherit; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cancel { padding: 8px 16px; border: none; background: transparent; color: var(--secondary-text); cursor: pointer; font-weight: 600; }
+    
+    .hidden { display: none !important; }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="header">
+    <h2><i class="fa-solid fa-headset"></i> Support & Complaints</h2>
+    <button class="btn-new" onclick="openModal()"><i class="fa-solid fa-plus"></i> New Complaint</button>
+</div>
+
+<div class="main-container">
+    <div class="ticket-list-panel">
+        <div class="search-box">
+            <input type="text" id="searchTickets" placeholder="Search tickets..." onkeyup="filterTickets()">
+        </div>
+        <div class="tickets-container" id="ticketList"></div>
+    </div>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="empty-state" id="emptyState">
+            <i class="fa-regular fa-comments"></i>
+            <h3>Select a ticket to view conversation</h3>
+        </div>
+
+        <div id="chatView" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="chat-header">
+                <div>
+                    <h3 id="chatSubject">Loading...</h3>
+                    <div style="font-size: 11px; color: var(--secondary-text); margin-top: 2px;">
+                        <span id="chatTicketId" style="font-weight:bold;">TKT-XXX</span> • <span id="chatStatusBadge" class="status-badge">OPEN</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-box" id="chatBox"></div>
+            
+            <div class="chat-input-area">
+                <input type="hidden" id="activeTicketId">
+                <input type="text" id="replyInput" placeholder="Type a message to Support Team..." onkeypress="handleEnter(event)">
+                <button onclick="sendReply()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="ticketModal">
+    <div class="modal">
+        <h3>Raise a Complaint</h3>
+        <form action="/support/create_ticket" method="POST">
+            <div class="form-group">
+                <label>Subject / Issue Summary</label>
+                <input type="text" name="subject" required placeholder="E.g., Stock mismatch">
+            </div>
+            <div class="form-group">
+                <label>Detailed Message</label>
+                <textarea name="message" rows="4" required placeholder="Describe the issue..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-new">Submit Ticket</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const myTickets = {{ (tickets_json if tickets_json is defined else []) | tojson | safe }};
+
+function renderTicketList(tickets) {
+    const listEl = document.getElementById("ticketList");
+    listEl.innerHTML = "";
+    
+    if(tickets.length === 0) {
+        listEl.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--secondary-text); font-size: 13px;">No tickets found.</div>`;
+        return;
+    }
+
+    tickets.forEach(t => {
+        listEl.innerHTML += `
+            <div class="ticket-card" id="ticket-card-${t.id}" onclick="openChat(${t.id}, '${t.ticket_number}', '${t.subject.replace(/'/g, "\\'")}', '${t.status}')">
+                <div class="ticket-header">
+                    <span class="ticket-id">${t.ticket_number}</span>
+                    <span class="ticket-date">${t.date}</span>
+                </div>
+                <div class="ticket-subject">${t.subject}</div>
+                <div class="status-badge status-${t.status}">${t.status.replace('_', ' ')}</div>
+            </div>
+        `;
+    });
+}
+
+function filterTickets() {
+    const q = document.getElementById("searchTickets").value.toLowerCase();
+    const filtered = myTickets.filter(t => t.ticket_number.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q));
+    renderTicketList(filtered);
+}
+
+// ─── 🚀 403 ఎర్రర్ ఫిక్స్: యూజర్ URL వాడుతున్నాం ───
+async function openChat(ticketId, ticketNum, subject, status) {
+    document.getElementById("emptyState").classList.add("hidden");
+    const chatView = document.getElementById("chatView");
+    chatView.classList.remove("hidden");
+    
+    document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`ticket-card-${ticketId}`).classList.add('active');
+
+    document.getElementById("chatSubject").innerText = subject;
+    document.getElementById("chatTicketId").innerText = ticketNum;
+    
+    const badge = document.getElementById("chatStatusBadge");
+    badge.className = `status-badge status-${status}`;
+    badge.innerText = status.replace('_', ' ');
+
+    document.getElementById("activeTicketId").value = ticketId;
+    
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = `<div style="text-align:center; color: var(--secondary-text); font-size: 12px; margin-top:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading conversation...</div>`;
+    
+    try {
+        // 🔴 ఇక్కడ /support/get_messages వాడాను (/admin కాదు)
+        const response = await fetch(`/support/get_messages/${ticketId}`);
+        const data = await response.json();
+        
+        chatBox.innerHTML = "";
+        if(data.messages && data.messages.length > 0) {
+            data.messages.forEach(m => {
+                const isUser = (m.sender_type === "USER");
+                const msgClass = isUser ? "msg-user" : "msg-admin";
+                const senderLabel = isUser ? "" : `<div style="font-size:10px; font-weight:800; color:var(--accent); margin-bottom:4px;"><i class="fa-solid fa-headset"></i> Support Team</div>`;
+                
+                chatBox.innerHTML += `
+                    <div class="msg ${msgClass}">
+                        ${senderLabel}
+                        ${m.message}
+                        <span class="msg-time">${m.time}</span>
+                    </div>
+                `;
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+            chatBox.innerHTML = `<div style="text-align:center; color: var(--secondary-text); font-size: 12px; margin-top:20px;">No messages yet.</div>`;
+        }
+    } catch(e) {
+        chatBox.innerHTML = `<div style="text-align:center; color: red; font-size: 12px; margin-top:20px;">Failed to load messages.</div>`;
+    }
+}
+
+// ─── 🚀 SEND REPLY ───
+async function sendReply() {
+    const ticketId = document.getElementById("activeTicketId").value;
+    const inputEl = document.getElementById("replyInput");
+    const message = inputEl.value.trim();
+    
+    if(!message || !ticketId) return;
+    
+    inputEl.value = ""; 
+    
+    const chatBox = document.getElementById("chatBox");
+    const nowTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    chatBox.innerHTML += `
+        <div class="msg msg-user" style="opacity: 0.7;">
+            ${message}
+            <span class="msg-time">${nowTime} <i class="fa-regular fa-clock"></i></span>
+        </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const formData = new FormData();
+    formData.append("ticket_id", ticketId);
+    formData.append("message", message);
+
+    try {
+        // 🔴 ఇక్కడ /support/send_message వాడాను
+        await fetch("/support/send_message", { method: "POST", body: formData });
+        const status = document.getElementById("chatStatusBadge").innerText.replace(' ', '_');
+        openChat(ticketId, document.getElementById("chatTicketId").innerText, document.getElementById("chatSubject").innerText, status);
+    } catch(e) {
+        alert("Failed to send message. Please try again.");
+    }
+}
+
+function handleEnter(e) { if(e.key === "Enter") sendReply(); }
+function openModal() { document.getElementById("ticketModal").style.display = "flex"; }
+function closeModal() { document.getElementById("ticketModal").style.display = "none"; }
+
+window.onload = () => {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    renderTicketList(myTickets);
+};
+</script>
+</body>
+</html>
