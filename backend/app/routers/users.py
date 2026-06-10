@@ -108,7 +108,7 @@ def save_user(
         role=role,
         permissions=permissions_csv,
         is_verified=True,
-        created_at=datetime.now()
+        created_at=ist_now()
     )
 
     db.add(new_user)

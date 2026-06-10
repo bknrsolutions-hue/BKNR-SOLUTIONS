@@ -70,7 +70,7 @@ async def attendance_entry(
     input_id = payload.employee_id.strip()
     action = payload.action.upper().strip() # IN, OUT, EXIT
 
-    now = datetime.now()
+    now = ist_now()
     time_str = now.strftime("%H:%M")
 
     # DYNAMIC ID SEARCH (e.g., '1' -> '%00001')
@@ -346,7 +346,7 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
     wb.save(stream)
     stream.seek(0)
 
-    filename = f"Attendance_Ledger_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"Attendance_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -80,7 +80,7 @@ async def save_production_for(
 
     # 🔥 Get raw form data for dynamic glaze costs
     form = await request.form()
-    now = datetime.now()
+    now = ist_now()
 
     GLAZES = [
         ("NWNC","NWNC"),

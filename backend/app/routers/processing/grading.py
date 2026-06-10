@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
 from datetime import datetime, timedelta, date
+from app.utils.timezone import ist_now
 import json
 import re
 
@@ -28,7 +29,7 @@ templates = Jinja2Templates(directory="app/templates")
 # TODAY RANGE (9 AM → NEXT DAY 9 AM)
 # -----------------------------------------------------
 def get_today_range():
-    now = datetime.now()
+    now = ist_now()
     start = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if now < start:
         start -= timedelta(days=1)
@@ -228,7 +229,7 @@ def save_grading(
         peeling_at=peeling_at,
         production_for=production_for,
         date=date.today(),
-        time=datetime.now().time(),
+        time=ist_now().time(),
         email=email,
         company_id=company_code
     )

@@ -46,8 +46,8 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
     
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
+    
+    
 
     # Today's entries for the table
     table_data = (
@@ -205,7 +205,7 @@ def save_stock_in(
         email=email,
         company_id=company_code,
         date=date.today(),
-        time=datetime.now().time()
+        time=ist_now().time()
     )
     db.add(entry)
     db.commit()
@@ -305,7 +305,7 @@ def stock_out_save(
     
     mc_weight = pack.mc_weight if pack else 0
     slab_weight = pack.slab_weight if pack else 0
-    now = datetime.now()
+    now = ist_now()
 
     for i in range(len(out_batch)):
         mc_val = int(out_mc[i]) if out_mc[i] else 0

@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
+from app.utils.timezone import ist_now
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
 from app.database.models.reprocess import Reprocess
@@ -19,7 +20,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/auth/login", status_code=303)
 
     all_combos = set()
-    report_date = datetime.now().date()
+    report_date = ist_now().date()
 
     # --- 1. RMP & PROCESSING SOURCES ---
     rmp_data = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_id).all()

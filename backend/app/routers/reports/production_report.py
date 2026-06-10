@@ -26,7 +26,7 @@ from app.database.models.criteria import (
 router = APIRouter(prefix="/production_report", tags=["PRODUCTION REPORT"])
 
 templates = Jinja2Templates(directory="app/templates")
-IST = pytz.timezone('Asia/Kolkata')
+
 
 # ------------------------------------------------------------
 # HELPER: GET COMPANY INFO

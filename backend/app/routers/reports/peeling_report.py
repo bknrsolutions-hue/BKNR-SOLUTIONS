@@ -219,7 +219,7 @@ async def peeling_export_pdf(
         name="reports/peeling_report_pdf.html", # Custom PDF clean printable layout template
         context={
             "rows": rows,
-            "print_date": datetime.now(),
+            "print_date": ist_now(),
             "company_code": comp_code
         }
     )
@@ -389,7 +389,7 @@ def peeling_monthly_bill(
         "total_peeled": round(t_peeled, 2),
         "avg_yield": round(avg_yield, 2),
         "grand_total": round(sum(r.amount or 0 for r in rows), 2),
-        "bill_date": datetime.now()
+        "bill_date": ist_now()
     }
     return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
 

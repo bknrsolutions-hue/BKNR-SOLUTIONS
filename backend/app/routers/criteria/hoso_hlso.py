@@ -92,7 +92,7 @@ def save_hoso_hlso(
         except ValueError:
             return JSONResponse({"error": "Invalid count format"}, status_code=400)
 
-    now = datetime.now()
+    now = ist_now()
 
     # -----------------------------
     # SAVE EACH COUNT INDIVIDUALLY

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Support Team</title>
+
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+
+    <style>
+        .page-container{
+            padding:20px;
+        }
+
+        .page-title{
+            font-size:24px;
+            font-weight:700;
+            margin-bottom:20px;
+        }
+
+        .card{
+            background:#fff;
+            border-radius:12px;
+            padding:20px;
+            box-shadow:0 2px 10px rgba(0,0,0,.08);
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th,td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+            text-align:left;
+        }
+
+        th{
+            background:#f5f5f5;
+        }
+
+        .empty{
+            text-align:center;
+            padding:30px;
+            color:#666;
+        }
+
+        .badge{
+            padding:5px 10px;
+            border-radius:20px;
+            background:#e8f5e9;
+            color:#2e7d32;
+            font-size:12px;
+            font-weight:600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-container">
+
+    <div class="page-title">
+        Support Team Management
+    </div>
+
+    <div class="card">
+
+        {% if support_users %}
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for user in support_users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.role %}
+                            {{ user.role }}
+                        {% else %}
+                            SUPPORT
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge">
+                            Active
+                        </span>
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No Support Team Members Found
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

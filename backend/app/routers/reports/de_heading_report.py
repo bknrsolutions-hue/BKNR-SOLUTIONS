@@ -215,7 +215,7 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
         "request": request, "rows": rows, "contractor_name": contractor, "month_year": month,
         "total_hoso": round(t_hoso, 2), "total_hlso": round(t_hlso, 2),
         "grand_total": round(sum(r.amount or 0 for r in rows), 2),
-        "avg_yield": round((t_hlso / t_hoso * 100) if t_hoso > 0 else 0, 2), "bill_date": datetime.now()
+        "avg_yield": round((t_hlso / t_hoso * 100) if t_hoso > 0 else 0, 2), "bill_date": ist_now()
     }
     if download:
         pdf = HTML(string=templates.get_template("reports/de_heading_monthly_bill.html").render(data)).write_pdf()
@@ -227,7 +227,7 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
     if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
-    pdf = HTML(string=templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": datetime.now()})).write_pdf()
+    pdf = HTML(string=templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": ist_now()})).write_pdf()
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"})
 
 @router.get("/export_excel")

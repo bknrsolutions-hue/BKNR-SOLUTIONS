@@ -205,7 +205,7 @@ tr.subtotal { background: var(--header-bg); font-weight: 800; color: var(--prima
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>GRADING SUMMARY REPORT</h2>
         <div style="font-size: 11px; color: var(--text-muted); font-weight:700;">
-            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+            {{ today_date }}
         </div>
     </div>
     <div class="view-tabs">

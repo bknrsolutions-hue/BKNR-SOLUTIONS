@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 import datetime as dt
 from io import BytesIO
 
@@ -58,20 +59,20 @@ async def gate_entry_report(
 
     if not fy:
         return templates.TemplateResponse(
-            request=request,
-            name="reports/gate_entry_report.html",
-            context={
-                "rows": [],
-                "suppliers_list": global_suppliers,
-                "factories_list": global_factories,
-                "locations_list": global_locations,
-                "vehicles_list": global_vehicles,
-                "production_for_list": global_production_for,
-                "is_admin": role == "admin",
-                "selected_fy": None,
-                "datetime": datetime
-            }
-        )
+    request=request,
+    name="reports/gate_entry_report.html",
+    context={
+        "rows": [],
+        "suppliers_list": global_suppliers,
+        "factories_list": global_factories,
+        "locations_list": global_locations,
+        "vehicles_list": global_vehicles,
+        "production_for_list": global_production_for,
+        "is_admin": role == "admin",
+        "selected_fy": None,
+        "today_date": ist_now()
+    }
+)
 
     # 1. Determine Target Financial Year Range
     selected_fy = int(fy)
@@ -91,20 +92,20 @@ async def gate_entry_report(
     )
 
     return templates.TemplateResponse(
-        request=request,
-        name="reports/gate_entry_report.html",
-        context={
-            "rows": rows,
-            "suppliers_list": global_suppliers,
-            "factories_list": global_factories,
-            "locations_list": global_locations,
-            "vehicles_list": global_vehicles,
-            "production_for_list": global_production_for,
-            "is_admin": role == "admin",
-            "selected_fy": str(selected_fy),
-            "datetime": datetime
-        }
-    )
+    request=request,
+    name="reports/gate_entry_report.html",
+    context={
+        "rows": rows,
+        "suppliers_list": global_suppliers,
+        "factories_list": global_factories,
+        "locations_list": global_locations,
+        "vehicles_list": global_vehicles,
+        "production_for_list": global_production_for,
+        "is_admin": role == "admin",
+        "selected_fy": str(selected_fy),
+        "today_date": ist_now()
+    }
+)
 
 # ============================================================
 # 2. DYNAMIC REAL-TIME PDF METADATA FILTER EXPORT
@@ -145,7 +146,7 @@ async def gate_export_pdf(
         "request": request,
         "company_name": company_name,
         "rows": rows,
-        "printed_on": datetime.now(),
+        "printed_on": ist_now(),
         "auto": 0  # Prevents infinite javascript print reload loop
     })
     

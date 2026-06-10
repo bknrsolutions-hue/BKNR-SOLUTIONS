@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 from sqlalchemy import func, distinct
 
 from app.database import get_db
@@ -38,8 +39,8 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
     
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
+    
+    
     
     # 1. FLOOR BALANCE CALCULATION (INCLUDING REPROCESS)
     combos = set()
@@ -373,7 +374,7 @@ def save_peeling(request: Request, db: Session = Depends(get_db),
         rate=rate, 
         amount=amount, 
         date=date.today(), 
-        time=datetime.now().time(), 
+        time=ist_now().time(), 
         email=email, 
         company_id=company_code
     )

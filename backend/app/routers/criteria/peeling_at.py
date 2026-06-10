@@ -67,7 +67,7 @@ def save_peeling_at(
 
     record_id = int(id) if id.isdigit() else None
 
-    now = datetime.now()
+    now = ist_now()
     if not date:
         date = now.strftime("%Y-%m-%d")
     if not time:

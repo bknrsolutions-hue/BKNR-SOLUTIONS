@@ -73,7 +73,7 @@ def save_freezer(
     record_id = int(id) if id and id.isdigit() else None
 
     # auto date / time
-    now = datetime.now()
+    now = ist_now()
     if not date:
         date = now.strftime("%Y-%m-%d")
     if not time:

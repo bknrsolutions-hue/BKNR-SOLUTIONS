@@ -95,7 +95,7 @@ def save_production_types(
     record_id = int(id) if id and id.isdigit() else None
 
     # Auto Date & Time
-    now = datetime.now()
+    now = ist_now()
     if not date:
         date = now.strftime("%Y-%m-%d")
     if not time:

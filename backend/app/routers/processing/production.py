@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import distinct, func, and_
 from datetime import datetime, timedelta
+from app.utils.timezone import ist_now
 from typing import Optional
 import re
 import json
@@ -30,16 +31,25 @@ templates = Jinja2Templates(directory="app/templates")
 # HELPER: TODAY RANGE (9 AM TO NEXT DAY 9 AM)
 # -----------------------------------------------------
 def get_today_range():
-    now = datetime.now()
-    start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    now = ist_now()
+
+    start = now.replace(
+        hour=9,
+        minute=0,
+        second=0,
+        microsecond=0
+    )
+
     if now < start:
         start -= timedelta(days=1)
+
     end = start + timedelta(days=1) - timedelta(seconds=1)
+
     return start, end
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
+    
+    
+    
+    
 
 
 # -----------------------------------------------------
@@ -450,8 +460,8 @@ def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(
         offset_qty = abs(old_entry.rejection_qty)
         
         new_soaking_record = Soaking(
-            date=datetime.now().date(),
-            time=datetime.now().time(),
+            date=ist_now().date(),
+            time=ist_now().time(),
             batch_number=old_entry.batch_number,
             production_at=old_entry.production_at,
             production_for=getattr(old_entry, 'production_for', None), 
@@ -537,8 +547,8 @@ def save_production(
             production_for=production_for,
             company_id=company_code,
             email=email,
-            date=datetime.now().date(),
-            time=datetime.now().time()
+            date=ist_now().date(),
+            time=ist_now().time()
         )
         db.add(obj)
         db.commit()

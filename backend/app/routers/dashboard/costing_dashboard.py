@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from datetime import date, datetime, timedelta
+from app.utils.timezone import ist_now
 import logging
 
 from app.database import get_db
@@ -82,7 +83,7 @@ def costing_dashboard(
         except Exception as e: 
             logger.warning(f"Invalid to_date format: {to_date}. {e}")
 
-    last_updated_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S IST")
+    last_updated_timestamp = ist_now().strftime("%Y-%m-%d %H:%M:%S IST")
 
     try:
         # ---------------------------------------------------------

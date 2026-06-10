@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.database import get_db
-from app.database.models.users import Company, User, OTPTable
+# 🟢 Added UserLoginActivity cleanly to the imports section
+from app.database.models.users import Company, User, OTPTable, UserLoginActivity
 from app.security.password_handler import hash_password, verify_password
 from app.services.setup_service import SetupService
 
@@ -29,6 +30,11 @@ SENDER_NAME = "BKNR ERP"
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
+
+
+# 🟢 BULLETPROOF IST TIME HELPER (సర్వర్ లేదా డేటాబేస్ ఎక్కడున్నా ఇండియన్ టైమే రికార్డ్ అవుతుంది)
+def get_ist_time():
+    return datetime.utcnow() + timedelta(hours=5, minutes=30)
 
 
 # ================= EMAIL FUNCTION =================
@@ -122,7 +128,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
         otp=otp,
         extra=json.dumps(extra_data),
         is_used=False,
-        created_at=datetime.now()
+        created_at=get_ist_time() # 🟢 Synchronized to IST
     ))
     db.commit()
 
@@ -153,7 +159,7 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
         OTPTable.is_used.is_(False)
     ).first()
 
-    if not rec or datetime.now() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
+    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN): # 🟢 Synchronized to IST
         raise HTTPException(400, "OTP expired or invalid")
 
     rec.is_used = True
@@ -247,6 +253,17 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         company.setup_completed = True
         db.commit()
 
+    # 🟢 Save Login Activity Block Inserted with Explicit IST Timestamp
+    activity = UserLoginActivity(
+        user_id=user.id,
+        company_id=company.company_code,
+        login_at=get_ist_time(),
+        session_hours="Active Now"
+    )
+
+    db.add(activity)
+    db.commit()
+
     request.session.update({
         "email": user.email,
         "company_id": company.id,
@@ -291,7 +308,7 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
         email=data.email,
         otp=token,
         is_used=False,
-        created_at=datetime.now()
+        created_at=get_ist_time() # 🟢 Synchronized to IST
     ))
     db.commit()
 
@@ -318,7 +335,7 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
         OTPTable.is_used.is_(False)
     ).first()
 
-    if not rec or datetime.now() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
+    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN): # 🟢 Synchronized to IST
         return HTMLResponse("<h3>Link expired</h3>")
 
     return templates.TemplateResponse(
@@ -357,9 +374,43 @@ def reset_password(
     return RedirectResponse("/", status_code=303)
 
 # =====================================================
-# 8. LOGOUT
+# 8. LOGOUT (🟢 Updated with UserLoginActivity tracking & IST Calibration)
 # =====================================================
 @router.get("/logout")
-def logout(request: Request):
+def logout(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    email = request.session.get("email")
+
+    if email:
+        user = db.query(User).filter(
+            User.email == email
+        ).first()
+
+        if user:
+            activity = (
+                db.query(UserLoginActivity)
+                .filter(
+                    UserLoginActivity.user_id == user.id,
+                    UserLoginActivity.logout_at.is_(None)
+                )
+                .order_by(
+                    UserLoginActivity.login_at.desc()
+                )
+                .first()
+            )
+
+            if activity:
+                # 🛠️ FIX: Logouts strictly mapped using same IST timeline
+                current_ist = get_ist_time()
+                activity.logout_at = current_ist
+
+                hrs = (activity.logout_at - activity.login_at).total_seconds() / 3600
+                activity.session_hours = f"{hrs:.2f} Hrs"
+
+                db.commit()
+
     request.session.clear()
+
     return RedirectResponse("/", status_code=303)

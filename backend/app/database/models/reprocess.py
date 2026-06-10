@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Date, Time, Text
 from app.database import Base
 from datetime import datetime
+from app.utils.timezone import ist_now
 
 class Reprocess(Base):
     __tablename__ = "reprocess_entries"
@@ -8,7 +9,7 @@ class Reprocess(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # --- Reprocess Specific ---
-    date = Column(Date, default=datetime.now().date())
+    date = Column(Date, default=lambda: ist_now().date())
     company_id = Column(String(100))
     reprocess_type = Column(String(50))    # Melting, Repacking, Reglaze
     original_batch = Column(String(255))   # Old Batch Number

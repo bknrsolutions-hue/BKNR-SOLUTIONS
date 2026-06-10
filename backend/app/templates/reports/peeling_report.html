@@ -294,7 +294,7 @@ tfoot td{
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>PEELING REPORT</h2>
         <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
-            {% if datetime %}{{ datetime.now().strftime('%d %b, %Y') }}{% endif %}
+            {{ today_date }}
         </div>
     </div>
     <div class="filters">

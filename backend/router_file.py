@@ -172,14 +172,14 @@ def export_sheet(writer, data, sheet_name):
 def generate_export_response(comp_code, module_name, export_logic, db):
     export_dir = "exports"
     os.makedirs(export_dir, exist_ok=True)
-    filename = f"BKNR_{module_name}_{comp_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"BKNR_{module_name}_{comp_code}_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     filepath = os.path.join(export_dir, filename)
 
     with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
         pd.DataFrame({
             "BKNR ERP Export": [f"{module_name} Module Generated Successfully"],
             "Company ID": [comp_code],
-            "Timestamp": [datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+            "Timestamp": [ist_now().strftime('%Y-%m-%d %H:%M:%S')]
         }).to_excel(writer, sheet_name="INFO", index=False)
         
         export_logic(writer, db, comp_code)
@@ -317,7 +317,7 @@ async def inspect_excel_file(excel_file: UploadFile = File(...)):
     try:
         upload_dir = "uploads"
         os.makedirs(upload_dir, exist_ok=True)
-        filename = f"import_temp_{datetime.now().strftime('%Y%m%d%H%M%S')}_{excel_file.filename}"
+        filename = f"import_temp_{ist_now().strftime('%Y%m%d%H%M%S')}_{excel_file.filename}"
         filepath = os.path.join(upload_dir, filename)
 
         with open(filepath, "wb") as buffer:

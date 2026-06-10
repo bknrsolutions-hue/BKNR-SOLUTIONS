@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
+from app.utils.timezone import ist_now
 import json
 import re
 
@@ -24,16 +25,16 @@ templates = Jinja2Templates(directory="app/templates")
 # TODAY RANGE (9 AM TO NEXT DAY 9 AM)
 # -----------------------------------------------------
 def get_today_range():
-    now = datetime.now()
+    now = ist_now()
     start = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if now < start:
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
     return start, end
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
+    
+    
+    
+    
 
 # -----------------------------------------------------
 # HOSO SUMMARY CALCULATION
@@ -211,7 +212,7 @@ def save_rmp(
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
-    now = datetime.now()
+    now = ist_now()
     received = g1_qty + g2_qty + dc_qty
     total_billable_qty = g1_qty + (g2_qty / 2)
     amount = round(total_billable_qty * rate_per_kg, 2)

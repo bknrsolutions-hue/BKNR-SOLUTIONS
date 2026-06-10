@@ -65,7 +65,7 @@ def save_purpose(
     # Safe ID conversion
     record_id = int(id) if id and id.isdigit() else None
 
-    now = datetime.now()
+    now = ist_now()
     date_val = now.strftime("%Y-%m-%d")
     time_val = now.strftime("%H:%M:%S")
 

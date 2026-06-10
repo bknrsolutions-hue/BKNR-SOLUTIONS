@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
+from app.utils.timezone import ist_now
 
 from app.database import get_db
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
@@ -47,7 +48,7 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
     units = sorted(list(units_set))
 
     # ఈరోజు ఎంటర్ చేసిన డేటా
-    today = datetime.now().date()
+    today = ist_now().date()
     today_data = db.query(GeneralStock).filter(
         GeneralStock.date == today, 
         func.upper(func.trim(GeneralStock.company_id)) == comp_code
@@ -179,8 +180,8 @@ def save_stock_entry(
         opening_stock=current_bal,
         available_stock=new_bal,
         minimum_level=minimum_level,
-        date=datetime.now().date(),
-        time=datetime.now().time(),
+        date=ist_now().date(),
+        time=ist_now().time(),
         email=user_email,
         company_id=comp_code
     )
@@ -223,8 +224,8 @@ def add_master_item_via_popup(
         item_name=item_name.upper().strip(),
         unit_name=unit_name.strip(),
         minimum_level=minimum_level,
-        created_date=datetime.now().date(),
-        created_time=datetime.now().time(),
+        created_date=ist_now().date(),
+        created_time=ist_now().time(),
         email=user_email,
         company_id=comp_code
     )

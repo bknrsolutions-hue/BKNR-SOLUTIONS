@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 from app.database import get_db
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 
@@ -100,7 +101,7 @@ async def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .distinct().all() if x[0]
     ]
 
-    today = datetime.now().date()
+    today = ist_now().date()
     today_data = db.query(GeneralStock).filter(
         GeneralStock.company_id == company_id,
         GeneralStock.date == today
@@ -160,8 +161,8 @@ async def save_stock_entry(
             minimum_level=minimum_level,
             email=user_email,
             company_id=company_id,
-            date=datetime.now().date(),
-            time=datetime.now().time()
+            date=ist_now().date(),
+            time=ist_now().time()
         )
         db.add(entry)
 

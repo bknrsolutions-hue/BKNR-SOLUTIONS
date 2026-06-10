@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 templates = Jinja2Templates(directory="app/templates")
-IST = pytz.timezone('Asia/Kolkata')
+
 
 # ------------------------------------------------------------
 # 1. MAIN REPORT VIEW (WITH FY FILTER)
@@ -210,7 +210,7 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     return StreamingResponse(
         stream, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": f"attachment; filename=Soaking_Report_{datetime.now().date()}.xlsx"}
+        headers={"Content-Disposition": f"attachment; filename=Soaking_Report_{ist_now().date()}.xlsx"}
     )
 
 # ------------------------------------------------------------

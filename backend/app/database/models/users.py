@@ -76,4 +76,19 @@ class OTPTable(Base):
     is_used = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# =================== NEW: USER LOGIN ACTIVITY MODEL ===================
+class UserLoginActivity(Base):
+    __tablename__ = "user_login_activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    
+    login_at = Column(DateTime, default=datetime.utcnow)
+    logout_at = Column(DateTime, nullable=True)
+    
+    # Session computation helper text column (e.g., "4.5 Hrs" or "Active Now")
+    session_hours = Column(String, default="Active Now")
     

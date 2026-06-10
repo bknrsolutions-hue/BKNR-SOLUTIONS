@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Date, Time
 from app.database import Base
 from datetime import datetime
+from app.utils.timezone import ist_now
 
 class GeneralStock(Base):
     __tablename__ = "general_stock"
@@ -18,8 +19,8 @@ class GeneralStock(Base):
     available_stock = Column(Float)
     minimum_level = Column(Float)
 
-    date = Column(Date, default=datetime.now().date)
-    time = Column(Time, default=datetime.now().time)
+    date = Column(Date, default=lambda: ist_now().date())
+    time = Column(Time, default=ist_now().time)
 
     email = Column(String)
     company_id = Column(String(50), index=True)
@@ -33,8 +34,8 @@ class GeneralStoreItems(Base):
     unit_name = Column(String, nullable=False)
     minimum_level = Column(Float, default=0)
 
-    created_date = Column(Date, default=datetime.now().date)
-    created_time = Column(Time, default=datetime.now().time)
+    created_date = Column(Date, default=lambda: ist_now().date())
+    created_time = Column(Time, default=ist_now().time)
     
     email = Column(String)
     company_id = Column(String(50), index=True)

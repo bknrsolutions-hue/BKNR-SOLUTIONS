@@ -74,7 +74,7 @@ def save_hsn_code(
 
     record_id = int(id) if id and id.isdigit() else None
 
-    now = datetime.now()
+    now = ist_now()
     date = date or now.strftime("%Y-%m-%d")
     time = time or now.strftime("%H:%M:%S")
 

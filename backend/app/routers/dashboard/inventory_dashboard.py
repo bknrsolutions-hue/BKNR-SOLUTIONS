@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, not_, and_, case
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 from collections import defaultdict
 
 from app.database import get_db
@@ -40,7 +41,7 @@ async def get_inventory_dashboard(
     if not comp_code:
         return RedirectResponse("/auth/login")
 
-    today = datetime.now().date()
+    today = ist_now().date()
     current_year = today.year
     current_fy_start_year = current_year if today.month >= 4 else current_year - 1
     current_fy_string = f"{current_fy_start_year}-{str(current_fy_start_year + 1)[2:]}"
@@ -402,7 +403,7 @@ async def get_kpi_details(
         return {"status": "error", "message": "Unauthorized"}, 401
 
     # Financial Year Boundary Logic
-    today = datetime.now().date()
+    today = ist_now().date()
     current_year = today.year
     current_fy_start_year = current_year if today.month >= 4 else current_year - 1
     

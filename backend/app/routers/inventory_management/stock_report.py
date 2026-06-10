@@ -27,7 +27,7 @@ from app.database.models.criteria import (
 router = APIRouter(prefix="/stock_report", tags=["STOCK REPORT"])
 
 # Indian Timezone setup
-IST = pytz.timezone('Asia/Kolkata')
+
 
 # ------------------------------------------------------------
 # HELPER: GET COMPANY INFO

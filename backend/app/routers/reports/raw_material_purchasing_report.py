@@ -172,7 +172,7 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
             old_val = str(getattr(row, field) or "")
             new_val = str(payload[field])
             if old_val != new_val:
-                db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name=field, old_value=old_val, new_value=new_val, edited_by=edited_by, edited_at=datetime.now()))
+                db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name=field, old_value=old_val, new_value=new_val, edited_by=edited_by, edited_at=ist_now()))
                 setattr(row, field, payload[field])
 
     g1, g2, dc, rate = float(row.g1_qty or 0), float(row.g2_qty or 0), float(row.dc_qty or 0), float(row.rate_per_kg or 0)
@@ -186,7 +186,7 @@ def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     comp_code = request.session.get("company_code")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
     if row:
-        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=datetime.now()))
+        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=ist_now()))
         db.delete(row); db.commit()
         return {"status": "deleted"}
     return {"status": "error"}
@@ -303,7 +303,7 @@ def print_table_view(
             "rows": rows, 
             "company_name": comp["name"], 
             "company_address": comp["address"], 
-            "printed_on": datetime.now()
+            "printed_on": ist_now()
         }
     )
 
@@ -322,7 +322,7 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
         supplier = get_supplier_info(db, comp_code, s_name)
         final_batches.append({"batch_number": b_no, "vehicle_number": g.vehicle_number if g else "N/A", "challan_number": g.challan_number if g else "N/A", "location": g.purchasing_location if g else "N/A", "date": g.date if g else b_rows[0].date, "rows": b_rows, "supplier": supplier, "total_quantity": round(sum(x.received_qty or 0 for x in b_rows), 2), "total_amount": round(sum(x.amount or 0 for x in b_rows), 2)})
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": datetime.now()})
+    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": ist_now()})
 
 @router.get("/export_pdf")
 async def export_rmp_pdf(

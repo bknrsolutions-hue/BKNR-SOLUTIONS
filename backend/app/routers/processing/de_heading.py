@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 import json
 
 from app.database import get_db
@@ -144,8 +145,11 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    IST = pytz.timezone('Asia/Kolkata')
-    today_data = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == datetime.now(IST).date()).order_by(DeHeading.id.desc()).all()
+    
+    today_data = db.query(DeHeading).filter(
+        DeHeading.company_id == company_code,
+        DeHeading.date == ist_now().date()
+    ).order_by(DeHeading.id.desc()).all()
 
     combos = set()
     r_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.variety_name == "HOSO").all()
@@ -215,7 +219,7 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
         production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
         species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
         contractor=contractor, rate_per_kg=rate_per_kg, amount=amount, date=date.today(), 
-        time=datetime.now().time(), email=email, company_id=company_code
+        time=ist_now().time(), email=email, company_id=company_code
     )
     db.add(new_entry)
     db.commit()

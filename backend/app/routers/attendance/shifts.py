@@ -77,7 +77,7 @@ async def save_shift(
         start_t = datetime.strptime(start_time, "%H:%M").time()
         end_t = datetime.strptime(end_time, "%H:%M").time()
 
-        now = datetime.now()
+        now = ist_now()
 
         new_shift = Shift(
             company_id=comp,

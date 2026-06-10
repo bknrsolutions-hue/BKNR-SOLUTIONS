@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin Dashboard & Activities | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* ================= PREMIUM THEME VARIABLES ================= */
+:root {
+    --bg-color: #f0f2f5;
+    --panel-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --primary-text: #1e293b;
+    --secondary-text: #64748b;
+    --accent: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+    --table-header-bg: #f8fafc;
+}
+
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --panel-bg: #1e293b;
+    --border-color: #334155;
+    --primary-text: #f8fafc;
+    --secondary-text: #94a3b8;
+    --accent: #3b82f6;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --table-header-bg: #0f172a;
+}
+
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+body { background: var(--bg-color); color: var(--primary-text); padding-bottom: 40px; transition: background 0.3s, color 0.3s; }
+
+/* ================= HEADER ================= */
+.header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--panel-bg); padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2 { margin: 0; font-size: 16px; color: var(--primary-text); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
+
+/* ================= MAIN CONTAINER SPLIT LAYOUT ================= */
+.main-container { width: 95%; max-width: 1400px; margin: 20px auto; }
+
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 2fr 1.1fr;
+    gap: 20px;
+}
+
+@media(max-width: 1024px) {
+    .dashboard-layout { grid-template-columns: 1fr; }
+    .timeline-container { position: relative !important; top: 0 !important; max-height: none !important; }
+}
+
+/* ================= LEFT COLUMN STYLES ================= */
+.left-column { display: flex; flex-direction: column; gap: 20px; }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+}
+.stat-card {
+    background: var(--panel-bg); border-radius: 12px;
+    border: 1px solid var(--border-color); padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: all 0.25s ease;
+}
+.stat-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+
+.stat-info h4 { font-size: 10px; color: var(--secondary-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.stat-info h2 { font-size: 22px; color: var(--primary-text); font-weight: 800; }
+.stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+.card-blue .stat-icon { background: rgba(37, 99, 235, 0.1); color: var(--accent); }
+.card-green .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.card-cyan .stat-icon { background: rgba(6, 182, 212, 0.1); color: var(--cyan); }
+.card-purple .stat-icon { background: rgba(139, 92, 246, 0.1); color: var(--purple); }
+.card-red .stat-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+/* ================= KPI DATA DISPLAY BOX ================= */
+.data-details-container {
+    background: var(--panel-bg); padding: 20px; border-radius: 12px;
+    border: 1px solid var(--border-color); display: block;
+    animation: slideDown 0.3s ease-out;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.data-details-container .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.reset-btn { background: rgba(59, 130, 246, 0.1); color: var(--accent); border: none; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.reset-btn:hover { background: var(--accent); color: white; }
+
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--table-header-bg); color: var(--secondary-text); padding: 12px; font-size: 11px; text-transform: uppercase; text-align: center; font-weight: 800; border-bottom: 2px solid var(--border-color); white-space: nowrap; }
+td { padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--primary-text); text-align: center; font-weight: 600; white-space: nowrap; }
+tr:hover { background: var(--bg-color); }
+.company-badge { background: var(--bg-color); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 700; color: var(--accent); }
+
+/* ================= RIGHT COLUMN TIMELINE (STICKY CHAT FEED) ================= */
+.timeline-container {
+    background: var(--panel-bg); padding: 20px; border-radius: 12px;
+    border: 1px solid var(--border-color);
+    position: sticky; top: 80px; 
+    max-height: calc(100vh - 120px); overflow-y: auto;
+}
+.timeline-container::-webkit-scrollbar { width: 5px; }
+.timeline-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+.section-header { font-size: 13px; font-weight: 800; color: var(--primary-text); padding-bottom: 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+
+.activity-card { display: flex; gap: 12px; margin-top: 15px; position: relative; }
+.activity-card::before { content: ''; position: absolute; left: 17px; top: 32px; bottom: -18px; width: 2px; background: var(--border-color); }
+.activity-card:last-child::before { display: none; }
+
+.activity-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-color); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 1; }
+.icon-admin { color: var(--warning); border-color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+.icon-user { color: var(--success); border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+
+.activity-content { flex: 1; background: var(--bg-color); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+.activity-meta { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+.activity-sender { font-size: 11px; font-weight: 800; color: var(--primary-text); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-badge { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1px 4px; border-radius: 4px; font-size: 8px; font-weight: 800; color: var(--accent); }
+.activity-msg { font-size: 12px; color: var(--secondary-text); line-height: 1.4; font-weight: 500; word-break: break-all; }
+</style>
+</head>
+
+<body data-theme="dark">
+
+<div class="header">
+  <div class="header-titles">
+      <h2><i class="fa-solid fa-chart-pie" style="margin-right: 6px; color: var(--accent);"></i> System Control Dashboard</h2>
+  </div>
+</div>
+
+<div class="main-container">
+    <div class="dashboard-layout">
+        
+        <!-- LEFT PANEL: STATS & DATA TARGET INTERFACE -->
+        <div class="left-column">
+            <div class="stats-grid">
+                <div class="stat-card card-blue" onclick="fetchRealKpi('Total Registrations', 'registrations')">
+                    <div class="stat-info">
+                        <h4>Total Registrations</h4>
+                        <h2>{{ stats.total_registrations if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon"><i class="fa-solid fa-id-card"></i></div>
+                </div>
+                
+                <div class="stat-card card-green" onclick="fetchRealKpi('Active Today', 'active')">
+                    <div class="stat-info">
+                        <h4>Active Companies</h4>
+                        <h2>{{ stats.today_active if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+                </div>
+
+                <!-- 🔥 KEY PERFORMANCE INDICATOR: LIVE ONLINE USERS -->
+                <div class="stat-card card-cyan" onclick="fetchRealKpi('Live Active Users', 'active_users')">
+                    <div class="stat-info">
+                        <h4>Active Users</h4>
+                        <h2>{{ stats.active_users if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon"><i class="fa-solid fa-users-viewfinder"></i></div>
+                </div>
+                
+                <div class="stat-card card-purple" onclick="fetchRealKpi('New This Month', 'new_month')">
+                    <div class="stat-info">
+                        <h4>New This Month</h4>
+                        <h2>+{{ stats.new_this_month if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon"><i class="fa-solid fa-user-plus"></i></div>
+                </div>
+                
+                <div class="stat-card card-red" onclick="fetchRealKpi('Open Tickets', 'tickets')">
+                    <div class="stat-info">
+                        <h4>Open Tickets</h4>
+                        <h2>{{ stats.open_tickets if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                </div>
+            </div>
+
+            <!-- KPI REAL RENDER SCREEN BLOCK -->
+            <div class="data-details-container" id="kpiDataBlock">
+                <div class="section-header">
+                    <div style="font-weight: 800; font-size: 14px; text-transform: uppercase;">
+                        <i class="fa-solid fa-table-list" style="color: var(--accent); margin-right: 6px;"></i> 
+                        <span id="kpiDataTitle">User Login Activity</span>
+                    </div>
+                    <button class="reset-btn" onclick="restoreDefaultLog()" title="Reload Login Activity"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Company ID</th>
+                                <th>Company Name</th>
+                                <th>Login Date</th>
+                                <th>Login Time</th>
+                                <th>Logout Time</th>
+                                <th>Email</th>
+                                <th>Login Hours</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kpiTableBody">
+                            <!-- Populated on load or card clicks dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: TIMELINE CHAT FEED -->
+        <div class="timeline-container">
+            <div class="section-header">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--purple);"></i> Live Helpdesk Feed
+            </div>
+            
+            {% if activities %}
+                {% for act in activities %}
+                <div class="activity-card">
+                    {% if act.sender_type == 'ADMIN' or act.sender_type == 'SUPPORT' %}
+                        <div class="activity-icon icon-admin"><i class="fa-solid fa-headset"></i></div>
+                    {% else %}
+                        <div class="activity-icon icon-user"><i class="fa-solid fa-user"></i></div>
+                    {% endif %}
+                    
+                    <div class="activity-content">
+                        <div class="activity-meta">
+                            <div class="activity-sender" title="{{ act.sender_email }}">
+                                {{ act.sender_email.split('@')[0] }} 
+                                <span class="ticket-badge">#{{ act.ticket_id }}</span>
+                            </div>
+                            <div style="font-size:9px; color:var(--secondary-text); white-space: nowrap; margin-left: 5px;">
+                                {{ act.sent_at.strftime('%d %b, %I:%M %p') if act.sent_at else '' }}
+                            </div>
+                        </div>
+                        <div class="activity-msg">"{{ act.message }}"</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="text-align: center; color: var(--secondary-text); font-size: 12px; margin-top: 30px;">No message streams monitored today.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+window.onload = function() {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    
+    // Silent initial fetch loading data automatically onto layout area
+    fetchRealKpi('User Login Activity', 'active', true);
+}
+
+// ================= ASYNC RUNTIME DATA DISPATCH ENGINE =================
+async function fetchRealKpi(title, type, isSilent = false) {
+    if (!isSilent) {
+        Swal.fire({
+            title: 'Querying Database...',
+            text: `Opening synchronized records for ${title}`,
+            allowOutsideClick: false,
+            background: 'var(--panel-bg)',
+            color: 'var(--primary-text)',
+            didOpen: () => { Swal.showLoading(); }
+        });
+    }
+
+    try {
+        const response = await fetch(`/admin/api/kpi_data/${type}`);
+        const result = await response.json();
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.error || "Server engine dropped execution pipeline.");
+        }
+
+        if (!isSilent) Swal.close();
+
+        document.getElementById('kpiDataTitle').innerText = `${title} - Live Log`;
+        const tbody = document.getElementById('kpiTableBody');
+        tbody.innerHTML = ""; 
+
+        if (!result.data || result.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="color:var(--secondary-text); padding:20px;">No operational metrics logged under this criteria.</td></tr>`;
+            return;
+        }
+
+        // 🟢 FIXED CLIENT-SIDE DEDUPLICATION & FILTERING ENGINE
+        let finalDataToRender = [];
+
+        if (type === 'active_users') {
+            // 🛠️ Active Users Logic: "Oka Mail Oka User" -> Group by unique email for today's logins
+            const seenEmails = new Set();
+            result.data.forEach(row => {
+                if (!seenEmails.has(row.email)) {
+                    seenEmails.add(row.email);
+                    finalDataToRender.push(row);
+                }
+            });
+        } else {
+            // 🛠️ Active Companies (or default log) -> Displays all raw logs/activities chronologically
+            finalDataToRender = result.data;
+        }
+
+        finalDataToRender.forEach(row => {
+            let statusStyle = "background: rgba(59, 130, 246, 0.1); color: var(--accent);";
+            
+            if (row.status === "OPEN" || row.status === "Inactive" || row.status === "Offline") {
+                statusStyle = "background: rgba(239, 68, 68, 0.1); color: var(--danger);";
+            } else if (row.status === "Active" || row.status === "RESOLVED" || row.status === "Online" || row.status === "New") {
+                statusStyle = "background: rgba(16, 185, 129, 0.1); color: var(--success);";
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="company-badge">${row.company_id || '--'}</span></td>
+                    <td style="color: var(--primary-text); font-weight: 700;">${row.company_name || '--'}</td>
+                    <td style="color: var(--secondary-text); font-size:12px;">${row.login_date}</td>
+                    <td style="color: var(--secondary-text); font-size:12px;">${row.login_time}</td>
+                    <td style="color: var(--secondary-text); font-size:12px; font-weight: 700;">${row.logout_time || '--'}</td>
+                    <td style="text-align: center; color: var(--accent); font-weight: 700;">${row.email}</td>
+                    <td style="color: var(--primary-text); font-weight: 700;"><i class="fa-regular fa-clock" style="margin-right:4px; font-size:11px;"></i> ${row.login_hours}</td>
+                    <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; ${statusStyle}">${row.status}</span></td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        if (!isSilent) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fetch Rejected',
+                text: error.message,
+                background: 'var(--panel-bg)',
+                color: 'var(--primary-text)'
+            });
+        }
+    }
+}
+
+function restoreDefaultLog() {
+    fetchRealKpi('User Login Activity', 'active');
+}
+</script>
+</body>
+</html>

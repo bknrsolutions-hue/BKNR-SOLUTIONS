@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
+from app.utils.timezone import ist_now
 
 from app.database import get_db
 from app.database.models.helpdesk import SupportTicket, TicketMessage
@@ -64,7 +65,7 @@ async def create_new_ticket(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # టికెట్ నంబర్ జనరేట్ చేద్దాం (ఉదా: TKT-20260610-001)
-    date_str = datetime.now().strftime("%Y%m%d")
+    date_str = ist_now().strftime("%Y%m%d")
     count_today = db.query(SupportTicket).filter(SupportTicket.ticket_number.like(f"TKT-{date_str}-%")).count()
     new_ticket_no = f"TKT-{date_str}-{count_today + 1:03d}"
 

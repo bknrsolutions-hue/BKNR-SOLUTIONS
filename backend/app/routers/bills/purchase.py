@@ -198,7 +198,7 @@ async def save_purchase_invoice(
             company_id=company_id,
             email=email,
             date=dt.date.today().strftime("%Y-%m-%d"),
-            time=dt.datetime.now().strftime("%H:%M:%S")
+            time=dt.ist_now().strftime("%H:%M:%S")
         )
 
         db.add(new_invoice)
@@ -436,7 +436,7 @@ def export_purchase_excel(request: Request, db: Session = Depends(get_db)):
     wb.save(stream)
     stream.seek(0)
 
-    filename = f"Purchase_Ledger_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"Purchase_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -467,7 +467,7 @@ def export_invoice_pdf(inv_id: int, request: Request, db: Session = Depends(get_
         "request": request,
         "invoice": invoice,
         "vendor_name": vendor_map.get(invoice.vendor_id, "Unknown Vendor"),
-        "printed_on": datetime.now()
+        "printed_on": ist_now()
     })
     
     pdf = HTML(string=html_content).write_pdf()

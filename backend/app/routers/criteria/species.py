@@ -68,7 +68,7 @@ def save_species(
 
     record_id = int(id) if id and id.isdigit() else None
 
-    now = datetime.now()
+    now = ist_now()
     date_val = date or now.strftime("%Y-%m-%d")
     time_val = time or now.strftime("%H:%M:%S")
 

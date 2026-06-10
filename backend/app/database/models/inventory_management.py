@@ -10,6 +10,7 @@ from sqlalchemy import (
     UniqueConstraint
 )
 from datetime import datetime  # ✅ Idhi kachithanga undali
+from app.utils.timezone import ist_now
 from app.database import Base
 from app.database.models.criteria import metacolumns
 
@@ -120,7 +121,8 @@ class sales_dispatch(Base):
     sales_quantity = Column(Float, default=0.0, nullable=True)  
     amount_usd = Column(Float, default=0.0, nullable=True)      
     amount_inr = Column(Float, default=0.0, nullable=True)
-    created_at = Column(Date, default=func.now() if 'func' in globals() else datetime.now().date())
+    created_at = Column(Date, default=lambda: ist_now().date()
+)
   
     
 # --------------------------------------------------------
@@ -159,7 +161,7 @@ class cold_storage_holding(Base, metacolumns):
     product_kg_value = Column(Float, default=0.0)
     inventory_value = Column(Float, default=0.0) 
     # Rent & Date Tracking
-    in_date = Column(Date, default=lambda: datetime.now().date())
+    in_date = Column(Date, default=lambda: ist_now().date())
     storage_rate_per_mc = Column(Float, default=0.0)  # Rate per Master Carton
     rent_start_date = Column(Date, nullable=True)
     last_billed_date = Column(Date, nullable=True)

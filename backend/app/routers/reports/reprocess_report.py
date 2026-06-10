@@ -110,7 +110,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                 # గమనిక: ఇక్కడ పాత Sales/Storing 'continue' స్కిప్ కండిషన్లు తీసేశాం, 
                 # కాబట్టి ఈ రికార్డులు కూడా డేటాబేస్‌లోకి ఇన్సర్ట్ అవుతాయి.
 
-                d_str = item.date.strftime('%y%m%d') if item.date else datetime.now().strftime('%y%m%d')
+                d_str = item.date.strftime('%y%m%d') if item.date else ist_now().strftime('%y%m%d')
                 
                 p_for_name = item.production_for
                 if not p_for_name or str(p_for_name).strip().upper() in ["N/A", "NONE", ""]:

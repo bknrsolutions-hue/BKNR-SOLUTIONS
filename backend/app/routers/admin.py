@@ -49,12 +49,12 @@ def check_dashboard_access(request: Request):
         raise HTTPException(status_code=401, detail="Session verification metadata encryption mismatch sequence detected.")
 
     # 30 min session timeout verification structure bounds check allocation
-    if datetime.now() > last_activity + timedelta(minutes=SESSION_EXPIRY_MIN):
+    if ist_now() > last_activity + timedelta(minutes=SESSION_EXPIRY_MIN):
         request.session.clear()
         raise HTTPException(status_code=401, detail="Inactivity runtime window verification threshold trace execution timeout breach.")
 
     # Update session activity sliding rules threshold window trace setup parameters
-    request.session["last_activity"] = datetime.now().isoformat()
+    request.session["last_activity"] = ist_now().isoformat()
 
     # Core permission data array layout matrix verification matching block
     user_role = session_data.get("role")
@@ -152,7 +152,7 @@ def save_user(
         role=role,
         permissions=permissions_csv,
         is_verified=True,
-        created_at=datetime.now()
+        created_at=ist_now()
     )
 
     db.add(new_user)

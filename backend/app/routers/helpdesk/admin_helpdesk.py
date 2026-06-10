@@ -1,25 +1,31 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import cast, Date
+from datetime import date, timedelta
+
 from app.database import get_db
 from app.database.models.helpdesk import SupportTicket, TicketMessage
-from app.database.models.users import User
+from app.database.models.users import User, Company
 
 router = APIRouter(prefix="/admin", tags=["SUPER ADMIN HELPDESK"])
 
-# 🔴 కేవలం BKNR మాత్రమే డిఫాల్ట్ సూపర్ అడ్మిన్ (మాస్టర్ ఓవర్‌రైడ్)
 ALLOWED_ADMINS = ["bknr.solutions@gmail.com"]
 
-# ─── 1. అన్ని కంప్లైంట్స్ చూసే రూట్ (HTML Page) ───
-@router.get("/all_tickets", response_class=HTMLResponse)
-async def admin_all_tickets_page(request: Request, db: Session = Depends(get_db)):
+def is_admin(request: Request):
     email = request.session.get("email")
     role = request.session.get("role")
-    
-    # సెక్యూరిటీ చెక్ (అడ్మిన్ కాకపోతే డాష్‌బోర్డ్ కి పంపించేస్తాం)
-    if email not in ALLOWED_ADMINS and role != "Super Admin":
+    return email in ALLOWED_ADMINS or role == "Super Admin"
+
+# =====================================================
+# 1. ALL TICKETS (HTML)
+# =====================================================
+@router.get("/all_tickets", response_class=HTMLResponse)
+async def all_tickets(request: Request, db: Session = Depends(get_db)):
+    if not is_admin(request):
         return RedirectResponse("/dashboard", status_code=302)
-        
+
     tickets = db.query(SupportTicket).order_by(SupportTicket.created_at.desc()).all()
     
     tickets_json = []
@@ -33,103 +39,92 @@ async def admin_all_tickets_page(request: Request, db: Session = Depends(get_db)
             "company_id": t.company_id,
             "date": t.created_at.strftime("%d %b") if t.created_at else ""
         })
-    
+
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="helpdesk/all_tickets.html",
+        name="helpdesk/all_tickets.html", 
         context={"request": request, "tickets_json": tickets_json}
     )
 
-# ─── 2. సపోర్ట్ టీమ్ కాన్ఫిగరేషన్ (HTML Page) ───
+# =====================================================
+# 2. SUPPORT TEAM (HTML)
+# =====================================================
 @router.get("/support_team", response_class=HTMLResponse)
 async def manage_support_team(request: Request, db: Session = Depends(get_db)):
-    email = request.session.get("email")
-    role = request.session.get("role")
-    
-    if email not in ALLOWED_ADMINS and role != "Super Admin":
+    if not is_admin(request):
         return RedirectResponse("/dashboard", status_code=302)
-        
-    support_users = db.query(User).filter(User.role == "Support Team").all()
+    support_users = db.query(User).filter(User.role.in_(["admin", "support", "super_admin"])).all()
     return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="admin/manage_support.html",
+        request=request, name="admin/manage_support.html",
         context={"request": request, "support_users": support_users}
     )
 
-# ─── 3. ADMIN గెట్ మెసేజెస్ (Ajax API) ───
+# =====================================================
+# 3. GET MESSAGES VIA AJAX (FOR CHAT BOX PANEL)
+# =====================================================
 @router.get("/get_messages/{ticket_id}")
 async def admin_get_messages(ticket_id: int, request: Request, db: Session = Depends(get_db)):
-    email = request.session.get("email")
-    role = request.session.get("role")
-    
-    if email not in ALLOWED_ADMINS and role != "Super Admin":
-        raise HTTPException(status_code=403, detail="Unauthorized Admin Access")
-
+    if not is_admin(request):
+        raise HTTPException(status_code=403, detail="Unauthorized")
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     messages = db.query(TicketMessage).filter(TicketMessage.ticket_id == ticket_id).order_by(TicketMessage.sent_at.asc()).all()
+    msg_data = [{"sender_type": m.sender_type, "message": m.message, "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""} for m in messages]
     
-    msg_data = []
-    for m in messages:
-        msg_data.append({
-            "sender_type": m.sender_type,
-            "message": m.message,
-            "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""
-        })
-
     return JSONResponse(content={"status": ticket.status, "subject": ticket.subject, "messages": msg_data})
 
-# ─── 4. ADMIN స్టేటస్ అప్‌డేట్ (Ajax API) ───
+# =====================================================
+# 4. UPDATE TICKET STATUS (WITH AUTO-REPLY RESOLUTION)
+# =====================================================
 @router.post("/update_ticket_status")
-async def update_ticket_status(
-    request: Request,
-    ticket_id: int = Form(...),
-    status: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    email = request.session.get("email")
-    role = request.session.get("role")
-    
-    if email not in ALLOWED_ADMINS and role != "Super Admin":
-        raise HTTPException(status_code=403, detail="Unauthorized Admin Access")
+async def update_ticket_status(request: Request, ticket_id: int = Form(...), status: str = Form(...), db: Session = Depends(get_db)):
+    if not is_admin(request):
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
+    # If status is being changed to RESOLVED for the first time
+    if status == "RESOLVED" and ticket.status != "RESOLVED":
+        auto_msg = TicketMessage(
+            ticket_id=ticket_id,
+            sender_email="support@bknr.solutions",
+            sender_type="ADMIN",
+            message="Thank you for reaching out to BKNR Support. This ticket is now successfully RESOLVED and permanently closed. If you require any further assistance, please raise a new ticket from your dashboard. Best regards, Operations Team."
+        )
+        db.add(auto_msg)
+
     ticket.status = status
     db.commit()
-
     return JSONResponse(content={"success": True, "message": "Ticket status updated"})
 
-# ─── 5. ADMIN రిప్లై పంపడం (Ajax API) - 🔴 FIXED (No User Email Leak) ───
+# =====================================================
+# 5. SEND MESSAGE VIA CHAT PANEL
+# =====================================================
 @router.post("/send_message")
-async def admin_send_message(
-    request: Request,
-    ticket_id: int = Form(...),
-    message: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    email = request.session.get("email")
-    role = request.session.get("role")
-    
-    if email not in ALLOWED_ADMINS and role != "Super Admin":
-        raise HTTPException(status_code=403, detail="Unauthorized Admin Access")
+async def admin_send_message(request: Request, ticket_id: int = Form(...), message: str = Form(...), db: Session = Depends(get_db)):
+    if not is_admin(request):
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # 🔴 BLOCKING ANY MESSAGES IF TICKET IS CLOSED
+    if ticket.status == "RESOLVED":
+        return JSONResponse(status_code=400, content={"detail": "Ticket is permanently closed."})
 
     new_msg = TicketMessage(
         ticket_id=ticket_id,
-        sender_email="support@bknr.solutions", # ఇక్కడ హార్డ్‌కోడ్ చేసాం
+        sender_email="support@bknr.solutions",
         sender_type="ADMIN",
         message=message
     )
     db.add(new_msg)
-    
-    ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
-    if ticket and ticket.status == "RESOLVED":
-        ticket.status = "IN_PROGRESS"
-
+    # Note: NO code here to change status back to IN_PROGRESS. Status stays as is!
     db.commit()
-
+    
     return JSONResponse(content={"success": True})

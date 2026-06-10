@@ -199,7 +199,7 @@ async def save_or_update_employee(
         row.reporting_to = reporting_to
         row.location = location
         row.date = date.today()
-        row.time = datetime.now().time()
+        row.time = ist_now().time()
 
         db.commit()
         request.session["message"] = f"✅ Employee {msg} Successfully!"
@@ -251,7 +251,7 @@ def export_employee_details(emp_id: str, request: Request, db: Session = Depends
         "request": request, 
         "e": emp, 
         "company": ctx["company_info"],
-        "printed_on": datetime.now().strftime("%d-%m-%Y %H:%M")
+        "printed_on": ist_now().strftime("%d-%m-%Y %H:%M")
     }
     
     # PDF vs HTML Print logic

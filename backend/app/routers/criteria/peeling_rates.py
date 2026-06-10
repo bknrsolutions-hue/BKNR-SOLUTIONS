@@ -77,7 +77,7 @@ def save_peeling_rate(
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=302)
 
-    now = datetime.now()
+    now = ist_now()
     date = now.date()
     time = now.time()
 

@@ -184,13 +184,6 @@ tr.selected { background: #eff6ff !important; }
     
     <div class="actions">
       <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE FREEZER</button>
-      
-      {% if today_data %}
-      <button type="button" class="btn" onclick="window.location.href='/criteria/setup/next'" style="background: var(--accent); color: white; border: none;">
-          NEXT <i class="fa-solid fa-arrow-right"></i>
-      </button>
-      {% endif %}
-      
       <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
     </div>
   </div>

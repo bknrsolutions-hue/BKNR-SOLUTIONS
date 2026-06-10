@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 
 from app.services.brevo_email import send_bulk_email
 from app.utils.company_service import get_gate_entry_report_emails
@@ -57,10 +58,10 @@ def load_dropdowns(db: Session, comp: str):
     ).distinct().all()
     
     prod_for_list = [p[0] for p in prod_for_data]
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
-    current_date = ist_now.date()
-    current_time = ist_now.time()
+    
+    
+    
+    
 
     # --- AUTO-INCREMENT LOGIC (For Suggestions only) ---
     last_batch_map = {}
@@ -212,7 +213,7 @@ async def save_entry(
         no_of_empty_boxes=no_of_empty_boxes,
         no_of_ice_boxes=no_of_ice_boxes,
         date=date.today(),
-        time=datetime.now().time(),
+        time=ist_now().time(),
         email=email,
         company_id=comp
     )

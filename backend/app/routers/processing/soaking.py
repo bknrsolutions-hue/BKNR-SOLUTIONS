@@ -15,7 +15,8 @@ from app.database.models.criteria import (
     varieties, species, chemicals, production_at, production_for as ProductionForMaster
 )
 # Centralized calculation service
-from app.services.floor_balance import get_floor_balance 
+from app.services.floor_balance import get_floor_balance
+from app.utils.timezone import ist_now 
 
 router = APIRouter(tags=["SOAKING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -30,11 +31,17 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
-        
-    # ✅ INDIAN TIME (IST) LOGIC
-    IST = pytz.timezone('Asia/Kolkata')
-    ist_now = datetime.now(IST)
-    current_date = ist_now.date()
+
+    # IST Time
+    now = ist_now()
+    current_date = now.date()
+    current_time = now.time()
+
+    today_data = db.query(Soaking).filter(
+        Soaking.company_id == company_id,
+        Soaking.date == current_date
+    ).order_by(Soaking.id.desc()).all()
+    
 
     # Searchable Dropdowns Data
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]

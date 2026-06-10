@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
+from app.utils.timezone import ist_now
 from collections import defaultdict
 from pydantic import BaseModel
 from typing import List, Optional
@@ -194,7 +195,7 @@ def save_pending_orders(
             exchange_rate=exchange_rate[i],
             company_id=company_code,
             email=email,
-            date=datetime.now().strftime("%Y-%m-%d"),
+            date=ist_now().strftime("%Y-%m-%d"),
             progress_steps="pending"
         ))
 
@@ -271,7 +272,7 @@ def move_to_sales(
                 freight_cost=0.0,
                 packing_cost=0.0,
                 status="Unpaid",
-                created_at=datetime.now().date()
+                created_at=ist_now().date()
             )
         )
 
