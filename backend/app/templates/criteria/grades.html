@@ -5,114 +5,146 @@
 <title>GRADES MASTER | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-:root{
-  --primary: #143465;
-  --accent: #3b82f6;
-  --border: #d1d5db;
-  --bg: #f3f4f6;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --danger: #dc2626;
+/* ================= PREMIUM THEME VARIABLES ================= */
+:root {
+    --bg-color: #f0f2f5;
+    --panel-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --primary-text: #1e293b;
+    --secondary-text: #64748b;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #10b981;
+    --success-hover: #059669;
+    --table-header-bg: #f8fafc;
+    --row-hover: #f1f5f9;
+    --row-selected: #eff6ff;
 }
 
-*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; }
-
-/* HEADER */
-.header{
-  position:sticky; top:0; z-index:100;
-  background:var(--card-bg); padding:10px 15px;
-  border-bottom:1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --panel-bg: #1e293b;
+    --border-color: #334155;
+    --primary-text: #f8fafc;
+    --secondary-text: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --success: #10b981;
+    --success-hover: #34d399;
+    --table-header-bg: #0f172a;
+    --row-hover: #0f172a;
+    --row-selected: rgba(59, 130, 246, 0.15);
 }
-.header-titles h2{margin:0; font-size:16px; color:var(--primary); font-weight: 800; text-transform: uppercase;}
+
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+body { background: var(--bg-color); color: var(--primary-text); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+
+/* ================= HEADER ================= */
+.header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--panel-bg); padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2 { margin: 0; font-size: 16px; color: var(--primary-text); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
 
 /* ================= FORM CONTAINER ================= */
 .form-container {
-  width: 95%; max-width: 1400px; margin: 10px auto;
-  background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none;
+    width: 95%; max-width: 1400px; margin: 15px auto;
+    background: var(--panel-bg); padding: 20px; border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    display: none;
 }
 
-.form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px; }
 
 .field { display: flex; flex-direction: column; }
-.form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
+.form-title-inner { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;}
 
-label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+label { font-size: 11px; font-weight: 700; color: var(--secondary-text); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;}
 input {
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: var(--card-bg);
-  outline: none; width: 100%; transition: 0.2s;
+    padding: 10px 14px; border: 1px solid var(--border-color);
+    border-radius: 8px; font-size: 13px; background: var(--bg-color); color: var(--primary-text);
+    outline: none; width: 100%; transition: 0.2s; font-weight: 500;
 }
-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 
-/* CONTROL ACTIONS HEAD */
+/* ================= BUTTONS & ACTIONS ================= */
 .table-header-bar {
-  width: 95%; max-width: 1400px; margin: 15px auto 5px;
-  display: flex; justify-content: space-between; align-items: center;
-  position: relative;
+    width: 95%; max-width: 1400px; margin: 20px auto 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative;
 }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; }
+.table-title { font-size: 14px; font-weight: 800; color: var(--primary-text); text-transform: uppercase; margin: 0; }
 
 .top-actions { margin: 0; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+.btn-toggle { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; transition: 0.2s; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+.btn-toggle:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.actions { text-align: center; display: flex; justify-content: flex-start; gap: 12px; margin-top: 15px; }
 .btn {
-  background: var(--primary); color: white; border: none;
-  padding: 10px 24px; border-radius: 6px; font-size: 12px;
-  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
+    background: var(--accent); color: white; border: none;
+    padding: 10px 24px; border-radius: 8px; font-size: 12px;
+    font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px; transition: 0.2s;
 }
-.btn-clear { background: #f1f5f9; color: var(--muted); }
-.btn:hover { background: var(--accent); }
+.btn-clear { background: var(--bg-color); color: var(--primary-text); border: 1px solid var(--border-color); }
+.btn:hover { opacity: 0.9; }
+.btn-clear:hover { background: var(--border-color); }
 
-/* ================= TABLE TOP INLINE 3-DOT MENU ================= */
+/* ================= 3-DOT MENU ================= */
 .menu-container { position: relative; display: none; }
-.dots-trigger { background: #003366; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; }
+.dots-trigger { background: var(--panel-bg); color: var(--primary-text); border: 1px solid var(--border-color); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.dots-trigger:hover { background: var(--bg-color); border-color: var(--accent); color: var(--accent);}
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 170px; z-index: 1000; overflow: hidden; }
 
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: #f0f7ff; color: var(--accent); }
+.menu-item { padding: 12px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border-color); cursor: pointer; color: var(--primary-text); display: flex; align-items: center; gap: 8px; transition: 0.2s; text-align: left; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item:hover { background: var(--row-hover); color: var(--accent); padding-left: 18px; }
+.menu-item.danger:hover { color: var(--danger); }
 
-/* ================= COMPACT FULL SCREEN TABLE AREA ================= */
-.table-wrap{
-    background: var(--card-bg) !important;
-} width: 95%; max-width: 1400px; margin: 0 auto 40px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+/* ================= TABLE AREA ================= */
+.table-wrap {
+    background: var(--panel-bg); width: 95%; max-width: 1400px; 
+    margin: 0 auto 40px; border-radius: 12px; border: 1px solid var(--border-color); 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; 
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
-  background: #f1f5f9; color: #475569; padding: 8px 6px;
-  font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
-  text-align: center; white-space: nowrap;
+    background: var(--table-header-bg); color: var(--secondary-text); padding: 12px 10px;
+    font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border-color);
+    text-align: center; white-space: nowrap; font-weight: 800; letter-spacing: 0.5px;
 }
-td { padding: 8px 6px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; }
-tr:hover { background: #f8fbff; cursor: pointer; }
-tr.selected { background: #eff6ff !important; }
+td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--primary-text); text-align: center; white-space: nowrap; font-weight: 500;}
+tr { transition: background 0.2s; }
+tr:hover { background: var(--row-hover); cursor: pointer; }
+tr.selected { background: var(--row-selected) !important; }
 
-/* MOBILE CARD LIST */
+/* ================= MOBILE CARDS ================= */
 .mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; }
-.card-label { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--primary); }
+.data-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: 0.2s; }
+.data-card.selected { border: 2px solid var(--accent); background: var(--row-selected); }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; align-items: center;}
+.card-row:last-child { margin-bottom: 0; }
+.card-label { color: var(--secondary-text); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
+.card-val { font-weight: 700; color: var(--primary-text); }
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
-  .mobile-card-list { display: block; }
-  .form-container, .table-header-bar { width: 95%; }
-  .actions { flex-direction: column; }
-  .btn { width: 100%; }
+    .table-wrap { display: none; }
+    .mobile-card-list { display: block; }
+    .form-container, .table-header-bar { width: 95%; }
+    .actions { flex-direction: column; }
+    .btn { width: 100%; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -120,19 +152,17 @@ tr.selected { background: #eff6ff !important; }
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
-<body>
+<body data-theme="dark">
 
 <div class="header">
   <div class="header-titles">
-      <h2>Grades Master</h2>
+      <h2><i class="fa-solid fa-layer-group" style="margin-right: 6px; color: var(--accent);"></i> Grades Master</h2>
   </div>
 </div>
 
-<!-- FORM AREA -->
 <form onsubmit="submitGrade(event)" id="gradeForm">
   <div class="form-container" id="formSection">
     
-    <!-- Grade Profile Configuration Grid -->
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-layer-group"></i> Grade Configuration</div>
       
@@ -142,25 +172,23 @@ tr.selected { background: #eff6ff !important; }
       </div>
     </div>
 
-    <!-- Metadata Hidden Fields -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_email">
     <input type="hidden" id="meta_company_id">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE GRADE</button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+      <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> SAVE GRADE</button>
+      <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
     </div>
   </div>
 </form>
 
 {% if message %}
-<p style="text-align:center;color:#10b981;font-weight:600;font-size:13px;margin:10px;">{{ message }}</p>
+<p style="text-align:center;color:var(--success);font-weight:700;font-size:13px;margin:10px;">{{ message }}</p>
 {% endif %}
 
 {% if today_data %}
 
-<!-- CONTROL ACTIONS HEADER BAR -->
 <div class="table-header-bar">
     <h3 class="table-title">Registered Grades</h3>
     
@@ -169,12 +197,11 @@ tr.selected { background: #eff6ff !important; }
             <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Grade</button>
         </div>
 
-        <!-- RIGHT INLINE 3-DOT MENU -->
         <div class="menu-container" id="threeDotsMenu">
-          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
           <div id="dropdownMenu">
             <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+            <div onclick="deleteSelected()" class="menu-item danger" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
             <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
             <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
             <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
@@ -183,7 +210,6 @@ tr.selected { background: #eff6ff !important; }
     </div>
 </div>
 
-<!-- MOBILE VIEW CARD LIST -->
 <div class="mobile-card-list">
     {% for row in today_data %}
     <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.grade_name }}"
@@ -191,31 +217,30 @@ tr.selected { background: #eff6ff !important; }
          onclick="selectRowOrCard(this)">
         <div class="card-row">
             <span class="card-label">ID</span>
-            <span class="card-val">#{{ row.id }}</span>
+            <span class="card-val" style="color: var(--secondary-text);">#{{ row.id }}</span>
         </div>
         <div class="card-row">
             <span class="card-label">Grade Item</span>
-            <span class="card-val" style="color:var(--accent);">{{ row.grade_name }}</span>
+            <span class="card-val" style="color:var(--accent); font-size: 14px;">{{ row.grade_name }}</span>
         </div>
-        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+        <div class="card-row" style="border-top: 1px dashed var(--border-color); margin-top: 8px; padding-top: 8px;">
             <span class="card-label">Log Metadata</span>
-            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.date }} {{ row.time }}</span>
+            <span class="card-val" style="font-size:11px; color:var(--secondary-text);">{{ row.date }} {{ row.time }}</span>
         </div>
         <div class="card-row">
             <span class="card-label">Account</span>
-            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.email }}</span>
+            <span class="card-val" style="font-size:11px; color:var(--secondary-text);">{{ row.email }}</span>
         </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- COMPACT FULL TABLE VIEW -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
       <tr>
-        <th style="width:50px;">ID</th>
-        <th>Grade Nomenclature Name</th>
+        <th style="width:60px;">ID</th>
+        <th style="text-align: left; padding-left: 20px;">Grade Nomenclature Name</th>
         <th>Date</th>
         <th>Time</th>
         <th>Email</th>
@@ -227,12 +252,12 @@ tr.selected { background: #eff6ff !important; }
       <tr data-id="{{ row.id }}" data-name="{{ row.grade_name }}"
           data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
           onclick="selectRowOrCard(this)">
-        <td>{{ row.id }}</td>
-        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.grade_name }}</td>
-        <td style="color: #475569;">{{ row.date if row.date else '' }}</td>
-        <td style="color: #64748b;">{{ row.time if row.time else '' }}</td>
-        <td style="color: #0284c7; font-size: 11px;">{{ row.email if row.email else '' }}</td>
-        <td>{{ row.company_id }}</td>
+        <td style="color: var(--secondary-text); font-weight: 700;">#{{ row.id }}</td>
+        <td style="text-align: left; padding-left: 20px; font-weight:700; color:var(--accent);">{{ row.grade_name }}</td>
+        <td style="color: var(--secondary-text);">{{ row.date if row.date else '' }}</td>
+        <td style="color: var(--secondary-text);">{{ row.time if row.time else '' }}</td>
+        <td style="font-size: 11px;">{{ row.email if row.email else '' }}</td>
+        <td><span style="background: var(--bg-color); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700;">{{ row.company_id }}</span></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -242,6 +267,14 @@ tr.selected { background: #eff6ff !important; }
 {% endif %}
 
 <script>
+// ─── 🚀 THEME SYNC ENGINE ───
+window.onload = function() {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+}
+
 let selectedElement = null;
 
 function toggleForm() {
@@ -299,11 +332,23 @@ async function submitGrade(e){
   });
 
   if(res.ok){
-    Swal.fire({icon:'success', title:'Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+    Swal.fire({
+        icon:'success', 
+        title:'Saved Successfully!', 
+        timer:1200, 
+        showConfirmButton:false,
+        background: 'var(--panel-bg)',
+        color: 'var(--primary-text)'
+    }).then(()=>{
         location.reload();
     });
   } else {
-    Swal.fire({icon:'error', title:'Save Failed!'});
+    Swal.fire({
+        icon:'error', 
+        title:'Save Failed!',
+        background: 'var(--panel-bg)',
+        color: 'var(--primary-text)'
+    });
   }
 }
 
@@ -335,18 +380,26 @@ function editSelected(){
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
+  
+  // Close menu after clicking edit
+  document.getElementById("dropdownMenu").style.display = "none";
 }
 
 async function deleteSelected(){
   if(!selectedElement) return;
   
+  document.getElementById("dropdownMenu").style.display = "none";
+  
   Swal.fire({
     title: 'Are you sure?',
-    text: "Delete this grade configuration entry?",
+    text: "Delete this grade configuration entry? This action cannot be reversed.",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: 'var(--danger)',
-    confirmButtonText: 'Yes, delete it!'
+    cancelButtonColor: 'var(--secondary-text)',
+    confirmButtonText: 'Yes, delete it!',
+    background: 'var(--panel-bg)',
+    color: 'var(--primary-text)'
   }).then(async (result) => {
     if (result.isConfirmed) {
       const id = selectedElement.dataset.id;
@@ -354,7 +407,7 @@ async function deleteSelected(){
         method:"POST"
       });
       if(res.ok) location.reload();
-      else Swal.fire({icon:'error', title:'Delete failed'});
+      else Swal.fire({icon:'error', title:'Delete failed', background: 'var(--panel-bg)', color: 'var(--primary-text)'});
     }
   });
 }
@@ -362,14 +415,15 @@ async function deleteSelected(){
 /* ------------------- EXTRAS ACTIONS ------------------- */
 function printSelected(){
   if(!selectedElement) return;
+  document.getElementById("dropdownMenu").style.display = "none";
 
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
 
   const p = window.open("", "_blank");
-  p.document.write("<h3>Grade Details</h3><hr>");
-  p.document.write("<p><b>Grade ID:</b> #"+id+"</p>");
-  p.document.write("<p><b>Grade Nomenclature:</b> "+name+"</p>");
+  p.document.write("<h3 style='font-family:sans-serif;'>Grade Details</h3><hr>");
+  p.document.write("<p style='font-family:sans-serif;'><b>Grade ID:</b> #"+id+"</p>");
+  p.document.write("<p style='font-family:sans-serif;'><b>Grade Nomenclature:</b> "+name+"</p>");
   p.document.close();
   p.print();
 }
@@ -378,6 +432,7 @@ function exportPDF(){ printSelected(); }
 
 function exportExcel(){
   if(!selectedElement) return;
+  document.getElementById("dropdownMenu").style.display = "none";
 
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
@@ -388,7 +443,7 @@ function exportExcel(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `grade_export_${name}.xls`;
+  a.download = `grade_export_${name.replace(/\s+/g, '_')}.xls`;
   a.click();
 }
 
