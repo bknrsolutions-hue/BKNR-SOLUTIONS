@@ -12,6 +12,7 @@ from sqlalchemy import func, and_, case
 
 import re
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess

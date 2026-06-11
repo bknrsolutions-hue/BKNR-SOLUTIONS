@@ -1,10 +1,11 @@
-import pytz
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 from app.services.inventory_summary_service import (
     InventorySummaryService
 )

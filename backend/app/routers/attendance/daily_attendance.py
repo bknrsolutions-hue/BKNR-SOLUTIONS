@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 import datetime as dt
 import logging
 import io

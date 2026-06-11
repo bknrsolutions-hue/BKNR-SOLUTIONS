@@ -1,4 +1,4 @@
-import pytz
+
 from fastapi import APIRouter, Request, Depends, Form, Query
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates

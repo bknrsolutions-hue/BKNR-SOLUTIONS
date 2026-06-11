@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 import datetime as dt
 import json
 from io import BytesIO

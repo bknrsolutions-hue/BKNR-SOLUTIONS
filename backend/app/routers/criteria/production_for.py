@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
+from app.utils.timezone import ist_now
 
 from app.database import get_db
 from app.database.models.criteria import production_for as ProductionFor

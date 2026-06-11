@@ -8,7 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract, func
 from datetime import datetime, date
-import pytz
+from app.utils.timezone import ist_now
+
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -166,7 +167,7 @@ def production_report_page(
             "prod_at_list": get_list(production_at, "production_at"),
             "prod_for_list": get_list(production_for, "production_for"),
             "prod_types_list": get_list(production_types, "production_type"),
-            "datetime": datetime 
+            "today_date": ist_now().strftime("%d %b, %Y")
         }
     )
 
@@ -206,7 +207,7 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
                     old_value=old_val,
                     new_value=new_val,
                     edited_by=user_email,
-                    edited_at=datetime.utcnow()
+                    edited_at=ist_now()
                 )
                 db.add(audit)
                 
@@ -346,7 +347,7 @@ def export_production_pdf(
         "rows": rows,
         "company_name": company_name,
         "company_address": company_address,
-        "printed_on": datetime.now(IST).strftime("%d-%m-%Y %H:%M:%S")
+        "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     
     pdf_file = HTML(string=html_content).write_pdf()

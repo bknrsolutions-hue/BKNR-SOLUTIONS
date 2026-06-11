@@ -2,7 +2,9 @@ from fastapi import APIRouter, Request, Depends, Body, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
+from app.utils.timezone import ist_now
+from datetime import timedelta
 from io import BytesIO
 from openpyxl import Workbook
 import math

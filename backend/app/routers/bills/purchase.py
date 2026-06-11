@@ -1,9 +1,10 @@
+from app.utils.timezone import ist_now
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, and_
 from datetime import date, datetime
 import datetime as dt
 import logging
@@ -100,7 +101,6 @@ def purchase_entry_page(
             .order_by(desc(PurchaseInvoice.invoice_date), desc(PurchaseInvoice.id))
             .all()
         )
-    # FY సెలెక్ట్ చేయనప్పుడు 'invoice_history' ఖాళీగా [] వెళ్తుంది, దీనివల్ల HTML లో 'Empty State' లోడ్ అవుతుంది.
 
     vendor_map = {v.id: v.name for v in all_vendors}
     location_code_map = {loc.id: loc.production_at for loc in locations}
@@ -144,9 +144,9 @@ def purchase_entry_page(
 
 
 # ============================================================
-# 2. SAVE/CREATE ACTION (POST) - WITH INITIAL AUDIT LOG
+# 2. SAVE/CREATE ACTION (POST) - BULLETPROOF IST PROTECTED
 # ============================================================
-@router.post("/create")
+@router.post("/save")
 async def save_purchase_invoice(
     request: Request,
     payload: PurchaseInvoiceSchema,
@@ -181,6 +181,9 @@ async def save_purchase_invoice(
             if po_number.upper() in ["N/A", "", "-"]:
                 po_number = None
 
+        # 🛠️ FIX: Explicit IST deployment timestamp tracking
+        current_ist = ist_now()
+
         new_invoice = PurchaseInvoice(
             unit_id=payload.unit_id,
             production_at_id=payload.unit_id,
@@ -197,18 +200,18 @@ async def save_purchase_invoice(
             po_number=po_number,
             company_id=company_id,
             email=email,
-            date=dt.date.today().strftime("%Y-%m-%d"),
-            time=dt.ist_now().strftime("%H:%M:%S")
+            date=current_ist.strftime("%Y-%m-%d"), # 🟢 Fixed Midnight Date Drift
+            time=current_ist.strftime("%H:%M:%S")  # 🟢 Fixed dt.ist_now() AttributeError Crash
         )
 
         db.add(new_invoice)
         db.flush()
 
-        # 📜 Master Audit Track Creation
+        # 📜 Master Audit Track Creation (IST Calibrated)
         db.add(AuditLog(
             table_name="purchase_invoice", record_id=new_invoice.id, company_id=company_id,
             field_name="CREATE", old_value="NONE", new_value=new_invoice.invoice_no,
-            edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
+            edited_by=email, edited_at=current_ist # 🟢 Synced onto common IST timeline
         ))
         
         db.commit()
@@ -245,6 +248,8 @@ async def update_purchase_invoice(
         if not invoice:
             return JSONResponse({"success": False, "message": "Invoice record not found"}, status_code=404)
 
+        current_ist = ist_now()
+
         # 📜 Field Level Tracking and Auditing
         tracked_fields = {
             "unit_id": payload.unit_id,
@@ -266,7 +271,7 @@ async def update_purchase_invoice(
                 db.add(AuditLog(
                     table_name="purchase_invoice", record_id=invoice.id, company_id=company_id,
                     field_name=key, old_value=old_val, new_value=check_new,
-                    edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
+                    edited_by=email, edited_at=current_ist # 🟢 Synced onto IST timeline
                 ))
                 setattr(invoice, key, new_val)
 
@@ -277,7 +282,7 @@ async def update_purchase_invoice(
         invoice.production_at_id = invoice.unit_id
         
         invoice.updated_by = email
-        invoice.updated_date = dt.date.today().strftime("%Y-%m-%d")
+        invoice.updated_date = current_ist.strftime("%Y-%m-%d") # 🟢 Synced onto IST date
 
         db.commit()
         return JSONResponse({"success": True, "message": f"Invoice {invoice.invoice_no} updated successfully!"})
@@ -333,7 +338,7 @@ def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db))
             db.add(AuditLog(
                 table_name="purchase_invoice", record_id=invoice.id, company_id=company_id,
                 field_name="DELETE", old_value=invoice.invoice_no, new_value="DELETED",
-                edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
+                edited_by=email, edited_at=ist_now() # 🟢 Synced onto IST timeline
             ))
             db.delete(invoice)
             db.commit()

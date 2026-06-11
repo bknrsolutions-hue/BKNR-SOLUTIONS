@@ -8,7 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, date
-import pytz
+from app.utils.timezone import ist_now
+
 import openpyxl 
 from io import BytesIO
 from weasyprint import HTML
@@ -293,7 +294,7 @@ def export_pdf(
     
     html = request.app.state.templates.get_template("inventory_management/stock_report_print.html").render({
         "request": request, "rows": rows, "company_name": company_name, 
-        "company_address": company_address, "printed_on": datetime.now(IST).strftime("%d-%m-%Y %H:%M:%S")
+        "company_address": company_address, "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     
     pdf_file = HTML(string=html).write_pdf()

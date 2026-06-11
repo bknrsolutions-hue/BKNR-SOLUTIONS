@@ -8,7 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract
 from datetime import datetime
-import pytz
+from app.utils.timezone import ist_now
+
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font

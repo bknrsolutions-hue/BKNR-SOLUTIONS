@@ -1,3 +1,4 @@
+from app.utils.timezone import ist_now
 # app/routers/criteria/species.py
 
 from app.services.grade_to_hoso_sync import sync_grade_to_hoso
