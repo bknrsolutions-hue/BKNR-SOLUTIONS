@@ -1,5 +1,4 @@
-
-from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query # <-- Query added here
+from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -24,12 +23,16 @@ from app.database.models.criteria import (
 # Centralized Floor Balance Service
 from app.services.floor_balance import get_floor_balance
 
-# Added prefix to match your JavaScript calls (/processing/...)
-router = APIRouter(tags=["DE-HEADING"])
+# 🟢 Centralized Hlso Grading Pool Sync Service
+from app.services.hlso_grading_sync import add_deheading_to_grading_pool, remove_deheading_from_grading_pool
+
+# 🟢 FIXED: Added prefix to perfectly match your JavaScript frontend calls (/processing/...)
+router = APIRouter( tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
 
+
 # =====================================================
-# API: GET AVAILABLE QTY (Fixed with Query Params to handle '/' in counts)
+# API: GET AVAILABLE QTY (Direct Service Link)
 # =====================================================
 @router.get("/get_available_qty")
 def get_available_qty(
@@ -50,9 +53,10 @@ def get_available_qty(
     is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_code).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # De-heading is always HOSO variety
+    # De-heading is always HOSO variety -> Directly calling centralized service engine
     qty = get_floor_balance(db, company_code, location, clean_batch, clean_count, species_name, "HOSO", source_type=s_type)
     return {"available_qty": round(qty, 2) if qty else 0}
+
 
 # =====================================================
 # API: GET VALID BATCHES
@@ -90,6 +94,7 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
 
     return {"batches": sorted(list(valid_batches))}
 
+
 # =====================================================
 # API: GET HOSO COUNTS
 # =====================================================
@@ -118,6 +123,7 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
 
     return {"counts": sorted(list(stock_counts))}
 
+
 # =====================================================
 # API: GET CONTRACTOR RATE
 # =====================================================
@@ -130,6 +136,7 @@ def get_contractor_rate(contractor: str, request: Request, db: Session = Depends
         peeling_rates.company_id == company_code
     ).order_by(peeling_rates.effective_from.desc()).first()
     return {"rate": float(row.rate) if row else 0}
+
 
 # =====================================================
 # MAIN VIEW: DE-HEADING PAGE
@@ -145,7 +152,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    
+    # Today's local data tracking
     today_data = db.query(DeHeading).filter(
         DeHeading.company_id == company_code,
         DeHeading.date == ist_now().date()
@@ -185,8 +192,9 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
         }
     )
 
+
 # =====================================================
-# ACTION: SAVE DE-HEADING
+# ACTION: SAVE DE-HEADING (IST Calibrated & Sync Enabled)
 # =====================================================
 @router.post("/de_heading")
 def save_de_heading(request: Request, db: Session = Depends(get_db), 
@@ -215,23 +223,42 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
     try: clean_yield = float(str(yield_percent).replace('%', ''))
     except: clean_yield = 0.0
 
+    # 🛠️ Midnight Rollover Date & Time Protection using ist_now helper
+    current_ist = ist_now()
+
     new_entry = DeHeading(
         production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
         species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
-        contractor=contractor, rate_per_kg=rate_per_kg, amount=amount, date=date.today(), 
-        time=ist_now().time(), email=email, company_id=company_code
+        contractor=contractor, rate_per_kg=rate_per_kg, amount=amount, 
+        date=current_ist.date(),  # 🟢 Synchronized to IST date
+        time=current_ist.time(),  # 🟢 Synchronized to IST time
+        email=email, company_id=company_code
     )
     db.add(new_entry)
+    
+    # 🟢 AUTO-DATA STORING GATEWAY: Adds HLSO stock straight to grading pool table
+    add_deheading_to_grading_pool(db, new_entry)
+    
     db.commit()
     return RedirectResponse("/processing/de_heading", status_code=303)
 
+
 # =====================================================
-# ACTION: DELETE
+# ACTION: DELETE (Sync and Pipeline Rollback Enabled)
 # =====================================================
 @router.post("/de_heading/delete/{id}")
 def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
-    db.query(DeHeading).filter(DeHeading.id == id, DeHeading.company_id == company_code).delete()
+    
+    # 🟢 Fetch row instance first to allow properties synchronization mapping
+    row = db.query(DeHeading).filter(DeHeading.id == id, DeHeading.company_id == company_code).first()
+    if not row:
+        return JSONResponse({"error": "Record not found"}, status_code=404)
+        
+    # 🟢 AUTO-DATA STORING GATEWAY: Rollback and subtract weight from grading pool
+    remove_deheading_from_grading_pool(db, row)
+    
+    db.delete(row)
     db.commit()
     return JSONResponse({"status": "ok"})

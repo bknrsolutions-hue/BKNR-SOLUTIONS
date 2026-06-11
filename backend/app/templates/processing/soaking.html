@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SOAKING MANAGEMENT - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,10 +14,11 @@
 :root{
   --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
   --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626; --warning: #f59e0b;
+  --card-bg: #ffffff; --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 20px; overflow-x: hidden;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+body{background:var(--bg); color:var(--text); padding-bottom: 20px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
 
 /* --- HEADER --- */
 .header-dash {
@@ -38,17 +39,17 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 20px; ov
 
 .panel { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .panel-title { padding: 8px 12px; background: #f8fafc; font-weight: 800; font-size: 10px; border-bottom: 1px solid var(--border); color: var(--primary); text-transform: uppercase; }
-.table-container { overflow-y: auto; max-height: 250px; overflow-x: auto; }
+.table-container { overflow-y: auto; max-height: 250px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* DASH TABLES */
 .dash-table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 250px; }
 .dash-table th { position: sticky; top: 0; background: var(--card-bg); padding: 8px; border-bottom: 2px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
-.dash-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; color: var(--primary); font-weight: 600; }
+.dash-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; color: var(--primary); font-weight: 600; white-space: nowrap; }
 
 /* Hierarchy Styles */
 .group-row { background: #f1f5f9 !important; cursor: pointer; border-left: 3px solid var(--primary); }
-.sub-group-row { background: var(--card-bg)fff !important; display: none; cursor: pointer; border-left: 3px solid var(--accent); } 
-.leaf-row { background: var(--card-bg)beb !important; display: none; font-size: 9px; }
+.sub-group-row { background: #ffffff !important; display: none; cursor: pointer; border-left: 3px solid var(--accent); } 
+.leaf-row { background: #ebebeb !important; display: none; font-size: 9px; }
 .toggle-icon { transition: transform 0.2s; margin-right: 5px; width: 10px; display: inline-block; text-align: center; }
 .expanded > td > .toggle-icon { transform: rotate(90deg); color: var(--accent); }
 
@@ -56,23 +57,49 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 20px; ov
 .filter-bar { background: var(--card-bg); padding: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 140px; }
 .filter-item label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.filter-item input { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; outline: none; width: 100%; }
+.filter-item input { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--primary); outline: none; width: 100%; }
+
+/* 🟢 FILTER BAR - COMPACT HORIZONTAL SCROLL ENGINE FOR MOBILE */
+@media(max-width: 600px) {
+    .filter-bar { 
+        padding: 10px 12px; 
+        gap: 12px; 
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+        scrollbar-width: thin;
+    }
+    .filter-bar::-webkit-scrollbar { height: 4px; }
+    .filter-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    
+    .filter-item { 
+        flex-shrink: 0 !important; 
+        min-width: 130px !important;
+        width: 130px !important;
+    }
+    .filter-item label { font-size: 8px !important; }
+    .filter-item input { 
+        height: 32px !important; 
+        padding: 4px 8px !important; 
+        font-size: 11px !important; 
+    }
+}
 
 /* --- MAIN TABLE --- */
 .section-header { padding: 10px 15px 5px; display: flex; justify-content: space-between; align-items: center; }
-.btn-add { background: var(--accent); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
 
 #threeDotsMenu { position: relative; display: none; }
 .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 #dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card-bg); border: 1px solid var(--border); width: 140px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .menu-item { padding: 10px; cursor: pointer; font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
 
-.table-wrap{
-    background: var(--card-bg) !important;
-} margin: 0 10px 20px; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+/* 🟢 FIXED: Re-structured valid mobile scroll wrapper properties */
+.table-wrap { margin: 0 10px 20px; background: var(--card-bg) !important; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .main-table { width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; min-width: 1200px; }
-.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); position: sticky; top: 0; }
-.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; }
+.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); position: sticky; top: 0; white-space: nowrap; }
+.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; white-space: nowrap; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 
 /* --- MODAL --- */
@@ -260,12 +287,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <datalist id="f_chem_list">{% for c in chemicals %}<option value="{{c}}">{% endfor %}</datalist>
 <datalist id="f_rej_for_list">{% for v in varieties %}<option value="{{v}}">{% endfor %}</datalist>
 
-<div id="floorDataStore" style="display:none;">
-    {% for r in rows_batch %}<span class="r-item" data-loc="{{r.location}}" data-comp="{{r.production_for}}" data-batch="{{r.batch}}" data-var="{{r.variety}}" data-spec="{{r.species}}" data-cnt="{{r.count}}" data-qty="{{r.available_qty}}"></span>{% endfor %}
-</div>
-
 <script>
-// 1. DATA INITIALIZATION
+const RAW_FLOOR_DATA = [
+    {% for r in rows_batch %}
+    { loc: "{{r.location}}", comp: "{{r.production_for}}", batch: "{{r.batch}}", var: "{{r.variety}}", spec: "{{r.species}}", cnt: "{{r.count}}", qty: parseFloat("{{r.available_qty or 0}}") },
+    {% endfor %}
+];
+
 const todayEntries = [
     {% for r in today_data %}
     {
@@ -295,7 +323,6 @@ let stockChart = null;
 let availableQtyGlobal = 0;
 let selectedRowId = null;
 
-// [2026-01-24] Searchable Dropdown triggers & Exact Match Filter Init
 window.onload = () => {
     populateSearchableFilters();
     runDashboard();
@@ -306,7 +333,7 @@ function populateSearchableFilters() {
     const varieties = new Set();
     const counts = new Set();
 
-    [...todayEntries, ...allRejections].forEach(e => {
+    todayEntries.concat(allRejections).forEach(e => {
         if(e.comp) comps.add(e.comp);
         if(e.var) varieties.add(e.var);
         if(e.cnt) counts.add(e.cnt);
@@ -346,17 +373,12 @@ function runDashboard() {
         return d.status !== 'Completed' && matchComp && matchVar && matchCount;
     });
 
-    const floorItems = [];
-    document.querySelectorAll('.r-item').forEach(i => {
-        const d = i.dataset;
+    const floorItems = RAW_FLOOR_DATA.filter(d => {
         const matchComp = compF === "" || d.comp === compF;
         const matchVar = varF === "" || d.var === varF;
         const matchCount = countF === "" || d.cnt === countF;
         const matchBatch = batchF === "" || d.batch.toUpperCase().includes(batchF);
-        
-        if(matchComp && matchVar && matchCount && matchBatch) {
-            floorItems.push({ ...d, qty: parseFloat(d.qty) });
-        }
+        return matchComp && matchVar && matchCount && matchBatch;
     });
 
     renderMainTable(filteredToday);
@@ -366,13 +388,13 @@ function runDashboard() {
 
 function renderMainTable(filteredData) {
     const tbody = document.getElementById('mainTableBody');
-    tbody.innerHTML = "";
     let groups = {};
     filteredData.forEach(item => {
         if (!groups[item.comp]) groups[item.comp] = [];
         groups[item.comp].push(item);
     });
 
+    let tableHtml = "";
     Object.keys(groups).sort().forEach(company => {
         let items = groups[company];
         let sQty = 0, sC = 0, sS = 0, sR = 0;
@@ -381,44 +403,42 @@ function renderMainTable(filteredData) {
             let sq = (item.qty * item.salt_p / 100);
             sQty += item.qty; sC += cq; sS += sq; sR += item.rej;
 
-            const tr = document.createElement('tr');
-            tr.className = selectedRowId == item.id ? "selected-row" : "";
-            tr.onclick = () => selectRow(tr, item.id);
-            tr.innerHTML = `
-                <td style="font-weight:800; color:var(--accent);">${item.sintex || '-'}</td>
-                <td style="font-weight:700;">${item.batch}</td>
-                <td>${item.comp}</td>
-                <td style="color:var(--accent); font-weight:700;">${item.cnt}</td>
-                <td>${item.var}</td>
-                <td>${item.spec}</td>
-                <td style="font-weight:800;">${item.qty.toFixed(2)}</td>
-                <td style="color:var(--warning); font-weight:700;">${item.loc}</td>
-                <td>${item.chem_n}</td>
-                <td>${item.chem_p}%</td>
-                <td style="background:#f0f7ff; font-weight:700;">${cq.toFixed(2)}</td>
-                <td>${item.salt_p}%</td>
-                <td style="background:var(--card-bg)7ed; font-weight:700;">${sq.toFixed(2)}</td>
-                <td style="color:var(--danger); font-weight:700;">${item.rej.toFixed(2)}</td>
-                <td style="font-weight:600; font-size:10px;">${item.rej_for || '-'}</td>
-                <td style="font-size:10px; color:var(--muted);">${item.time}</td>
+            tableHtml += `
+                <tr class="${selectedRowId == item.id ? 'selected-row' : ''}" onclick="selectRow(this, '${item.id}')">
+                    <td style="font-weight:800; color:var(--accent);">${item.sintex || '-'}</td>
+                    <td style="font-weight:700;">${item.batch}</td>
+                    <td>${item.comp}</td>
+                    <td style="color:var(--accent); font-weight:700;">${item.cnt}</td>
+                    <td>${item.var}</td>
+                    <td>${item.spec}</td>
+                    <td style="font-weight:800;">${item.qty.toFixed(2)}</td>
+                    <td style="color:var(--warning); font-weight:700;">${item.loc}</td>
+                    <td>${item.chem_n}</td>
+                    <td>${item.chem_p}%</td>
+                    <td style="background:#f0f7ff; font-weight:700;">${cq.toFixed(2)}</td>
+                    <td>${item.salt_p}%</td>
+                    <td style="background:rgba(255,255,255,0.5); font-weight:700;">${sq.toFixed(2)}</td>
+                    <td style="color:var(--danger); font-weight:700;">${item.rej.toFixed(2)}</td>
+                    <td style="font-weight:600; font-size:10px;">${item.rej_for || '-'}</td>
+                    <td style="font-size:10px; color:var(--muted);">${item.time}</td>
+                </tr>
             `;
-            tbody.appendChild(tr);
         });
 
-        const subTr = document.createElement('tr');
-        subTr.className = "main-subtotal-row";
-        subTr.innerHTML = `
-            <td colspan="6" style="text-align:right; padding-right:15px; font-weight:bold;">${company} TOTAL:</td>
-            <td style="font-weight:bold;">${sQty.toFixed(2)}</td>
-            <td colspan="3"></td>
-            <td style="font-weight:bold;">${sC.toFixed(2)}</td>
-            <td></td>
-            <td style="font-weight:bold;">${sS.toFixed(2)}</td>
-            <td style="font-weight:bold; color:var(--danger);">${sR.toFixed(2)}</td>
-            <td colspan="2"></td>
+        tableHtml += `
+            <tr class="main-subtotal-row">
+                <td colspan="6" style="text-align:right; padding-right:15px; font-weight:bold;">${company} TOTAL:</td>
+                <td style="font-weight:bold;">${sQty.toFixed(2)}</td>
+                <td colspan="3"></td>
+                <td style="font-weight:bold;">${sC.toFixed(2)}</td>
+                <td></td>
+                <td style="font-weight:bold;">${sS.toFixed(2)}</td>
+                <td style="font-weight:bold; color:var(--danger);">${sR.toFixed(2)}</td>
+                <td colspan="2"></td>
+            </tr>
         `;
-        tbody.appendChild(subTr);
     });
+    tbody.innerHTML = tableHtml;
 }
 
 function buildFloorHierarchy(filteredFloorItems, filteredRejections) {
@@ -466,30 +486,25 @@ function addToTree(tree, comp, loc, batch, variety, spec, cnt, qty) {
 
 function renderHierarchy(tree, containerId, rowPrefix) {
     const tbody = document.getElementById(containerId); 
-    tbody.innerHTML = "";
+    let htmlContent = "";
+    
     Object.keys(tree).sort().forEach((comp, cIdx) => {
         const cClass = `${rowPrefix}-c-${cIdx}`;
-        let tr = createRow("group-row", `<td><span class="toggle-icon"><i class="fa-solid fa-chevron-right"></i></span> <b>${comp}</b></td><td style="text-align:right;">${tree[comp].total.toFixed(2)}</td>`);
-        tr.onclick = () => toggleRowExpansion(tr, cClass);
-        tbody.appendChild(tr);
+        htmlContent += `<tr class="group-row" onclick="toggleRowExpansion(this, '${cClass}')"><td><span class="toggle-icon"><i class="fa-solid fa-chevron-right"></i></span> <b>${comp}</b></td><td style="text-align:right;">${tree[comp].total.toFixed(2)}</td></tr>`;
 
         Object.keys(tree[comp].locations).sort().forEach((loc, lIdx) => {
             const lClass = `${rowPrefix}-l-${cIdx}-${lIdx}`;
             let locStyle = loc === "REJECTION STOCK" ? "color:var(--danger); font-weight:bold;" : "color:var(--accent); font-weight:700;";
-            let lTr = createRow(`sub-group-row ${cClass}`, `<td style="padding-left:25px;"><span class="toggle-icon"><i class="fa-solid fa-caret-right"></i></span> ${loc}</td><td style="text-align:right; ${locStyle}">${tree[comp].locations[loc].total.toFixed(2)}</td>`);
-            lTr.setAttribute('data-target-class', lClass);
-            lTr.onclick = (e) => { e.stopPropagation(); toggleRowExpansion(lTr, lClass); };
-            tbody.appendChild(lTr);
+            htmlContent += `<tr class="sub-group-row ${cClass}" data-target-class="${lClass}" onclick="event.stopPropagation(); toggleRowExpansion(this, '${lClass}')"><td style="padding-left:25px;"><span class="toggle-icon"><i class="fa-solid fa-caret-right"></i></span> ${loc}</td><td style="text-align:right; ${locStyle}">${tree[comp].locations[loc].total.toFixed(2)}</td></tr>`;
 
             Object.values(tree[comp].locations[loc].items).forEach(item => {
                 let qtyStyle = item.qty < 0 ? "color:var(--danger); font-weight:700;" : "font-weight:700;";
-                tbody.appendChild(createRow(`leaf-row ${lClass}`, `<td style="padding-left:50px; color:var(--muted)">${item.batch} | ${item.variety} | ${item.species} | ${item.count}</td><td style="text-align:right; ${qtyStyle}">${item.qty.toFixed(2)}</td>`));
+                htmlContent += `<tr class="leaf-row ${lClass}"><td style="padding-left:50px; color:var(--muted)">${item.batch} | ${item.variety} | ${item.species} | ${item.count}</td><td style="text-align:right; ${qtyStyle}">${item.qty.toFixed(2)}</td></tr>`;
             });
         });
     });
+    tbody.innerHTML = htmlContent;
 }
-
-function createRow(cls, html) { let tr = document.createElement('tr'); tr.className = cls; tr.innerHTML = html; return tr; }
 
 function toggleRowExpansion(row, targetClass) {
     const isExpanding = !row.classList.contains('expanded');
@@ -505,13 +520,21 @@ function toggleRowExpansion(row, targetClass) {
 }
 
 function updateChart(map) {
-    const ctx = document.getElementById('stockChart').getContext('2d');
-    if (stockChart) stockChart.destroy();
-    stockChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: Object.keys(map), datasets: [{ data: Object.values(map), backgroundColor: ['#143465', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
-    });
+    const labels = Object.keys(map);
+    const data = Object.values(map);
+    
+    if (stockChart) {
+        stockChart.data.labels = labels;
+        stockChart.data.datasets[0].data = data;
+        stockChart.update();
+    } else {
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        stockChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#143465', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+        });
+    }
 }
 
 function onCompanyChange() {
@@ -611,10 +634,6 @@ function handleSintexLogic() {
     }
 }
 
-// =====================================================
-// SINTEX VALUE ENFORCEMENT ENGINE
-// 100% Locked on Database Auto Generation Sequence
-// =====================================================
 function getNextSintexNumber() {
     document.getElementById("f_sintex").value = "AUTO";
 }
@@ -657,7 +676,6 @@ function closeModal() { document.getElementById('entryModal').style.display = 'n
 document.getElementById("dotsBtn").onclick = (e) => { e.stopPropagation(); const m = document.getElementById("dropdownMenu"); m.style.display = (m.style.display === "block") ? "none" : "block"; };
 document.onclick = (e) => { if(!e.target.closest('.menu-trigger')) document.getElementById("dropdownMenu").style.display = 'none'; };
 
-// FINAL SUCCESS HANDLING LOGIC
 const soakingForm = document.getElementById('soakingForm');
 if(soakingForm) {
     soakingForm.onsubmit = async function(event) {

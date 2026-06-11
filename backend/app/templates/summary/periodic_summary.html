@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
@@ -28,69 +28,59 @@
 <style>
 /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
 :root {
-    /* LIGHT MODE (DEFAULT) */
     --primary-dark: #0f172a;
-    --slate-bg: #f1f5f9; 
+    --slate-bg: #f8fafc; 
     --card-bg: #ffffff;
-    --accent-blue: #1d4ed8;
+    --accent-blue: #0f172a;
     --border-color: #e2e8f0;
     --text-main: #0f172a;
-    --text-muted: #475569;
-    --text-value: #000000;
+    --text-muted: #64748b;
+    --text-value: #0f172a;
     
-    --radius-premium: 12px;
-    --radius-md: 8px;
-    --orange-accent: #ea580c;
-    --danger: #dc2626;
-    --success: #16a34a;
-
-    --kpi-rmp-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); --kpi-rmp-bd: #bfdbfe; --kpi-rmp-text: #2563eb;
-    --kpi-prod-bg: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); --kpi-prod-bd: #e9d5ff; --kpi-prod-text: #7c3aed;
-    --kpi-stk-bg: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); --kpi-stk-bd: #ccfbf1; --kpi-stk-text: #0d9488;
-    --kpi-danger-bg: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); --kpi-danger-bd: #fecaca; --kpi-danger-text: #e11d48;
+    --radius-premium: 8px;
+    --radius-md: 6px;
+    --orange-accent: #f97316;
+    --danger: #ef4444;
+    --success: #10b981;
 
     --table-header-bg: #f8fafc;
-    --table-hover-bg: #f8fafc;
-    --qty-cell-bg: #eff6ff;
+    --table-hover-bg: #f1f5f9;
+    --qty-cell-bg: #f8fafc;
     --tag-bg: #f1f5f9;
-    --subtotal-bg: #eff6ff;
-    --subtotal-bd: #bfdbfe;
-    --subtotal-text: #1e40af;
+    --subtotal-bg: #f8fafc;
+    --subtotal-bd: #e2e8f0;
+    --subtotal-text: #0f172a;
 
-    --danger-sub-bg: #fff1f2;
-    --danger-sub-bd: #fecaca;
+    --danger-sub-bg: #fef2f2;
+    --danger-sub-bd: #fee2e2;
+    --amber-sub-bg: #fffbeb;
 }
 
 [data-theme="dark"] {
-    /* DARK MODE OVERRIDES */
     --primary-dark: #f8fafc;
-    --slate-bg: #0f172a; 
-    --card-bg: #1e293b;
-    --accent-blue: #60a5fa;
-    --border-color: #334155;
+    --slate-bg: #020617; 
+    --card-bg: #0f172a;
+    --accent-blue: #38bdf8;
+    --border-color: #1e293b;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --text-value: #f8fafc;
     
     --orange-accent: #f97316;
-    --danger: #ef4444;
-    --success: #22c55e;
+    --danger: #f43f5e;
+    --success: #34d399;
 
-    --kpi-rmp-bg: rgba(37, 99, 235, 0.15); --kpi-rmp-bd: rgba(37, 99, 235, 0.3); --kpi-rmp-text: #60a5fa;
-    --kpi-prod-bg: rgba(124, 58, 237, 0.15); --kpi-prod-bd: rgba(124, 58, 237, 0.3); --kpi-prod-text: #a78bfa;
-    --kpi-stk-bg: rgba(13, 148, 136, 0.15); --kpi-stk-bd: rgba(13, 148, 136, 0.3); --kpi-stk-text: #2dd4bf;
-    --kpi-danger-bg: rgba(225, 29, 72, 0.15); --kpi-danger-bd: rgba(225, 29, 72, 0.3); --kpi-danger-text: #fb7185;
+    --table-header-bg: #1e293b;
+    --table-hover-bg: #1e293b;
+    --qty-cell-bg: #1e293b;
+    --tag-bg: #1e293b;
+    --subtotal-bg: #1e293b;
+    --subtotal-bd: #334155;
+    --subtotal-text: #38bdf8;
 
-    --table-header-bg: #0f172a;
-    --table-hover-bg: #0f172a;
-    --qty-cell-bg: rgba(59, 130, 246, 0.1);
-    --tag-bg: #334155;
-    --subtotal-bg: rgba(59, 130, 246, 0.2);
-    --subtotal-bd: rgba(59, 130, 246, 0.4);
-    --subtotal-text: #60a5fa;
-
-    --danger-sub-bg: rgba(225, 29, 72, 0.2);
-    --danger-sub-bd: rgba(225, 29, 72, 0.4);
+    --danger-sub-bg: rgba(244, 63, 94, 0.08);
+    --danger-sub-bd: rgba(244, 63, 94, 0.2);
+    --amber-sub-bg: rgba(245, 158, 11, 0.08);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -100,109 +90,114 @@ body {
     color: var(--text-main); 
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
-    padding: 8px;
-    transition: background 0.3s ease, color 0.3s ease;
+    padding: 6px;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .dashboard-container { width: 100%; max-width: 1600px; margin: 0 auto; }
-@media(min-width: 768px) { body { padding: 16px; } }
 
-/* HEADER */
+/* HEADER PANEL */
 .header-panel {
-    background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius-premium); margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color);
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-    border-left: 4px solid var(--accent-blue);
-    transition: background 0.3s, border-color 0.3s;
+    background: var(--card-bg); padding: 10px 16px; border-radius: var(--radius-premium); margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    border-left: 3px solid var(--accent-blue);
 }
-.header-title h2 { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; color: var(--text-main); }
-.header-title p { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.header-title h2 { font-size: 13px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; color: var(--text-main); }
+.header-title p { font-size: 9px; color: var(--text-muted); font-weight: 600; margin-top: 1px; }
 
-.btn-action { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--radius-md); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
+.btn-action { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: var(--radius-md); font-size: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .btn-action:hover { background: var(--border-color); }
-.btn-sync { background: var(--accent-blue); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-sync { background: var(--text-main); color: var(--card-bg); border: none; padding: 6px 12px; border-radius: var(--radius-md); font-weight: 800; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .btn-sync:hover { opacity: 0.9; }
-.btn-reset { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 800; font-size: 11px; display: inline-block; transition: 0.2s; }
+.btn-reset { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); text-decoration: none; padding: 6px 12px; border-radius: var(--radius-md); font-weight: 800; font-size: 10px; display: inline-block; text-align: center; }
 .btn-reset:hover { background: var(--border-color); }
 
 /* FILTER PANEL */
-.filter-panel { background: var(--card-bg); padding: 12px 16px; border-radius: var(--radius-premium); margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border-color); transition: background 0.3s, border-color 0.3s; }
-.filter-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.input-field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
-.input-field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-.input-field input, .input-field select { padding: 6px 10px; border: 1px solid var(--border-color); background: var(--slate-bg); border-radius: var(--radius-md); font-size: 11px; font-weight: 600; color: var(--text-main); outline: none; width: 100%; height: 34px; transition: 0.3s;}
-.input-field input:focus, .input-field select:focus { border-color: var(--accent-blue); }
+.filter-panel { background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius-premium); margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+.filter-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.input-field { display: flex; flex-direction: column; gap: 2px; min-width: 120px; flex: 1; }
+.input-field label { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.input-field input, .input-field select { padding: 4px 8px; border: 1px solid var(--border-color); background: var(--slate-bg); border-radius: var(--radius-md); font-size: 10px; font-weight: 600; color: var(--text-main); outline: none; width: 100%; height: 28px; }
 
-.choices__inner { background-color: var(--slate-bg) !important; border: 1px solid var(--border-color) !important; border-radius: var(--radius-md) !important; min-height: 34px !important; padding: 3px 8px !important; font-size: 11px !important; font-weight: 600 !important; color: var(--text-main) !important; transition: 0.3s; }
-.choices__list--dropdown { font-size: 11px !important; z-index: 99 !important; background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+.choices__inner { background-color: var(--slate-bg) !important; border: 1px solid var(--border-color) !important; border-radius: var(--radius-md) !important; min-height: 28px !important; padding: 0px 6px !important; font-size: 10px !important; font-weight: 600 !important; color: var(--text-main) !important; display: flex; align-items: center;}
+.choices__list--dropdown { font-size: 10px !important; z-index: 99 !important; background-color: var(--card-bg) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
 .choices__list--dropdown .choices__item--selectable.is-highlighted { background-color: var(--slate-bg) !important; color: var(--accent-blue) !important;}
+.choices__list--single { padding: 0 !important; }
 
-/* KPI GRID */
-.kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+/* 🔴 STICKY KPI CONTAINER ENGINE */
+.sticky-kpi-container {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--slate-bg);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 6px -4px rgba(0,0,0,0.1);
+}
+
+.kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 @media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
 @media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
-@media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(8, 1fr); } }
+@media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(9, 1fr); } } /* Aligned for 9 KPIs */
 
-.ref-kpi-card { padding: 12px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.2s ease; border: 1px solid var(--border-color); background: var(--card-bg); cursor: pointer; }
-.ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
-.ref-kpi-meta { font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; }
-.ref-kpi-value { font-size: 14px; font-weight: 800; color: var(--text-value); margin-top: 4px; letter-spacing: -0.5px; }
+.ref-kpi-card { padding: 8px 10px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center; background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+.ref-kpi-card:hover { transform: translateY(-1px); }
+.ref-kpi-meta { font-size: 8px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.3px; }
+.ref-kpi-value { font-size: 12px; font-weight: 800; color: var(--text-value); margin-top: 2px; line-height: 1.3; }
 
-.kpi-rmp { background: var(--kpi-rmp-bg) !important; border-color: var(--kpi-rmp-bd) !important; }
-.kpi-rmp .ref-kpi-value { color: var(--kpi-rmp-text) !important; }
-.kpi-prod { background: var(--kpi-prod-bg) !important; border-color: var(--kpi-prod-bd) !important; }
-.kpi-prod .ref-kpi-value { color: var(--kpi-prod-text) !important; }
-.kpi-stock { background: var(--kpi-stk-bg) !important; border-color: var(--kpi-stk-bd) !important; }
-.kpi-stock .ref-kpi-value { color: var(--kpi-stk-text) !important; }
-.kpi-danger { background: var(--kpi-danger-bg) !important; border-color: var(--kpi-danger-bd) !important; }
-.kpi-danger .ref-kpi-value { color: var(--kpi-danger-text) !important; }
+.kpi-rmp { border-left: 3px solid #3b82f6 !important; }
+.kpi-prod { border-left: 3px solid #8b5cf6 !important; }
+.kpi-stock { border-left: 3px solid #10b981 !important; }
+.kpi-danger { border-left: 3px solid #f43f5e !important; }
+.kpi-amber { border-left: 3px solid #f59e0b !important; }
 
 /* SECTIONS & TABLES */
-.section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 12px; transition: background 0.3s, border-color 0.3s;}
-.section-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 6px; transition: background 0.2s; border-left: 3px solid var(--orange-accent); }
+.section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; scroll-margin-top: 65px; }
+.section-header { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 5px; border-radius: 4px; border-left: 2px solid var(--orange-accent); }
 .section-header:hover { background: var(--slate-bg); }
-.section-header-left { display: flex; align-items: center; gap: 8px; }
-.toggle-icon { color: var(--text-muted); font-size: 12px; transition: transform 0.2s; }
+.section-header-left { display: flex; align-items: center; gap: 6px; }
+.toggle-icon { color: var(--text-muted); font-size: 10px; transition: transform 0.2s; }
 
-.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 6px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
 table { width: 100%; border-collapse: collapse; min-width: 600px; }
-th, td { padding: 6px 8px; font-size: 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: middle; white-space: nowrap; color: var(--text-main);}
-th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 9px; }
+th, td { padding: 4px 6px; font-size: 9px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: middle; white-space: nowrap; color: var(--text-main);}
+th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 8.5px; }
 tr:hover td { background-color: var(--table-hover-bg); }
 
 .text-left { text-align: left !important; }
 .text-right { text-align: right !important; }
 .qty-cell { font-weight: 800; color: var(--text-main); background: var(--qty-cell-bg); text-align: right !important; }
+.margin-active-card { border-color: var(--orange-accent) !important; box-shadow: 0 0 0 1px var(--orange-accent); }
+
 .money-cell { color: var(--success); font-weight: 800; text-align: right !important; }
-.sl-no { font-weight: 800; color: var(--text-muted); background: var(--table-header-bg); width: 30px; }
-.tag { background: var(--tag-bg); color: var(--text-main); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid var(--border-color); display: inline-block; }
+.sl-no { font-weight: 800; color: var(--text-muted); background: var(--table-header-bg); width: 25px; }
+.tag { background: var(--tag-bg); color: var(--text-main); padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid var(--border-color); display: inline-block; }
 
 .subtotal-row { background: var(--subtotal-bg) !important; border-top: 1px solid var(--subtotal-bd); border-bottom: 1px solid var(--subtotal-bd); }
 .subtotal-row td { color: var(--subtotal-text) !important; font-weight: 800; }
-.danger-subtotal { background: var(--danger-sub-bg) !important; border-top: 1.5px solid var(--danger-sub-bd); }
-.danger-subtotal td { color: var(--kpi-danger-text) !important; font-weight: 800; }
+.danger-subtotal { background: var(--danger-sub-bg) !important; border-top: 1px solid var(--danger-sub-bd); }
+.danger-subtotal td { color: #f43f5e !important; font-weight: 800; }
+.amber-subtotal { background: var(--amber-sub-bg) !important; border-top: 1px solid var(--border-color); }
+.amber-subtotal td { color: #f59e0b !important; font-weight: 800; }
 
 /* GRADING CARDS LAYOUT */
-.cards-view-grid { 
-    display: grid; 
-    grid-template-columns: 1fr; 
-    gap: 12px; 
-    margin-top: 10px; 
-}
+.cards-view-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 6px; }
 @media(min-width: 768px) { .cards-view-grid { grid-template-columns: repeat(2, 1fr); } }
 @media(min-width: 1024px) { .cards-view-grid { grid-template-columns: repeat(4, 1fr); } }
 
-.report-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--orange-accent); transition: 0.3s;}
-.card-top { background: var(--table-header-bg); padding: 6px 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-.card-body { padding: 8px; flex: 1; }
-.card-body-summary { display: flex; justify-content: space-between; font-size: 9.5px; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; margin-bottom: 6px; }
-.card-footer { background: var(--table-header-bg); padding: 6px 8px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 9.5px; }
-.card-body-title { margin-bottom: 4px; font-size: 9.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.report-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; border-left: 2px solid var(--orange-accent); }
+.card-top { background: var(--table-header-bg); padding: 4px 6px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+.card-body { padding: 6px; flex: 1; }
+.card-body-summary { display: flex; justify-content: space-between; font-size: 8.5px; border-bottom: 1px dashed var(--border-color); padding-bottom: 2px; margin-bottom: 4px; }
+.card-footer { background: var(--table-header-bg); padding: 4px 6px; border-top: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 8.5px; }
+.card-body-title { margin-bottom: 2px; font-size: 8.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 
 @media print { 
+    .sticky-kpi-container { position: relative !important; top: auto !important; }
     .filter-panel, .btn-action, .btn-sync, .btn-reset, .toggle-icon { display: none !important; } 
     body { background: var(--card-bg); padding: 0; } 
-    .section-card { box-shadow: none; border: none; padding: 0; margin-bottom: 20px; }
+    .section-card { box-shadow: none; border: none; padding: 0; margin-bottom: 12px; scroll-margin-top: 0; }
     .toggle-content { display: block !important; } 
     .cards-view-grid { display: grid !important; }
 }
@@ -218,7 +213,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <h2>{{ selected_company or 'COMPANY' }} FILTERED TIMEFRAME SUMMARY</h2>
             <p>Executive Production & Floor Balance Terminal</p>
         </div>
-        <div class="control-bar" style="display: flex; gap: 6px;">
+        <div class="control-bar">
             <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
         </div>
     </div>
@@ -271,7 +266,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     {% for b in batches %}<option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
                 </select>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 6px;">
                 <button type="submit" class="btn-sync"><i class="fa-solid fa-sync"></i> Filter Matrix</button>
                 <a href="/summary/periodic-report" class="btn-reset">Reset</a>
             </div>
@@ -294,60 +289,114 @@ tr:hover td { background-color: var(--table-hover-bg); }
         {% set kpi_gross.total = kpi_gross.total + r_gross %}
     {% endfor %}
 
-    <div class="kpi-matrix-grid">
-        <div class="ref-kpi-card" onclick="openSection('sec-gate')">
-            <span class="ref-kpi-meta">Gate Boxes</span>
-            <span class="ref-kpi-value">{{ card.gate_boxes }} Box</span>
-        </div>
-        
-        {% if selected_prod_type == 'RMP' %}
-        <div class="ref-kpi-card kpi-rmp" onclick="openSection('sec-rmp')">
-            <span class="ref-kpi-meta">RM Purchasing</span>
-            <span class="ref-kpi-value" style="font-size: 11px;">{{ "%.2f"|format(card.rmp_qty) }} KG<br>₹{{ "{:,.2f}".format(card.rmp_amount) }}</span>
-        </div>
-        {% else %}
-        <div class="ref-kpi-card kpi-rmp" onclick="openSection('sec-rep')">
-            <span class="ref-kpi-meta">Reprocess (In/Out)</span>
-            <span class="ref-kpi-value" style="font-size: 11px;">{{ "%.2f"|format(card.rep_in|default(0)) }} KG<br>{{ "%.2f"|format(card.rep_out|default(0)) }} KG</span>
-        </div>
-        {% endif %}
+    <div class="sticky-kpi-container no-print">
+        <div class="kpi-matrix-grid">
+            
+            <div class="ref-kpi-card kpi-amber" onclick="openSection('sec-open-floor')">
+                <span class="ref-kpi-meta">Opening Floor Bal</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG<br>₹{{ "{:,.2f}".format(card.floor_opening_val|default(0.0)) }}</span>
+            </div>
 
-        <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-deh')">
-            <span class="ref-kpi-meta">Deheading (HO/HL)</span>
-            <span class="ref-kpi-value" style="font-size: 11px;">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG<br>{{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span>
+            <div class="ref-kpi-card" onclick="openSection('sec-gate')">
+                <span class="ref-kpi-meta">Gate Boxes</span>
+                <span class="ref-kpi-value">{{ card.gate_boxes }} Box</span>
+            </div>
+            
+            {% if selected_prod_type == 'RMP' %}
+            <div class="ref-kpi-card kpi-rmp" onclick="openSection('sec-rmp')">
+                <span class="ref-kpi-meta">RM Purchasing</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.rmp_qty) }} KG<br>₹{{ "{:,.2f}".format(card.rmp_amount) }}</span>
+            </div>
+            {% else %}
+            <div class="ref-kpi-card kpi-rmp" onclick="openSection('sec-rep')">
+                <span class="ref-kpi-meta">Reprocess (In/Out)</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.rep_in|default(0)) }} KG<br>{{ "%.2f"|format(card.rep_out|default(0)) }} KG</span>
+            </div>
+            {% endif %}
+
+            <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-deh')">
+                <span class="ref-kpi-meta">Deheading (HO/HL)</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG<br>{{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span>
+            </div>
+            <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-grd')">
+                <span class="ref-kpi-meta">Grading Output</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span>
+            </div>
+            <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-pel')">
+                <span class="ref-kpi-meta">Peeling Output</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span>
+            </div>
+            <div class="ref-kpi-card kpi-stock" onclick="openSection('sec-prod')">
+                <span class="ref-kpi-meta">Net Production</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.production_qty) }} KG</span>
+            </div>
+            <div class="ref-kpi-card kpi-stock" onclick="openSection('sec-stk')">
+                <span class="ref-kpi-meta">Stock Vault Asset</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.stock_qty) }} KG<br>₹{{ "{:,.2f}".format(card.stock_amount) }}</span>
+            </div>
+            <div class="ref-kpi-card kpi-danger" onclick="openSection('sec-close-floor')">
+                <span class="ref-kpi-meta">Closing Floor Bal</span>
+                <span class="ref-kpi-value">{{ "%.2f"|format(card.floor_closing_qty) }} KG<br>₹{{ "{:,.2f}".format(card.floor_closing_val) }}</span>
+            </div>
         </div>
-        <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-grd')">
-            <span class="ref-kpi-meta">Grading Output</span>
-            <span class="ref-kpi-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header" onclick="toggleSection('sec-open-floor')">
+            <div class="section-header-left"><i class="fas fa-hourglass-start text-amber-500"></i> 9. OPENING FLOOR BALANCE (CUT-OFF: START DATE 9:00 AM)</div>
+            <i id="icon-sec-open-floor" class="fas fa-chevron-down toggle-icon"></i>
         </div>
-        <div class="ref-kpi-card kpi-prod" onclick="openSection('sec-pel')">
-            <span class="ref-kpi-meta">Peeling Output</span>
-            <span class="ref-kpi-value">{{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span>
-        </div>
-        <div class="ref-kpi-card kpi-stock" onclick="openSection('sec-prod')">
-            <span class="ref-kpi-meta">Net Production</span>
-            <span class="ref-kpi-value">{{ "%.2f"|format(card.production_qty) }} KG</span>
-        </div>
-        <div class="ref-kpi-card kpi-stock" onclick="openSection('sec-stk')">
-            <span class="ref-kpi-meta">Stock Vault Asset</span>
-            <span class="ref-kpi-value" style="font-size: 11px;">{{ "%.2f"|format(card.stock_qty) }} KG<br>₹{{ "{:,.2f}".format(card.stock_amount) }}</span>
-        </div>
-        <div class="ref-kpi-card kpi-danger" onclick="openSection('sec-close-floor')">
-            <span class="ref-kpi-meta">Closing Floor Bal</span>
-            <span class="ref-kpi-value" style="font-size: 11px;">{{ "%.2f"|format(card.floor_closing_qty) }} KG<br>₹{{ "{:,.2f}".format(card.floor_closing_val) }}</span>
+        <div id="sec-open-floor" class="table-wrap toggle-content" style="display: none;">
+            <table>
+                <thead>
+                    <tr style="background:var(--table-header-bg)">
+                        <th class="text-center" style="width:25px">Sl</th>
+                        <th>Batch Number</th>
+                        <th>Species</th>
+                        <th>Location/Peeling At</th>
+                        <th>Variety</th>
+                        <th>Count/Grade</th>
+                        <th class="text-right" style="color:var(--text-muted)">Opening Qty (KG)</th>
+                        <th class="text-right" style="color:var(--text-muted)">Value (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows.opening_floor_balance %}
+                    <tr>
+                        <td class="sl-no" style="background:var(--amber-sub-bg); color:#f59e0b;">{{ loop.index }}</td>
+                        <td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
+                        <td>{{ row.species }}</td>
+                        <td>{{ row.peeling_at }}</td>
+                        <td><span class="tag">{{ row.variety }}</span></td>
+                        <td><b>{{ row.count }}</b></td>
+                        <td class="qty-cell" style="color:#f59e0b; background:var(--amber-sub-bg);">{{ "%.2f"|format(row.available_qty) }}</td>
+                        <td class="money-cell" style="color:#f59e0b;">₹ {{ "{:,.2f}".format(row.value) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock found at Opening Cut-off Time.</td></tr>
+                    {% endfor %}
+                    {% if rows.opening_floor_balance %}
+                    <tr class="amber-subtotal">
+                        <td colspan="6" class="text-right">TOTAL OPENING FLOOR BALANCE:</td>
+                        <td class="qty-cell" style="background:var(--amber-sub-bg);">{{ "%.2f"|format(card.floor_opening_qty) }}</td>
+                        <td class="money-cell" style="color:#f59e0b !important;">₹ {{ "{:,.2f}".format(card.floor_opening_val) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <div class="section-card">
         <div class="section-header" onclick="toggleSection('sec-close-floor')">
-            <div class="section-header-left"><i class="fas fa-balance-scale"></i> 9. LIVE FLOOR BALANCE (CLOSING)</div>
+            <div class="section-header-left"><i class="fas fa-balance-scale"></i> 10. LIVE FLOOR BALANCE (CLOSING)</div>
             <i id="icon-sec-close-floor" class="fas fa-chevron-down toggle-icon"></i>
         </div>
         <div id="sec-close-floor" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
                     <tr style="background:var(--danger-sub-bg);">
-                        <th class="text-center" style="width:30px">Sl</th>
+                        <th class="text-center" style="width:25px">Sl</th>
                         <th>Batch Number</th>
                         <th>Species</th>
                         <th>Location / Peeling At</th>
@@ -363,14 +412,14 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         <td class="sl-no" style="background:var(--danger-sub-bg); color:var(--danger)">{{ loop.index }}</td>
                         <td style="font-weight:800; color:var(--danger);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
                         <td>{{ row.species }}</td>
-                        <td>{{ row.peeling_at }}</td>
+                        <td>{{ row.peeling_at or row.location }}</td>
                         <td><span class="tag" style="background:var(--danger-sub-bg); color:var(--danger); border-color:var(--danger-sub-bd);">{{ row.variety }}</span></td>
                         <td><b>{{ row.count }}</b></td>
                         <td class="qty-cell" style="color:var(--danger); background:var(--danger-sub-bg);">{{ "%.2f"|format(row.available_qty) }}</td>
                         <td class="money-cell" style="color:var(--danger)">₹ {{ "{:,.2f}".format(row.value) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock Left at Closing Cut-off Time.</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted" style="padding: 6px;">No Stock Left at Closing Cut-off Time.</td></tr>
                     {% endfor %}
                     {% if rows.closing_floor_balance %}
                     <tr class="danger-subtotal">
@@ -393,7 +442,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <table>
                 <thead>
                     <tr>
-                        <th class="text-center" style="width:30px">Sl</th>
+                        <th class="text-center" style="width:25px">Sl</th>
                         <th>Species</th>
                         <th>Variety Name</th>
                         <th>Count</th>
@@ -409,9 +458,9 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         {% if k not in var_count_summary %}
                             {% set _ = var_count_summary.update({k: {'species': r.species, 'variety': r.variety_name, 'count': r.count, 'boxes': 0, 'qty': 0.0, 'amt': 0.0}}) %}
                         {% endif %}
-                        {% set _ = var_count_summary[k].update({'boxes': var_count_summary[k].boxes + (r.material_boxes|default(0)|int)}) %}
-                        {% set _ = var_count_summary[k].update({'qty': var_count_summary[k].qty + (r.received_qty|default(0)|float)}) %}
-                        {% set _ = var_count_summary[k].update({'amt': var_count_summary[k].amt + (r.amount|default(0)|float)}) %}
+                        {% set _ = var_count_summary[k].update({'boxes': var_count_summary[k].boxes + (r.material_boxes|default(0)|int) }) %}
+                        {% set _ = var_count_summary[k].update({'qty': var_count_summary[k].qty + (r.received_qty|default(0)|float) }) %}
+                        {% set _ = var_count_summary[k].update({'amt': var_count_summary[k].amt + (r.amount|default(0)|float) }) %}
                     {% endfor %}
                     {% for key, val in var_count_summary.items() %}
                     <tr>
@@ -440,7 +489,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <table>
                 <thead>
                     <tr>
-                        <th class="text-center" style="width:30px">Sl</th>
+                        <th class="text-center" style="width:25px">Sl</th>
                         <th>Supplier Name</th>
                         <th>Species</th>
                         <th>Variety Name</th>
@@ -457,9 +506,9 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         {% if k not in supp_summary %}
                             {% set _ = supp_summary.update({k: {'supplier': r.supplier_name, 'species': r.species, 'variety': r.variety_name, 'count': r.count, 'boxes': 0, 'qty': 0.0, 'amt': 0.0}}) %}
                         {% endif %}
-                        {% set _ = supp_summary[k].update({'boxes': supp_summary[k].boxes + (r.material_boxes|default(0)|int)}) %}
-                        {% set _ = supp_summary[k].update({'qty': supp_summary[k].qty + (r.received_qty|default(0)|float)}) %}
-                        {% set _ = supp_summary[k].update({'amt': supp_summary[k].amt + (r.amount|default(0)|float)}) %}
+                        {% set _ = supp_summary[k].update({'boxes': supp_summary[k].boxes + (r.material_boxes|default(0)|int) }) %}
+                        {% set _ = supp_summary[k].update({'qty': supp_summary[k].qty + (r.received_qty|default(0)|float) }) %}
+                        {% set _ = supp_summary[k].update({'amt': supp_summary[k].amt + (r.amount|default(0)|float) }) %}
                     {% endfor %}
                     {% for key, val in supp_summary.items() %}
                     <tr>
@@ -565,7 +614,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <table>
                 <thead>
                     <tr>
-                        <th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Supplier Name</th><th>Vehicle Number</th><th>Date</th><th>Time</th><th>Species</th><th>Gate Pass</th><th>Challan</th><th>Center</th><th>Location</th><th class="text-right">Boxes</th><th>Production For</th><th>Email</th>
+                        <th class="text-center" style="width:25px">Sl</th><th>Batch Number</th><th>Supplier Name</th><th>Vehicle Number</th><th>Date</th><th>Time</th><th>Species</th><th>Gate Pass</th><th>Challan</th><th>Center</th><th>Location</th><th class="text-right">Boxes</th><th>Production For</th><th>Email</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -595,7 +644,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
         <div id="sec-rmp" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Supplier Name</th><th>Date</th><th>Time</th><th>Species</th><th>Variety Name</th><th>Count</th><th>G1 Qty</th><th>G2 Qty</th><th>DC Qty</th><th class="text-right">Boxes</th><th class="text-right">Received Qty</th><th class="text-right">Rate</th><th class="text-right">Amount</th><th>Peeling At</th><th>Production For</th><th>Remarks</th><th>HSN Code</th><th>Email</th></tr>
+                    <tr><th class="text-center" style="width:25px">Sl</th><th>Batch Number</th><th>Supplier Name</th><th>Date</th><th>Time</th><th>Species</th><th>Variety Name</th><th>Count</th><th>G1 Qty</th><th>G2 Qty</th><th>DC Qty</th><th class="text-right">Boxes</th><th class="text-right">Received Qty</th><th class="text-right">Rate</th><th class="text-right">Amount</th><th>Peeling At</th><th>Production For</th><th>Remarks</th><th>HSN Code</th><th>Email</th></tr>
                 </thead>
                 <tbody>
                     {% set rmp_ns = namespace(curr='', boxes=0, qty=0.0, amt=0.0) %}
@@ -617,13 +666,13 @@ tr:hover td { background-color: var(--table-hover-bg); }
     {% else %}
     <div class="section-card">
         <div class="section-header" onclick="toggleSection('sec-rep')">
-            <div class="section-header-left"><i class="fas fa-sync"></i> 1. RE-PROCESSING INPUT</div>
+            <div class="section-header-left"><i class="fas fa-sync"></i> 2. RE-PROCESSING INPUT</div>
             <i id="icon-sec-rep" class="fas fa-chevron-down toggle-icon"></i>
         </div>
         <div id="sec-rep" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Date</th><th>Prod For</th><th>Prod At</th><th>Species</th><th>Type</th><th>Old Batch</th><th>Brand</th><th>Freezer</th><th>Packing</th><th>MC</th><th>Loose</th><th>Variety</th><th>Grade</th><th class="text-right">In Qty</th><th class="text-right">Out Qty</th><th class="text-right">Value</th></tr>
+                    <tr><th class="text-center" style="width:25px">Sl</th><th>Batch Number</th><th>Date</th><th>Prod For</th><th>Prod At</th><th>Species</th><th>Type</th><th>Old Batch</th><th>Brand</th><th>Freezer</th><th>Packing</th><th>MC</th><th>Loose</th><th>Variety</th><th>Grade</th><th class="text-right">In Qty</th><th class="text-right">Out Qty</th><th class="text-right">Value</th></tr>
                 </thead>
                 <tbody>
                     {% set tot_rep = namespace(in_q=0.0, out_q=0.0, val=0.0) %}
@@ -634,7 +683,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     </tr>
                     {% else %}<tr><td colspan="18" class="text-center text-muted">No Reprocess entries found.</td></tr>{% endfor %}
                     {% if rows.reprocess %}
-                    <tr class="subtotal-row"><td colspan="14" class="text-right">TOTAL REPROCESS:</td><td class="qty-cell">{{ "%.2f"|format(tot_rep.in_q) }}</td><td class="qty-cell">{{ "%.2f"|format(tot_rep.out_q) }}</td><td class="money-cell">₹ {{ "{:,.2f}".format(tot_rep.val) }}</td></tr>
+                    <tr class="subtotal-row"><td colspan="15" class="text-right">TOTAL REPROCESS:</td><td class="qty-cell">{{ "%.2f"|format(tot_rep.in_q) }}</td><td class="qty-cell">{{ "%.2f"|format(tot_rep.out_q) }}</td><td class="money-cell">₹ {{ "{:,.2f}".format(tot_rep.val) }}</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -650,7 +699,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
         <div id="sec-deh" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:30px">Sl</th><th>Batch Number</th><th>Contractor</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Species</th><th>Variety</th><th class="text-right">HOSO Qty</th><th class="text-right">HLSO Qty</th><th class="text-right">Yield%</th><th class="text-right">Def Yield</th><th class="text-right">Def Qty</th><th class="text-right">Rate</th><th class="text-right">Amount</th><th>Email</th></tr>
+                    <tr><th class="text-center" style="width:25px">Sl</th><th>Batch Number</th><th>Contractor</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Species</th><th>Variety</th><th class="text-right">HOSO Qty</th><th class="text-right">HLSO Qty</th><th class="text-right">Yield%</th><th class="text-right">Def Yield</th><th class="text-right">Def Qty</th><th class="text-right">Rate</th><th class="text-right">Amount</th><th>Email</th></tr>
                 </thead>
                 <tbody>
                     {% set deh_ns = namespace(curr='', hoso=0.0, hlso=0.0, amt=0.0) %}
@@ -678,7 +727,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
         <div id="sec-grd" class="table-wrap toggle-content" style="display: none;">
             <table>
                 <thead>
-                    <tr><th class="text-center" style="width:35px">Sl</th><th>Batch Number</th><th>Date</th><th>Time</th><th>Peeling At</th><th>Production For</th><th>Species</th><th>HOSO Count</th><th>Variety Name</th><th>Graded Count</th><th class="text-right">Quantity</th><th>Email</th></tr>
+                    <tr><th class="text-center" style="width:25px">Sl</th><th>Batch Number</th><th>Date</th><th>Time</th><th>Peeling At</th><th>Production For</th><th>Species</th><th>HOSO Count</th><th>Variety Name</th><th>Graded Count</th><th class="text-right">Quantity</th><th>Email</th></tr>
                 </thead>
                 <tbody>
                     {% set grd_ns = namespace(curr='', qty=0.0) %}
@@ -779,7 +828,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                                 {% set glaze_pct = digits|int %}
                                 {% if glaze_pct < 100 %}
                                     {% set gross_qty = (r.production_qty|default(0)|float) / ((100 - glaze_pct) / 100) %}
-                                {% endif %}
+                                  {% endif %}
                             {% endif %}
                         {% endif %}
 
@@ -798,7 +847,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                                 <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
-                                <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
+                                <td style="font-size: 8px; text-align: left; padding-left: 6px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
                             </tr>
                         {% endif %}
 
@@ -823,7 +872,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td class="qty-cell">{{ r.production_qty }}</td>
                             <td class="text-right">-</td>
                             <td class="text-right">-</td>
-                            <td style="font-size:8.5px; color: var(--text-muted);">{{ r.email }}</td>
+                            <td style="font-size:8px; color: var(--text-muted);">{{ r.email }}</td>
                         </tr>
 
                         {% set p_ns.last_key = current_key %}
@@ -838,11 +887,11 @@ tr:hover td { background-color: var(--table-hover-bg); }
                                 <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
-                                <td style="font-size: 8.5px; text-align: left; padding-left: 10px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
+                                <td style="font-size: 8px; text-align: left; padding-left: 6px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
                             </tr>
                         {% endif %}
                     {% endfor %}
-                    <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:2px double var(--orange-accent);">
+                    <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:1.5px solid var(--orange-accent);">
                         <td colspan="14" style="text-align:right; font-weight:800; color:var(--orange-accent);">GRAND TOTAL PRODUCTION:</td>
                         <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.mc }}</td>
                         <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.loose }}</td>
@@ -912,7 +961,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td>{{ row.production_for or 'N/A' }}</td>
                             <td>{{ row.po_number or 'N/A' }}</td>
                             <td>{{ row.purpose or 'N/A' }}</td>
-                            <td><span class="tag" style="background: {{ 'var(--kpi-pl-bg)' if row.cargo_movement_type == 'IN' else 'var(--kpi-danger-bg)' }}; color: {{ 'var(--success)' if row.cargo_movement_type == 'IN' else 'var(--danger)' }}">{{ row.cargo_movement_type }}</span></td>
+                            <td><span class="tag" style="color: {{ 'var(--success)' if row.cargo_movement_type == 'IN' else 'var(--danger)' }}">{{ row.cargo_movement_type }}</span></td>
                             <td>{{ row.brand or 'N/A' }}</td>
                             <td>{{ row.freezer or 'N/A' }}</td>
                             <td>{{ row.packing_style or 'N/A' }}</td>
@@ -940,70 +989,16 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             </tr>
                         {% endif %}
                     {% else %}
-                        <tr>
-                            <td colspan="17" class="text-center text-muted py-4">
-                                <i class="fas fa-box-open d-block mb-2" style="font-size: 2rem;"></i>
-                                No Active Stock Inventory Found in Cold Storage For This Timeframe.
-                            </td>
-                        </tr>
+                        <tr><td colspan="17" class="text-center text-muted py-2">No Active Stock Inventory Found.</td></tr>
                     {% endfor %}
                     
                     {% if rows.stock and rows.stock|length > 0 %}
-                    <tr class="subtotal-row" style="background:var(--kpi-pl-bg) !important; border-top:2px double var(--success); font-weight: 800;">
+                    <tr class="subtotal-row" style="border-top:1.5px solid var(--success); font-weight: 800;">
                         <td colspan="13" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK LOG:</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.mc }}</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.loose }}</td>
                         <td class="qty-cell" style="color:var(--success);">{{ "%.2f"|format(grand_stock.qty) }}</td>
                         <td class="money-cell" style="color:var(--success);">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="section-card">
-        <div class="section-header" onclick="toggleSection('sec-open-floor')">
-            <div class="section-header-left"><i class="fas fa-hourglass-start"></i> 9. OPENING FLOOR BALANCE (CUT-OFF: START DATE 9:00 AM)</div>
-            <i id="icon-sec-open-floor" class="fas fa-chevron-down toggle-icon"></i>
-        </div>
-        <div id="sec-open-floor" class="table-wrap toggle-content" style="display: none;">
-            <table>
-                <thead>
-                    <tr style="background:var(--table-header-bg)">
-                        <th class="text-center" style="width:30px">Sl</th>
-                        <th>Batch Number</th>
-                        <th>Species</th>
-                        <th>Location/Peeling At</th>
-                        <th>Variety</th>
-                        <th>Count/Grade</th>
-                        <th class="text-right" style="color:var(--text-muted)">Opening Qty (KG)</th>
-                        <th class="text-right" style="color:var(--text-muted)">Value (₹)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set tot_open_floor = namespace(qty=0.0, val=0.0) %}
-                    {% for row in rows.opening_floor_balance %}
-                        {% set tot_open_floor.qty = tot_open_floor.qty + (row.available_qty|default(0)|float) %}
-                        {% set tot_open_floor.val = tot_open_floor.val + (row.value|default(0)|float) %}
-                    <tr>
-                        <td class="sl-no">{{ loop.index }}</td>
-                        <td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
-                        <td>{{ row.species }}</td>
-                        <td>{{ row.peeling_at }}</td>
-                        <td><span class="tag">{{ row.variety }}</span></td>
-                        <td><b>{{ row.count }}</b></td>
-                        <td class="qty-cell">{{ "%.2f"|format(row.available_qty) }}</td>
-                        <td class="money-cell" style="color:var(--text-muted)">₹ {{ "{:,.2f}".format(row.value) }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock at Opening Cut-off Time.</td></tr>
-                    {% endfor %}
-                    {% if rows.opening_floor_balance %}
-                    <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:1.5px solid var(--border-color);">
-                        <td colspan="6" style="text-align:right; font-weight:800; color:var(--text-muted);">TOTAL OPENING FLOOR BALANCE:</td>
-                        <td class="qty-cell">{{ "%.2f"|format(tot_open_floor.qty) }}</td>
-                        <td class="money-cell" style="color:var(--text-muted);">₹ {{ "{:,.2f}".format(tot_open_floor.val) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -1022,12 +1017,9 @@ tr:hover td { background-color: var(--table-hover-bg); }
 </table>
 
 <script>
-// Watch for dynamic theme changes instantly without reload
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        if (mutation.attributeName === "data-theme") {
-            // CSS handles visual switch, js logic runs if specific re-rendering required.
-        }
+        if (mutation.attributeName === "data-theme") {}
     });
 });
 observer.observe(document.documentElement, { attributes: true });
@@ -1044,7 +1036,6 @@ function toggleDateInputs() {
     }
 }
 
-// Accordion Toggle
 function toggleSection(id) {
     const el = document.getElementById(id);
     const icon = document.getElementById('icon-' + id);
@@ -1059,20 +1050,33 @@ function toggleSection(id) {
     }
 }
 
-// Directly Open from KPI
 function openSection(id) {
     const isGrading = id === 'sec-grd';
-    const targetId = isGrading ? 'sec-grading-cards-wrapper' : id;
+    const targetTableId = isGrading ? 'sec-grading-cards-wrapper' : id;
+    const contentEl = document.getElementById(targetTableId);
     
-    const el = document.getElementById(targetId);
-    const icon = document.getElementById('icon-' + targetId);
-    
-    if(el) {
-        el.style.display = 'block';
+    if(contentEl) {
+        contentEl.style.display = 'block';
+        
+        const icon = document.getElementById('icon-' + targetTableId);
         if(icon) { icon.style.transform = 'rotate(180deg)'; }
-        setTimeout(() => {
-            el.previousElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 50);
+        
+        const parentCard = contentEl.closest('.section-card');
+        if(parentCard) {
+            document.querySelectorAll('.section-card').forEach(c => c.classList.remove('margin-active-card'));
+            parentCard.classList.add('margin-active-card');
+
+            setTimeout(() => {
+                const stickyKpiHeight = document.querySelector('.sticky-kpi-container').offsetHeight || 60;
+                const elementPosition = parentCard.getBoundingClientRect().top + window.pageYOffset;
+                const offsetPosition = elementPosition - stickyKpiHeight - 6;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }, 60);
+        }
     }
 }
 
@@ -1104,13 +1108,13 @@ document.addEventListener("DOMContentLoaded", function() {
             let subTableBodyHTML = ""; let cardTotalQuantity = 0;
 
             if(subRows.length === 0) {
-                subTableBodyHTML = `<tr><td colspan="2" style="color:var(--text-muted); font-style:italic; text-align:center; padding: 6px 4px;">No details</td></tr>`;
+                subTableBodyHTML = `<tr><td colspan="2" style="color:var(--text-muted); font-style:italic; text-align:center; padding: 4px 2px;">No details</td></tr>`;
             } else {
                 subRows.forEach(row => {
                     let finalCount = row.graded_count ?? '-'; let finalQty = parseFloat(row.quantity ?? 0); cardTotalQuantity += finalQty;
-                    subTableBodyHTML += `<tr><td style="border-bottom:1px solid var(--border-color); padding:4px; text-align:center;">${finalCount}</td><td style="border-bottom:1px solid var(--border-color); padding:4px; text-align:right; color:var(--accent-blue); font-weight:700;">${finalQty.toFixed(2)} KG</td></tr>`;
+                    subTableBodyHTML += `<tr><td style="border-bottom:1px solid var(--border-color); padding:2px; text-align:center;">${finalCount}</td><td style="border-bottom:1px solid var(--border-color); padding:2px; text-align:right; color:var(--accent-blue); font-weight:700;">${finalQty.toFixed(2)} KG</td></tr>`;
                 });
-                subTableBodyHTML += `<tr style="background:var(--table-header-bg); font-weight:800;"><td style="padding:4px;">Total:</td><td style="padding:4px; text-align:right; color:var(--accent-blue);">${cardTotalQuantity.toFixed(2)} KG</td></tr>`;
+                subTableBodyHTML += `<tr style="background:var(--table-header-bg); font-weight:800;"><td style="padding:2px;">Total:</td><td style="padding:2px; text-align:right; color:var(--accent-blue);">${cardTotalQuantity.toFixed(2)} KG</td></tr>`;
             }
             
             const cardHTML = `
@@ -1118,11 +1122,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="card-top">
                         <div class="left-info">
                             <div><b style="color:var(--accent-blue);">BATCH: ${batch}</b></div>
-                            <div class="tag" style="margin-top:2px;">${species} | ${variety}</div>
+                            <div class="tag" style="margin-top:1px;">${species} | ${variety}</div>
                         </div>
                         <div style="text-align:right;">
-                            <span style="font-size:8px; color:var(--text-muted); display:block; font-weight:800;">HOSO COUNT</span>
-                            <b style="font-size:12px; color:var(--text-main);">${hosoCount}</b>
+                            <span style="font-size:7.5px; color:var(--text-muted); display:block; font-weight:800;">HOSO COUNT</span>
+                            <b style="font-size:11px; color:var(--text-main);">${hosoCount}</b>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1130,7 +1134,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             <span>Actual HOSO:</span><b style="color:var(--accent-blue);">${actualHoso} KG</b>
                         </div>
                         <div class="card-body-title">Graded Breakdown</div>
-                        <table style="width:100%; font-size:9px;">
+                        <table style="width:100%; font-size:8.5px;">
                             ${subTableBodyHTML}
                         </table>
                     </div>

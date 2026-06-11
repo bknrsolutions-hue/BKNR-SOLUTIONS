@@ -1,102 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>PRODUCTION CONTROL - BKNR SOLUTIONS</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<title>PRODUCTION CONTROL - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <style>
-        :root{
-            --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-            --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626; --warning: #f59e0b;
+<style>
+    :root{
+        --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+        --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626; --warning: #f59e0b;
+        --card-bg: #ffffff; --header-bg: #f8fafc;
+    }
+
+    *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+    body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
+
+    /* HEADER - COMPACT FOR MOBILE */
+    .header {
+        position: sticky; top: 0; z-index: 1000; background: var(--card-bg); padding: 10px 15px;
+        border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+    .btn-new { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+
+    /* UNIFIED FILTER BAR - HORIZONTAL SCROLL ON MOBILE */
+    .filter-bar {
+        background: var(--card-bg); margin: 10px; padding: 12px; border-radius: 10px;
+        border: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-end;
+        overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    .filter-bar::-webkit-scrollbar { height: 4px; }
+    .filter-bar::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 4px; }
+    
+    .filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .filter-field.search-field { min-width: 220px; flex: 2; }
+    .filter-field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-field input, .filter-field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); color: var(--primary); font-weight: 600; }
+
+    @media(max-width: 600px) {
+        .filter-bar { 
+            padding: 10px 12px; 
+            gap: 12px; 
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            justify-content: flex-start;
         }
+        .filter-field { flex-shrink: 0 !important; gap: 2px !important; }
+        .filter-field label { font-size: 8px !important; }
+        .filter-field input, .filter-field select { height: 32px !important; padding: 4px 8px !important; font-size: 11px !important; }
+        .filter-field.search-field { min-width: 160px !important; }
+    }
 
-        *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-        body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden;}
+    /* LAYOUT GRID - RESPONSIVE */
+    .row-grid { display: flex; flex-direction: column; gap: 10px; margin: 0 10px 10px; }
+    @media (min-width: 992px) { .row-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; } }
 
-        /* HEADER - COMPACT FOR MOBILE */
-        .header {
-            position: sticky; top: 0; z-index: 1000; background: var(--card-bg); padding: 10px 15px;
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
-        }
-        .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-        .btn-new { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+    .full-width-grid { margin: 0 10px 15px; }
 
-        /* UNIFIED FILTER BAR - HORIZONTAL SCROLL ON MOBILE */
-        .filter-bar {
-            background: var(--card-bg); margin: 10px; padding: 12px; border-radius: 10px;
-            border: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-end;
-            overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-        }
-        .filter-bar::-webkit-scrollbar { height: 5px; }
-        .filter-bar::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 4px; }
-        
-        .filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
-        .filter-field.search-field { min-width: 220px; flex: 2; }
-        .filter-field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .filter-field input, .filter-field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); }
+    .panel { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .panel-header { padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
 
-        /* LAYOUT GRID - RESPONSIVE */
-        .row-grid { display: flex; flex-direction: column; gap: 10px; margin: 0 10px 10px; }
-        @media (min-width: 992px) { .row-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; } }
+    .grand-total-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; }
+    .sub-total-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-left: 5px; }
 
-        .full-width-grid { margin: 0 10px 15px; }
+    /* 🟢 FIXED: Re-structured valid mobile scroll wrapper properties */
+    .table-wrap {
+        background: var(--card-bg) !important; margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 600px; } 
+    
+    #reqTable { min-width: 2500px; } 
+    #dataTable { min-width: 1800px; }
 
-        .panel { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .panel-header { padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
+    thead th { background: #f1f5f9; padding: 8px 4px; border: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; font-size: 9px; white-space: nowrap; }
+    tbody td { padding: 6px 4px; border: 1px solid #edf2f7; text-align: center; color: var(--primary); vertical-align: middle; font-weight: 600; white-space: nowrap; }
 
-        .grand-total-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; }
-        .sub-total-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-left: 5px; }
+    .group-row { background: #f8fafc !important; font-weight: 800; color: var(--primary); text-align: left !important; }
+    .po-cell { background: #f0f7ff; color: var(--accent); }
+    .calc-col { background: #f0fdf4 !important; color: #15803d; }
+    .pnd-mc-col { background: #fee2e2 !important; color: #dc2626; font-weight: 800; }
+    
+    .util-badge { background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
+    .ref-badge { background: #fef3c7; color: #92400e; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
 
-        /* TABLE STYLES - COMPACT & SCROLLABLE */
-        .table-wrap{
-    background: var(--card-bg) !important;
-} overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 600px; } 
-        
-        #reqTable { min-width: 2500px; } 
-        #dataTable { min-width: 1800px; }
+    .status-badge { padding: 4px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid #d1d5db; outline: none; width: 100%; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-running { background: #dbeafe; color: #1e40af; }
+    .timer-cell { font-family: monospace; font-weight: 800; color: var(--danger); font-size: 11px; }
 
-        thead th { background: #f1f5f9; padding: 8px 4px; border: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; font-size: 9px; white-space: nowrap; }
-        tbody td { padding: 6px 4px; border: 1px solid #edf2f7; text-align: center; color: var(--primary); vertical-align: middle; font-weight: 600; }
+    /* MODAL RESPONSIVENESS */
+    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: flex-end; justify-content: center; }
+    .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px 15px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; }
+    
+    /* FORM GRID - SINGLE COLUMN ON MOBILE */
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 768px) { .form-grid { grid-template-columns: repeat(4, 1fr); .modal { align-items: center; } .modal-content { border-radius: 12px; width: 95%; max-width: 900px; } } }
+    
+    .field { display: flex; flex-direction: column; gap: 3px; }
+    .field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+    .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; background: var(--card-bg); }
 
-        .group-row { background: #f8fafc !important; font-weight: 800; color: var(--primary); text-align: left !important; }
-        .po-cell { background: #f0f7ff; color: var(--accent); }
-        .calc-col { background: #f0fdf4 !important; color: #15803d; }
-        .pnd-mc-col { background: #fee2e2 !important; color: #dc2626; font-weight: 800; }
-        
-        .util-badge { background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
-        .ref-badge { background: #fef3c7; color: #92400e; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
-
-        .status-badge { padding: 4px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid #d1d5db; outline: none; width: 100%; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-running { background: #dbeafe; color: #1e40af; }
-        .timer-cell { font-family: monospace; font-weight: 800; color: var(--danger); font-size: 11px; }
-
-        /* MODAL RESPONSIVENESS */
-        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: flex-end; justify-content: center; }
-        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px 15px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; }
-        
-        /* FORM GRID - SINGLE COLUMN ON MOBILE */
-        .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        @media (min-width: 768px) { .form-grid { grid-template-columns: repeat(4, 1fr); } .modal { align-items: center; } .modal-content { border-radius: 12px; width: 95%; max-width: 900px; } }
-        
-        .field { display: flex; flex-direction: column; gap: 3px; }
-        .field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-        .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; background: var(--card-bg); }
-
-        /* ACTION MENU */
-        #menuWrap { position: relative; }
-        .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
-        #menuBox { display: none; position: absolute; right: 0; top: 32px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; width: 130px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; }
-        .menu-item { padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
-        tr.selected { background: #eff6ff !important; outline: 1px solid var(--accent); }
-    </style>
+    /* ACTION MENU */
+    #menuWrap { position: relative; }
+    .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+    #menuBox { display: none; position: absolute; right: 0; top: 32px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; width: 130px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; }
+    .menu-item { padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
+    tr.selected { background: #eff6ff !important; outline: 1px solid var(--accent); }
+</style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
@@ -111,7 +126,6 @@
     <button class="btn-new" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ENTRY</button>
 </div>
 
-<!-- ALL FILTERS ARRANGED IN A SINGLE ROW WITH HORIZONTAL SCROLLING -->
 <div class="filter-bar">
     <div class="filter-field">
         <label>Company</label>
@@ -175,7 +189,7 @@
                             </tr>
                             {% for s in records if s.status != 'Completed' %}
                             <tr data-company="{{s.production_for}}" data-variety="{{s.variety_name}}" data-glaze="" data-freezer="" data-grade="">
-                                <td style="color:var(--accent);">{{s.sintex_number}}</td>
+                                <td style="color:var(--accent);">${{s.sintex_number}}</td>
                                 <td>{{s.batch_number}}</td>
                                 <td>{{s.variety_name}}</td>
                                 <td>{{s.in_count}}</td>
@@ -241,11 +255,11 @@
                     {% for po_no, records in grouped_req %}
                         {% set first_row = records[0] %}
                         <tr class="group-row" data-company="{{ first_row.company_name }}">
-                            <td colspan="16" style="background:var(--card-bg)7ed; color:#121d9a;">
+                            <td colspan="16" style="background:rgba(255,255,255,0.5); color:#121d9a;">
                                 <i class="fa-solid fa-file-invoice"></i> PO: <b>{{ po_no }}</b> | {{ first_row.buyer }}
                             </td>
                             <td class="pnd-mc-col">{{ (records | sum(attribute='no_of_mc') - records | sum(attribute='stock_mc'|default(0))) | round(0) | int }}</td>
-                            <td colspan="10" style="background:var(--card-bg)7ed;"></td>
+                            <td colspan="10" style="background:rgba(255,255,255,0.5);"></td>
                         </tr>
                         {% for row in records %}
                         <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}" data-freezer="" data-grade="{{ row.grade }}">
@@ -304,7 +318,7 @@
                 </thead>
                 <tbody>
                     {% for r in today_data %}
-                    <tr data-id="{{r.id}}" data-company="{{r.production_for}}" data-variety="{{r.variety_name}}" data-glaze="{{r.glaze}}" data-freezer="{{r.freezer}}" data-grade="{{r.grade}}">
+                    <tr class="log-data-row" data-id="{{r.id}}" data-company="{{r.production_for}}" data-variety="{{r.variety_name}}" data-glaze="{{r.glaze}}" data-freezer="{{r.freezer}}" data-grade="{{r.grade}}">
                         <td>{{r.id}}</td>
                         <td>{{r.production_for}}</td>
                         <td style="font-weight:800">{{r.batch_number}}</td>
@@ -329,7 +343,6 @@
 </div>
 {% endif %}
 
-<!-- Entry Modal -->
 <div id="entryModal" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -338,14 +351,14 @@
         </div>
         <form method="post" action="/processing/production" id="productionForm">
             <div class="form-grid">
-                <div class="field"><label>Production For</label><input list="c_list" name="production_for" required placeholder="Company"></div>
-                <div class="field"><label>Batch Number</label><input list="b_list" name="batch_number" required placeholder="Batch"></div>
-                <div class="field"><label>Species</label><input list="s_list" name="species" required placeholder="Species"></div>
-                <div class="field"><label>Variety</label><input list="v_list" name="variety_name" required placeholder="Variety"></div>
-                <div class="field"><label>Brand</label><input list="br_list" name="brand" required placeholder="Brand"></div>
-                <div class="field"><label>Grade</label><input list="g_list" name="grade" placeholder="Grade"></div>
-                <div class="field"><label>Glaze (%)</label><input list="gz_list" name="glaze" placeholder="Glaze"></div>
-                <div class="field"><label>Freezer</label><input list="f_list" name="freezer" placeholder="Freezer"></div>
+                <div class="field"><label>Production For</label><input type="text" list="c_list" name="production_for" required placeholder="Company" autocomplete="off"></div>
+                <div class="field"><label>Batch Number</label><input type="text" list="b_list" name="batch_number" required placeholder="Batch" autocomplete="off"></div>
+                <div class="field"><label>Species</label><input type="text" list="s_list" name="species" required placeholder="Species" autocomplete="off"></div>
+                <div class="field"><label>Variety</label><input type="text" list="v_list" name="variety_name" required placeholder="Variety" autocomplete="off"></div>
+                <div class="field"><label>Brand</label><input type="text" list="br_list" name="brand" required placeholder="Brand" autocomplete="off"></div>
+                <div class="field"><label>Grade</label><input type="text" list="g_list" name="grade" placeholder="Grade" autocomplete="off"></div>
+                <div class="field"><label>Glaze (%)</label><input type="text" list="gz_list" name="glaze" placeholder="Glaze" autocomplete="off"></div>
+                <div class="field"><label>Freezer</label><input type="text" list="f_list" name="freezer" placeholder="Freezer" autocomplete="off"></div>
                 <div class="field">
                     <label>Type</label>
                     <select name="production_type" required>
@@ -404,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initManualListeners(); 
     setInterval(updateTimers, 1000);
     
-    // BACKEND MESSAGES TO SWEETALERT CONVERSION SYSTEM [cite: 3]
+    // BACKEND MESSAGES TO SWEETALERT CONVERSION SYSTEM
     {% if success_msg or msg %}
         Swal.fire({
             title: 'Success!',
@@ -464,7 +477,7 @@ function calcQty() {
     }
 }
 
-// MULTI-ATTRIBUTE UNIFIED DATA FILTER MATRIX [cite: 3]
+// MULTI-ATTRIBUTE UNIFIED DATA FILTER MATRIX
 function applyGlobalFilters() {
     const co = document.getElementById("filter_company")?.value.toLowerCase() || "";
     const varty = document.getElementById("filter_variety")?.value.toLowerCase() || "";
@@ -575,13 +588,13 @@ function toggleMenu() {
 
 let selectedRowRef = null;
 function initLogTable() {
-    const rows = document.querySelectorAll("#dataTable tbody tr[data-id]");
+    const rows = document.querySelectorAll("#dataTable tbody tr.log-data-row");
     rows.forEach(r => {
         r.onclick = () => {
             rows.forEach(x => x.classList.remove("selected"));
             r.classList.add("selected");
             selectedRowRef = r;
-            document.getElementById("menuWrap").style.display = "block";
+            document.getElementById("menuBtn").style.display = "block";
         }
     });
 }

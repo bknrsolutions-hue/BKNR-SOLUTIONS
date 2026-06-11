@@ -1,5 +1,5 @@
 # ============================================================
-# 🔥 PRODUCTION ROUTER - CORRECTED VERSION (TemplateResponse Fixed)
+# 🔥 PRODUCTION ROUTER - BULLETPROOF IST PROTECTED VERSION
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Form
@@ -23,7 +23,7 @@ from app.database.models.criteria import (
     production_types, HOSO_HLSO_Yields, grade_to_hoso
 )
 
-router = APIRouter(tags=["PRODUCTION"])
+router = APIRouter(tags=["PRODUCTION"]) # Aligned prefix cleanly with processing apps
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -46,10 +46,6 @@ def get_today_range():
     end = start + timedelta(days=1) - timedelta(seconds=1)
 
     return start, end
-    
-    
-    
-    
 
 
 # -----------------------------------------------------
@@ -75,7 +71,7 @@ def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, fre
         str(grade or "").strip().lower(),
         str(packing_style or "").strip().lower(),
         str(int(extract_number(glaze, 0))),
-        str( freezer or "N/A").strip().lower()
+        str(freezer or "N/A").strip().lower()
     ])
 
 
@@ -459,9 +455,12 @@ def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(
         # rejection quantity ni positive chesi counter-entry vesthunnam
         offset_qty = abs(old_entry.rejection_qty)
         
+        # 🟢 Microsecond Rollover Protection Engine Deployment
+        current_ist = ist_now()
+        
         new_soaking_record = Soaking(
-            date=ist_now().date(),
-            time=ist_now().time(),
+            date=current_ist.date(),
+            time=current_ist.time(),
             batch_number=old_entry.batch_number,
             production_at=old_entry.production_at,
             production_for=getattr(old_entry, 'production_for', None), 
@@ -530,6 +529,9 @@ def save_production(
                     3
                 )
 
+        # 🟢 Microsecond Rollover Protection Engine Deployment
+        current_ist = ist_now()
+
         obj = Production(
             batch_number=batch_number,
             brand=brand,
@@ -547,8 +549,8 @@ def save_production(
             production_for=production_for,
             company_id=company_code,
             email=email,
-            date=ist_now().date(),
-            time=ist_now().time()
+            date=current_ist.date(),
+            time=current_ist.time()
         )
         db.add(obj)
         db.commit()

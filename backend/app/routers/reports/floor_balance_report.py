@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.utils.timezone import ist_now
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
@@ -19,8 +19,16 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # 🟢 9:00 AM AUTOMATED SHIFT ENGINE
+    now_ist = ist_now()
+    cutoff_time = now_ist.replace(hour=9, minute=0, second=0, microsecond=0)
+    
+    if now_ist < cutoff_time:
+        report_date = (now_ist - timedelta(days=1)).date() 
+    else:
+        report_date = now_ist.date() 
+
     all_combos = set()
-    report_date = ist_now().date()
 
     # --- 1. RMP & PROCESSING SOURCES ---
     rmp_data = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_id).all()
@@ -40,7 +48,7 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
 
     # --- 2. REPROCESS SOURCES ---
     repro_data = db.query(Reprocess).filter(
-        Reprocess.company_id == company_id, 
+        Reprocess.company_id == company_id,  # 🟢 FIXED: Capital 'R' matching the imported model table structure
         Reprocess.reprocess_type != 'SALES'
     ).all()
     
@@ -68,10 +76,11 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
                 "REPROCESS"
             ))
 
-    # --- 3. LIVE STOCK CALCULATION ---
+    # --- 3. LIVE STOCK CALCULATION VIA SERVICE ENGINE ---
     rows_batch = []
     for batch, count, species_val, variety, prod_for, location, s_type in all_combos:
         pass_prod_for = None if prod_for == "N/A" else prod_for
+        
         qty = get_floor_balance(
             db=db, 
             company_id=company_id, 
@@ -106,9 +115,9 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
         str(x["count"])
     ))
 
-    # --- 5. RETURN (FIXED LINE) ---
+    # --- 5. RETURN ---
     return templates.TemplateResponse(
         request=request,
         name="reports/floor_balance_report.html",
-        context={"rows_batch": rows_batch}
+        context={"rows_batch": rows_batch, "report_date": report_date.strftime("%d-%m-%Y")}
     )

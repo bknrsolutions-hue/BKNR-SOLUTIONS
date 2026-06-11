@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -10,7 +9,8 @@ import json
 import re
 
 from app.database import get_db
-from app.database.models.processing import Grading, RawMaterialPurchasing
+# 🟢 Imported HlsoForGrading model table structure
+from app.database.models.processing import Grading, RawMaterialPurchasing, DeHeading, HlsoForGrading
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     varieties, 
@@ -22,11 +22,14 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 
-router = APIRouter(tags=["GRADING"])
+# 🟢 Centralized Hlso Grading Pool Sync Service Import
+from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_grading_consumption
+
+router = APIRouter( tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
 
 # -----------------------------------------------------
-# TODAY RANGE (9 AM → NEXT DAY 9 AM)
+# TODAY RANGE (9 AM → NEXT DAY 9 AM AUTOMATIC SHIFT)
 # -----------------------------------------------------
 def get_today_range():
     now = ist_now()
@@ -37,7 +40,7 @@ def get_today_range():
     return start, end
 
 # -----------------------------------------------------
-# SHOW PAGE (WITH FULL SUMMARY LOGIC)
+# MAIN VIEW: SHOW GRADING PAGE
 # -----------------------------------------------------
 @router.get("/grading", response_class=HTMLResponse)
 def show_grading(request: Request, db: Session = Depends(get_db)):
@@ -47,13 +50,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. Master Data for Dropdowns (Searchable Columns [2026-01-24])
+    # 1. Master Data for Dropdowns
     species_list = [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
     peeling_locations = [l.peeling_at for l in db.query(PeelingAtMaster).filter(PeelingAtMaster.company_id == company_code).all()]
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    # 2. Today's Grading Data
+    # 2. Today's Grading Data (Locked into 9 AM Shift Window)
     start, end = get_today_range()
     today_data = db.query(Grading).filter(
         Grading.company_id == company_code,
@@ -61,7 +64,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         Grading.date <= end.date()
     ).order_by(Grading.id.desc()).all()
 
-    # 3. REQUIREMENT LOGIC (Exact Copy of Your Summary Calculation)
+    # 3. REQUIREMENT LOGIC
     p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_code).all()
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
     yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
@@ -138,12 +141,19 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
+    # 🟢 4. HIGH PERFORMANCE TABLE DATA CALL ENGINE
+    # 🔴 Completed మరియు Pending రెండు రికార్డులూ రావాలి కాబట్టి ఇక్కడ Filter మార్చాను
+    deheading_pending = db.query(HlsoForGrading).filter(
+        HlsoForGrading.company_id == company_code
+    ).order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
+
     return templates.TemplateResponse(
         request=request, name="processing/grading.html",
         context={
             "species_list": species_list, "variety_list": variety_list, "peeling_locations": peeling_locations,
             "prod_for_list": prod_for_list, "today_data": today_data,
             "hlso_summary": list(hlso_summary.values()), "hoso_summary": list(hoso_summary.values()),
+            "deheading_pending": deheading_pending,
             "drill_down_json": json.dumps(drill_down_data), "edit_data": None,
             "message": request.session.pop("message", None)
         }
@@ -157,13 +167,11 @@ def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"batches": []}
 
-    # RMP Batches
     r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
         RawMaterialPurchasing.company_id == company_code,
         func.lower(RawMaterialPurchasing.production_for) == company.lower()
     ).all()
     
-    # Reprocess Batches
     r2 = db.query(distinct(Reprocess.new_batch_id)).filter(
         Reprocess.company_id == company_code,
         func.lower(Reprocess.production_for) == company.lower()
@@ -180,14 +188,12 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
     company_code = request.session.get("company_code")
     if not company_code: return {"counts": []}
 
-    # RMP Counts
     c1 = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.batch_number == batch,
         func.lower(RawMaterialPurchasing.production_for) == company.lower()
     ).all()
     
-    # Reprocess Grades (as counts)
     c2 = db.query(distinct(Reprocess.grade)).filter(
         Reprocess.company_id == company_code,
         Reprocess.new_batch_id == batch,
@@ -198,7 +204,7 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
     return {"counts": sorted(list(all_counts))}
 
 # -----------------------------------------------------
-# POST: SAVE GRADING
+# POST: SAVE GRADING (With Midnight Protection & Auto-Stock Consume)
 # -----------------------------------------------------
 @router.post("/grading")
 def save_grading(
@@ -219,6 +225,8 @@ def save_grading(
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    current_ist = ist_now()
+
     grading = Grading(
         batch_number=batch_number,
         hoso_count=hoso_count,
@@ -228,19 +236,22 @@ def save_grading(
         species=species_val,
         peeling_at=peeling_at,
         production_for=production_for,
-        date=date.today(),
-        time=ist_now().time(),
+        date=current_ist.date(),
+        time=current_ist.time(),
         email=email,
         company_id=company_code
     )
-
     db.add(grading)
+
+    # 🟢 AUTO-DATA STORING GATEWAY: Consumes/Subtracts weight from HlsoForGrading pool table
+    consume_hlso_for_grading(db, grading)
+
     db.commit()
     db.refresh(grading)
 
     request.session["message"] = "✔ Grading Saved Successfully!"
-
     return RedirectResponse("/processing/grading", status_code=303)
+
 # -----------------------------------------------------
 # POST: UPDATE GRADING
 # -----------------------------------------------------
@@ -269,13 +280,96 @@ def update_grading(
     return RedirectResponse("/processing/grading", status_code=303)
 
 # -----------------------------------------------------
-# POST: DELETE (AJAX)
+# 🔴 NEW API: UPDATE LIVE STATUS FROM FRONTEND DROPDOWN
+# -----------------------------------------------------
+@router.post("/grading/update_pool_status")
+def update_pool_status(
+    request: Request,
+    batch_number: str = Form(...),
+    production_for: str = Form(...),
+    hoso_count: str = Form(...),
+    status: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
+
+    pool_record = db.query(HlsoForGrading).filter(
+        HlsoForGrading.company_id == company_code,
+        HlsoForGrading.batch_number == batch_number,
+        HlsoForGrading.production_for == production_for,
+        HlsoForGrading.hoso_count == hoso_count
+    ).first()
+
+    if not pool_record:
+        return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+
+    pool_record.status = status
+    db.commit()
+    return {"status": "success", "message": f"Status updated to {status}"}
+
+# -----------------------------------------------------
+# API: SYNC HISTORICAL DATA
+# -----------------------------------------------------
+@router.get("/grading/sync_old_data")
+def sync_old_data(request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return {"status": "error", "message": "Unauthorized"}
+
+    db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code).delete()
+    
+    dh_totals = db.query(
+        DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
+        DeHeading.peeling_at, DeHeading.production_for,
+        func.sum(DeHeading.hlso_qty).label("total_hlso")
+    ).filter(DeHeading.company_id == company_code).group_by(
+        DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
+        DeHeading.peeling_at, DeHeading.production_for
+    ).all()
+
+    grad_totals = db.query(
+        Grading.batch_number, Grading.species, Grading.hoso_count, 
+        Grading.peeling_at, Grading.production_for,
+        func.sum(Grading.quantity).label("total_graded")
+    ).filter(Grading.company_id == company_code).group_by(
+        Grading.batch_number, Grading.species, Grading.hoso_count, 
+        Grading.peeling_at, Grading.production_for
+    ).all()
+
+    grad_map = {}
+    for g in grad_totals:
+        k = (str(g.batch_number).upper(), str(g.species).upper(), str(g.hoso_count).upper(), str(g.peeling_at).upper(), str(g.production_for).upper())
+        grad_map[k] = float(g.total_graded or 0)
+
+    for d in dh_totals:
+        k = (str(d.batch_number).upper(), str(d.species).upper(), str(d.hoso_count).upper(), str(d.peeling_at).upper(), str(d.production_for).upper())
+        net = float(d.total_hlso or 0) - grad_map.get(k, 0.0)
+        
+        if net > 0.01:
+            pool = HlsoForGrading(
+                date=ist_now().date(), time=ist_now().time(),
+                batch_number=d.batch_number, production_for=d.production_for,
+                peeling_at=d.peeling_at, species=d.species, hoso_count=d.hoso_count,
+                total_hlso_qty=d.total_hlso, graded_qty=grad_map.get(k, 0.0),
+                available_qty=round(net, 2), status="Pending", company_id=company_code
+            )
+            db.add(pool)
+            
+    db.commit()
+    return {"status": "success", "message": "All historical data synced successfully!"}
+
+# -----------------------------------------------------
+# POST: DELETE (Sync and Pipeline Rollback Enabled)
 # -----------------------------------------------------
 @router.post("/grading/delete/{id}")
 def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
+    
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
+        rollback_grading_consumption(db, entry)
         db.delete(entry)
         db.commit()
     return JSONResponse({"status": "ok"})

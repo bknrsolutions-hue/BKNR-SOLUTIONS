@@ -252,3 +252,30 @@ class AuditLog(Base):
 
     edited_by = Column(String(255))
     edited_at = Column(DateTime, default=datetime.utcnow)
+
+from sqlalchemy import Column, Integer, String, Float, Date, Time
+from app.database import Base  # నీ ప్రాజెక్ట్ Base మోడల్ ఇంపోర్ట్ పాత్ ఇక్కడ ఇవ్వు
+
+class HlsoForGrading(Base):
+    __tablename__ = "hlso_for_grading"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False)
+    time = Column(Time, nullable=False)
+    
+    # Core Tracking Attributes
+    batch_number = Column(String(100), index=True, nullable=False)
+    production_for = Column(String(255), index=True, nullable=False) # ఏ కంపెనీ మెటీరియల్
+    peeling_at = Column(String(255), nullable=False)                 # ఏ లొకేషన్ లో ఉంది
+    species = Column(String(100), nullable=False)
+    hoso_count = Column(String(50), nullable=False)                  # ఇన్‌పుట్ హ్యాండ్లింగ్ కౌంట్
+    
+    # Live Balance Columns
+    total_hlso_qty = Column(Float, default=0.0)  # DeHeading నుండి వచ్చిన టోటల్ ఇన్‌పుట్ బరువు
+    graded_qty = Column(Float, default=0.0)      # ఇప్పటివరకు గ్రేడింగ్ చేసిన నికర బరువు
+    available_qty = Column(Float, default=0.0)   # నిల్వ ఉన్న కరెంట్ స్టాక్ (total_hlso_qty - graded_qty)
+    
+    # State Control Engine
+    status = Column(String(50), default="Pending") # Pending / Completed (Done) గా మారినప్పుడు హైడ్ అవుతుంది
+    email = Column(String(255))
+    company_id = Column(String(50), index=True, nullable=False)    # మల్టీ-టెనెంట్ ఐడి

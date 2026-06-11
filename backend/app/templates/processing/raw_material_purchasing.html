@@ -14,10 +14,11 @@
   --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
   --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
   --muted:#64748b; --success: #166534; --danger: #dc2626;
+  --card-bg: #ffffff; --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 80px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+body{background:var(--bg); color:var(--text); padding-bottom: 80px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
 
 /* HEADER - Compact for Mobile */
 .header{
@@ -47,11 +48,51 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 80px; ov
 .clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
 
 /* DRILL DOWN */
-.drill-row td { background: var(--card-bg)beb !important; padding: 0 !important; }
+.drill-row td { background: #ebebeb !important; padding: 0 !important; }
 .drill-container { padding: 8px; border: 1px dashed #fcd34d; margin: 5px; border-radius: 8px; background: var(--card-bg); overflow-x: auto; }
 .drill-mini-table { width: 100%; border-collapse: collapse; font-size: 9px; min-width: 300px; }
 .drill-mini-table th { background: #fef3c7; color: #92400e; padding: 5px; border: 1px solid #fde68a; }
 .drill-mini-table td { padding: 5px; border: 1px solid #fde68a; text-align: center; color: var(--primary); }
+
+/* 🟢 FILTER BAR - COMPACT HORIZONTAL SCROLL ENGINE FOR MOBILE */
+.filter-section {
+    background: var(--card-bg); padding: 10px 15px; display: flex; align-items: center; gap: 15px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; margin: 10px; border-radius: 12px; border: 1px solid var(--border);
+}
+.filter-item { display: flex; align-items: center; gap: 8px; }
+.filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.filter-section input {
+    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
+}
+
+@media(max-width: 600px) {
+    .filter-section { 
+        padding: 10px 12px; 
+        gap: 12px; 
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+    }
+    .filter-section::-webkit-scrollbar { height: 4px; }
+    .filter-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .filter-section-title { flex-shrink: 0; font-size: 11px !important; white-space: nowrap; }
+    .filter-item { 
+        flex-shrink: 0 !important; 
+        flex-direction: column; 
+        align-items: flex-start !important; 
+        gap: 2px !important; 
+    }
+    .filter-item label { font-size: 8px !important; }
+    .filter-section input { 
+        min-width: 130px !important; 
+        width: 130px !important; 
+        height: 32px !important; 
+        padding: 4px 8px !important; 
+        font-size: 11px !important; 
+    }
+}
 
 /* FORM SECTION */
 .section{
@@ -75,7 +116,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 80px; ov
 input, select, textarea{
   padding:12px; border-radius:8px; border:1px solid var(--border);
   font-size:14px; background:var(--card-bg); outline: none; transition: 0.2s; width: 100%;
-  -webkit-appearance: none; /* Mobile optimization */
+  -webkit-appearance: none;
 }
 input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight: 700; }
@@ -92,13 +133,13 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 .table-header-tool { padding: 0 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
 .table-header-tool h3 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
 
-.mobile-card-list { padding: 10px 15px; }
+.mobile-card-list { padding: 10px 15px; display: block; }
 .data-card {
     background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
     padding: 15px; margin-bottom: 12px; position: relative;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
-.data-card.selected { border: 2px solid var(--accent); background: #f0f7ff; }
+.data-card.selected { border: 2px solid var(--accent); background: #eff6ff; }
 .card-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
 .card-label { color: var(--muted); font-weight: 600; font-size: 10px; text-transform: uppercase; }
 .card-val { font-weight: 700; color: var(--primary); }
@@ -109,14 +150,11 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 #dropdownMenu{ display:none; position:absolute; right:0; bottom: 60px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; width:150px; box-shadow:0 5px 20px rgba(0,0,0,0.2); overflow: hidden; }
 .menu-item{ padding:15px; font-size:14px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
 
-/* Desktop Table (Hidden on Mobile) */
-.table-wrap{
-    background: var(--card-bg) !important;
-} display: none; }
+/* 🟢 FIXED: Desktop Table Scroll Wrapper & Responsive Visibility Properties */
+.table-wrap{ display: none; background: var(--card-bg) !important; border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 @media(min-width: 1024px) {
-    .table-wrap{
-    background: var(--card-bg) !important;
-} display: block; margin: 12px 18px; background:var(--card); border-radius:16px; border:1px solid var(--border); overflow-x:auto; }
+    .table-wrap { display: block; margin: 12px 18px; border-radius: 16px; }
     #dataTable{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1300px; table-layout: fixed; }
     #dataTable thead th{ background:var(--header-bg); padding:15px 8px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; text-align: center; }
     #dataTable tbody td{ padding:12px 8px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); white-space: nowrap; }
@@ -145,7 +183,7 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 <div class="summary-container" id="summarySection" style="display: {% if edit_data %} none {% else %} block {% endif %};">
     <div class="summary-card">
         <div class="summary-title"><i class="fa-solid fa-chart-pie"></i> Pending HOSO Status</div>
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
           <table class="summary-table">
               <thead>
                   <tr>
@@ -183,6 +221,23 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
               </tbody>
           </table>
         </div>
+    </div>
+</div>
+
+<!-- 🟢 FILTER BAR SECTION FOR TODAY'S LOGS -->
+<div class="filter-section" id="logFilterBar" style="display: {% if edit_data %} none {% else %} flex {% endif %};">
+    <div class="filter-section-title" style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase;"><i class="fa-solid fa-filter"></i> Log Filters:</div>
+    <div class="filter-item">
+        <label>Company</label>
+        <input id="companyLogFilter" oninput="applyLogFilters()" placeholder="Search Company...">
+    </div>
+    <div class="filter-item">
+        <label>Batch</label>
+        <input id="batchLogFilter" oninput="applyLogFilters()" placeholder="Search Batch...">
+    </div>
+    <div class="filter-item">
+        <label>Variety</label>
+        <input id="varietyLogFilter" oninput="applyLogFilters()" placeholder="Search Variety...">
     </div>
 </div>
 
@@ -271,12 +326,16 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
     <h3>Today's Log</h3>
 </div>
 
-<div class="mobile-card-list">
+<div class="mobile-card-list" id="logCardContainer">
     {% for r in today_data %}
-    <div class="data-card" data-id="{{r.id}}" onclick="selectCard(this)">
+    <div class="data-card" data-id="{{r.id}}" data-comp="{{r.production_for}}" data-batch="{{r.batch_number}}" data-var="{{r.variety_name}}" onclick="selectCard(this)">
         <div class="card-row">
             <span class="card-label">Batch: {{r.batch_number}}</span>
             <span class="card-val" style="color:var(--accent);">#{{r.id}}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Company</span>
+            <span class="card-val">{{r.production_for}}</span>
         </div>
         <div class="card-row">
             <span class="card-label">Supplier</span>
@@ -299,14 +358,14 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 </div>
 
 <!-- Desktop Table Wrapper -->
-<div class="table-wrap">
+<div class="table-wrap" id="logTableContainer">
     <table id="dataTable">
         <thead>
             <tr><th>ID</th><th>Company</th><th>Batch</th><th>Supplier</th><th>Variety</th><th>Total Qty</th><th>Amount</th><th>Time</th></tr>
         </thead>
-        <tbody>
+        <tbody id="logTableBody">
             {% for r in today_data %}
-            <tr data-id="{{r.id}}" onclick="selectCard(this)">
+            <tr data-id="{{r.id}}" data-comp="{{r.production_for}}" data-batch="{{r.batch_number}}" data-var="{{r.variety_name}}" onclick="selectCard(this)">
                 <td>{{r.id}}</td>
                 <td>{{r.production_for}}</td>
                 <td>{{r.batch_number}}</td>
@@ -341,6 +400,7 @@ const validVarieties = {{ variety_list | safe }};
 
 let selectedId = null;
 
+// 🟢 HIGH PERFORMANCE: Optimized Batch String builder replaces slow incremental DOM loops
 function toggleDrillDown(element, species, variety) {
     const count = element.innerText.trim();
     const mainRow = element.closest('tr');
@@ -348,17 +408,41 @@ function toggleDrillDown(element, species, variety) {
     const drillBody = drillRow.querySelector('.drill-body');
     
     if (drillRow.style.display === "none") {
-        drillBody.innerHTML = "";
         const matches = drillDownData[`${species}|${variety}|${count}`] || [];
         if (matches.length > 0) {
+            let htmlBuffer = "";
             matches.forEach(m => {
-                drillBody.innerHTML += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td>${m.req.toLocaleString()}</td></tr>`;
+                htmlBuffer += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td>${m.req.toLocaleString()}</td></tr>`;
             });
+            drillBody.innerHTML = htmlBuffer;
             drillRow.style.display = "table-row";
         }
     } else {
         drillRow.style.display = "none";
     }
+}
+
+// 🟢 HIGH PERFORMANCE: Memory array search filter logic execution loops for layout rows
+function applyLogFilters() {
+    const compF = document.getElementById("companyLogFilter").value.trim().toUpperCase();
+    const batchF = document.getElementById("batchLogFilter").value.trim().toUpperCase();
+    const varF = document.getElementById("varietyLogFilter").value.trim().toUpperCase();
+
+    // Filter desktop rows
+    document.querySelectorAll("#logTableBody tr").forEach(row => {
+        const matchComp = !compF || row.dataset.comp.toUpperCase().includes(compF);
+        const matchBatch = !batchF || row.dataset.batch.toUpperCase().includes(batchF);
+        const matchVar = !varF || row.dataset.var.toUpperCase().includes(varF);
+        row.style.display = (matchComp && matchBatch && matchVar) ? "" : "none";
+    });
+
+    // Filter mobile cards
+    document.querySelectorAll("#logCardContainer .data-card").forEach(card => {
+        const matchComp = !compF || card.dataset.comp.toUpperCase().includes(compF);
+        const matchBatch = !batchF || card.dataset.batch.toUpperCase().includes(batchF);
+        const matchVar = !varF || card.dataset.var.toUpperCase().includes(varF);
+        card.style.display = (matchComp && matchBatch && matchVar) ? "" : "none";
+    });
 }
 
 document.getElementById("prod_for_dd")?.addEventListener("input", function() {
@@ -391,16 +475,24 @@ function calcFormula(){
 ["g1","g2","dc","rate"].forEach(id=> document.getElementById(id)?.addEventListener("input",calcFormula));
 
 function toggleForm() {
-    const f = document.getElementById("formSection"), s = document.getElementById("summarySection");
+    const f = document.getElementById("formSection"), s = document.getElementById("summarySection"), lb = document.getElementById("logFilterBar");
     f.style.display = (f.style.display === "none" || f.style.display === "") ? "block" : "none";
     s.style.display = (f.style.display === "block") ? "none" : "block";
+    if (lb) lb.style.display = (f.style.display === "block") ? "none" : "flex";
     if(f.style.display === "none") { {% if edit_data %} location.href = "/processing/raw_material_purchasing"; {% endif %} }
 }
 
 function selectCard(el) {
-    document.querySelectorAll(".data-card, tr").forEach(x => x.classList.remove("selected", "selected-row"));
-    el.classList.add("selected");
-    selectedId = el.dataset.id;
+    document.querySelectorAll(".data-card, #logTableBody tr").forEach(x => x.classList.remove("selected", "selected-row"));
+    const id = el.dataset.id;
+    
+    // Sync UI selection on both layouts simultaneously
+    document.querySelectorAll(`[data-id="${id}"]`).forEach(node => {
+        if(node.tagName === "TR") node.classList.add("selected-row");
+        else node.classList.add("selected");
+    });
+    
+    selectedId = id;
     document.getElementById("threeDotsMenu").style.display = "block";
 }
 
@@ -421,7 +513,10 @@ function deleteSelected() {
         }
     });
 }
-window.onclick = () => document.getElementById("dropdownMenu").style.display = "none";
+window.onclick = () => {
+    const dm = document.getElementById("dropdownMenu");
+    if(dm) dm.style.display = "none";
+};
 </script>
 
 {% if message %}<script>Swal.fire({icon:'success', title:'Saved', timer:1500, showConfirmButton:false});</script>{% endif %}

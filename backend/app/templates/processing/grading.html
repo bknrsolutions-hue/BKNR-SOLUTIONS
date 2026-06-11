@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>GRADING - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,10 +14,11 @@
   --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
   --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
   --muted:#64748b; --success: #166534; --danger: #dc2626;
+  --card-bg: #ffffff; --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
 
 /* HEADER */
 .header{
@@ -29,58 +30,75 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 .header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
 .header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
 
-/* SUMMARY CARDS */
-.summary-container { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 18px; }
-@media(max-width:900px){ .summary-container { grid-template-columns: 1fr; } }
+@media(max-width: 600px) {
+    .header { padding: 12px 15px; }
+    .header-titles h2 { font-size: 16px; }
+    .header-titles p { font-size: 10px; }
+}
 
-.summary-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-.summary-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+/* SUMMARY CARDS - UPGRADED TO 3 COLUMNS GRID ENGINE */
+.summary-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px; }
+@media(max-width:1100px){ .summary-container { grid-template-columns: 1fr 1fr; } }
+@media(max-width:700px){ .summary-container { grid-template-columns: 1fr; margin: 10px; gap: 10px; } }
+
+.summary-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+.summary-title { font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-bottom: 2px solid var(--bg); padding-bottom: 8px; letter-spacing: 0.5px; }
 .sum-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.sum-table th { background: #f8fafc; text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; }
-.sum-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
+.sum-table th { background: #f8fafc; text-align: left; padding: 10px 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 9px; }
+.sum-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; font-weight: 600; white-space: nowrap; vertical-align: middle; }
 
 .clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
 
+/* SEARCHABLE STATUS INLINE SELECT STYLE */
+.table-status-select {
+  padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;
+  border: 1px solid var(--border); outline: none; background: #fff; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.5px; text-align: center; width: 100%;
+}
+.status-pending-select { color: #d97706; background: #fef3c7; border-color: #fcd34d; }
+.status-completed-select { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
+
 /* DRILL DOWN STYLE */
-.drill-row td { background: var(--card-bg)beb !important; padding: 0 !important; }
-.drill-container { padding: 12px; border: 1px dashed #fcd34d; margin: 8px; border-radius: 10px; background: var(--card-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.drill-mini-table th { background: #fef3c7; color: #92400e; padding: 8px; border: 1px solid #fde68a; text-align: left; }
-.drill-mini-table td { padding: 8px; border: 1px solid #fde68a; color: #78350f; }
+.drill-row td { background: #ebebeb !important; padding: 0 !important; }
+.drill-container { padding: 12px; border: 1px dashed #fcd34d; margin: 8px; border-radius: 10px; background: var(--card-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); overflow-x: auto; }
+.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 250px; }
+.drill-mini-table th { background: #fef3c7; color: #92400e; padding: 8px; border: 1px solid #fde68a; text-align: left; font-size: 9px; }
+.drill-mini-table td { padding: 8px; border: 1px solid #fde68a; color: #78350f; white-space: nowrap; }
 
 /* FORM SECTION */
 .section{
-  margin:18px; background:var(--card); padding:25px;
-  border-radius:16px; border:1px solid var(--border);
+  margin:15px; background:var(--card); padding:20px;
+  border-radius:12px; border:1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   display: none;
 }
-.section-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-.form-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
+.section-title { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.form-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; }
 @media(max-width:1100px){ .form-grid{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
-.field{display:flex; flex-direction:column; gap: 5px;}
-.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+.field{display:flex; flex-direction:column; gap: 4px;}
+.field label{ font-size:10px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
-input { padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:13px; outline: none; transition: 0.2s; width: 100%; }
+input { padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:13px; outline: none; transition: 0.2s; width: 100%; color: var(--primary); font-weight: 600; }
 input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
 
 /* ACTIONS */
-.top-actions { margin: 0 18px; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.top-actions { margin: 0 15px; display: flex; justify-content: flex-end; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; }
 
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
 .btn{ padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--card-bg); }
 .btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
 
 /* TABLE */
-.table-header-tool { padding: 0 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
-.table-header-tool h3 { margin: 0; font-size: 15px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-.table-wrap{ margin:12px 18px; background:var(--card); border-radius:16px; border:1px solid var(--border); overflow-x:auto; }
-#dataTable{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1000px; }
-#dataTable thead th{ background:var(--header-bg); font-size:11px; padding:14px 10px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; }
-#dataTable tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
+.table-header-tool { padding: 0 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
+.table-header-tool h3 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+
+.table-wrap{ margin:12px 15px; background:var(--card); border-radius:12px; border:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling: touch; }
+#dataTable{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1000px; }
+#dataTable thead th{ background:var(--header-bg); font-size:10px; padding:12px 8px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+#dataTable tbody td{ padding:12px 8px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); font-weight: 600; white-space: nowrap; }
 tbody tr.selected{ background:#eff6ff !important; border-left: 4px solid var(--accent); }
 
 #threeDotsMenu{ position:relative; display: none; margin-right: 15px; }
@@ -106,7 +124,6 @@ iframe{ width:100%; height:100%; border:none; }
       <h2>Grading Entry</h2>
       <p><i class="fa-solid fa-layer-group"></i> Production output and location tracking</p>
   </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;"> </div>
 </div>
 
 {% if message %}
@@ -118,40 +135,72 @@ iframe{ width:100%; height:100%; border:none; }
 <div class="summary-container" id="summarySection">
     <div class="summary-card">
         <div class="summary-title"><i class="fa-solid fa-box-open"></i> HLSO Requirement</div>
-        <table class="sum-table">
-            <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
-            <tbody>
-                {% if hlso_summary %}{% for item in hlso_summary %}
-                <tr>
-                    <td>{{ item.species }} | {{ item.variety }}</td>
-                    <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hlso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
-                    <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
-                </tr>
-                <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
-                {% endfor %}{% else %}
-                <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HLSO requirements pending</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="sum-table">
+                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+                <tbody>
+                    {% if hlso_summary %}{% for item in hlso_summary %}
+                    <tr>
+                        <td>{{ item.species }} | {{ item.variety }}</td>
+                        <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hlso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
+                        <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                    </tr>
+                    <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
+                    {% endfor %}{% else %}
+                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HLSO requirements pending</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
     
     <div class="summary-card">
         <div class="summary-title"><i class="fa-solid fa-shrimp"></i> HOSO Requirement</div>
-        <table class="sum-table">
-            <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
-            <tbody>
-                {% if hoso_summary %}{% for item in hoso_summary %}
-                <tr>
-                    <td>{{ item.species }} | {{ item.variety }}</td>
-                    <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hoso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
-                    <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
-                </tr>
-                <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
-                {% endfor %}{% else %}
-                <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HOSO requirements pending</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="sum-table">
+                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+                <tbody>
+                    {% if hoso_summary %}{% for item in hoso_summary %}
+                    <tr>
+                        <td>{{ item.species }} | {{ item.variety }}</td>
+                        <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hoso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
+                        <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                    </tr>
+                    <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
+                    {% endfor %}{% else %}
+                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HOSO requirements pending</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-title" style="background: #e0f2fe; color: #0369a1; border-radius: 4px; padding: 4px 8px;"><i class="fa-solid fa-boxes-packing"></i> HLSO For Grading</div>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="sum-table" id="poolTable">
+                <thead><tr><th>Batch / Location</th><th>Species | Count</th><th style="text-align:right;">Avail Qty</th><th style="text-align:center; width:110px;">Status</th></tr></thead>
+                <tbody id="poolTableBody">
+                    {% if deheading_pending %}
+                        {% for item in deheading_pending %}
+                        <tr data-status="{{ item.status }}" data-prod-for="{{ item.production_for }}">
+                            <td><b>{{ item.batch_number }}</b><br><small style="color:var(--muted); font-size: 9px;">{{ item.peeling_at }}</small></td>
+                            <td>{{ item.species }}<br><small style="color:var(--accent); font-weight:700;">In: {{ item.hoso_count }}</small></td>
+                            <td style="text-align:right; color:var(--success); font-weight:800;">{{ "{:,.2f}".format(item.available_qty) }} KG</td>
+                            <td style="text-align:center;">
+                                <select class="table-status-select {% if item.status == 'Pending' %}status-pending-select{% else %}status-completed-select{% endif %}" data-prev="{{ item.status }}" onchange="changeLiveStatus(this)">
+                                    <option value="Pending" {% if item.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                    <option value="Completed" {% if item.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">No stock data from de-heading</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -269,6 +318,99 @@ iframe{ width:100%; height:100%; border:none; }
 <script>
 const drillDownData = {{ drill_down_json | safe if drill_down_json else '{}' }};
 
+// 🔴 FIXED AJAX LIVE UPDATE WITH CONFIRMATION ENGINE
+function changeLiveStatus(selectElement) {
+    const nextVal = selectElement.value;
+    const prevVal = selectElement.getAttribute("data-prev");
+    const row = selectElement.closest("tr");
+    
+    // రో నుండి కచ్చితమైన ఒరిజినల్ డేటాబేస్ వాల్యూస్ ని లాగడం
+    const batchNumber = row.cells[0].querySelector("b").innerText.trim();
+    const speciesCountText = row.cells[1].querySelector("small").innerText; // "In: 10/20"
+    const hosoCount = speciesCountText.replace("In:", "").trim();
+    
+    // 🔴 BUG FIX: నేరుగా ఈ రో కి సంబంధించిన 'production_for' ని రో అట్రిబ్యూట్ నుండి లాగుతున్నాం
+    const productionFor = row.getAttribute("data-prod-for").trim(); 
+
+    if (nextVal === prevVal) return;
+
+    Swal.fire({
+        title: 'Change Status?',
+        text: `Are you sure you want to change status to ${nextVal} in database?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Update'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            // Backend API కి డేటా పంపే అజాక్స్ ఫామ్ డేటా సెటప్
+            const formData = new FormData();
+            formData.append("batch_number", batchNumber);
+            formData.append("production_for", productionFor);
+            formData.append("hoso_count", hosoCount);
+            formData.append("status", nextVal);
+
+            fetch("/processing/grading/update_pool_status", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    // UI కలర్ మార్చడం
+                    if (nextVal === "Completed") {
+                        selectElement.className = "table-status-select status-completed-select";
+                    } else {
+                        selectElement.className = "table-status-select status-pending-select";
+                    }
+                    
+                    // హిస్టరీ సింక్ అట్రిబ్యూట్స్ అప్‌డేట్
+                    selectElement.setAttribute("data-prev", nextVal);
+                    row.setAttribute("data-status", nextVal);
+                    
+                    // టేబుల్ ని లైవ్ గా రీ-సార్ట్ చేయడం (Pending పైకి, Completed కిందకి)
+                    sortPoolTable();
+                    
+                    Swal.fire({ icon: 'success', title: 'DB Updated', text: `Status changed to ${nextVal}`, timer: 1500, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Failed', text: data.message || 'Error updating DB' });
+                    selectElement.value = prevVal; // ఫెయిల్ అయితే వెనక్కి తిప్పేయడం
+                }
+            })
+            .catch(err => {
+                Swal.fire({ icon: 'error', title: 'Server Error', text: 'Connection to server failed' });
+                selectElement.value = prevVal;
+            });
+
+        } else {
+            selectElement.value = prevVal; // క్యాన్సిల్ చేస్తే పాత వాల్యూ కి తిప్పేయడం
+        }
+    });
+}
+
+function sortPoolTable() {
+    const tbody = document.getElementById("poolTableBody");
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll("tr[data-status]"));
+    
+    rows.sort((a, b) => {
+        const statusA = a.getAttribute("data-status");
+        const statusB = b.getAttribute("data-status");
+        if (statusA === "Pending" && statusB === "Completed") return -1;
+        if (statusA === "Completed" && statusB === "Pending") return 1;
+        return 0;
+    });
+    
+    rows.forEach(r => tbody.appendChild(r));
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    sortPoolTable();
+});
+
 function toggleForm() {
     const section = document.getElementById("formSection"), summary = document.getElementById("summarySection");
     if (section.style.display === "none" || section.style.display === "") {
@@ -278,7 +420,6 @@ function toggleForm() {
     }
 }
 
-// DROPDOWN VALIDATION (STRICT)
 function validateForm() {
     const inputs = [
         { id: "production_for", list: "prod_for_data", label: "Production For" },
@@ -292,6 +433,7 @@ function validateForm() {
     for (let item of inputs) {
         const input = document.getElementById(item.id);
         const list = document.getElementById(item.list);
+        if(!list) continue;
         const options = Array.from(list.options).map(opt => opt.value);
 
         if (input.value && !options.includes(input.value)) {
@@ -308,7 +450,6 @@ function validateForm() {
     return true;
 }
 
-// COMPANY & BATCH FILTERING
 function handleCompanyChange() {
     const company = document.getElementById("production_for").value;
     const batchList = document.getElementById("batches_data"), batchInput = document.getElementById("batch");
@@ -338,18 +479,18 @@ function handleBatchChange() {
         });
 }
 
-// DRILL DOWN
 function toggleSumDrill(element, type, species, variety, count) {
     const mainRow = element.closest('tr'), drillRow = mainRow.nextElementSibling;
     const drillBody = drillRow.querySelector('.drill-body');
 
     if (drillRow.style.display === "none") {
-        drillBody.innerHTML = "";
         const key = `${species}|${variety}|${count}`;
         const matches = (drillDownData[type] && drillDownData[type][key]) ? drillDownData[type][key] : [];
+        let htmlBuffer = "";
         matches.forEach(m => {
-            drillBody.innerHTML += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td style="text-align:right;">${m.qty.toFixed(2)}</td></tr>`;
+            htmlBuffer += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td style="text-align:right;">${m.qty.toFixed(2)}</td></tr>`;
         });
+        drillBody.innerHTML = htmlBuffer;
         drillRow.style.display = "table-row";
     } else { drillRow.style.display = "none"; }
 }
@@ -359,7 +500,6 @@ function closeLookup(){ document.getElementById("lookupModal").style.display="no
 function handleSpeciesChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/species"); i.value=""; } }
 function handleVarietyChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/varieties"); i.value=""; } }
 
-// TABLE ACTIONS
 let selectedRow = null;
 document.querySelectorAll("#dataTable tbody tr").forEach(r => {
   r.onclick = () => {
