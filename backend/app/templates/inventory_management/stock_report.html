@@ -3,83 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <title>STOCK LEDGER | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
  --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f1f5f9;
  --header:#ffffff; --text:#1e293b; --danger: #ef4444; --success: #22c55e;
+ --card-bg: #ffffff; --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;}
-body{ margin:0; background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); }
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+body{
+ background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text); -webkit-font-smoothing: antialiased;
+}
 
 /* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header-top { display: flex; justify-content: space-between; align-items: center; }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
+.header{ background:var(--header); padding:8px 12px; border-bottom:2px solid var(--primary); }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
- margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:6px; background:var(--header-bg); padding:10px; border-radius:6px; border:1px solid var(--border);
+ margin-top:6px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+ gap:12px; background:var(--header-bg); padding:6px; border-radius:4px; border:1px solid var(--border);
+ -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.fbox{ display:flex; flex-direction:column; gap:1px; flex-shrink: 0 !important; min-width: 120px; }
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],#searchBox{ padding:4px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
-
+select,input[type=date],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:32px !important; color: var(--primary); font-weight: 600; width: 100%; transition: all 0.2s ease; }
+select:focus, input[type=date]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+#searchBox{ min-width: 200px !important; width: 200px !important; border-left:3px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
 
+@media (max-width: 768px) {
+    .header { padding: 6px 10px; }
+    .header h2 { font-size: 11px; }
+    .filters { gap: 12px; padding: 4px; overflow-y: hidden; }
+    .fbox { min-width: 110px; }
+    select, input[type=date], #searchBox { font-size: 9.5px; padding: 2px 4px; }
+    .fbox label { font-size: 7.5px; }
+    #searchBox { min-width: 150px !important; width: 150px !important; }
+}
+
 /* ================= ACTIONS ================= */
-.actions{ background:var(--card-bg); padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:14px;}
+.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:12px;}
 
 .menu-list{
- position:absolute; right:0; top:30px; width:230px; background:var(--card-bg); border:1px solid var(--border);
+ position:absolute; right:0; top:28px; width:210px; background:var(--card-bg); border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+.menu-list div{ padding:6px 10px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
 .menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 6px 12px; font-size: 9px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list b { display: block; padding: 4px 10px; font-size: 8px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
 /* ================= TABLE AREA ================= */
-.section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+.section{ flex:1; margin:4px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.table-wrap{ flex: 1; overflow: auto; width: 100%; background: var(--card-bg) !important; -webkit-overflow-scrolling: touch; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2100px; } 
 
 thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
+ background:var(--header-bg); padding:8px 4px; font-size:9.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ color: var(--text); letter-spacing: 0.3px; white-space: nowrap;
 }
 
 tbody td{
  padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+ font-weight: 600; color: var(--primary);
 }
 
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
+/* 🔴 STOCK OUT - HIGHLIGHT ENGINE */
+tr.stock-out-row { background: rgba(239, 68, 68, 0.04) !important; }
+tr.stock-out-row:hover { background: rgba(239, 68, 68, 0.08) !important; }
+
+tbody tr:hover:not(.stock-out-row){background:#f1f7ff; cursor:pointer;}
+tr.selected { background: #dbeafe !important; }
 
 .empty-state { padding: 80px 20px; text-align: center; color: #64748b; }
 .inv-col { background: var(--card-bg)cf0; font-weight: 700; color: #92400e; }
 .qty-col { font-weight: 800; color: var(--accent); }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
+.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; height:22px; }
 
+/* SEARCHABLE INLINE DROPDOWN CORE STYLING */
+.searchable-dropdown-container { position: relative; width: 100%; }
+.searchable-dropdown-list {
+    position: fixed; 
+    max-height: 120px; overflow-y: auto;
+    background: var(--card-bg); border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
+}
+.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
+
+/* ================= FOOTER ================= */
 tfoot td{ 
-    background:#d3d8e0 !important; color:#201c1c !important; 
-    font-weight:900; font-size:11px; border-top:2px solid #c5cfde; 
-    position:sticky; bottom:0; z-index:20; padding:10px 4px; 
+    background:var(--header-bg); font-weight:800; font-size:9.5px; color:var(--primary);
+    border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:8px 4px; white-space: nowrap;
 }
 
-/* ================= MODALS & PANELS ================= */
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
 .modal-content{ background:var(--card-bg); padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
 .btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
@@ -90,10 +124,43 @@ tfoot td{
     border-left:3px solid var(--primary); display:none; flex-direction:column; 
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
+
+/* ================= PRINT ENGINE ================= */
+@media print {
+    @page { size: A4 landscape; margin: 5mm; }
+    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
+    .header, .actions, .menu-box, .audit-panel, button, #confirmModal { display: none !important; }
+    .section { border: none; margin: 0; padding: 0; overflow: visible; }
+    .table-wrap{ background: var(--card-bg) !important; overflow: visible; width: 100%; }
+    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
+    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
+@media (max-width: 768px) {
+    body { overflow: hidden; height: 100vh; }
+    .actions { padding: 4px 10px; }
+    #rowCount { font-size: 9px; }
+    .dots { width: 22px; height: 22px; font-size: 10px; }
+    .section { margin: 2px; }
+    
+    table { display: table !important; min-width: 2100px !important; }
+    thead { display: table-header-group !important; }
+    tbody { display: table-row-group !important; }
+    tr { display: table-row !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+    td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; border-bottom: 1px solid #f1f5f9 !important; width: auto !important; }
+    
+    td::before { content: "" !important; display: none !important; }
+    tfoot { display: table-footer-group !important; }
+    tfoot tr { display: table-row !important; padding: 0 !important; }
+    tfoot td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; }
+    tfoot td::before { content: "" !important; display: none !important; }
+    
+    .audit-panel { width: 100% !important; z-index: 99999; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -121,7 +188,10 @@ tfoot td{
         <div class="fbox"><label>Species</label><select id="f_species"><option value="">All Species</option></select></div>
         <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
         <div class="fbox"><label>Location</label><select id="f_loc"><option value="">All Locations</option></select></div>
-        <input id="searchBox" placeholder="Quick Search Batch, Brand, Grade, PO, User...">
+        <div class="fbox">
+            <label>Search Filters</label>
+            <input id="searchBox" placeholder="Quick Search Batch, Brand, Grade, PO, User...">
+        </div>
     </div>
 </div>
 
@@ -187,7 +257,8 @@ tfoot td{
                 </tr>
                 {% else %}
                     {% for r in rows %}
-                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                    <!-- 🟢 DYNAMIC INJECT: Appends .stock-out-row if movement is OUT -->
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" class="{% if r.cargo_movement_type == 'OUT' %}stock-out-row{% endif %}" onclick="selectRow(this)">
                         <td class="slno"></td>
                         <td>{{ r.date }}</td>
                         <td class="editable" data-field="batch_number" style="font-weight:700">{{ r.batch_number }}</td>

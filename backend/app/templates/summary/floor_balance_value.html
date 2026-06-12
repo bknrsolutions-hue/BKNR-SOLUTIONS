@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FLOOR BALANCE VALUE | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FLOOR BALANCE VALUE | BKNR ERP</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root{
+ /* 🌟 LIGHT MODE VARIABLES */
  --primary:#0f172a;
  --accent:#2563eb;
  --border:#e2e8f0;
@@ -16,13 +17,43 @@
  --header:#ffffff;
  --text:#1e293b;
  --success:#16a34a;
- --orange:#ea580c;
+ --orange:#2563eb;
  --card-bg: #ffffff;
  --header-bg: #f8fafc;
+ --table-header: #f1f5f9;
+ 
+ /* Subtotal Theme Variables (Light) */
+ --loc-bg: #0f172a;    --loc-text: #ffffff;
+ --comp-bg: #e0f2fe;   --comp-text: #0369a1;  --comp-border: #bae6fd;
+ --var-bg: #f8fafc;    --var-text: #475569;
+ --td-text: #1e293b;   --td-border: #f1f5f9;
+ --batch-color: #2563eb;
+}
+
+[data-theme="dark"] {
+ /* 🌟 DARK MODE VARIABLES (FIXED MULTI-MODE TEXT ENGINES) */
+ --primary:#f8fafc;
+ --accent:#60a5fa;
+ --border:#334155;
+ --bg:#0f172a;
+ --header:#1e293b;
+ --text:#e2e8f0;
+ --success:#4ade80;
+ --orange:#60a5fa;
+ --card-bg: #1e293b;
+ --header-bg: #0f172a;
+ --table-header: #0f172a;
+ 
+ /* Subtotal Theme Variables (Dark) */
+ --loc-bg: #334155;    --loc-text: #f8fafc;
+ --comp-bg: rgba(56, 189, 248, 0.15);  --comp-text: #38bdf8;  --comp-border: rgba(56, 189, 248, 0.3);
+ --var-bg: rgba(71, 85, 105, 0.2);     --var-text: #94a3b8;
+ --td-text: #e2e8f0;   --td-border: #1e293b;
+ --batch-color: #60a5fa;
 }
 
 *{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0;}
-body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:10px; font-size:9.5px; -webkit-font-smoothing: antialiased; }
+body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:10px; font-size:9.5px; -webkit-font-smoothing: antialiased; transition: background 0.2s ease, color 0.2s ease; }
 
 /* ================= PREMIUM HEADER & FILTERS ================= */
 .header{ 
@@ -34,13 +65,13 @@ body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:colum
     margin-bottom: 6px;
 }
 .header-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
-.company-badge { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); font-weight: 700; color: var(--text); font-size: 9px; }
+.header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--accent); padding-left: 6px; text-transform: uppercase; }
+.company-badge { background: var(--table-header); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); font-weight: 700; color: var(--text); font-size: 9px; }
 
-/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
+/* FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
  display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
- gap:12px; background:#f1f5f9; padding:8px; border-radius:6px;
+ gap:12px; background:var(--table-header); padding:8px; border-radius:6px;
  -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
 .filters::-webkit-scrollbar { height: 4px; }
@@ -57,13 +88,13 @@ body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:colum
 .fbox{ position: relative; display:flex; flex-direction:column; gap:2px; flex-shrink: 0 !important; min-width: 130px; }
 @media (min-width: 768px) { .fbox { min-width: unset; } }
 
-.fbox label{ font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom: 1px; }
+.fbox label{ font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.3px; }
 
 /* ================= SEARCHABLE DROPDOWN CORE COMPONENT ================= */
 .searchable-select-container { position: relative; width: 100%; }
 .select-trigger { 
     padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); 
-    border-radius:4px; background:var(--card-bg); outline:none; color:#0f172a; width: 100%; 
+    border-radius:4px; background:var(--card-bg); outline:none; color:var(--text); width: 100%; 
     display: flex; justify-content: space-between; align-items: center; cursor: pointer; height: 32px !important;
 }
 .select-dropdown {
@@ -73,16 +104,16 @@ body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:colum
 }
 .dropdown-search-input {
     width: 100%; padding: 5px; font-size: 9.5px; border: none;
-    border-bottom: 1px solid var(--border); outline: none; font-weight: 600;
+    border-bottom: 1px solid var(--border); outline: none; font-weight: 600; background: var(--card-bg); color: var(--text);
 }
 .dropdown-options { max-height: 150px; overflow-y: auto; padding: 2px 0; }
 .dropdown-option { 
     padding: 5px 8px; font-size: 9.5px; cursor: pointer; font-weight: 600; color: var(--text);
 }
-.dropdown-option:hover { background: #eff6ff; color: var(--accent); }
+.dropdown-option:hover { background: var(--table-header); color: var(--accent); }
 .dropdown-option.selected { background: var(--accent); color: #fff; }
 
-#searchBox{ padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; color:#0f172a; width: 100%; border-left:3px solid var(--accent); height: 32px !important; min-width: 180px; }
+#searchBox{ padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; color:var(--text); width: 100%; border-left:3px solid var(--accent); height: 32px !important; min-width: 180px; }
 
 @media (min-width: 768px) {
     .select-trigger, #searchBox { height: 36px !important; }
@@ -90,9 +121,9 @@ body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:colum
 
 /* ================= ACTIONS SYSTEM ================= */
 .actions{ background:var(--card-bg); padding:5px 8px; display:flex; justify-content:space-between; align-items:center; border-radius:6px; border:1px solid var(--border); margin-bottom:6px; }
-#rowCount{ font-size:9px; font-weight:800; color:var(--accent); background: #eff6ff; padding: 1px 6px; border-radius: 12px; border: 1px solid #bfdbfe; }
-.btn-print{ font-size:9px; cursor:pointer; color:#fff; background:var(--primary); padding:4px 10px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; border:none; display:flex; align-items:center; gap:4px; }
-.btn-print:hover{ background:var(--accent); }
+#rowCount{ font-size:10px; font-weight:700; color:var(--accent); background: rgba(59, 130, 246, 0.08); padding: 4px 8px; border-radius: 12px; }
+.btn-print { font-size:10px; cursor:pointer; color:#fff; background:var(--accent); padding:6px 12px; border-radius:4px; font-weight:700; text-decoration:none; transition:0.2s; border:none; display:flex; align-items:center; gap:4px; text-transform: uppercase; }
+.btn-print:hover{ opacity: 0.9; }
 
 /* ================= TABLE AREA ULTRA-COMPACT LAYOUT ================= */
 .section{ background:var(--card-bg); border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02); margin-bottom: 10px; }
@@ -101,35 +132,37 @@ body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:colum
 table{ width:100%; border-collapse:collapse; table-layout:auto; } 
 
 thead th{
- background:var(--header-bg); padding:6px 4px; font-size:8.5px; font-weight:800;
+ background:var(--table-header); padding:8px 4px; font-size:9.5px; font-weight:700;
  text-transform:uppercase; border-bottom:2px solid var(--border);
- position:sticky; top:0; z-index:20; color:#475569; white-space: nowrap;
+ position:sticky; top:0; z-index:20; color:var(--text-muted); white-space: nowrap; letter-spacing: 0.5px;
 }
 
 tbody td{
- padding:5px 4px; font-size:9px; border-bottom:1px solid #f1f5f9;
- white-space:nowrap; font-weight: 600; color: var(--primary);
+ padding:6px 4px; font-size:9.5px; border-bottom:1px solid var(--td-border);
+ white-space:nowrap; font-weight: 600; color: var(--td-text);
 }
-tr:hover td { background-color: #f8fafc; }
+tr:hover td { background-color: var(--table-header); }
 
-/* Subtotal Grouping Styles - Extra Premium Tight */
-.row-loc { background: #0f172a !important; color: #ffffff !important; font-weight: 800; }
-.row-loc td { text-align: left !important; padding-left: 10px !important; }
-.row-comp { background: #e0f2fe !important; color: #0369a1 !important; font-weight: 700; border-top: 1px solid #bae6fd; border-bottom: 1px solid #bae6fd; }
-.row-comp td { text-align: left !important; padding-left: 20px !important; }
-.row-var { background: #f8fafc !important; color: #334155 !important; font-weight: 700; border-bottom: 1px solid var(--border); }
-.row-var td { text-align: left !important; padding-left: 30px !important; }
+/* 🟢 FIXED: Subtotal text engine colors synchronized across dark/light variables */
+.row-loc { background: var(--loc-bg) !important; }
+.row-loc td { text-align: left !important; padding-left: 10px !important; color: var(--loc-text) !important; font-size: 11px; font-weight: 800; }
+.row-comp { background: var(--comp-bg) !important; border-top: 1px solid var(--comp-border); border-bottom: 1px solid var(--comp-border); }
+.row-comp td { text-align: left !important; padding-left: 20px !important; color: var(--comp-text) !important; font-size: 10px; font-weight: 700; }
+.row-var { background: var(--var-bg) !important; border-bottom: 1px solid var(--border); }
+.row-var td { text-align: left !important; padding-left: 30px !important; color: var(--var-text) !important; font-weight: 700; }
 
 .qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; }
-.val-column { background: rgba(255,255,255,0.5); color: #92400e; font-weight: 700; text-align: right !important; padding-right: 6px !important; }
-.batch-bold { color: var(--accent); font-weight: 700; }
+.val-column { background: rgba(255,255,255,0.02); color: var(--td-text); font-weight: 700; text-align: right !important; padding-right: 6px !important; }
+.batch-bold { color: var(--batch-color); font-weight: 700; }
 
-.tag { background: #edf2f7; color: #2d3748; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid #cbd5e1; display: inline-block; }
+.tag { background: var(--table-header); color: var(--text); padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid var(--border); display: inline-block; }
 .source-tag { font-size: 8px; padding: 1px 3px; border-radius: 3px; font-weight: 700; }
 .src-rmp { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
+[data-theme="dark"] .src-rmp { background: rgba(4, 116, 129, 0.2); color: #2dd4bf; border-color: rgba(4, 116, 129, 0.4); }
 .src-reprocess { background: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
+[data-theme="dark"] .src-reprocess { background: rgba(107, 70, 193, 0.2); color: #c084fc; border-color: rgba(107, 70, 193, 0.4); }
 
-tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); white-space: nowrap; }
+tfoot td{ background:var(--table-header); font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px 4px; color:var(--primary); white-space: nowrap; }
 
 @media print {
     .filters, .actions, .btn-print { display: none !important; }
@@ -139,8 +172,6 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -218,7 +249,7 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
 
 <div class="actions">
     <div id="rowCount">0 Records Found</div>
-    <div style="font-size: 8px; font-weight: 700; color: #64748b;"><i class="fa-solid fa-circle-info"></i> detailed view</div>
+    <div style="font-size: 8px; font-weight: 700; color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> detailed view</div>
 </div>
 
 <div class="section">
@@ -394,7 +425,7 @@ function applyFilters() {
                         <td style="text-align:center;"><span class="tag">${item.variety}</span></td>
                         <td style="text-align:center;">${item.count}</td>
                         <td class="qty-bold">${item.qty.toFixed(2)}</td>
-                        <td class="val-column">${item.value.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+                        <td class="val-column">₹${item.value.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -404,7 +435,7 @@ function applyFilters() {
     
     document.getElementById("rowCount").innerText = `${filtered.length} Records`;
     document.getElementById("net_qty").innerText = grandQty.toFixed(2);
-    document.getElementById("net_value").innerText = grandValue.toLocaleString('en-IN',{minimumFractionDigits:2});
+    document.getElementById("net_value").innerText = "₹" + grandValue.toLocaleString('en-IN',{minimumFractionDigits:2});
 }
 
 function insertSubRow(label, qty, val, cls) {
@@ -413,7 +444,7 @@ function insertSubRow(label, qty, val, cls) {
     tr.innerHTML = `
         <td colspan="8" style="padding-left:6px; text-align:left;">${label}</td>
         <td class="qty-bold">${qty.toFixed(2)}</td>
-        <td class="qty-bold">${val.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        <td class="qty-bold">₹${val.toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
     `;
     document.getElementById("tbody").appendChild(tr);
 }

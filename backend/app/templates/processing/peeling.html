@@ -51,7 +51,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
 .dash-table th { position: sticky; top: 0; background: var(--card-bg); padding: 10px; border-bottom: 2px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
 .dash-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary); font-weight: 600; white-space: nowrap; }
 
-/* 🟢 FILTER BAR - SINGLE ROW HORIZONTAL SCROLL FOR MOBILE */
+/* --- FILTER BAR --- */
 .filter-bar { background: var(--card-bg); padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
 .filter-item { display: flex; align-items: center; gap: 8px; }
 .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
@@ -96,7 +96,6 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
 .menu-item { padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .menu-item:hover { background: #fef2f2; color: var(--danger); }
 
-/* 🟢 FIXED: Re-structured clean table wrapping support */
 .table-wrap {
     margin: 0 25px 25px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; 
 }
@@ -165,7 +164,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             <div class="table-container"><table class="dash-table"><thead><tr><th>Company > Loc > Variety</th><th style="text-align:right">Qty (KG)</th></tr></thead><tbody id="todaySummaryBody"></tbody></table></div>
         </div>
         <div id="contractorSum" class="tab-content">
-            <div class="table-container"><table class="dash-table"><thead><tr><th>Contractor > Loc > Company</th><th>Details</th><th style="text-align:right">Qty / Amt</th></tr></thead><tbody id="contractorSummaryBody"></tbody></table></div>
+            <div class="table-container"><table class="dash-table"><thead><tr><th>Contractor</th><th>Details</th><th style="text-align:right">Qty / Amt</th></tr></thead><tbody id="contractorSummaryBody"></tbody></table></div>
         </div>
     </div>
 
@@ -297,9 +296,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field">
                     <label>Variety</label>
                      <input list="fvl" name="variety" id="f_variety" oninput="loadRate()" required autocomplete="off" placeholder="Search Variety...">
-                     <datalist id="fvl">
+                     <xaxis datalist id="fvl">
                        {% for v in varieties %}<option value="{{ v }}">{% endfor %}
-                     </datalist> 
+                     </xaxis> 
                 </div>
 
                 <div class="field">
@@ -339,7 +338,7 @@ function runDashboard() {
     filterMainTable();
     buildFloorTable('HLSO', 'hlsoFloorBody');
     buildFloorTable('OTHER', 'otherFloorBody');
-    if (window.buildTodaySummary) buildTodaySummary();
+    buildTodaySummary(); // 🟢 యాక్టివేట్ చేయబడింది
 }
 
 function openTab(evt, tabId) {
@@ -408,6 +407,70 @@ function buildFloorTable(type, bodyId) {
     });
 }
 
+// 🟢 NEW FEATURE: Today Summary and Contractor Analysis Parser Engines
+function buildTodaySummary() {
+    const todaySummaryBody = document.getElementById("todaySummaryBody");
+    const contractorSummaryBody = document.getElementById("contractorSummaryBody");
+    
+    if(!todaySummaryBody || !contractorSummaryBody) return;
+    
+    todaySummaryBody.innerHTML = "";
+    contractorSummaryBody.innerHTML = "";
+    
+    const rows = [...document.querySelectorAll('#mainTableBody tr')].filter(r => r.style.display !== "none");
+    
+    let todayTree = {};
+    let contractorTree = {};
+    
+    rows.forEach(r => {
+        const comp = r.dataset.comp;
+        const loc = r.dataset.loc;
+        const variety = r.dataset.var;
+        const contractor = r.dataset.cont;
+        const qty = parseFloat(r.dataset.qty) || 0;
+        const amt = parseFloat(r.dataset.amt) || 0;
+        
+        // Today Summary Hierarchy Grouping
+        const todayKey = `${comp} > ${loc} > ${variety}`;
+        todayTree[todayKey] = (todayTree[todayKey] || 0) + qty;
+        
+        // Contractor Summary Hierarchy Grouping
+        if(!contractorTree[contractor]) {
+            contractorTree[contractor] = { qty: 0, amt: 0 };
+        }
+        contractorTree[contractor].qty += qty;
+        contractorTree[contractor].amt += amt;
+    });
+    
+    // Render Today Summary Table Template Matrix
+    const todayKeys = Object.keys(todayTree).sort();
+    if(todayKeys.length > 0) {
+        todayKeys.forEach(key => {
+            todaySummaryBody.innerHTML += `<tr><td><b>${key}</b></td><td style="text-align:right; font-weight:800; color:var(--success);">${todayTree[key].toFixed(2)}</td></tr>`;
+        });
+    } else {
+        todaySummaryBody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:15px; color:var(--muted);">No matching data logs found</td></tr>`;
+    }
+    
+    // Render Contractor Summary Table Template Matrix
+    const contractorKeys = Object.keys(contractorTree).sort();
+    if(contractorKeys.length > 0) {
+        contractorKeys.forEach(key => {
+            contractorSummaryBody.innerHTML += `
+                <tr>
+                    <td><b>${key}</b></td>
+                    <td style="color:var(--muted); font-size:10px;">Total Peeled Weight<br>Total Payroll Bill</td>
+                    <td style="text-align:right; font-weight:800;">
+                        <span style="color:var(--accent);">${contractorTree[key].qty.toFixed(2)} KG</span><br>
+                        <span style="color:var(--text);">&#x20B9;${contractorTree[key].amt.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                    </td>
+                </tr>`;
+        });
+    } else {
+        contractorSummaryBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--muted);">No contractor sessions tracked today</td></tr>`;
+    }
+}
+
 function toggle(row, cls) {
     const exp = !row.classList.contains('expanded');
     row.classList.toggle('expanded');
@@ -417,14 +480,12 @@ function toggle(row, cls) {
     });
 }
 
-// 🟢 FIXED: Filters Batches datalist strictly to include only %HLSO% types
 function handleCompanyChange() {
     const selectedCo = document.getElementById("f_comp").value.trim().toUpperCase();
     const bl = document.getElementById("fbl"); 
     bl.innerHTML = "";
     if(!selectedCo) return;
     
-    // Filters localized pool entries matching explicit HLSO identifiers
     const relevantBatches = [...new Set(RAW_FLOOR.filter(item => 
         item.production_for.trim().toUpperCase() === selectedCo && 
         (item.variety || "").toUpperCase().includes("HLSO")
@@ -435,7 +496,6 @@ function handleCompanyChange() {
     });
 }
 
-// 🟢 FIXED: Filters Counts datalist strictly to extract only %HLSO% metrics
 function loadHLSO() {
     const batchVal = document.getElementById("f_batch").value.trim();
     const companyVal = document.getElementById("f_comp").value.trim().toUpperCase();
@@ -444,7 +504,6 @@ function loadHLSO() {
     cl.innerHTML = "";
     if (!batchVal) return;
     
-    // Re-mapped to strictly capture native HLSO parameters matching backend synchronization
     const matches = RAW_FLOOR.filter(item => 
         item.batch === batchVal && 
         item.production_for.toUpperCase() === companyVal && 
@@ -465,7 +524,6 @@ function loadHLSO() {
     }
 }
 
-// 🟢 FIXED: Count Input Handler locked strictly onto %HLSO% categories
 document.getElementById("f_count").oninput = function() {
     const batchVal = document.getElementById("f_batch").value.trim();
     const countVal = this.value.trim();
@@ -487,7 +545,6 @@ document.getElementById("f_count").oninput = function() {
     }
 };
 
-// 🟢 FIXED: Stock display query locked strictly onto %HLSO% matching specifications
 function updateAvailableQtyFromFloor() {
     const loc = document.getElementById("f_location").value.trim().toUpperCase();
     const batch = document.getElementById("f_batch").value.trim();
@@ -584,7 +641,6 @@ function resetFilters() {
     runDashboard(); 
 }
 
-// Requirement drill down execution loop logic
 function toggleReqDrill(el, spc, var_name, count) {
     const row = el.closest('tr').nextElementSibling;
     if(row.style.display === "none") {

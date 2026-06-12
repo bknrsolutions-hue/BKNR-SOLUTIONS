@@ -78,8 +78,8 @@
     --header-bg: rgba(30, 41, 59, 0.9);
 }
 
-* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.4; padding-bottom: 40px; transition: background 0.3s, color 0.3s; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.4; padding-bottom: 40px; transition: background 0.3s, color 0.3s; }
 
 /* STICKY HEADER & FILTERS BAR */
 .header-dash { 
@@ -91,15 +91,32 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 }
 .header-titles h2 { font-size: 14px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 6px; margin: 0; text-transform: uppercase; }
 
-.filter-bar { background: var(--card-bg); padding: 10px 12px; margin: 10px 12px; border: 1px solid var(--border); border-radius: 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.01); transition: background 0.3s, border-color 0.3s; }
-.filter-item { display: flex; flex-direction: column; gap: 3px; }
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
+.filter-bar { 
+    background: var(--card-bg); padding: 10px 12px; margin: 10px 12px; border: 1px solid var(--border); border-radius: 8px; 
+    display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px;
+    -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.01); transition: background 0.3s, border-color 0.3s; 
+}
+.filter-bar::-webkit-scrollbar { height: 4px; }
+.filter-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+@media (min-width: 992px) {
+    .filter-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-x: visible !important; flex-wrap: wrap !important; }
+}
+
+.filter-item { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0 !important; min-width: 120px; }
+@media(max-width: 600px) { .filter-item { min-width: 110px; } }
+
 .filter-item label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.5px; }
 .search-input, .filter-select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; font-weight: 700; background: var(--bg); color: var(--text-main); outline: none; height: 30px; width: 100%; transition: 0.2s; }
 .search-input:focus, .filter-select:focus { border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-sub); }
-.btn-clear { background: var(--text-sub); color: #fff; border: none; padding: 0 10px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; transition: 0.2s; }
+
+.buttons-group { justify-content: flex-end; display: flex; align-items: flex-end; gap: 4px; min-width: max-content; }
+.btn-clear { background: var(--text-sub); color: #fff; border: none; padding: 0 12px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; transition: 0.2s; white-space: nowrap; }
 .btn-clear:hover { background: var(--text-main); }
-.btn-print { background: var(--accent); color: #fff; border: none; padding: 0 10px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; transition: 0.2s; }
+.btn-print { background: var(--accent); color: #fff; border: none; padding: 0 12px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; transition: 0.2s; white-space: nowrap; }
 .btn-print:hover { opacity: 0.9; }
 
 /* SUMMARY TABLES GRID */
@@ -144,7 +161,7 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 .main-table th:nth-child(5), .main-table td:nth-child(5) { width: 65px; }  
 .main-table th:nth-child(6), .main-table td:nth-child(6) { width: 75px; }  
 .main-table th:nth-child(7), .main-table td:nth-child(7) { width: 65px; }  
-.main-table th:nth-child(8), .main-table td:nth-child(8) { width: 65px; }  /* Sps */
+.main-table th:nth-child(8), .main-table td:nth-child(8) { width: 65px; }  
 .main-table th:nth-child(9), .main-table td:nth-child(9) { width: 50px; }  
 .main-table th:nth-child(10), .main-table td:nth-child(10) { width: 40px; } 
 .main-table th:nth-child(11), .main-table td:nth-child(11) { width: 40px; } 
@@ -206,12 +223,10 @@ tbody td.po-cell-merged { background: var(--merged-cell-bg); font-weight: 700; c
     .header-dash { padding: 8px 12px; }
     .header-titles h2 { font-size: 12px; }
     
-    .filter-bar { grid-template-columns: repeat(2, 1fr); margin: 6px; padding: 6px; gap: 4px; }
-    .filter-bar .filter-item:nth-child(3) { grid-column: span 2; }
-    .filter-bar .filter-item:nth-child(4) { grid-column: span 2; }
-    .filter-bar .buttons-group { grid-column: span 2; display: flex; gap: 4px; }
-    .btn-clear, .btn-print { flex: 1; height: 28px; font-size: 10px; }
-    .search-input, .filter-select { height: 28px; font-size: 10px; }
+    .filter-bar { gap: 12px; margin: 6px; padding: 6px; overflow-y: hidden; }
+    .filter-bar .buttons-group { display: flex; gap: 4px; align-items: flex-end; }
+    .btn-clear, .btn-print { height: 30px; font-size: 11px; }
+    .search-input, .filter-select { height: 30px; font-size: 11px; }
 
     .summary-container { grid-template-columns: 1fr !important; gap: 8px !important; margin: 0 6px 8px !important; }
     .summary-card { border-radius: 6px; }
@@ -232,7 +247,7 @@ tbody td.po-cell-merged { background: var(--merged-cell-bg); font-weight: 700; c
 
 <div class="header-dash">
   <div class="header-titles"><h2><i class="fa-solid fa-chart-line"></i> Pending Orders Premium Report</h2></div>
-  <div id="rowCount" style="font-size:9px; font-weight:800; color:white; background:var(--accent); padding: 3px 8px; border-radius: 4px;">Loading...</div>
+  <div id="rowCount" style="font-size:9px; font-weight:800; color:white; background:var(--accent); padding: 3px 8px; border-radius: 4px;"></div>
 </div>
 
 <div class="filter-bar">
@@ -245,8 +260,11 @@ tbody td.po-cell-merged { background: var(--merged-cell-bg); font-weight: 700; c
             {% for po in f_po %}<option value="{{ po }}">{{ po }}</option>{% endfor %}
         </select>
     </div>
-    <div class="filter-item"><label>Search Stream</label><input type="text" id="f_search" class="search-input" placeholder="Buyer, Brand, Species, Var, Grd..." oninput="applyFilters()"></div>
-    <div class="filter-item buttons-group" style="justify-content: flex-end; display: flex; align-items: flex-end; gap:4px;">
+    <div class="filter-item">
+        <label>Search Stream</label>
+        <input type="text" id="f_search" class="search-input" placeholder="Buyer, Brand, Species, Var, Grd..." oninput="applyFilters()">
+    </div>
+    <div class="filter-item buttons-group">
         <button class="btn-clear" onclick="resetFilters()">RESET</button>
         <button class="btn-print" onclick="window.print()"><i class="fa fa-print"></i> PRINT</button>
     </div>
@@ -409,11 +427,9 @@ tbody td.po-cell-merged { background: var(--merged-cell-bg); font-weight: 700; c
 </div>
 
 <script>
-// MutationObserver to ensure smooth re-render if needed upon theme switch
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.attributeName === "data-theme") {
-            // CSS handles visual switch, js logic runs if specific re-rendering required.
         }
     });
 });
