@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>PEELING REPORT | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -18,29 +18,45 @@
  --text-muted:#64748b;
  --danger: #ef4444;
  --success: #22c55e;
+ --card-bg: #ffffff;
+ --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+ background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text); -webkit-font-smoothing: antialiased;
 }
 
 /* ================= HEADER & FILTERS ================= */
 .header{ background:var(--header); padding:8px 12px; border-bottom:2px solid var(--primary); }
 .header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
- margin-top:6px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(95px, 1fr));
- gap:4px; background:var(--header-bg); padding:6px; border-radius:4px; border:1px solid var(--border);
+ margin-top:6px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+ gap:12px; background:var(--header-bg); padding:6px; border-radius:4px; border:1px solid var(--border);
+ -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
-.fbox{display:flex;flex-direction:column;gap:1px;}
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.fbox{ display:flex; flex-direction:column; gap:1px; flex-shrink: 0 !important; min-width: 120px; }
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:24px; }
-#searchBox{ grid-column:span 2; border-left:3px solid var(--accent); }
+select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:32px !important; color: var(--primary); font-weight: 600; }
+#searchBox{ min-width: 200px !important; width: 200px !important; border-left:3px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+@media (max-width: 768px) {
+    .header { padding: 6px 10px; }
+    .header h2 { font-size: 11px; }
+    .filters { gap: 12px; padding: 4px; overflow-y: hidden; }
+    .fbox { min-width: 110px; }
+    select, input[type=date], input[type=month], #searchBox { font-size: 9.5px; padding: 2px 4px; }
+    .fbox label { font-size: 7.5px; }
+    #searchBox { min-width: 150px !important; width: 150px !important; }
+}
 
 /* ================= ACTIONS ================= */
 .actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
@@ -63,7 +79,7 @@ select,input[type=date],input[type=month],#searchBox{ padding:3px 5px; font-size
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100px; } 
 
-thead th{
+thead Th{
  background:var(--header-bg); padding:6px 2px; font-size:9px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
@@ -74,7 +90,7 @@ tbody td{
  padding:6px 3px; font-size:9px; border-bottom:1px solid #f1f5f9;
  border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- font-weight: 400; 
+ font-weight: 600; color: var(--primary);
 }
 
 tbody tr:hover{background:#f1f7ff; cursor:pointer;}
@@ -149,19 +165,6 @@ tfoot td{
 /* ================= MOBILE COMPACT RESPONSIVE CORE ENGINE ================= */
 @media (max-width: 768px) {
     body { overflow: hidden; height: 100vh; }
-    .header { padding: 6px 10px; }
-    .header h2 { font-size: 11px; }
-    
-    .filters { 
-        grid-template-columns: repeat(2, 1fr) !important; 
-        gap: 4px; 
-        max-height: 120px; 
-        overflow-y: auto; 
-        padding: 4px;
-    }
-    #searchBox { grid-column: span 2 !important; height: 24px; font-size: 10px; }
-    .fbox label { font-size: 7.5px; }
-    select, input[type=date], input[type=month] { height: 22px; font-size: 9.5px; padding: 2px 4px; }
     
     .actions { padding: 4px 10px; }
     #rowCount { font-size: 9px; }
@@ -204,7 +207,6 @@ tfoot td{
         text-overflow: ellipsis;
     }
     
-    /* Absolute Floating Element for Mobile Record Count Card Index */
     td.slno {
         position: absolute;
         top: 4px;
@@ -221,7 +223,6 @@ tfoot td{
     }
     td.slno::before { content: "#"; margin-right: 1px; }
     
-    /* Expand master text metrics to spans full width inside responsive card block */
     td[data-field="contractor_name"],
     td[data-field="variety_name"],
     td[data-field="peeling_at"] {
@@ -231,7 +232,6 @@ tfoot td{
         margin-bottom: 2px;
     }
     
-    /* Prepend inline titles dynamically for card layout metrics */
     td:nth-child(2)::before { content: "Date:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
     td:nth-child(3)::before { content: "Batch:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
     td[data-field="contractor_name"]::before { content: "Contractor:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
@@ -249,11 +249,9 @@ tfoot td{
     td[data-field="production_for"]::before { content: "Prod For:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
     td:nth-child(17)::before { content: "User:"; font-weight: 600; color: var(--text-muted); font-size: 8px; text-transform: uppercase; }
     
-    /* Inline Editor Layout Constraints for Mobile Devices */
     .edit-input { width: 60% !important; height: 20px; font-size: 9.5px; text-align: right; padding: 1px 4px; margin-left: auto; }
     .searchable-dropdown-container { width: 60% !important; margin-left: auto; }
     
-    /* Sticky Total Calculation Summary Matrix Drawer */
     tfoot { display: block; width: 100%; background: var(--header-bg); border-top: 2px solid var(--primary); }
     tfoot tr { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 4px 8px; padding: 6px 8px; width: 100%; box-sizing: border-box; }
     tfoot td { display: none !important; border: none !important; padding: 1px 0 !important; font-size: 9px !important; justify-content: space-between !important; align-items: center !important; }
@@ -273,8 +271,6 @@ tfoot td{
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -317,7 +313,10 @@ tfoot td{
         <div class="fbox"><label>Variety</label><select id="f_variety"><option value="">All Varieties</option></select></div>
         <div class="fbox"><label>Peeling At</label><select id="f_peeling"><option value="">All Locations</option></select></div>
         <div class="fbox"><label>Production For</label><select id="f_prod_for"><option value="">All Production For</option></select></div>
-        <input id="searchBox" placeholder="Search Batch, Contractor...">
+        <div class="fbox">
+            <label>Search Parameters</label>
+            <input id="searchBox" placeholder="Search Batch, Contractor...">
+        </div>
     </div>
 </div>
 
@@ -648,8 +647,15 @@ function closeAllInlineDropdowns() {
 }
 
 document.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('dropdown-search-input') && !e.target.classList.contains('searchable-dropdown-item')) {
+    if (!e.target.closest('.searchable-dropdown-container')) {
         closeAllInlineDropdowns();
+    }
+    const mainMenu = document.getElementById("mainMenu");
+    if (mainMenu) {
+        if (e.target.closest('.dots')) {
+            return;
+        }
+        mainMenu.style.display = "none";
     }
 });
 

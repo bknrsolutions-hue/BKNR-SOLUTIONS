@@ -24,6 +24,7 @@
     --danger: #dc2626;
     --success: #16a34a;
     --table-header-bg: #f1f5f9;
+    --card-bg: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -53,31 +54,36 @@ body{
 .header{ background: var(--panel-bg); padding: 8px 12px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
 .header h2{ margin:0; font-size:13px; font-weight:800; color:var(--text-main); text-transform:uppercase; letter-spacing:0.5px; }
 
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
- margin-top:8px; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
- gap:4px; background:var(--bg-light); padding:8px; border-radius:6px; border:1px solid var(--border-color);
+ margin-top:8px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+ gap:12px; background:var(--bg-light); padding:8px; border-radius:6px; border:1px solid var(--border-color);
+ -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
-.fbox{display:flex;flex-direction:column;gap:2px;}
+.fbox{ display:flex; flex-direction:column; gap:2px; flex-shrink: 0 !important; min-width: 120px; }
 .fbox label{ font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing: 0.5px; }
 
 select,input[type=date],input[type=month],#searchBox{ 
     padding:4px 6px; font-size:10px; font-weight: 600; border:1px solid var(--border-color); 
     border-radius:4px; background:var(--panel-bg); color: var(--text-main); outline:none; transition: all 0.2s;
+    height: 32px !important;
 }
 select:focus, input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25); }
 
-#searchBox{ grid-column:span 2; border-left:3px solid var(--accent-blue); }
+#searchBox{ min-width: 200px !important; width: 200px !important; border-left:3px solid var(--accent-blue); }
 #f_fy { border: 1.5px solid var(--accent-blue); font-weight: 700; color: var(--accent-glow); background: var(--panel-bg); }
 
 /* MOBILE COMPACT FILTERS */
 @media (max-width: 600px) {
     .header { padding: 6px 8px; }
     .header h2 { font-size: 11px; }
-    .filters { grid-template-columns: repeat(3, 1fr); padding: 6px; gap: 4px; }
-    #searchBox { grid-column: span 3 !important; }
+    .fbox { min-width: 110px; }
     select, input[type=date], input[type=month], #searchBox { font-size: 9.5px; padding: 4px; }
     .fbox label { font-size: 7.5px; }
+    #searchBox { min-width: 150px !important; width: 150px !important; }
 }
 
 /* ================= ACTIONS ================= */
@@ -161,7 +167,7 @@ tr.selected{background:#2563eb33 !important;}
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); text-align: left; border-radius: 4px;
     scrollbar-width: thin;
 }
-...searchable-dropdown-item { padding: 5px 6px; font-size: 9px; font-weight:600; cursor: pointer; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+.searchable-dropdown-item { padding: 5px 6px; font-size: 9px; font-weight:600; cursor: pointer; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
 .searchable-dropdown-item:hover { background: #2563eb33; color: var(--accent-glow); }
 
 /* ================= FOOTER ================= */
@@ -211,7 +217,7 @@ tfoot td{ background:var(--table-header-bg); font-weight:800; font-size:9px; bor
         <h2 style="margin:0; font-size:12px; color:#000; font-weight:800; text-transform:uppercase;">BKNR ENTERPRISES ERP</h2>
         <div style="margin:2px 0 0 0; font-size:9px; font-weight:bold; color:#333;">DE-HEADING & PRODUCTION YIELD MATRIX REPORT</div>
     </div>
-    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.2;">
+    <div style="text-align: right; font-size: 8px; font-weight: bold; line-height: 1.4;">
         <div style="color:#000; font-size:9px; text-transform:uppercase;">CONTRACTOR: <span id="printContractorLabel">ALL CONTRACTORS</span></div>
         <div style="font-size:7px; color:#555; font-weight:normal; margin-top:1px;">Generated Realtime Local Client System</div>
     </div>
@@ -269,7 +275,10 @@ tfoot td{ background:var(--table-header-bg); font-weight:800; font-size:9px; bor
                 {% for pf in production_for_list %}<option value="{{ pf }}">{{ pf }}</option>{% endfor %}
             </select>
         </div>
-        <input id="searchBox" placeholder="Quick Search..." onkeyup="applyFilters()">
+        <div class="fbox">
+            <label>Search Filters</label>
+            <input id="searchBox" placeholder="Quick Search..." onkeyup="applyFilters()">
+        </div>
     </div>
 </div>
 
@@ -657,7 +666,6 @@ async function toggleAudit() {
         </div>`).join('');
 }
 
-// 🟢 THEME CHRONOLOGY GATEWAY & FILTER REGISTRATION ON INITIALIZATION
 window.onload = function() {
     try {
         const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");

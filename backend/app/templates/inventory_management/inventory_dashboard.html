@@ -138,7 +138,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 4px;
         gap: 10px;
     }
 
@@ -179,15 +179,34 @@
         border-color: var(--accent);
     }
 
+    /* 🟢 FILTERS BAR - SOAKING REPORT EXACT STYLE WITH HORIZONTAL SCROLL IN MOBILE */
+    .filter-panel-wrapper {
+        padding: 0 16px 12px;
+    }
     .filters {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 10px;
+        display: flex;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 12px;
         background: var(--card-bg);
         padding: 10px;
         border-radius: 8px;
         border: 1px solid var(--border);
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+        scrollbar-width: thin;
         transition: 0.3s;
+    }
+    .filters::-webkit-scrollbar { height: 4px; }
+    .filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @media (min-width: 992px) {
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            overflow-x: visible !important;
+            flex-wrap: wrap !important;
+        }
     }
 
     .fbox {
@@ -195,18 +214,20 @@
         flex-direction: column;
         gap: 4px;
         position: relative;
+        flex-shrink: 0 !important;
+        min-width: 120px;
     }
+    @media(max-width: 600px) { .fbox { min-width: 110px; } }
 
     .fbox label {
-        font-size: 9px;
+        font-size: 8px;
         text-transform: uppercase;
-        font-weight: 800;
+        font-weight: 700;
         padding-left: 2px;
-        letter-spacing: 0.5px;
-        color: var(--sub);
+        color: var(--primary);
     }
 
-    /* Searchable Dropdown Layout Styling */
+    /* Searchable Dropdown Sizing & Borders aligned with Soaking Report */
     .searchable-dropdown-container {
         position: relative;
         width: 100%;
@@ -214,18 +235,20 @@
 
     .dropdown-display-box {
         border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 7px 8px;
-        font-size: 11px;
-        background: var(--bg);
+        border-radius: 4px;
+        padding: 3px 5px;
+        font-size: 10px;
+        background: var(--card-bg);
         cursor: pointer;
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: 0.3s;
+        height: 24px !important;
+        transition: all 0.2s ease;
     }
+    .dropdown-display-box:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 
     .dropdown-search-wrapper {
         display: none;
@@ -246,8 +269,8 @@
     .dropdown-search-wrapper input {
         border: none;
         border-bottom: 1px solid var(--border);
-        padding: 8px 10px;
-        font-size: 11px;
+        padding: 6px 8px;
+        font-size: 10px;
         width: 100%;
         outline: none;
         position: sticky;
@@ -264,10 +287,10 @@
     }
 
     .dropdown-options-list li {
-        padding: 8px 10px;
+        padding: 6px 8px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text);
     }
 
@@ -279,19 +302,28 @@
 
     .fbox input.main-search-field {
         border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 7px 8px;
-        font-size: 11px;
-        background: var(--bg);
+        border-radius: 4px;
+        padding: 3px 5px;
+        font-size: 10px;
+        background: var(--card-bg);
         outline: none;
         width: 100%;
         color: var(--text);
-        font-weight: 600;
-        transition: 0.3s;
+        font-weight: 500;
+        height: 24px !important;
+        border-left: 3px solid var(--accent) !important;
+        transition: all 0.2s ease;
+    }
+    .fbox input.main-search-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+
+    @media(max-width: 600px) {
+        .fbox input.main-search-field { min-width: 150px !important; width: 150px !important; font-size: 9.5px; }
+        .dropdown-display-box { font-size: 9.5px; }
+        .fbox label { font-size: 7.5px; }
     }
 
     .kpi-grid {
-        padding: 14px 16px;
+        padding: 14px 16px 8px;
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
@@ -596,10 +628,15 @@
     .age-yellow { background: var(--warning-light); color: var(--warning); padding: 3px 8px; border-radius: 6px; }
     .age-orange { background: rgba(234, 88, 12, 0.15); color: #ea580c; padding: 3px 8px; border-radius: 6px; }
     .age-red { background: var(--danger-light); color: var(--danger); padding: 3px 8px; border-radius: 6px; }
+
+    @media print {
+        .filters, .tabs, .action-btn { display: none !important; }
+        .section { border: none; margin: 0; }
+        body { background: var(--card-bg); padding: 0; }
+        .table-wrap { background: var(--card-bg) !important; overflow: visible; }
+    }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -614,8 +651,60 @@
             <div class="badge">FY: {{ current_fy_name }}</div>
         </div>
     </div>
+</div>
 
-    <!-- 🔍 SEARCHABLE DROPDOWNS INTEGRATION FORM -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-opening" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
+        <h4>Opening</h4>
+        <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
+    </div>
+    
+    <div class="kpi-card kpi-closing" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
+        <h4>Closing</h4>
+        <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
+    </div>
+    
+    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales">
+        <h4>Sales</h4>
+        <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
+    </a>
+    
+    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess">
+        <h4>Reprocess</h4>
+        <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
+        <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
+    </a>
+    
+    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh">
+        <h4>Fresh</h4>
+        <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
+    </a>
+
+    <div class="kpi-card kpi-reglaze">
+        <h4>Reglaze Prod.</h4>
+        <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
+        <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
+    </div>
+
+    <div class="kpi-card kpi-dead">
+        <h4>Dead Stock</h4>
+        <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
+        <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
+    </div>
+    
+    <div class="kpi-card kpi-mc">
+        <h4>Total MC</h4>
+        <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
+        <div class="amt-sub">Boxes</div>
+    </div>
+</div>
+
+<!-- 🟢 FILTER PANEL - PLACED DIRECTLY BELOW KPI GRID AND SEPARATED FROM TABLES -->
+<div class="filter-panel-wrapper no-print">
     <form method="get" id="filterForm" class="filters" action="">
         
         <!-- FY Searchable Dropdown -->
@@ -738,56 +827,6 @@
     </form>
 </div>
 
-<div class="kpi-grid">
-    <div class="kpi-card kpi-opening" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
-        <h4>Opening</h4>
-        <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
-    </div>
-    
-    <div class="kpi-card kpi-closing" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
-        <h4>Closing</h4>
-        <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
-    </div>
-    
-    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales">
-        <h4>Sales</h4>
-        <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
-    </a>
-    
-    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess">
-        <h4>Reprocess</h4>
-        <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
-        <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
-    </a>
-    
-    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh">
-        <h4>Fresh</h4>
-        <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
-    </a>
-
-    <div class="kpi-card kpi-reglaze">
-        <h4>Reglaze Prod.</h4>
-        <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
-        <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
-    </div>
-
-    <div class="kpi-card kpi-dead">
-        <h4>Dead Stock</h4>
-        <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
-    </div>
-    
-    <div class="kpi-card kpi-mc">
-        <h4>Total MC</h4>
-        <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
-        <div class="amt-sub">Boxes</div>
-    </div>
-</div>
-
 <div class="tabs" id="dashboardTabsBlock">
     <button class="tab-btn active" id="live_tab_btn" onclick="openTab(event,'live_tab')">Live Inventory</button>
     <button class="tab-btn" id="opening_tab_btn" onclick="openTab(event,'opening_tab')">Opening Stock</button>
@@ -830,8 +869,8 @@
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
                         <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
                         <td align="right" style="color:var(--success);">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:var(--danger);">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--accent);">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent);">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
+                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent); font-weight:800;">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
                         <td>
                             {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
                             {% elif age <= 90 %}<span class="age-yellow">{{ age }}D</span>
@@ -873,7 +912,7 @@
                     {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
                     <tr>
                         <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--accent);">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
+                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -902,11 +941,10 @@
 </div>
 
 <script>
-// Watch for dynamic theme changes instantly without reload
+// MutationObserver to catch dynamic theme changes
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.attributeName === "data-theme") {
-            // CSS handles visual switch automatically, but charts need explicit re-rendering
             if(window.chartsInstance) {
                 renderCharts();
             }
@@ -915,9 +953,7 @@ const observer = new MutationObserver((mutations) => {
 });
 observer.observe(document.documentElement, { attributes: true });
 
-// Toggle View Logic for Searchable Custom Dropdowns
 function toggleSearchDropdown(id) {
-    // Close other opened dropdown wrappers first to protect overlay stack
     document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
         if(wrapper.id !== id) wrapper.style.display = 'none';
     });
@@ -927,17 +963,15 @@ function toggleSearchDropdown(id) {
         target.style.display = 'none';
     } else {
         target.style.display = 'block';
-        // Focus the target input fields automatically upon extraction
         let inputField = target.querySelector('input');
         if(inputField) {
             inputField.value = '';
             inputField.focus();
-            filterDropdownList(id, ''); // Show all lines initially
+            filterDropdownList(id, ''); 
         }
     }
 }
 
-// Keyup Engine Filter Tracker Inside Dropdowns
 function filterDropdownList(wrapperId, query) {
     let container = document.getElementById(wrapperId);
     let filter = query.toUpperCase();
@@ -953,11 +987,8 @@ function filterDropdownList(wrapperId, query) {
     });
 }
 
-// Option Assignment Handler & Dispatcher
 function selectDropdownOption(hiddenInputId, val, displayName, isFYChange = false) {
     document.getElementById(hiddenInputId).value = val;
-    
-    // Auto collapse parent container wrapper
     let parentWrapper = document.getElementById(hiddenInputId).previousElementSibling;
     if(parentWrapper) parentWrapper.style.display = 'none';
     
@@ -968,7 +999,6 @@ function selectDropdownOption(hiddenInputId, val, displayName, isFYChange = fals
     }
 }
 
-// Global Document Listener to Close Opened Overlay List Dropdowns on Outside Clicks
 document.addEventListener('click', function(event) {
     if (!event.target.closest('.searchable-dropdown-container')) {
         document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
@@ -1046,7 +1076,7 @@ function exportToExcel(tableID, fileName){
 
 let fyChartInst = null;
 let varChartInst = null;
-window.chartsInstance = true; // flag to signify charts are loaded
+window.chartsInstance = true; 
 
 function renderCharts() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';

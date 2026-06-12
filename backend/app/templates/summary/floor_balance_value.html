@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>FLOOR BALANCE VALUE | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -17,10 +17,12 @@
  --text:#1e293b;
  --success:#16a34a;
  --orange:#ea580c;
+ --card-bg: #ffffff;
+ --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif;}
-body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:10px; font-size:9.5px; }
+*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0;}
+body{ background:var(--bg); min-height:100vh; display:flex; flex-direction:column; color:var(--text); padding:10px; font-size:9.5px; -webkit-font-smoothing: antialiased; }
 
 /* ================= PREMIUM HEADER & FILTERS ================= */
 .header{ 
@@ -35,19 +37,26 @@ body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direc
 .header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; border-left: 3px solid var(--orange); padding-left: 6px; }
 .company-badge { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); font-weight: 700; color: var(--text); font-size: 9px; }
 
-/* Responsive Filters Grid */
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
- display:grid;
- grid-template-columns: 1fr;
- gap:8px; background:#f1f5f9; padding:8px; border-radius:6px;
+ display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+ gap:12px; background:#f1f5f9; padding:8px; border-radius:6px;
+ -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
 @media (min-width: 768px) { 
  .filters { 
+    display: grid;
     grid-template-columns: repeat(3, minmax(160px, 1fr)) 1.5fr; 
+    overflow-x: visible !important;
  } 
 }
 
-.fbox{position: relative; display:flex; flex-direction:column; gap:2px;}
+.fbox{ position: relative; display:flex; flex-direction:column; gap:2px; flex-shrink: 0 !important; min-width: 130px; }
+@media (min-width: 768px) { .fbox { min-width: unset; } }
+
 .fbox label{ font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom: 1px; }
 
 /* ================= SEARCHABLE DROPDOWN CORE COMPONENT ================= */
@@ -55,7 +64,7 @@ body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direc
 .select-trigger { 
     padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); 
     border-radius:4px; background:var(--card-bg); outline:none; color:#0f172a; width: 100%; 
-    display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; cursor: pointer; height: 32px !important;
 }
 .select-dropdown {
     position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg);
@@ -73,7 +82,11 @@ body{ margin:0; background:var(--bg); min-height:100vh; display:flex; flex-direc
 .dropdown-option:hover { background: #eff6ff; color: var(--accent); }
 .dropdown-option.selected { background: var(--accent); color: #fff; }
 
-#searchBox{ padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; color:#0f172a; width: 100%; border-left:3px solid var(--accent); }
+#searchBox{ padding:5px 8px; font-size:10px; font-weight:600; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; color:#0f172a; width: 100%; border-left:3px solid var(--accent); height: 32px !important; min-width: 180px; }
+
+@media (min-width: 768px) {
+    .select-trigger, #searchBox { height: 36px !important; }
+}
 
 /* ================= ACTIONS SYSTEM ================= */
 .actions{ background:var(--card-bg); padding:5px 8px; display:flex; justify-content:space-between; align-items:center; border-radius:6px; border:1px solid var(--border); margin-bottom:6px; }
@@ -95,17 +108,20 @@ thead th{
 
 tbody td{
  padding:5px 4px; font-size:9px; border-bottom:1px solid #f1f5f9;
- white-space:nowrap; font-weight: 600;
+ white-space:nowrap; font-weight: 600; color: var(--primary);
 }
 tr:hover td { background-color: #f8fafc; }
 
 /* Subtotal Grouping Styles - Extra Premium Tight */
 .row-loc { background: #0f172a !important; color: #ffffff !important; font-weight: 800; }
+.row-loc td { text-align: left !important; padding-left: 10px !important; }
 .row-comp { background: #e0f2fe !important; color: #0369a1 !important; font-weight: 700; border-top: 1px solid #bae6fd; border-bottom: 1px solid #bae6fd; }
+.row-comp td { text-align: left !important; padding-left: 20px !important; }
 .row-var { background: #f8fafc !important; color: #334155 !important; font-weight: 700; border-bottom: 1px solid var(--border); }
+.row-var td { text-align: left !important; padding-left: 30px !important; }
 
 .qty-bold { text-align: right !important; font-weight: 800; padding-right: 6px !important; }
-.val-column { background: var(--card-bg)df5; color: #92400e; font-weight: 700; text-align: right !important; padding-right: 6px !important; }
+.val-column { background: rgba(255,255,255,0.5); color: #92400e; font-weight: 700; text-align: right !important; padding-right: 6px !important; }
 .batch-bold { color: var(--accent); font-weight: 700; }
 
 .tag { background: #edf2f7; color: #2d3748; padding: 1px 4px; border-radius: 3px; font-weight: 700; font-size: 8px; border: 1px solid #cbd5e1; display: inline-block; }
@@ -113,15 +129,13 @@ tr:hover td { background-color: #f8fafc; }
 .src-rmp { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
 .src-reprocess { background: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
 
-tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); }
+tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:6px 4px; color:var(--primary); white-space: nowrap; }
 
 @media print {
     .filters, .actions, .btn-print { display: none !important; }
     .section { border: none; margin: 0; }
     body { background: var(--card-bg); padding: 0; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible; }
+    .table-wrap{ background: var(--card-bg) !important; overflow: visible; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -141,7 +155,6 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
     </div>
     
     <div class="filters">
-        <!-- Searchable Location Select -->
         <div class="fbox">
             <label>Location</label>
             <div class="searchable-select-container" id="container_location">
@@ -160,7 +173,6 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
             </div>
         </div>
 
-        <!-- Searchable Production For Select -->
         <div class="fbox">
             <label>Production For</label>
             <div class="searchable-select-container" id="container_production">
@@ -179,7 +191,6 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
             </div>
         </div>
 
-        <!-- Searchable Variety Select -->
         <div class="fbox">
             <label>Variety</label>
             <div class="searchable-select-container" id="container_variety">
@@ -198,7 +209,6 @@ tfoot td{ background:#f1f5f9; font-weight:800; font-size:10px; border-top:2px so
             </div>
         </div>
 
-        <!-- Global Text Filter -->
         <div class="fbox">
             <label>Global Filter</label>
             <input id="searchBox" placeholder="Search by Batch, Species, Source...">
@@ -257,7 +267,6 @@ const rawData = [
     {% endfor %}
 ];
 
-// Dropdown Values State Tracker
 let filterState = {
     location: '',
     production: '',
@@ -271,9 +280,9 @@ function toggleDropdown(type) {
     if (!isVisible) {
         el.style.display = 'block';
         const searchInput = el.querySelector('input');
-        searchInput.value = ''; // Input క్లియర్ చేస్తుంది
+        searchInput.value = ''; 
         searchInput.focus();
-        filterOptions(type); // లిస్ట్‌ను రీసెట్ చేస్తుంది
+        filterOptions(type); 
     }
 }
 
@@ -301,11 +310,9 @@ function filterOptions(type) {
 function selectOption(type, value) {
     filterState[type] = value;
     
-    // UI ఆప్షన్స్ క్లాస్ అప్‌డేట్
     const container = document.getElementById(`opts_${type}`);
     container.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
     
-    // ట్రిగ్గర్ హెడర్ టెక్స్ట్ అప్‌డేట్
     const trigger = document.getElementById(`label_${type}`);
     if(value === '') {
         trigger.innerText = type === 'location' ? 'All Locations' : type === 'production' ? 'All Stocks' : 'All Varieties';
@@ -313,7 +320,6 @@ function selectOption(type, value) {
         trigger.innerText = value;
     }
     
-    // క్లిక్ చేసిన ఎలిమెంట్‌ను హైలైట్ చేయడానికి `event.currentTarget` ని వాడుతున్నాం
     if (window.event && window.event.currentTarget) {
         window.event.currentTarget.classList.add('selected');
     }
@@ -322,7 +328,6 @@ function selectOption(type, value) {
     applyFilters();
 }
 
-// డ్రాప్‌డౌన్ బయట క్లిక్ చేస్తే ఆటోమేటిక్‌గా క్లోజ్ అవ్వడానికి
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.searchable-select-container')) {
         closeAllDropdowns();
@@ -346,14 +351,12 @@ function applyFilters() {
         return ok;
     });
 
-    // సాఫ్ట్ సార్టింగ్ అల్గారిథమ్
     filtered.sort((a, b) => a.location.localeCompare(b.location) || a.production_for.localeCompare(b.production_for));
 
     const tree = {};
     let grandQty = 0;
     let grandValue = 0;
 
-    // మల్టీ లెవెల్ ట్రీ ఆబ్జెక్ట్ కన్స్ట్రక్షన్
     filtered.forEach(d => {
         if(!tree[d.location]) tree[d.location] = { qty: 0, val: 0, comps: {} };
         if(!tree[d.location].comps[d.production_for]) tree[d.location].comps[d.production_for] = { qty: 0, val: 0, vars: {} };

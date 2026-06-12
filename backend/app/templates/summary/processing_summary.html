@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{ selected_company or 'COMPANY' }} ERP | Master Batch Summary</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     
     <script>
         function syncTheme() {
@@ -24,7 +23,6 @@
     <style>
         /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
         :root { 
-            /* LIGHT MODE */
             --brand: #0f172a; 
             --accent: #2563eb; 
             --orange: #ea580c;
@@ -36,6 +34,8 @@
             --card-bg: #ffffff;
             --text-main: #0f172a;
             --text-muted: #475569;
+            --header-bg: #f8fafc;
+            --text: #1e293b;
             
             --th-bg: #f8fafc;
             --td-border: #f1f5f9;
@@ -55,7 +55,6 @@
         }
 
         [data-theme="dark"] {
-            /* DARK MODE */
             --brand: #f8fafc; 
             --accent: #60a5fa; 
             --orange: #f97316;
@@ -67,6 +66,8 @@
             --card-bg: #1e293b;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --text: #f8fafc;
+            --header-bg: #0f172a;
             
             --th-bg: #0f172a;
             --td-border: #1e293b;
@@ -85,7 +86,7 @@
             --kpi-prod-text: #a78bfa;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         
         body { 
             background-color: var(--bg-light); 
@@ -106,29 +107,42 @@
         }
         .report-header h1 { margin: 0; font-size: 13px; color: var(--brand); font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; }
         
-        /* Modern Filter Card */
+        /* 🟢 FILTERS BAR - SOAKING REPORT EXACT MATCH COLORS & SIZES WITH MOBILE SCROLL SUPPORT */
         .filter-card { 
             background: var(--card-bg); padding: 10px 12px; border-radius: 8px; 
-            margin-bottom: 8px; border: 1px solid var(--border); 
+            margin-bottom: 12px; border: 1px solid var(--border); 
             transition: background 0.3s, border-color 0.3s;
         }
-        .filter-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        @media (min-width: 768px) { .filter-grid { grid-template-columns: repeat(4, 1fr) auto; align-items: flex-end; } }
-        
-        select { 
-            width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; 
-            font-size: 9.5px; font-weight: 600; background-color: var(--bg-light); color: var(--text-main); outline: none; 
-            transition: 0.3s;
+        .filter-grid { 
+            display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; align-items: flex-end;
+            -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; padding-bottom: 4px;
         }
+        .filter-grid::-webkit-scrollbar { height: 4px; }
+        .filter-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-        /* Tom Select Custom Compact Styling */
-        .ts-control {
-            border-radius: 6px !important; padding: 6px 10px !important; font-size: 9.5px !important; font-weight: 600 !important;
-            background-color: var(--bg-light) !important; color: var(--text-main) !important; border: 1px solid var(--border) !important;
-            transition: 0.3s;
+        @media (min-width: 768px) { 
+            .filter-grid { 
+                display: grid; 
+                grid-template-columns: repeat(4, 1fr) auto; 
+                overflow-x: visible !important; 
+                padding-bottom: 0; 
+                flex-wrap: wrap !important;
+            } 
         }
-        .ts-dropdown { font-size: 9.5px !important; font-weight: 600 !important; background-color: var(--card-bg) !important; color: var(--text-main) !important; border-color: var(--border) !important;}
-        .ts-dropdown .option.active { background-color: var(--bg-light) !important; color: var(--accent) !important;}
+        
+        .fbox-item { display: flex; flex-direction: column; gap: 2px; min-width: 120px; flex: 1; flex-shrink: 0 !important; }
+        @media(max-width: 600px) { .fbox-item { min-width: 110px; } }
+        
+        .fbox-item label { font-size: 8px; font-weight: 700; color: var(--brand); text-transform: uppercase; }
+
+        select, input { 
+            width: 100%; padding: 3px 5px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; 
+            background-color: var(--card-bg); color: var(--text); outline: none; height: 24px !important; transition: all 0.2s ease;
+        }
+        select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        
+        .btn-filter-action { background: var(--accent); color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 10px; height: 24px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-reset-action { text-decoration: none; background: #e2e8f0; color: #1e293b; padding: 4px 12px; border-radius: 4px; font-weight: 700; font-size: 10px; text-align: center; height: 24px; display: inline-flex; align-items: center; justify-content: center; text-transform: uppercase; }
 
         .full-width-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; width: 100%; }
 
@@ -149,7 +163,7 @@
         .section-title { margin: 12px 0 6px 0; font-size: 10.5px; font-weight: 800; color: var(--brand); display: flex; align-items: center; gap: 6px; text-transform: uppercase; border-left: 3px solid var(--orange); padding-left: 6px; letter-spacing: 0.5px; }
         
         /* Compact Table System */
-        .table-wrap { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); width: 100%; margin-bottom: 10px; overflow-x: auto; transition: 0.3s;}
+        .table-wrap { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); width: 100%; margin-bottom: 10px; overflow-x: auto; transition: 0.3s; -webkit-overflow-scrolling: touch; }
         
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
         
@@ -204,15 +218,11 @@
             .section-title { page-break-after: avoid !important; }
             div, section, main, article { overflow: visible !important; }
         }
-        
     </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
+    <link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 <body>
 
-<!-- PRE-CALCULATE PRODUCTION PACKING GRAND TOTAL GROSS QUANTITY FOR KPI BOX IN ADVANCE -->
 {% set kpi_gross = namespace(total=0.0) %}
 {% for r in rows.production %}
     {% set r_glaze = r.glaze|string|upper|trim %}
@@ -238,39 +248,39 @@
 
 <div class="filter-card no-print">
     <form method="get" id="filterForm" class="filter-grid">
-        <div>
-            <label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px; color: #475569;">FINANCIAL YEAR</label>
-            <select name="fy" class="searchable-select">
+        <div class="fbox-item">
+            <label>FINANCIAL YEAR</label>
+            <select id="f_fy" name="fy" onchange="document.getElementById('filterForm').submit();">
                 <option value="">-- ALL FY --</option>
                 {% for f in financial_years %}
                     <option value="{{ f }}" {% if selected_fy == f %}selected{% endif %}>FY {{ f }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div>
-            <label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px; color: #475569;">PRODUCTION FOR</label>
-            <select name="production_for" class="searchable-select">
+        <div class="fbox-item">
+            <label>PRODUCTION FOR</label>
+            <select name="production_for" onchange="document.getElementById('filterForm').submit();">
                 <option value="">-- SELECT --</option>
                 {% for c in companies %}<option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
             </select>
         </div>
-        <div>
-            <label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px; color: #475569;">PROCESS TYPE</label>
-            <select name="prod_type" class="searchable-select">
+        <div class="fbox-item">
+            <label>PROCESS TYPE</label>
+            <select name="prod_type" onchange="document.getElementById('filterForm').submit();">
                 <option value="RMP" {% if selected_prod_type == 'RMP' %}selected{% endif %}>RMP (Fresh)</option>
                 <option value="REPROCESS" {% if selected_prod_type == 'REPROCESS' %}selected{% endif %}>RE-PROCESSING</option>
             </select>
         </div>
-        <div>
-            <label style="font-size:9px; font-weight:800; display:block; margin-bottom:4px; color: #475569;">BATCH NUMBER</label>
-            <select name="batch" class="searchable-select">
+        <div class="fbox-item">
+            <label>BATCH NUMBER</label>
+            <select id="f_batch" name="batch" onchange="document.getElementById('filterForm').submit();">
                 <option value="">-- SELECT BATCH --</option>
                 {% for b in batches %}<option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
             </select>
         </div>
-        <div style="display: flex; gap: 6px;">
-            <button type="submit" style="background:var(--accent); color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700; font-size:9.5px; height: 28px;">FILTER</button>
-            <a href="/summary/processing" style="text-decoration:none; background:#e2e8f0; color:#1e293b; padding:6px 12px; border-radius:6px; font-weight:700; font-size:9.5px; text-align:center; line-height:16px; height: 28px;">RESET</a>
+        <div class="fbox-item" style="display: flex; gap: 6px; flex-direction: row; align-items: flex-end;">
+            <button type="submit" class="btn-filter-action">FILTER</button>
+            <a href="/summary/processing" class="btn-reset-action">RESET</a>
         </div>
     </form>
 </div>
@@ -279,7 +289,6 @@
 
 <div class="full-width-container">
     
-    <!-- 1. BATCH MATRIX METRICS BLOCKS -->
     <div class="section-title" style="margin-top:0px;"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> BATCH MATRIX METRICS</div>
     <div class="horizontal-kpi-grid">
         <div class="kpi-column-card" style="border-top: 2px solid var(--accent);">
@@ -314,9 +323,9 @@
             <div class="kpi-label">Soaking | Chem | Salt</div>
             <div class="kpi-val" style="font-size:9.5px;">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</div>
         </div>
-        <div class="kpi-column-card" style="background:#f5f3ff; border-top: 2px solid #6d28d9;">
+        <div class="kpi-column-card" style="background:var(--kpi-prod-bg); border-top: 2px solid #6d28d9;">
             <div class="kpi-label" style="color:#6d28d9;">Gross Prod | Net Prod | Stock Qty</div>
-            <div class="kpi-val" style="color: #312e81;">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
+            <div class="kpi-val" style="color: var(--kpi-prod-text);">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
         </div>
         <div class="kpi-column-card">
             <div class="kpi-label">Stock Inventory Value</div>
@@ -328,7 +337,6 @@
         </div>
     </div>
 
-    <!-- 2. RECONCILIATION SUMMARY COMPACT -->
     <div class="recon-wrap">
         <div style="font-weight: 800; font-size: 11px; margin-bottom: 6px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; color: var(--brand); text-transform: uppercase; letter-spacing: 0.5px;">RECONCILIATION SUMMARY</div>
         
@@ -450,11 +458,9 @@
 
 </div>
 
-<!-- 3. GRADING SUMMARY CARDS VIEW -->
 <div class="section-title"><i class="fas fa-list-ol" style="color:var(--orange)"></i> GRADING SUMMARY </div>
 <div id="cardsGrid" class="cards-view-grid"></div>
 
-<!-- Raw Data Bridge Table -->
 <table id="rawGradingSummaryTable" style="display:none;">
     <tbody>
         {% for r in rows.grading_summary %}
@@ -1132,25 +1138,9 @@
 <div style="text-align:center; padding:80px 20px; color:#94a3b8;"><i class="fas fa-search" style="font-size:28px; margin-bottom:8px; opacity:0.3; color: var(--accent);"></i><p style="font-size: 11px; font-weight: 600;">Select Filters to generate the full batch analysis report.</p></div>
 {% endif %}
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     
-    // 1. SEARCHABLE SELECT DROP-DOWNS (TOMSELECT) INITIALIZATION
-    if (typeof TomSelect !== 'undefined') {
-        document.querySelectorAll('.searchable-select').forEach(function(select) {
-            new TomSelect(select, {
-                create: false,
-                sortField: { field: "text", direction: "asc" },
-                onChange: function() { 
-                    const filterForm = document.getElementById('filterForm');
-                    if(filterForm) filterForm.submit(); 
-                }
-            });
-        });
-    }
-
     // 2. JINJA2 TEMPLATE BREAKDOWN DATA ARRAY
     const allDetailedData = [
         {% for row in rows.grading_details %}
@@ -1176,7 +1166,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // 4. MAIN CARDS VIEW RENDER FUNCTION
     function renderCardsView() {
         const cardsGrid = document.getElementById("cardsGrid");
-        if(!cardsGrid) return; // Safety Check
+        if(!cardsGrid) return; 
         cardsGrid.innerHTML = "";
         
         if(!allRows || allRows.length === 0) {
@@ -1184,7 +1174,6 @@ document.addEventListener("DOMContentLoaded", function() {
             return;
         }
         
-        // Extract Dynamic Filter Values safely with fallbacks
         const b = f_batch ? f_batch.value.toLowerCase() : "";
         const s = f_species ? f_species.value.toLowerCase() : "";
         const v = f_variety ? f_variety.value.toLowerCase() : "";
@@ -1197,7 +1186,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const tds = r.querySelectorAll("td");
             if(tds.length < 12) return;
             
-            // Extract text metrics from the active table row
             const id = tds[0].innerText.trim();
             const batch = tds[1].innerText.trim();
             const species = tds[2].innerText.trim();
@@ -1211,7 +1199,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const diffKg = tds[10].innerText.trim();
             const diffPct = tds[11].innerText.trim();
 
-            // Unified Query Filter Check
             const text = r.innerText.toLowerCase();
             let matchesFilters = (!b || batch.toLowerCase() === b) &&
                                  (!s || species.toLowerCase() === s) &&
@@ -1222,7 +1209,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if(matchesFilters) {
                 visibleCards++;
                 
-                // Match items against detailed dataset mapping (handles multi-property naming variants)
                 const subRows = allDetailedData.filter(row => 
                     String(row.batch_number || row.batch || '').toLowerCase() === batch.toLowerCase() &&
                     String(row.species || '').toLowerCase() === species.toLowerCase() &&
@@ -1244,7 +1230,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (isNaN(finalQty)) finalQty = 0;
                         cardTotalQuantity += finalQty;
                         
-                        // Clean layout using padding structure from baseline
                         subTableBodyHTML += `
                         <tr>
                             <td style="border-bottom:1px solid #f1f5f9; padding:6px 4px; font-size:9.5px; text-align:center; font-weight:600;">${finalCount}</td>
@@ -1253,7 +1238,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         `;
                     });
                     
-                    // Card Subtotal Layout
                     subTableBodyHTML += `
                     <tr class="card-subtotal-row" style="background-color: #f8fafc;">
                         <td style="padding:6px 4px; font-size:9.5px; text-align:left; font-weight:800; text-transform:uppercase; color:#1e40af;">Total:</td>
@@ -1262,7 +1246,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     `;
                 }
                 
-                // Construct Component UI Structure
                 const cardHTML = `
                     <div class="report-card">
                         <div class="card-top">
@@ -1289,9 +1272,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                             <th style="width: 50%; text-align:right; padding:4px; font-size:9px; color:#475569;">Quantity</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        ${subTableBodyHTML}
-                                    </tbody>
+                                    <tbody>${subTableBodyHTML}</tbody>
                                 </table>
                             </div>
                         </div>
@@ -1307,14 +1288,12 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
         
-        // Dynamic Counter Component Update
         const rowCountEl = document.getElementById("rowCount");
         if(rowCountEl) {
             rowCountEl.innerText = `${visibleCards} cards displayed`;
         }
     }
 
-    // 5. EVENT LISTENERS ASSIGNMENT FOR LIVE FILTERING (TABLE/CARDS SYNC)
     [f_batch, f_species, f_variety, f_count, searchBox].forEach(element => {
         if(element) {
             element.addEventListener("input", renderCardsView);
@@ -1322,7 +1301,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // 6. INITIAL RENDER CALL
     renderCardsView();
 });
 </script>

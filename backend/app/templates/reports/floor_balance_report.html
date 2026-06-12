@@ -20,7 +20,6 @@
         } catch(e) {}
     }
     syncTheme();
-    // విండో రీసైజ్/లోడ్ అయినప్పుడు కూడా చెక్ చేయడానికి
     window.addEventListener('load', syncTheme);
 </script>
 
@@ -77,21 +76,32 @@ body {
 @media(min-width: 992px) { .sidebar { width: 220px; height: 100vh; border-right: 1px solid var(--border-color); border-bottom: none; padding: 18px 14px; } }
 
 .sidebar h2 { margin: 0 0 6px 0; font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.filters { display: flex; flex-direction: row; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-.filters::-webkit-scrollbar { display: none; }
-@media(min-width: 992px) { .filters { flex-direction: column; gap: 10px; overflow-x: visible; padding-bottom: 0; } }
 
-.fbox { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; width: 115px; }
+/* 🟢 FILTERS - FORCED SINGLE ROW ENGINE FOR MOBILE WITH SCROLL SUPPORT */
+.filters { 
+    display: flex; flex-direction: row; gap: 12px; overflow-x: auto !important; padding-bottom: 4px; scrollbar-width: thin; 
+    flex-wrap: nowrap !important; -webkit-overflow-scrolling: touch; justify-content: flex-start;
+}
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+@media(min-width: 992px) { .filters { flex-direction: column; gap: 10px; overflow-x: visible; padding-bottom: 0; flex-wrap: wrap !important; } }
+
+.fbox { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0 !important; width: 130px; }
 @media(min-width: 992px) { .fbox { width: 100%; } }
 .fbox label { font-size: 7.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
 
 select, input { 
     padding: 5px 6px; font-size: 10.5px; font-weight: 600; color: var(--text-main); 
     border: 1px solid var(--border-color); border-radius: 4px; outline: none; 
-    background: var(--slate-bg); width: 100%; 
+    background: var(--slate-bg); width: 100%; height: 32px !important;
 }
 select:focus, input:focus { border-color: var(--accent-blue); }
 #searchBox { border-left: 2px solid var(--accent-blue); }
+
+@media(min-width: 992px) {
+    select, input { height: 38px !important; font-size: 12px !important; }
+}
 
 /* ================= MAIN CONTENT AREA ================= */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--slate-bg); }
@@ -100,8 +110,8 @@ select:focus, input:focus { border-color: var(--accent-blue); }
 #rowCount { font-size: 8px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
 
 /* ================= ULTRA COMPACT TABLE SYSTEMS ================= */
-.section { flex: 1; margin: 4px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-.table-wrap { flex: 1; overflow: auto; width: 100%; } 
+.section { flex: 1; margin: 4px; background: var(--card-bg); border-radius: var(--radius-premium); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.table-wrap { flex: 1; overflow: auto; width: 100%; -webkit-overflow-scrolling: touch; } 
 
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
@@ -117,7 +127,7 @@ table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 thead th {
     background: var(--slate-bg); padding: 6px 2px; font-size: 8px; font-weight: 700;
     text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10;
+    border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 10; white-space: nowrap;
 }
 @media(min-width: 768px) { thead th { font-size: 9px; padding: 8px 4px; } }
 
@@ -144,7 +154,7 @@ tr.selected { background: rgba(59, 130, 246, 0.1) !important; }
 
 .badge { padding: 1px 3px; border-radius: 3px; font-size: 7.5px; font-weight: 700; text-transform: uppercase; background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); }
 
-tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); }
+tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; border-top: 1px solid var(--border-color); position: sticky; bottom: 0; z-index: 10; padding: 8px; color: var(--primary-dark); white-space: nowrap; }
 @media(min-width: 768px) { tfoot td { font-size: 11.5px; padding: 12px; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -271,7 +281,6 @@ const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.attributeName === "data-theme") {
             const newTheme = document.documentElement.getAttribute("data-theme");
-            // Theme already applied by CSS variables, nothing extra needed
         }
     });
 });

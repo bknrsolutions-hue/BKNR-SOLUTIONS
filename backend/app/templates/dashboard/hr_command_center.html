@@ -33,6 +33,10 @@
     
     --radius-premium: 12px;
     --radius-md: 8px;
+    --bg-light: #f8fafc;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --text: #0f172a;
   }
 
   /* ==========================================================
@@ -49,6 +53,10 @@
     --text-muted: #94a3b8;
     --hover-bg: rgba(255, 255, 255, 0.04);
     --chart-grid: #334155;
+    --bg-light: #0f172a;
+    --border: #334155;
+    --accent: #60a5fa;
+    --text: #f8fafc;
   }
 
   /* ==========================================================
@@ -106,6 +114,7 @@
   @media(min-width:768px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
   @media(min-width:1024px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
 
+  /* 🟢 FIXED: Removed profit-card, loss-card, warning-card specific color modifications */
   .ref-kpi-card {
     padding: 14px 14px; 
     border-radius: var(--radius-premium); 
@@ -118,13 +127,6 @@
   .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); }
   .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ref-kpi-value { font-size: 19px; font-weight: 800; color: var(--text-main); margin-top: 4px; letter-spacing: -0.5px; }
-
-  .profit-card { background: rgba(16, 185, 129, 0.05) !important; border: 1px solid rgba(16, 185, 129, 0.2) !important; }
-  .profit-card .ref-kpi-value { color: var(--emerald) !important; }
-  .loss-card { background: rgba(244, 63, 94, 0.05) !important; border: 1px solid rgba(244, 63, 94, 0.2) !important; }
-  .loss-card .ref-kpi-value { color: var(--rose) !important; }
-  .warning-card { background: rgba(245, 158, 11, 0.05) !important; border: 1px solid rgba(245, 158, 11, 0.2) !important; }
-  .warning-card .ref-kpi-value { color: var(--amber) !important; }
 
   /* CORE LAYOUT GRID */
   .core-layout-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
@@ -170,9 +172,28 @@
 
   /* FILTER BAR */
   .filter-bar { background: var(--slate-bg); padding: 10px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color); }
-  .filter-bar select, .filter-bar input { padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 600; background: var(--card-bg); color: var(--text-main); outline: none; }
+  .filter-bar form {
+    display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; align-items: center; width: 100%;
+    -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; padding-bottom: 4px;
+  }
+  .filter-bar form::-webkit-scrollbar { height: 4px; }
+  .filter-bar form::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+  @media (min-width: 992px) {
+    .filter-bar form { flex-wrap: wrap !important; overflow-x: visible !important; padding-bottom: 0; }
+  }
+
+  .filter-bar select, .filter-bar input { padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 600; background: var(--card-bg); color: var(--text-main); outline: none; flex-shrink: 0 !important; height: 28px; }
+  .filter-bar select { min-width: 130px; }
   .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent-blue); }
-  #tableSearchInput { flex: 2; min-width: 200px; font-weight: 500; }
+  #tableSearchInput { flex: 2; min-width: 200px !important; font-weight: 500; }
+  .btn-reset-link { font-size:11px; font-weight:700; padding:6px 12px; text-decoration:none; color:var(--text-muted); background:var(--border-color); border-radius:4px; flex-shrink: 0 !important; white-space: nowrap; height: 28px; display: inline-flex; align-items: center; }
+
+  @media(max-width: 600px) {
+    .filter-bar select { min-width: 110px; font-size: 10px; padding: 4px 6px; }
+    #tableSearchInput { min-width: 150px !important; font-size: 10px; padding: 4px 6px; }
+    .btn-reset-link { font-size: 10px; padding: 4px 8px; }
+  }
 
   /* CHARTS & MISC */
   .gauge-container { margin-bottom: 8px; }
@@ -199,17 +220,17 @@
 
   <div class="kpi-matrix-grid">
     <div class="ref-kpi-card"><div class="ref-kpi-meta">Total Staff</div><div class="ref-kpi-value">{{ total_employees }}</div></div>
-    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Active Staff</div><div class="ref-kpi-value">{{ active_employees }}</div></div>
-    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Present Today</div><div class="ref-kpi-value">{{ present_today }}</div></div>
-    <div class="ref-kpi-card loss-card"><div class="ref-kpi-meta">Absent Today</div><div class="ref-kpi-value">{{ absent_today }}</div></div>
-    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Open Shifts</div><div class="ref-kpi-value">{{ open_shifts }}</div></div>
-    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Overtime Run</div><div class="ref-kpi-value">{{ overtime_count }}</div></div>
-    <div class="ref-kpi-card loss-card"><div class="ref-kpi-meta">Double Duty</div><div class="ref-kpi-value">{{ double_duty_count }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Active Staff</div><div class="ref-kpi-value">{{ active_employees }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Present Today</div><div class="ref-kpi-value">{{ present_today }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Absent Today</div><div class="ref-kpi-value">{{ absent_today }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Open Shifts</div><div class="ref-kpi-value">{{ open_shifts }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Overtime Run</div><div class="ref-kpi-value">{{ overtime_count }}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Double Duty</div><div class="ref-kpi-value">{{ double_duty_count }}</div></div>
     <div class="ref-kpi-card"><div class="ref-kpi-meta">MTD New Joins</div><div class="ref-kpi-value">{{ new_joiners_month }}</div></div>
-    <div class="ref-kpi-card warning-card"><div class="ref-kpi-meta">Advances O/S</div><div class="ref-kpi-value">₹{{"{:.0f}".format(advances_outstanding)}}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Advances O/S</div><div class="ref-kpi-value">₹{{"{:.0f}".format(advances_outstanding)}}</div></div>
     <div class="ref-kpi-card"><div class="ref-kpi-meta">PF Registered</div><div class="ref-kpi-value">{{ pf_covered }}</div></div>
     <div class="ref-kpi-card"><div class="ref-kpi-meta">ESI Registered</div><div class="ref-kpi-value">{{ esi_covered }}</div></div>
-    <div class="ref-kpi-card profit-card"><div class="ref-kpi-meta">Structural Net Payroll</div><div class="ref-kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
+    <div class="ref-kpi-card"><div class="ref-kpi-meta">Structural Net Payroll</div><div class="ref-kpi-value">₹{{"{:.0f}".format(monthly_payroll)}}</div></div>
   </div>
 
   <div class="core-layout-grid">
@@ -276,14 +297,14 @@
       <div class="section-header"><i class="fa-solid fa-wallet" style="color:var(--amber);"></i> Advance Capital Control Book</div>
       <div class="data-row"><span>Total Ledger Disbursed</span><span>₹{{"{:.0f}".format(adv_aggregates.issued or 0)}}</span></div>
       <div class="data-row"><span>Total Recovered Pool</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(adv_aggregates.recovered or 0)}}</span></div>
-      <div class="data-row anchor-total-row" style="background: rgba(244, 63, 94, 0.1) !important; border: 1px solid rgba(244, 63, 94, 0.2);"><span>Net Outstanding Balance</span><span style="color: var(--rose) !important;">₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
+      <div class="data-row anchor-total-row" style="background: rgba(244, 63, 94, 0.1) !important; border: 1px solid rgba(244, 63, 94, 0.2);><span>Net Outstanding Balance</span><span style="color: var(--rose) !important;">₹{{"{:.0f}".format(adv_aggregates.balance or 0)}}</span></div>
       {% for a in adv_outstanding_list %}
       <div class="data-row" style="font-size:10px; border:none; padding:3px 12px;"><span>&bull; {{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
       {% endfor %}
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-arrow-trend-up" style="color:var(--emerald);"></i> Salary Modifications Stream</div>
+      <div class="section-header"><i class="fa-solid fa-id-card-clip" style="color:var(--emerald);"></i> Salary Modifications Stream</div>
       <div class="data-row"><span>Total Events (YTD)</span><span>{{ inc_stats.total_inc or 0 }} Trans</span></div>
       <div class="data-row"><span>Mean Delta Spike</span><span>₹{{"{:.0f}".format(inc_stats.avg_inc_val or 0)}}</span></div>
       {% for i in increment_table %}
@@ -315,12 +336,12 @@
       <div class="section-header"><i class="fa-solid fa-users" style="color:var(--accent-blue);"></i> Master Enterprise Employee Directory</div>
        
       <div class="filter-bar">
-        <form method="GET" action="/hr/hr_command_center" id="filterForm" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:6px; width:100%;">
+        <form method="GET" action="/hr/hr_command_center" id="filterForm">
           <select name="dept_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All Departments</option>{% for d in dept_matrix %}<option value="{{ d.department }}" {% if dept_filter == d.department %}selected{% endif %}>{{ d.department }}</option>{% endfor %}</select>
           <select name="type_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All Tiers</option><option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option><option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option></select>
           <select name="status_filter" onchange="document.getElementById('filterForm').submit()"><option value="">All System States</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option></select>
           <input type="text" id="tableSearchInput" onkeyup="searchTableEngine()" placeholder="🔍 Type to filter rows dynamically across records...">
-          <a href="/hr/hr_command_center" style="font-size:11px; font-weight:700; padding:6px 12px; text-decoration:none; color:var(--text-muted); background:var(--border-color); border-radius:4px; align-self:center;">Reset</a>
+          <a href="/hr/hr_command_center" class="btn-reset-link">Reset</a>
         </form>
       </div>
 
@@ -390,7 +411,6 @@
 // ==========================================
 // 🎨 DYNAMIC CHART THEME ENGINE (DUAL MODE)
 // ==========================================
-// ఫైల్ లోడ్ అయినప్పుడు CSS వేరియబుల్స్ నుండి కలర్స్ తీసుకుంటుంది (Dark/Light మోడ్స్ కోసం)
 const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 Chart.defaults.color = getCssVar('--text-muted') || '#94a3b8'; 
@@ -400,7 +420,6 @@ Chart.defaults.font.weight = '600';
 Chart.defaults.plugins.legend.labels.boxWidth = 8;
 Chart.defaults.borderColor = getCssVar('--chart-grid') || '#334155';
 
-// 1. Gender Demographics Chart
 new Chart(document.getElementById("genderChart"), {
   type: "pie",
   options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 6 } } } },
@@ -410,7 +429,6 @@ new Chart(document.getElementById("genderChart"), {
   }
 });
 
-// 2. Attendance Velocity Flow Chart
 new Chart(document.getElementById("attendanceTrendChart"), {
   type: "line",
   options: { 
@@ -424,7 +442,6 @@ new Chart(document.getElementById("attendanceTrendChart"), {
   }
 });
 
-// 3. Labor Productivity Bar Chart
 new Chart(document.getElementById("prodChart"), {
   type: "bar",
   options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
@@ -434,7 +451,6 @@ new Chart(document.getElementById("prodChart"), {
   }
 });
 
-// 4. Payroll Spectrum Spread Chart
 new Chart(document.getElementById("salaryChart"), {
   type: "bar",
   options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
@@ -452,7 +468,6 @@ const activeColumnFilters = {};
 document.addEventListener("DOMContentLoaded", function() {
   populateColumnDropdowns();
   
-  // Close dropdowns when clicking outside
   document.addEventListener("click", function(e) {
     if (!e.target.closest('.th-searchable')) {
       document.querySelectorAll('.col-dropdown-panel').forEach(p => p.style.display = 'none');
@@ -474,9 +489,8 @@ function toggleColumnDropdown(e, id) {
 function populateColumnDropdowns() {
   const table = document.getElementById("employeeDataTable");
   const tr = table.getElementsByTagName("tr");
-  const uniqueValues = { 1: new Set(), 2: new Set(), 3: new Set() }; // Targeted Column Indexes
+  const uniqueValues = { 1: new Set(), 2: new Set(), 3: new Set() }; 
 
-  // Collect unique textual records from visible columns
   for (let i = 1; i < tr.length; i++) {
     for (let colIndex in uniqueValues) {
       if (tr[i].getElementsByTagName("td")[colIndex]) {
@@ -486,12 +500,10 @@ function populateColumnDropdowns() {
     }
   }
 
-  // Bind option fragments inside lists
   document.querySelectorAll('.col-dropdown-options').forEach(container => {
     const colIndex = container.getAttribute('data-col-index');
     container.innerHTML = '';
     
-    // Default system option for clearing localized filters
     const allOpt = document.createElement('div');
     allOpt.className = 'col-dropdown-option';
     allOpt.style.fontWeight = 'bold';
@@ -515,7 +527,7 @@ function filterColumnOptions(panelId, query) {
   const upperQuery = query.toUpperCase();
 
   options.forEach((opt, idx) => {
-    if(idx === 0) return; // Skip 'All Records' target
+    if(idx === 0) return; 
     const text = opt.innerText.toUpperCase();
     opt.style.display = text.indexOf(upperQuery) > -1 ? "" : "none";
   });
@@ -549,7 +561,6 @@ function executeMasterFilteringEngine() {
     let matchesGlobal = !globalFilter;
     let matchesColumns = true;
 
-    // Check row elements against column scoped parameters
     for (let colIndex in activeColumnFilters) {
       if (td[colIndex]) {
         const cellText = td[colIndex].textContent.trim().toUpperCase();
@@ -560,8 +571,7 @@ function executeMasterFilteringEngine() {
       }
     }
 
-    // Check row matches global input engine text
-    if (globalFilter && matchesColumns) { // Optimization: Checks search only if dropdowns match
+    if (globalFilter && matchesColumns) { 
       for (let j = 0; j < td.length; j++) {
         if (td[j]) {
           if ((td[j].textContent || td[j].innerText).toUpperCase().indexOf(globalFilter) > -1) {
@@ -576,13 +586,10 @@ function executeMasterFilteringEngine() {
   }
 }
 
-// Client-Side Real-Time Multi-Column Table Search Engine
 function searchTableEngine() {
   executeMasterFilteringEngine();
 }
 </script>
-
 <script src="/static/js/global-loader.js"></script>
-
 </body>
 </html>

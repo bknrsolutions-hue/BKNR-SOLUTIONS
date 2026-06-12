@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>RE-PROCESS REPORT | BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -16,12 +16,14 @@
  --header:#ffffff;
  --text:#1e293b;
  --text-muted:#64748b;
+ --card-bg: #ffffff;
+ --header-bg: #f8fafc;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{
- margin:0; background:var(--bg); height:100vh;
- display:flex; flex-direction:column; overflow:hidden; color:var(--text);
+ background:var(--bg); height:100vh;
+ display:flex; flex-direction:column; overflow:hidden; color:var(--text); -webkit-font-smoothing: antialiased;
 }
 
 /* ================= HEADER & SEARCH ================= */
@@ -29,17 +31,28 @@ body{
 .header-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
- margin-top:8px; display:grid;
- grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
- gap:8px; background:var(--header-bg); padding:10px; border-radius:6px; border:1px solid var(--border);
+ margin-top:8px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+ gap:12px; background:var(--header-bg); padding:10px; border-radius:6px; border:1px solid var(--border);
+ -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
 }
-.fbox{display:flex;flex-direction:column;gap:2px;}
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.fbox{ display:flex; flex-direction:column; gap:2px; flex-shrink: 0 !important; min-width: 120px; }
 .fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
 
-select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; }
-#searchBox{ grid-column:span 2; border-left:4px solid var(--accent); }
+select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:32px !important; color: var(--primary); font-weight: 600; }
+#searchBox{ min-width: 200px !important; width: 200px !important; border-left:4px solid var(--accent); }
 #f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+@media(max-width: 600px) {
+    .filters { gap: 12px; padding: 8px; overflow-y: hidden; }
+    .fbox { min-width: 110px; }
+    select, input[type=date], #searchBox { font-size: 10px; padding: 4px 6px; }
+    #searchBox { min-width: 150px !important; width: 150px !important; }
+}
 
 /* ================= CORPORATE TABS STRUCT ================= */
 .tabs-container {
@@ -47,6 +60,7 @@ select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px soli
     background: var(--card-bg);
     padding: 0 15px;
     border-bottom: 2px solid var(--primary);
+    flex-shrink: 0;
 }
 .tab-btn {
     padding: 10px 20px;
@@ -78,7 +92,7 @@ select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px soli
 
 /* ================= TABLE AREA ================= */
 .section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; } 
+.table-wrap{ flex:1; overflow:auto; width: 100%; -webkit-overflow-scrolling: touch; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1400px; } 
 
@@ -86,14 +100,14 @@ thead th{
  background:var(--header-bg); padding:12px 4px; font-size:10px; font-weight:700;
  text-transform:uppercase; border-bottom:2px solid var(--border);
  border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
- color: var(--text); letter-spacing: 0.5px; text-align: center;
+ color: var(--text); letter-spacing: 0.5px; text-align: center; white-space: nowrap;
 }
 
 tbody td{
  padding:8px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:left;
+ border-right:1px solid #f8fafc; text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- font-weight: 400; color: var(--text);
+ font-weight: 600; color: var(--primary);
 }
 
 .row-date-group { background: #f8fafc !important; }
@@ -103,6 +117,7 @@ tbody td{
     font-weight: 800 !important; 
     color: var(--primary); 
     padding: 10px 15px;
+    text-align: left !important;
 }
 
 tbody tr:hover:not(.row-date-group){background:#f1f7ff; cursor:pointer;}
@@ -119,15 +134,13 @@ tbody tr:hover:not(.row-date-group){background:#f1f7ff; cursor:pointer;}
 /* ================= FOOTER ================= */
 tfoot td{ 
     background:var(--header-bg); font-weight:800; font-size:11px; color:var(--primary);
-    border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:12px; 
+    border-top:2px solid var(--primary); position:sticky; bottom:0; z-index:10; padding:12px; white-space: nowrap;
 }
 
 @media print {
     .header, .filters, .tabs-container { display: none !important; }
     .section { border: none !important; margin: 0 !important; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible !important; }
+    .table-wrap{ background: var(--card-bg) !important; overflow: visible !important; }
     table { min-width: 100% !important; table-layout: auto !important; }
 }
 </style>
@@ -160,7 +173,10 @@ tfoot td{
         </div>
         <div class="fbox"><label>From</label><input type="date" id="f_from" onchange="applyFilters()"></div>
         <div class="fbox"><label>To</label><input type="date" id="f_to" onchange="applyFilters()"></div>
-        <input type="text" id="searchBox" placeholder="Quick Search Batch, Variety, Grade..." onkeyup="applyFilters()">
+        <div class="fbox">
+            <label>Search Filters</label>
+            <input type="text" id="searchBox" placeholder="Quick Search Batch, Variety, Grade..." onkeyup="applyFilters()">
+        </div>
     </div>
 </div>
 
@@ -208,11 +224,8 @@ tfoot td{
 </div>
 
 <script>
-// 🔹 CURRENT SELECTED TAB STATE
 let currentTab = 'reprocess';
 
-// 🔹 SPLITTING JINJA CONTEXT INTO 3 DISTINCT JAVASCRIPT ARRAYS
-// 🔹 SPLITTING JINJA CONTEXT INTO 3 DISTINCT JAVASCRIPT ARRAYS WITH EXACT MATCHES
 const datasets = {
     reprocess: [
         {% for r in rows_reprocess %}
@@ -286,15 +299,10 @@ function changeFY(val) {
     window.location.href = url.toString();
 }
 
-// 🔹 TAB SWITCHING LOGIC
 function switchTab(tabName) {
     currentTab = tabName;
-    
-    // Update active tab button classes
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
-    
-    // Re-apply filters with new dataset
     applyFilters();
 }
 
@@ -312,9 +320,7 @@ function applyFilters() {
         return;
     }
 
-    // Current tab కి సంబంధించిన డేటాని ఫెచ్ చేయడం
     let activeData = datasets[currentTab] || [];
-
     tbody.innerHTML = "";
     
     let filtered = activeData.filter(d => {
@@ -356,6 +362,7 @@ function applyFilters() {
             </tr>`;
         
         group.items.forEach((r, i) => {
+            // 🟢 FIXED: Removed the manual '%' symbol so it renders cleanly from database data
             tbody.innerHTML += `
                 <tr>
                     <td>${i+1}</td>
@@ -368,11 +375,11 @@ function applyFilters() {
                     <td>${r.grade}</td>
                     <td>${r.species}</td>
                     <td>${r.freezer}</td>
-                    <td>${r.glaze}%</td>
+                    <td>${r.glaze}</td>
                     <td style="text-align:right;">${r.qty.toFixed(2)}</td>
                     <td style="text-align:right;">${r.rate.toFixed(2)}</td>
                     <td style="text-align:right;">${r.value.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                    <td style="font-size: 9px; color: var(--text-muted);">${r.prod_at}</td>
+                    <td style="font-size: 9px; color: var(--text-muted); text-align: center;">${r.prod_at}</td>
                 </tr>`;
         });
     });
