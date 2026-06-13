@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
+from app.utils.timezone import ist_now
 import random, json, os, requests, secrets
 from dotenv import load_dotenv
 
@@ -35,6 +36,20 @@ RESET_EXPIRY_MIN = 30
 # 🟢 BULLETPROOF IST TIME HELPER (సర్వర్ లేదా డేటాబేస్ ఎక్కడున్నా ఇండియన్ టైమే రికార్డ్ అవుతుంది)
 def get_ist_time():
     return datetime.utcnow() + timedelta(hours=5, minutes=30)
+
+
+# =====================================================
+# 🛡️ 🟢 MASTER SECURITY GUARD (Route Protection Dependency)
+# =====================================================
+def require_auth(request: Request):
+    """
+    ఎవరైనా డైరెక్ట్ గా URL ద్వారా పేజీలను ఓపెన్ చేయాలని చూస్తే, 
+    సెషన్‌లో లాగిన్ వివరాలు ఉన్నాయో లేదో చెక్ చేసి... లేకపోతే వెంటనే లాగిన్ పేజీకి పంపించేస్తుంది.
+    """
+    email = request.session.get("email")
+    if not email:
+        raise HTTPException(status_code=303, headers={"Location": "/auth/login"})
+    return request.session
 
 
 # ================= EMAIL FUNCTION =================
@@ -248,7 +263,6 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     print("NEXT PAGE =", next_page)
     print("================================")
 
-    # ఒకవేళ ఇప్పుడే సెటప్ పూర్తయితే, DB లో కూడా అప్‌డేట్ చేయాలి
     if setup_completed and not company.setup_completed:
         company.setup_completed = True
         db.commit()
@@ -264,6 +278,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     db.add(activity)
     db.commit()
 
+    # 🟢 Added "last_activity" to track 30 min idle time
     request.session.update({
         "email": user.email,
         "company_id": company.id,
@@ -272,7 +287,8 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions,
-        "setup_completed": setup_completed
+        "setup_completed": setup_completed,
+        "last_activity": get_ist_time().timestamp() 
     })
 
     response = JSONResponse({
@@ -374,7 +390,7 @@ def reset_password(
     return RedirectResponse("/", status_code=303)
 
 # =====================================================
-# 8. LOGOUT (🟢 Updated with UserLoginActivity tracking & IST Calibration)
+# 8. LOGOUT 
 # =====================================================
 @router.get("/logout")
 def logout(
@@ -414,3 +430,72 @@ def logout(
     request.session.clear()
 
     return RedirectResponse("/", status_code=303)
+
+# =====================================================
+# 9. 🟢 SESSION HEARTBEAT (FIXED: NO FOREVER ACTIVE BUG)
+# =====================================================
+@router.post("/heartbeat")
+def session_heartbeat(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("email")
+    last_activity = request.session.get("last_activity")
+
+    if not email or not last_activity:
+        return JSONResponse({"status": "expired"}, status_code=401)
+
+    current_time = get_ist_time().timestamp()
+    inactive_minutes = (current_time - float(last_activity)) / 60
+
+    # 30 నిమిషాలు దాటితే ఆటోమేటిక్ గా లాగౌట్ ఎంట్రీ పడిపోతుంది
+    if inactive_minutes > 30:
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            activity = db.query(UserLoginActivity).filter(
+                UserLoginActivity.user_id == user.id, UserLoginActivity.logout_at.is_(None)
+            ).order_by(UserLoginActivity.login_at.desc()).first()
+
+            if activity:
+                activity.logout_at = get_ist_time()
+                hrs = (activity.logout_at - activity.login_at).total_seconds() / 3600
+                activity.session_hours = f"{hrs:.2f} Hrs (Timeout)"
+                db.commit()
+
+        request.session.clear()
+        return JSONResponse({"status": "expired", "message": "Session Timeout"}, status_code=401)
+
+    # 🟢 FIXED: request.session["last_activity"] = current_time ని ఇక్కడి నుండి తీసేశాను!
+    # హార్ట్‌బీట్ కేవలం సెషన్ బతికే ఉందో లేదో మాత్రమే రిటర్న్ చేస్తుంది.
+    return {"status": "active"}
+
+# =====================================================
+# 10. 🟢 NEW ROUTE: REAL USER ACTIVITY TRACKER
+# =====================================================
+@router.post("/activity")
+def update_activity(request: Request):
+    """
+    ఫ్రంటెండ్ నుండి మౌస్ మూవ్‌మెంట్, కీ ప్రెస్, క్లిక్ లేదా టచ్ జరిగినప్పుడు 
+    మాత్రమే ఈ రూట్ కాల్ అయ్యి సెషన్‌లో కరెంట్ టైమ్‌స్టాంప్‌ను అప్‌డేట్ చేస్తుంది.
+    """
+    request.session["last_activity"] = get_ist_time().timestamp()
+    return {"status": "ok"}
+
+# =====================================================
+# 11. 🟢 BROWSER / TAB CLOSE AUTO LOGOUT
+# =====================================================
+@router.post("/tab-close-logout")
+def tab_close_logout(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("email")
+    if email:
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            activity = db.query(UserLoginActivity).filter(
+                UserLoginActivity.user_id == user.id, UserLoginActivity.logout_at.is_(None)
+            ).order_by(UserLoginActivity.login_at.desc()).first()
+
+            if activity:
+                activity.logout_at = get_ist_time()
+                hrs = (activity.logout_at - activity.login_at).total_seconds() / 3600
+                activity.session_hours = f"{hrs:.2f} Hrs (Closed)"
+                db.commit()
+
+        request.session.clear()
+    return {"status": "logged_out"}

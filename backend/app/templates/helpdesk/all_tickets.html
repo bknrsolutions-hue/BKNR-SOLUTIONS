@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-    /* ================= CORPORATE THEME VARIABLES ================= */
     :root {
         --bg-color: #f3f4f6;
         --panel-bg: #ffffff;
@@ -42,16 +41,13 @@
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
     body { background: var(--bg-color); color: var(--primary-text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Header */
     .header { padding: 12px 24px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.02);}
     .header h2 { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary-text); text-transform: uppercase; letter-spacing: 0.5px;}
     .header-stats { display: flex; gap: 12px; font-size: 11px; font-weight: 700; color: var(--secondary-text); }
     .header-stats span { background: var(--bg-color); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); }
 
-    /* Main Container */
     .main-container { flex: 1; display: flex; overflow: hidden; margin: 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 
-    /* Left Sidebar: Ticket List */
     .ticket-list-panel { width: 350px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); }
     .search-box { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
     [data-theme="dark"] .search-box { background: #0f172a; }
@@ -75,49 +71,38 @@
     .status-IN_PROGRESS { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d;}
     .status-RESOLVED { background: #dcfce7; color: #16a34a; border: 1px solid #86efac;}
 
-    /* Right Sidebar: Chat Panel */
     .chat-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
-    
     .chat-header { padding: 14px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
     .chat-header-info h3 { font-size: 15px; margin: 0; color: var(--primary-text); font-weight: 700;}
     .chat-header-meta { font-size: 11px; color: var(--secondary-text); margin-top: 6px; display: flex; gap: 12px; align-items: center; font-weight: 500;}
-    
     .mobile-back-btn { display: none; background: transparent; border: none; color: var(--primary-text); font-size: 16px; cursor: pointer; margin-right: 12px; }
 
-    /* Admin Action Controls */
     .admin-actions { display: flex; gap: 8px; align-items: center; }
     .status-select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); font-size: 11px; font-weight: 700; outline: none; cursor: pointer; }
     .btn-update { background: var(--accent); color: var(--panel-bg); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
     .btn-update:hover { background: var(--accent-hover); }
 
-    /* Chat Area */
     .chat-box { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background-color: var(--bg-color); background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
-    
     .msg { max-width: 75%; padding: 14px 18px; border-radius: 8px; font-size: 13px; line-height: 1.5; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .msg-admin { background: var(--admin-msg); align-self: flex-end; border: 1px solid var(--border-color); color: var(--primary-text); border-bottom-right-radius: 0;}
     .msg-user { background: var(--user-msg); align-self: flex-start; border: 1px solid rgba(59, 130, 246, 0.2); color: var(--primary-text); border-bottom-left-radius: 0;}
-    .msg-system { background: #fefce8; align-self: center; border: 1px dashed #facc15; font-size: 12px; color: #854d0e; text-align: center; max-width: 90%; border-radius: 6px;}
-    [data-theme="dark"] .msg-system { background: rgba(250, 204, 21, 0.1); color: #facc15; border-color: rgba(250, 204, 21, 0.3);}
     
     .msg-time { font-size: 9px; color: var(--secondary-text); display: block; text-align: right; margin-top: 8px; font-weight: 600;}
     .msg-sender { font-size: 10px; font-weight: 800; margin-bottom: 6px; display: block; letter-spacing: 0.5px;}
     .msg-user .msg-sender { color: var(--accent-blue); }
     .msg-admin .msg-sender { color: var(--secondary-text); }
 
-    /* Quick Replies */
     .quick-replies-container { padding: 12px 20px; background: var(--panel-bg); border-top: 1px solid var(--border-color); display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; }
     .quick-replies-container::-webkit-scrollbar { height: 0px; }
     .quick-reply-chip { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--primary-text); padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .quick-reply-chip:hover { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 
-    /* Input Area */
     .chat-input-area { padding: 16px 20px; background: var(--panel-bg); display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--border-color);}
     .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 13px; font-weight: 500; transition: border 0.2s;}
     .chat-input-area input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
     .btn-send { background: var(--accent-blue); color: white; border: none; width: 42px; height: 42px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; }
     .btn-send:hover { background: #1d4ed8; }
 
-    /* 🔴 Closed Ticket Banner */
     .closed-ticket-banner {
         padding: 16px; background: var(--bg-color); text-align: center; color: var(--danger);
         font-weight: 700; font-size: 12px; border-top: 1px solid var(--border-color);
@@ -128,10 +113,8 @@
 
     .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--secondary-text); text-align: center; }
     .empty-state i { font-size: 40px; margin-bottom: 16px; opacity: 0.2; color: var(--primary-text); }
-    
     .hidden { display: none !important; }
 
-    /* Mobile Responsive */
     @media (max-width: 850px) {
         .main-container { margin: 0; border-radius: 0; border-left: none; border-right: none; border-bottom: none; flex-direction: column; height: calc(100vh - 55px); }
         .ticket-list-panel { width: 100%; border-right: none; }
@@ -185,7 +168,7 @@
                         <div class="chat-header-meta">
                             <span id="chatTicketId" style="font-weight:800; color:var(--primary-text);">TKT-XXX</span>
                             <span>•</span>
-                            <span id="chatUserEmail"><i class="fa-regular fa-envelope"></i> user@email.com</span>
+                            <span id="chatUserEmail" class="email-holder"><i class="fa-regular fa-envelope"></i> user@email.com</span>
                             <span>•</span>
                             <span id="chatCompany" class="company-badge">CMP</span>
                         </div>
@@ -209,7 +192,6 @@
                     <div class="quick-reply-chip" onclick="useQuickReply('Could you please provide more details or screenshots to help us understand better?')">Need Details</div>
                     <div class="quick-reply-chip" onclick="useQuickReply('This has been escalated to our engineering team. We will update you shortly.')">Escalated</div>
                 </div>
-
                 <div class="chat-input-area">
                     <input type="hidden" id="activeTicketId">
                     <input type="text" id="replyInput" placeholder="Type an official response..." onkeypress="handleEnter(event)">
@@ -219,8 +201,8 @@
 
             <div id="closedBanner" class="closed-ticket-banner hidden">
                 <i class="fa-solid fa-lock"></i>
-                This ticket is marked as Resolved and locked for new messages.
-                <span>Change the status to 'IN PROGRESS' to reopen the chat.</span>
+                This ticket is permanently closed.
+                <span>Users must raise a new ticket for further assistance.</span>
             </div>
 
         </div>
@@ -233,7 +215,6 @@ const allTickets = {{ (tickets_json if tickets_json is defined else []) | tojson
 function renderTicketList(tickets) {
     const listEl = document.getElementById("ticketList");
     listEl.innerHTML = "";
-    
     document.getElementById("stat-open").innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color:var(--danger);"></i> Open: ${allTickets.filter(t=>t.status==='OPEN').length}`;
     document.getElementById("stat-resolved").innerHTML = `<i class="fa-solid fa-check-circle" style="color:var(--success);"></i> Resolved: ${allTickets.filter(t=>t.status==='RESOLVED').length}`;
 
@@ -245,7 +226,6 @@ function renderTicketList(tickets) {
     tickets.forEach(t => {
         const safeSubject = (t.subject || "").replace(/'/g, "\\'").replace(/"/g, '\\"');
         const safeEmail = (t.user_email || "").replace(/'/g, "\\'");
-        
         listEl.innerHTML += `
             <div class="ticket-card" id="ticket-card-${t.id}" onclick="openAdminChat(${t.id}, '${t.ticket_number}', '${safeSubject}', '${t.status}', '${safeEmail}', '${t.company_id}')">
                 <div class="ticket-header">
@@ -265,7 +245,6 @@ function renderTicketList(tickets) {
 function filterTickets() {
     const q = document.getElementById("searchTickets").value.toLowerCase();
     const stat = document.getElementById("filterStatus").value;
-    
     const filtered = allTickets.filter(t => {
         const matchesQuery = t.ticket_number.toLowerCase().includes(q) || 
                              t.subject.toLowerCase().includes(q) || 
@@ -277,7 +256,6 @@ function filterTickets() {
     renderTicketList(filtered);
 }
 
-// ─── 🚀 OPEN CHAT LOGIC ───
 function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
     document.getElementById("emptyState").classList.add("hidden");
     const chatView = document.getElementById("chatView");
@@ -293,15 +271,14 @@ function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
 
     document.getElementById("chatSubject").innerText = subject;
     document.getElementById("chatTicketId").innerText = ticketNum;
-    document.getElementById("chatUserEmail").innerHTML = `<i class="fa-regular fa-envelope"></i> ${email}`;
+    document.querySelector(".email-holder").innerHTML = `<i class="fa-regular fa-envelope"></i> ${email}`;
+    document.getElementById("chatUserEmail").dataset.val = email; // Store for fetching
     document.getElementById("chatCompany").innerHTML = `<i class="fa-regular fa-building"></i> ${company}`;
     
     document.getElementById("activeTicketId").value = ticketId;
     document.getElementById("updateStatusSelect").value = status;
     
-    // 🔴 Lock/Unlock Chat UI Based on Status
     toggleChatLock(status);
-    
     fetchMessages(ticketId, email);
 }
 
@@ -310,7 +287,6 @@ function closeChatMobile() {
     document.getElementById("chatPanel").classList.remove("active-mobile");
 }
 
-// 🔴 LOCK CHAT FUNCTION
 function toggleChatLock(status) {
     if (status === "RESOLVED") {
         document.getElementById("chatControls").classList.add("hidden");
@@ -360,47 +336,36 @@ function useQuickReply(text) {
     input.focus();
 }
 
-async function sendAdminReply(customMessage = null, isAuto = false) {
+async function sendAdminReply() {
     const ticketId = document.getElementById("activeTicketId").value;
     const inputEl = document.getElementById("replyInput");
-    const message = customMessage || inputEl.value.trim();
+    const message = inputEl.value.trim();
     
     if(!message || !ticketId) return;
-    if(!customMessage) inputEl.value = ""; 
+    inputEl.value = ""; 
     
     const chatBox = document.getElementById("chatBox");
     const nowTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
-    if(isAuto) {
-        chatBox.innerHTML += `<div class="msg msg-system"><i class="fa-solid fa-robot"></i> ${message} <span style="font-size:9px; display:block; margin-top:4px; opacity:0.7;">System Generated Auto-Reply</span></div>`;
-    } else {
-        chatBox.innerHTML += `
-            <div class="msg msg-admin" style="opacity: 0.7;">
-                <span class="msg-sender"><i class="fa-solid fa-headset"></i> BKNR Support</span>
-                ${message}
-                <span class="msg-time">${nowTime}</span>
-            </div>
-        `;
-    }
+    chatBox.innerHTML += `
+        <div class="msg msg-admin" style="opacity: 0.7;">
+            <span class="msg-sender"><i class="fa-solid fa-headset"></i> BKNR Support</span>
+            ${message}
+            <span class="msg-time">${nowTime}</span>
+        </div>
+    `;
     chatBox.scrollTop = chatBox.scrollHeight;
 
     const formData = new FormData();
     formData.append("ticket_id", ticketId);
     formData.append("message", message);
-    formData.append("sender_type", "ADMIN"); 
 
     try {
         await fetch("/admin/send_message", { method: "POST", body: formData });
-        if(!isAuto) {
-            const btnId = document.getElementById("chatTicketId").innerText;
-            const subj = document.getElementById("chatSubject").innerText;
-            const stat = document.getElementById("updateStatusSelect").value;
-            const em = document.getElementById("chatUserEmail").innerText.trim();
-            const comp = document.getElementById("chatCompany").innerText.trim();
-            openAdminChat(ticketId, btnId, subj, stat, em, comp);
-        }
+        const email = document.getElementById("chatUserEmail").dataset.val;
+        fetchMessages(ticketId, email); // Reload silently to ensure sync
     } catch(e) {
-        if(!isAuto) alert("Transmission failed. Please check network.");
+        alert("Transmission failed. Please check network.");
     }
 }
 
@@ -411,7 +376,6 @@ function handleEnter(e) {
 async function updateTicketStatus() {
     const ticketId = document.getElementById("activeTicketId").value;
     const newStatus = document.getElementById("updateStatusSelect").value;
-    
     if(!ticketId) return;
 
     const formData = new FormData();
@@ -429,14 +393,12 @@ async function updateTicketStatus() {
             const card = document.getElementById(`ticket-card-${ticketId}`);
             if(card) card.classList.add('active');
             
-            // 🔴 Send Auto-Message and Lock Chat if Resolved
-            if(newStatus === "RESOLVED") {
-                const autoResolveMsg = "Thank you for reaching out to BKNR Support. This ticket is now marked as resolved. If you have further queries, you can reopen this ticket by replying from your portal. Best regards, Operations Team.";
-                await sendAdminReply(autoResolveMsg, true);
-            }
-            
             toggleChatLock(newStatus);
-            alert(`Ticket status updated to ${newStatus.replace('_', ' ')}`);
+            
+            // Reload messages to show the backend-generated auto-reply!
+            const email = document.getElementById("chatUserEmail").dataset.val;
+            fetchMessages(ticketId, email);
+            
         } else {
             alert("Failed to update status.");
         }
@@ -450,7 +412,6 @@ window.onload = () => {
         const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
         if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
     } catch(e) {}
-    
     renderTicketList(allTickets);
 };
 

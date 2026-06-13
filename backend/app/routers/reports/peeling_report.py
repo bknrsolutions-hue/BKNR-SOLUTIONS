@@ -1,6 +1,6 @@
 from app.utils.timezone import ist_now
 # ============================================================
-# PEELING REPORT ROUTER (BKNR ERP) - FY LOCK + EXPORT ENGINES
+# PEELING REPORT ROUTER – FINAL (SPECIES + FY LOCK + DB SYNC)
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
@@ -13,6 +13,8 @@ from datetime import datetime
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import Peeling, AuditLog
@@ -28,7 +30,6 @@ templates = Jinja2Templates(directory="app/templates")
 # --- Helper: Get Financial Year (April to March) ---
 def get_fin_year(date_val):
     if not date_val: return None
-    # Entry date 2026-03-25 ayithe adi 2025 FY kindaku vasthundi
     return date_val.year if date_val.month >= 4 else date_val.year - 1
 
 
@@ -37,6 +38,7 @@ def get_fin_year(date_val):
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def peeling_report(request: Request, db: Session = Depends(get_db)):
+    production_for, location = get_global_filters(request)
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
     
@@ -51,7 +53,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     var_list = db.query(Varieties).filter(Varieties.company_id == comp_code).all()
     yield_map = {v.variety_name: float(v.peeling_yield or 0) for v in var_list}
 
-    # 2. Fetch Rows based on Selected FY
+    # 2. Fetch Rows based on Selected FY (Universal Filters Applied Here)
     rows = []
     if selected_fy:
         try:
@@ -59,15 +61,20 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             start_date = dt.date(fy_start_int, 4, 1)
             end_date = dt.date(fy_start_int + 1, 3, 31)
             
-            # Filter rows specifically for the selected Financial Year range
-            rows = (
-                db.query(Peeling)
-                .filter(Peeling.company_id == comp_code)
-                .filter(Peeling.date >= start_date)
-                .filter(Peeling.date <= end_date)
-                .order_by(Peeling.date.desc(), Peeling.time.desc())
-                .all()
+            # 🟢 UPDATED: Filter rows specifically using global parameters and FY range
+            query = db.query(Peeling).filter(
+                Peeling.company_id == comp_code,
+                Peeling.date >= start_date,
+                Peeling.date <= end_date
             )
+
+            if production_for:
+                query = query.filter(Peeling.production_for == production_for)
+
+            if location:
+                query = query.filter(Peeling.peeling_at == location)
+
+            rows = query.order_by(Peeling.date.desc(), Peeling.time.desc()).all()
         except ValueError:
             rows = []
 
@@ -121,7 +128,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
 
 
 # ------------------------------------------------------------
-# 2. INLINE UPDATE (POST) - WITH FY LOCK & AUDIT
+# 2. INLINE UPDATE (POST) - DON'T TOUCH GLOBAL FILTERS
 # ------------------------------------------------------------
 @router.post("/update")
 async def update_peeling(
@@ -165,7 +172,7 @@ async def update_peeling(
                 ))
                 setattr(row, field, new_val)
 
-    # --- RECALCULATION & TARGET SYNC (Only sync target if record is in Current FY) ---
+    # --- RECALCULATION & TARGET SYNC ---
     if record_fy == current_fy:
         var_obj = db.query(Varieties).filter(
             Varieties.company_id == comp_code, 
@@ -189,6 +196,7 @@ async def update_peeling(
         row.diff_qty = 0.0
 
     db.commit()
+    refresh_floor_balance(db, comp_code)
     return {"status": "success", "target_yield": row.target_yield_percent}
 
 
@@ -201,14 +209,21 @@ async def peeling_export_pdf(
     ids: str = Query(None), 
     db: Session = Depends(get_db)
 ):
-    """
-    Renders selected rows into a standalone clean print/PDF compilation viewport layout.
-    """
     comp_code = request.session.get("company_code")
     if not comp_code:
         raise HTTPException(status_code=401, detail="Session expired")
 
     q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    
+    # 1. 🟢 Apply global filter constraints to the PDF generation scope
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        q = q.filter(Peeling.production_for == production_for)
+
+    if location:
+        q = q.filter(Peeling.peeling_at == location)
+
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.isdigit()]
         q = q.filter(Peeling.id.in_(id_list))
@@ -217,7 +232,7 @@ async def peeling_export_pdf(
     
     return templates.TemplateResponse(
         request=request,
-        name="reports/peeling_report_pdf.html", # Custom PDF clean printable layout template
+        name="reports/peeling_report_pdf.html", 
         context={
             "rows": rows,
             "print_date": ist_now(),
@@ -234,6 +249,16 @@ def peeling_export_excel(
 ):
     comp_code = request.session.get("company_code")
     q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    
+    # 2. 🟢 Apply global filter constraints to the Excel workbook data scope
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        q = q.filter(Peeling.production_for == production_for)
+
+    if location:
+        q = q.filter(Peeling.peeling_at == location)
+
     if ids: 
         q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
     
@@ -241,7 +266,6 @@ def peeling_export_excel(
     ws = wb.active
     ws.title = "Peeling Ledger"
     
-    # Enable grid lines visibility
     ws.views.sheetView[0].showGridLines = True
     
     # Styles Setup
@@ -301,7 +325,6 @@ def peeling_export_excel(
             cell.font = data_font
             cell.border = thin_border
             
-            # Alignments & Number Formats
             if col in [1, 2]:
                 cell.alignment = Alignment(horizontal="center")
             elif col in [3, 4]:
@@ -322,12 +345,10 @@ def peeling_export_excel(
     ws.merge_cells(start_row=tot_row, start_column=1, end_row=tot_row, end_column=4)
     ws.cell(row=tot_row, column=1).alignment = Alignment(horizontal="right", bold=True)
     
-    # Excel Formulations for Aggregations
     ws.cell(row=tot_row, column=5, value=f"=SUM(E{start_row}:E{end_row})").number_format = '#,##0'
     ws.cell(row=tot_row, column=6, value=f"=SUM(F{start_row}:F{end_row})").number_format = '#,##0.00'
     ws.cell(row=tot_row, column=7, value=f"=SUM(G{start_row}:G{end_row})").number_format = '#,##0.00'
     
-    # Average yield formula logic injection
     ws.cell(row=tot_row, column=9, value=f"=IF(F{tot_row}>0,(G{tot_row}/F{tot_row})*100,0)").number_format = '0.00"%"'
     ws.cell(row=tot_row, column=11, value=f"=SUM(K{start_row}:K{end_row})").number_format = '#,##0.00'
     ws.cell(row=tot_row, column=13, value=f"=SUM(M{start_row}:M{end_row})").number_format = '#,##0.00'
@@ -356,6 +377,9 @@ def peeling_export_excel(
     )
 
 
+# ------------------------------------------------------------
+# 4. CONTRACTOR BILLS - DON'T TOUCH GLOBAL FILTERS
+# ------------------------------------------------------------
 @router.get("/contractor_monthly_bill")
 def peeling_monthly_bill(
     request: Request, 
@@ -365,20 +389,19 @@ def peeling_monthly_bill(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
+    query_bill = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
     
     if ids: 
-        q = q.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
+        query_bill = query_bill.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
     else: 
-        q = q.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
+        query_bill = query_bill.filter(func.to_char(Peeling.date, "YYYY-MM") == month)
         
-    rows = q.order_by(Peeling.date.asc()).all()
+    rows = query_bill.order_by(Peeling.date.asc()).all()
 
     # --- Calculations ---
     t_hlso = sum(r.hlso_qty or 0 for r in rows)
     t_peeled = sum(r.peeled_qty or 0 for r in rows)
     
-    # Calculate Average Yield Matrix
     avg_yield = (t_peeled / t_hlso * 100) if t_hlso > 0 else 0
 
     data = {
@@ -395,9 +418,9 @@ def peeling_monthly_bill(
     return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
 
 
-# ============================================================
-# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
-# ============================================================
+# ------------------------------------------------------------
+# 5. AUDIT HISTORY & TRANSACTION DELETION - DON'T TOUCH
+# ------------------------------------------------------------
 @router.get("/audit_all")
 async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -432,5 +455,6 @@ async def delete_peeling(
         ))
         db.delete(row)
         db.commit()
+        refresh_floor_balance(db, comp_code)
         return {"status": "success"}
     return {"status": "error"}

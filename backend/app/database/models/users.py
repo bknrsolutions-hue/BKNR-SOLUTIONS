@@ -51,6 +51,8 @@ class User(Base):
     password = Column(String, nullable=True)
     role = Column(String, default="admin")
     permissions = Column(String, nullable=True)
+    working_for = Column(String(255), index=True)
+    working_at = Column(String(255), index=True)
 
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

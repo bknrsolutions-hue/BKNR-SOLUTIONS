@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>BKNR ERP 2.0 – Ultra Premium Suite</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#0f172a">
@@ -24,7 +24,7 @@
 /* 🌟 NEXT-LEVEL MENU VARIABLES (DARK MODE FIRST) 🌟 */
 :root {
     --bg-app: #0f172a;             
-    --surface-panel: rgba(30, 41, 59, 0.92); /* Added slight transparency for glass effect */
+    --surface-panel: rgba(30, 41, 59, 0.92); 
     --glass-bg: rgba(15, 23, 42, 0.65); 
     
     --text-primary: #f8fafc;       
@@ -34,10 +34,10 @@
     --accent-dark: #3b82f6;        
     --accent-blue: #60a5fa;        
     
-    --border-light: rgba(255, 255, 255, 0.06); /* Softer, more premium border */
+    --border-light: rgba(255, 255, 255, 0.06); 
     --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
-    --glow-active: 0 8px 16px -4px rgba(59, 130, 246, 0.4); /* Glow for active elements */
+    --glow-active: 0 8px 16px -4px rgba(59, 130, 246, 0.4); 
 
     --radius-panel: 24px;
     --radius-element: 12px;
@@ -74,17 +74,14 @@ body {
     height: 100vh;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s ease;
 }
 
-/* Invisible elegant scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-/* 🌟 OVERLAY 🌟 */
 .sidebar-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.3);
@@ -93,11 +90,11 @@ body {
 }
 .sidebar-overlay.show { display: block; opacity: 1; }
 
-/* 🌟 FLOATING SIDEBAR 🌟 */
+/* FLOATING SIDEBAR */
 .sidebar {
     width: var(--sidebar-w);
     background: var(--surface-panel);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); /* Premium Glass */
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
     display: flex; flex-direction: column;
     position: fixed; top: 12px; bottom: 12px; left: calc(-1 * var(--sidebar-w) - 30px); 
     z-index: 995;
@@ -109,231 +106,148 @@ body {
 }
 .sidebar.open { left: 0; }
 
-/* 🌟 BRANDING AREA 🌟 */
 .sidebar-brand {
     height: 84px;
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 28px; 
     border-bottom: 1px solid var(--border-light);
-    transition: border-color 0.3s ease;
 }
 
 .brand-wrapper { display: flex; flex-direction: column; gap: 2px; }
-
-.brand-title {
-    font-weight: 800; font-size: 20px; letter-spacing: -0.5px;
-    color: var(--text-primary); display: flex; align-items: center; gap: 12px;
-}
-.brand-title i {
-    background: linear-gradient(135deg, var(--accent-blue), #818cf8);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    font-size: 24px;
-    filter: drop-shadow(0 2px 4px rgba(96, 165, 250, 0.3)); /* Icon glow */
-}
-
-.brand-subtitle {
-    font-size: 9px; font-weight: 800; color: var(--text-tertiary);
-    letter-spacing: 3px; text-transform: uppercase; margin-left: 36px;
-}
+.brand-title { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 12px; }
+.brand-title i { background: linear-gradient(135deg, var(--accent-blue), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; }
+.brand-subtitle { font-size: 9px; font-weight: 800; color: var(--text-tertiary); letter-spacing: 3px; text-transform: uppercase; margin-left: 36px; }
 
 .close-sidebar-btn {
-    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); 
-    color: var(--text-secondary);
-    font-size: 14px; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); color: var(--text-secondary);
+    font-size: 14px; cursor: pointer; width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
 }
 [data-theme="light"] .close-sidebar-btn { background: rgba(0, 0, 0, 0.03); }
 .close-sidebar-btn:hover { color: var(--text-primary); transform: scale(1.08); background: var(--border-light); }
 
-/* 🌟 MENU NAVIGATION 🌟 */
 .sidebar-menu { flex: 1; overflow-y: auto; padding: 28px 0; }
-
 .pillar-block { margin-bottom: 28px; }
-.pillar-title {
-    padding: 0 32px 10px; 
-    font-size: 10px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary);
-}
-.pillar-title.super-admin-title {
-    color: #ef4444;
-}
-
+.pillar-title { padding: 0 32px 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary); }
+.pillar-title.super-admin-title { color: #ef4444; }
 .menu-wrapper { margin-bottom: 4px; }
 
 .submenu-heading-text {
     font-size: 13px; font-weight: 700; color: var(--text-secondary);
     padding: 12px 24px 12px 32px; cursor: pointer; display: flex; align-items: center;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin: 0 16px; border-radius: var(--radius-element);
+    transition: all 0.3s ease; margin: 0 16px; border-radius: var(--radius-element);
 }
 .submenu-heading-text:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); transform: translateX(2px); }
 [data-theme="light"] .submenu-heading-text:hover { background: rgba(0, 0, 0, 0.02); }
-
-.submenu-heading-text .sub-chevron { 
-    font-size: 10px; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-    margin-right: 14px; color: var(--text-tertiary); 
-}
+.submenu-heading-text .sub-chevron { font-size: 10px; transition: transform 0.4s ease; margin-right: 14px; color: var(--text-tertiary); }
 .submenu-heading-block.open .submenu-heading-text { color: var(--text-primary); }
 .submenu-heading-block.open .submenu-heading-text .sub-chevron { transform: rotate(90deg); color: var(--accent-blue); }
 
-.reports-container { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.reports-container { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
 .submenu-heading-block.open .reports-container { max-height: 2500px; padding: 6px 0; }
 
-/* Menu Items */
-.submenu-item-row { display: flex; align-items: center; justify-content: space-between; margin: 2px 16px; border-radius: var(--radius-element); transition: all 0.3s ease;}
-
+.submenu-item-row { display: flex; align-items: center; justify-content: space-between; margin: 2px 16px; border-radius: var(--radius-element); }
 .submenu-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; color: var(--text-secondary);
-    font-size: 13.5px; font-weight: 600; cursor: pointer; flex-grow: 1;
-    text-decoration: none; overflow: hidden; white-space: nowrap; gap: 10px;
-    border-radius: var(--radius-element); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 12px 16px; color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; flex-grow: 1;
+    text-decoration: none; overflow: hidden; white-space: nowrap; gap: 10px; border-radius: var(--radius-element); transition: all 0.3s ease;
 }
-
-.submenu-item i { width: 24px; text-align: center; color: var(--text-tertiary); font-size: 15px; transition: color 0.3s ease; margin-right: 8px;}
+.submenu-item i { width: 24px; text-align: center; color: var(--text-tertiary); font-size: 15px; margin-right: 8px;}
 .submenu-item:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); transform: translateX(4px); }
 [data-theme="light"] .submenu-item:hover { background: rgba(0, 0, 0, 0.02); }
 .submenu-item:hover i { color: var(--accent-blue); }
 
-/* Premium Active State */
-.submenu-item.active { 
-    color: #ffffff; 
-    background: linear-gradient(135deg, var(--accent-dark), var(--accent-blue)); 
-    box-shadow: var(--glow-active);
-    font-weight: 700;
-}
-.submenu-item.active i { color: #ffffff; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
+.submenu-item.active { color: #ffffff; background: linear-gradient(135deg, var(--accent-dark), var(--accent-blue)); box-shadow: var(--glow-active); font-weight: 700; }
+.submenu-item.active i { color: #ffffff; }
 .submenu-item.active:hover { transform: none; background: linear-gradient(135deg, var(--accent-dark), var(--accent-blue)); } 
 
 .submenu-heading-block .submenu-item { padding-left: 50px; font-size: 13px; font-weight: 500;}
 .submenu-heading-block .submenu-item.active { padding-left: 50px; font-weight: 600;}
 .submenu-heading-block .submenu-item i { display: none; } 
-
 .submenu-item.disabled-link { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
 
-/* Premium Badges */
 .kpi-badge {
     font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 20px;
     background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); 
-    text-transform: uppercase; flex-shrink: 0; border: 1px solid var(--border-light);
-    letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
+    text-transform: uppercase; flex-shrink: 0; border: 1px solid var(--border-light); letter-spacing: 0.5px;
 }
 [data-theme="light"] .kpi-badge { background: rgba(0, 0, 0, 0.03); }
-.submenu-item:hover .kpi-badge { color: var(--text-primary); background: var(--bg-app); border-color: transparent; }
-.submenu-item.active .kpi-badge { 
-    background: rgba(255,255,255,0.25); 
-    color: #ffffff; 
-    border: none; 
-    box-shadow: none;
-    backdrop-filter: blur(4px);
-}
 .kpi-badge.super-badge { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; background: rgba(239, 68, 68, 0.05); } 
-.submenu-item.active .kpi-badge.super-badge { color: #fff; background: rgba(255,255,255,0.25); }
 
-/* Sidebar Footer */
-.sidebar-footer { padding: 28px; border-top: 1px solid var(--border-light); text-align: center; transition: border-color 0.3s ease;}
+.sidebar-footer { padding: 28px; border-top: 1px solid var(--border-light); text-align: center;}
 .footer-quote { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 8px; font-weight: 600;}
 .sidebar-footer .footer-powered { font-size: 11px; font-weight: 800; color: var(--text-primary); letter-spacing: 1px; }
 
-/* 🌟 WORKSPACE CONTAINER & GLASS HEADER 🌟 */
+/* WORKSPACE CONTAINER & GLASS HEADER */
 .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px 12px 12px 0; gap: 12px;}
 
 .app-header {
     height: var(--header-h); 
     background: var(--glass-bg); 
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); /* Stronger premium blur */
-    display: flex; align-items: center; justify-content: space-between; padding: 0 28px;
-    border-radius: var(--radius-panel);
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--border-light);
-    flex-shrink: 0;
-    transition: background 0.4s ease, border-color 0.4s ease;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); 
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    border-radius: var(--radius-panel); box-shadow: var(--shadow-soft); border: 1px solid var(--border-light);
+    flex-shrink: 0; transition: background 0.4s ease;
 }
 
-.header-left-meta { display: flex; align-items: center; gap: 20px; }
+.header-left-meta { display: flex; align-items: center; gap: 16px; }
 
-/* Premium Header Buttons */
+/* UNIVERSAL FILTERS CONTAINER DESIGN DEPLOYMENT */
+.universal-filters-wrapper { display: flex; align-items: center; gap: 12px; margin-left: 10px; }
+.global-filter-box { display: flex; flex-direction: column; gap: 2px; }
+.global-filter-box label { font-size: 7.5px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.global-select-input {
+    background: var(--surface-panel); color: var(--text-primary); border: 1px solid var(--border-light);
+    font-size: 11.5px; font-weight: 700; padding: 4px 28px 4px 10px; border-radius: 6px; outline: none;
+    height: 28px; min-width: 150px; cursor: pointer; transition: var(--shadow-soft);
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8'><path d='M0 3l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat; background-position: right 10px center;
+}
+.global-select-input:focus { border-color: var(--accent-blue); }
+
 .hamburger-trigger-btn, .theme-toggle-btn, .logout-btn {
     background: var(--surface-panel); border: 1px solid var(--border-light); 
     color: var(--text-secondary); border-radius: 50%; width: 44px; height: 44px;
-    font-size: 15px; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--shadow-soft);
+    font-size: 15px; cursor: pointer; transition: all 0.3s ease;
+    display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft);
 }
-.hamburger-trigger-btn:hover, .theme-toggle-btn:hover { 
-    color: var(--accent-blue); 
-    box-shadow: var(--shadow-float); 
-    transform: translateY(-2px); 
-    border-color: var(--accent-blue);
-}
-.logout-btn:hover { 
-    color: #ef4444; 
-    box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.4); 
-    transform: translateY(-2px); 
-    border-color: rgba(239, 68, 68, 0.3);
-}
+.hamburger-trigger-btn:hover, .theme-toggle-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+.logout-btn:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
 
-.company-header-badge {
-    background: var(--surface-panel);
-    color: var(--text-primary); 
-    font-size: 13.5px; font-weight: 800; 
-    letter-spacing: 0.5px; padding: 10px 20px;
-    border-radius: 30px; /* Pill shape for premium feel */
-    display: flex; align-items: center; gap: 10px;
-    box-shadow: var(--shadow-soft); border: 1px solid var(--border-light);
-    transition: all 0.3s ease;
-}
-.company-header-badge::before {
-    content: ''; display: inline-block; width: 8px; height: 8px;
-    background: #34C759; border-radius: 50%; box-shadow: 0 0 10px rgba(52, 199, 89, 0.6);
-}
-
-.header-right-actions { display: flex; align-items: center; gap: 16px; }
+.header-right-actions { display: flex; align-items: center; gap: 14px; }
 
 .user-profile { 
-    background: var(--surface-panel);
-    font-size: 13.5px; font-weight: 700; color: var(--text-primary); 
-    display: flex; align-items: center; gap: 12px; padding: 6px 20px 6px 6px;
-    border-radius: 40px; box-shadow: var(--shadow-soft);
-    border: 1px solid var(--border-light);
-    transition: all 0.3s ease;
-    cursor: pointer;
+    background: var(--surface-panel); font-size: 13px; font-weight: 700; color: var(--text-primary); 
+    display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px;
+    border-radius: 40px; border: 1px solid var(--border-light); cursor: pointer;
 }
-.user-profile:hover { transform: translateY(-1px); box-shadow: var(--shadow-float); }
 .user-profile .avatar { 
-    width: 32px; height: 32px; 
-    background: linear-gradient(135deg, var(--accent-blue), #4f46e5); 
-    color: #FFF; border-radius: 50%; display: flex; 
-    align-items: center; justify-content: center; font-size: 13px; 
-    box-shadow: 0 4px 10px rgba(96, 165, 250, 0.3);
+    width: 30px; height: 32px; background: linear-gradient(135deg, var(--accent-blue), #4f46e5); 
+    color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; 
 }
 
 .iframe-wrapper {
-    flex: 1; background: var(--bg-app); /* Matches theme seamlessly */
-    border-radius: var(--radius-panel); overflow: hidden;
-    box-shadow: var(--shadow-float); border: 1px solid var(--border-light);
-    display: flex; flex-direction: column; position: relative;
-    transition: background 0.4s ease, border-color 0.4s ease;
+    flex: 1; background: var(--bg-app); border-radius: var(--radius-panel); overflow: hidden;
+    box-shadow: var(--shadow-float); border: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative;
 }
-
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
+
+@media (max-width: 1200px) {
+    .universal-filters-wrapper { display: none !important; } 
+}
 
 @media (max-width: 1024px) {
     .app-container { padding: 8px; gap: 8px;}
     .iframe-wrapper { border-radius: 20px; }
-    .company-header-badge { font-size: 12px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-profile span { display: none; } 
-    .user-profile { padding: 6px; }
+    .user-profile span { display: none; } .user-profile { padding: 6px; }
     .app-header { padding: 0 16px; border-radius: 20px;}
 }
 
 @media (max-width: 600px) {
-    .company-header-badge { display: none; } 
-    .header-left-meta { gap: 12px; }
-    .header-right-actions { gap: 12px; }
+    .header-left-meta { gap: 12px; } .header-right-actions { gap: 12px; }
     .theme-toggle-btn, .logout-btn, .hamburger-trigger-btn { width: 40px; height: 40px; font-size: 14px; }
-    .user-profile .avatar { width: 28px; height: 28px; font-size: 12px;}
     .app-header { padding: 0 12px; height: 64px;}
 }
 </style>
@@ -346,10 +260,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="brand-wrapper">
-            <div class="brand-title">
-                <i class="fa-solid fa-layer-group"></i> 
-                MY ERP 
-            </div>
+            <div class="brand-title"><i class="fa-solid fa-layer-group"></i> MY ERP </div>
             <div class="brand-subtitle">WORKSPACE</div>
         </div>
         <button class="close-sidebar-btn" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
@@ -369,8 +280,27 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
             <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Menu">
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
-            <div class="company-header-badge" title="Active Connection">
-                {{ request.session.get('company_name') or request.session.get('company_code') }}
+            
+            <!-- 🟢 UNIVERSAL PLUG-IN FILTERS BAR COMPONENT -->
+            <div class="universal-filters-wrapper">
+                <div class="global-filter-box">
+                    <label>Production For</label>
+                    <select id="global_production_for" class="global-select-input" onchange="broadcastUniversalFilters()">
+                        <option value="">All Corporate Entities</option>
+                        {% for c in companies %}
+                        <option value="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="global-filter-box">
+                    <label>Plant Location</label>
+                    <select id="global_plant_location" class="global-select-input" onchange="broadcastUniversalFilters()">
+                        <option value="">All Active Plants</option>
+                        {% for l in locations %}
+                        <option value="{{ l }}">{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -424,7 +354,72 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
 });
 
-// 🌟 MASTER IFRAME INJECTOR 🌟
+// 🌟 🟢 UNIVERSAL FILTERS SYNC SYSTEM (BULL-PROOF FIX) 🌟
+function broadcastUniversalFilters() {
+    const pFor = document.getElementById("global_production_for").value;
+    const pLoc = document.getElementById("global_plant_location").value;
+    const iframe = document.getElementById("frame");
+    
+    if (!iframe || !iframe.src || iframe.src === "about:blank") return;
+    
+    try {
+        let currentUrl = new URL(iframe.src, window.location.origin);
+        
+        if (pFor) {
+            currentUrl.searchParams.set("production_for", pFor);
+        } else {
+            currentUrl.searchParams.delete("production_for");
+        }
+        
+        // 🔴 🟢 FIXED: Force mapping of ALL dynamic query names at the same time to guarantee sync across all different report routes
+        if (pLoc) {
+            currentUrl.searchParams.set("location", pLoc);
+            currentUrl.searchParams.set("peeling_at", pLoc);
+            currentUrl.searchParams.set("production_at", pLoc);
+        } else {
+            currentUrl.searchParams.delete("location");
+            currentUrl.searchParams.delete("peeling_at");
+            currentUrl.searchParams.delete("production_at");
+        }
+        
+        // Triggers safe hot reload with parameters attached
+        iframe.src = currentUrl.toString();
+    } catch(e) {
+        console.warn("Universal filter injection synchronized.");
+    }
+}
+
+// 🌟 🟢 AUTOMATIC DYNAMIC SIDEBAR INTERCEPTOR LINK EXTENSION 🌟
+function loadPage(url, element) {
+    if(url === '#') return;
+    
+    const pFor = document.getElementById("global_production_for").value;
+    const pLoc = document.getElementById("global_plant_location").value;
+    
+    let targetUrl = new URL(url, window.location.origin);
+    
+    // Injects variables into the layout when user manually clicks sidebar options
+    if (pFor) targetUrl.searchParams.set("production_for", pFor);
+    if (pLoc) {
+        targetUrl.searchParams.set("location", pLoc);
+        targetUrl.searchParams.set("peeling_at", pLoc);
+        targetUrl.searchParams.set("production_at", pLoc);
+    }
+
+    document.getElementById('frame').src = targetUrl.toString();
+    document.querySelectorAll('.submenu-item').forEach(el => el.classList.remove('active'));
+    
+    if(element) {
+        element.classList.add('active');
+        const parentBlock = element.closest('.submenu-heading-block');
+        if(parentBlock && !parentBlock.classList.contains('open')) {
+            parentBlock.classList.add('open');
+        }
+    }
+    toggleSidebar(false);
+}
+
+// 🌟 AUTOMATIC DYNAMIC SUB-FRAME AUTO-LOADER & STRIKT FILTERING ENGINE 
 const frame = document.getElementById('frame');
 frame.addEventListener('load', () => {
     try {
@@ -433,14 +428,52 @@ frame.addEventListener('load', () => {
         
         frameDoc.documentElement.setAttribute("data-theme", currentTheme);
         
-        if (!frameDoc.getElementById('master-theme-enforcer')) {
-            let enforceLink = frameDoc.createElement("link");
-            enforceLink.id = "master-theme-enforcer";
-            enforceLink.rel = "stylesheet";
-            enforceLink.href = "/static/css/bknr-standard.css?v=" + new Date().getTime(); 
-            frameDoc.head.appendChild(enforceLink);
+        let iframeUrl = new URL(frame.src, window.location.origin);
+        const pFor = iframeUrl.searchParams.get("production_for") || document.getElementById("global_production_for").value;
+        const pLoc = iframeUrl.searchParams.get("location") || iframeUrl.searchParams.get("peeling_at") || iframeUrl.searchParams.get("production_at") || document.getElementById("global_plant_location").value;
+        
+        let shouldTriggerFilter = false;
+
+        // 1. Corporate Entity Sync (production_for)
+        if (pFor) {
+            const subProdFor = frameDoc.querySelector('select[name="production_for"], select#production_for');
+            if (subProdFor && subProdFor.value !== pFor) {
+                subProdFor.value = pFor;
+                subProdFor.dispatchEvent(new Event('change', { bubbles: true }));
+                shouldTriggerFilter = true;
+            }
         }
 
+        // 2. STRIKT LOCATION ATTRIBUTE MATCHING (Only peeling_at & production_at)
+        if (pLoc) {
+            const subLoc = frameDoc.querySelector(
+                'select[name="peeling_at"], select#peeling_at, select[name="production_at"], select#production_at'
+            );
+            
+            if (subLoc && subLoc.value !== pLoc) {
+                subLoc.value = pLoc;
+                subLoc.dispatchEvent(new Event('change', { bubbles: true }));
+                shouldTriggerFilter = true;
+            }
+        }
+
+        // 3. AUTOMATIC SUB-TABLE UPDATES TRIGGER PROTOCOL
+        if (shouldTriggerFilter) {
+            const nativeForm = frameDoc.querySelector('form');
+            if (nativeForm) {
+                const filterBtn = nativeForm.querySelector('button[type="submit"], .btn-sync, #filterBtn, button[onclick*="submit"]');
+                if (filterBtn) filterBtn.click();
+                else nativeForm.submit();
+                console.log("🟢 Subscreen filters executed via Form/Button Action Trigger.");
+            } else {
+                const win = frame.contentWindow;
+                if (typeof win.filterTickets === "function") win.filterTickets();
+                else if (typeof win.filterMatrix === "function") win.filterMatrix();
+                else if (typeof win.applyFilters === "function") win.applyFilters();
+            }
+        }
+
+        // Nuclear Themes Enforcer Guard
         if (!frameDoc.getElementById('nuclear-dark-mode')) {
             let nuclearStyle = frameDoc.createElement("style");
             nuclearStyle.id = 'nuclear-dark-mode';
@@ -462,21 +495,14 @@ frame.addEventListener('load', () => {
             `;
             frameDoc.head.appendChild(nuclearStyle);
         }
-
-        if(typeof initializeSearchableColumns === "function") {
-            initializeSearchableColumns(frameDoc);
-        }
     } catch(e) {
-        console.warn("Iframe injection blocked.");
+        console.warn("Iframe automated tracking error handled.");
     }
 });
 
-// 🌟 BACKEND CONSTANTS FOR ROLE BASED ACCESS 🌟
 const permissions = {{ request.session.get('permissions')|tojson|default("[]") }};
 const currentUserRole = "{{ request.session.get('role', '') }}"; 
 const currentUserEmail = "{{ request.session.get('email', '') }}"; 
-
-// 🔴 MASTER OVERRIDE FOR DEFAULT SUPER ADMIN 🔴
 const isDefaultSuperAdmin = (currentUserEmail === "bknr.solutions@gmail.com");
 
 function allow(key){ 
@@ -485,16 +511,7 @@ function allow(key){
     return permissions.includes("ALL") || permissions.includes(key); 
 }
 
-function initializeSearchableColumns(doc) {
-    const selects = doc.querySelectorAll('select');
-    selects.forEach(select => {
-        if (!select.dataset.searchable) {
-            select.dataset.searchable = "true";
-        }
-    });
-}
-
-// 🌟 DYNAMIC MENU DATA 🌟
+// DYNAMIC MENU DATA
 const menuData = [
     {
         title: "DASHBOARDS",
@@ -661,7 +678,6 @@ const menuData = [
             ['raise_ticket', '/support/my_tickets', 'fa-ticket', 'My Complaints', 'Help']
         ]
     },
-    // 🔴 🌟 SUPER ADMIN EXCLUSIVE PANEL 🌟 🔴
     {
         title: "SUPER ADMIN PANEL",
         roleRequired: "Super Admin", 
@@ -686,31 +702,23 @@ function renderOrganizedMenu() {
         }
 
         let hasVisible = false;
-        
         if (cat.items) {
             hasVisible = cat.items.some(item => allow(item[0]) || item[5]);
         } else if (cat.subgroups) {
             hasVisible = cat.subgroups.some(sub => sub.items.some(item => allow(item[0])));
         }
-        
         if (!hasVisible) return;
 
         const titleClass = cat.roleRequired ? "pillar-title super-admin-title" : "pillar-title";
-
-        html += `<div class="pillar-block">
-                   <div class="${titleClass}">${cat.title}</div>
-                   <div class="menu-wrapper">`;
+        html += `<div class="pillar-block"><div class="${titleClass}">${cat.title}</div><div class="menu-wrapper">`;
 
         if (cat.items) {
             cat.items.forEach(item => {
                 const [permissionKey, route, icon, label, badge, isDisabled] = item;
                 if (!isDisabled && !allow(permissionKey)) return;
-                
                 const disabledClass = isDisabled ? "disabled-link" : "";
-                
                 const isSuperAdminBlock = cat.roleRequired ? "super-badge" : "";
                 const badgeClass = isDisabled ? `kpi-badge disabled-badge ${isSuperAdminBlock}` : `kpi-badge ${isSuperAdminBlock}`;
-                
                 const clickHandler = isDisabled ? `onclick="loadPage('#', this)"` : `onclick="loadPage('${route}', this)"`;
 
                 html += `<div class="submenu-item-row">
@@ -755,21 +763,14 @@ function renderOrganizedMenu() {
 function toggleReportsGroup(element) {
     const parentBlock = element.closest('.submenu-heading-block');
     const isOpen = parentBlock.classList.contains('open');
-    
     const masterContainer = element.closest('.menu-wrapper');
     if(masterContainer) {
         masterContainer.querySelectorAll('.submenu-heading-block').forEach(block => {
-            if(block !== parentBlock) {
-                block.classList.remove('open');
-            }
+            if(block !== parentBlock) block.classList.remove('open');
         });
     }
-
-    if(isOpen) {
-        parentBlock.classList.remove('open');
-    } else {
-        parentBlock.classList.add('open');
-    }
+    if(isOpen) parentBlock.classList.remove('open');
+    else parentBlock.classList.add('open');
 }
 
 function toggleSidebar(shouldOpen) {
@@ -780,22 +781,6 @@ function toggleSidebar(shouldOpen) {
         sidebar.classList.remove('open');
         sidebarOverlay.classList.remove('show');
     }
-}
-
-function loadPage(url, element) {
-    if(url === '#') { return; }
-    document.getElementById('frame').src = url;
-    document.querySelectorAll('.submenu-item').forEach(el => el.classList.remove('active'));
-    
-    if(element) {
-        element.classList.add('active');
-        const parentBlock = element.closest('.submenu-heading-block');
-        if(parentBlock && !parentBlock.classList.contains('open')) {
-            parentBlock.classList.add('open');
-        }
-    }
-    
-    toggleSidebar(false);
 }
 
 function logout() {
@@ -812,9 +797,7 @@ window.onload = () => {
         loadPage('/dashboard/inventory_dashboard');
     } else {
         const firstSubmenuItem = document.querySelector('.submenu-item:not(.disabled-link)');
-        if(firstSubmenuItem) {
-            firstSubmenuItem.click();
-        }
+        if(firstSubmenuItem) firstSubmenuItem.click();
     }
 };
 

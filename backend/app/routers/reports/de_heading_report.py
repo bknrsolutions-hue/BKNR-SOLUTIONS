@@ -11,6 +11,8 @@ from sqlalchemy import func, extract
 from datetime import datetime
 import datetime as dt
 from io import BytesIO
+from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.global_filters import get_global_filters
 
 from openpyxl import Workbook
 from weasyprint import HTML
@@ -40,6 +42,7 @@ async def de_heading_report(
     fy: str = Query(None), # Financial Year Filter
     db: Session = Depends(get_db)
 ):
+    production_for, location = get_global_filters(request)
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
@@ -65,16 +68,21 @@ async def de_heading_report(
         start_date = dt.date(selected_year, 4, 1)
         end_date = dt.date(selected_year + 1, 3, 31)
         
-        rows = (
-            db.query(DeHeading)
-            .filter(
-                DeHeading.company_id == company_id,
-                DeHeading.date >= start_date,
-                DeHeading.date <= end_date
-            )
-            .order_by(DeHeading.date.desc(), DeHeading.time.desc())
-            .all()
+        # 🟢 UPDATED: Core query selection layered dynamically via global options
+        query = db.query(DeHeading).filter(
+            DeHeading.company_id == company_id,
+            DeHeading.date >= start_date,
+            DeHeading.date <= end_date
         )
+
+        # Global Filters Integration
+        if production_for:
+            query = query.filter(DeHeading.production_for == production_for)
+
+        if location:
+            query = query.filter(DeHeading.peeling_at == location)
+
+        rows = query.order_by(DeHeading.date.desc(), DeHeading.time.desc()).all()
 
     # 3. Auto-Refresh Logic (Current FY only)
     needs_commit = False
@@ -180,10 +188,11 @@ async def update_deheading_row(
         row.diff_percent = round(row.yield_percent - target_y, 2)
 
     db.commit()
+    refresh_floor_balance(db, company_id)
     return {"status": "success", "target_yield_percent": row.target_yield_percent, "diff_qty": row.diff_qty, "diff_percent": row.diff_percent}
 
 # ============================================================
-# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE
 # ============================================================
 @router.get("/audit_all")
 async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db)):
@@ -204,6 +213,7 @@ async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db
 
 @router.get("/contractor_monthly_bill")
 def de_heading_monthly_bill(request: Request, month: str = Query(...), contractor: str = Query(...), ids: str = Query(None), download: bool = Query(False), db: Session = Depends(get_db)):
+    # 🔴 STRIKT POLICY: Untouched base layers. Universal filters purposefully bypassed here.
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(DeHeading.company_id == company_id, DeHeading.contractor == contractor)
     if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
@@ -227,7 +237,19 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
 def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
-    if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
+    
+    # 1. 🟢 Force evaluate incoming global interface context
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        query = query.filter(DeHeading.production_for == production_for)
+
+    if location:
+        query = query.filter(DeHeading.peeling_at == location)
+
+    if ids: 
+        query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
+        
     pdf = HTML(string=templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": ist_now()})).write_pdf()
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"})
 
@@ -235,7 +257,19 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
 def de_heading_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
-    if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
+    
+    # 2. 🟢 Force evaluate incoming global interface context
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        query = query.filter(DeHeading.production_for == production_for)
+
+    if location:
+        query = query.filter(DeHeading.peeling_at == location)
+
+    if ids: 
+        query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
+        
     wb = Workbook()
     ws = wb.active
     ws.append(["Date", "Batch No", "Contractor", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount"])
@@ -250,5 +284,6 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
     if row:
         db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="DELETE", old_value="DeHeading Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)))
         db.delete(row); db.commit()
+        refresh_floor_balance(db, company_id)
         return {"status": "success"}
     return {"status": "error"}

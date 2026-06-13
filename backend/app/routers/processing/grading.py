@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, date
 from app.utils.timezone import ist_now
 import json
 import re
+from app.services.floor_balance_sync import refresh_floor_balance
 
 from app.database import get_db
 # 🟢 Imported HlsoForGrading model table structure
@@ -248,7 +249,7 @@ def save_grading(
 
     db.commit()
     db.refresh(grading)
-
+    refresh_floor_balance(db, company_code)
     request.session["message"] = "✔ Grading Saved Successfully!"
     return RedirectResponse("/processing/grading", status_code=303)
 
@@ -372,4 +373,5 @@ def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
         rollback_grading_consumption(db, entry)
         db.delete(entry)
         db.commit()
+        refresh_floor_balance(db, company_code)
     return JSONResponse({"status": "ok"})

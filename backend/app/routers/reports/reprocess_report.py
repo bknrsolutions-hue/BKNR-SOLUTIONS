@@ -1,7 +1,6 @@
-from app.utils.timezone import ist_now
-# ============================================================
-# REPROCESS, SALES & STORING REPORT ROUTER (FINAL FIXED)
-# ============================================================
+# ============================================================================
+# REPROCESS, SALES & STORING REPORT ROUTER (FINAL FIXED WITH GLOBAL FILTERS)
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -10,6 +9,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 import re
 from datetime import datetime
+from app.utils.timezone import ist_now
+from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -23,6 +25,9 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/re-process", response_class=HTMLResponse)
 async def reprocess_report_page(request: Request, db: Session = Depends(get_db)):
+    # 🟢 1. FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
+    production_for, location = get_global_filters(request)
+    
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
@@ -108,9 +113,6 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             for item in inventory_out_data:
                 p_val = str(item.purpose or "GENERAL OUT").upper()
                 
-                # గమనిక: ఇక్కడ పాత Sales/Storing 'continue' స్కిప్ కండిషన్లు తీసేశాం, 
-                # కాబట్టి ఈ రికార్డులు కూడా డేటాబేస్‌లోకి ఇన్సర్ట్ అవుతాయి.
-
                 d_str = item.date.strftime('%y%m%d') if item.date else ist_now().strftime('%y%m%d')
                 
                 p_for_name = item.production_for
@@ -144,7 +146,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                     b_id = f"{prefix}-{tag}-{d_str}-{daily_counter:03d}"
                     generated_batches[match_key] = b_id
 
-                # --- 🔹 START KG VALUE LOOKUP LOGIC ---
+                # --- START KG VALUE LOOKUP LOGIC ---
                 stock_in_record = db.query(stock_entry.product_kg_value).filter(
                     stock_entry.company_id == comp_code,
                     stock_entry.cargo_movement_type.ilike("IN"),
@@ -163,7 +165,7 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                     final_rate = 280.0 if any(x in str(item.grade).upper() for x in ["BKN", "DC"]) else round(b_rate / y_val, 2)
                 
                 final_val = round(float(item.quantity or 0) * final_rate, 2)
-                # --- 🔹 END KG VALUE LOOKUP LOGIC ---
+                # --- END KG VALUE LOOKUP LOGIC ---
 
                 db.add(Reprocess(
                     date=item.date, 
@@ -190,12 +192,23 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
                 ))
 
             db.commit()
+            refresh_floor_balance(
+               db,
+               comp_code
+            )
 
-            # 6. DATA FETCHING & FILTERING FOR TABS
+            # 6. DATA FETCHING & FILTERING FOR TABS (UNIVERSAL FILTER LAYER)
             base = db.query(Reprocess).filter(
                 Reprocess.company_id == comp_code,
                 Reprocess.date.between(start_date, end_date)
             )
+
+            # 🟢 2. INJECT ACTIVE UNIVERSAL FILTERS ON BASE QUERY POOL
+            if production_for:
+                base = base.filter(Reprocess.production_for == production_for)
+
+            if location:
+                base = base.filter(Reprocess.production_at == location)
 
             rows_reprocess = base.filter(
                 ~Reprocess.reprocess_type.ilike("%SALE%"),

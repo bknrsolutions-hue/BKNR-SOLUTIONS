@@ -255,3 +255,35 @@ class InventorySummary(Base):
             name="uq_inventory_summary"
         ),
     )
+    # --------------------------------------------------------
+   # INVENTORY SUMMARY scheduler
+   # --------------------------------------------------------
+class InventoryDailySnapshot(Base):
+    __tablename__ = "inventory_daily_snapshot"
+
+    id = Column(Integer, primary_key=True)
+
+    snapshot_date = Column(Date, index=True)
+
+    company_id = Column(String(50))
+
+    species = Column(String(100))
+    variety = Column(String(100))
+    grade = Column(String(100))
+
+    packing_style = Column(String(100))
+    glaze = Column(String(50))
+
+    production_for = Column(String(255))
+    production_at = Column(String(255))
+
+    freezer = Column(String(100))
+
+    opening_qty = Column(Float, default=0)
+    opening_mc = Column(Float, default=0)
+    opening_loose = Column(Float, default=0)
+    
+    avg_rate = Column(Float, default=0)
+    inventory_value = Column(Float, default=0) 
+
+    created_at = Column(DateTime)

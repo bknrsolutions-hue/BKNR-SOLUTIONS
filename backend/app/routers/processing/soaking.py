@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct, cast, String, Integer
 from datetime import date, datetime
+from app.services.floor_balance_sync import refresh_floor_balance
 
 from app.database import get_db
 from app.database.models.processing import (
@@ -279,6 +280,7 @@ def save_soaking(
     )
     db.add(entry)
     db.commit()
+    refresh_floor_balance(db, company_id)
     return RedirectResponse("/processing/soaking", status_code=303)
 
 
@@ -312,6 +314,7 @@ def update_soaking(
         row.production_at = production_at
         row.production_for = production_for
         db.commit()
+        refresh_floor_balance(db, company_id)
     return RedirectResponse("/processing/soaking", status_code=303)
 
 
@@ -320,4 +323,5 @@ def delete_soaking(id: int, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).delete()
     db.commit()
+    refresh_floor_balance(db, company_id)
     return JSONResponse({"status": "ok"})

@@ -15,6 +15,8 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from weasyprint import HTML
+from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry, AuditLog
@@ -61,6 +63,7 @@ def report_page(
     fy: str = Query(None), 
     db: Session = Depends(get_db)
 ):
+    production_for, location = get_global_filters(request)
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
     if not comp_code:
@@ -96,7 +99,8 @@ def report_page(
     start_date = dt.date(selected_fy, 4, 1)
     end_date = dt.date(selected_fy + 1, 3, 31)
 
-    rows = (
+    # 🟢 UPDATED: Core query selection layered dynamically via global options
+    query = (
         db.query(RawMaterialPurchasing)
         .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
         .filter(
@@ -105,9 +109,15 @@ def report_page(
             GateEntry.date >= start_date,
             GateEntry.date <= end_date
         )
-        .order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc())
-        .all()
     )
+
+    if production_for:
+        query = query.filter(RawMaterialPurchasing.production_for == production_for)
+
+    if location:
+        query = query.filter(RawMaterialPurchasing.peeling_at == location)
+
+    rows = query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()
 
     def get_dist(attr):
         return sorted({getattr(r, attr) for r in rows if getattr(r, attr)})
@@ -180,6 +190,7 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     row.received_qty = round(g1 + g2 + dc, 2)
     row.amount = round(row.received_qty * rate, 2)
     db.commit()
+    refresh_floor_balance(db, comp_code)
     return {"status": "updated", "received_qty": row.received_qty, "amount": row.amount}
 
 @router.post("/delete")
@@ -189,6 +200,7 @@ def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     if row:
         db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=ist_now()))
         db.delete(row); db.commit()
+        refresh_floor_balance(db, comp_code)
         return {"status": "deleted"}
     return {"status": "error"}
 
@@ -209,8 +221,18 @@ def export_rmp_excel(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    
+    # 🟢 FIX: Avoid parameter collision with explicit global_ prefixes
+    global_production_for, global_location = get_global_filters(request)
+    
     query = db.query(RawMaterialPurchasing).join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number).filter(RawMaterialPurchasing.company_id == comp_code)
     
+    if global_production_for:
+        query = query.filter(RawMaterialPurchasing.production_for == global_production_for)
+
+    if global_location:
+        query = query.filter(RawMaterialPurchasing.peeling_at == global_location)
+        
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         query = query.filter(RawMaterialPurchasing.id.in_(id_list))
@@ -257,6 +279,9 @@ def print_table_view(
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    # 🟢 FIX: In-memory evaluation tracking via global contextual scopes
+    global_production_for, global_location = get_global_filters(request)
+
     # Base Join Rules Structure Setup Enforced
     q = db.query(RawMaterialPurchasing).join(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
@@ -264,6 +289,12 @@ def print_table_view(
         RawMaterialPurchasing.company_id == comp_code,
         GateEntry.company_id == comp_code
     )
+    
+    if global_production_for:
+        q = q.filter(RawMaterialPurchasing.production_for == global_production_for)
+
+    if global_location:
+        q = q.filter(RawMaterialPurchasing.peeling_at == global_location)
     
     # 1. Direct Hard-Check Visible Explicit IDs
     if ids:
@@ -311,10 +342,22 @@ def print_table_view(
 @router.get("/print_summary", response_class=HTMLResponse)
 def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
+    
+    # 🟢 FIX: In-memory evaluation tracking via global contextual scopes
+    global_production_for, global_location = get_global_filters(request)
+    
     q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == comp_code)
+    
+    if global_production_for:
+        q = q.filter(RawMaterialPurchasing.production_for == global_production_for)
+
+    if global_location:
+        q = q.filter(RawMaterialPurchasing.peeling_at == global_location)
+        
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
         q = q.filter(RawMaterialPurchasing.id.in_(id_list))
+        
     rows = q.all(); grouped = {}
     for r in rows: grouped.setdefault((r.supplier_name, r.batch_number), []).append(r)
     final_batches = []

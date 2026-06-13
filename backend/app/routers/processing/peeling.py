@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 from sqlalchemy import func, distinct
+from app.services.floor_balance_sync import refresh_floor_balance
+
 
 from app.database import get_db
 from app.database.models.processing import Grading, Peeling, RawMaterialPurchasing
@@ -426,6 +428,7 @@ def save_peeling(request: Request, db: Session = Depends(get_db),
     try:
         db.add(new_entry)
         db.commit()
+        refresh_floor_balance(db, company_code)
         return JSONResponse({"message": "Saved successfully"}) 
     except Exception as e:
         db.rollback()
@@ -439,5 +442,6 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
     if row:
         db.delete(row)
         db.commit()
+        refresh_floor_balance(db, company_id)
         return JSONResponse({"status": "ok"})
     return JSONResponse({"error": "Record not found"}, status_code=404)

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -8,7 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.services.setup_service import SetupService
 from app.database import SessionLocal
 import logging
+import os
+from apscheduler.schedulers.background import BackgroundScheduler
+from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
+from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+from sqlalchemy import distinct # 🟢 Necessary query helper inclusion
 
+os.environ["TZ"] = "Asia/Kolkata"
 # =====================================================
 # 🚀 1. APP INIT
 # =====================================================
@@ -35,6 +41,37 @@ import app.database.models.general_stock
 import app.database.models.bills
 import app.database.models.attendance
 import app.database.models.requirements
+# =====================================================
+# =====================================================
+# 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
+# =====================================================
+
+if os.environ.get("RUN_MAIN") == "true" or not os.environ.get("UVICORN_RELOAD"):
+
+    scheduler = BackgroundScheduler(
+        timezone="Asia/Kolkata"
+    )
+
+    scheduler.add_job(
+        create_inventory_snapshot,
+        trigger="cron",
+        hour=9,
+        minute=00,
+        id="daily_inventory_snapshot",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        create_floor_balance_snapshot,
+        trigger="cron",
+        hour=9,
+        minute=00,
+        id="daily_floor_balance_snapshot",
+        replace_existing=True
+   )
+    scheduler.start()
+
+    print("✅ Daily Inventory Snapshot Scheduler Started")
+    print("✅ Daily Floor Balance Snapshot Scheduler Started")
 
 # =====================================================
 # 🔐 3. SESSION & AUTH MIDDLEWARE (ORDER IS CRITICAL)
@@ -43,13 +80,11 @@ import app.database.models.requirements
 # 1. First, define the Auth Middleware
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # 🐛 DEBUG PRINT: To verify if middleware is hit and session exists
         email = request.session.get("email") if hasattr(request, "session") else "NO_SESSION"
         print(f"PATH= {request.url.path} EMAIL= {email}")
 
         path = request.url.path
 
-        # ✅ FIX: Separate exact matches from prefix matches to avoid "/" bypassing everything
         exact_paths = ["/", "/health", "/docs", "/openapi.json"]
         prefix_paths = ["/auth/", "/static/", "/create-all"]
 
@@ -74,7 +109,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     next_page = SetupService.get_next_master(db, company_code)
                     print("SETUP REDIRECT:", next_page)
 
-                    # Allow criteria pages to load so the user can complete setup
                     if not path.startswith("/criteria"):
                         return RedirectResponse(next_page, status_code=303)
             finally:
@@ -173,7 +207,6 @@ application.include_router(bills_router, prefix="/api")
 # =====================================================
 @application.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
-    # If already logged in, skip login page
     if request.session.get("email"):
         return RedirectResponse("/home", status_code=303)
         
@@ -186,28 +219,69 @@ async def login_page(request: Request):
 
 @application.get("/home", response_class=HTMLResponse)
 async def home_page(request: Request):
-    # Auth checks are handled by middleware, but fallback verification:
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=303)
+
+    company_code = request.session.get("company_code")
 
     # Setup Check (Fallback incase session flag is out of sync)
     if not request.session.get("setup_completed", False):
         db = SessionLocal()
         try:
-            next_page = SetupService.get_next_master(
-                db,
-                request.session.get("company_code")
-            )
-            # Prevent infinite loop if somehow next_page is /home
+            next_page = SetupService.get_next_master(db, company_code)
             if next_page and next_page != "/home":
                 return RedirectResponse(next_page, status_code=303)
         finally:
             db.close()
 
+    # 🟢 🚀 MASTER UNIVERSAL FILTER PIPING DROPDOWN DATA EXTRACTION 🚀 🟢
+    db = SessionLocal()
+    companies_list = []
+    locations_list = []
+    
+    try:
+        from app.database.models.processing import GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production
+        
+        # 1. Fetch Universal Companies Unique List (production_for)
+        companies_set = set()
+        tables_with_prod_for = [GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production]
+        for model in tables_with_prod_for:
+            res = db.query(distinct(model.production_for)).filter(model.company_id == company_code).all()
+            for row in res:
+                if row[0]: companies_set.add(row[0].strip())
+        companies_list = sorted(list(companies_set))
+
+        # 2. Fetch Strict Plant Locations Unique List (peeling_at & production_at ONLY)
+        locations_set = set()
+        
+        # peeling_at criteria scanning targets
+        peeling_models = [RawMaterialPurchasing, DeHeading, Grading, Peeling]
+        for model in peeling_models:
+            res = db.query(distinct(model.peeling_at)).filter(model.company_id == company_code).all()
+            for row in res:
+                if row[0]: locations_set.add(row[0].strip())
+                
+        # production_at criteria scanning targets
+        production_models = [Soaking, Production]
+        for model in production_models:
+            res = db.query(distinct(model.production_at)).filter(model.company_id == company_code).all()
+            for row in res:
+                if row[0]: locations_set.add(row[0].strip())
+                
+        locations_list = sorted(list(locations_set))
+    except Exception as e:
+        print("🔴 ERROR LOADING UNIVERSAL FILTER ARRAYS:", e)
+    finally:
+        db.close()
+
     return templates.TemplateResponse(
         request=request,
         name="menu.html",
-        context={"request": request}
+        context={
+            "request": request,
+            "companies": companies_list,
+            "locations": locations_list
+        }
     )
 
 

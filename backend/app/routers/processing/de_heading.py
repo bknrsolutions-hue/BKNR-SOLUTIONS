@@ -6,6 +6,7 @@ from sqlalchemy import func, distinct
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 import json
+from app.services.floor_balance_sync import refresh_floor_balance
 
 from app.database import get_db
 from app.database.models.processing import (
@@ -240,6 +241,7 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
     add_deheading_to_grading_pool(db, new_entry)
     
     db.commit()
+    refresh_floor_balance(db, company_code)
     return RedirectResponse("/processing/de_heading", status_code=303)
 
 
@@ -261,4 +263,5 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
     
     db.delete(row)
     db.commit()
+    refresh_floor_balance(db, company_code)
     return JSONResponse({"status": "ok"})

@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.database.models.users import OTPTable
 from datetime import datetime, timedelta
+
 import json
 
 OTP_EXP_MINUTES = 10

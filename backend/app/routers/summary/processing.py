@@ -6,6 +6,7 @@ from sqlalchemy import distinct, func, and_
 from typing import Optional
 import re
 from datetime import date
+from app.utils.timezone import ist_now
 from collections import defaultdict
 
 from app.database import get_db

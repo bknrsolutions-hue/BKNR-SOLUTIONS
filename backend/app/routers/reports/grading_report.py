@@ -1,6 +1,6 @@
-# ============================================================
+# ============================================================================
 # GRADING SUMMARY REPORT – FULL ROUTER (LOCKED, UPDATED & FY FILTER)
-# ============================================================
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Query, HTTPException, Body
 from fastapi.responses import (
@@ -17,6 +17,7 @@ from io import BytesIO
 import json
 import datetime as dt
 from datetime import datetime
+from app.utils.global_filters import get_global_filters
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
@@ -37,17 +38,17 @@ def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
 
-# ============================================================
+# ============================================================================
 # PERMISSION CHECK
-# ============================================================
+# ============================================================================
 def allow_grading(request: Request):
     role = request.session.get("role", "admin")
     if role not in ("admin", "viewer"):
         raise HTTPException(status_code=403, detail="Access Denied")
 
-# ============================================================
+# ============================================================================
 # MAIN REPORT VIEW WITH FINANCIAL YEAR FILTER
-# ============================================================
+# ============================================================================
 @router.get("", response_class=HTMLResponse)
 def grading_report(
     request: Request,
@@ -55,20 +56,33 @@ def grading_report(
     db: Session = Depends(get_db),
     _ = Depends(allow_grading)
 ):
+    production_for, location = get_global_filters(request)
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. Base Queries setup for unique filter generation
+    # 1. Base Queries setup for unique filter generation (Universal Filter Core Applied)
     grading_base_query = db.query(Grading).filter(Grading.company_id == company_id)
     
+    if production_for:
+        grading_base_query = grading_base_query.filter(Grading.production_for == production_for)
+
+    if location:
+        grading_base_query = grading_base_query.filter(Grading.peeling_at == location)
+    
     rows = []
-    detailed_rows = [] # 🟢 Added purely for Frontend Inline Edit/Delete
+    detailed_rows = [] 
     selected_year = None
 
     # CRITICAL CHANGE: Only process and fetch data if 'fy' parameter is explicitly provided
     if fy:
         deheading_base_query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
+
+        if production_for:
+            deheading_base_query = deheading_base_query.filter(DeHeading.production_for == production_for)
+
+        if location:
+            deheading_base_query = deheading_base_query.filter(DeHeading.peeling_at == location)
 
         # 2. Date Boundaries based on Selected Financial Year (April 1st to March 31st)
         selected_year = int(fy)
@@ -184,7 +198,7 @@ def grading_report(
         name="reports/grading_report.html",
         context={
             "rows": rows,
-            "detailed_rows": detailed_rows, # 🟢 Linked for Frontend Edit/Delete stability
+            "detailed_rows": detailed_rows, 
             "selected_fy": fy,
             "fy_years": unique_fy_years,
             "batches": get_unique_options("batch_number"),
@@ -315,12 +329,26 @@ def get_grading_audits(request: Request, db: Session = Depends(get_db)):
     } for l in logs]
 
 # ============================================================
-# EXPORT EXCEL
+# EXPORT EXCEL (WITH UNIVERSAL FILTERS LAYER)
 # ============================================================
 @router.get("/export_excel")
 def export_excel(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    rows = db.query(Grading).filter(Grading.company_id == company_id).all()
+    
+    # 🟢 Mapped and forced global criteria evaluation inside spreadsheet compiler
+    production_for, location = get_global_filters(request)
+
+    query = db.query(Grading).filter(
+        Grading.company_id == company_id
+    )
+
+    if production_for:
+        query = query.filter(Grading.production_for == production_for)
+
+    if location:
+        query = query.filter(Grading.peeling_at == location)
+
+    rows = query.all()
 
     wb = Workbook()
     ws = wb.active

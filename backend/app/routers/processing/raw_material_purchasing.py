@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from app.utils.timezone import ist_now
 import json
 import re
+from app.services.floor_balance_sync import refresh_floor_balance
 
 from app.database import get_db
 # Models import
@@ -228,6 +229,10 @@ def save_rmp(
     )
     db.add(entry)
     db.commit()
+    refresh_floor_balance(
+        db,
+        comp_code
+        )
     request.session["message"] = "✔ Saved Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -257,6 +262,11 @@ def update_rmp(
     entry.material_boxes, entry.remarks = material_boxes, remarks
     
     db.commit()
+    
+    refresh_floor_balance(
+        db,
+        comp_code
+        )
     request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -267,5 +277,9 @@ def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
     if entry:
         db.delete(entry)
         db.commit()
+        refresh_floor_balance(
+            db,
+            comp_code
+        )
     request.session["message"] = "🗑 Deleted Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)

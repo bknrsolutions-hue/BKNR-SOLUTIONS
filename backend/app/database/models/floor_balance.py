@@ -1,5 +1,9 @@
 from sqlalchemy import (
-    Column, Integer, String, Float,
+    Column,
+    Integer,
+    String,
+    Float,
+    Date,
     DateTime
 )
 from datetime import datetime
@@ -42,3 +46,33 @@ class FloorBalance(Base):
     time = Column(String(20))
 
     email = Column(String(150))
+
+#scheduler snapshot table
+class FloorBalanceSnapshot(Base):
+    __tablename__ = "floor_balance_snapshot"
+
+    id = Column(Integer, primary_key=True)
+
+    snapshot_date = Column(Date, index=True)
+
+    company_id = Column(String(50))
+
+    location = Column(String(100))
+    production_for = Column(String(100))
+
+    batch_number = Column(String(100))
+
+    source_type = Column(String(30))
+
+    species = Column(String(100))
+    variety = Column(String(100))
+    count = Column(String(50))
+
+    opening_qty = Column(Float, default=0.0)
+
+    inventory_value = Column(Float, default=0.0)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )

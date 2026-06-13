@@ -1,6 +1,6 @@
-# ============================================================
+# ============================================================================
 # PRODUCTION REPORT ROUTER (BKNR ERP - FULLY UPDATED WITH FY)
-# ============================================================
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
@@ -14,6 +14,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from weasyprint import HTML
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import Production, AuditLog, Soaking
@@ -48,6 +49,7 @@ def production_report_page(
     to_date: str = "",
     db: Session = Depends(get_db)
 ):
+    selected_production_for, selected_location = get_global_filters(request)
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
 
@@ -58,6 +60,13 @@ def production_report_page(
     
     # Base Query
     q = db.query(Production).filter(Production.company_id == comp_code)
+    
+    # 🟢 FIX 1: Syntax Bracket Alignment Resolved for Base Query Filter Pipeline
+    if selected_production_for:
+        q = q.filter(Production.production_for == selected_production_for)
+        
+    if selected_location:
+        q = q.filter(Production.production_at == selected_location)
 
     if fy:
         start_year = int(fy)
@@ -147,9 +156,9 @@ def production_report_page(
         request=request,
         name="reports/production_report.html",
         context={
-            "summary_rows": summary_rows,         # Added for Tab 1
+            "summary_rows": summary_rows,         
             "summary_subtotals": summary_subtotals, 
-            "detail_rows": detail_rows,           # Added for Tab 2
+            "detail_rows": detail_rows,           
             "detail_subtotals": detail_subtotals,
             "selected_fy": fy,
             "from_date": from_date,
@@ -292,10 +301,23 @@ async def get_all_production_audit(request: Request, db: Session = Depends(get_d
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 
+# ------------------------------------------------------------
+# 3. EXCEL EXPORT (WITH UNIVERSAL GLOBAL FILTERS LAYER)
+# ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids: str = Query(None), from_date: str = "", to_date: str = ""):
     comp_code = str(request.session.get("company_code"))
+    
+    # 2. 🟢 FIX 2: Evaluate global contextual filter arrays inside Excel Compiler
+    selected_production_for, selected_location = get_global_filters(request)
+    
     q = db.query(Production).filter(Production.company_id == comp_code)
+    
+    if selected_production_for:
+        q = q.filter(Production.production_for == selected_production_for)
+
+    if selected_location:
+        q = q.filter(Production.production_at == selected_location)
     
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]
@@ -325,6 +347,9 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
         headers={"Content-Disposition": "attachment; filename=Production_Report.xlsx"}
     )
 
+# ------------------------------------------------------------
+# 4. PDF EXPORT (WITH UNIVERSAL GLOBAL FILTERS LAYER)
+# ------------------------------------------------------------
 @router.get("/export_pdf")
 def export_production_pdf(
     request: Request, 
@@ -333,7 +358,17 @@ def export_production_pdf(
     download: bool = Query(False)
 ):
     comp_code = str(request.session.get("company_code"))
+    
+    # 3. 🟢 FIX 3: Evaluate global contextual filter arrays inside PDF Compiler
+    selected_production_for, selected_location = get_global_filters(request)
+    
     q = db.query(Production).filter(Production.company_id == comp_code)
+    
+    if selected_production_for:
+        q = q.filter(Production.production_for == selected_production_for)
+
+    if selected_location:
+        q = q.filter(Production.production_at == selected_location)
     
     if ids:
         id_list = [int(i) for i in ids.split(",") if i.strip().isdigit()]

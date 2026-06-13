@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 import re
 import json
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.inventory_management import pending_orders, stock_entry
@@ -34,6 +35,9 @@ def pending_orders_report_page(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
 ):
+    # 🟢 Global Filters Fetch
+    production_for, location = get_global_filters(request)
+    
     # 1. Session check
     comp_code = request.session.get("company_code")
     if not comp_code:
@@ -42,6 +46,12 @@ def pending_orders_report_page(
     # 2. Pending Orders Base Query
     q = db.query(pending_orders).filter(pending_orders.company_id == comp_code)
     
+    # 🟢 FIX: Applying Global Production For filter to company_name
+    if production_for:
+        q = q.filter(pending_orders.company_name == production_for)
+        
+    # NOTE: Location filter is skipped because pending_orders model lacks location/production_at fields.
+
     # Date Filtering with Error Handling
     if from_date:
         try:
@@ -84,7 +94,7 @@ def pending_orders_report_page(
 
     # 5. Processing Loop
     for r in rows:
-        # ✅ FIX ALIGNMENT: pending_orders.company_name row extraction mapped explicitly
+        # pending_orders.company_name row extraction mapped explicitly
         current_row_comp = str(r.company_name or "").strip().upper()  
         
         p_spec = str(r.species or "").strip().lower()
@@ -102,8 +112,7 @@ def pending_orders_report_page(
         p_w_gl_val = float(w_gl_match.group(1)) if w_gl_match else 0.0
         w_gl_factor = (100 - p_w_gl_val) / 100 if p_w_gl_val < 100 else 1.0
 
-        # ✅ STRICT MATCH ENFORCED: exact_key checks balance using pending_orders.company_name
-        # This matches keys in global pool where stock_entry.production_for == pending_orders.company_name
+        # STRICT MATCH ENFORCED: exact_key checks balance using pending_orders.company_name
         exact_key = f"{current_row_comp}|{p_spec}|{p_var}|{p_grad}|{p_pack}|{str(int(p_c_gl_val))}|{p_frz}"
         opening_bal = round(stock_pool.get(exact_key, 0.0), 2)
         r.available_stock = opening_bal
@@ -152,7 +161,6 @@ def pending_orders_report_page(
         is_order_nwnc = "NWNC" in p_gl_full_text or p_c_gl_val == 0
         
         for s in all_stock:
-            # ✅ STRICT MATCH ENFORCED ALSO FOR REFERRAL STOCK LOOKUPS
             if str(s.production_for or "").strip().upper() != current_row_comp: continue
             s_gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
             s_gl_num = s_gl_match.group(1) if s_gl_match else "0"

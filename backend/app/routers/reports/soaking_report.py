@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract
 from datetime import datetime
 from app.utils.timezone import ist_now
+from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.global_filters import get_global_filters
 
 from io import BytesIO
 from openpyxl import Workbook
@@ -26,7 +28,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ------------------------------------------------------------
-# 1. MAIN REPORT VIEW (WITH FY FILTER)
+# 1. MAIN REPORT VIEW (WITH FY FILTER & UNIVERSAL FILTERS)
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def soaking_main_report(
@@ -34,6 +36,7 @@ async def soaking_main_report(
     fy: str = Query(None), # Financial Year parameter
     db: Session = Depends(get_db)
 ):
+    production_for, location = get_global_filters(request)
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
@@ -45,17 +48,20 @@ async def soaking_main_report(
         start_year = int(fy)
         end_year = start_year + 1
         
-        # SQL filtering for the selected Financial Year
-        rows = (
-            db.query(Soaking)
-            .filter(
-                Soaking.company_id == company_id,
-                Soaking.date >= f"{start_year}-04-01",
-                Soaking.date <= f"{end_year}-03-31"
-            )
-            .order_by(desc(Soaking.date), desc(Soaking.id))
-            .all()
+        # 🟢 UPDATED: Filter rows specifically using global parameters and FY range
+        query = db.query(Soaking).filter(
+            Soaking.company_id == company_id,
+            Soaking.date >= f"{start_year}-04-01",
+            Soaking.date <= f"{end_year}-03-31"
         )
+
+        if production_for:
+            query = query.filter(Soaking.production_for == production_for)
+
+        if location:
+            query = query.filter(Soaking.production_at == location)
+
+        rows = query.order_by(desc(Soaking.date), desc(Soaking.id)).all()
 
     # Searchable dropdowns logic based on filtered rows
     varieties = sorted(list({r.variety_name for r in rows if r.variety_name}))
@@ -68,16 +74,18 @@ async def soaking_main_report(
         context={
             "rows": rows,
             "selected_fy": fy,
+            "selected_production_for": production_for, # 🟢 Passed to template context
+            "selected_location": location,             # 🟢 Passed to template context
             "varieties": varieties,
             "locations": locations,
             "batches": batches,
             "is_admin": role == "admin",
-            "datetime": datetime # For header date display
+            "datetime": datetime 
         }
     )
 
 # ------------------------------------------------------------
-# 2. UPDATE LOGIC (WITH AUTO-CALCS & AUDIT)
+# 2. UPDATE LOGIC (WITH AUTO-CALCS & AUDIT) - TRANSACTIONAL
 # ------------------------------------------------------------
 @router.post("/update")
 async def update_soaking_row(
@@ -124,7 +132,6 @@ async def update_soaking_row(
                     edited_at=datetime.utcnow()
                 ))
                 
-                # Update numeric fields correctly
                 if field in ["in_qty", "chemical_percent", "salt_percent", "rejection_qty"]:
                     try:
                         setattr(row, field, float(payload[field] or 0))
@@ -135,7 +142,6 @@ async def update_soaking_row(
                 has_changes = True
 
     if has_changes:
-        # ✅ Auto-Recalculate Chemical & Salt Kg
         qty = float(row.in_qty or 0)
         c_per = float(row.chemical_percent or 0)
         s_per = float(row.salt_percent or 0)
@@ -145,6 +151,7 @@ async def update_soaking_row(
 
         try:
             db.commit()
+            refresh_floor_balance(db, company_id)
             return {"status": "success", "chemical_qty": row.chemical_qty, "salt_qty": row.salt_qty}
         except Exception as e:
             db.rollback()
@@ -153,7 +160,7 @@ async def update_soaking_row(
     return {"status": "no_changes"}
 
 # ============================================================
-# 3. AUDIT HISTORY, BILLING, EXPORTS & DELETE (STAY SAME)
+# 3. AUDIT HISTORY & TRANSACTION DELETION
 # ============================================================
 @router.get("/audit_all")
 async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db)):
@@ -173,12 +180,22 @@ async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db))
     } for l in logs]
 
 # ------------------------------------------------------------
-# 4. EXPORT EXCEL
+# 4. EXPORT EXCEL (WITH UNIVERSAL FILTERS LAYER)
 # ------------------------------------------------------------
 @router.get("/export_excel")
 def soaking_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
+    
+    # 🟢 Force evaluate global contextual filter arrays inside Excel Compiler
+    production_for, location = get_global_filters(request)
+    
     query = db.query(Soaking).filter(Soaking.company_id == company_id)
+    
+    if production_for:
+        query = query.filter(Soaking.production_for == production_for)
+
+    if location:
+        query = query.filter(Soaking.production_at == location)
     
     if ids and ids.strip():
         id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
@@ -190,7 +207,6 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     ws = wb.active
     ws.title = "Soaking Report"
     
-    # Headers based on your table requirements
     headers = [
         "Date", "Sintex No", "Batch", "Variety", "In Qty", "Rej Qty", 
         "Chem Name", "Chem %", "Chem Kg", "Salt %", "Salt Kg", "Status", "At"
@@ -233,6 +249,7 @@ async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Se
     if row:
         db.delete(row)
         db.commit()
+        refresh_floor_balance(db, company_id)
         return {"status": "success"}
         
     return {"status": "error", "message": "Record not found"}

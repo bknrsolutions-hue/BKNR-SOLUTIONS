@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from app.utils.timezone import ist_now
 import calendar
 
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry as Inventory
 from app.database.models.criteria import production_for as ProductionFor
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -21,6 +23,9 @@ def storage_cost_report(
     selected_month: str = "",
     db: Session = Depends(get_db)
 ):
+    # 🟢 FIX 1: Safe extraction to avoid parameter collision overwriting local variables
+    global_production_for, global_location = get_global_filters(request)
+    
     # 🔐 SESSION CHECK
     if not request.session.get("email"):
         return RedirectResponse("/", status_code=302)
@@ -44,9 +49,16 @@ def storage_cost_report(
     # 🔍 FETCH ALL DATA (FIFO కోసం Billing End Date వరకు ఉన్నవన్నీ కావాలి)
     q = db.query(Inventory).filter(Inventory.company_id == company_code)
     
-    if production_for: q = q.filter(Inventory.production_for == production_for)
-    if production_at: q = q.filter(Inventory.production_at == production_at)
-    if freezer: q = q.filter(Inventory.freezer == freezer)
+    # 🟢 FIX 2: Manual screen selection OR Global header selection fallback mechanism
+    effective_production_for = global_production_for or production_for
+    effective_location = global_location or production_at
+
+    if effective_production_for: 
+        q = q.filter(Inventory.production_for == effective_production_for)
+    if effective_location: 
+        q = q.filter(Inventory.production_at == effective_location)
+    if freezer: 
+        q = q.filter(Inventory.freezer == freezer)
     
     all_rows = q.filter(Inventory.date <= billing_end_date).order_by(Inventory.date.asc()).all()
 
@@ -54,12 +66,11 @@ def storage_cost_report(
     grouped_dict = {}
 
     for r in all_rows:
-        # Combo Key: Batch + Freezer + Glaze + Grade + Variety + Packing Style
         combo_key = (r.batch_number, r.freezer, r.glaze, r.grade, r.variety, r.packing_style)
         
         if combo_key not in grouped_dict:
             grouped_dict[combo_key] = {
-                "details": r,  # 🔥 ఇక్కడ r ని సేవ్ చేయడం వల్ల HTML లో r.details.column_name పనిచేస్తుంది
+                "details": r,  
                 "batch_number": r.batch_number,
                 "freezer": r.freezer,
                 "glaze": r.glaze,
@@ -74,8 +85,8 @@ def storage_cost_report(
                 "monthly_in_mc": 0.0,
                 "monthly_out_mc": 0.0,
                 "monthly_in_qty": 0.0,
-                "in_movements": [], # FIFO tracking
-                "this_month_ledger": [], # Tab 2 & 3 కోసం
+                "in_movements": [], 
+                "this_month_ledger": [], 
                 "earliest_in_date": r.date
             }
         
@@ -84,7 +95,6 @@ def storage_cost_report(
         qty_kg = float(r.quantity or 0)
 
         if r.cargo_movement_type == "IN":
-            # FIFO Tracking
             data["in_movements"].append({"date": r.date, "qty": qty_mc, "rem": qty_mc})
             
             if r.date < billing_start_date:
@@ -94,7 +104,6 @@ def storage_cost_report(
                 data["monthly_in_qty"] += qty_kg
                 data["this_month_ledger"].append(r)
         else:
-            # OUT logic with FIFO
             temp_out = qty_mc
             for inv in data["in_movements"]:
                 if temp_out <= 0: break
@@ -117,11 +126,9 @@ def storage_cost_report(
     for key, item in grouped_dict.items():
         item["closing_mc"] = item["opening_mc"] + item["monthly_in_mc"] - item["monthly_out_mc"]
         
-        # Skip if no activity and no stock
         if item["opening_mc"] == 0 and item["monthly_in_mc"] == 0 and item["monthly_out_mc"] == 0:
             continue
 
-        # Fetch Costing Rates
         costing = db.query(ProductionFor).filter(
             ProductionFor.company_id == company_code,
             ProductionFor.production_for == item["production_for"],
@@ -133,7 +140,6 @@ def storage_cost_report(
         free_days = int(costing.free_days) if costing else 0
         p_cost_kg = float(costing.production_cost_per_kg) if costing else 0.0
 
-        # FIFO Holding Cost Calculation
         holding_cost = 0.0
         for inv in item["in_movements"]:
             if inv["rem"] > 0:
@@ -149,7 +155,6 @@ def storage_cost_report(
             "payable_amount": round(item["monthly_in_qty"] * p_cost_kg, 2)
         })
         
-        # Totals for Summary Boxes
         total_qty_sum += item["monthly_in_qty"]
         total_holding_sum += item["holding_cost"]
         total_payable_sum += item["payable_amount"]
@@ -170,6 +175,8 @@ def storage_cost_report(
             "production_at_list": p_at_list,
             "freezers": fzrs,
             "selected_month": selected_month,
+            "selected_production_for": effective_production_for, # 🟢 Passed to layout templates context
+            "selected_location": effective_location,             # 🟢 Passed to layout templates context
             "billing_start_date": billing_start_date,
             "total_qty_sum": round(total_qty_sum, 2),
             "total_holding_sum": round(total_holding_sum, 2),

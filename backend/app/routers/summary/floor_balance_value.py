@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 import re
 from datetime import datetime
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
@@ -16,6 +17,7 @@ from app.database.models.floor_balance import FloorBalance
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 templates = Jinja2Templates(directory="app/templates")
+
 
 # ============================================================================
 # 🟢 HELPER 1: CONVERT ANY SEMI-FINISHED PRODUCT QUANTITY TO HOSO EQUIVALENT
@@ -179,6 +181,7 @@ def save_floor_balance(
 # ============================================================================
 @router.get("/floor_balance_value", response_class=HTMLResponse)
 def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
+    production_for, location = get_global_filters(request)
     company_id = request.session.get("company_code")
     user_email = request.session.get("email") or request.session.get("user_email") or "System"
     
@@ -211,12 +214,17 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
             combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS", glaze_val))
 
     rows_batch = []
-    for batch, count, species_val, variety, prod_for, location, s_type, glaze in combos:
+    for batch, count, species_val, variety, prod_for, row_location, s_type, glaze in combos:
+        if production_for and str(prod_for) != str(production_for):
+            continue
+
+        if location and str(row_location) != str(location):
+            continue
         
         qty = get_floor_balance(
             db=db,
             company_id=company_id,
-            location=location,
+            location=row_location,
             batch=batch,
             count=count,
             species=species_val,
@@ -236,7 +244,7 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
             save_floor_balance(
                 db=db,
                 company_id=company_id,
-                location=location,
+                location=row_location,
                 production_for=prod_for_clean,
                 batch=batch,
                 source=s_type,
@@ -254,7 +262,7 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
                 "count": count,
                 "species": species_val,
                 "production_for": prod_for_clean,
-                "location": location,
+                "location": row_location,
                 "available_qty": qty,
                 "value": val,
                 "source": s_type
