@@ -19,7 +19,6 @@ from app.services.production_requirements_service import (
 
 # Database and Models
 from app.database import get_db
-from app.database import get_db
 from app.database.models.inventory_management import pending_orders, sales_dispatch, stock_entry
 from app.database.models.users import Company
 from app.database.models.criteria import (
@@ -28,6 +27,7 @@ from app.database.models.criteria import (
     production_for
 )
 from app.database.models.bills import ContainerLog, PurchaseInvoice
+from app.utils.global_filters import get_global_filters
 
 # Standardizing Prefix and Tags from Code 2
 router = APIRouter(prefix="/inventory", tags=["PENDING ORDERS & SALES"])
@@ -42,7 +42,7 @@ class StatusUpdate(BaseModel):
     invoice_no: Optional[str] = None
 
 # -----------------------------------
-# HELPER FUNCTIONS (From Code 1)
+# HELPER FUNCTIONS 
 # -----------------------------------
 def clean_po(val):
     if not val:
@@ -62,10 +62,13 @@ def calculate_pieces(grade_str, manual_pcs):
     return 0
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE (GET)
+# 1️⃣ PENDING ORDERS PAGE (GET) - WITH ACTIVE GLOBAL FILTERS INJECTION
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
+    # 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
+    production_for_filter, location = get_global_filters(request)
+    
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     
@@ -80,10 +83,13 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
 
     unique_companies = [c[0] for c in prod_names if c[0]]
 
-    # Fetch all pending orders for the table
-    rows = db.query(pending_orders).filter(
-        pending_orders.company_id == company_code
-    ).order_by(pending_orders.sl_no, pending_orders.id).all()
+    # 🟢 Fetch pending orders with active universal parameters filter
+    query = db.query(pending_orders).filter(pending_orders.company_id == company_code)
+    
+    if production_for_filter:
+        query = query.filter(func.trim(pending_orders.company_name) == func.trim(production_for_filter))
+        
+    rows = query.order_by(pending_orders.sl_no, pending_orders.id).all()
 
     # Grouping by PO Number for display logic
     po_groups = defaultdict(list)
@@ -115,10 +121,12 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         request=request,
         name="inventory_management/pending_orders.html",
         context={
-            "po_groups": dict(po_groups),  # Dict format explicitly for Jinja2 compatibility
+            "po_groups": dict(po_groups),  
             "edit_rows": edit_rows,
             "next_sl": next_sl,
             "unique_companies": unique_companies,
+            "selected_production_for": production_for_filter, # 🟢 Passed for memory lock
+            "selected_location": location,                     # 🟢 Passed for memory lock
             "buyers": get_lookup(buyers, "buyer_name"),
             "agents": get_lookup(buyer_agents, "agent_name"),
             "brands": get_lookup(brands, "brand_name"),
@@ -134,7 +142,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     )
 
 # -------------------------------------------------------------------------
-# 2️⃣ SAVE PENDING ORDERS (POST)
+# 2️⃣ SAVE PENDING ORDERS (POST) - ISOLATED TRANSPARENT ARCHITECTURE
 # -------------------------------------------------------------------------
 @router.post("/pending_orders")
 def save_pending_orders(
@@ -204,21 +212,16 @@ def save_pending_orders(
     print("PRODUCTION REQUIREMENTS REFRESH")
     print("COMPANY:", company_code)
     rows = ProductionRequirementService.refresh_requirements(
-    db=db,
-    company_id=company_code
-)
+        db=db,
+        company_id=company_code
+    )
     print("ROWS CREATED:", rows)
 
-    request.session["message"] = (
-    f"PO {po_number} saved successfully!"
-    )
+    request.session["message"] = f"PO {po_number} saved successfully!"
+    return RedirectResponse("/inventory/pending_orders", status_code=303)
 
-    return RedirectResponse(
-    "/inventory/pending_orders",
-    status_code=303
-)
 # -------------------------------------------------------------------------
-# 3️⃣ MOVE TO SALES (SALES DISPATCH) (POST)
+# 3️⃣ MOVE TO SALES (SALES DISPATCH) (POST) - ISOLATED ARCHITECTURE
 # -------------------------------------------------------------------------
 @router.post("/move_to_sales")
 def move_to_sales(
@@ -241,10 +244,7 @@ def move_to_sales(
     ).all()
 
     if not items:
-        raise HTTPException(
-            status_code=404,
-            detail="PO Number not found"
-        )
+        raise HTTPException(status_code=404, detail="PO Number not found")
 
     for item in items:
         db.add(
@@ -283,21 +283,17 @@ def move_to_sales(
 
     db.commit()
 
-    request.session["message"] = (
-        f"PO {po_number} moved to Sales Dispatch "
-        f"(Invoice: {invoice_no})"
-    )
-
-    return RedirectResponse(
-        "/inventory/pending_orders",
-        status_code=303
-    )
+    request.session["message"] = f"PO {po_number} moved to Sales Dispatch (Invoice: {invoice_no})"
+    return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
-# 4️⃣ SALES REPORT PAGE (DYNAMIC CALCULATIONS)
+# 4️⃣ SALES REPORT PAGE (WITH UNIVERSAL FILTERS INJECTION SETUP)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report(request: Request, db: Session = Depends(get_db)):
+    # 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
+    production_for_filter, location = get_global_filters(request)
+    
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
@@ -305,15 +301,24 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
-    sales_data = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code).order_by(
-        sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no
-    ).all()
+    # 🟢 Base Sales Query formulation with global trim layers
+    sales_q = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
+    
+    if production_for_filter:
+        sales_q = sales_q.filter(func.trim(sales_dispatch.company_name) == func.trim(production_for_filter))
+        
+    sales_data = sales_q.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
 
-    # Load Stocks, Freight, and Packing costs into maps
-    raw_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+    # 🟢 Stock Entry Query injection restricted safely via active global location parameter (production_at rule)
+    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
+    
+    if location:
+        stock_q = stock_q.filter(func.trim(stock_entry.production_at) == func.trim(location))
+        
+    raw_stock = stock_q.all()
     stock_map = {}
     for row in raw_stock:
         po = clean_po(row.po_number)
@@ -358,12 +363,14 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         name="inventory_management/sales_report.html", 
         context={
             "sales_data": processed, 
-            "unique_companies": unique_companies
+            "unique_companies": unique_companies,
+            "selected_production_for": production_for_filter, # 🟢 Memory lock state
+            "selected_location": location                     # 🟢 Memory lock state
         }
     )
 
 # -------------------------------------------------------------------------
-# 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX)
+# 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX) - ISOLATED TRANSPARENT ARCHITECTURE
 # -------------------------------------------------------------------------
 @router.post("/update_exchange_rate")
 async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
@@ -396,7 +403,7 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     }
 
 # -------------------------------------------------------------------------
-# 6️⃣ STATUS/PO PROGRESS UPDATE ROUTE (AJAX)
+# 6️⃣ STATUS/PO PROGRESS UPDATE ROUTE (AJAX) - ISOLATED TRANSPARENT ARCHITECTURE
 # -------------------------------------------------------------------------
 @router.post("/update_po_status")
 async def update_po_status(data: StatusUpdate, request: Request, db: Session = Depends(get_db)):

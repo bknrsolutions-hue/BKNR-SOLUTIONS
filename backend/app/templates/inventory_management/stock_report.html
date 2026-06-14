@@ -9,19 +9,59 @@
 
 <style>
 :root{
- --primary:#0f172a; --accent:#2563eb; --border:#e2e8f0; --bg:#f1f5f9;
- --header:#ffffff; --text:#1e293b; --danger: #ef4444; --success: #22c55e;
- --card-bg: #ffffff; --header-bg: #f8fafc;
+ /* 🌟 LIGHT MODE VARIABLES */
+ --primary:#0f172a; 
+ --accent:#2563eb;  
+ --border:#e2e8f0;  
+ --bg:#f1f5f9;      
+ --header:#ffffff;
+ --text:#1e293b;
+ --text-muted:#64748b;
+ --danger: #ef4444;
+ --success: #22c55e;
+ --card-bg: #ffffff;
+ --header-bg: #f8fafc;
+ --table-hover: #f1f7ff;
+ --selected-row: #dbeafe;
+ --stock-out-bg: rgba(239, 68, 68, 0.04);
+ --stock-out-hover: rgba(239, 68, 68, 0.08);
+ --purpose-text: #92400e;
+}
+
+[data-theme="dark"] {
+ /* 🌟 DARK MODE VARIABLES */
+ --primary:#f8fafc; 
+ --accent:#3b82f6;  
+ --border:#334155;  
+ --bg:#0f172a;      
+ --header:#1e293b;
+ --text:#e2e8f0;
+ --text-muted:#94a3b8;
+ --danger: #f87171;
+ --success: #4ade80;
+ --card-bg: #1e293b;
+ --header-bg: #0f172a;
+ --table-hover: #1e293b;
+ --selected-row: #1e3a8a;
+ --stock-out-bg: rgba(239, 68, 68, 0.1);
+ --stock-out-hover: rgba(239, 68, 68, 0.15);
+ --purpose-text: #f59e0b;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{
  background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text); -webkit-font-smoothing: antialiased;
+ transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Elegant Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
 /* ================= HEADER & FILTERS ================= */
-.header{ background:var(--header); padding:8px 12px; border-bottom:2px solid var(--primary); }
+.header{ background:var(--header); padding:8px 12px; border-bottom:2px solid var(--border); transition: background 0.3s ease, border-color 0.3s ease; }
 .header h2{ margin:0; font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
 /* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
@@ -29,12 +69,13 @@ body{
  margin-top:6px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
  gap:12px; background:var(--header-bg); padding:6px; border-radius:4px; border:1px solid var(--border);
  -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
+ transition: background 0.3s ease, border-color 0.3s ease;
 }
 .filters::-webkit-scrollbar { height: 4px; }
 .filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .fbox{ display:flex; flex-direction:column; gap:1px; flex-shrink: 0 !important; min-width: 120px; }
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
+.fbox label{ font-size:8px; font-weight:700; color:var(--text-muted); text-transform:uppercase; }
 
 select,input[type=date],#searchBox{ padding:3px 5px; font-size:10px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height:32px !important; color: var(--primary); font-weight: 600; width: 100%; transition: all 0.2s ease; }
 select:focus, input[type=date]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
@@ -52,22 +93,23 @@ select:focus, input[type=date]:focus, #searchBox:focus { border-color: var(--acc
 }
 
 /* ================= ACTIONS ================= */
-.actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); transition: background 0.3s ease, border-color 0.3s ease; }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 
 .menu-box{position:relative;}
-.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:12px;}
+.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:12px; color: var(--primary);}
 
 .menu-list{
  position:absolute; right:0; top:28px; width:210px; background:var(--card-bg); border:1px solid var(--border);
- border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+ border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.15);
 }
-.menu-list div{ padding:6px 10px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
-.menu-list b { display: block; padding: 4px 10px; font-size: 8px; background: #f8fafc; color: #64748b; text-transform: uppercase; }
+.menu-list div{ padding:6px 10px; font-size:10px; border-bottom:1px solid var(--border); cursor:pointer; color: var(--primary); }
+.menu-list div:hover{ background: var(--header-bg); color:var(--accent); }
+.menu-list b { display: block; padding: 4px 10px; font-size: 8px; background: var(--header-bg); color: var(--text-muted); text-transform: uppercase; }
+.menu-list hr { border: 0; border-top: 1px solid var(--border); margin: 0; }
 
 /* ================= TABLE AREA ================= */
-.section{ flex:1; margin:4px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.section{ flex:1; margin:4px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; transition: background 0.3s ease, border-color 0.3s ease; }
 .table-wrap{ flex: 1; overflow: auto; width: 100%; background: var(--card-bg) !important; -webkit-overflow-scrolling: touch; } 
 
 table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2100px; } 
@@ -75,28 +117,30 @@ table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 2100
 thead th{
  background:var(--header-bg); padding:8px 4px; font-size:9.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+ border-right:1px solid var(--border); position:sticky; top:0; z-index:10;
  color: var(--text); letter-spacing: 0.3px; white-space: nowrap;
+ transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 tbody td{
- padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
+ padding:6px 4px; font-size:9.5px; border-bottom:1px solid var(--border);
+ border-right:1px solid var(--border); text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
- font-weight: 600; color: var(--primary);
+ font-weight: 600; color: var(--text);
+ transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 /* 🔴 STOCK OUT - HIGHLIGHT ENGINE */
-tr.stock-out-row { background: rgba(239, 68, 68, 0.04) !important; }
-tr.stock-out-row:hover { background: rgba(239, 68, 68, 0.08) !important; }
+tr.stock-out-row { background: var(--stock-out-bg) !important; }
+tr.stock-out-row:hover { background: var(--stock-out-hover) !important; }
 
-tbody tr:hover:not(.stock-out-row){background:#f1f7ff; cursor:pointer;}
-tr.selected { background: #dbeafe !important; }
+tbody tr:hover:not(.stock-out-row){background:var(--table-hover); cursor:pointer;}
+tr.selected { background: var(--selected-row) !important; }
 
-.empty-state { padding: 80px 20px; text-align: center; color: #64748b; }
-.inv-col { background: var(--card-bg)cf0; font-weight: 700; color: #92400e; }
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); }
+.inv-col { font-weight: 700; color: var(--purpose-text); }
 .qty-col { font-weight: 800; color: var(--accent); }
-.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; height:22px; }
+.edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; height:22px; background: var(--card-bg); color: var(--primary); }
 
 /* SEARCHABLE INLINE DROPDOWN CORE STYLING */
 .searchable-dropdown-container { position: relative; width: 100%; }
@@ -105,24 +149,25 @@ tr.selected { background: #dbeafe !important; }
     max-height: 120px; overflow-y: auto;
     background: var(--card-bg); border: 1px solid var(--accent); z-index: 9999; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left;
 }
-.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
-.searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
+.searchable-dropdown-item { padding: 4px 6px; font-size: 10px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--primary); }
+.searchable-dropdown-item:hover { background: var(--header-bg); color: var(--accent); }
 
 /* ================= FOOTER ================= */
 tfoot td{ 
     background:var(--header-bg); font-weight:800; font-size:9.5px; color:var(--primary);
     border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:8px 4px; white-space: nowrap;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:6000; }
-.modal-content{ background:var(--card-bg); padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-.btn-y{ background:var(--primary); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
-.btn-n{ background:#e2e8f0; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; }
+#confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:6000; backdrop-filter: blur(2px); }
+.modal-content{ background:var(--card-bg); padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--primary); }
+.btn-y{ background:var(--accent); color:#fff; border:none; padding:8px 18px; border-radius:4px; cursor:pointer; margin-right:5px; font-weight:bold; }
+.btn-n{ background:var(--border); border:none; padding:8px 18px; border-radius:4px; cursor:pointer; font-weight:bold; color: var(--text); }
 
 .audit-panel{ 
     position:fixed; right:0; top:0; bottom:0; width:400px; background:var(--card-bg); 
-    border-left:3px solid var(--primary); display:none; flex-direction:column; 
-    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
+    border-left:3px solid var(--border); display:none; flex-direction:column; 
+    z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.2); 
 }
 
 /* ================= PRINT ENGINE ================= */
@@ -149,7 +194,7 @@ tfoot td{
     thead { display: table-header-group !important; }
     tbody { display: table-row-group !important; }
     tr { display: table-row !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
-    td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; border-bottom: 1px solid #f1f5f9 !important; width: auto !important; }
+    td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; border-bottom: 1px solid var(--border) !important; width: auto !important; }
     
     td::before { content: "" !important; display: none !important; }
     tfoot { display: table-footer-group !important; }
@@ -168,7 +213,7 @@ tfoot td{
 <div class="header">
     <div class="header-top">
         <h2>STOCK LEDGER REPORT - {{ company_name }}</h2>
-        <div style="font-size: 10px; font-weight: 700; color: #64748b;">BKNR ERP · 2026</div>
+        <div style="font-size: 10px; font-weight: 700; color: var(--text-muted);">BKNR ERP · 2026</div>
     </div>
     <div class="filters">
         <div class="fbox">
@@ -232,8 +277,8 @@ tfoot td{
                     <th style="width:100px">Species</th>
                     <th style="width:100px">Location</th>
                     <th style="width:100px">PO #</th>
-                    <th style="width:100px">Prod For</th>
-                    <th style="width:100px">Prod At</th>
+                    <th style="width:100px">Production For</th>
+                    <th style="width:100px">Production At</th>
                     <th style="width:80px">Freezer</th>
                     <th style="width:100px">Pack Style</th>
                     <th style="width:120px">Variety</th>
@@ -257,7 +302,6 @@ tfoot td{
                 </tr>
                 {% else %}
                     {% for r in rows %}
-                    <!-- 🟢 DYNAMIC INJECT: Appends .stock-out-row if movement is OUT -->
                     <tr data-id="{{ r.id }}" data-date="{{ r.date }}" class="{% if r.cargo_movement_type == 'OUT' %}stock-out-row{% endif %}" onclick="selectRow(this)">
                         <td class="slno"></td>
                         <td>{{ r.date }}</td>
@@ -298,7 +342,7 @@ tfoot td{
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:15px; background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+    <div style="padding:15px; background:var(--header-bg); color:var(--primary); display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border)">
         <b style="font-size:13px;">📜 STOCK EDIT LOGS</b>
         <span onclick="toggleAudit()" style="cursor:pointer; font-size:24px; line-height:1;">×</span>
     </div>
@@ -461,12 +505,12 @@ async function toggleAudit() {
         const logs = await res.json();
         if(!logs.length) { content.innerHTML = `<p style="text-align:center; font-size:10px; padding:20px;">No history found.</p>`; return; }
         content.innerHTML = logs.map(l => `
-            <div class="audit-item" style="padding:10px; border-bottom:1px solid #e2e8f0; border-left:4px solid var(--accent); margin-bottom:5px; background:var(--header-bg);">
+            <div class="audit-item" style="padding:10px; border-bottom:1px solid var(--border); border-left:4px solid var(--accent); margin-bottom:5px; background:var(--header-bg);">
                 <div style="display:flex; justify-content:space-between; font-size:10px;">
                     <b style="color:var(--accent)">${l.timestamp}</b>
-                    <span style="background:#f1f5f9; padding:2px 4px;">Batch: ${l.batch}</span>
+                    <span style="background:var(--bg); padding:2px 4px; border: 1px solid var(--border)">Batch: ${l.batch}</span>
                 </div>
-                <div style="font-weight:800; font-size:10px;">${l.field || l.action}</div>
+                <div style="font-weight:800; font-size:10px; color: var(--primary)">${l.field || l.action}</div>
                 <div style="font-size:10px; color:var(--text);">${l.details}</div>
                 <div style="font-size:9px; color:#94a3b8; text-align:right;">User: ${l.user}</div>
             </div>
@@ -499,9 +543,27 @@ function exportFile(ext) {
     const fs = document.getElementById("f_species").value;
     const fv = document.getElementById("f_variety").value;
     const fl = document.getElementById("f_loc").value;
-    let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
-    if(ext === 'pdf') params += "&download=true";
-    window.location.href = `${baseUrl}/export_${ext}${params}`;
+    
+    let exportUrl = new URL(`${baseUrl}/export_${ext}`, window.location.origin);
+    let currentUrlParams = new URLSearchParams(window.location.search);
+    
+    exportUrl.searchParams.set("from_date", f1);
+    exportUrl.searchParams.set("to_date", f2);
+    exportUrl.searchParams.set("type", ft);
+    exportUrl.searchParams.set("batch", fb);
+    exportUrl.searchParams.set("brand", fbr);
+    exportUrl.searchParams.set("species", fs);
+    exportUrl.searchParams.set("variety", fv);
+    exportUrl.searchParams.set("location", fl);
+    
+    if(ext === 'pdf') exportUrl.searchParams.set("download", "true");
+    
+    if (currentUrlParams.get("production_for")) exportUrl.searchParams.set("production_for", currentUrlParams.get("production_for"));
+    if (currentUrlParams.get("location")) exportUrl.searchParams.set("location", currentUrlParams.get("location"));
+    if (currentUrlParams.get("peeling_at")) exportUrl.searchParams.set("peeling_at", currentUrlParams.get("peeling_at"));
+    if (currentUrlParams.get("production_at")) exportUrl.searchParams.set("production_at", currentUrlParams.get("production_at"));
+
+    window.location.href = exportUrl.toString();
 }
 
 function printReport() {
@@ -512,12 +574,27 @@ function printReport() {
     const fs = document.getElementById("f_species").value;
     const fv = document.getElementById("f_variety").value;
     const fl = document.getElementById("f_loc").value;
-    let params = `?from_date=${f1}&to_date=${f2}&type=${ft}&batch=${fb}&brand=${fbr}&species=${fs}&variety=${fv}&location=${fl}`;
-    const pdfUrl = `${baseUrl}/export_pdf${params}`;
+    
+    let exportUrl = new URL(`${baseUrl}/export_pdf`, window.location.origin);
+    let currentUrlParams = new URLSearchParams(window.location.search);
+    
+    exportUrl.searchParams.set("from_date", f1);
+    exportUrl.searchParams.set("to_date", f2);
+    exportUrl.searchParams.set("type", ft);
+    exportUrl.searchParams.set("batch", fb);
+    exportUrl.searchParams.set("brand", fbr);
+    exportUrl.searchParams.set("species", fs);
+    exportUrl.searchParams.set("variety", fv);
+    exportUrl.searchParams.set("location", fl);
+    
+    if (currentUrlParams.get("production_for")) exportUrl.searchParams.set("production_for", currentUrlParams.get("production_for"));
+    if (currentUrlParams.get("location")) exportUrl.searchParams.set("location", currentUrlParams.get("location"));
+    if (currentUrlParams.get("peeling_at")) exportUrl.searchParams.set("peeling_at", currentUrlParams.get("peeling_at"));
+    if (currentUrlParams.get("production_at")) exportUrl.searchParams.set("production_at", currentUrlParams.get("production_at"));
 
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
-    iframe.src = pdfUrl;
+    iframe.src = exportUrl.toString();
     document.body.appendChild(iframe);
 
     iframe.onload = function() {
@@ -547,6 +624,11 @@ function fillFilters() {
 }
 
 window.onload = () => {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    
     fillFilters();
     document.querySelectorAll(".filters input, .filters select").forEach(el => {
         if(el.id !== 'f_fy') el.onchange = applyFilters;

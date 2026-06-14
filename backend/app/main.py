@@ -241,6 +241,7 @@ async def home_page(request: Request):
     
     try:
         from app.database.models.processing import GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production
+        from app.database.models.inventory_management import cold_storage # 🟢 కోల్డ్ స్టోరేజ్ మాస్టర్ మోడల్ ఇంపోర్ట్
         
         # 1. Fetch Universal Companies Unique List (production_for)
         companies_set = set()
@@ -268,6 +269,17 @@ async def home_page(request: Request):
             for row in res:
                 if row[0]: locations_set.add(row[0].strip())
                 
+        # 🟢 3. COLD STORAGE MASTER నుండి యాక్టివ్ గా ఉన్న స్టోరేజ్ నేమ్స్ స్క్యాన్ చేస్తున్నాం
+        try:
+            cs_res = db.query(distinct(cold_storage.storage_name)).filter(
+                cold_storage.company_id == company_code,
+                cold_storage.is_active == "ACTIVE"
+            ).all()
+            for row in cs_res:
+                if row[0]: locations_set.add(row[0].strip())
+        except Exception as cs_err:
+            print("⚠️ COLD STORAGE MASTER SCAN PASS BYPASSED:", cs_err)
+
         locations_list = sorted(list(locations_set))
     except Exception as e:
         print("🔴 ERROR LOADING UNIVERSAL FILTER ARRAYS:", e)

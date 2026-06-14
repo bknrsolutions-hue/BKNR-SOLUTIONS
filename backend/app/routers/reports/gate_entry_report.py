@@ -1,11 +1,12 @@
-# ============================================================
+# ============================================================================
 # GATE ENTRY REPORT ROUTER – STOCK STYLE (FY LOCK + META SYNC)
-# ============================================================
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func  # 👈 func.trim() వాడటానికి ఇంపోర్ట్ చేశాను
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 import datetime as dt
@@ -15,6 +16,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from weasyprint import HTML
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import GateEntry, AuditLog
@@ -31,22 +33,34 @@ def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
 
-# ============================================================
+# ============================================================================
 # 1. MAIN REPORT (GET) - WITH FY LOCK & AUTO META-DATA
-# ============================================================
+# ============================================================================
 @router.get("", response_class=HTMLResponse)
 async def gate_entry_report(
     request: Request,
     fy: str = Query(None), # Financial Year Filter
     db: Session = Depends(get_db)
 ):
+    production_for, location = get_global_filters(request)
+    
+    # 🟢 TEMPORARY DEBUG PRINT: టెర్మినల్ అవుట్‌పుట్ చెక్ చేయడానికి యాడ్ చేశాను
+    print("GLOBAL FILTERS =", production_for, location)
+    
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    # Global unique tracking arrays static loading across multi-company filter setups
-    meta_base = db.query(GateEntry).filter(GateEntry.company_id == company_id).all()
+    # 🟢 META DROPDOWNS SYNC WITH func.trim()
+    meta_q = db.query(GateEntry).filter(GateEntry.company_id == company_id)
+    
+    if production_for:
+        meta_q = meta_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+    if location:
+        meta_q = meta_q.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
+        
+    meta_base = meta_q.all()
     
     def extract_global_unique(field_attr):
         return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
@@ -59,57 +73,63 @@ async def gate_entry_report(
 
     if not fy:
         return templates.TemplateResponse(
-    request=request,
-    name="reports/gate_entry_report.html",
-    context={
-        "rows": [],
-        "suppliers_list": global_suppliers,
-        "factories_list": global_factories,
-        "locations_list": global_locations,
-        "vehicles_list": global_vehicles,
-        "production_for_list": global_production_for,
-        "is_admin": role == "admin",
-        "selected_fy": None,
-        "today_date": ist_now()
-    }
-)
+            request=request,
+            name="reports/gate_entry_report.html",
+            context={
+                "rows": [],
+                "suppliers_list": global_suppliers,
+                "factories_list": global_factories,
+                "locations_list": global_locations,
+                "vehicles_list": global_vehicles,
+                "production_for_list": global_production_for,
+                "is_admin": role == "admin",
+                "selected_fy": None,
+                "selected_production_for": production_for,
+                "selected_location": location,
+                "today_date": ist_now()
+            }
+        )
 
-    # 1. Determine Target Financial Year Range
+    # Determine Target Financial Year Range
     selected_fy = int(fy)
     start_date = dt.date(selected_fy, 4, 1)
     end_date = dt.date(selected_fy + 1, 3, 31)
 
-    # 2. Fetch Rows based on FY range query filters
-    rows = (
-        db.query(GateEntry)
-        .filter(
-            GateEntry.company_id == company_id,
-            GateEntry.date >= start_date,
-            GateEntry.date <= end_date
-        )
-        .order_by(GateEntry.date.desc(), GateEntry.time.desc())
-        .all()
+    # 🟢 MAIN REPORT QUERY WITH func.trim() STRICtest LOCK
+    query = db.query(GateEntry).filter(
+        GateEntry.company_id == company_id,
+        GateEntry.date >= start_date,
+        GateEntry.date <= end_date
     )
 
-    return templates.TemplateResponse(
-    request=request,
-    name="reports/gate_entry_report.html",
-    context={
-        "rows": rows,
-        "suppliers_list": global_suppliers,
-        "factories_list": global_factories,
-        "locations_list": global_locations,
-        "vehicles_list": global_vehicles,
-        "production_for_list": global_production_for,
-        "is_admin": role == "admin",
-        "selected_fy": str(selected_fy),
-        "today_date": ist_now()
-    }
-)
+    if production_for:
+        query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+    if location:
+        query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
 
-# ============================================================
+    rows = query.order_by(GateEntry.date.desc(), GateEntry.time.desc()).all()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/gate_entry_report.html",
+        context={
+            "rows": rows,
+            "suppliers_list": global_suppliers,
+            "factories_list": global_factories,
+            "locations_list": global_locations,
+            "vehicles_list": global_vehicles,
+            "production_for_list": global_production_for,
+            "is_admin": role == "admin",
+            "selected_fy": str(selected_fy),
+            "selected_production_for": production_for, 
+            "selected_location": location,             
+            "today_date": ist_now()
+        }
+    )
+
+# ============================================================================
 # 2. DYNAMIC REAL-TIME PDF METADATA FILTER EXPORT
-# ============================================================
+# ============================================================================
 @router.get("/export_pdf")
 async def gate_export_pdf(
     request: Request, 
@@ -127,12 +147,19 @@ async def gate_export_pdf(
     start_date = date(selected_fy, 4, 1)
     end_date = date(selected_fy + 1, 3, 31)
 
-    # Multi-dimensional Interceptor Architecture
     query = db.query(GateEntry).filter(
         GateEntry.company_id == company_id,
         GateEntry.date >= start_date,
         GateEntry.date <= end_date
     )
+    
+    # 🟢 GLOBAL FILTERS LOCK FOR PDF WITH func.trim()
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+    if location:
+        query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
     
     if supplier and supplier.strip() != "":
         query = query.filter(GateEntry.supplier_name == supplier)
@@ -141,13 +168,12 @@ async def gate_export_pdf(
 
     rows = query.order_by(GateEntry.date.asc()).all()
 
-    # Dynamic render mapped onto direct printing target HTML
     html_content = templates.get_template("reports/gate_entry_print.html").render({
         "request": request,
         "company_name": company_name,
         "rows": rows,
         "printed_on": ist_now(),
-        "auto": 0  # Prevents infinite javascript print reload loop
+        "auto": 0  
     })
     
     pdf = HTML(string=html_content).write_pdf()
@@ -157,9 +183,9 @@ async def gate_export_pdf(
         headers={"Content-Disposition": f"attachment; filename=GATE_ENTRY_FY{fy}.pdf"}
     )
 
-# ============================================================
+# ============================================================================
 # 3. DYNAMIC EXCEL ENGINE (CORPORATE DESIGN SHEET BUILDER)
-# ============================================================
+# ============================================================================
 @router.get("/export_excel")
 async def gate_export_excel(
     request: Request, 
@@ -183,6 +209,14 @@ async def gate_export_excel(
         GateEntry.date <= end_date
     )
     
+    # 🟢 GLOBAL FILTERS LOCK FOR EXCEL WITH func.trim()
+    production_for, location = get_global_filters(request)
+
+    if production_for:
+        query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+    if location:
+        query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
+    
     if supplier and supplier.strip() != "":
         query = query.filter(GateEntry.supplier_name == supplier)
     if factory and factory.strip() != "":
@@ -195,7 +229,6 @@ async def gate_export_excel(
     ws.title = "Gate Entry Report"
     ws.views.sheetView[0].showGridLines = True
 
-    # Company Top Banner block styling
     ws.merge_cells("A1:M1")
     ws["A1"] = company_name.upper()
     ws["A1"].font = Font(name="Arial", size=14, bold=True, color="003366")
@@ -205,10 +238,8 @@ async def gate_export_excel(
     ws["A2"] = f"GATE ENTRY SHEET | FY: {fy}-{int(fy)+1}"
     ws["A2"].font = Font(name="Arial", size=10, bold=True, color="475569")
     ws["A2"].alignment = Alignment(horizontal="center")
-    
-    ws.append([]) # spacer line
+    ws.append([]) 
 
-    # Grid Corporate Table Headers mapping 
     headers = ["SL", "Date", "Time", "Batch Number", "Challan No", "Gate Pass", "Factory", "Supplier Name", "Location", "Vehicle No", "Material Box", "Empty Box", "Ice Box"]
     ws.append(headers)
     
@@ -225,7 +256,6 @@ async def gate_export_excel(
         cell.alignment = center_align
         cell.border = thin_border
 
-    # Data population block
     start_data_row = 5
     for idx, r in enumerate(rows, 1):
         dt_str = r.date.strftime("%d-%m-%Y") if isinstance(r.date, (date, datetime)) else str(r.date)
@@ -249,7 +279,6 @@ async def gate_export_excel(
             else:
                 cell.alignment = center_align
 
-    # Excel math layout injection formulas
     last_data_row = start_data_row + len(rows) - 1
     total_row_idx = last_data_row + 1
     
@@ -266,28 +295,22 @@ async def gate_export_excel(
         else:
             ws.cell(row=total_row_idx, column=1).alignment = Alignment(horizontal="right")
 
-    # Auto calculation grid column layouts adjustments (FIXED FOR MERGED CELLS)
     for col in ws.columns:
         max_len = 0
         first_cell = col[0]
-        
-        # Safely extract column letter independent of cell type initialization
         if hasattr(first_cell, 'column_letter'):
             col_letter = first_cell.column_letter
         else:
             col_letter = get_column_letter(first_cell.column)
             
         for cell in col:
-            # Skip top titles & summary cells that skew column widths distorting readability
             if cell.row > 3 and cell.row < total_row_idx and cell.value:
                 max_len = max(max_len, len(str(cell.value)))
-                
         ws.column_dimensions[col_letter].width = max(max_len + 3, 11)
 
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    
     return StreamingResponse(
         stream, 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 

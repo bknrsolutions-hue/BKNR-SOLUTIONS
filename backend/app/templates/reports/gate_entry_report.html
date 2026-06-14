@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>GATE ENTRY REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -20,7 +20,7 @@ body{ background:var(--bg); height:100vh; display:flex; flex-direction:column; o
 .header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
 .header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
 
-/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
+/* FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
 .filters{
  margin-top:8px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
  gap:12px; background:var(--header-bg); padding:8px; border-radius:6px; border:1px solid var(--border);
@@ -56,7 +56,7 @@ select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px soli
 /* TABLE AREA */
 .section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
 .table-wrap{ flex:1; overflow:auto; width: 100%; -webkit-overflow-scrolling: touch; } 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1300px; } 
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1550px; } 
 thead th{
  background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
@@ -71,9 +71,9 @@ tr.selected{background:#dbeafe !important;}
 .empty-state i { font-size: 40px; margin-bottom: 10px; color: var(--accent); opacity: 0.5; }
 
 /* Column Widths */
-.w-sl { width: 40px; } .w-dt { width: 90px; } .w-tm { width: 60px; } .w-bt { width: 100px; }
-.w-ch { width: 100px; } .w-fc { width: 120px; } .w-sp { width: 150px; } .w-lc { width: 120px; }
-.w-bx { width: 60px; } .w-em { width: 150px; }
+.w-sl { width: 45px; } .w-dt { width: 90px; } .w-tm { width: 65px; } .w-bt { width: 100px; }
+.w-ch { width: 100px; } .w-fc { width: 120px; } .w-gp { width: 100px; } .w-sp { width: 160px; } 
+.w-lc { width: 120px; } .w-vn { width: 100px; } .w-pf { width: 140px; } .w-bx { width: 65px; } .w-em { width: 140px; }
 
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 
@@ -97,7 +97,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
     z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); 
 }
 
-/* RUNTIME NATIVE HARD PRINT COMPILE STYLES (A4 LANDSCAPE OVERRIDES) */
+/* RUNTIME NATIVE HARD PRINT COMPILE STYLES */
 @media print {
     @page { size: A4 landscape; margin: 8mm; }
     body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
@@ -164,7 +164,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
         </div>
         <div class="fbox">
             <label>Search Parameters</label>
-            <input id="searchBox" placeholder="Search Batch, Vehicle, Location..." onkeyup="applyFilters()">
+            <input id="searchBox" placeholder="Search Batch, Vehicle, Location, Company..." onkeyup="applyFilters()">
         </div>
     </div>
 </div>
@@ -198,9 +198,11 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
                     <th class="w-bt">Batch No</th>
                     <th class="w-ch">Challan No</th>
                     <th class="w-fc">Factory Name</th>
-                    <th class="w-fc">Gatepass No</th>
+                    <th class="w-gp">Gatepass No</th>
                     <th class="w-sp">Supplier Name</th>
                     <th class="w-lc">PR Location</th>
+                    <th class="w-vn">Vehicle No</th>
+                    <th class="w-pf">Production For</th> 
                     <th class="w-bx">Mat.</th>
                     <th class="w-bx">Emp.</th>
                     <th class="w-bx">Ice</th>
@@ -210,7 +212,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
             <tbody id="tbody">
                 {% if not rows %}
                 <tr>
-                    <td colspan="12" class="empty-state">
+                    <td colspan="15" class="empty-state">
                         <i class="fa-solid fa-calendar-day"></i><br>
                         <b>Financial Year Not Selected</b><br>
                         <span>Please select a Financial Year to load data.</span>
@@ -228,6 +230,8 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
                         <td class="editable" data-field="gate_pass_number">{{ r.gate_pass_number }}</td>
                         <td class="lookup supplier" data-field="supplier_name">{{ r.supplier_name }}</td>
                         <td class="lookup location" data-field="purchasing_location">{{ r.purchasing_location }}</td>
+                        <td class="editable" data-field="vehicle_number">{{ r.vehicle_number or '' }}</td>
+                        <td class="lookup prodfor" data-field="production_for">{{ r.production_for or '' }}</td> 
                         <td class="editable mat-box" data-field="no_of_material_boxes">{{ r.no_of_material_boxes }}</td>
                         <td class="editable emp-box" data-field="no_of_empty_boxes">{{ r.no_of_empty_boxes }}</td>
                         <td class="editable ice-box" data-field="no_of_ice_boxes">{{ r.no_of_ice_boxes }}</td>
@@ -238,8 +242,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="8" style="text-align:right">TOTAL BOXES:</td>
-                    <td id="tot_mat">0</td>
+                    <td colspan="11" style="text-align:right">TOTAL BOXES:</td> <td id="tot_mat">0</td>
                     <td id="tot_emp">0</td>
                     <td id="tot_ice">0</td>
                     <td></td>
@@ -260,16 +263,20 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 const lookups = {
     supplier: {{ suppliers_list|tojson or [] }},
     factory: {{ factories_list|tojson or [] }},
-    location: {{ locations_list|tojson or [] }}
+    location: {{ locations_list|tojson or [] }},
+    prodfor: {{ production_for_list|tojson or [] }}
 };
 
 let selectedRow = null;
 const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 
 function changeFY(val) {
-    if(val) { window.location.href = `/reports/gate_entry?fy=${val}`; }
+    if(!val) return;
+    let currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("fy", val);
+    window.location.href = currentUrl.toString();
 }
-// [RULE 1] Definitively completing user formatting selection matrix mapping paths
+
 function selectRow(tr) {
     allRows.forEach(r => r.classList.remove("selected"));
     tr.classList.add("selected");
@@ -456,26 +463,17 @@ function exportAction(type) {
     const supplier = document.getElementById("f_supplier").value || "";
     const factory = document.getElementById("f_factory").value || "";
     
-    const baseUrl = `/reports/gate_entry/export_${type}`;
-    const params = new URLSearchParams({ fy: fy, supplier: supplier, factory: factory });
+    let exportUrl = new URL(`/reports/gate_entry/export_${type}`, window.location.origin);
+    let currentUrlParams = new URLSearchParams(window.location.search);
     
-    window.location.href = `${baseUrl}?${params.toString()}`;
-}
-
-function toggleAudit() {
-    const p = document.getElementById("auditPanel");
-    p.style.display = p.style.display==="flex"?"none":"flex";
-    if(p.style.display==="flex") {
-        fetch("/reports/gate_entry/audit").then(r=>r.json()).then(data=>{
-            document.getElementById("auditContent").innerHTML = data.map(l=>`
-                <div style="font-size:10px; border-bottom:1px solid #ddd; padding:8px 0;">
-                    <b>REC ID: ${l.record_id}</b> | ${l.time}<br>
-                    Field: <span style="color:var(--accent)">${l.field}</span><br>
-                    <span style="color:red">${l.old}</span> → <span style="color:green">${l.new}</span> by ${l.user}
-                </div>
-            `).join("");
-        });
-    }
+    exportUrl.searchParams.set("fy", fy);
+    exportUrl.searchParams.set("supplier", supplier);
+    exportUrl.searchParams.set("factory", factory);
+    
+    if (currentUrlParams.get("production_for")) exportUrl.searchParams.set("production_for", currentUrlParams.get("production_for"));
+    if (currentUrlParams.get("location")) exportUrl.searchParams.set("location", currentUrlParams.get("location"));
+    
+    window.location.href = exportUrl.toString();
 }
 
 applyFilters();

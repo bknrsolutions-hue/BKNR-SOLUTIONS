@@ -157,7 +157,7 @@
     .tab-btn { padding: 5px 14px; border: none; background: transparent; font-size: 9px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: 0.2s; }
     .tab-btn.active { background: var(--brand-primary); color: var(--bg-main); }
 
-    /* 🟢 FILTERS GROUP - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
+    /* FILTERS GROUP - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
     .filters-group { 
         display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; align-items: flex-end; width: 100%;
         -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; padding-bottom: 4px;
@@ -182,7 +182,6 @@
 
     .fy-select-premium { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; outline: none; background: var(--input-bg); width: 100%; color: var(--brand-accent); border-left: 3px solid var(--brand-accent); cursor: pointer; height: 28px; transition: 0.3s;}
     
-    /* Dashboard wrapper filter sub-matrix support */
     .dashboard-fields-wrapper { display: flex; flex-wrap: nowrap !important; gap: 12px; flex: 1; min-width: max-content; }
     @media (min-width: 992px) { .dashboard-fields-wrapper { display: contents !important; } }
 
@@ -477,7 +476,7 @@
 
     <div id="dashboardView" class="view-content">
         <div id="dashContainer" class="grid-layout">
-            </div>
+        </div>
     </div>
 </main>
 
@@ -499,6 +498,7 @@
         <div class="stat-item"><span class="stat-label">Balance Value</span><span id="stat_val" class="stat-val" style="color:var(--brand-accent)">₹0</span></div>
     </div>
 </div>
+
 <script>
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -520,6 +520,35 @@
             url.searchParams.delete('fy');
         }
         window.location.href = url.toString();
+    }
+
+    // 🌟 🟢 GHOST EV_TRIGGER BLOCK: సైలెంట్ గా వాల్యూస్ ని మాత్రమే మార్చి, ఈవెంట్ లూప్స్ ని కంప్లీట్ గా కిల్ చేస్తుంది!
+    function syncParentScreenFilters() {
+        try {
+            const activeProdFor = "{{ selected_production_for or '' }}";
+            const activeLocation = "{{ selected_location or '' }}";
+
+            if (window.parent && window.parent.document) {
+                const parentProdForDropdown = window.parent.document.getElementById("global_production_for") || window.parent.document.getElementById("production_for");
+                const parentLocDropdown = window.parent.document.getElementById("global_location") || window.parent.document.getElementById("location") || window.parent.document.getElementById("peeling_at") || window.parent.document.getElementById("production_at");
+
+                // 🔴 CRITICAL FIX: వాల్యూస్ మారితేనే అప్‌డేట్ చేస్తుంది, మళ్లీ మళ్లీ ఈవెంట్స్ ని ట్రిగ్గర్ చేయనివ్వదు!
+                if (parentProdForDropdown && activeProdFor && parentProdForDropdown.value !== activeProdFor) {
+                    let oldHandler = parentProdForDropdown.onchange;
+                    parentProdForDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentProdForDropdown.value = activeProdFor;
+                    parentProdForDropdown.onchange = oldHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                }
+                if (parentLocDropdown && activeLocation && parentLocDropdown.value !== activeLocation) {
+                    let oldLocHandler = parentLocDropdown.onchange;
+                    parentLocDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentLocDropdown.value = activeLocation;
+                    parentLocDropdown.onchange = oldLocHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                }
+            }
+        } catch (e) {
+            console.log("Parent Frame Dropdown Synchronization Blocked or Offline:", e);
+        }
     }
 
     function switchView(view, btn) {
@@ -765,6 +794,8 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+        // 🟢 STRICT INITIAL SYNC - NO LOOPS
+        syncParentScreenFilters();
         applyFilters();
     });
 </script>

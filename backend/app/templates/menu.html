@@ -129,7 +129,6 @@ body {
 .sidebar-menu { flex: 1; overflow-y: auto; padding: 28px 0; }
 .pillar-block { margin-bottom: 28px; }
 .pillar-title { padding: 0 32px 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary); }
-.pillar-title.super-admin-title { color: #ef4444; }
 .menu-wrapper { margin-bottom: 4px; }
 
 .submenu-heading-text {
@@ -172,14 +171,13 @@ body {
     text-transform: uppercase; flex-shrink: 0; border: 1px solid var(--border-light); letter-spacing: 0.5px;
 }
 [data-theme="light"] .kpi-badge { background: rgba(0, 0, 0, 0.03); }
-.kpi-badge.super-badge { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; background: rgba(239, 68, 68, 0.05); } 
 
 .sidebar-footer { padding: 28px; border-top: 1px solid var(--border-light); text-align: center;}
 .footer-quote { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 8px; font-weight: 600;}
 .sidebar-footer .footer-powered { font-size: 11px; font-weight: 800; color: var(--text-primary); letter-spacing: 1px; }
 
 /* WORKSPACE CONTAINER & GLASS HEADER */
-.app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px 12px 12px 0; gap: 12px;}
+.app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px 12px 12px 0; gap: 12px; position: relative; }
 
 .app-header {
     height: var(--header-h); 
@@ -187,68 +185,126 @@ body {
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); 
     display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
     border-radius: var(--radius-panel); box-shadow: var(--shadow-soft); border: 1px solid var(--border-light);
-    flex-shrink: 0; transition: background 0.4s ease;
+    flex-shrink: 0; transition: background 0.4s ease; position: relative; z-index: 1000;
 }
 
 .header-left-meta { display: flex; align-items: center; gap: 16px; }
 
-/* UNIVERSAL FILTERS CONTAINER DESIGN DEPLOYMENT */
-.universal-filters-wrapper { display: flex; align-items: center; gap: 12px; margin-left: 10px; }
-.global-filter-box { display: flex; flex-direction: column; gap: 2px; }
-.global-filter-box label { font-size: 7.5px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-
-.global-select-input {
-    background: var(--surface-panel); color: var(--text-primary); border: 1px solid var(--border-light);
-    font-size: 11.5px; font-weight: 700; padding: 4px 28px 4px 10px; border-radius: 6px; outline: none;
-    height: 28px; min-width: 150px; cursor: pointer; transition: var(--shadow-soft);
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8'><path d='M0 3l5 5 5-5z'/></svg>");
-    background-repeat: no-repeat; background-position: right 10px center;
-}
-.global-select-input:focus { border-color: var(--accent-blue); }
-
-.hamburger-trigger-btn, .theme-toggle-btn, .logout-btn {
+.hamburger-trigger-btn, .theme-toggle-btn {
     background: var(--surface-panel); border: 1px solid var(--border-light); 
     color: var(--text-secondary); border-radius: 50%; width: 44px; height: 44px;
     font-size: 15px; cursor: pointer; transition: all 0.3s ease;
     display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft);
 }
 .hamburger-trigger-btn:hover, .theme-toggle-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
-.logout-btn:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
 
-.header-right-actions { display: flex; align-items: center; gap: 14px; }
+.header-right-actions { display: flex; align-items: center; gap: 14px; position: relative; }
 
+/* 🌟 USER PROFILE CONSOLE WITH TOGGLE TRIGGER 🌟 */
 .user-profile { 
     background: var(--surface-panel); font-size: 13px; font-weight: 700; color: var(--text-primary); 
     display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px;
     border-radius: 40px; border: 1px solid var(--border-light); cursor: pointer;
+    user-select: none; transition: all 0.2s ease;
 }
+.user-profile:hover, .user-profile.active { border-color: var(--accent-blue); box-shadow: var(--shadow-soft); }
 .user-profile .avatar { 
     width: 30px; height: 32px; background: linear-gradient(135deg, var(--accent-blue), #4f46e5); 
     color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; 
 }
+.user-profile .chevron-down-icon { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s ease; }
+.user-profile.active .chevron-down-icon { transform: rotate(180deg); }
+
+/* 🌟 ULTRA PREMIUM DROPDOWN OVERLAY CONSOLE (FIXED STACKING ORDER) 🌟 */
+.profile-dropdown-console {
+    position: absolute; 
+    top: calc(var(--header-h) + 6px); 
+    right: 0px; 
+    width: 340px;
+    background: var(--surface-panel); 
+    backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);
+    border-radius: 20px; 
+    border: 1px solid var(--border-light); 
+    box-shadow: var(--shadow-float);
+    display: none; 
+    flex-direction: column; 
+    z-index: 999999 !important; /* 👈 Force-stacking index pool override to top-most layer */
+    overflow: hidden; 
+    padding: 16px; 
+    gap: 16px;
+    animation: dropSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.profile-dropdown-console.show { display: flex; }
+
+@keyframes dropSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🟢 DROPDOWN FILTERS LAYOUT SETUP */
+.dropdown-filter-section { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
+.dropdown-filter-box { display: flex; flex-direction: column; gap: 4px; }
+.dropdown-filter-box label { font-size: 8px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.global-select-input {
+    background: var(--bg-app); color: var(--text-primary); border: 1px solid var(--border-light);
+    font-size: 12px; font-weight: 700; padding: 6px 28px 6px 10px; border-radius: 8px; outline: none;
+    height: 34px; width: 100%; cursor: pointer; transition: border-color 0.2s;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8'><path d='M0 3l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat; background-position: right 12px center;
+}
+.global-select-input:focus { border-color: var(--accent-blue); }
+
+/* 🟢 DROPDOWN MENUS ENGINE */
+.dropdown-menu-scroll-box { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 2px; }
+.dropdown-pillar-block { display: flex; flex-direction: column; gap: 4px; }
+.dropdown-pillar-title { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); padding-left: 6px; }
+.dropdown-pillar-title.super-admin-title { color: #ef4444; }
+
+.dropdown-submenu-list { display: flex; flex-direction: column; gap: 2px; }
+.dropdown-item-row { display: flex; align-items: center; border-radius: 8px; transition: all 0.2s ease; }
+.dropdown-submenu-item {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: 8px 10px; color: var(--text-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer;
+    text-decoration: none; border-radius: 8px; transition: all 0.2s ease;
+}
+.dropdown-submenu-item i { width: 20px; text-align: center; color: var(--text-tertiary); font-size: 13px; margin-right: 6px; }
+.dropdown-submenu-item:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.04); transform: translateX(2px); }
+[data-theme="light"] .dropdown-submenu-item:hover { background: rgba(0, 0, 0, 0.02); }
+.dropdown-submenu-item:hover i { color: var(--accent-blue); }
+
+.dropdown-submenu-item.active { color: #ffffff; background: linear-gradient(135deg, var(--accent-dark), var(--accent-blue)); font-weight: 700; }
+.dropdown-submenu-item.active i { color: #ffffff; }
+
+/* 🟢 DROPDOWN TERMINATE CONSOLE EXECUTOR */
+.dropdown-logout-wrapper { border-top: 1px solid var(--border-light); padding-top: 10px; }
+.dropdown-logout-btn {
+    width: 100%; height: 38px; background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.15);
+    color: #f87171; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;
+}
+.dropdown-logout-btn:hover { background: #ef4444; color: #ffffff; border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
 
 .iframe-wrapper {
     flex: 1; background: var(--bg-app); border-radius: var(--radius-panel); overflow: hidden;
-    box-shadow: var(--shadow-float); border: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative;
+    box-shadow: var(--shadow-float); border: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative; z-index: 10;
 }
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
-
-@media (max-width: 1200px) {
-    .universal-filters-wrapper { display: none !important; } 
-}
 
 @media (max-width: 1024px) {
     .app-container { padding: 8px; gap: 8px;}
     .iframe-wrapper { border-radius: 20px; }
     .user-profile span { display: none; } .user-profile { padding: 6px; }
     .app-header { padding: 0 16px; border-radius: 20px;}
+    .profile-dropdown-console { width: calc(100vw - 32px); right: 0px; top: calc(var(--header-h) + 4px); }
 }
 
 @media (max-width: 600px) {
     .header-left-meta { gap: 12px; } .header-right-actions { gap: 12px; }
-    .theme-toggle-btn, .logout-btn, .hamburger-trigger-btn { width: 40px; height: 40px; font-size: 14px; }
+    .theme-toggle-btn, .hamburger-trigger-btn { width: 40px; height: 40px; font-size: 14px; }
     .app-header { padding: 0 12px; height: 64px;}
+    .profile-dropdown-console { top: 54px; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -280,28 +336,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
             <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Menu">
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
-            
-            <!-- 🟢 UNIVERSAL PLUG-IN FILTERS BAR COMPONENT -->
-            <div class="universal-filters-wrapper">
-                <div class="global-filter-box">
-                    <label>Production For</label>
-                    <select id="global_production_for" class="global-select-input" onchange="broadcastUniversalFilters()">
-                        <option value="">All Corporate Entities</option>
-                        {% for c in companies %}
-                        <option value="{{ c }}">{{ c }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="global-filter-box">
-                    <label>Plant Location</label>
-                    <select id="global_plant_location" class="global-select-input" onchange="broadcastUniversalFilters()">
-                        <option value="">All Active Plants</option>
-                        {% for l in locations %}
-                        <option value="{{ l }}">{{ l }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
         </div>
         
         <div class="header-right-actions">
@@ -309,13 +343,49 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 <i class="fa-solid fa-sun"></i>
             </div>
             
-            <div class="user-profile" title="Current User">
+            <!-- 🌟 USER PROFILE CONSOLE WITH CHEVRON TRIGGER 🌟 -->
+            <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)">
                 <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
                 <span>{{ request.session.get('name') }}</span>
+                <i class="fa-solid fa-chevron-down chevron-down-icon"></i>
             </div>
-            <div class="logout-btn" onclick="logout()" title="Secure Logout">
-                <i class="fa-solid fa-power-off"></i>
+
+            <!-- 🌟 FULLY INTEGRATED PROFILE DROPDOWN DROP CONSOLE (TOP-MOST Z-INDEX) 🌟 -->
+            <div class="profile-dropdown-console" id="profileDropdownConsole">
+                
+                <!-- 🟢 UNIVERSAL FILTERS SPLIT INSIDE CONSOLE -->
+                <div class="dropdown-filter-section">
+                    <div class="dropdown-filter-box">
+                        <label>Production For</label>
+                        <select id="global_production_for" class="global-select-input" onchange="broadcastUniversalFilters()">
+                            <option value="">All Corporate Entities</option>
+                            {% for c in companies %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="dropdown-filter-box">
+                        <label>Plant Location</label>
+                        <select id="global_plant_location" class="global-select-input" onchange="broadcastUniversalFilters()">
+                            <option value="">All Active Plants</option>
+                            {% for l in locations %}
+                            <option value="{{ l }}">{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 🟢 COMPLEX DROPDOWN DYNAMIC ROUTING ENGINE -->
+                <div class="dropdown-menu-scroll-box" id="dropdownMenuScrollBox"></div>
+
+                <!-- 🟢 LOGOUT SECURE TERMINATION CONSOLE -->
+                <div class="dropdown-logout-wrapper">
+                    <button class="dropdown-logout-btn" onclick="logout()">
+                        <i class="fa-solid fa-power-off"></i> Terminate Workspace
+                    </button>
+                </div>
             </div>
+
         </div>
     </div>
 
@@ -354,7 +424,33 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
 });
 
-// 🌟 🟢 UNIVERSAL FILTERS SYNC SYSTEM (BULL-PROOF FIX) 🌟
+// 🌟 PROFILE DROPDOWN TOGGLE ENGINE 🌟
+function toggleProfileDropdown(e) {
+    if(e) e.stopPropagation();
+    const consoleBox = document.getElementById("profileDropdownConsole");
+    const profileBtn = document.getElementById("userProfileBtn");
+    
+    const isShowing = consoleBox.classList.contains("show");
+    if(isShowing) {
+        consoleBox.classList.remove("show");
+        profileBtn.classList.remove("active");
+    } else {
+        consoleBox.classList.add("show");
+        profileBtn.classList.add("active");
+    }
+}
+
+// Close Dropdown Console when clicking anywhere outside
+document.addEventListener("click", (e) => {
+    const consoleBox = document.getElementById("profileDropdownConsole");
+    const profileBtn = document.getElementById("userProfileBtn");
+    if (consoleBox && !consoleBox.contains(e.target) && !profileBtn.contains(e.target)) {
+        consoleBox.classList.remove("show");
+        profileBtn.classList.remove("active");
+    }
+});
+
+// 🌟 UNIVERSAL FILTERS SYNC SYSTEM 🌟
 function broadcastUniversalFilters() {
     const pFor = document.getElementById("global_production_for").value;
     const pLoc = document.getElementById("global_plant_location").value;
@@ -371,25 +467,27 @@ function broadcastUniversalFilters() {
             currentUrl.searchParams.delete("production_for");
         }
         
-        // 🔴 🟢 FIXED: Force mapping of ALL dynamic query names at the same time to guarantee sync across all different report routes
         if (pLoc) {
             currentUrl.searchParams.set("location", pLoc);
             currentUrl.searchParams.set("peeling_at", pLoc);
             currentUrl.searchParams.set("production_at", pLoc);
+            currentUrl.searchParams.set("receiving_center", pLoc);
+            currentUrl.searchParams.set("cold_storage_name", pLoc);
         } else {
             currentUrl.searchParams.delete("location");
             currentUrl.searchParams.delete("peeling_at");
             currentUrl.searchParams.delete("production_at");
+            currentUrl.searchParams.delete("receiving_center");
+            currentUrl.searchParams.delete("cold_storage_name");
         }
         
-        // Triggers safe hot reload with parameters attached
         iframe.src = currentUrl.toString();
     } catch(e) {
         console.warn("Universal filter injection synchronized.");
     }
 }
 
-// 🌟 🟢 AUTOMATIC DYNAMIC SIDEBAR INTERCEPTOR LINK EXTENSION 🌟
+// 🌟 AUTOMATIC DYNAMIC SIDEBAR INTERCEPTOR LINK EXTENSION 🌟
 function loadPage(url, element) {
     if(url === '#') return;
     
@@ -398,16 +496,18 @@ function loadPage(url, element) {
     
     let targetUrl = new URL(url, window.location.origin);
     
-    // Injects variables into the layout when user manually clicks sidebar options
     if (pFor) targetUrl.searchParams.set("production_for", pFor);
     if (pLoc) {
         targetUrl.searchParams.set("location", pLoc);
         targetUrl.searchParams.set("peeling_at", pLoc);
         targetUrl.searchParams.set("production_at", pLoc);
+        targetUrl.searchParams.set("receiving_center", pLoc);
+        targetUrl.searchParams.set("cold_storage_name", pLoc);
     }
 
     document.getElementById('frame').src = targetUrl.toString();
-    document.querySelectorAll('.submenu-item').forEach(el => el.classList.remove('active'));
+    
+    document.querySelectorAll('.submenu-item, .dropdown-submenu-item').forEach(el => el.classList.remove('active'));
     
     if(element) {
         element.classList.add('active');
@@ -416,64 +516,25 @@ function loadPage(url, element) {
             parentBlock.classList.add('open');
         }
     }
+    
     toggleSidebar(false);
+    document.getElementById("profileDropdownConsole").classList.remove("show");
+    document.getElementById("userProfileBtn").classList.remove("active");
 }
 
-// 🌟 AUTOMATIC DYNAMIC SUB-FRAME AUTO-LOADER & STRIKT FILTERING ENGINE 
 const frame = document.getElementById('frame');
 frame.addEventListener('load', () => {
     try {
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
+        if (!frameDoc) return;
+
         const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
-        
         frameDoc.documentElement.setAttribute("data-theme", currentTheme);
         
-        let iframeUrl = new URL(frame.src, window.location.origin);
-        const pFor = iframeUrl.searchParams.get("production_for") || document.getElementById("global_production_for").value;
-        const pLoc = iframeUrl.searchParams.get("location") || iframeUrl.searchParams.get("peeling_at") || iframeUrl.searchParams.get("production_at") || document.getElementById("global_plant_location").value;
-        
-        let shouldTriggerFilter = false;
-
-        // 1. Corporate Entity Sync (production_for)
-        if (pFor) {
-            const subProdFor = frameDoc.querySelector('select[name="production_for"], select#production_for');
-            if (subProdFor && subProdFor.value !== pFor) {
-                subProdFor.value = pFor;
-                subProdFor.dispatchEvent(new Event('change', { bubbles: true }));
-                shouldTriggerFilter = true;
-            }
+        if (frame.contentWindow && typeof frame.contentWindow.syncTheme === 'function') {
+            frame.contentWindow.syncTheme();
         }
 
-        // 2. STRIKT LOCATION ATTRIBUTE MATCHING (Only peeling_at & production_at)
-        if (pLoc) {
-            const subLoc = frameDoc.querySelector(
-                'select[name="peeling_at"], select#peeling_at, select[name="production_at"], select#production_at'
-            );
-            
-            if (subLoc && subLoc.value !== pLoc) {
-                subLoc.value = pLoc;
-                subLoc.dispatchEvent(new Event('change', { bubbles: true }));
-                shouldTriggerFilter = true;
-            }
-        }
-
-        // 3. AUTOMATIC SUB-TABLE UPDATES TRIGGER PROTOCOL
-        if (shouldTriggerFilter) {
-            const nativeForm = frameDoc.querySelector('form');
-            if (nativeForm) {
-                const filterBtn = nativeForm.querySelector('button[type="submit"], .btn-sync, #filterBtn, button[onclick*="submit"]');
-                if (filterBtn) filterBtn.click();
-                else nativeForm.submit();
-                console.log("🟢 Subscreen filters executed via Form/Button Action Trigger.");
-            } else {
-                const win = frame.contentWindow;
-                if (typeof win.filterTickets === "function") win.filterTickets();
-                else if (typeof win.filterMatrix === "function") win.filterMatrix();
-                else if (typeof win.applyFilters === "function") win.applyFilters();
-            }
-        }
-
-        // Nuclear Themes Enforcer Guard
         if (!frameDoc.getElementById('nuclear-dark-mode')) {
             let nuclearStyle = frameDoc.createElement("style");
             nuclearStyle.id = 'nuclear-dark-mode';
@@ -496,7 +557,7 @@ frame.addEventListener('load', () => {
             frameDoc.head.appendChild(nuclearStyle);
         }
     } catch(e) {
-        console.warn("Iframe automated tracking error handled.");
+        console.warn("Iframe basic automated tracking layer complete.");
     }
 });
 
@@ -511,8 +572,8 @@ function allow(key){
     return permissions.includes("ALL") || permissions.includes(key); 
 }
 
-// DYNAMIC MENU DATA
-const menuData = [
+// 🌟 SIDEBAR MENU ROUTING MATRIX
+const sidebarMenuData = [
     {
         title: "DASHBOARDS",
         items: [
@@ -613,54 +674,58 @@ const menuData = [
             ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
             ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR']
         ]
-    },
+    }
+];
+
+// 🌟 DROPDOWN OVERLAY PANEL CONFIGURATION DATA
+const dropdownConsoleMenuData = [
     {
         title: "MASTERS",
         subgroups: [
             {
                 name: "Business Masters",
                 items: [
-                    ['buyers', '/criteria/buyers', 'fa-caret-right', 'Buyers', 'Mstr'],
-                    ['buyer_agents', '/criteria/buyer_agents', 'fa-caret-right', 'Buyer Agents', 'Mstr'],
-                    ['suppliers', '/criteria/suppliers', 'fa-caret-right', 'Suppliers', 'Mstr'],
-                    ['vendors', '/criteria/vendors', 'fa-caret-right', 'Vendors', 'Mstr'],
-                    ['countries', '/criteria/countries', 'fa-caret-right', 'Countries', 'Mstr'],
-                    ['brands', '/criteria/brands', 'fa-caret-right', 'Brands', 'Mstr']
+                    ['buyers', '/criteria/buyers', 'fa-circle-chevron-right', 'Buyers', 'Mstr'],
+                    ['buyer_agents', '/criteria/buyer_agents', 'fa-circle-chevron-right', 'Buyer Agents', 'Mstr'],
+                    ['suppliers', '/criteria/suppliers', 'fa-circle-chevron-right', 'Suppliers', 'Mstr'],
+                    ['vendors', '/criteria/vendors', 'fa-circle-chevron-right', 'Vendors', 'Mstr'],
+                    ['countries', '/criteria/countries', 'fa-circle-chevron-right', 'Countries', 'Mstr'],
+                    ['brands', '/criteria/brands', 'fa-circle-chevron-right', 'Brands', 'Mstr']
                 ]
             },
             {
                 name: "Production Masters",
                 items: [
-                    ['species', '/criteria/species', 'fa-caret-right', 'Species', 'Prod'],
-                    ['varieties', '/criteria/varieties', 'fa-caret-right', 'Varieties', 'Prod'],
-                    ['grades', '/criteria/grades', 'fa-caret-right', 'Grades', 'Prod'],
-                    ['freezers', '/criteria/freezers', 'fa-caret-right', 'Freezers', 'Prod'],
-                    ['glazes', '/criteria/glazes', 'fa-caret-right', 'Glazes', 'Prod'],
-                    ['packing_styles', '/criteria/packing_styles', 'fa-caret-right', 'Packing Styles', 'Prod'],
-                    ['contractors', '/criteria/contractors', 'fa-caret-right', 'Contractors', 'Prod'],
-                    ['peeling_at', '/criteria/peeling_at', 'fa-caret-right', 'Peeling At', 'Prod'],
-                    ['peeling_rates', '/criteria/peeling_rates', 'fa-caret-right', 'Peeling Rates', 'Prod'],
-                    ['production_at', '/criteria/production_at', 'fa-caret-right', 'Production At', 'Prod'],
-                    ['production_for', '/criteria/production_for', 'fa-caret-right', 'Production For', 'Prod'],
-                    ['production_types', '/criteria/production_types', 'fa-caret-right', 'Production Types', 'Prod'],
-                    ['chemicals', '/criteria/chemicals', 'fa-caret-right', 'Chemicals', 'Prod'],
-                    ['purposes', '/criteria/purposes', 'fa-caret-right', 'Purposes', 'Prod'],
-                    ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-caret-right', 'Grade to HOSO', 'Prod'],
-                    ['hoso_hlso', '/criteria/hoso_hlso', 'fa-caret-right', 'HOSO & HLSO', 'Prod']
+                    ['species', '/criteria/species', 'fa-circle-chevron-right', 'Species', 'Prod'],
+                    ['varieties', '/criteria/varieties', 'fa-circle-chevron-right', 'Varieties', 'Prod'],
+                    ['grades', '/criteria/grades', 'fa-circle-chevron-right', 'Grades', 'Prod'],
+                    ['freezers', '/criteria/freezers', 'fa-circle-chevron-right', 'Freezers', 'Prod'],
+                    ['glazes', '/criteria/glazes', 'fa-circle-chevron-right', 'Glazes', 'Prod'],
+                    ['packing_styles', '/criteria/packing_styles', 'fa-circle-chevron-right', 'Packing Styles', 'Prod'],
+                    ['contractors', '/criteria/contractors', 'fa-circle-chevron-right', 'Contractors', 'Prod'],
+                    ['peeling_at', '/criteria/peeling_at', 'fa-circle-chevron-right', 'Peeling At', 'Prod'],
+                    ['peeling_rates', '/criteria/peeling_rates', 'fa-circle-chevron-right', 'Peeling Rates', 'Prod'],
+                    ['production_at', '/criteria/production_at', 'fa-circle-chevron-right', 'Production At', 'Prod'],
+                    ['production_for', '/criteria/production_for', 'fa-circle-chevron-right', 'Production For', 'Prod'],
+                    ['production_types', '/criteria/production_types', 'fa-circle-chevron-right', 'Production Types', 'Prod'],
+                    ['chemicals', '/criteria/chemicals', 'fa-circle-chevron-right', 'Chemicals', 'Prod'],
+                    ['purposes', '/criteria/purposes', 'fa-circle-chevron-right', 'Purposes', 'Prod'],
+                    ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-circle-chevron-right', 'Grade to HOSO', 'Prod'],
+                    ['hoso_hlso', '/criteria/hoso_hlso', 'fa-circle-chevron-right', 'HOSO & HLSO', 'Prod']
                 ]
             },
             {
                 name: "Inventory Masters",
                 items: [
                     ['cold_storage', '/inventory/cold_storage', 'fa-warehouse', 'Cold Storage Master', 'InvM'],
-                    ['coldstore_locations', '/criteria/coldstore_locations', 'fa-caret-right', 'Coldstore Locations', 'InvM'],
-                    ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-caret-right', 'Vehicle Numbers', 'InvM']
+                    ['coldstore_locations', '/criteria/coldstore_locations', 'fa-circle-chevron-right', 'Coldstore Locations', 'InvM'],
+                    ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-circle-chevron-right', 'Vehicle Numbers', 'InvM']
                 ]
             },
             {
                 name: "Finance Masters",
                 items: [
-                    ['hsn_codes', '/criteria/hsn_codes', 'fa-caret-right', 'HSN Codes', 'FinM']
+                    ['hsn_codes', '/criteria/hsn_codes', 'fa-circle-chevron-right', 'HSN Codes', 'FinM']
                 ]
             }
         ]
@@ -695,42 +760,31 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 
 function renderOrganizedMenu() {
     let html = "";
-    menuData.forEach(cat => {
-        if (cat.roleRequired) {
-            const hasRoleAccess = (currentUserRole === cat.roleRequired) || isDefaultSuperAdmin;
-            if (!hasRoleAccess) return; 
-        }
-
+    sidebarMenuData.forEach(cat => {
         let hasVisible = false;
         if (cat.items) {
-            hasVisible = cat.items.some(item => allow(item[0]) || item[5]);
+            hasVisible = cat.items.some(item => allow(item[0]));
         } else if (cat.subgroups) {
             hasVisible = cat.subgroups.some(sub => sub.items.some(item => allow(item[0])));
         }
         if (!hasVisible) return;
 
-        const titleClass = cat.roleRequired ? "pillar-title super-admin-title" : "pillar-title";
-        html += `<div class="pillar-block"><div class="${titleClass}">${cat.title}</div><div class="menu-wrapper">`;
+        html += `<div class="pillar-block"><div class="pillar-title">${cat.title}</div><div class="menu-wrapper">`;
 
         if (cat.items) {
             cat.items.forEach(item => {
-                const [permissionKey, route, icon, label, badge, isDisabled] = item;
-                if (!isDisabled && !allow(permissionKey)) return;
-                const disabledClass = isDisabled ? "disabled-link" : "";
-                const isSuperAdminBlock = cat.roleRequired ? "super-badge" : "";
-                const badgeClass = isDisabled ? `kpi-badge disabled-badge ${isSuperAdminBlock}` : `kpi-badge ${isSuperAdminBlock}`;
-                const clickHandler = isDisabled ? `onclick="loadPage('#', this)"` : `onclick="loadPage('${route}', this)"`;
-
+                const [permissionKey, route, icon, label, badge] = item;
+                if (!allow(permissionKey)) return;
                 html += `<div class="submenu-item-row">
-                            <a class="submenu-item ${disabledClass}" href="javascript:void(0)" ${clickHandler}>
+                            <a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                 <div><i class="fa-solid ${icon}"></i> ${label}</div>
-                                <span class="${badgeClass}">${badge}</span>
+                                <span class="kpi-badge">${badge}</span>
                             </a>
                            </div>`;
             });
         } else if (cat.subgroups) {
             cat.subgroups.forEach(sub => {
-                let allowedSubItems = sub.items.filter(item => allow(item[0]) || item[5]);
+                let allowedSubItems = sub.items.filter(item => allow(item[0]));
                 if (allowedSubItems.length === 0) return;
 
                 html += `<div class="submenu-heading-block">
@@ -740,15 +794,11 @@ function renderOrganizedMenu() {
                             <div class="reports-container">`;
                             
                 allowedSubItems.forEach(item => {
-                    const [permissionKey, route, icon, label, badge, isDisabled] = item;
-                    const disabledClass = isDisabled ? "disabled-link" : "";
-                    const badgeClass = isDisabled ? "kpi-badge disabled-badge" : "kpi-badge";
-                    const clickHandler = isDisabled ? `onclick="loadPage('#', this)"` : `onclick="loadPage('${route}', this)"`;
-
+                    const [permissionKey, route, icon, label, badge] = item;
                     html += `<div class="submenu-item-row">
-                                <a class="submenu-item ${disabledClass}" href="javascript:void(0)" ${clickHandler}>
+                                <a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                     <div><i class="fa-solid ${icon}"></i> ${label}</div>
-                                    <span class="${badgeClass}">${badge}</span>
+                                    <span class="kpi-badge">${badge}</span>
                                 </a>
                                </div>`;
                 });
@@ -760,10 +810,73 @@ function renderOrganizedMenu() {
     sidebarMenu.innerHTML = html;
 }
 
+function renderDropdownConsoleMenu() {
+    const consoleScrollBox = document.getElementById("dropdownMenuScrollBox");
+    if(!consoleScrollBox) return;
+    
+    let html = "";
+    dropdownConsoleMenuData.forEach(cat => {
+        if (cat.roleRequired) {
+            const hasRoleAccess = (currentUserRole === cat.roleRequired) || isDefaultSuperAdmin;
+            if (!hasRoleAccess) return; 
+        }
+
+        let hasVisible = false;
+        if (cat.items) {
+            hasVisible = cat.items.some(item => allow(item[0]));
+        } else if (cat.subgroups) {
+            hasVisible = cat.subgroups.some(sub => sub.items.some(item => allow(item[0])));
+        }
+        if (!hasVisible) return;
+
+        const titleClass = cat.roleRequired ? "dropdown-pillar-title super-admin-title" : "dropdown-pillar-title";
+        html += `<div class="dropdown-pillar-block"><div class="${titleClass}">${cat.title}</div><div class="dropdown-submenu-list">`;
+
+        if (cat.items) {
+            cat.items.forEach(item => {
+                const [permissionKey, route, icon, label, badge] = item;
+                if (!allow(permissionKey)) return;
+                const isSuperAdminBlock = cat.roleRequired ? "super-badge" : "";
+                
+                html += `<div class="dropdown-item-row">
+                            <a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                                <div><i class="fa-solid ${icon}"></i> ${label}</div>
+                                <span class="kpi-badge ${isSuperAdminBlock}">${badge}</span>
+                            </a>
+                           </div>`;
+            });
+        } else if (cat.subgroups) {
+            cat.subgroups.forEach(sub => {
+                let allowedSubItems = sub.items.filter(item => allow(item[0]));
+                if (allowedSubItems.length === 0) return;
+
+                html += `<div class="submenu-heading-block">
+                            <div class="submenu-heading-text" style="margin:0; padding:8px 6px;" onclick="toggleReportsGroup(this)">
+                                <i class="fa-solid fa-chevron-right sub-chevron"></i><span>${sub.name}</span>
+                            </div>
+                            <div class="reports-container">`;
+                            
+                allowedSubItems.forEach(item => {
+                    const [permissionKey, route, icon, label, badge] = item;
+                    html += `<div class="dropdown-item-row" style="margin:2px 0 2px 14px;">
+                                <a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                                    <div><i class="fa-solid ${icon}"></i> ${label}</div>
+                                    <span class="kpi-badge">${badge}</span>
+                                </a>
+                               </div>`;
+                });
+                html += `</div></div>`;
+            });
+        }
+        html += `</div></div>`;
+    });
+    consoleScrollBox.innerHTML = html;
+}
+
 function toggleReportsGroup(element) {
     const parentBlock = element.closest('.submenu-heading-block');
     const isOpen = parentBlock.classList.contains('open');
-    const masterContainer = element.closest('.menu-wrapper');
+    const masterContainer = element.closest('.menu-wrapper') || element.closest('.dropdown-submenu-list');
     if(masterContainer) {
         masterContainer.querySelectorAll('.submenu-heading-block').forEach(block => {
             if(block !== parentBlock) block.classList.remove('open');
@@ -791,6 +904,7 @@ function logout() {
 
 window.onload = () => {
     renderOrganizedMenu();
+    renderDropdownConsoleMenu();
     if(allow("processing_dashboard")) {
         loadPage('/dashboard/processing_dashboard');
     } else if(allow("inventory_dashboard")) {

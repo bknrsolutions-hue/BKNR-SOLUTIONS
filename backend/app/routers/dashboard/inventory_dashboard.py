@@ -15,15 +15,16 @@ from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     varieties, grades, species, production_for
 )
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(
     prefix="/inventory_dashboard",
     tags=["INVENTORY DASHBOARD"]
 )
 
-# ============================================================
-# INVENTORY DASHBOARD (MAIN ROUTE)
-# ============================================================
+# ============================================================================
+# INVENTORY DASHBOARD (MAIN ROUTE) - WITH ACTIVE GLOBAL FILTERS
+# ============================================================================
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def get_inventory_dashboard(
@@ -36,10 +37,17 @@ async def get_inventory_dashboard(
     sel_fy: str = Query("ALL"),  
     db: Session = Depends(get_db)
 ):
+    # 🟢 1. FETCH ACTIVE UNIVERSAL GLOBAL FILTERS CONTEXT
+    global_production_for, global_location = get_global_filters(request)
+
     # SESSION & COMPANY CHECK
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login")
+
+    # 🟢 DUAL MODE OVERRIDE LAYER: గ్లోబల్ హెడర్ మారితే స్క్రీన్ లోకల్ సెలెక్షన్స్ ఓవర్‌రైడ్ అవుతాయి
+    if global_production_for: sel_prod_for = global_production_for
+    if global_location: sel_prod_at = global_location
 
     today = ist_now().date()
     current_year = today.year
@@ -60,15 +68,21 @@ async def get_inventory_dashboard(
     fy_start = date(start_year, 4, 1)
     fy_end = date(start_year + 1, 3, 31)
 
-    # ============================================================
-    # 🌟 1. FRESH PRODUCTION LOGIC
-    # ============================================================
-    gate_records = db.query(GateEntry.batch_number).filter(
+    # ============================================================================
+    # 🌟 1. FRESH PRODUCTION LOGIC (WITH ACTIVE GLOBAL FILTERS INJECTION)
+    # ============================================================================
+    gate_records_q = db.query(GateEntry.batch_number).filter(
         GateEntry.company_id == comp_code, 
         GateEntry.batch_number != None,
         GateEntry.date >= fy_start,
         GateEntry.date <= fy_end
-    ).all()
+    )
+    if sel_prod_for != "ALL":
+        gate_records_q = gate_records_q.filter(func.trim(GateEntry.production_for) == func.trim(sel_prod_for))
+    if sel_prod_at != "ALL":
+        gate_records_q = gate_records_q.filter(func.trim(GateEntry.receiving_center) == func.trim(sel_prod_at))
+        
+    gate_records = gate_records_q.all()
     soaking_batches_in_fy = {str(r[0]).strip() for r in gate_records if r[0]}
 
     fresh_q = db.query(stock_entry).filter(
@@ -80,8 +94,8 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": fresh_q = fresh_q.filter(stock_entry.species == sel_species)
     if sel_variety != "ALL": fresh_q = fresh_q.filter(stock_entry.variety == sel_variety)
     if sel_grade != "ALL": fresh_q = fresh_q.filter(stock_entry.grade == sel_grade)
-    if sel_prod_for != "ALL": fresh_q = fresh_q.filter(stock_entry.production_for == sel_prod_for)
-    if sel_prod_at != "ALL": fresh_q = fresh_q.filter(stock_entry.production_at == sel_prod_at)
+    if sel_prod_for != "ALL": fresh_q = fresh_q.filter(func.trim(stock_entry.production_for) == func.trim(sel_prod_for))
+    if sel_prod_at != "ALL": fresh_q = fresh_q.filter(func.trim(stock_entry.production_at) == func.trim(sel_prod_at))
 
     fresh_rows = fresh_q.all()
 
@@ -94,9 +108,9 @@ async def get_inventory_dashboard(
         total_in_qty += qty
         total_in_value += inv_val
 
-    # ============================================================
+    # ============================================================================
     # 🌟 2. GENERAL DASHBOARD LOOP
-    # ============================================================
+    # ============================================================================
     stocks = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
     cs_holds = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code).all()
 
@@ -120,8 +134,8 @@ async def get_inventory_dashboard(
         if sel_species != "ALL" and item.species != sel_species: return True
         if sel_variety != "ALL" and item.variety != sel_variety: return True
         if sel_grade != "ALL" and item.grade != sel_grade: return True
-        if sel_prod_for != "ALL" and item.production_for != sel_prod_for: return True
-        if sel_prod_at != "ALL" and loc_val != sel_prod_at: return True
+        if sel_prod_for != "ALL" and func.trim(item.production_for) != func.trim(sel_prod_for): return True
+        if sel_prod_at != "ALL" and func.trim(loc_val) != func.trim(sel_prod_at): return True
         return False
 
     all_raw_data = []
@@ -130,7 +144,7 @@ async def get_inventory_dashboard(
         all_raw_data.append((s, str(prod_val).strip().upper(), s.date))
         
     for c in cs_holds: 
-        cs_val = getattr(c, "cold_storage_name", "CS") or "CS"
+        cs_val = getattr(c, "production_at", "CS") or "CS" # 👈 Modified cold storage location field alignment to production_at rule
         item_date = c.in_date if c.in_date else today
         all_raw_data.append((c, str(cs_val).strip().upper(), item_date))
 
@@ -215,9 +229,9 @@ async def get_inventory_dashboard(
         variety_stats[item.variety or "N/A"] += net
         grade_stats[item.grade or "N/A"] += net
 
-    # ============================================================
-    # 🌟 3. REGLAZE KPI LOGIC
-    # ============================================================
+    # ============================================================================
+    # 🌟 3. REGLAZE KPI LOGIC (WITH ACTIVE GLOBAL FILTERS INJECTION)
+    # ============================================================================
     reglaze_q = db.query(stock_entry).filter(
         stock_entry.company_id == comp_code,
         func.upper(stock_entry.type_of_production) == "REGLAZE"
@@ -228,8 +242,8 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": reglaze_q = reglaze_q.filter(stock_entry.species == sel_species)
     if sel_variety != "ALL": reglaze_q = reglaze_q.filter(stock_entry.variety == sel_variety)
     if sel_grade != "ALL": reglaze_q = reglaze_q.filter(stock_entry.grade == sel_grade)
-    if sel_prod_for != "ALL": reglaze_q = reglaze_q.filter(stock_entry.production_for == sel_prod_for)
-    if sel_prod_at != "ALL": reglaze_q = reglaze_q.filter(stock_entry.production_at == sel_prod_at)
+    if sel_prod_for != "ALL": reglaze_q = reglaze_q.filter(func.trim(stock_entry.production_for) == func.trim(sel_prod_for))
+    if sel_prod_at != "ALL": reglaze_q = reglaze_q.filter(func.trim(stock_entry.production_at) == func.trim(sel_prod_at))
 
     reglaze_rows = reglaze_q.all()
     reglaze_qty = 0.0
@@ -250,9 +264,9 @@ async def get_inventory_dashboard(
         reglaze_qty += (qty * r_sign)
         reglaze_value += (row_val * r_sign)
 
-    # ============================================================
-    # OVERRIDES FOR EXTERNAL TABLES (SALES & REPROCESS)
-    # ============================================================
+    # ============================================================================
+    # OVERRIDES FOR EXTERNAL TABLES (SALES & REPROCESS WITH FILTERS)
+    # ============================================================================
     sales_db_query = db.query(
         func.sum(sales_dispatch.sales_quantity).label("sales_qty_kg"),  
         func.sum(sales_dispatch.amount_inr).label("sales_total_inr_value")  
@@ -265,7 +279,7 @@ async def get_inventory_dashboard(
         )
     if sel_variety != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.variety == sel_variety)
     if sel_grade != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.grade == sel_grade)
-    if sel_prod_for != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.buyer_name == sel_prod_for)
+    if sel_prod_for != "ALL": sales_db_query = sales_db_query.filter(func.trim(sales_dispatch.buyer_name) == func.trim(sel_prod_for))
         
     sales_metrics_result = sales_db_query.first()
     total_out_qty = float(getattr(sales_metrics_result, "sales_qty_kg", 0) or 0)
@@ -282,7 +296,8 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.species == sel_species)
     if sel_variety != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.variety == sel_variety)
     if sel_grade != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.grade == sel_grade)
-    if sel_prod_for != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.production_for == sel_prod_for)
+    if sel_prod_for != "ALL": reprocess_db_query = reprocess_db_query.filter(func.trim(Reprocess.production_for) == func.trim(sel_prod_for))
+    if sel_prod_at != "ALL": reprocess_db_query = reprocess_db_query.filter(func.trim(Reprocess.production_at) == func.trim(sel_prod_at))
 
     reprocess_metrics_result = reprocess_db_query.first()
     reprocess_qty = float(getattr(reprocess_metrics_result, "reproc_total_qty", 0) or 0)
@@ -375,6 +390,9 @@ async def get_inventory_dashboard(
         "sel_variety": sel_variety, 
         "sel_grade": sel_grade,
         "sel_prod_for": sel_prod_for, 
+        "sel_prod_at": sel_prod_at,
+        "selected_production_for": global_production_for, # 🟢 Passed for layout sync memory lock
+        "selected_location": global_location,             # 🟢 Passed for layout sync memory lock
         "sel_fy": sel_fy, 
         "selected_fy": str(start_year),
         "current_fy_name": current_fy_string
@@ -385,22 +403,29 @@ async def get_inventory_dashboard(
     )
 
 
-# ============================================================
-# 🌟 KPI DRILL-DOWN DETAILS (AJAX ENDPOINT FOR POP-UP TABLE)
-# ============================================================
+# ============================================================================
+# 🌟 KPI DRILL-DOWN DETAILS (AJAX ENDPOINT FOR POP-UP TABLE WITH FILTERS)
+# ============================================================================
 @router.get("/kpi_details")
 async def get_kpi_details(
     request: Request,
-    kpi_type: str = Query(...),  # FRESH, REGLAZE, REPROCESS
+    kpi_type: str = Query(...),  
     sel_species: str = Query("ALL"),
     sel_variety: str = Query("ALL"),
     sel_grade: str = Query("ALL"),
+    sel_prod_at: str = Query("ALL"), # 🟢 Added to drill down signature
+    sel_prod_for: str = Query("ALL"), # 🟢 Added to drill down signature
     sel_fy: str = Query("ALL"),
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
     if not comp_code:
         return {"status": "error", "message": "Unauthorized"}, 401
+
+    # 🟢 SYNC DRILL-DOWN WITH ACTIVE UNIVERSAL FILTERS POOL
+    global_production_for, global_location = get_global_filters(request)
+    if global_production_for: sel_prod_for = global_production_for
+    if global_location: sel_prod_at = global_location
 
     # Financial Year Boundary Logic
     today = ist_now().date()
@@ -422,11 +447,17 @@ async def get_kpi_details(
 
     # 1. FRESH PRODUCTION DRILL DOWN
     if kpi_type.upper() == "FRESH":
-        gate_records = db.query(GateEntry.batch_number).filter(
+        gate_records_q = db.query(GateEntry.batch_number).filter(
             GateEntry.company_id == comp_code, 
             GateEntry.date >= fy_start, 
             GateEntry.date <= fy_end
-        ).all()
+        )
+        if sel_prod_for != "ALL":
+            gate_records_q = gate_records_q.filter(func.trim(GateEntry.production_for) == func.trim(sel_prod_for))
+        if sel_prod_at != "ALL":
+            gate_records_q = gate_records_q.filter(func.trim(GateEntry.receiving_center) == func.trim(sel_prod_at))
+            
+        gate_records = gate_records_q.all()
         soaking_batches = {str(r[0]).strip() for r in gate_records if r[0]}
 
         query = db.query(stock_entry).filter(
@@ -437,6 +468,8 @@ async def get_kpi_details(
         if sel_species != "ALL": query = query.filter(stock_entry.species == sel_species)
         if sel_variety != "ALL": query = query.filter(stock_entry.variety == sel_variety)
         if sel_grade != "ALL": query = query.filter(stock_entry.grade == sel_grade)
+        if sel_prod_for != "ALL": query = query.filter(func.trim(stock_entry.production_for) == func.trim(sel_prod_for))
+        if sel_prod_at != "ALL": query = query.filter(func.trim(stock_entry.production_at) == func.trim(sel_prod_at))
         
         rows = query.all()
         for r in rows:
@@ -464,6 +497,8 @@ async def get_kpi_details(
         if sel_species != "ALL": query = query.filter(stock_entry.species == sel_species)
         if sel_variety != "ALL": query = query.filter(stock_entry.variety == sel_variety)
         if sel_grade != "ALL": query = query.filter(stock_entry.grade == sel_grade)
+        if sel_prod_for != "ALL": query = query.filter(func.trim(stock_entry.production_for) == func.trim(sel_prod_for))
+        if sel_prod_at != "ALL": query = query.filter(func.trim(stock_entry.production_at) == func.trim(sel_prod_at))
 
         rows = query.all()
         for r in rows:
@@ -492,12 +527,14 @@ async def get_kpi_details(
         if sel_species != "ALL": query = query.filter(Reprocess.species == sel_species)
         if sel_variety != "ALL": query = query.filter(Reprocess.variety == sel_variety)
         if sel_grade != "ALL": query = query.filter(Reprocess.grade == sel_grade)
+        if sel_prod_for != "ALL": query = query.filter(func.trim(Reprocess.production_for) == func.trim(sel_prod_for))
+        if sel_prod_at != "ALL": query = query.filter(func.trim(Reprocess.production_at) == func.trim(sel_prod_at))
 
         rows = query.all()
         for r in rows:
             result_data.append({
                 "date": str(r.date) if r.date else "N/A", 
-                "batch": r.batch_no or "N/A", 
+                "batch": r.batch_id or "N/A", 
                 "species": r.species or "N/A",
                 "variety": r.variety or "N/A", 
                 "grade": r.grade or "N/A", 

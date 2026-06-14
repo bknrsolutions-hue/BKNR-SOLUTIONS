@@ -1,5 +1,10 @@
-from fastapi import APIRouter, Request, Depends, Body, HTTPException
+# ============================================================================
+# COLD STORAGE HOLDING REPORT ROUTER (BKNR ERP - FULLY UPDATED WITH FILTERS)
+# ============================================================================
+
+from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date
@@ -8,6 +13,7 @@ from datetime import timedelta
 from io import BytesIO
 from openpyxl import Workbook
 import math
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.inventory_management import cold_storage_holding
@@ -18,6 +24,8 @@ from app.database.models.criteria import (
 )
 
 router = APIRouter(prefix="/cold_storage_holding_report", tags=["COLD STORAGE HOLDING REPORT"])
+
+templates = Jinja2Templates(directory="app/templates")
 
 # ------------------------------------------------------------
 # HELPER: HOLDING COST CALCULATION
@@ -71,7 +79,7 @@ def calculate_batch_holding_cost(db: Session, batch_no: str, comp_code: str, tar
     return round(total_cost, 2)
 
 # ------------------------------------------------------------
-# 1. MAIN REPORT PAGE (GET)
+# 1. MAIN REPORT PAGE (GET) - WITH UNIVERSAL FILTERS LAYER
 # ------------------------------------------------------------
 @router.get("/", response_class=HTMLResponse)
 async def cold_storage_report_page(
@@ -80,11 +88,22 @@ async def cold_storage_report_page(
     from_date: str = "",
     to_date: str = ""
 ):
+    # 🟢 FETCH ACTIVE UNIVERSAL FILTERS FROM CONTEXT LAYER
+    production_for, location = get_global_filters(request)
+    
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
     if not comp_code: return RedirectResponse("/auth/login", status_code=302)
 
+    # Base Query Construction
     q = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code)
+    
+    # 🟢 INJECT ACTIVE UNIVERSAL FILTERS
+    if production_for:
+        q = q.filter(func.trim(cold_storage_holding.production_for) == func.trim(production_for))
+    if location:
+        q = q.filter(func.trim(cold_storage_holding.production_at) == func.trim(location)) # 👈 Production At matching
+
     if from_date: q = q.filter(cold_storage_holding.in_date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(cold_storage_holding.in_date <= date.fromisoformat(to_date))
 
@@ -143,6 +162,8 @@ async def cold_storage_report_page(
         "rows": rows, 
         "from_date": from_date, 
         "to_date": to_date,
+        "selected_production_for": production_for, # 🟢 Passed for dropdown memory lock
+        "selected_location": location,             # 🟢 Passed for dropdown memory lock
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "varieties_list": get_list(varieties, "variety_name"),
@@ -152,7 +173,6 @@ async def cold_storage_report_page(
         "role": role
     }
     
-    # FIXED: Added explicit request=request to prevent TemplateResponse error
     return request.app.state.templates.TemplateResponse(
         request=request, 
         name="inventory_management/cold_storage_report.html", 
@@ -160,7 +180,7 @@ async def cold_storage_report_page(
     )
 
 # ------------------------------------------------------------
-# 2. API: UPDATE RECORD
+# 2. API: UPDATE RECORD - TRANSACTIONAL
 # ------------------------------------------------------------
 @router.post("/update")
 async def update_cold_storage(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -196,7 +216,7 @@ async def update_cold_storage(request: Request, payload: dict = Body(...), db: S
     return {"status": "success"}
 
 # ------------------------------------------------------------
-# 3. API: DELETE ENTRY
+# 3. API: DELETE ENTRY - TRANSACTIONAL
 # ------------------------------------------------------------
 @router.post("/delete")
 async def delete_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -213,14 +233,24 @@ async def delete_entry(request: Request, payload: dict = Body(...), db: Session 
     raise HTTPException(status_code=404)
 
 # ------------------------------------------------------------
-# 4. EXCEL EXPORT
+# 4. EXCEL EXPORT - WITH UNIVERSAL FILTERS LAYER
 # ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_xlsx(request: Request, db: Session = Depends(get_db), from_date: str = "", to_date: str = ""):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/auth/login")
 
+    # 🟢 FIX: Extract filters with custom prefix to bypass any explicit argument name clash
+    global_production_for, global_location = get_global_filters(request)
+
     q = db.query(cold_storage_holding).filter(cold_storage_holding.company_id == comp_code)
+    
+    # 🟢 Layer universal bindings safely onto workbook parameter constraints pipeline
+    if global_production_for:
+        q = q.filter(func.trim(cold_storage_holding.production_for) == func.trim(global_production_for))
+    if global_location:
+        q = q.filter(func.trim(cold_storage_holding.production_at) == func.trim(global_location))
+
     if from_date: q = q.filter(cold_storage_holding.in_date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(cold_storage_holding.in_date <= date.fromisoformat(to_date))
     

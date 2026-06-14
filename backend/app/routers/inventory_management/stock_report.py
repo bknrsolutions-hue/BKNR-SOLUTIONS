@@ -1,6 +1,6 @@
-# ============================================================
+# ============================================================================
 # STOCK REPORT ROUTER – FINAL (WITH FY FILTERS & EXPORTS)
-# ============================================================
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, date
 from app.utils.timezone import ist_now
+from app.utils.global_filters import get_global_filters
 
 import openpyxl 
 from io import BytesIO
@@ -26,9 +27,6 @@ from app.database.models.criteria import (
 )
 
 router = APIRouter(prefix="/stock_report", tags=["STOCK REPORT"])
-
-# Indian Timezone setup
-
 
 # ------------------------------------------------------------
 # HELPER: GET COMPANY INFO
@@ -57,7 +55,7 @@ def check_stock_availability(db: Session, comp_code: str, batch: str, location: 
     return int(res.bal_mc or 0), int(res.bal_ls or 0)
 
 # ------------------------------------------------------------
-# STOCK REPORT PAGE (GET)
+# STOCK REPORT PAGE (GET) - WITH UNIVERSAL FILTERS LAYER
 # ------------------------------------------------------------
 @router.get("", response_class=HTMLResponse)
 async def stock_report_page(
@@ -67,6 +65,9 @@ async def stock_report_page(
     to_date: str = "",
     fy: str = Query(None)
 ):
+    # 🟢 FETCH ACTIVE UNIVERSAL FILTERS FROM CONTEXT LAYER
+    global_production_for, global_location = get_global_filters(request)
+
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
@@ -90,10 +91,16 @@ async def stock_report_page(
     # --- Financial Year Logic ---
     selected_fy = fy
     
-    # 🌟 బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
+    # బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
     q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
         stock_entry.company_id == comp_code
     )
+
+    # 🟢 INJECT ACTIVE UNIVERSAL FILTERS ON BASE QUERY POOL
+    if global_production_for:
+        q = q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
+    if global_location:
+        q = q.filter(func.trim(stock_entry.production_at) == func.trim(global_location))
 
     if selected_fy:
         start_year = int(selected_fy)
@@ -122,22 +129,18 @@ async def stock_report_page(
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
-    # 🌟 production_types టేబుల్ లో company_id లేకపోయినా లేదా కాలమ్ నేమ్స్ తేడా ఉన్నా క్రాష్ అవ్వకుండా సేఫ్ ఫెట్చింగ్ లాజిక్
+    # production_types టేబుల్ సేఫ్ ఫెట్చింగ్ లాజిక్
     try:
-        # మొదట కంపెనీ కోడ్ తో ట్రై చేస్తున్నాం
         p_types_data = db.query(production_types).filter(production_types.company_id == comp_code).all()
     except Exception:
-        # ఒకవేళ ఆ టేబుల్ లో company_id కాలమ్ లేకపోతే గ్లోబల్ గా అన్ని రికార్డులు తెస్తాం
         p_types_data = db.query(production_types).all()
 
-    # మీ మోడల్ లో కాలమ్ పేరు 'type_name' లేదా 'production_type' ఏదైనా సరే డైనమిక్ గా వాల్యూస్ కలెక్ట్ చేస్తుంది భాయ్
     prod_types_list = []
     for x in p_types_data:
         val = getattr(x, "type_name", None) or getattr(x, "production_type", None) or getattr(x, "type_of_production", None)
         if val: prod_types_list.append(val)
     prod_types_list = sorted(list(set(prod_types_list)))
 
-    # ఒకవేళ డేటాబేస్ టేబుల్ పూర్తిగా ఖాళీగా ఉంటే డిఫాల్ట్ వాల్యూస్ బ్యాకప్ లాగా పనిచేస్తాయి
     if not prod_types_list:
         prod_types_list = ["PROCESSED", "SEMIPROCESSED", "RAW"]
 
@@ -148,13 +151,12 @@ async def stock_report_page(
         "to_date": to_date,
         "financial_years": financial_years,
         "selected_fy": selected_fy,
+        "selected_production_for": global_production_for, # 🟢 For Dropdown State Memory Lock
+        "selected_location": global_location,             # 🟢 For Dropdown State Memory Lock
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
-        
-        # 🌟 డేటా టేబుల్ నుండి క్లీన్ గా వెళ్తున్న డ్రాప్ డౌన్ లిస్ట్
         "type_of_production_list": prod_types_list,
-        
         "production_at_list": get_list(production_at, "production_at"),
         "freezers_list": get_list(freezers, "freezer_name"),
         "packing_styles_list": get_list(packing_styles, "packing_style"),
@@ -170,11 +172,11 @@ async def stock_report_page(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="inventory_management/stock_report.html",
-        context=context
+        context={k: v for k, v in context.items()}
     )
 
 # ------------------------------------------------------------
-# UPDATE STOCK (WITH VALIDATION & AUDIT)
+# UPDATE STOCK (WITH VALIDATION & AUDIT) - TRANSACTIONAL
 # ------------------------------------------------------------
 @router.post("/update")
 async def update_stock(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -218,7 +220,7 @@ async def update_stock(request: Request, payload: dict = Body(...), db: Session 
     return {"status": "success"}
 
 # ------------------------------------------------------------
-# EXPORT EXCEL (WITH FULL FILTERS)
+# EXPORT EXCEL (WITH FULL FILTERS & GLOBAL LAYERS)
 # ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_xlsx(
@@ -228,7 +230,17 @@ def export_xlsx(
     variety: str = "", location: str = ""
 ):
     comp_code = request.session.get("company_code")
+    
+    # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
+    global_production_for, global_location = get_global_filters(request)
+
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+
+    # 🟢 Layer universal bindings safely onto workbook generation parameters pool
+    if global_production_for:
+        q = q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
+    if global_location:
+        q = q.filter(func.trim(stock_entry.production_at) == func.trim(global_location))
 
     if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
@@ -267,7 +279,7 @@ def export_xlsx(
     return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=Stock_Ledger.xlsx"})
 
 # ------------------------------------------------------------
-# EXPORT PDF (WITH FULL FILTERS & PRINT LOGIC)
+# EXPORT PDF (WITH FULL FILTERS & GLOBAL LAYERS)
 # ------------------------------------------------------------
 @router.get("/export_pdf")
 def export_pdf(
@@ -278,7 +290,17 @@ def export_pdf(
     download: bool = Query(False)
 ):
     comp_code = request.session.get("company_code")
+    
+    # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
+    global_production_for, global_location = get_global_filters(request)
+
     q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+
+    # 🟢 Layer universal bindings safely onto PDF render parameter pipeline
+    if global_production_for:
+        q = q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
+    if global_location:
+        q = q.filter(func.trim(stock_entry.production_at) == func.trim(global_location))
 
     if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
     if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
@@ -318,7 +340,7 @@ async def get_stock_audits(request: Request, db: Session = Depends(get_db)):
     return JSONResponse([{"timestamp": l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"), "user": l.AuditLog.edited_by.split('@')[0], "batch": l.batch_number, "field": l.AuditLog.field_name.replace('_', ' ').title(), "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"} for l in logs])
 
 # ------------------------------------------------------------
-# DELETE RECORD
+# DELETE RECORD - TRANSACTIONAL
 # ------------------------------------------------------------
 @router.post("/delete")
 async def delete_stock(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):

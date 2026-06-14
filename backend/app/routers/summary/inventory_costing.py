@@ -1,7 +1,7 @@
-# ============================================================
+# ============================================================================
 # FINAL INVENTORY & REPROCESS COSTING ROUTER
-# (UPDATED: ALL DATA BY DEFAULT & CONDITIONAL CARD VIEW)
-# ============================================================
+# (UPDATED: ALL DATA BY DEFAULT & CONDITIONAL CARD VIEW WITH GLOBAL FILTERS)
+# ============================================================================
 
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,6 +13,7 @@ from sqlalchemy import func, and_, case
 import re
 from datetime import datetime, date
 from app.utils.timezone import ist_now
+from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -43,9 +44,9 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 
-# ============================================================
+# ============================================================================
 # HELPERS
-# ============================================================
+# ============================================================================
 
 SPECIAL_GRADES = ["BKN", "DC", "BLACK SPOT"]
 
@@ -154,9 +155,9 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
 
     return 5.0
 
-# ============================================================
-# MAIN ROUTER WITH UPDATED FILTER FLOW
-# ============================================================
+# ============================================================================
+# MAIN ROUTER WITH UPDATED FILTER FLOW & GLOBAL ENGINE INJECTION
+# ============================================================================
 
 @router.get("/inventory_costing", response_class=HTMLResponse)
 def inventory_costing_page(
@@ -165,12 +166,19 @@ def inventory_costing_page(
     from_date: str = "",
     to_date: str = "",
     fy: str = Query(None),
-    production_for_filter: str = Query("", alias="production_for") # UI డ్రాప్‌డౌన్ ఫిల్టర్ మ్యాచ్
+    production_for_filter: str = Query("", alias="production_for") 
 ):
+    # 🟢 1. FETCH ACTIVE UNIVERSAL GLOBAL FILTERS CONTEXT
+    production_for, location = get_global_filters(request)
+    
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/auth/login", status_code=302)
 
-    # 1. Dynamic Financial Years Generation from Gate Entry
+    # 🟢 DUAL MODE FALLBACK LAYER: గ్లోబల్ హెడర్ సెలెక్షన్ ఉంటే అది లోకల్ స్క్రీన్ ఫిల్టర్ ని ఓవర్‌రైడ్ చేస్తుంది
+    if production_for:
+        production_for_filter = production_for
+
+    # 2. Dynamic Financial Years Generation from Gate Entry
     all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
     fy_set = set()
     for d_tuple in all_dates:
@@ -184,7 +192,7 @@ def inventory_costing_page(
 
     selected_fy = fy
 
-    # 2. Base Queries Formulation
+    # 3. Base Queries Formulation
     q_stock = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
         stock_entry.company_id == comp_code
     )
@@ -193,10 +201,15 @@ def inventory_costing_page(
         cold_storage_holding.company_id == comp_code
     )
 
-    # UI నుండి కంపెనీ (production_for) ఫిల్టర్ అప్లై చేస్తే:
+    # 🟢 Active Company Filter Injection
     if production_for_filter:
-        q_stock = q_stock.filter(stock_entry.production_for == production_for_filter)
-        q_cs = q_cs.filter(cold_storage_holding.production_for == production_for_filter)
+        q_stock = q_stock.filter(func.trim(stock_entry.production_for) == func.trim(production_for_filter))
+        q_cs = q_cs.filter(func.trim(cold_storage_holding.production_for) == func.trim(production_for_filter))
+
+    # 🟢 Active Location Filter Injection (Brings strict matching context onto location rule)
+    if location:
+        q_stock = q_stock.filter(func.trim(stock_entry.production_at) == func.trim(location))
+        q_cs = q_cs.filter(func.trim(cold_storage_holding.production_at) == func.trim(location))
 
     # FY & Date Range Logic
     if selected_fy:
@@ -226,7 +239,6 @@ def inventory_costing_page(
             q_stock = q_stock.filter(stock_entry.date <= date.fromisoformat(to_date))
             q_cs = q_cs.filter(cold_storage_holding.date <= date.fromisoformat(to_date))
 
-    # 🌟 మార్పు: FY సెలెక్ట్ చేయకపోయినా ఖాళీగా ఉంచకుండా, టేబుల్ లోని మొత్తం డేటా (All Data) లోడ్ అవుతుంది
     plant_rows = q_stock.order_by(stock_entry.date.desc()).all()
     cs_rows = q_cs.order_by(cold_storage_holding.date.desc()).all()
 
@@ -238,7 +250,7 @@ def inventory_costing_page(
     batch_residual_map = {}
     batch_total_hoso_weight_pool = {}
 
-    # 3. Calculation Processing Pool Matrices
+    # 4. Calculation Processing Pool Matrices
     for batch in batch_numbers:
         rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty).label("tq"), func.sum(RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
         raw_val = float(rmp_stats.ta or 0); raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
@@ -314,7 +326,7 @@ def inventory_costing_page(
     db.commit()
     db.expire_all()
 
-    # 4. Fetch Structured Output Records Set
+    # 5. Fetch Structured Output Records Set
     all_rows = plant_rows + cs_rows
 
     total_qty_in = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
@@ -325,7 +337,7 @@ def inventory_costing_page(
     balance_value = total_val_in + (sum(float(r.inventory_value or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT"))
     avg_rate = (balance_value / available_qty) if available_qty > 0 else 0
 
-    # 5. Safe Fetch Helper Method
+    # Safe Fetch Helper Method
     def get_list(model, attr):
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
@@ -352,7 +364,8 @@ def inventory_costing_page(
             "to_date": to_date,
             "financial_years": financial_years,
             "selected_fy": selected_fy,
-            "selected_production_for": production_for_filter, # UI లో చెక్ చేసుకోవడానికి
+            "selected_production_for": production_for_filter, # 🟢 Sync dropdown lock memory state
+            "selected_location": location,             # 🟢 Sync dropdown lock memory state
             "company_name": request.session.get("company_name", "BKNR"),
             "is_admin": request.session.get("role") == "admin",
             "brands_list": get_list(brands, "brand_name"),
