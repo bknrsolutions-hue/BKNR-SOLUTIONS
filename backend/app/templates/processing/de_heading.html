@@ -1,151 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>De-Heading & Floor Balance – BKNR ERP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8">
+<title>De-Heading & Floor Balance – BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
-    <style>
-        :root {
-            --primary: #143465; --accent: #3b82f6; --border: #d6dde7; --bg: #f4f6f9;
-            --card: #ffffff; --text: #1f2937; --muted: #64748b; --success: #166534;
+<style>
+    :root {
+        --primary: #143465; --accent: #3b82f6; --border: #d6dde7; --bg: #f4f6f9;
+        --card: #ffffff; --text: #1f2937; --muted: #64748b; --success: #166534;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: 20px; }
+
+    /* --- DASHBOARD STYLES --- */
+    .header-dash {
+        background: var(--card-bg); padding: 15px 25px; border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+        position: sticky; top: 0; z-index: 100;
+    }
+    @media(max-width: 600px) {
+        .header-dash { padding: 12px 15px; flex-direction: column; gap: 10px; align-items: flex-start; }
+        .header-dash h2 { font-size: 16px !important; }
+        .grand-total { width: 100%; text-align: center; font-size: 13px !important; }
+    }
+
+    .grand-total {
+        background: var(--primary); color: #fff; padding: 10px 20px;
+        border-radius: 12px; font-size: 15px; font-weight: 800;
+    }
+
+    /* 🟢 FILTER BAR - WITH SINGLE ROW HORIZONTAL SCROLL ENGINE FOR MOBILE */
+    .filter-section {
+        background: var(--card-bg); padding: 10px 25px; display: flex; align-items: center; gap: 15px;
+        border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .filter-item { display: flex; align-items: center; gap: 8px; }
+    .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .filter-section input {
+        padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+        font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
+    }
+
+    @media(max-width: 600px) {
+        .filter-section { 
+            padding: 10px 15px; 
+            gap: 12px; 
+            flex-wrap: nowrap !important; 
+            overflow-x: auto !important; 
+            -webkit-overflow-scrolling: touch;
+            justify-content: flex-start;
+            scrollbar-width: thin;
         }
-
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: 20px; }
-
-        /* --- DASHBOARD STYLES --- */
-        .header-dash {
-            background: var(--card-bg); padding: 15px 25px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100;
-        }
-        @media(max-width: 600px) {
-            .header-dash { padding: 12px 15px; flex-direction: column; gap: 10px; align-items: flex-start; }
-            .header-dash h2 { font-size: 16px !important; }
-            .grand-total { width: 100%; text-align: center; font-size: 13px !important; }
-        }
-
-        .grand-total {
-            background: var(--primary); color: #fff; padding: 10px 20px;
-            border-radius: 12px; font-size: 15px; font-weight: 800;
-        }
-
-        /* 🟢 FILTER BAR - WITH SINGLE ROW HORIZONTAL SCROLL ENGINE FOR MOBILE */
-        .filter-section {
-            background: var(--card-bg); padding: 10px 25px; display: flex; align-items: center; gap: 15px;
-            border-bottom: 1px solid var(--border); flex-wrap: wrap;
-        }
-        .filter-item { display: flex; align-items: center; gap: 8px; }
-        .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-        .filter-section input {
-            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-            font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
-        }
-
-        @media(max-width: 600px) {
-            .filter-section { 
-                padding: 10px 15px; 
-                gap: 12px; 
-                flex-wrap: nowrap !important; /* Forces filters to stay on a single row */
-                overflow-x: auto !important; /* Enables horizontal scrolling */
-                -webkit-overflow-scrolling: touch;
-                justify-content: flex-start;
-                scrollbar-width: thin;
-            }
-            .filter-section::-webkit-scrollbar { height: 4px; }
-            .filter-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-            
-            .filter-section-title { flex-shrink: 0; font-size: 11px !important; white-space: nowrap; }
-
-            .filter-item { 
-                flex-shrink: 0 !important; /* Prevents input fields from collapsing */
-                flex-direction: column; 
-                align-items: flex-start !important; 
-                gap: 2px !important; 
-            }
-            .filter-item label { font-size: 8px !important; }
-            .filter-section input { 
-                min-width: 130px !important; 
-                width: 130px !important; 
-                height: 32px !important; 
-                padding: 4px 8px !important; 
-                font-size: 11px !important; 
-            }
-        }
-
-        /* Dashboard Layout Properties */
-        .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; align-items: stretch; }
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 2; min-width: 0; }
+        .filter-section::-webkit-scrollbar { height: 4px; }
+        .filter-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
         
-        #chartPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .filter-section-title { flex-shrink: 0; font-size: 11px !important; white-space: nowrap; }
 
-        @media(max-width: 1024px) {
-            .main-dashboard { flex-direction: column; padding: 10px; }
-            .dashboard-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; flex: unset; }
-            #chartPanel { width: 100%; flex: unset; }
+        .filter-item { 
+            flex-shrink: 0 !important; 
+            flex-direction: column; 
+            align-items: flex-start !important; 
+            gap: 2px !important; 
         }
-
-        .panel { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-        .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .table-container { overflow-y: auto; flex-grow: 1; max-height: 300px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { position: sticky; top: 0; background: var(--card-bg); padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
-        td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
-
-        .company-row { cursor: pointer; background: #f8fafc; font-weight: 800; color: var(--primary); }
-        .location-row { cursor: pointer; background: var(--card-bg); font-weight: 700; color: var(--accent); padding-left: 20px !important; }
-        .drill-row { display: none; background: var(--card-bg); }
-        
-        .drill-container { padding: 0px 5px 10px 15px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); min-width: 300px; }
-
-        /* --- FORM MODAL --- */
-        .modal {
-            display: none; position: fixed; z-index: 1001; left: 0; top: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 10px;
+        .filter-item label { font-size: 8px !important; }
+        .filter-section input { 
+            min-width: 130px !important; 
+            width: 130px !important; 
+            height: 32px !important; 
+            padding: 4px 8px !important; 
+            font-size: 11px !important; 
         }
-        .modal-content {
-            background: var(--card-bg); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto;
-        }
-        @media(max-width: 600px) {
-            .modal-content { width: 95%; padding: 15px; }
-            .form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
-            .btn-add { width: 100%; justify-content: center; }
-        }
+    }
 
-        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .field { display: flex; flex-direction: column; gap: 4px; }
-        .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-        .field input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; height: 40px; }
-        .field input[readonly] { background: #f8fafc; cursor: not-allowed; font-weight: 600; }
+    /* Dashboard Layout Properties */
+    .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; align-items: stretch; }
+    .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 2; min-width: 0; }
+    
+    #chartPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-        .btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        
-        .table-wrap { 
-            margin: 15px 25px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; 
-        }
-        #mainTable { min-width: 900px; }
-        
-        @media(max-width: 600px) {
-            .section-header { padding: 15px !important; flex-direction: column; align-items: flex-start !important; gap: 15px; }
-            .section-header div { width: 100%; display: flex; justify-content: space-between; }
-            .table-wrap { margin: 10px !important; border-radius: 8px !important; }
-        }
+    @media(max-width: 1024px) {
+        .main-dashboard { flex-direction: column; padding: 10px; }
+        .dashboard-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; flex: unset; }
+        #chartPanel { width: 100%; flex: unset; }
+    }
 
-        .selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
-        #dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .menu-item { padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .menu-item:hover { background: #f8fafc; color: var(--danger); }
-    </style>
+    .panel { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .table-container { overflow-y: auto; flex-grow: 1; max-height: 300px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { position: sticky; top: 0; background: var(--card-bg); padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
+    td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+
+    .company-row { cursor: pointer; background: #f8fafc; font-weight: 800; color: var(--primary); }
+    .location-row { cursor: pointer; background: var(--card-bg); font-weight: 700; color: var(--accent); padding-left: 20px !important; }
+    .drill-row { display: none; background: var(--card-bg); }
+    
+    .drill-container { padding: 0px 5px 10px 15px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); min-width: 300px; }
+
+    /* --- FORM MODAL --- */
+    .modal {
+        display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+        width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 10px;
+    }
+    .modal-content {
+        background: var(--card-bg); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto;
+    }
+    @media(max-width: 600px) {
+        .modal-content { width: 95%; padding: 15px; }
+        .form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+        .btn-add { width: 100%; justify-content: center; }
+    }
+
+    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; height: 40px; background: var(--card); color: var(--text); }
+    .field input[readonly] { background: #f8fafc; cursor: not-allowed; font-weight: 600; }
+
+    .btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    
+    .table-wrap { 
+        margin: 15px 25px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; 
+    }
+    #mainTable { min-width: 900px; }
+    
+    @media(max-width: 600px) {
+        .section-header { padding: 15px !important; flex-direction: column; align-items: flex-start !important; gap: 15px; }
+        .section-header div { width: 100%; display: flex; justify-content: space-between; }
+        .table-wrap { margin: 10px !important; border-radius: 8px !important; }
+    }
+
+    .selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+    #dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .menu-item { padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .menu-item:hover { background: #f8fafc; color: var(--danger); }
+</style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
@@ -162,7 +162,7 @@
     
     <div class="filter-item">
         <label>Company</label>
-        <input list="dash_comp_list" id="dashboard_company_filter" oninput="updateDashboard()" placeholder="Search Company...">
+        <input list="dash_comp_list" id="dashboard_company_filter" oninput="updateDashboard()" placeholder="Search Company..." value="{{ selected_production_for or '' }}">
         <datalist id="dash_comp_list">
             {% for p in prod_for_list %}<option value="{{p}}"></option>{% endfor %}
         </datalist>
@@ -170,7 +170,7 @@
 
     <div class="filter-item">
         <label>Location</label>
-        <input list="dash_loc_list" id="dashboard_location_filter" oninput="updateDashboard()" placeholder="Search Location...">
+        <input list="dash_loc_list" id="dashboard_location_filter" oninput="updateDashboard()" placeholder="Search Location..." value="{{ selected_location or '' }}">
         <datalist id="dash_loc_list">
             {% for loc in peeling_locations %}<option value="{{loc}}"></option>{% endfor %}
         </datalist>
@@ -264,17 +264,21 @@
             <div class="form-grid">
                 <div class="field">
                     <label>Production For</label>
-                    <input list="prod_for_list_data" name="production_for" id="form_production_for" onchange="loadBatches()" placeholder="Search Company..." required autocomplete="off">
-                    <datalist id="prod_for_list_data">
-                        {% for p in prod_for_list %}<option value="{{p}}"></option>{% endfor %}
-                    </datalist>
+                    <select name="production_for" id="form_production_for" onchange="loadBatches()" required autocomplete="off">
+                        <option value="">-- SELECT COMPANY --</option>
+                        {% for p in prod_for_list %}
+                        <option value="{{p}}" {% if selected_production_for == p %}selected{% endif %}>{{p}}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="field">
                     <label>Location</label>
-                    <input list="loc_list_data" name="deheading_at" id="form_loc" onchange="loadBatches()" placeholder="Search Location..." required autocomplete="off">
-                    <datalist id="loc_list_data">
-                        {% for loc in peeling_locations %}<option value="{{loc}}"></option>{% endfor %}
-                    </datalist>
+                    <select name="deheading_at" id="form_loc" onchange="loadBatches()" required autocomplete="off">
+                        <option value="">-- SELECT LOCATION --</option>
+                        {% for loc in peeling_locations %}
+                        <option value="{{loc}}" {% if selected_location == loc %}selected{% endif %}>{{loc}}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="field">
                     <label>Species</label>
@@ -577,12 +581,22 @@ function calculateForm() {
 
 function openModal() { 
     document.getElementById('entryModal').style.display = 'flex'; 
+    // 🟢 DUAL MODE RUNTIME MEMORY ALLOCATION: Triggers batch validation on modal load sequence
+    if (document.getElementById('form_production_for').value && document.getElementById('form_loc').value) {
+        loadBatches();
+    }
 }
 
 function closeModal() { 
     document.getElementById('entryModal').style.display = 'none'; 
     document.getElementById('deHeadingForm').reset();
     document.getElementById('floor_display').innerText = "0.00";
+    
+    // Retain global states upon form termination workflows
+    const activeGlobalPFor = "{{ selected_production_for or '' }}";
+    const activeGlobalLoc = "{{ selected_location or '' }}";
+    if (activeGlobalPFor) document.getElementById('form_production_for').value = activeGlobalPFor;
+    if (activeGlobalLoc) document.getElementById('form_loc').value = activeGlobalLoc;
 }
 
 // 7. FORM SUBMISSION

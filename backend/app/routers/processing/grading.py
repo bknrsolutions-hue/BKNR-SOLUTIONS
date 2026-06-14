@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Form, Depends
+import json
+from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
@@ -10,7 +11,7 @@ import re
 from app.services.floor_balance_sync import refresh_floor_balance
 
 from app.database import get_db
-# 🟢 Imported HlsoForGrading model table structure
+# Imported HlsoForGrading model table structure
 from app.database.models.processing import Grading, RawMaterialPurchasing, DeHeading, HlsoForGrading
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
@@ -23,10 +24,13 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 
-# 🟢 Centralized Hlso Grading Pool Sync Service Import
+# Centralized Hlso Grading Pool Sync Service Import
 from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_grading_consumption
 
-router = APIRouter( tags=["GRADING"])
+# Universal Global Filters Helper
+from app.utils.global_filters import get_global_filters
+
+router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
 
 # -----------------------------------------------------
@@ -41,33 +45,51 @@ def get_today_range():
     return start, end
 
 # -----------------------------------------------------
-# MAIN VIEW: SHOW GRADING PAGE
+# MAIN VIEW: SHOW GRADING PAGE (STRICT MULTI-LAYER FILTER SYNC)
 # -----------------------------------------------------
 @router.get("/grading", response_class=HTMLResponse)
 def show_grading(request: Request, db: Session = Depends(get_db)):
+    # 1. 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
+    global_production_for, global_location = get_global_filters(request)
+
     company_code = request.session.get("company_code")
     email = request.session.get("email")
 
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 1. Master Data for Dropdowns
+    # Master Data for Dropdowns
     species_list = [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
     peeling_locations = [l.peeling_at for l in db.query(PeelingAtMaster).filter(PeelingAtMaster.company_id == company_code).all()]
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    # 2. Today's Grading Data (Locked into 9 AM Shift Window)
+    # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global Matrices)
     start, end = get_today_range()
-    today_data = db.query(Grading).filter(
+    today_q = db.query(Grading).filter(
         Grading.company_id == company_code,
         Grading.date >= start.date(),
         Grading.date <= end.date()
-    ).order_by(Grading.id.desc()).all()
+    )
+    if global_production_for:
+        today_q = today_q.filter(func.trim(Grading.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(Grading.peeling_at) == func.trim(global_location))
 
-    # 3. REQUIREMENT LOGIC
-    p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_code).all()
-    all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+    today_data = today_q.order_by(Grading.id.desc()).all()
+
+    # 3. 🟢 REQUIREMENT LOGIC - CRITICAL FIXED FILTER ENGINE 🟢
+    p_orders_q = db.query(pending_orders).filter(pending_orders.company_id == company_code)
+    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
+    
+    # 🔴 FIXED: ఒకవేళ గ్లోబల్ కంపెనీ ఫిల్టర్ మారి ఉంటే, ఆర్డర్స్ తో పాటు స్టాక్ పూల్ ని కూడా ఇక్కడే వడపోస్తున్నాం!
+    if global_production_for:
+        p_orders_q = p_orders_q.filter(func.trim(pending_orders.company_name) == func.trim(global_production_for))
+        stock_q = stock_q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
+        
+    p_orders = p_orders_q.all()
+    all_stock = stock_q.all()
+    
     yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
     p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
@@ -142,11 +164,15 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
-    # 🟢 4. HIGH PERFORMANCE TABLE DATA CALL ENGINE
-    # 🔴 Completed మరియు Pending రెండు రికార్డులూ రావాలి కాబట్టి ఇక్కడ Filter మార్చాను
-    deheading_pending = db.query(HlsoForGrading).filter(
-        HlsoForGrading.company_id == company_code
-    ).order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
+    # 4. HIGH PERFORMANCE TABLE DATA CALL ENGINE
+    pending_pool_q = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code)
+    
+    if global_production_for:
+        pending_pool_q = pending_pool_q.filter(func.trim(HlsoForGrading.production_for) == func.trim(global_production_for))
+    if global_location:
+        pending_pool_q = pending_pool_q.filter(func.trim(HlsoForGrading.peeling_at) == func.trim(global_location))
+
+    deheading_pending = pending_pool_q.order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
 
     return templates.TemplateResponse(
         request=request, name="processing/grading.html",
@@ -155,6 +181,8 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
             "prod_for_list": prod_for_list, "today_data": today_data,
             "hlso_summary": list(hlso_summary.values()), "hoso_summary": list(hoso_summary.values()),
             "deheading_pending": deheading_pending,
+            "selected_production_for": global_production_for, 
+            "selected_location": global_location,             
             "drill_down_json": json.dumps(drill_down_data), "edit_data": None,
             "message": request.session.pop("message", None)
         }
@@ -168,15 +196,24 @@ def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"batches": []}
 
-    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for: company = global_p_for
+
+    r1_q = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
         RawMaterialPurchasing.company_id == company_code,
-        func.lower(RawMaterialPurchasing.production_for) == company.lower()
-    ).all()
+        func.trim(RawMaterialPurchasing.production_for) == func.trim(company)
+    )
+    if global_loc:
+        r1_q = r1_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_loc))
+    r1 = r1_q.all()
     
-    r2 = db.query(distinct(Reprocess.new_batch_id)).filter(
+    r2_q = db.query(distinct(Reprocess.new_batch_id)).filter(
         Reprocess.company_id == company_code,
-        func.lower(Reprocess.production_for) == company.lower()
-    ).all()
+        func.trim(Reprocess.production_for) == func.trim(company)
+    )
+    if global_loc:
+        r2_q = r2_q.filter(func.trim(Reprocess.production_at) == func.trim(global_loc))
+    r2 = r2_q.all()
     
     all_batches = set([r[0] for r in r1 if r[0]]) | set([r[0] for r in r2 if r[0]])
     return {"batches": sorted(list(all_batches))}
@@ -189,17 +226,26 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
     company_code = request.session.get("company_code")
     if not company_code: return {"counts": []}
 
-    c1 = db.query(distinct(RawMaterialPurchasing.count)).filter(
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for: company = global_p_for
+
+    c1_q = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.batch_number == batch,
-        func.lower(RawMaterialPurchasing.production_for) == company.lower()
-    ).all()
+        func.trim(RawMaterialPurchasing.production_for) == func.trim(company)
+    )
+    if global_loc:
+        c1_q = c1_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_loc))
+    c1 = c1_q.all()
     
-    c2 = db.query(distinct(Reprocess.grade)).filter(
+    c2_q = db.query(distinct(Reprocess.grade)).filter(
         Reprocess.company_id == company_code,
         Reprocess.new_batch_id == batch,
-        func.lower(Reprocess.production_for) == company.lower()
-    ).all()
+        func.trim(Reprocess.production_for) == func.trim(company)
+    )
+    if global_loc:
+        c2_q = c2_q.filter(func.trim(Reprocess.production_at) == func.trim(global_loc))
+    c2 = c2_q.all()
 
     all_counts = set([r[0] for r in c1 if r[0]]) | set([r[0] for r in c2 if r[0]])
     return {"counts": sorted(list(all_counts))}
@@ -244,7 +290,6 @@ def save_grading(
     )
     db.add(grading)
 
-    # 🟢 AUTO-DATA STORING GATEWAY: Consumes/Subtracts weight from HlsoForGrading pool table
     consume_hlso_for_grading(db, grading)
 
     db.commit()
@@ -281,7 +326,7 @@ def update_grading(
     return RedirectResponse("/processing/grading", status_code=303)
 
 # -----------------------------------------------------
-# 🔴 NEW API: UPDATE LIVE STATUS FROM FRONTEND DROPDOWN
+# NEW API: UPDATE LIVE STATUS FROM FRONTEND DROPDOWN
 # -----------------------------------------------------
 @router.post("/grading/update_pool_status")
 def update_pool_status(

@@ -1,9 +1,9 @@
-
 import json
 from fastapi import APIRouter, Request, Depends, Form, BackgroundTasks
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func, distinct # 👈 🔴 FIXED: func అండ్ distinct ఇంపోర్ట్స్ ఇక్కడ పక్కాగా యాడ్ చేశాను!
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 
@@ -19,6 +19,7 @@ from app.database.models.criteria import (
     production_for,
     peeling_at
 )
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["GATE ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
@@ -28,7 +29,6 @@ templates = Jinja2Templates(directory="app/templates")
 # COMMON DROPDOWNS & SEQUENCE LOGIC
 # =========================================================
 def load_dropdowns(db: Session, comp: str):
-    # Fetching master data company-wise [2026-01-03]
     supplier_list = [
         x.supplier_name for x in db.query(suppliers)
         .filter(suppliers.company_id == comp)
@@ -58,10 +58,6 @@ def load_dropdowns(db: Session, comp: str):
     ).distinct().all()
     
     prod_for_list = [p[0] for p in prod_for_data]
-    
-    
-    
-    
 
     # --- AUTO-INCREMENT LOGIC (For Suggestions only) ---
     last_batch_map = {}
@@ -99,10 +95,13 @@ def load_dropdowns(db: Session, comp: str):
 
 
 # =========================================================
-# LOAD PAGE
+# LOAD PAGE (WITH DUAL FILTER LAYERS INJECTION)
 # =========================================================
 @router.get("/gate_entry", response_class=HTMLResponse)
 def gate_entry_page(request: Request, db: Session = Depends(get_db)):
+    # 1. FETCH UNIVERSAL GLOBAL FILTERS FROM RUNTIME CONTEXT
+    global_production_for, global_location = get_global_filters(request)
+
     email = request.session.get("email")
     comp  = request.session.get("company_code")
 
@@ -112,15 +111,17 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
     (suppliers_dd, locations_dd, vehicles_dd, peeling_dd, prod_for_list, 
      lb_json, lc_json, last_gp) = load_dropdowns(db, comp)
 
-    # Filter data company wise [2026-01-03]
-    today_rows = (
-        db.query(GateEntry)
-        .filter(GateEntry.company_id == comp, GateEntry.date == date.today())
-        .order_by(GateEntry.id.desc())
-        .all()
-    )
+    # 2. Base Gate Query formulation strictly with active global filters pool
+    today_date = ist_now().date()
+    today_q = db.query(GateEntry).filter(GateEntry.company_id == comp, GateEntry.date == today_date)
 
-    # ✅ FIXED: TemplateResponse for new FastAPI versions (request separately passed)
+    if global_production_for:
+        today_q = today_q.filter(func.trim(GateEntry.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_location))
+
+    today_rows = today_q.order_by(GateEntry.id.desc()).all()
+
     return templates.TemplateResponse(
         request=request,
         name="processing/gate_entry.html",
@@ -134,6 +135,8 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
             "last_challan_map_json": lc_json,
             "last_gp_value": last_gp,
             "today_data": today_rows,
+            "selected_production_for": global_production_for, 
+            "selected_location": global_location,             
             "edit_data": None
         }
     )
@@ -149,7 +152,6 @@ def send_gate_notification(db: Session, comp: str, row_id: int):
         
         emails = get_gate_entry_report_emails(db, comp)
         if emails:
-            # Note: Background task uses templates via its global definition
             html = templates.get_template("emails/gate_entry_notification.html").render(
                 batch_number=row.batch_number, challan_number=row.challan_number,
                 gate_pass_number=row.gate_pass_number, receiving_center=row.receiving_center,
@@ -165,7 +167,7 @@ def send_gate_notification(db: Session, comp: str, row_id: int):
 
 
 # =========================================================
-# SAVE NEW ENTRY (Optimized for Immediate Saving)
+# SAVE NEW ENTRY 
 # =========================================================
 @router.post("/gate_entry")
 async def save_entry(
@@ -200,6 +202,8 @@ async def save_entry(
     if dup:
         return JSONResponse({"error": f"❌ Batch '{batch_number}' or Challan '{challan_number}' already exists!"}, status_code=400)
 
+    current_ist = ist_now()
+
     row = GateEntry(
         batch_number=batch_number,
         challan_number=challan_number,
@@ -212,8 +216,8 @@ async def save_entry(
         no_of_material_boxes=no_of_material_boxes,
         no_of_empty_boxes=no_of_empty_boxes,
         no_of_ice_boxes=no_of_ice_boxes,
-        date=date.today(),
-        time=ist_now().time(),
+        date=current_ist.date(), 
+        time=current_ist.time(), 
         email=email,
         company_id=comp
     )
@@ -222,9 +226,7 @@ async def save_entry(
     db.commit()
     db.refresh(row)
 
-    # Run Email in Background so response is immediate
     background_tasks.add_task(send_gate_notification, db, comp, row.id)
-
     return JSONResponse({"status": "success", "message": "Gate Entry Saved Successfully!"})
 
 

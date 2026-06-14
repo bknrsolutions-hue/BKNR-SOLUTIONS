@@ -33,9 +33,10 @@
     
     --accent-dark: #3b82f6;        
     --accent-blue: #60a5fa;        
+    --orange-premium: #f97316;     
     
     --border-light: rgba(255, 255, 255, 0.06); 
-    --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
     --glow-active: 0 8px 16px -4px rgba(59, 130, 246, 0.4); 
 
@@ -188,7 +189,20 @@ body {
     flex-shrink: 0; transition: background 0.4s ease; position: relative; z-index: 1000;
 }
 
+/* 🌟 DYNAMIC REAL COMPANY SINGLE HEADER ARCHITECTURE */
 .header-left-meta { display: flex; align-items: center; gap: 16px; }
+.header-brand-title-box {
+    border-left: 4px solid var(--orange-premium); padding-left: 12px; margin-left: 4px; display: flex; align-items: center;
+}
+.header-premium-title {
+    font-size: 16px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--text-primary) 40%, var(--text-secondary) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+[data-theme="light"] .header-premium-title {
+    background: linear-gradient(135deg, #0f172a 40%, #475569 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
 
 .hamburger-trigger-btn, .theme-toggle-btn {
     background: var(--surface-panel); border: 1px solid var(--border-light); 
@@ -200,7 +214,7 @@ body {
 
 .header-right-actions { display: flex; align-items: center; gap: 14px; position: relative; }
 
-/* 🌟 USER PROFILE CONSOLE WITH TOGGLE TRIGGER 🌟 */
+/* USER PROFILE CONSOLE WITH TOGGLE TRIGGER */
 .user-profile { 
     background: var(--surface-panel); font-size: 13px; font-weight: 700; color: var(--text-primary); 
     display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px;
@@ -215,20 +229,20 @@ body {
 .user-profile .chevron-down-icon { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s ease; }
 .user-profile.active .chevron-down-icon { transform: rotate(180deg); }
 
-/* 🌟 ULTRA PREMIUM DROPDOWN OVERLAY CONSOLE (FIXED STACKING ORDER) 🌟 */
+/* 🌟 FULL SCREEN OVERLAY ENGINE FIXED POSITION MATRIX (ANTI-BLINK & LOCK) 🌟 */
 .profile-dropdown-console {
-    position: absolute; 
-    top: calc(var(--header-h) + 6px); 
-    right: 0px; 
+    position: fixed; 
+    top: calc(var(--header-h) + 24px); 
+    right: 12px; 
     width: 340px;
     background: var(--surface-panel); 
-    backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
     border-radius: 20px; 
     border: 1px solid var(--border-light); 
     box-shadow: var(--shadow-float);
     display: none; 
     flex-direction: column; 
-    z-index: 999999 !important; /* 👈 Force-stacking index pool override to top-most layer */
+    z-index: 99999999 !important; /* 👈 Absolute topmost stacking index enforcer */
     overflow: hidden; 
     padding: 16px; 
     gap: 16px;
@@ -241,7 +255,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 🟢 DROPDOWN FILTERS LAYOUT SETUP */
+/* DROPDOWN FILTERS LAYOUT SETUP */
 .dropdown-filter-section { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
 .dropdown-filter-box { display: flex; flex-direction: column; gap: 4px; }
 .dropdown-filter-box label { font-size: 8px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -256,8 +270,8 @@ body {
 }
 .global-select-input:focus { border-color: var(--accent-blue); }
 
-/* 🟢 DROPDOWN MENUS ENGINE */
-.dropdown-menu-scroll-box { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 2px; }
+/* DROPDOWN MENUS ENGINE */
+.dropdown-menu-scroll-box { max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 2px; }
 .dropdown-pillar-block { display: flex; flex-direction: column; gap: 4px; }
 .dropdown-pillar-title { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); padding-left: 6px; }
 .dropdown-pillar-title.super-admin-title { color: #ef4444; }
@@ -277,7 +291,7 @@ body {
 .dropdown-submenu-item.active { color: #ffffff; background: linear-gradient(135deg, var(--accent-dark), var(--accent-blue)); font-weight: 700; }
 .dropdown-submenu-item.active i { color: #ffffff; }
 
-/* 🟢 DROPDOWN TERMINATE CONSOLE EXECUTOR */
+/* DROPDOWN TERMINATE CONSOLE EXECUTOR */
 .dropdown-logout-wrapper { border-top: 1px solid var(--border-light); padding-top: 10px; }
 .dropdown-logout-btn {
     width: 100%; height: 38px; background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.15);
@@ -297,14 +311,17 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     .iframe-wrapper { border-radius: 20px; }
     .user-profile span { display: none; } .user-profile { padding: 6px; }
     .app-header { padding: 0 16px; border-radius: 20px;}
-    .profile-dropdown-console { width: calc(100vw - 32px); right: 0px; top: calc(var(--header-h) + 4px); }
+    .profile-dropdown-console { width: calc(100vw - 32px); right: 16px; top: calc(var(--header-h) + 16px); }
+    .header-premium-title { font-size: 14px; }
 }
 
 @media (max-width: 600px) {
     .header-left-meta { gap: 12px; } .header-right-actions { gap: 12px; }
     .theme-toggle-btn, .hamburger-trigger-btn { width: 40px; height: 40px; font-size: 14px; }
     .app-header { padding: 0 12px; height: 64px;}
-    .profile-dropdown-console { top: 54px; }
+    .profile-dropdown-console { width: calc(100vw - 24px); right: 12px; top: 70px; }
+    .header-brand-title-box { display: flex !important; }
+    .header-premium-title { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -336,6 +353,11 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
             <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Menu">
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
+            
+            <!-- 🌟 DYNAMIC REAL COMPANY SINGLE LUXURY TONE TEXT INJECTION 🌟 -->
+            <div class="header-brand-title-box">
+                <div class="header-premium-title">{{ request.session.get('company_name') }}</div>
+            </div>
         </div>
         
         <div class="header-right-actions">
@@ -343,17 +365,17 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 <i class="fa-solid fa-sun"></i>
             </div>
             
-            <!-- 🌟 USER PROFILE CONSOLE WITH CHEVRON TRIGGER 🌟 -->
+            <!-- USER PROFILE CONSOLE WITH CHEVRON TRIGGER -->
             <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)">
                 <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
                 <span>{{ request.session.get('name') }}</span>
                 <i class="fa-solid fa-chevron-down chevron-down-icon"></i>
             </div>
 
-            <!-- 🌟 FULLY INTEGRATED PROFILE DROPDOWN DROP CONSOLE (TOP-MOST Z-INDEX) 🌟 -->
+            <!-- FULLY INTEGRATED PROFILE DROPDOWN DROP CONSOLE (OVERRIDING FOREGROUND ENGINE) -->
             <div class="profile-dropdown-console" id="profileDropdownConsole">
                 
-                <!-- 🟢 UNIVERSAL FILTERS SPLIT INSIDE CONSOLE -->
+                <!-- UNIVERSAL FILTERS SPLIT INSIDE CONSOLE -->
                 <div class="dropdown-filter-section">
                     <div class="dropdown-filter-box">
                         <label>Production For</label>
@@ -375,13 +397,13 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                     </div>
                 </div>
 
-                <!-- 🟢 COMPLEX DROPDOWN DYNAMIC ROUTING ENGINE -->
+                <!-- COMPLEX DROPDOWN DYNAMIC ROUTING ENGINE -->
                 <div class="dropdown-menu-scroll-box" id="dropdownMenuScrollBox"></div>
 
-                <!-- 🟢 LOGOUT SECURE TERMINATION CONSOLE -->
+                <!-- LOGOUT SECURE TERMINATION CONSOLE -->
                 <div class="dropdown-logout-wrapper">
                     <button class="dropdown-logout-btn" onclick="logout()">
-                        <i class="fa-solid fa-power-off"></i> Terminate Workspace
+                        <i class="fa-solid fa-power-off"></i> sign out
                     </button>
                 </div>
             </div>
@@ -395,7 +417,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 </div>
 
 <script>
-// 🌟 THEME TOGGLE LOGIC 🌟
+// THEME TOGGLE LOGIC
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
@@ -424,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
 });
 
-// 🌟 PROFILE DROPDOWN TOGGLE ENGINE 🌟
+// PROFILE DROPDOWN TOGGLE ENGINE
 function toggleProfileDropdown(e) {
     if(e) e.stopPropagation();
     const consoleBox = document.getElementById("profileDropdownConsole");
@@ -440,7 +462,6 @@ function toggleProfileDropdown(e) {
     }
 }
 
-// Close Dropdown Console when clicking anywhere outside
 document.addEventListener("click", (e) => {
     const consoleBox = document.getElementById("profileDropdownConsole");
     const profileBtn = document.getElementById("userProfileBtn");
@@ -450,7 +471,7 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// 🌟 UNIVERSAL FILTERS SYNC SYSTEM 🌟
+// UNIVERSAL FILTERS SYNC SYSTEM
 function broadcastUniversalFilters() {
     const pFor = document.getElementById("global_production_for").value;
     const pLoc = document.getElementById("global_plant_location").value;
@@ -487,7 +508,7 @@ function broadcastUniversalFilters() {
     }
 }
 
-// 🌟 AUTOMATIC DYNAMIC SIDEBAR INTERCEPTOR LINK EXTENSION 🌟
+// AUTOMATIC DYNAMIC SIDEBAR INTERCEPTOR LINK EXTENSION
 function loadPage(url, element) {
     if(url === '#') return;
     
@@ -572,7 +593,6 @@ function allow(key){
     return permissions.includes("ALL") || permissions.includes(key); 
 }
 
-// 🌟 SIDEBAR MENU ROUTING MATRIX
 const sidebarMenuData = [
     {
         title: "DASHBOARDS",
@@ -677,7 +697,6 @@ const sidebarMenuData = [
     }
 ];
 
-// 🌟 DROPDOWN OVERLAY PANEL CONFIGURATION DATA
 const dropdownConsoleMenuData = [
     {
         title: "MASTERS",

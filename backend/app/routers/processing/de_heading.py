@@ -24,11 +24,13 @@ from app.database.models.criteria import (
 # Centralized Floor Balance Service
 from app.services.floor_balance import get_floor_balance
 
-# 🟢 Centralized Hlso Grading Pool Sync Service
+# Centralized Hlso Grading Pool Sync Service
 from app.services.hlso_grading_sync import add_deheading_to_grading_pool, remove_deheading_from_grading_pool
 
-# 🟢 FIXED: Added prefix to perfectly match your JavaScript frontend calls (/processing/...)
-router = APIRouter( tags=["DE-HEADING"])
+# Universal Global Filters Helper
+from app.utils.global_filters import get_global_filters
+
+router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -54,13 +56,12 @@ def get_available_qty(
     is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_code).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # De-heading is always HOSO variety -> Directly calling centralized service engine
     qty = get_floor_balance(db, company_code, location, clean_batch, clean_count, species_name, "HOSO", source_type=s_type)
     return {"available_qty": round(qty, 2) if qty else 0}
 
 
 # =====================================================
-# API: GET VALID BATCHES
+# API: GET VALID BATCHES - UPDATED FOR DUAL FILTER MODE
 # =====================================================
 @router.get("/get_valid_batches/{production_for}/{location}")
 def get_valid_batches(production_for: str, location: str, request: Request, db: Session = Depends(get_db)):
@@ -68,17 +69,22 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
     if not company_code:
         return {"batches": []}
 
+    # 🟢 GLOBAL OVERRIDE LOGIC: పేరెంట్ విండో ఫిల్టర్స్ మారితే ఆటోమేటిక్‌గా ఇక్కడ కూడా వాల్యూస్ బైండ్ అవుతాయి
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for: production_for = global_p_for
+    if global_loc: location = global_loc
+
     rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species)\
-        .filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.production_for == production_for,
-                RawMaterialPurchasing.peeling_at == location, RawMaterialPurchasing.variety_name == "HOSO").all()
+        .filter(RawMaterialPurchasing.company_id == company_code, func.trim(RawMaterialPurchasing.production_for) == func.trim(production_for),
+                func.trim(RawMaterialPurchasing.peeling_at) == func.trim(location), RawMaterialPurchasing.variety_name == "HOSO").all()
     
     grad_q = db.query(Grading.batch_number, Grading.graded_count, Grading.species)\
-        .filter(Grading.company_id == company_code, Grading.production_for == production_for,
-                Grading.peeling_at == location, Grading.variety_name == "HOSO").all()
+        .filter(Grading.company_id == company_code, func.trim(Grading.production_for) == func.trim(production_for),
+                func.trim(Grading.peeling_at) == func.trim(location), Grading.variety_name == "HOSO").all()
     
     repro_q = db.query(Reprocess.new_batch_id, Reprocess.grade, Reprocess.species)\
-        .filter(Reprocess.company_id == company_code, Reprocess.production_for == production_for,
-                Reprocess.production_at == location, Reprocess.variety == "HOSO").all()
+        .filter(Reprocess.company_id == company_code, func.trim(Reprocess.production_for) == func.trim(production_for),
+                func.trim(Reprocess.production_at) == func.trim(location), Reprocess.variety == "HOSO").all()
 
     valid_batches = set()
     for b_num, count, spec in rmp_q:
@@ -97,13 +103,18 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
 
 
 # =====================================================
-# API: GET HOSO COUNTS
+# API: GET HOSO COUNTS - UPDATED FOR DUAL FILTER MODE
 # =====================================================
 @router.get("/get_hoso/{production_for}/{location}/{batch}")
 def get_hoso_counts(production_for: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return {"counts": []}
+
+    # 🟢 GLOBAL OVERRIDE LOGIC: ఇక్కడ కూడా గ్లోబల్ హెడర్ కండిషన్స్ లాక్ చేస్తున్నాం
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for: production_for = global_p_for
+    if global_loc: location = global_loc
 
     rmp_c = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species).filter(
         RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.variety_name == "HOSO").all()
@@ -140,10 +151,12 @@ def get_contractor_rate(contractor: str, request: Request, db: Session = Depends
 
 
 # =====================================================
-# MAIN VIEW: DE-HEADING PAGE
+# MAIN VIEW: DE-HEADING PAGE (WITH INTERCEPT CONTROL)
 # =====================================================
 @router.get("/de_heading", response_class=HTMLResponse)
 def show_de_heading(request: Request, db: Session = Depends(get_db)):
+    global_production_for, global_location = get_global_filters(request)
+
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
@@ -153,11 +166,15 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    # Today's local data tracking
-    today_data = db.query(DeHeading).filter(
-        DeHeading.company_id == company_code,
-        DeHeading.date == ist_now().date()
-    ).order_by(DeHeading.id.desc()).all()
+    # Today's local data tracking filtered strictly via Global Selection Context Matrix
+    today_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == ist_now().date())
+    
+    if global_production_for:
+        today_q = today_q.filter(func.trim(DeHeading.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(DeHeading.peeling_at) == func.trim(global_location))
+        
+    today_data = today_q.order_by(DeHeading.id.desc()).all()
 
     combos = set()
     r_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.variety_name == "HOSO").all()
@@ -172,6 +189,10 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     hoso_floor_balance_list = []
     for b_num, c_val, s_val, p_for, loc, s_type in combos:
         if not b_num or not loc: continue
+        
+        if global_production_for and str(p_for).strip() != str(global_production_for).strip(): continue
+        if global_location and str(loc).strip() != str(global_location).strip(): continue
+        
         avail = get_floor_balance(db, company_code, loc, b_num, c_val, s_val, "HOSO", source_type=s_type)
         if avail > 0.01:
             hoso_floor_balance_list.append({
@@ -189,7 +210,9 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
         request=request, name="processing/de_heading.html",
         context={
             "contractors": contractor_list, "species": species_list, "peeling_locations": peeling_locs,
-            "prod_for_list": prod_for_list, "today_data": today_data, "hoso_floor_balance": hoso_floor_balance_list
+            "prod_for_list": prod_for_list, "today_data": today_data, "hoso_floor_balance": hoso_floor_balance_list,
+            "selected_production_for": global_production_for, 
+            "selected_location": global_location              
         }
     )
 
@@ -224,20 +247,18 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
     try: clean_yield = float(str(yield_percent).replace('%', ''))
     except: clean_yield = 0.0
 
-    # 🛠️ Midnight Rollover Date & Time Protection using ist_now helper
     current_ist = ist_now()
 
     new_entry = DeHeading(
         production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
         species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
         contractor=contractor, rate_per_kg=rate_per_kg, amount=amount, 
-        date=current_ist.date(),  # 🟢 Synchronized to IST date
-        time=current_ist.time(),  # 🟢 Synchronized to IST time
+        date=current_ist.date(),  
+        time=current_ist.time(),  
         email=email, company_id=company_code
     )
     db.add(new_entry)
     
-    # 🟢 AUTO-DATA STORING GATEWAY: Adds HLSO stock straight to grading pool table
     add_deheading_to_grading_pool(db, new_entry)
     
     db.commit()
@@ -253,12 +274,10 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
-    # 🟢 Fetch row instance first to allow properties synchronization mapping
     row = db.query(DeHeading).filter(DeHeading.id == id, DeHeading.company_id == company_code).first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
         
-    # 🟢 AUTO-DATA STORING GATEWAY: Rollback and subtract weight from grading pool
     remove_deheading_from_grading_pool(db, row)
     
     db.delete(row)
