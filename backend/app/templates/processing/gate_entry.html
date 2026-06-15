@@ -5,43 +5,56 @@
 <title>Gate Entry – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
 
 <style>
 :root{
-  --primary:#143465;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-  --success: #166534;
-  --danger: #991b1b;
+  /* 🌟 LIGHT MODE VARIABLES */
+  --primary: #0f172a;
+  --accent: #2563eb;
+  --border: #e2e8f0;
+  --bg: #f1f5f9;
+  --text: #1e293b;
+  --muted: #64748b;
+  --danger: #ef4444;
+  --card-bg: #ffffff;
+  --header-bg: #f8fafc;
+  --row-hover: #f1f7ff;
+  --processing-bg: #dbeafe;
 }
 
-*{box-sizing:border-box;font-family: 'Inter', sans-serif;}
-body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: antialiased;}
+[data-theme="dark"] {
+  /* 🌟 DARK MODE VARIABLES */
+  --primary: #f8fafc;
+  --accent: #3b82f6;
+  --border: #334155;
+  --bg: #0f172a;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #f87171;
+  --card-bg: #1e293b;
+  --header-bg: #0f172a;
+  --row-hover: #1e293b;
+  --processing-bg: #1e3a8a;
+}
+
+*{ box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s ease, color 0.3s ease; }
 
 /* HEADER */
 .header{
-  position:sticky;top:0;z-index:100;
-  background:var(--card-bg);
-  padding:16px 25px;
+  position:sticky; top:0; z-index:100;
+  background:var(--card-bg); padding:12px 15px;
   border-bottom:1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
-.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
-.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
-
-@media(max-width: 600px) {
-  .header { padding: 12px 15px; }
-  .header-titles h2 { font-size: 16px; }
-  .header-titles p { font-size: 11px; }
-}
+.header-titles h2{ margin:0; font-size:14px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* ALERT */
 #statusAlert {
@@ -63,157 +76,118 @@ body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing: ant
 }
 @keyframes slideDown { from { top: -50px; } to { top: 20px; } }
 
-/* FORM SECTION */
-.section{
-  margin:18px;
-  background:var(--card);
-  padding:25px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-@media(max-width: 600px) {
-  .section { margin: 10px; padding: 15px; border-radius: 12px; }
-}
-
-.section-title {
-    font-size: 13px; font-weight: 800; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 20px; 
-    display: flex; align-items: center; gap: 8px;
-}
-
-/* 🔹 FORM GRID - STRICT ONE BELOW ANOTHER FOR MOBILE */
-.form-grid{
-  display:grid;
-  grid-template-columns: 1fr; /* Default: One column for mobile view */
-  gap:16px;
-}
-@media(min-width:701px) and (max-width:1200px){ .form-grid{grid-template-columns:repeat(3,1fr);} }
-@media(min-width:1201px){ .form-grid{grid-template-columns:repeat(5,1fr);} }
-
-.field{display:flex;flex-direction:column; gap: 5px;}
-.field label{
-  font-size:11px;
-  font-weight:700;
-  color:var(--muted);
-  text-transform: uppercase;
-}
-
-/* 🟢 PERFECT FIELD ALIGNMENT FOR SELECT AND INPUTS */
-.field input, .field select{
-  width: 100%;
-  height: 40px; 
-  padding: 0 12px;
-  border-radius: 8px;
+/* FORM CONTAINER */
+.section {
+  width: 95%; max-width: 1400px; margin: 12px auto;
+  background: var(--card-bg); padding: 20px; border-radius: 8px;
   border: 1px solid var(--border);
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text);
-  background: var(--card-bg);
-  outline: none;
-  transition: 0.2s;
-  appearance: auto;
-  -webkit-appearance: auto;
-}
-.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-.field select { cursor: pointer; }
-.field select:invalid { color: var(--muted); }
-
-/* ACTIONS */
-.actions{
-  margin-top:20px;
-  display:flex;
-  justify-content:flex-end;
-  gap:12px;
-}
-@media(max-width: 600px) {
-  .actions { flex-direction: column-reverse; gap: 8px; }
-  .actions .btn { width: 100%; justify-content: center; height: 40px; }
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: {% if today_data %} none {% else %} block {% endif %};
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-.btn{
-  padding:10px 22px;
-  border-radius:8px;
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer;
-  border:1px solid var(--border);
-  background:var(--card-bg);
-  transition: 0.2s;
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
+@media(min-width:768px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(5, 1fr); } }
+
+.field { display: flex; flex-direction: column; }
+.section-title { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px;}
+
+.field label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.3px; }
+.field input, .field select {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; background: var(--card-bg);
+  outline: none; width: 100%; color: var(--primary); font-weight: 600; transition: 0.2s; height: 36px;
 }
-.btn-primary{
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  box-shadow: 0 4px 10px rgba(59,130,246,0.3);
-  display: flex; align-items: center; gap: 8px;
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+.field input { text-transform: uppercase !important; }
+
+/* CONTROL ACTIONS HEADER BAR */
+.table-header-bar {
+  width: 95%; max-width: 1400px; margin: 15px auto 5px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  position: relative;
+}
+.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; padding-top: 8px; letter-spacing: 0.5px;}
+
+.top-actions { margin: 0; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
+
+/* PREMIUM RMP TOGGLE STYLE BUTTON */
+.btn-toggle { 
+    background: var(--accent) !important; 
+    color: #fff !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; 
+    border: none !important; cursor: pointer; display: flex; align-items: center; 
+    gap: 6px; font-size: 11px; text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+.btn-toggle:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-/* TABLE */
-.table-header-tool {
-    padding: 0 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 20px;
+.actions { text-align: center; display: flex; justify-content: center; gap: 8px; margin-top: 15px; width: 100%; }
+.btn {
+  background: var(--accent); color: white; border: none;
+  padding: 10px 24px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
 }
-@media(max-width: 600px) {
-    .table-header-tool { padding: 0 12px; margin-top: 15px; }
-    .table-header-tool h3 { font-size: 13px !important; }
+.btn-clear { background: var(--bg); color: var(--text-muted); }
+.btn:hover { opacity: 0.9; }
+
+/* TOP INLINE 3-DOT MENU */
+.menu-container { position: relative; display: none; margin-top: 2px; }
+.dots-trigger { background: var(--accent); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+
+#dropdownMenu { 
+    display: none; position: absolute; right: 0; top: 36px; 
+    background: var(--card-bg) !important; border: 1px solid var(--border); 
+    border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); width: 160px; z-index: 1000; overflow: hidden; 
+}
+.menu-item { padding: 10px 14px; font-size: 11px; font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
+.menu-item:hover { background: var(--row-hover); color: var(--accent); }
+
+/* COMPACT TABLE AREA - 🔴 FORCE TABLE ON ALL SCREEN SIZES */
+.table-wrap {
+  background: var(--card-bg) !important;
+  width: 100%; max-width: 1400px; margin: 0 auto 40px; 
+  border-radius: 8px; border: 1px solid var(--border); 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; display: block !important; 
+}
+table { width: 100%; border-collapse: collapse; min-width: 1450px; table-layout: fixed !important; display: table !important; }
+
+th {
+  background: var(--header-bg) !important; color: var(--text); padding: 10px 6px;
+  text-transform: uppercase; border-bottom: 2px solid var(--border) !important;
+  text-align: center !important; white-space: nowrap; font-size: 9.5px !important; font-weight: 800;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  display: table-cell !important;
 }
 
-.table-wrap{
-  margin:12px 18px 30px;
-  background:var(--card);
-  border-radius:16px;
-  border:1px solid var(--border);
-  overflow-x:auto;
-  -webkit-overflow-scrolling: touch;
+td { 
+  padding: 8px 6px; border-bottom: 1px solid var(--border) !important; color: var(--text) !important; 
+  text-align: center !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px !important; 
+  font-weight: 600; transition: background 0.3s ease, border-color 0.3s ease;
+  display: table-cell !important;
 }
-@media(max-width: 600px) {
-  .table-wrap{
-    background: var(--card-bg) !important;
-} margin: 10px; border-radius: 12px; }
-}
+tr { display: table-row !important; background: transparent !important; }
+tr:hover { background: var(--row-hover) !important; cursor: pointer; }
+tr.selected { background: var(--processing-bg) !important; }
 
-table{ width:100%; border-collapse:collapse; font-size: 12px; min-width: 1200px;}
-thead th{
-  background:var(--header-bg);
-  padding:14px 10px;
-  border-bottom: 1px solid var(--border);
-  color: #475569;
-  text-transform: uppercase;
-}
-tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-tbody tr:hover{background:#f8fbff; cursor:pointer}
-tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--accent); }
+/* Width Allocations Framework Lock */
+.w-id { width: 55px; } .w-tm { width: 75px; } .w-comp { width: 140px; } .w-fc { width: 130px; }
+.w-gp { width: 110px; } .w-bt { width: 110px; } .w-ch { width: 110px; } .w-sp { width: 180px; }
+.w-lc { width: 130px; } .w-vn { width: 110px; } .w-bx { width: 75px; } .w-usr { width: 130px; }
 
-/* MENU */
-#threeDotsMenu{ position:relative; display: none; }
-.menu-trigger {
-  background: var(--card-bg); border: 1px solid var(--border);
-  width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
-}
-#dropdownMenu{
-  display:none;
-  position:absolute;
-  right:0; top: 40px;
-  background:var(--card-bg);
-  border:1px solid var(--border);
-  border-radius:10px;
-  width:160px;
-  box-shadow:0 10px 25px rgba(0,0,0,.15);
-  z-index: 1000;
-}
-.menu-item{
-  padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer;
-  display: flex; align-items: center; gap: 10px; color: var(--danger);
+@media(max-width: 1024px){
+  .section, .table-header-bar { width: 95%; }
+  .actions { flex-direction: column-reverse; }
+  .btn, .btn-toggle { width: 100% !important; height: 36px; padding: 0 !important; line-height: 1; }
+  
+  /* 🔴 ప్యాడింగ్ తగ్గించి మొబైల్‌లో కూడా టేబుల్ అలైన్‌మెంట్ పక్కాగా ఉండేలా లాక్ చేశాను */
+  th { padding: 6px 3px !important; font-size: 9px !important; }
+  td { padding: 6px 3px !important; font-size: 9px !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -222,158 +196,176 @@ tbody tr.selected{background:#eff6ff !important; border-left: 4px solid var(--ac
 <div class="header">
   <div class="header-titles">
       <h2>Gate Entry</h2>
-      <p><i class="fa-solid fa-truck-ramp-box"></i> Raw Material Management</p>
   </div>
-  <div style="font-size: 12px; color: var(--muted); font-weight: 600;"> </div>
 </div>
 
 <form id="entryForm" autocomplete="off">
-<div class="section">
-  <div class="section-title">Entry Details</div>
-  <div class="form-grid">
+  <div class="section" id="formSection">
+    <div class="form-grid">
+      <div class="section-title"><i class="fa-solid fa-truck-ramp-box"></i> Entry Pipeline Details</div>
       
-    <div class="field">
-      <label>Production For</label>
-      <select name="production_for" id="prod_for" required>
-        <option value="" disabled selected>Select Company</option>
-        {% for p in prod_for_list %}
-        <option value="{{p}}">{{p}}</option>
-        {% endfor %}
-      </select>
-    </div> 
+      <div class="field">
+        <label>Production For</label>
+        <select name="production_for" id="prod_for" required>
+          <option value="" disabled selected>Select Company</option>
+          {% for p in prod_for_list %}
+          <option value="{{p}}">{{p}}</option>
+          {% endfor %}
+        </select>
+      </div> 
 
-    <div class="field">
-      <label>Batch Number</label>
-      <input name="batch_number" id="batch_num" required placeholder="Ex: B-101" autocomplete="off">
+      <div class="field">
+        <label>Factory Name</label>
+        <input list="factory_list" name="receiving_center" id="receiving_dd" required placeholder="Search/Type..." autocomplete="off">
+        <datalist id="factory_list">
+          {% for p in peeling_ats %}<option value="{{p}}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label>Gate Pass Number</label>
+        <input name="gate_pass_number" id="gp_num" required placeholder="Ex: GP-101" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Batch Number</label>
+        <input name="batch_number" id="batch_num" required placeholder="Ex: B-101" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Challan Number</label>
+        <input name="challan_number" id="challan_num" required placeholder="Ex: CH-101" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Supplier Name</label>
+        <input list="supp_list" name="supplier_name" id="supplier_dd" required placeholder="Search/Type..." autocomplete="off">
+        <datalist id="supp_list">
+          {% for s in suppliers %}<option value="{{s}}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label>Location</label>
+        <input list="loc_list" name="purchasing_location" id="location_dd" required placeholder="Search/Type..." autocomplete="off">
+        <datalist id="loc_list">
+          {% for l in locations %}<option value="{{l}}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label>Vehicle Number</label>
+        <input list="veh_list" name="vehicle_number" id="vehicle_dd" required placeholder="Search/Type..." autocomplete="off">
+        <datalist id="veh_list">
+          {% for v in vehicles %}<option value="{{v}}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field"><label>Mat. Boxes</label><input type="number" step="any" name="no_of_material_boxes" value="0" autocomplete="off"></div>
+      <div class="field"><label>Empty Boxes</label><input type="number" step="any" name="no_of_empty_boxes" value="0" autocomplete="off"></div>
+      <div class="field"><label>Ice Boxes</label><input type="number" step="any" name="no_of_ice_boxes" value="0" autocomplete="off"></div>
     </div>
 
-    <div class="field">
-      <label>Challan Number</label>
-      <input name="challan_number" id="challan_num" required placeholder="Ex: CH-101" autocomplete="off">
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" id="saveBtn">SAVE GATE ENTRY</button>
+      <button class="btn btn-clear" type="button" onclick="clearFormWork()">CANCEL</button>
     </div>
-
-    <div class="field">
-      <label>Gate Pass Number</label>
-      <input name="gate_pass_number" id="gp_num" required placeholder="Ex: GP-101" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label>Factory Name</label>
-      <input list="factory_list" name="receiving_center" id="receiving_dd" required placeholder="Search/Type..." autocomplete="off">
-      <datalist id="factory_list">
-        {% for p in peeling_ats %}<option value="{{p}}"></option>{% endfor %}
-      </datalist>
-    </div>
-
-    <div class="field">
-      <label>Supplier Name</label>
-      <input list="supp_list" name="supplier_name" id="supplier_dd" required placeholder="Search/Type..." autocomplete="off">
-      <datalist id="supp_list">
-        {% for s in suppliers %}<option value="{{s}}"></option>{% endfor %}
-      </datalist>
-    </div>
-
-    <div class="field">
-      <label>Location</label>
-      <input list="loc_list" name="purchasing_location" id="location_dd" required placeholder="Search/Type..." autocomplete="off">
-      <datalist id="loc_list">
-        {% for l in locations %}<option value="{{l}}"></option>{% endfor %}
-      </datalist>
-    </div>
-
-    <div class="field">
-      <label>Vehicle Number</label>
-      <input list="veh_list" name="vehicle_number" id="vehicle_dd" required placeholder="Search/Type..." autocomplete="off">
-      <datalist id="veh_list">
-        {% for v in vehicles %}<option value="{{v}}"></option>{% endfor %}
-      </datalist>
-    </div>
-
-    <div class="field">
-      <label>Mat. Boxes</label>
-      <input type="number" step="any" name="no_of_material_boxes" value="0" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label>Empty Boxes</label>
-      <input type="number" step="any" name="no_of_empty_boxes" value="0" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label>Ice Boxes</label>
-      <input type="number" step="any" name="no_of_ice_boxes" value="0" autocomplete="off">
-    </div>
-
   </div>
-
-  <div class="actions">
-    <button type="button" class="btn" onclick="location.reload()"><i class="fa-solid fa-rotate"></i> Clear</button>
-    <button type="submit" id="saveBtn" class="btn btn-primary">
-        <i class="fa-solid fa-floppy-disk"></i> Save Gate Entry
-    </button>
-  </div>
-</div>
 </form>
 
 {% if today_data %}
-<div class="table-header-tool">
-    <h3 style="font-size:15px; color:var(--primary); font-weight:800;">Today's Entries</h3>
-    <div id="threeDotsMenu">
-      <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-      <div id="dropdownMenu">
-        <div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash"></i> Delete Entry</div>
-      </div>
+
+<div class="table-header-bar">
+    <h3 class="table-title">Gate Entry Logs</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle" onclick="toggleFormGrid()"><i class="fa-solid fa-plus"></i> Add Gate Entry</button>
+        </div>
+
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Entry</div>
+          </div>
+        </div>
     </div>
 </div>
 
 <div class="table-wrap">
-<table id="dataTable">
-<thead>
-  <tr>
-    <th>ID</th><th>Time</th><th>Company</th><th>Batch #</th><th>Challan #</th><th>GP #</th><th>Factory</th><th>Supplier</th><th>Location</th><th>Vehicle</th><th>Mat</th><th>Emp</th><th>Ice</th><th>User</th>
-  </tr>
-</thead>
-<tbody>
-{% for r in today_data %}
-<tr data-id="{{r.id}}">
-  <td>{{r.id}}</td>
-  <td style="color:var(--muted)">{{r.time.strftime('%H:%M') if r.time else ''}}</td>
-  <td style="font-weight:600">{{r.production_for}}</td>
-  <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
-  <td>{{r.challan_number}}</td>
-  <td>{{r.gate_pass_number}}</td>
-  <td>{{r.receiving_center}}</td>
-  <td>{{r.supplier_name}}</td>
-  <td>{{r.purchasing_location}}</td>
-  <td>{{r.vehicle_number}}</td>
-  <td>{{r.no_of_material_boxes}}</td>
-  <td>{{r.no_of_empty_boxes}}</td>
-  <td>{{r.no_of_ice_boxes}}</td>
-  <td style="font-size:10px; color:var(--muted)">{{r.email.split('@')[0] if r.email else ''}}</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th class="w-id">ID</th>
+        <th class="w-tm">Time</th>
+        <th class="w-comp" style="text-align:left;">Company</th>
+        <th class="w-fc" style="text-align:left;">Factory</th>
+        <th class="w-gp">GP #</th>
+        <th class="w-bt">Batch #</th>
+        <th class="w-ch">Challan #</th>
+        <th class="w-sp" style="text-align:left;">Supplier</th>
+        <th class="w-lc" style="text-align:left;">Location</th>
+        <th class="w-vn">Vehicle</th>
+        <th class="w-bx" style="text-align:right;">Mat</th>
+        <th class="w-bx" style="text-align:right;">Emp</th>
+        <th class="w-bx" style="text-align:right;">Ice</th>
+        <th class="w-usr" style="text-align:left;">User Channel</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in today_data %}
+      <tr data-id="{{ r.id }}" onclick="selectRowOrCard(this)">
+        <td>{{ r.id }}</td>
+        <td style="color:var(--muted)">{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
+        <td style="font-weight:600">{{ r.production_for }}</td>
+        <td>{{ r.receiving_center }}</td>
+        <td>{{ r.gate_pass_number }}</td>
+        <td style="font-weight:800; color:var(--accent)">{{ r.batch_number }}</td>
+        <td>{{ r.challan_number }}</td>
+        <td>{{ r.supplier_name }}</td>
+        <td>{{ r.purchasing_location }}</td>
+        <td>{{ r.vehicle_number }}</td>
+        <td style="color:var(--accent);">{{ r.no_of_material_boxes }}</td>
+        <td>{{ r.no_of_empty_boxes }}</td>
+        <td>{{ r.no_of_ice_boxes }}</td>
+        <td style="font-size:10px; color:var(--muted)">{{ r.email.split('@')[0] if r.email else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+
 {% endif %}
 
 <script>
-// Data from server
 const lastBatchMap = JSON.parse('{{ last_batch_map_json | safe }}');
 const lastChallanMap = JSON.parse('{{ last_challan_map_json | safe }}');
+const lastGPComboMap = JSON.parse('{{ last_gp_map_json | safe }}'); 
 const lastGPVal = "{{ last_gp_value }}";
 
-const alertBox = document.getElementById("statusAlert");
+let selectedElement = null;
 
-function showAlert(msg, type) {
-    alertBox.innerText = msg;
-    alertBox.style.display = "block";
-    alertBox.style.background = type === 'success' ? '#dcfce7' : '#fee2e2';
-    alertBox.style.color = type === 'success' ? '#166534' : '#991b1b';
-    setTimeout(() => { alertBox.style.display = "none"; }, 3000);
+window.onload = function() {
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) toggle.style.display = "none";
+    }
 }
 
-// Logic to get next sequence (still editable)
+function toggleFormGrid() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearFormWork();
+    }
+}
+
 function getNextSequence(val) {
     if(!val) return "";
     let parts = val.split('-');
@@ -385,75 +377,122 @@ function getNextSequence(val) {
     return parts.join('-');
 }
 
-// Trigger auto-fill when company changes
 document.getElementById("prod_for").addEventListener("change", function() {
-    const pName = this.value;
-    document.getElementById("batch_num").value = getNextSequence(lastBatchMap[pName] || "");
-    document.getElementById("challan_num").value = getNextSequence(lastChallanMap[pName] || "");
-    document.getElementById("gp_num").value = getNextSequence(lastGPVal || "");
+    document.getElementById("receiving_dd").value = "";
+    document.getElementById("batch_num").value = "";
+    document.getElementById("challan_num").value = "";
+    document.getElementById("gp_num").value = "";
 });
 
-// Fast AJAX Submission
+document.getElementById("receiving_dd").addEventListener("input", function() {
+    const pName = document.getElementById("prod_for").value;
+    const fName = this.value.trim().toUpperCase();
+    
+    if(!pName) {
+        Swal.fire({icon: 'warning', title: 'Select Company First!'});
+        this.value = "";
+        return;
+    }
+
+    if(fName !== "") {
+        document.getElementById("batch_num").value = getNextSequence(lastBatchMap[pName] || "");
+        document.getElementById("challan_num").value = getNextSequence(lastChallanMap[pName] || "");
+        
+        if(lastGPComboMap[pName] && lastGPComboMap[pName][fName] !== undefined && lastGPComboMap[pName][fName] !== "") {
+            document.getElementById("gp_num").value = getNextSequence(lastGPComboMap[pName][fName]);
+        } else {
+            document.getElementById("gp_num").value = getNextSequence(lastGPVal || "");
+        }
+    } else {
+        document.getElementById("batch_num").value = "";
+        document.getElementById("challan_num").value = "";
+        document.getElementById("gp_num").value = "";
+    }
+});
+
+document.getElementById("entryForm").addEventListener("submit", function() {
+    this.querySelectorAll("input[type=text], input:not([type])").forEach(input => {
+        input.value = input.value.toUpperCase().trim();
+    });
+});
+
 document.getElementById("entryForm").onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById("saveBtn");
-    
-    // Immediate Feedback
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
     const formData = new FormData(e.target);
-
     try {
         const res = await fetch("/processing/gate_entry", { 
             method: "POST", 
             body: formData,
             headers: { 'Cache-Control': 'no-cache' } 
         });
-        
         const data = await res.json();
 
         if(res.ok) {
-            showAlert("✅ Saved Successfully", "success");
-            // Fast reload after success
-            setTimeout(() => { window.location.reload(); }, 400); 
+            Swal.fire({icon: 'success', title: 'Saved Successfully', showConfirmButton: false, timer: 1200}).then(()=>{
+                window.location.reload();
+            });
         } else {
-            showAlert(data.error || "Error Saving", "error");
+            Swal.fire({icon: 'error', title: data.error || 'Execution Error'});
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Gate Entry';
+            btn.innerHTML = 'SAVE GATE ENTRY';
         }
     } catch (err) {
-        showAlert("❌ Connection Error", "error");
+        Swal.fire({icon: 'error', title: 'Local Connection Error'});
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Gate Entry';
+        btn.innerHTML = 'SAVE GATE ENTRY';
     }
 };
 
-// Selection & Delete Logic
-let selectedId = null;
-document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
-    tr.onclick = () => {
-        document.querySelectorAll("#dataTable tr").forEach(x => x.classList.remove("selected"));
-        tr.classList.add("selected");
-        selectedId = tr.dataset.id;
-        document.getElementById("threeDotsMenu").style.display = "block";
-    };
+function selectRowOrCard(el) {
+  document.querySelectorAll("#dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
-document.getElementById("menuBtn").onclick = (e) => {
-    e.stopPropagation();
-    const m = document.getElementById("dropdownMenu");
-    m.style.display = m.style.display === "block" ? "none" : "block";
-};
-
-window.onclick = () => document.getElementById("dropdownMenu").style.display = "none";
-
 async function deleteSelected() {
-    if(selectedId && confirm("Are you sure you want to delete this record?")) {
-        const res = await fetch("/processing/gate_entry/delete/" + selectedId, { method: "POST" });
-        if(res.ok) window.location.reload();
-        else showAlert("Delete failed", "error");
-    }
+    if(!selectedElement) return;
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "Delete this gate entry log?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const id = selectedElement.dataset.id;
+            const res = await fetch("/processing/gate_entry/delete/" + id, { method: "POST" });
+            if(res.ok) window.location.reload();
+            else Swal.fire('Error', 'Deletion rejected.', 'error');
+        }
+    });
+}
+
+function clearFormWork(){
+  selectedElement = null;
+  document.getElementById("entryForm").reset();
+  document.querySelectorAll("tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
 }
 </script>
 <script src="/static/js/global-loader.js"></script>

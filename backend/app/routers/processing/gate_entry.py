@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Depends, Form, BackgroundTasks
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct # 👈 🔴 FIXED: func అండ్ distinct ఇంపోర్ట్స్ ఇక్కడ పక్కాగా యాడ్ చేశాను!
+from sqlalchemy import func, distinct 
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 
@@ -26,20 +26,31 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # =========================================================
-# COMMON DROPDOWNS & SEQUENCE LOGIC
+# COMMON DROPDOWNS & SEQUENCE LOGIC (STRICT USER PERMISSION & FILTER LOCK)
 # =========================================================
-def load_dropdowns(db: Session, comp: str):
+def load_dropdowns(db: Session, comp: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
+    # Fetching master data company-wise
     supplier_list = [
         x.supplier_name for x in db.query(suppliers)
         .filter(suppliers.company_id == comp)
         .order_by(suppliers.supplier_name).all()
     ]
 
-    location_list = [
-        x.location_name for x in db.query(purchasing_locations)
-        .filter(purchasing_locations.company_id == comp)
-        .order_by(purchasing_locations.location_name).all()
-    ]
+    # 🟢 🔴 FIXED: USER PERMISSION & GLOBAL LOCATION DROPDOWN STRICT LOCK
+    loc_q = db.query(purchasing_locations).filter(purchasing_locations.company_id == comp)
+    
+    # 1. యూజర్ పర్మిషన్ లో ఉన్న లొకేషన్స్ ని మాత్రమే ఫిల్టర్ చేస్తాం (Multiple allowed locations support)
+    if user_allowed_locations:
+        # ట్రిమ్ మరియు కేస్ సెన్సిటివిటీ ఇష్యూస్ లేకుండా క్లీన్ గా లాక్ చేయడానికి
+        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+        if allowed_clean:
+            loc_q = loc_q.filter(func.upper(func.trim(purchasing_locations.location_name)).in_(allowed_clean))
+            
+    # 2. ఒకవేళ గ్లోబల్ హెడర్ ఫిల్టర్ లో కూడా లొకేషన్ సెలెక్ట్ చేసి ఉంటే దాన్ని కూడా లాక్ చేస్తాం
+    if global_loc:
+        loc_q = loc_q.filter(func.trim(purchasing_locations.location_name) == func.trim(global_loc))
+        
+    location_list = [x.location_name for x in loc_q.order_by(purchasing_locations.location_name).all()]
 
     vehicle_list = [
         x.vehicle_number for x in db.query(vehicle_numbers)
@@ -47,21 +58,28 @@ def load_dropdowns(db: Session, comp: str):
         .order_by(vehicle_numbers.vehicle_number).all()
     ]
 
-    peeling_list = [
-        x.peeling_at for x in db.query(peeling_at)
-        .filter(peeling_at.company_id == comp)
-        .order_by(peeling_at.peeling_at).all()
-    ]
+    # Peeling At / Factory dropdown also layered with the same location restrictions if required
+    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == comp)
+    if user_allowed_locations:
+        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+        if allowed_clean:
+            peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+    if global_loc:
+        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
+        
+    peeling_list = [x.peeling_at for x in peeling_q.order_by(peeling_at.peeling_at).all()]
 
-    prod_for_data = db.query(production_for.production_for).filter(
-        production_for.company_id == comp
-    ).distinct().all()
+    prod_q = db.query(production_for.production_for).filter(production_for.company_id == comp)
+    if global_p_for:
+        prod_q = prod_q.filter(func.trim(production_for.production_for) == func.trim(global_p_for))
     
+    prod_for_data = prod_q.distinct().all()
     prod_for_list = [p[0] for p in prod_for_data]
 
-    # --- AUTO-INCREMENT LOGIC (For Suggestions only) ---
+    # --- AUTO-INCREMENT MATRIX ENGINE (Strict Company + Factory Combinations) ---
     last_batch_map = {}
     last_challan_map = {}
+    last_gp_combo_map = {}  
     
     for p_name in prod_for_list:
         last_entry = (
@@ -70,17 +88,31 @@ def load_dropdowns(db: Session, comp: str):
             .order_by(GateEntry.id.desc())
             .first()
         )
-        if last_entry:
-            last_batch_map[p_name] = last_entry.batch_number
-            last_challan_map[p_name] = last_entry.challan_number
+        last_batch_map[p_name] = last_entry.batch_number if last_entry else ""
+        last_challan_map[p_name] = last_entry.challan_number if last_entry else ""
+        
+        last_gp_combo_map[p_name] = {}
+        for f_name in peeling_list:
+            f_clean = f_name.strip().upper()
+            last_gp_entry = (
+                db.query(GateEntry)
+                .filter(
+                    GateEntry.company_id == comp, 
+                    GateEntry.production_for == p_name,
+                    func.upper(func.trim(GateEntry.receiving_center)) == f_clean
+                )
+                .order_by(GateEntry.id.desc())
+                .first()
+            )
+            if last_gp_entry:
+                last_gp_combo_map[p_name][f_clean] = last_gp_entry.gate_pass_number
+            else:
+                last_gp_combo_map[p_name][f_clean] = ""
 
-    last_gp_entry = (
-        db.query(GateEntry)
-        .filter(GateEntry.company_id == comp)
-        .order_by(GateEntry.id.desc())
-        .first()
-    )
-    last_gp_val = last_gp_entry.gate_pass_number if last_gp_entry else ""
+    last_gp_backup = ""
+    backup_row = db.query(GateEntry).filter(GateEntry.company_id == comp).order_by(GateEntry.id.desc()).first()
+    if backup_row:
+        last_gp_backup = backup_row.gate_pass_number
 
     return (
         supplier_list, 
@@ -90,7 +122,8 @@ def load_dropdowns(db: Session, comp: str):
         prod_for_list,
         json.dumps(last_batch_map),
         json.dumps(last_challan_map),
-        last_gp_val
+        json.dumps(last_gp_combo_map),  
+        last_gp_backup
     )
 
 
@@ -99,7 +132,6 @@ def load_dropdowns(db: Session, comp: str):
 # =========================================================
 @router.get("/gate_entry", response_class=HTMLResponse)
 def gate_entry_page(request: Request, db: Session = Depends(get_db)):
-    # 1. FETCH UNIVERSAL GLOBAL FILTERS FROM RUNTIME CONTEXT
     global_production_for, global_location = get_global_filters(request)
 
     email = request.session.get("email")
@@ -108,10 +140,24 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
     if not email or not comp:
         return RedirectResponse("/auth/login", status_code=302)
 
-    (suppliers_dd, locations_dd, vehicles_dd, peeling_dd, prod_for_list, 
-     lb_json, lc_json, last_gp) = load_dropdowns(db, comp)
+    # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION (లిస్ట్ లేదా కామా సెపరేటెడ్ స్ట్రింగ్ ఏదైనా సపోర్ట్ చేస్తుంది)
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = session_locations
 
-    # 2. Base Gate Query formulation strictly with active global filters pool
+    # డ్రాప్‌డౌన్ లోడ్ అయ్యేటప్పుడే యూజర్ పర్మిషన్స్ మరియు గ్లోబల్ సెలెక్షన్స్ ని పంపి లాక్ చేసాను
+    (suppliers_dd, locations_dd, vehicles_dd, peeling_dd, prod_for_list, 
+     lb_json, lc_json, lgp_json, last_gp) = load_dropdowns(
+         db=db, 
+         comp=comp, 
+         user_allowed_locations=user_allowed_locations, 
+         global_p_for=global_production_for, 
+         global_loc=global_location
+     )
+
+    # Base Gate Query formulation strictly with active global filters pool
     today_date = ist_now().date()
     today_q = db.query(GateEntry).filter(GateEntry.company_id == comp, GateEntry.date == today_date)
 
@@ -133,6 +179,7 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
             "prod_for_list": prod_for_list,
             "last_batch_map_json": lb_json,
             "last_challan_map_json": lc_json,
+            "last_gp_map_json": lgp_json,  
             "last_gp_value": last_gp,
             "today_data": today_rows,
             "selected_production_for": global_production_for, 

@@ -5,146 +5,173 @@
 <title>De-Heading & Floor Balance – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <style>
-    :root {
-        --primary: #143465; --accent: #3b82f6; --border: #d6dde7; --bg: #f4f6f9;
-        --card: #ffffff; --text: #1f2937; --muted: #64748b; --success: #166534;
+:root{
+  /* 🌟 LIGHT MODE VARIABLES */
+  --primary:#0f172a; 
+  --accent:#2563eb;  
+  --border:#e2e8f0;  
+  --bg:#f1f5f9;      
+  --header:#ffffff;
+  --text:#1e293b;
+  --text-muted:#64748b;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --card-bg: #ffffff;
+  --header-bg: #f8fafc;
+  --row-hover: #f1f7ff;
+  --processing-bg: #dbeafe;
+}
+
+[data-theme="dark"] {
+  /* 🌟 DARK MODE VARIABLES */
+  --primary:#f8fafc; 
+  --accent:#3b82f6;  
+  --border:#334155;  
+  --bg:#0f172a;      
+  --header:#1e293b;
+  --text:#e2e8f0;
+  --text-muted:#94a3b8;
+  --danger: #f87171;
+  --success: #4ade80;
+  --card-bg: #1e293b;
+  --header-bg: #0f172a;
+  --row-hover: #1e293b;
+  --processing-bg: #1e3a8a;
+}
+
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: 20px; transition: background 0.3s ease, color 0.3s ease; }
+
+/* Elegant Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+/* --- DASHBOARD STYLES --- */
+.header-dash {
+    background: var(--card-bg); padding: 12px 15px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+}
+.header-dash h2 { font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+@media(max-width: 600px) {
+    .header-dash { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .grand-total { width: 100%; text-align: center; }
+}
+
+.grand-total {
+    background: var(--accent); color: #fff; padding: 8px 16px;
+    border-radius: 6px; font-size: 13px; font-weight: 800;
+}
+
+/* 🟢 FILTER BAR */
+.filter-section {
+    background: var(--card-bg); padding: 10px 15px; display: flex; align-items: center; gap: 15px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; margin: 10px; border-radius: 8px; border: 1px solid var(--border);
+}
+.filter-item { display: flex; align-items: center; gap: 8px; }
+.filter-item label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.filter-section input {
+    padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; color: var(--primary); background: var(--card-bg); outline: none; min-width: 160px; height: 32px;
+}
+
+@media(max-width: 768px) {
+    .filter-section { 
+        padding: 10px 12px; gap: 12px; flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; justify-content: flex-start;
     }
+    .filter-section-title { flex-shrink: 0; font-size: 11px !important; white-space: nowrap; }
+    .filter-item { flex-shrink: 0 !important; flex-direction: column; align-items: flex-start !important; gap: 2px !important; }
+    .filter-section input { min-width: 130px !important; width: 130px !important; }
+}
 
-    * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: 20px; }
+.main-dashboard { display: flex; gap: 15px; padding: 0 10px 15px; align-items: stretch; }
+.dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 2; min-width: 0; }
+#chartPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-    /* --- DASHBOARD STYLES --- */
-    .header-dash {
-        background: var(--card-bg); padding: 15px 25px; border-bottom: 1px solid var(--border);
-        display: flex; justify-content: space-between; align-items: center;
-        position: sticky; top: 0; z-index: 100;
-    }
-    @media(max-width: 600px) {
-        .header-dash { padding: 12px 15px; flex-direction: column; gap: 10px; align-items: flex-start; }
-        .header-dash h2 { font-size: 16px !important; }
-        .grand-total { width: 100%; text-align: center; font-size: 13px !important; }
-    }
+@media(max-width: 1024px) {
+    .main-dashboard { flex-direction: column; }
+    .dashboard-grid { width: 100%; display: flex; flex-direction: column; gap: 15px; flex: unset; }
+    #chartPanel { width: 100%; flex: unset; }
+}
 
-    .grand-total {
-        background: var(--primary); color: #fff; padding: 10px 20px;
-        border-radius: 12px; font-size: 15px; font-weight: 800;
-    }
+.panel { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.panel-title { padding: 10px; background: var(--header-bg); text-align: center; font-weight: 800; font-size: 11px; border-bottom: 1px solid var(--border); text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; }
 
-    /* 🟢 FILTER BAR - WITH SINGLE ROW HORIZONTAL SCROLL ENGINE FOR MOBILE */
-    .filter-section {
-        background: var(--card-bg); padding: 10px 25px; display: flex; align-items: center; gap: 15px;
-        border-bottom: 1px solid var(--border); flex-wrap: wrap;
-    }
-    .filter-item { display: flex; align-items: center; gap: 8px; }
-    .filter-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .filter-section input {
-        padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-        font-size: 13px; font-weight: 600; color: var(--primary); outline: none; min-width: 160px;
-    }
+.table-container { overflow-y: auto; flex-grow: 1; max-height: 300px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.panel table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.panel th { position: sticky; top: 0; background: var(--header-bg); padding: 10px 8px; border-bottom: 2px solid var(--border); text-align: center; color: var(--text); z-index: 10; font-weight: 800; text-transform: uppercase; }
+.panel td { padding: 8px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 600; text-align: center; color: var(--text); }
 
-    @media(max-width: 600px) {
-        .filter-section { 
-            padding: 10px 15px; 
-            gap: 12px; 
-            flex-wrap: nowrap !important; 
-            overflow-x: auto !important; 
-            -webkit-overflow-scrolling: touch;
-            justify-content: flex-start;
-            scrollbar-width: thin;
-        }
-        .filter-section::-webkit-scrollbar { height: 4px; }
-        .filter-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        
-        .filter-section-title { flex-shrink: 0; font-size: 11px !important; white-space: nowrap; }
+.company-row { cursor: pointer; background: var(--header-bg) !important; font-weight: 800 !important; color: var(--accent) !important; }
+.location-row { cursor: pointer; background: var(--card-bg) !important; font-weight: 700 !important; color: var(--primary) !important; }
+.drill-row { display: none; background: var(--bg); }
 
-        .filter-item { 
-            flex-shrink: 0 !important; 
-            flex-direction: column; 
-            align-items: flex-start !important; 
-            gap: 2px !important; 
-        }
-        .filter-item label { font-size: 8px !important; }
-        .filter-section input { 
-            min-width: 130px !important; 
-            width: 130px !important; 
-            height: 32px !important; 
-            padding: 4px 8px !important; 
-            font-size: 11px !important; 
-        }
-    }
+.drill-container { padding: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.drill-table { border: 1px solid var(--border); border-radius: 6px; width: 100%; background: var(--card-bg); }
+.drill-table th { background: var(--header-bg) !important; color: var(--text-muted); font-size: 9px; padding: 6px; border-bottom: 1px solid var(--border); }
+.drill-table td { padding: 6px; border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text); }
 
-    /* Dashboard Layout Properties */
-    .main-dashboard { display: flex; gap: 15px; padding: 15px 25px; align-items: stretch; }
-    .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 2; min-width: 0; }
-    
-    #chartPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* --- FORM MODAL --- */
+.modal {
+    display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+    width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 10px; backdrop-filter: blur(2px);
+}
+.modal-content {
+    background: var(--card-bg); padding: 20px; border-radius: 8px; width: 95%; max-width: 1000px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); color: var(--text);
+}
+@media(max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+    .btn-add { width: 100% !important; justify-content: center; }
+}
 
-    @media(max-width: 1024px) {
-        .main-dashboard { flex-direction: column; padding: 10px; }
-        .dashboard-grid { width: 100%; display: flex; flex-direction: column; gap: 10px; flex: unset; }
-        #chartPanel { width: 100%; flex: unset; }
-    }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.field input, .field select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 12px; width: 100%; height: 36px; background: var(--card-bg); color: var(--primary); font-weight: 600; }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+.field input[readonly] { background: var(--header-bg); cursor: not-allowed; }
 
-    .panel { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-    .panel-title { padding: 10px; background: #f8fafc; text-align: center; font-weight: 800; font-size: 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    .table-container { overflow-y: auto; flex-grow: 1; max-height: 300px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th { position: sticky; top: 0; background: var(--card-bg); padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; color: var(--muted); z-index: 10; }
-    td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+.btn-add { background: var(--accent) !important; color: #fff !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none !important; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; transition: all 0.2s ease; }
 
-    .company-row { cursor: pointer; background: #f8fafc; font-weight: 800; color: var(--primary); }
-    .location-row { cursor: pointer; background: var(--card-bg); font-weight: 700; color: var(--accent); padding-left: 20px !important; }
-    .drill-row { display: none; background: var(--card-bg); }
-    
-    .drill-container { padding: 0px 5px 10px 15px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .drill-table { border: 1px solid #edf2f7; border-radius: 8px; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); min-width: 300px; }
+.section-header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border-top: 1px solid var(--border); }
+.section-header h3 { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* --- FORM MODAL --- */
-    .modal {
-        display: none; position: fixed; z-index: 1001; left: 0; top: 0;
-        width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 10px;
-    }
-    .modal-content {
-        background: var(--card-bg); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto;
-    }
-    @media(max-width: 600px) {
-        .modal-content { width: 95%; padding: 15px; }
-        .form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
-        .btn-add { width: 100%; justify-content: center; }
-    }
+.table-wrap { 
+    display: block !important; margin: 12px 10px; background: var(--card-bg) !important; 
+    border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+#mainTable { width:100%; border-collapse:collapse; font-size: 10px !important; min-width: 1500px; table-layout: fixed !important; display: table !important; }
 
-    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-    .field { display: flex; flex-direction: column; gap: 4px; }
-    .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); outline: none; font-size: 13px; width: 100%; height: 40px; background: var(--card); color: var(--text); }
-    .field input[readonly] { background: #f8fafc; cursor: not-allowed; font-weight: 600; }
+#mainTable thead th { 
+    background:var(--header-bg) !important; padding:6px 2px; border-bottom: 2px solid var(--border) !important; 
+    color: var(--text); font-weight: 800; text-transform: uppercase; text-align: center !important; white-space: nowrap; font-size: 9.5px !important;
+    display: table-cell !important; transition: background 0.3s ease, border-color 0.3s ease;
+}
+#mainTable tbody td { 
+    padding:5px 2px; border-bottom: 1px solid var(--border) !important; text-align: center !important; 
+    color: var(--text) !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px !important; font-weight: 600;
+    display: table-cell !important; transition: background 0.3s ease, border-color 0.3s ease;
+}
+#mainTable tbody tr:hover { background: var(--row-hover) !important; cursor: pointer; }
+#mainTable tbody tr.selected-row { background: var(--processing-bg) !important; }
 
-    .btn-add { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-    
-    .table-wrap { 
-        margin: 15px 25px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; 
-    }
-    #mainTable { min-width: 900px; }
-    
-    @media(max-width: 600px) {
-        .section-header { padding: 15px !important; flex-direction: column; align-items: flex-start !important; gap: 15px; }
-        .section-header div { width: 100%; display: flex; justify-content: space-between; }
-        .table-wrap { margin: 10px !important; border-radius: 8px !important; }
-    }
+.w-loc { width: 120px; } .w-comp { width: 130px; } .w-btc { width: 140px; } .w-sp { width: 140px; }
+.w-qt { width: 95px; } .w-yl { width: 85px; } .w-con { width: 140px; } .w-amt { width: 110px; }
 
-    .selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
-    #dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .menu-item { padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
-    .menu-item:hover { background: #f8fafc; color: var(--danger); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); width: 150px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); overflow: hidden; }
+.menu-item { padding: 12px 14px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); }
+.menu-item:hover { background: var(--row-hover); color: var(--accent); }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -153,13 +180,12 @@
 <body>
 
 <div class="header-dash">
-    <div><h2 style="margin:0; font-size:18px; color:var(--primary);">De-Heading & Floor Balance</h2></div>
+    <div><h2>De-Heading & Floor Balance</h2></div>
     <div class="grand-total" id="gt_display">TOTAL FLOOR: 0.00 KG</div>
 </div>
 
 <div class="filter-section">
-    <div class="filter-section-title" style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;"><i class="fa-solid fa-filter"></i> Filters:</div>
-    
+    <div class="filter-section-title"><i class="fa-solid fa-filter"></i> Filters:</div>
     <div class="filter-item">
         <label>Company</label>
         <input list="dash_comp_list" id="dashboard_company_filter" oninput="updateDashboard()" placeholder="Search Company..." value="{{ selected_production_for or '' }}">
@@ -167,7 +193,6 @@
             {% for p in prod_for_list %}<option value="{{p}}"></option>{% endfor %}
         </datalist>
     </div>
-
     <div class="filter-item">
         <label>Location</label>
         <input list="dash_loc_list" id="dashboard_location_filter" oninput="updateDashboard()" placeholder="Search Location..." value="{{ selected_location or '' }}">
@@ -175,7 +200,6 @@
             {% for loc in peeling_locations %}<option value="{{loc}}"></option>{% endfor %}
         </datalist>
     </div>
-
     <div class="filter-item">
         <label>Species</label>
         <input list="dash_species_list" id="dashboard_species_filter" oninput="updateDashboard()" placeholder="Search Species...">
@@ -192,25 +216,23 @@
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th style="padding-left:15px;">Flow (Company > Location > Batch)</th><th style="text-align:right; padding-right:15px;">Qty (Kg)</th></tr>
+                        <tr><th>Flow (Company > Location > Batch)</th><th>Qty (Kg)</th></tr>
                     </thead>
                     <tbody id="fb_main_body"></tbody>
                 </table>
             </div>
         </div>
-
         <div class="panel">
             <div class="panel-title">Live Statistics</div>
             <div style="padding:20px; text-align:center;">
-                <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Filtered Batches</div>
-                <div style="font-size:32px; font-weight:800; color:var(--primary);" id="stat_batches">0</div>
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Filtered Batches</div>
+                <div style="font-size:32px; font-weight:800; color:var(--accent);" id="stat_batches">0</div>
                 <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-                <div style="font-size:11px; color:var(--muted); text-transform:uppercase;">Unique Counts</div>
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Unique Counts</div>
                 <div style="font-size:32px; font-weight:800; color:var(--accent);" id="stat_counts">0</div>
             </div>
         </div>
     </div>
-    
     <div class="panel" id="chartPanel">
         <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
         <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; padding: 15px;">
@@ -219,35 +241,36 @@
     </div>
 </div>
 
-<div class="section-header" style="padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border-top: 1px solid var(--border);">
-    <h3 style="font-size:15px; font-weight:800; color:var(--primary); margin:0;"><i class="fa-solid fa-history"></i> Today's De-Heading Entries</h3>
+<div class="section-header">
+    <h3><i class="fa-solid fa-history"></i> Today's De-Heading Entries</h3>
     <div style="display:flex; gap:10px; position: relative; align-items: center;">
-        <button class="menu-trigger" id="menuBtn" style="background:var(--card-bg); border:1px solid var(--border); width:35px; height:35px; border-radius:8px; cursor:pointer; display:none;"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-        <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash"></i> Delete Entry</div></div>
+        <button class="menu-trigger" id="menuBtn" style="background:var(--card-bg); border:1px solid var(--border); width:35px; height:35px; border-radius:8px; cursor:pointer; display:none; color:var(--text);"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete Entry</div></div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> New Entry</button>
     </div>
 </div>
 
 <div class="table-wrap">
     <table id="mainTable">
-        <thead style="background:var(--header-bg);">
+        <thead>
             <tr>
-                <th>Location</th><th>Production For</th><th>Batch / Count</th><th>Species</th><th>HOSO (In)</th>
-                <th>HLSO (Out)</th><th>Yield %</th><th>Contractor</th><th style="text-align:right">Amount</th>
+                <th class="w-loc">Location</th><th class="w-comp">Production For</th><th class="w-btc">Batch / Count</th>
+                <th class="w-sp">Species</th><th class="w-qt">HOSO (In)</th><th class="w-qt">HLSO (Out)</th>
+                <th class="w-yl">Yield %</th><th class="w-con">Contractor</th><th class="w-amt">Amount</th>
             </tr>
         </thead>
         <tbody id="today_entries_body">
             {% for r in today_data %}
             <tr data-id="{{r.id}}" data-loc="{{r.peeling_at}}" onclick="selectRow(this)">
                 <td>{{r.peeling_at}}</td>
-                <td style="font-weight: 600; color: var(--primary);">{{ r.production_for }}</td>
+                <td style="font-weight: 600; color: var(--accent);">{{ r.production_for }}</td>
                 <td>{{r.batch_number}} / {{r.hoso_count}}</td>
                 <td>{{r.species}}</td>
-                <td class="qty-in" style="font-weight:700;">{{r.hoso_qty}}</td>
+                <td class="qty-in" style="font-weight:700; color:var(--accent);">{{r.hoso_qty}}</td>
                 <td class="qty-out" style="font-weight:700;">{{r.hlso_qty}}</td>
                 <td>{{r.yield_percent}}%</td>
                 <td>{{r.contractor}}</td>
-                <td class="amt" style="text-align:right; color:var(--accent); font-weight:700;">{{ "%.2f"|format(r.amount) }}</td>
+                <td class="amt" style="color:var(--accent); font-weight:700;">{{ "%.2f"|format(r.amount) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -256,15 +279,15 @@
 
 <div class="modal" id="entryModal">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; border-bottom:1px solid #eee; padding-bottom:15px;">
-            <h3 style="margin:0; color:var(--primary); font-weight:800;">De-Heading Entry Form</h3>
-            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:24px; color:var(--muted);">&times;</button>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; border-bottom:1px solid var(--border); padding-bottom:15px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800; text-transform:uppercase; font-size:13px; letter-spacing:0.5px;">De-Heading Entry Form</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:24px; color:var(--text-muted);">&times;</button>
         </div>
         <form id="deHeadingForm">
             <div class="form-grid">
                 <div class="field">
                     <label>Production For</label>
-                    <select name="production_for" id="form_production_for" onchange="loadBatches()" required autocomplete="off">
+                    <select name="production_for" id="form_production_for" onchange="loadBatches()" required>
                         <option value="">-- SELECT COMPANY --</option>
                         {% for p in prod_for_list %}
                         <option value="{{p}}" {% if selected_production_for == p %}selected{% endif %}>{{p}}</option>
@@ -273,7 +296,7 @@
                 </div>
                 <div class="field">
                     <label>Location</label>
-                    <select name="deheading_at" id="form_loc" onchange="loadBatches()" required autocomplete="off">
+                    <select name="deheading_at" id="form_loc" onchange="loadBatches()" required>
                         <option value="">-- SELECT LOCATION --</option>
                         {% for loc in peeling_locations %}
                         <option value="{{loc}}" {% if selected_location == loc %}selected{% endif %}>{{loc}}</option>
@@ -282,40 +305,42 @@
                 </div>
                 <div class="field">
                     <label>Species</label>
-                    <input list="species_list_data" name="species" id="form_species" onchange="checkFloor()" placeholder="Search Species..." required autocomplete="off">
-                    <datalist id="species_list_data">
-                        {% for s in species %}<option value="{{s}}"></option>{% endfor %}
-                    </datalist>
+                    <select name="species" id="form_species" onchange="checkFloor()" required>
+                        <option value="">-- SELECT SPECIES --</option>
+                        {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
+                    </select>
                 </div>
                 <div class="field">
                     <label>Batch Number</label>
-                    <input list="batch_list_data" name="batch_number" id="form_batch" onchange="loadCounts()" placeholder="Type/Search Batch" required autocomplete="off">
-                    <datalist id="batch_list_data"></datalist>
+                    <select name="batch_number" id="form_batch" onchange="loadCounts()" required>
+                        <option value="">-- SELECT BATCH --</option>
+                    </select>
                 </div>
                 <div class="field">
                     <label>HOSO Count</label>
-                    <input list="count_list_data" name="hoso_count" id="form_count" onchange="checkFloor()" placeholder="Search Count..." required autocomplete="off">
-                    <datalist id="count_list_data"></datalist>
+                    <select name="hoso_count" id="form_count" onchange="checkFloor()" required>
+                        <option value="">-- SELECT COUNT --</option>
+                    </select>
                 </div>
                 <div class="field">
                     <label>HOSO Qty (In)</label>
                     <input type="number" step="0.01" name="hoso_qty" id="f_hoso" placeholder="0.00" required>
-                    <span style="font-size:10px; color:var(--accent); font-weight:700; margin-top:2px;">Floor Avail: <b id="floor_display">0.00</b></span>
+                    <span style="font-size:10px; color:var(--accent); font-weight:700; margin-top:2px; text-align:center;">Floor Avail: <b id="floor_display">0.00</b></span>
                 </div>
                 <div class="field"><label>HLSO Qty (Out)</label><input type="number" step="0.01" name="hlso_qty" id="f_hlso" placeholder="0.00" required></div>
                 <div class="field"><label>Yield %</label><input type="text" id="f_yield" readonly name="yield_percent"></div>
                 <div class="field">
                     <label>Contractor</label>
-                    <input list="contractor_list_data" name="contractor" id="f_contractor" onchange="getRate()" placeholder="Search Contractor..." required autocomplete="off">
-                    <datalist id="contractor_list_data">
-                        {% for c in contractors %}<option value="{{c}}"></option>{% endfor %}
-                    </datalist>
+                    <select name="contractor" id="f_contractor" onchange="getRate()" required>
+                        <option value="">-- SELECT CONTRACTOR --</option>
+                        {% for c in contractors %}<option value="{{c}}">{{c}}</option>{% endfor %}
+                    </select>
                 </div>
                 <div class="field"><label>Rate / Kg</label><input type="number" name="rate_per_kg" id="f_rate" readonly></div>
-                <div class="field"><label>Total Amount</label><input type="number" name="amount" id="f_amount" readonly style="color:var(--accent); font-size:16px;"></div>
+                <div class="field"><label>Total Amount</label><input type="number" name="amount" id="f_amount" readonly style="color:var(--accent); font-size:14px; font-weight:800; text-align:center;"></div>
             </div>
-            <div style="margin-top:20px; text-align:right; border-top:1px solid #eee; padding-top:20px;">
-                <button type="button" onclick="closeModal()" style="background:#eee; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:10px;">Cancel</button>
+            <div style="margin-top:20px; text-align:right; border-top:1px solid var(--border); padding-top:20px;">
+                <button type="button" onclick="closeModal()" style="background:var(--bg); border:none; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:10px; color:var(--text); font-weight:600;">Cancel</button>
                 <button type="submit" class="btn-add" id="submitBtn">Save Entry</button>
             </div>
         </form>
@@ -323,19 +348,17 @@
 </div>
 
 <script>
-// 1. DATA INITIALIZATION
 const rawFloorData = {{ hoso_floor_balance | safe if hoso_floor_balance else '[]' }};
 let chartInstance = null;
 let selectedId = null;
 
 const getLocationColor = (loc) => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+    const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
     let hash = 0;
     for (let i = 0; i < loc.length; i++) { hash = loc.charCodeAt(i) + ((hash << 5) - hash); }
     return colors[Math.abs(hash) % colors.length];
 };
 
-// 2. DASHBOARD & FILTERING LOGIC
 function updateDashboard() {
     const spF = document.getElementById('dashboard_species_filter').value.trim().toLowerCase();
     const cpF = document.getElementById('dashboard_company_filter').value.trim().toLowerCase();
@@ -344,11 +367,7 @@ function updateDashboard() {
     const fbBody = document.getElementById('fb_main_body');
     if(fbBody) fbBody.innerHTML = "";
 
-    let hierarchy = {}; 
-    let grandTotal = 0;
-    let chartDataMap = {}; 
-    let batches = new Set();
-    let counts = new Set();
+    let hierarchy = {}; let grandTotal = 0; let chartDataMap = {}; let batches = new Set(); let counts = new Set();
 
     rawFloorData.forEach(item => {
         const comp = item.production_for || "General Stock";
@@ -371,28 +390,25 @@ function updateDashboard() {
         if (!chartDataMap[count]) chartDataMap[count] = {};
         chartDataMap[count][loc] = (chartDataMap[count][loc] || 0) + qty;
 
-        grandTotal += qty;
-        batches.add(item.batch);
-        counts.add(item.count);
+        grandTotal += qty; batches.add(item.batch); counts.add(item.count);
     });
 
     if(fbBody) {
         let layoutHtml = "";
         Object.keys(hierarchy).sort().forEach((comp, cIdx) => {
             const cId = `comp_${cIdx}`;
-            layoutHtml += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td style="padding-left:15px;"><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td style="text-align:right; padding-right:15px;">${hierarchy[comp].total.toFixed(2)}</td></tr>`;
-            
+            layoutHtml += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td>${hierarchy[comp].total.toFixed(2)}</td></tr>`;
             Object.keys(hierarchy[comp].locations).sort().forEach((loc, lIdx) => {
                 const lId = `${cId}_loc_${lIdx}`;
                 layoutHtml += `
                     <tr class="location-row child-of-${cId}" style="display:none;" onclick="toggleRows('#drill_${lId}', 'table-row')">
                         <td><i class="fa-solid fa-location-dot" style="margin-left:25px; margin-right:8px;"></i> ${loc}</td>
-                        <td style="text-align:right; padding-right:15px;">${hierarchy[comp].locations[loc].total.toFixed(2)}</td>
+                        <td>${hierarchy[comp].locations[loc].total.toFixed(2)}</td>
                     </tr>
                     <tr class="drill-row" id="drill_${lId}" style="display:none;">
                         <td colspan="2">
-                            <div class="drill-container"><table class="drill-table"><thead><tr><th>Species</th><th>Batch / Count</th><th style="text-align:right">Qty (Kg)</th></tr></thead>
-                            <tbody>${hierarchy[comp].locations[loc].items.map(i => `<tr><td>${i.species}</td><td>${i.batch} / ${i.count}</td><td style="text-align:right; font-weight:700;">${parseFloat(i.available_qty).toFixed(2)}</td></tr>`).join('')}</tbody>
+                            <div class="drill-container"><table class="drill-table"><thead><tr><th>Species</th><th>Batch / Count</th><th>Qty (Kg)</th></tr></thead>
+                            <tbody>${hierarchy[comp].locations[loc].items.map(i => `<tr><td>${i.species}</td><td>${i.batch} / ${i.count}</td><td style="font-weight:700; color:var(--accent);">${parseFloat(i.available_qty).toFixed(2)}</td></tr>`).join('')}</tbody>
                             </table></div>
                         </td>
                     </tr>`;
@@ -400,35 +416,22 @@ function updateDashboard() {
         });
         fbBody.innerHTML = layoutHtml;
     }
-
     document.getElementById('gt_display').innerText = `TOTAL FLOOR: ${grandTotal.toFixed(2)} KG`;
     document.getElementById('stat_batches').innerText = batches.size;
     document.getElementById('stat_counts').innerText = counts.size;
-    
-    updateTodayTableSubtotals();
-    renderStackedBar(chartDataMap);
+    updateTodayTableSubtotals(); renderStackedBar(chartDataMap);
 }
 
-// 3. CHART RENDERING
 function renderStackedBar(dataMap) {
-    const canvas = document.getElementById('countStackedBar');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (chartInstance) chartInstance.destroy();
-    
-    const labels = Object.keys(dataMap).sort();
-    const locations = [...new Set(rawFloorData.map(i => i.peeling_at || "Purchased Stock"))];
-    
+    const canvas = document.getElementById('countStackedBar'); if(!canvas) return;
+    const ctx = canvas.getContext('2d'); if (chartInstance) chartInstance.destroy();
+    const labels = Object.keys(dataMap).sort(); const locations = [...new Set(rawFloorData.map(i => i.peeling_at || "Purchased Stock"))];
     const datasets = locations.map(loc => ({
-        label: loc,
-        data: labels.map(label => dataMap[label][loc] || 0),
-        backgroundColor: getLocationColor(loc),
-        borderRadius: 4
+        label: loc, data: labels.map(label => dataMap[label][loc] || 0), backgroundColor: getLocationColor(loc), borderRadius: 4
     })).filter(ds => ds.data.some(v => v > 0));
 
     chartInstance = new Chart(ctx, {
-        type: 'bar', plugins: [ChartDataLabels],
-        data: { labels: labels, datasets: datasets },
+        type: 'bar', plugins: [ChartDataLabels], data: { labels: labels, datasets: datasets },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { 
@@ -440,7 +443,6 @@ function renderStackedBar(dataMap) {
     });
 }
 
-// 4. UI UTILITIES
 function toggleRows(selector, displayType) {
     const rows = document.querySelectorAll(selector);
     rows.forEach(row => {
@@ -461,53 +463,45 @@ function toggleRows(selector, displayType) {
 }
 
 function updateTodayTableSubtotals() {
-    const tbody = document.getElementById('today_entries_body');
-    if (!tbody) return;
-    const rows = Array.from(tbody.querySelectorAll('tr:not(.subtotal-row)'));
-    tbody.querySelectorAll('.subtotal-row').forEach(r => r.remove());
+    const tbody = document.getElementById('today_entries_body'); if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.subtotal-row)')); tbody.querySelectorAll('.subtotal-row').forEach(r => r.remove());
     let locGroup = {};
     rows.forEach(r => {
-        const loc = r.dataset.loc || "Unknown";
-        if(!locGroup[loc]) locGroup[loc] = { hoso:0, hlso:0, amt:0, lastRow: null };
+        const loc = r.dataset.loc || "Unknown"; if(!locGroup[loc]) locGroup[loc] = { hoso:0, hlso:0, amt:0, lastRow: null };
         const hosoVal = parseFloat(r.querySelector('.qty-in').innerText) || 0;
         const hlsoVal = parseFloat(r.querySelector('.qty-out').innerText) || 0;
         const amtVal = parseFloat(r.querySelector('.amt').innerText.replace(/,/g, '')) || 0;
-        
-        locGroup[loc].hoso += hosoVal;
-        locGroup[loc].hlso += hlsoVal;
-        locGroup[loc].amt += amtVal;
-        locGroup[loc].lastRow = r;
+        locGroup[loc].hoso += hosoVal; locGroup[loc].hlso += hlsoVal; locGroup[loc].amt += amtVal; locGroup[loc].lastRow = r;
     });
     Object.keys(locGroup).forEach(loc => {
         if(locGroup[loc].lastRow) {
             locGroup[loc].lastRow.insertAdjacentHTML('afterend', `
                 <tr class="subtotal-row" style="background:var(--header-bg); font-weight:bold;">
                     <td colspan="4" style="text-align:right; padding-right:10px;">Sub-Total (${loc}):</td>
-                    <td>${locGroup[loc].hoso.toFixed(2)}</td>
-                    <td>${locGroup[loc].hlso.toFixed(2)}</td>
+                    <td style="color:var(--accent); font-weight:800;">${locGroup[loc].hoso.toFixed(2)}</td>
+                    <td style="font-weight:700;">${locGroup[loc].hlso.toFixed(2)}</td>
                     <td colspan="2"></td>
-                    <td style="text-align:right; padding-right:10px;">${locGroup[loc].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td style="color:var(--accent); font-weight:800;">${locGroup[loc].amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                 </tr>`);
         }
     });
 }
 
-// 5. DYNAMIC API FETCHING
+// 🟢 REWRITTEN DYNAMIC OPTIONS LOADER - SELECT NO LONGER CONTAINS OTHERS
 async function loadBatches() {
     const comp = document.getElementById('form_production_for').value;
     const loc = document.getElementById('form_loc').value;
+    const bSel = document.getElementById('form_batch');
+    
+    bSel.innerHTML = '<option value="">-- SELECT BATCH --</option>';
+    document.getElementById('form_count').innerHTML = '<option value="">-- SELECT COUNT --</option>';
+    document.getElementById('floor_display').innerText = "0.00";
     if(!comp || !loc) return;
 
     fetch(`/processing/get_valid_batches/${encodeURIComponent(comp)}/${encodeURIComponent(loc)}`)
     .then(r => r.json())
     .then(data => {
-        const dl = document.getElementById('batch_list_data');
-        dl.innerHTML = '';
-        if(data.batches) data.batches.forEach(b => dl.innerHTML += `<option value="${b}"></option>`);
-        document.getElementById('form_batch').value = '';
-        document.getElementById('form_count').value = '';
-        document.getElementById('count_list_data').innerHTML = '';
-        document.getElementById('floor_display').innerText = "0.00";
+        if(data.batches) data.batches.forEach(b => bSel.innerHTML += `<option value="${b}">${b}</option>`);
     });
 }
 
@@ -515,15 +509,15 @@ async function loadCounts() {
     const comp = document.getElementById('form_production_for').value;
     const loc = document.getElementById('form_loc').value;
     const batch = document.getElementById('form_batch').value;
+    const cSel = document.getElementById('form_count');
+    
+    cSel.innerHTML = '<option value="">-- SELECT COUNT --</option>';
     if(!comp || !loc || !batch) return;
 
     fetch(`/processing/get_hoso/${encodeURIComponent(comp)}/${encodeURIComponent(loc)}/${encodeURIComponent(batch)}`)
     .then(r => r.json())
     .then(data => {
-        const dl = document.getElementById('count_list_data');
-        dl.innerHTML = '';
-        if(data.counts) data.counts.forEach(c => dl.innerHTML += `<option value="${c}"></option>`);
-        document.getElementById('form_count').value = '';
+        if(data.counts) data.counts.forEach(c => cSel.innerHTML += `<option value="${c}">${c}</option>`);
         checkFloor(); 
     });
 }
@@ -533,47 +527,30 @@ async function checkFloor() {
     const b = document.getElementById('form_batch').value;
     const c = document.getElementById('form_count').value;
     const s = document.getElementById('form_species').value;
-    
-    if(!loc || !b || !c || !s) { 
-        document.getElementById('floor_display').innerText = "0.00"; 
-        return; 
-    }
+    if(!loc || !b || !c || !s) { document.getElementById('floor_display').innerText = "0.00"; return; }
     
     try {
-        const params = new URLSearchParams({
-            location: loc,
-            batch: b,
-            count: c,
-            species_name: s
-        });
-
+        const params = new URLSearchParams({ location: loc, batch: b, count: c, species_name: s });
         const response = await fetch(`/processing/get_available_qty?${params.toString()}`);
         const data = await response.json();
         const avl = data.available_qty || 0;
         const display = document.getElementById('floor_display');
         display.innerText = avl.toFixed(2);
-        display.style.color = avl > 0 ? "#1e40af" : "#ef4444";
-    } catch(e) { 
-        console.error("Floor check failed:", e); 
-        document.getElementById('floor_display').innerText = "0.00";
-    }
+        display.style.color = avl > 0 ? "var(--accent)" : "var(--danger)";
+    } catch(e) { document.getElementById('floor_display').innerText = "0.00"; }
 }
 
 function getRate() {
-    const c = document.getElementById('f_contractor').value;
-    if(!c) return;
+    const c = document.getElementById('f_contractor').value; if(!c) return;
     fetch(`/processing/get_rate/${encodeURIComponent(c)}`).then(r=>r.json()).then(data => {
-        document.getElementById('f_rate').value = data.rate;
-        calculateForm();
+        document.getElementById('f_rate').value = data.rate; calculateForm();
     });
 }
 
-// 6. CALCULATIONS & MODAL
 function calculateForm() {
     const hoso = parseFloat(document.getElementById('f_hoso').value) || 0;
     const hlso = parseFloat(document.getElementById('f_hlso').value) || 0;
     const rate = parseFloat(document.getElementById('f_rate').value) || 0;
-    
     const yieldVal = hoso > 0 ? ((hlso / hoso) * 100).toFixed(2) : 0;
     document.getElementById('f_yield').value = yieldVal + "%";
     document.getElementById('f_amount').value = (hlso * rate).toFixed(2);
@@ -581,105 +558,58 @@ function calculateForm() {
 
 function openModal() { 
     document.getElementById('entryModal').style.display = 'flex'; 
-    // 🟢 DUAL MODE RUNTIME MEMORY ALLOCATION: Triggers batch validation on modal load sequence
     if (document.getElementById('form_production_for').value && document.getElementById('form_loc').value) {
         loadBatches();
     }
 }
 
 function closeModal() { 
-    document.getElementById('entryModal').style.display = 'none'; 
-    document.getElementById('deHeadingForm').reset();
+    document.getElementById('entryModal').style.display = 'none'; document.getElementById('deHeadingForm').reset();
     document.getElementById('floor_display').innerText = "0.00";
-    
-    // Retain global states upon form termination workflows
-    const activeGlobalPFor = "{{ selected_production_for or '' }}";
-    const activeGlobalLoc = "{{ selected_location or '' }}";
+    const activeGlobalPFor = "{{ selected_production_for or '' }}"; const activeGlobalLoc = "{{ selected_location or '' }}";
     if (activeGlobalPFor) document.getElementById('form_production_for').value = activeGlobalPFor;
     if (activeGlobalLoc) document.getElementById('form_loc').value = activeGlobalLoc;
 }
 
-// 7. FORM SUBMISSION
 document.getElementById('deHeadingForm').onsubmit = async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    const reqQty = parseFloat(document.getElementById('f_hoso').value) || 0;
-    const availQty = parseFloat(document.getElementById('floor_display').innerText) || 0;
-
-    if (reqQty <= 0) { 
-        Swal.fire('Error', 'Please enter a valid HOSO Quantity', 'error'); 
-        return; 
-    }
-    
-    if (reqQty > (availQty + 0.1)) { 
-        Swal.fire('Error', `Quantity exceeds floor balance! (Available: ${availQty})`, 'error'); 
-        return; 
-    }
-
-    btn.disabled = true; 
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-    
+    e.preventDefault(); const btn = document.getElementById('submitBtn');
+    const reqQty = parseFloat(document.getElementById('f_hoso').value) || 0; const availQty = parseFloat(document.getElementById('floor_display').innerText) || 0;
+    if (reqQty <= 0) { Swal.fire('Error', 'Please enter a valid HOSO Quantity', 'error'); return; }
+    if (reqQty > (availQty + 0.1)) { Swal.fire('Error', `Quantity exceeds floor balance! (Available: ${availQty})`, 'error'); return; }
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
     try {
         const resp = await fetch('/processing/de_heading', { method: 'POST', body: new FormData(this) });
-        if (resp.ok) {
-            Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false })
-            .then(() => window.location.reload());
-        } else {
-            const errData = await resp.json();
-            throw new Error(errData.error || 'Save failed');
-        }
-    } catch (err) { 
-        Swal.fire('Error', err.message, 'error'); 
-        btn.disabled = false; 
-        btn.innerHTML = 'Save Entry'; 
-    }
+        if (resp.ok) { Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); }
+        else { const errData = await resp.json(); throw new Error(errData.error || 'Save failed'); }
+    } catch (err) { Swal.fire('Error', err.message, 'error'); btn.disabled = false; btn.innerHTML = 'Save Entry'; }
 };
 
-// 8. ROW SELECTION & DELETE
 function selectRow(row) {
     document.querySelectorAll('#mainTable tr').forEach(r => r.classList.remove('selected-row'));
-    row.classList.add('selected-row');
-    selectedId = row.dataset.id;
-    document.getElementById('menuBtn').style.display = 'block';
+    row.classList.add('selected-row'); selectedId = row.dataset.id; document.getElementById('menuBtn').style.display = 'block';
 }
 
 document.getElementById('menuBtn').onclick = (e) => {
-    e.stopPropagation();
-    const m = document.getElementById('dropdownMenu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    e.stopPropagation(); const m = document.getElementById('dropdownMenu'); m.style.display = m.style.display === 'block' ? 'none' : 'block';
 };
 
 async function deleteSelected() {
     if(!selectedId) return;
-    const result = await Swal.fire({ 
-        title: 'Delete?', 
-        text: "This action cannot be undone!", 
-        icon: 'warning', 
-        showCancelButton: true, 
-        confirmButtonColor: '#ef4444' 
-    });
-    
+    const result = await Swal.fire({ title: 'Delete?', text: "This action cannot be undone!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
     if(result.isConfirmed) {
         try {
             const resp = await fetch(`/processing/de_heading/delete/${selectedId}`, { method: 'POST' });
-            if(resp.ok) window.location.reload();
-            else throw new Error("Delete failed");
+            if(resp.ok) window.location.reload(); else throw new Error("Delete failed");
         } catch (err) { Swal.fire('Error', err.message, 'error'); }
     }
 }
 
-// 9. EVENT LISTENERS & LIFECYCLE GATEWAY
 document.getElementById('f_hoso').addEventListener('input', calculateForm);
 document.getElementById('f_hlso').addEventListener('input', calculateForm);
 
-window.onclick = (e) => { 
-    if(!e.target.closest('.menu-trigger')) {
-        const m = document.getElementById('dropdownMenu');
-        if(m) m.style.display = 'none';
-    }
-};
-
+window.onclick = (e) => { if(!e.target.closest('.menu-trigger')) { const m = document.getElementById('dropdownMenu'); if(m) m.style.display = 'none'; } };
 window.onload = () => {
+    try { const parentTheme = window.parent.document.documentElement.getAttribute("data-theme"); if(parentTheme) document.body.setAttribute("data-theme", parentTheme); } catch(e) {}
     updateDashboard();
 };
 </script>

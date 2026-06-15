@@ -2,152 +2,192 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>GRADING - BKNR SOLUTIONS</title>
+<title>GRADING – BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
+
 <style>
 :root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7;
-  --bg:#f4f6f9; --card:#ffffff; --text:#1f2937;
-  --muted:#64748b; --success: #166534; --danger: #dc2626;
-  --card-bg: #ffffff; --header-bg: #f8fafc;
+  /* 🌟 LIGHT & DARK THEME VARIABLES SYNC */
+  --primary:#0f172a; 
+  --accent:#2563eb;  
+  --border:#e2e8f0;  
+  --bg:#f1f5f9;      
+  --header:#ffffff;
+  --text:#1e293b;
+  --text-muted:#64748b;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --card-bg: #ffffff;
+  --header-bg: #f8fafc;
+  --row-hover: #f1f7ff;
+  --processing-bg: #dbeafe;
+}
+
+[data-theme="dark"] {
+  --primary:#f8fafc; 
+  --accent:#3b82f6;  
+  --border:#334155;  
+  --bg:#0f172a;      
+  --header:#1e293b;
+  --text:#e2e8f0;
+  --text-muted:#94a3b8;
+  --danger: #f87171;
+  --success: #4ade80;
+  --card-bg: #1e293b;
+  --header-bg: #0f172a;
+  --row-hover: #1e293b;
+  --processing-bg: #1e3a8a;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
-body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
+body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
+
+/* Elegant Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
 /* HEADER */
 .header{
   position:sticky; top:0; z-index:100;
-  background:var(--card-bg); padding:16px 25px;
+  background:var(--card-bg); padding:12px 15px;
   border-bottom:1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
 }
-.header-titles h2{margin:0; font-size:20px; color:var(--primary); font-weight: 800;}
-.header-titles p{margin:4px 0 0; font-size:12px; color:var(--muted); font-weight: 500;}
+.header-titles h2{margin:0; font-size:14px; color:var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
+.header-titles p{margin:4px 0 0; font-size:11px; color:var(--text-muted); font-weight: 500;}
 
 @media(max-width: 600px) {
-    .header { padding: 12px 15px; }
-    .header-titles h2 { font-size: 16px; }
+    .header-titles h2 { font-size: 13px; }
     .header-titles p { font-size: 10px; }
 }
 
 /* SUMMARY CARDS - UPGRADED TO 3 COLUMNS GRID ENGINE */
-.summary-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px; }
+.summary-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 10px; }
 @media(max-width:1100px){ .summary-container { grid-template-columns: 1fr 1fr; } }
-@media(max-width:700px){ .summary-container { grid-template-columns: 1fr; margin: 10px; gap: 10px; } }
+@media(max-width:700px){ .summary-container { grid-template-columns: 1fr; gap: 10px; } }
 
-.summary-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
-.summary-title { font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-bottom: 2px solid var(--bg); padding-bottom: 8px; letter-spacing: 0.5px; }
+.summary-card { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+.summary-title { font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 8px; letter-spacing: 0.5px; }
+
+/* PANEL DASH-TABLE TYPOGRAPHY LOCK: Headers 9.5px, Data 10px Center */
 .sum-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.sum-table th { background: #f8fafc; text-align: left; padding: 10px 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 9px; }
-.sum-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; font-weight: 600; white-space: nowrap; vertical-align: middle; }
+.sum-table th { background: var(--header-bg); text-align: center !important; padding: 10px 8px; border-bottom: 2px solid var(--border); color: var(--text); font-weight: 800; text-transform: uppercase; font-size: 9.5px !important; }
+.sum-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap; vertical-align: middle; font-size: 10px !important; text-align: center !important; color: var(--text); }
 
 .clickable-count { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 800; }
 
 /* SEARCHABLE STATUS INLINE SELECT STYLE */
 .table-status-select {
   padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;
-  border: 1px solid var(--border); outline: none; background: #fff; cursor: pointer;
-  text-transform: uppercase; letter-spacing: 0.5px; text-align: center; width: 100%;
+  border: 1px solid var(--border); outline: none; background: var(--card-bg); cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.5px; text-align: center; width: 100%; height: 28px;
 }
-.status-pending-select { color: #d97706; background: #fef3c7; border-color: #fcd34d; }
-.status-completed-select { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
+.status-pending-select { color: var(--warning); background: rgba(245, 158, 11, 0.1); border-color: var(--warning); }
+.status-completed-select { color: var(--success); background: rgba(34, 197, 94, 0.1); border-color: var(--success); }
 
 /* DRILL DOWN STYLE */
-.drill-row td { background: #ebebeb !important; padding: 0 !important; }
-.drill-container { padding: 12px; border: 1px dashed #fcd34d; margin: 8px; border-radius: 10px; background: var(--card-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); overflow-x: auto; }
-.drill-mini-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 250px; }
-.drill-mini-table th { background: #fef3c7; color: #92400e; padding: 8px; border: 1px solid #fde68a; text-align: left; font-size: 9px; }
-.drill-mini-table td { padding: 8px; border: 1px solid #fde68a; color: #78350f; white-space: nowrap; }
+.drill-row td { background: var(--header-bg) !important; padding: 0 !important; }
+.drill-container { padding: 12px; border: 1px dashed var(--border); margin: 8px; border-radius: 8px; background: var(--card-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); overflow-x: auto; }
+.drill-mini-table { width: 100%; border-collapse: collapse; min-width: 250px; }
+.drill-mini-table th { background: var(--header-bg); color: var(--text); padding: 8px; border: 1px solid var(--border); text-align: center !important; font-size: 9.5px !important; font-weight: 800; }
+.drill-mini-table td { padding: 8px; border: 1px solid var(--border); color: var(--text); white-space: nowrap; font-size: 10px !important; text-align: center !important; }
 
-/* FORM SECTION */
-.section{
-  margin:15px; background:var(--card); padding:20px;
-  border-radius:12px; border:1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+/* FORM SECTION Workspace Container */
+.section {
+  width: 98%; max-width: 1400px; margin: 12px auto;
+  background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
+  border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   display: none;
 }
-.section-title { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-.form-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; }
+.section-title { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 15px; }
 @media(max-width:1100px){ .form-grid{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
 .field{display:flex; flex-direction:column; gap: 4px;}
-.field label{ font-size:10px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+.field label{ font-size:9px; font-weight:700; color:var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
 
-input { padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:13px; outline: none; transition: 0.2s; width: 100%; color: var(--primary); font-weight: 600; }
-input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.field input, .field select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; transition: 0.2s; width: 100%; color: var(--primary); background: var(--card-bg); font-weight: 600; height: 36px; }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 
 /* ACTIONS */
-.top-actions { margin: 0 15px; display: flex; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.top-actions { margin: 12px 10px; display: flex; justify-content: flex-end; }
+
+/* PREMIUM RMP-STYLE ROYAL BLUE BUTTON WITH GLOW EFFECT */
+.btn-toggle { 
+    background: var(--accent) !important; 
+    color: #fff !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none !important; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; transition: all 0.2s ease;
+}
+.btn-toggle:hover { opacity: 0.9; transform: translateY(-1px); }
 
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{ padding:10px 22px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--card-bg); }
-.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
+.btn{ padding:8px 16px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--card-bg); color: var(--text); }
+.btn-primary{ background:var(--accent); color:#fff; border:none; display: flex; align-items: center; gap: 6px; }
 
-/* TABLE */
-.table-header-tool { padding: 0 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
-.table-header-tool h3 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
+/* TABLE LAYER WITH STRICT TYPOGRAPHY ENGINE */
+.table-header-tool { padding: 0 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
+.table-header-tool h3 { margin: 0; font-size: 13px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.table-wrap{ margin:12px 15px; background:var(--card); border-radius:12px; border:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling: touch; }
-#dataTable{ width:100%; border-collapse:collapse; font-size: 11px; min-width: 1000px; }
-#dataTable thead th{ background:var(--header-bg); font-size:10px; padding:12px 8px; border-bottom: 2px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
-#dataTable tbody td{ padding:12px 8px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); font-weight: 600; white-space: nowrap; }
-tbody tr.selected{ background:#eff6ff !important; border-left: 4px solid var(--accent); }
+/* Universal Scroll Wrapper Enforcer */
+.table-wrap{ display: block !important; margin: 12px 10px; background: var(--card-bg) !important; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+#dataTable{ width:100%; border-collapse:collapse; min-width: 1200px; table-layout: fixed !important; display: table !important; }
+
+/* FIXED MAIN TABLE TYPOGRAPHY: Headers 9.5px, Data 10px Center Lock */
+#dataTable thead th{ background:var(--header-bg) !important; font-size: 9.5px !important; padding:6px 2px; border-bottom: 2px solid var(--border) !important; color: var(--text) !important; font-weight: 800; text-transform: uppercase; white-space: nowrap; text-align: center !important; display: table-cell !important; }
+#dataTable tbody td{ padding:5px 2px; border-bottom: 1px solid var(--border) !important; text-align:center !important; color: var(--text) !important; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px !important; display: table-cell !important; }
+#dataTable tbody tr:hover { background: var(--row-hover) !important; cursor: pointer; }
+#dataTable tbody tr.selected { background: var(--processing-bg) !important; }
+
+/* 🌟 GRADING MATRIX LAYOUT WIDTH */
+.w-bt { width: 110px; } .w-comp { width: 140px; } .w-cnt { width: 95px; } 
+.w-gr { width: 110px; } .w-sp { width: 180px; } .w-qt { width: 105px; } .w-ti { width: 85px; }
 
 #threeDotsMenu{ position:relative; display: none; margin-right: 15px; }
-.menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
-.menu-item{ padding:12px 15px; font-size:13px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
-.menu-item:hover{background:#f1f5ff; color: var(--danger);}
+.menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+#dropdownMenu{ display:none; position:absolute; right:0; top: 40px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; width:160px; box-shadow:0 4px 15px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+.menu-item{ padding:12px 14px; font-size:11px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+.menu-item:hover{ background:var(--row-hover); }
 
 #lookupModal{ display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); justify-content:center; align-items:center; z-index: 9999; }
-.lookup-box{ background:var(--card-bg); width:90%; max-width:1000px; height:85vh; border-radius:16px; position:relative; overflow:hidden; }
-.close-popup{ position:absolute; top:15px; right:20px; font-size:24px; font-weight:bold; cursor:pointer; color:var(--muted); z-index: 10; }
+.lookup-box{ background:var(--card-bg); width:90%; max-width:1000px; height:85vh; border-radius:12px; position:relative; overflow:hidden; border: 1px solid var(--border); }
+.close-popup{ position:absolute; top:15px; right:20px; font-size:24px; font-weight:bold; cursor:pointer; color:var(--text); z-index: 10; }
 iframe{ width:100%; height:100%; border:none; }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
 
 <div class="header">
   <div class="header-titles">
-      <h2>Grading Entry</h2>
+      <h2>Grading Entry Control</h2>
       <p><i class="fa-solid fa-layer-group"></i> Production output and location tracking</p>
   </div>
 </div>
-
-{% if message %}
-<script>
-    Swal.fire({ icon: 'success', title: 'Success', text: '{{ message }}', timer: 3000, showConfirmButton: false });
-</script>
-{% endif %}
 
 <div class="summary-container" id="summarySection">
     <div class="summary-card">
         <div class="summary-title"><i class="fa-solid fa-box-open"></i> HLSO Requirement</div>
         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table class="sum-table">
-                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:center;">Total KG</th></tr></thead>
                 <tbody>
                     {% if hlso_summary %}{% for item in hlso_summary %}
                     <tr>
                         <td>{{ item.species }} | {{ item.variety }}</td>
                         <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hlso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
-                        <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                        <td style="text-align:center; color:var(--accent); font-weight:800;">{{ "{:,.2f}".format(item.total_kg) }}</td>
                     </tr>
                     <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
                     {% endfor %}{% else %}
-                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HLSO requirements pending</td></tr>
+                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">No HLSO requirements pending</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -158,17 +198,17 @@ iframe{ width:100%; height:100%; border:none; }
         <div class="summary-title"><i class="fa-solid fa-shrimp"></i> HOSO Requirement</div>
         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table class="sum-table">
-                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:right;">Total KG</th></tr></thead>
+                <thead><tr><th>Species | Variety</th><th>Count</th><th style="text-align:center;">Total KG</th></tr></thead>
                 <tbody>
                     {% if hoso_summary %}{% for item in hoso_summary %}
                     <tr>
                         <td>{{ item.species }} | {{ item.variety }}</td>
                         <td><span class="clickable-count" onclick="toggleSumDrill(this, 'hoso', '{{item.species}}', '{{item.variety}}', '{{item.count}}')">{{ item.count }}</span></td>
-                        <td style="text-align:right; color:var(--accent);">{{ "{:,.2f}".format(item.total_kg) }}</td>
+                        <td style="text-align:center; color:var(--accent); font-weight:800;">{{ "{:,.2f}".format(item.total_kg) }}</td>
                     </tr>
                     <tr class="drill-row" style="display:none;"><td colspan="3"><div class="drill-container"><table class="drill-mini-table"><thead><tr><th>PO#</th><th>Buyer</th><th>Grade</th><th>Qty (Net)</th></tr></thead><tbody class="drill-body"></tbody></table></div></td></tr>
                     {% endfor %}{% else %}
-                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No HOSO requirements pending</td></tr>
+                    <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">No HOSO requirements pending</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -176,17 +216,17 @@ iframe{ width:100%; height:100%; border:none; }
     </div>
 
     <div class="summary-card">
-        <div class="summary-title" style="background: #e0f2fe; color: #0369a1; border-radius: 4px; padding: 4px 8px;"><i class="fa-solid fa-boxes-packing"></i> HLSO For Grading</div>
+        <div class="summary-title" style="color: var(--accent) !important;"><i class="fa-solid fa-boxes-packing"></i> HLSO For Grading Queue</div>
         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table class="sum-table" id="poolTable">
-                <thead><tr><th>Batch / Location</th><th>Species | Count</th><th style="text-align:right;">Avail Qty</th><th style="text-align:center; width:110px;">Status</th></tr></thead>
+                <thead><tr><th>Batch / Location</th><th>Species | Count</th><th style="text-align:center;">Avail Qty</th><th style="text-align:center; width:110px;">Status</th></tr></thead>
                 <tbody id="poolTableBody">
                     {% if deheading_pending %}
                         {% for item in deheading_pending %}
                         <tr data-status="{{ item.status }}" data-prod-for="{{ item.production_for }}">
-                            <td><b>{{ item.batch_number }}</b><br><small style="color:var(--muted); font-size: 9px;">{{ item.peeling_at }}</small></td>
-                            <td>{{ item.species }}<br><small style="color:var(--accent); font-weight:700;">In: {{ item.hoso_count }}</small></td>
-                            <td style="text-align:right; color:var(--success); font-weight:800;">{{ "{:,.2f}".format(item.available_qty) }} KG</td>
+                            <td style="text-align:left !important; padding-left:10px;"><b>{{ item.batch_number }}</b><br><small style="color:var(--text-muted); font-size: 9px;">{{ item.peeling_at }}</small></td>
+                            <td style="text-align:left !important; padding-left:10px;">{{ item.species }}<br><small style="color:var(--accent); font-weight:700;">In: {{ item.hoso_count }}</small></td>
+                            <td style="text-align:center; color:var(--success); font-weight:800;">{{ "{:,.2f}".format(item.available_qty) }} KG</td>
                             <td style="text-align:center;">
                                 <select class="table-status-select {% if item.status == 'Pending' %}status-pending-select{% else %}status-completed-select{% endif %}" data-prev="{{ item.status }}" onchange="changeLiveStatus(this)">
                                     <option value="Pending" {% if item.status == 'Pending' %}selected{% endif %}>Pending</option>
@@ -196,7 +236,7 @@ iframe{ width:100%; height:100%; border:none; }
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">No stock data from de-heading</td></tr>
+                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -215,44 +255,44 @@ iframe{ width:100%; height:100%; border:none; }
     
     <div class="field">
       <label>Production For</label>
-      <input list="prod_for_data" name="production_for" id="production_for" onchange="handleCompanyChange()" placeholder="Search Company..." required autocomplete="off">
-      <datalist id="prod_for_data">{% for p in prod_for_list %}<option value="{{p}}">{% endfor %}</datalist>
+      <select name="production_for" id="production_for" onchange="handleCompanyChange()" required>
+          <option value="">Select Company</option>
+      </select>
     </div>
 
     <div class="field">
         <label>Grading At (Location)</label>
-        <input list="locations_data" name="peeling_at" id="peeling_at" placeholder="Search Location..." required autocomplete="off">
-        <datalist id="locations_data">{% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}</datalist>
+        <select name="peeling_at" id="peeling_at" onchange="handleLocationChange()" required>
+            <option value="">Select Location</option>
+        </select>
     </div>
 
     <div class="field">
       <label>Batch Number</label>
-      <input list="batches_data" name="batch_number" id="batch" onchange="handleBatchChange()" placeholder="Select Company First..." required autocomplete="off">
-      <datalist id="batches_data"></datalist>
+      <select name="batch_number" id="batch" onchange="handleBatchChange()" required>
+          <option value="">Select Batch</option>
+      </select>
     </div>
 
     <div class="field">
       <label>HOSO Count (In)</label>
-      <input list="hoso_data" name="hoso_count" id="hoso" placeholder="Select Batch First..." required autocomplete="off">
-      <datalist id="hoso_data"></datalist>
+      <select name="hoso_count" id="hoso" onchange="loadMatchingInputSpecs()" required>
+          <option value="">Select Count</option>
+      </select>
     </div>
 
     <div class="field">
       <label>Species</label>
-      <input list="species_data" name="species_val" id="species" onchange="handleSpeciesChange(this)" placeholder="Search Species..." required autocomplete="off">
-      <datalist id="species_data">
-        {% for s in species_list %}<option value="{{s}}">{% endfor %}
-        <option value="➕ Add New Species">
-      </datalist>
+      <select name="species_val" id="species" onchange="handleSpeciesChange(this)" required>
+          <option value="">Select Species</option>
+      </select>
     </div>
 
     <div class="field">
       <label>Variety</label>
-      <input list="variety_data" name="variety_name" id="variety" onchange="handleVarietyChange(this)" placeholder="Search Variety..." required autocomplete="off">
-      <datalist id="variety_data">
-        {% for v in variety_list %}<option value="{{v}}">{% endfor %}
-        <option value="➕ Add New Variety">
-      </datalist>
+      <select name="variety_name" id="variety" onchange="handleVarietyChange(this)" required>
+          <option value="">Select Variety</option>
+      </select>
     </div>
 
     <div class="field">
@@ -268,7 +308,7 @@ iframe{ width:100%; height:100%; border:none; }
   
   <div class="actions">
     <button type="button" class="btn" onclick="toggleForm()"><i class="fa-solid fa-xmark"></i> Cancel</button>
-    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
+    <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
   </div>
 </div>
 </form>
@@ -287,25 +327,25 @@ iframe{ width:100%; height:100%; border:none; }
 <table id="dataTable">
 <thead>
     <tr>
-        <th>Batch #</th>
-        <th>Production For</th>
-        <th>In (HOSO)</th>
-        <th>Out (Graded)</th>
-        <th>Species | Variety</th>
-        <th>Qty (KG)</th>
-        <th>Time</th>
+        <th class="w-bt">Batch #</th>
+        <th class="w-comp">Production For</th>
+        <th class="w-cnt">In (HOSO)</th>
+        <th class="w-gr">Out (Graded)</th>
+        <th class="w-sp">Species | Variety</th>
+        <th class="w-qt">Qty (KG)</th>
+        <th class="w-ti">Time</th>
     </tr>
 </thead>
 <tbody>
 {% for r in today_data %}
 <tr data-id="{{r.id}}">
-  <td style="font-weight:700;">{{r.batch_number}}</td>
-  <td style="font-weight: 600; color: var(--primary);">{{ r.production_for }}</td>
+  <td style="font-weight:700; color:var(--accent);">{{r.batch_number}}</td>
+  <td style="text-align:left;">{{ r.production_for }}</td>
   <td>{{r.hoso_count}}</td>
   <td style="color:var(--accent); font-weight:800;">{{r.graded_count}}</td>
-  <td>{{r.species}} | {{r.variety_name}}</td>
-  <td style="font-weight:700;">{{ "{:,.2f}".format(r.quantity) }}</td>
-  <td style="font-size:10px; color:var(--muted);">{{r.time}}</td>
+  <td style="text-align:left;">{{r.species}} | {{r.variety_name}}</td>
+  <td style="font-weight:800; text-align:center; color:var(--accent);">{{ "{:,.2f}".format(r.quantity) }}</td>
+  <td style="font-size:10px; color:var(--text-muted);">{{r.time}}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -316,20 +356,36 @@ iframe{ width:100%; height:100%; border:none; }
 <div id="lookupModal"><div class="lookup-box"><span class="close-popup" onclick="closeLookup()">×</span><iframe id="lookupFrame"></iframe></div></div>
 
 <script>
+// ============================================================
+// 🔥 GRADING CONTROL MASTER CASCADE PIPELINE ENGINE - STABLE 2026
+// ============================================================
+
 const drillDownData = {{ drill_down_json | safe if drill_down_json else '{}' }};
 
-// 🔴 FIXED AJAX LIVE UPDATE WITH CONFIRMATION ENGINE
+const RAW_SPECIES = [{% for s in species_list %}"{{s}}",{% endfor %}];
+const RAW_VARIETIES = [{% for v in variety_list %}"{{v}}",{% endfor %}];
+const RAW_LOCATIONS = [{% for loc in peeling_locations %}"{{loc}}",{% endfor %}];
+const RAW_COMPANIES = [{% for p in prod_for_list %}"{{p}}",{% endfor %}];
+
+const DEHEADING_POOL_DATA = [
+    {% if deheading_pending %}
+        {% for item in deheading_pending %}
+        { batch: "{{item.batch_number}}", comp: "{{item.production_for}}", loc: "{{item.peeling_at}}", sps: "{{item.species}}", hoso: "{{item.hoso_count}}" },
+        {% endfor %}
+    {% endif %}
+];
+
+const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
+const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
+
 function changeLiveStatus(selectElement) {
     const nextVal = selectElement.value;
     const prevVal = selectElement.getAttribute("data-prev");
     const row = selectElement.closest("tr");
     
-    // రో నుండి కచ్చితమైన ఒరిజినల్ డేటాబేస్ వాల్యూస్ ని లాగడం
     const batchNumber = row.cells[0].querySelector("b").innerText.trim();
-    const speciesCountText = row.cells[1].querySelector("small").innerText; // "In: 10/20"
+    const speciesCountText = row.cells[1].querySelector("small").innerText; 
     const hosoCount = speciesCountText.replace("In:", "").trim();
-    
-    // 🔴 BUG FIX: నేరుగా ఈ రో కి సంబంధించిన 'production_for' ని రో అట్రిబ్యూట్ నుండి లాగుతున్నాం
     const productionFor = row.getAttribute("data-prod-for").trim(); 
 
     if (nextVal === prevVal) return;
@@ -339,145 +395,209 @@ function changeLiveStatus(selectElement) {
         text: `Are you sure you want to change status to ${nextVal} in database?`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#3b82f6',
+        confirmButtonColor: 'var(--accent)',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Yes, Update'
     }).then((result) => {
         if (result.isConfirmed) {
-            
-            // Backend API కి డేటా పంపే అజాక్స్ ఫామ్ డేటా సెటప్
             const formData = new FormData();
             formData.append("batch_number", batchNumber);
             formData.append("production_for", productionFor);
             formData.append("hoso_count", hosoCount);
             formData.append("status", nextVal);
 
-            fetch("/processing/grading/update_pool_status", {
-                method: "POST",
-                body: formData
-            })
+            fetch("/processing/grading/update_pool_status", { method: "POST", body: formData })
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // UI కలర్ మార్చడం
-                    if (nextVal === "Completed") {
-                        selectElement.className = "table-status-select status-completed-select";
-                    } else {
-                        selectElement.className = "table-status-select status-pending-select";
-                    }
-                    
-                    // హిస్టరీ సింక్ అట్రిబ్యూట్స్ అప్‌డేట్
+                    selectElement.className = nextVal === "Completed" ? "table-status-select status-completed-select" : "table-status-select status-pending-select";
                     selectElement.setAttribute("data-prev", nextVal);
                     row.setAttribute("data-status", nextVal);
-                    
-                    // టేబుల్ ని లైవ్ గా రీ-సార్ట్ చేయడం (Pending పైకి, Completed కిందకి)
                     sortPoolTable();
-                    
                     Swal.fire({ icon: 'success', title: 'DB Updated', text: `Status changed to ${nextVal}`, timer: 1500, showConfirmButton: false });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Failed', text: data.message || 'Error updating DB' });
-                    selectElement.value = prevVal; // ఫెయిల్ అయితే వెనక్కి తిప్పేయడం
+                    selectElement.value = prevVal; 
                 }
             })
             .catch(err => {
                 Swal.fire({ icon: 'error', title: 'Server Error', text: 'Connection to server failed' });
                 selectElement.value = prevVal;
             });
-
-        } else {
-            selectElement.value = prevVal; // క్యాన్సిల్ చేస్తే పాత వాల్యూ కి తిప్పేయడం
-        }
+        } else { selectElement.value = prevVal; }
     });
 }
 
 function sortPoolTable() {
-    const tbody = document.getElementById("poolTableBody");
-    if (!tbody) return;
-    
+    const tbody = document.getElementById("poolTableBody"); if (!tbody) return;
     const rows = Array.from(tbody.querySelectorAll("tr[data-status]"));
-    
     rows.sort((a, b) => {
-        const statusA = a.getAttribute("data-status");
-        const statusB = b.getAttribute("data-status");
+        const statusA = a.getAttribute("data-status"), statusB = b.getAttribute("data-status");
         if (statusA === "Pending" && statusB === "Completed") return -1;
         if (statusA === "Completed" && statusB === "Pending") return 1;
         return 0;
     });
-    
     rows.forEach(r => tbody.appendChild(r));
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.onload = () => {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
     sortPoolTable();
-});
+};
+
+function initializeFormCompanies() {
+    const compSelect = document.getElementById("production_for");
+    compSelect.innerHTML = '<option value="">Select Company</option>';
+
+    if (BACKEND_GLOBAL_COMPANY && BACKEND_GLOBAL_COMPANY !== "None" && BACKEND_GLOBAL_COMPANY !== "") {
+        let opt = document.createElement('option');
+        opt.value = BACKEND_GLOBAL_COMPANY; opt.innerText = BACKEND_GLOBAL_COMPANY;
+        compSelect.appendChild(opt); compSelect.value = BACKEND_GLOBAL_COMPANY;
+    } else {
+        RAW_COMPANIES.forEach(comp => {
+            let opt = document.createElement('option'); opt.value = comp; opt.innerText = comp;
+            compSelect.appendChild(opt);
+        });
+    }
+    populateLocationsBasedOnCompany();
+}
+
+function handleCompanyChange() {
+    populateLocationsBasedOnCompany();
+}
+
+function populateLocationsBasedOnCompany() {
+    const compVal = document.getElementById('production_for').value.trim().toUpperCase();
+    const locSelect = document.getElementById('peeling_at');
+    locSelect.innerHTML = '<option value="">Select Location</option>';
+    resetCascadedFields();
+
+    if(!compVal) return;
+
+    if (BACKEND_GLOBAL_LOCATION && BACKEND_GLOBAL_LOCATION !== "None" && BACKEND_GLOBAL_LOCATION !== "") {
+        let opt = document.createElement('option');
+        opt.value = BACKEND_GLOBAL_LOCATION; opt.innerText = BACKEND_GLOBAL_LOCATION;
+        locSelect.appendChild(opt); locSelect.value = BACKEND_GLOBAL_LOCATION;
+    } else {
+        RAW_LOCATIONS.forEach(loc => {
+            let opt = document.createElement('option'); opt.value = loc; opt.innerText = loc;
+            locSelect.appendChild(opt);
+        });
+    }
+    handleLocationChange();
+}
+
+function handleLocationChange() {
+    resetCascadedFields();
+    const compVal = document.getElementById('production_for').value.trim().toUpperCase();
+    const locVal = document.getElementById('peeling_at').value.trim().toUpperCase();
+    const batchSelect = document.getElementById('batch');
+
+    if(!compVal || !locVal) return;
+
+    const relevantBatches = [...new Set(DEHEADING_POOL_DATA.filter(item => 
+        item.comp.trim().toUpperCase() === compVal && 
+        item.loc.trim().toUpperCase() === locVal
+    ).map(item => item.batch))].sort();
+
+    relevantBatches.forEach(batch => {
+        let opt = document.createElement('option'); opt.value = batch; opt.innerText = batch;
+        batchSelect.appendChild(opt);
+    });
+}
+
+function handleBatchChange() {
+    const batchVal = document.getElementById("batch").value.trim();
+    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
+    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
+    const hosoSelect = document.getElementById("hoso");
+
+    hosoSelect.innerHTML = '<option value="">Select Count</option>';
+
+    if(!batchVal || !compVal || !locVal) return;
+
+    const relevantCounts = [...new Set(DEHEADING_POOL_DATA.filter(item => 
+        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal
+    ).map(item => item.hoso))].sort();
+
+    relevantCounts.forEach(c => {
+        let opt = document.createElement('option'); opt.value = c; opt.innerText = c;
+        hosoSelect.appendChild(opt);
+    });
+}
+
+function loadMatchingInputSpecs() {
+    const batchVal = document.getElementById("batch").value.trim();
+    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
+    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
+    const hosoVal = document.getElementById("hoso").value.trim();
+
+    const specSelect = document.getElementById("species");
+    const varSelect = document.getElementById("variety");
+
+    specSelect.innerHTML = '<option value="">Select Species</option>';
+    varSelect.innerHTML = '<option value="">Select Variety</option>';
+
+    if(!hosoVal) { setupStaticDropdowns(); return; }
+
+    const matches = DEHEADING_POOL_DATA.filter(item => 
+        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal && item.hoso === hosoVal
+    );
+
+    if(matches.length > 0) {
+        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].sort();
+        uniqueSpecs.forEach(s => { let opt = document.createElement('option'); opt.value = s; opt.innerText = s; specSelect.appendChild(opt); });
+        
+        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
+    }
+    setupStaticDropdowns();
+}
+
+function setupStaticDropdowns() {
+    fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
+    
+    const specSelect = document.getElementById("species");
+    if(specSelect.options.length <= 1) {
+        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
+    }
+}
+
+function fillStaticSelect(id, arrayData, defaultText, addNewOption) {
+    const el = document.getElementById(id); if(!el) return;
+    const currentVal = el.value;
+    el.innerHTML = `<option value="">${defaultText}</option>`;
+    arrayData.sort().forEach(item => {
+        let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt);
+    });
+    if(addNewOption) {
+        let opt = document.createElement('option'); opt.value = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
+        opt.innerText = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
+        el.appendChild(opt);
+    }
+    if(currentVal) el.value = currentVal;
+}
+
+function resetCascadedFields() {
+    document.getElementById('batch').innerHTML = '<option value="">Select Batch</option>';
+    document.getElementById('hoso').innerHTML = '<option value="">Select Count</option>';
+    document.getElementById('species').innerHTML = '<option value="">Select Species</option>';
+    document.getElementById('variety').innerHTML = '<option value="">Select Variety</option>';
+}
 
 function toggleForm() {
     const section = document.getElementById("formSection"), summary = document.getElementById("summarySection");
     if (section.style.display === "none" || section.style.display === "") {
         section.style.display = "block"; summary.style.display = "none";
+        initializeFormCompanies();
     } else {
         section.style.display = "none"; summary.style.display = "grid";
     }
 }
 
-function validateForm() {
-    const inputs = [
-        { id: "production_for", list: "prod_for_data", label: "Production For" },
-        { id: "peeling_at", list: "locations_data", label: "Grading At" },
-        { id: "batch", list: "batches_data", label: "Batch Number" },
-        { id: "hoso", list: "hoso_data", label: "HOSO Count" },
-        { id: "species", list: "species_data", label: "Species" },
-        { id: "variety", list: "variety_data", label: "Variety" }
-    ];
-
-    for (let item of inputs) {
-        const input = document.getElementById(item.id);
-        const list = document.getElementById(item.list);
-        if(!list) continue;
-        const options = Array.from(list.options).map(opt => opt.value);
-
-        if (input.value && !options.includes(input.value)) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Invalid Selection',
-                text: `Please select a valid ${item.label} from the searchable list only.`,
-                confirmButtonColor: '#3b82f6'
-            });
-            input.focus();
-            return false;
-        }
-    }
-    return true;
-}
-
-function handleCompanyChange() {
-    const company = document.getElementById("production_for").value;
-    const batchList = document.getElementById("batches_data"), batchInput = document.getElementById("batch");
-    batchList.innerHTML = ""; batchInput.value = "";
-    document.getElementById("hoso_data").innerHTML = ""; document.getElementById("hoso").value = "";
-
-    if (!company) return;
-    fetch(`/processing/grading/get_batches/${encodeURIComponent(company)}`)
-        .then(r => r.json()).then(data => {
-            if (data.batches) data.batches.forEach(b => {
-                let opt = document.createElement("option"); opt.value = b; batchList.appendChild(opt);
-            });
-        });
-}
-
-function handleBatchChange() {
-    const company = document.getElementById("production_for").value, batch = document.getElementById("batch").value;
-    const hosoList = document.getElementById("hoso_data"), hosoInput = document.getElementById("hoso");
-    hosoList.innerHTML = ""; hosoInput.value = "";
-
-    if (!company || !batch) return;
-    fetch(`/processing/grading/get_hoso/${encodeURIComponent(company)}/${encodeURIComponent(batch)}`)
-        .then(r => r.json()).then(data => {
-            if(data.counts) data.counts.forEach(c => {
-                let opt = document.createElement("option"); opt.value = c; hosoList.appendChild(opt);
-            });
-        });
-}
+function validateForm() { return true; }
 
 function toggleSumDrill(element, type, species, variety, count) {
     const mainRow = element.closest('tr'), drillRow = mainRow.nextElementSibling;
@@ -488,7 +608,7 @@ function toggleSumDrill(element, type, species, variety, count) {
         const matches = (drillDownData[type] && drillDownData[type][key]) ? drillDownData[type][key] : [];
         let htmlBuffer = "";
         matches.forEach(m => {
-            htmlBuffer += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td style="text-align:right;">${m.qty.toFixed(2)}</td></tr>`;
+            htmlBuffer += `<tr><td>${m.po_no}</td><td>${m.buyer}</td><td>${m.grade}</td><td style="text-align:center !important;">${m.qty.toFixed(2)}</td></tr>`;
         });
         drillBody.innerHTML = htmlBuffer;
         drillRow.style.display = "table-row";
@@ -497,6 +617,7 @@ function toggleSumDrill(element, type, species, variety, count) {
 
 function openLookup(url){ document.getElementById("lookupFrame").src=url; document.getElementById("lookupModal").style.display="flex"; }
 function closeLookup(){ document.getElementById("lookupModal").style.display="none"; location.reload(); }
+
 function handleSpeciesChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/species"); i.value=""; } }
 function handleVarietyChange(i) { if(i.value.includes("Add New")){ openLookup("/criteria/varieties"); i.value=""; } }
 
@@ -524,7 +645,7 @@ function deleteSelected(){
         text: "This action cannot be undone!", 
         icon: 'warning', 
         showCancelButton: true,
-        confirmButtonColor: '#dc2626',
+        confirmButtonColor: 'var(--danger)',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Yes, Delete it!'
     }).then((res) => {
@@ -536,6 +657,11 @@ function deleteSelected(){
         }
     });
 }
+
+document.getElementById("gradingForm").onsubmit = function() {
+    const btn = document.getElementById("submitBtn");
+    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+};
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

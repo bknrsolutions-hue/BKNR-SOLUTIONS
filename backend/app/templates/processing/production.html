@@ -5,123 +5,158 @@
 <title>PRODUCTION CONTROL - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
+
 <style>
     :root{
-        --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-        --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626; --warning: #f59e0b;
-        --card-bg: #ffffff; --header-bg: #f8fafc;
+        /* 🌟 LIGHT & DARK THEME VARIABLES SYNC */
+        --primary:#0f172a; 
+        --accent:#2563eb;  
+        --border:#e2e8f0;  
+        --bg:#f1f5f9;      
+        --header:#ffffff;
+        --text:#1e293b;
+        --text-muted:#64748b;
+        --danger: #ef4444;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --card-bg: #ffffff;
+        --header-bg: #f8fafc;
+        --row-hover: #f1f7ff;
+        --processing-bg: #dbeafe;
+    }
+
+    [data-theme="dark"] {
+        --primary:#f8fafc; 
+        --accent:#3b82f6;  
+        --border:#334155;  
+        --bg:#0f172a;      
+        --header:#1e293b;
+        --text:#e2e8f0;
+        --text-muted:#94a3b8;
+        --danger: #f87171;
+        --success: #4ade80;
+        --card-bg: #1e293b;
+        --header-bg: #0f172a;
+        --row-hover: #1e293b;
+        --processing-bg: #1e3a8a;
     }
 
     *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
-    body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
+    body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
 
-    /* HEADER - COMPACT FOR MOBILE */
+    /* Elegant Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+    /* HEADER */
     .header {
-        position: sticky; top: 0; z-index: 1000; background: var(--card-bg); padding: 10px 15px;
+        position: sticky; top: 0; z-index: 1000; background: var(--card-bg); padding: 12px 15px;
         border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
     }
-    .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-    .btn-new { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+    .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .btn-new { 
+        background: var(--accent) !important; 
+        color: white !important; border: none !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: all 0.2s ease;
+    }
+    .btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
 
-    /* UNIFIED FILTER BAR - HORIZONTAL SCROLL ON MOBILE */
+    /* UNIFIED FILTER BAR */
     .filter-bar {
-        background: var(--card-bg); margin: 10px; padding: 12px; border-radius: 10px;
+        background: var(--card-bg); margin: 10px; padding: 12px; border-radius: 8px;
         border: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-end;
-        overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
+        overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
     }
     .filter-bar::-webkit-scrollbar { height: 4px; }
     .filter-bar::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 4px; }
     
     .filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
     .filter-field.search-field { min-width: 220px; flex: 2; }
-    .filter-field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .filter-field input, .filter-field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); color: var(--primary); font-weight: 600; }
+    .filter-field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-field select, .filter-field input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); color: var(--text); font-weight: 600; height: 36px; }
 
-    @media(max-width: 600px) {
-        .filter-bar { 
-            padding: 10px 12px; 
-            gap: 12px; 
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            justify-content: flex-start;
-        }
+    @media(max-width: 768px) {
+        .filter-bar { padding: 10px 12px; gap: 12px; flex-wrap: nowrap !important; overflow-x: auto !important; justify-content: flex-start; }
         .filter-field { flex-shrink: 0 !important; gap: 2px !important; }
         .filter-field label { font-size: 8px !important; }
         .filter-field input, .filter-field select { height: 32px !important; padding: 4px 8px !important; font-size: 11px !important; }
         .filter-field.search-field { min-width: 160px !important; }
     }
 
-    /* LAYOUT GRID - RESPONSIVE */
+    /* LAYOUT GRID */
     .row-grid { display: flex; flex-direction: column; gap: 10px; margin: 0 10px 10px; }
     @media (min-width: 992px) { .row-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; } }
 
     .full-width-grid { margin: 0 10px 15px; }
 
-    .panel { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .panel-header { padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
+    /* 🟢 REMOVED ALL EXTRA PANEL COLOUR BORDERS */
+    .panel { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .panel-header { padding: 10px; background: var(--header-bg); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; color: var(--text); text-transform: uppercase; }
 
-    .grand-total-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; }
+    .grand-total-badge { background: var(--accent); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; }
     .sub-total-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-left: 5px; }
 
-    /* 🟢 FIXED: Re-structured valid mobile scroll wrapper properties */
-    .table-wrap {
-        background: var(--card-bg) !important; margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 600px; } 
+    .table-wrap { background: var(--card-bg) !important; margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; display: block !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; text-align: center !important; table-layout: fixed !important; } 
     
-    #reqTable { min-width: 2500px; } 
-    #dataTable { min-width: 1800px; }
+    #soakingTable { min-width: 750px; }
+    #floorTable { min-width: 550px; }
+    #reqTable { min-width: 2550px; } 
+    #dataTable { min-width: 1550px; }
 
-    thead th { background: #f1f5f9; padding: 8px 4px; border: 1px solid var(--border); color: #475569; font-weight: 700; text-transform: uppercase; position: sticky; top: 0; z-index: 10; font-size: 9px; white-space: nowrap; }
-    tbody td { padding: 6px 4px; border: 1px solid #edf2f7; text-align: center; color: var(--primary); vertical-align: middle; font-weight: 600; white-space: nowrap; }
+    thead th { background: var(--header-bg) !important; padding: 8px 4px; border: 1px solid var(--border) !important; color: var(--text) !important; font-weight: 800; text-transform: uppercase; position: sticky; top: 0; z-index: 10; font-size: 9.5px !important; white-space: nowrap; text-align: center !important; }
+    tbody td { padding: 6px 4px; border: 1px solid var(--border) !important; text-align: center !important; color: var(--text) !important; vertical-align: middle; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px !important; }
 
-    .group-row { background: #f8fafc !important; font-weight: 800; color: var(--primary); text-align: left !important; }
-    .po-cell { background: #f0f7ff; color: var(--accent); }
-    .calc-col { background: #f0fdf4 !important; color: #15803d; }
-    .pnd-mc-col { background: #fee2e2 !important; color: #dc2626; font-weight: 800; }
+    .group-row { background: var(--header-bg) !important; font-weight: 800; color: var(--accent) !important; text-align: left !important; padding-left: 10px !important; }
+    .group-row td { text-align: left !important; padding-left: 10px !important; color: var(--accent) !important; }
+    .po-cell { color: var(--accent) !important; font-weight: 700; }
+    .calc-col { background: var(--processing-bg) !important; color: var(--accent) !important; }
+    .pnd-mc-col { background: rgba(239, 68, 68, 0.1) !important; color: var(--danger) !important; font-weight: 800; }
     
-    .util-badge { background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
-    .ref-badge { background: #fef3c7; color: #92400e; padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
+    .util-badge { background: var(--processing-bg); color: var(--accent); padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
+    .ref-badge { background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 2px 4px; border-radius: 3px; font-weight: 800; cursor: pointer; }
 
-    .status-badge { padding: 4px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid #d1d5db; outline: none; width: 100%; }
-    .status-pending { background: #fef3c7; color: #92400e; }
-    .status-running { background: #dbeafe; color: #1e40af; }
-    .timer-cell { font-family: monospace; font-weight: 800; color: var(--danger); font-size: 11px; }
+    .status-badge { padding: 4px; border-radius: 4px; font-weight: 700; font-size: 9px; border: 1px solid var(--border); outline: none; width: 100%; height: 26px; background: var(--card-bg); color: var(--text); }
+    .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .status-running { background: var(--processing-bg); color: var(--accent); }
+    .timer-cell { font-family: monospace; font-weight: 800; color: var(--danger); font-size: 11px; text-align: center !important; }
 
     /* MODAL RESPONSIVENESS */
-    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: flex-end; justify-content: center; }
-    .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px 15px 0 0; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 10px; }
+    .modal-content { background: var(--card-bg); padding: 20px; border-radius: 8px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); color: var(--text); }
     
-    /* FORM GRID - SINGLE COLUMN ON MOBILE */
-    .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    @media (min-width: 768px) { .form-grid { grid-template-columns: repeat(4, 1fr); .modal { align-items: center; } .modal-content { border-radius: 12px; width: 95%; max-width: 900px; } } }
+    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 1000px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
     
-    .field { display: flex; flex-direction: column; gap: 3px; }
-    .field label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-    .field input, .field select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; background: var(--card-bg); }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+    .field input, .field select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; outline: none; background: var(--card-bg); color: var(--primary); font-weight: 600; height: 36px; }
+    .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+    .field input[readonly] { background: var(--header-bg) !important; cursor: not-allowed; }
 
     /* ACTION MENU */
     #menuWrap { position: relative; }
-    .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
-    #menuBox { display: none; position: absolute; right: 0; top: 32px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; width: 130px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; }
-    .menu-item { padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
-    tr.selected { background: #eff6ff !important; outline: 1px solid var(--accent); }
+    .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+    #menuBox { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; width: 140px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 100; overflow: hidden; }
+    .menu-item { padding: 12px 14px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text); border-bottom: 1px solid var(--border); }
+    .menu-item:hover { background: var(--row-hover); }
+    tr.selected { background: var(--processing-bg) !important; }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
 
 <div class="header">
     <div class="header-titles">
-        <h2><i class="fa-solid fa-microchip"></i> Production</h2>
+        <h2><i class="fa-solid fa-microchip"></i> Production Control Centre</h2>
     </div>
     <button class="btn-new" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ENTRY</button>
 </div>
@@ -129,38 +164,23 @@
 <div class="filter-bar">
     <div class="filter-field">
         <label>Company</label>
-        <select id="filter_company" onchange="applyGlobalFilters()">
-            <option value="">All Companies</option>
-            {% for p in prod_for_list %}<option value="{{p}}">{{p}}</option>{% endfor %}
-        </select>
+        <select id="filter_company" onchange="applyGlobalFilters()"></select>
     </div>
     <div class="filter-field">
         <label>Variety</label>
-        <select id="filter_variety" onchange="applyGlobalFilters()">
-            <option value="">All Varieties</option>
-            {% for v in varieties %}<option value="{{v}}">{{v}}</option>{% endfor %}
-        </select>
+        <select id="filter_variety" onchange="applyGlobalFilters()"></select>
     </div>
     <div class="filter-field">
         <label>Glaze (%)</label>
-        <select id="filter_glaze" onchange="applyGlobalFilters()">
-            <option value="">All Glazes</option>
-            {% for gz in glazes %}<option value="{{gz}}">{{gz}}%</option>{% endfor %}
-        </select>
+        <select id="filter_glaze" onchange="applyGlobalFilters()"></select>
     </div>
     <div class="filter-field">
         <label>Freezer</label>
-        <select id="filter_freezer" onchange="applyGlobalFilters()">
-            <option value="">All Freezers</option>
-            {% for fz in freezers %}<option value="{{fz}}">{{fz}}</option>{% endfor %}
-        </select>
+        <select id="filter_freezer" onchange="applyGlobalFilters()"></select>
     </div>
     <div class="filter-field">
         <label>Grade</label>
-        <select id="filter_grade" onchange="applyGlobalFilters()">
-            <option value="">All Grades</option>
-            {% for g in grades %}<option value="{{g}}">{{g}}</option>{% endfor %}
-        </select>
+        <select id="filter_grade" onchange="applyGlobalFilters()"></select>
     </div>
     <div class="filter-field search-field">
         <label>Search (PO, Buyer, Batch)</label>
@@ -169,15 +189,15 @@
 </div>
 
 <div class="row-grid">
-    <div class="panel" style="border-top: 3px solid var(--accent);">
+    <div class="panel">
         <div class="panel-header" style="color: var(--accent);">
-            <div><i class="fa-solid fa-droplet"></i> Soaking</div>
+            <div><i class="fa-solid fa-droplet"></i> Active Soaking Lines</div>
             <div class="grand-total-badge">{{ soaking_data | selectattr('status', 'ne', 'Completed') | sum(attribute='in_qty') | round(2) }} KG</div>
         </div>
         <div class="table-wrap" style="max-height: 300px;">
             <table id="soakingTable">
                 <thead>
-                    <tr><th>Sintex</th><th>Batch</th><th>Variety</th><th>Cnt</th><th>Qty</th><th>Timer</th><th>Status</th></tr>
+                    <tr><th style="width:75px;">Sintex</th><th>Batch</th><th style="width:140px; text-align:left;">Variety</th><th>Cnt</th><th style="text-align:right;">Qty</th><th>Timer</th><th style="width:95px;">Status</th></tr>
                 </thead>
                 <tbody>
                     {% set grouped_soak = soaking_data | groupby('production_for') %}
@@ -189,11 +209,11 @@
                             </tr>
                             {% for s in records if s.status != 'Completed' %}
                             <tr data-company="{{s.production_for}}" data-variety="{{s.variety_name}}" data-glaze="" data-freezer="" data-grade="">
-                                <td style="color:var(--accent);">${{s.sintex_number}}</td>
-                                <td>{{s.batch_number}}</td>
-                                <td>{{s.variety_name}}</td>
+                                <td style="color:var(--accent); font-weight:800;">{{s.sintex_number}}</td>
+                                <td style="font-weight:700; color:var(--accent);">{{s.batch_number}}</td>
+                                <td style="text-align:left;">{{s.variety_name}}</td>
                                 <td>{{s.in_count}}</td>
-                                <td>{{s.in_qty}}</td>
+                                <td style="text-align:right; font-weight:700;">{{s.in_qty}}</td>
                                 <td class="timer-cell" data-start="{{s.date}}T{{s.time}}">00:00:00</td>
                                 <td>
                                     <select class="status-badge {% if s.status == 'Pending' %}status-pending{% else %}status-running{% endif %}" onchange="updateSoakingStatus('{{s.id}}', this.value)">
@@ -211,12 +231,12 @@
         </div>
     </div>
 
-    <div class="panel" style="border-top: 3px solid var(--danger);">
-        <div class="panel-header" style="color: var(--danger);"><div><i class="fa-solid fa-triangle-exclamation"></i> Floor Balance</div></div>
+    <div class="panel">
+        <div class="panel-header" style="color: var(--danger);"><div><i class="fa-solid fa-triangle-exclamation"></i> Rejection Stock Floor</div></div>
         <div class="table-wrap" style="max-height: 300px;">
             <table id="floorTable">
                 <thead>
-                    <tr><th>Batch</th><th>Variety</th><th>Cnt</th><th>Rej Qty</th><th>Action</th></tr>
+                    <tr><th style="width:95px;">Batch</th><th style="width:130px; text-align:left;">Variety</th><th>Cnt</th><th style="text-align:right;">Rej Qty</th><th style="width:80px;">Action</th></tr>
                 </thead>
                 <tbody>
                     {% set grouped_rej = rejection_data | groupby('production_for') %}
@@ -224,10 +244,10 @@
                         <tr class="group-row" data-company="{{company}}"><td colspan="5">{{company}}</td></tr>
                         {% for r in items %}
                         <tr data-company="{{company}}" data-variety="{{r.variety_name}}" data-glaze="" data-freezer="" data-grade="">
-                            <td style="font-weight:800;">{{r.batch_number}}</td>
-                            <td>{{r.variety_name}}</td><td>{{r.in_count}}</td>
-                            <td><span style="background:#fee2e2; color:#b91c1c; padding:2px 4px; border-radius:3px; font-weight:800;">{{r.rejection_qty}}</span></td>
-                            <td><button style="background:var(--success); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:9px;" onclick="markRejectionCompleted('{{r.id}}')">DONE</button></td>
+                            <td style="font-weight:800; color:var(--accent);">{{r.batch_number}}</td>
+                            <td style="text-align:left;">{{r.variety_name}}</td><td>{{r.in_count}}</td>
+                            <td style="text-align:right;"><span style="background:rgba(239, 68, 68, 0.1); color:var(--danger); padding:2px 6px; border-radius:3px; font-weight:800;">{{r.rejection_qty}}</span></td>
+                            <td><button style="background:var(--success); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:9px; font-weight:700;" onclick="markRejectionCompleted('{{r.id}}')">DONE</button></td>
                         </tr>
                         {% endfor %}
                     {% endfor %}
@@ -238,16 +258,16 @@
 </div>
 
 <div class="full-width-grid">
-    <div class="panel" style="border-top: 3px solid var(--warning);">
-        <div class="panel-header" style="color: #b45309;">
-            <div><i class="fa-solid fa-chart-bar"></i> Yield Requirements</div>
-            <div class="grand-total-badge" id="prod_count_badge">{{ pending_orders|length }} Items</div>
+    <div class="panel">
+        <div class="panel-header" style="color: var(--warning);">
+            <div><i class="fa-solid fa-chart-bar"></i> Dynamic Yield Production Requirements</div>
+            <div class="grand-total-badge" id="prod_count_badge">{{ pending_orders|length }} Items Listed</div>
         </div>
         <div class="table-wrap" style="max-height: 500px;">
             <table id="reqTable">
                 <thead>
                     <tr>
-                        <th>Sl</th><th>Company</th><th>PO Number</th><th>Buyer</th><th>Ship Date</th><th>Packing Style</th><th>Brand</th><th>Sps</th><th>Var</th><th>CG%</th><th>WG%</th><th>Grd</th><th>NW Grd</th><th>Pcs</th><th>Ord MC</th><th>Stk MC</th><th class="pnd-mc-col">Pnd MC</th><th class="calc-col">Net Cnt</th><th class="calc-col">HL Cnt</th><th class="calc-col">HOSO Cnt</th><th>Ord Qty</th><th>Avl Stk</th><th>Utilized</th><th>Ref Stock</th><th>Pnd Prd</th><th style="background:var(--card-bg)7ed; color:#c2410c;">REQ HLSO</th><th style="background:var(--card-bg)7ed; color:#c2410c;">REQ HOSO</th>
+                        <th style="width:40px;">Sl</th><th style="width:130px; text-align:left;">Company</th><th style="width:95px;">PO Number</th><th style="width:140px; text-align:left;">Buyer</th><th style="width:85px;">Ship Date</th><th style="width:120px; text-align:left;">Packing Style</th><th style="width:110px; text-align:left;">Brand</th><th style="width:75px;">Sps</th><th style="width:115px; text-align:left;">Var</th><th style="width:65px;">CG%</th><th style="width:65px;">WG%</th><th style="width:75px;">Grd</th><th style="width:75px;">NW Grd</th><th style="width:75px; text-align:right;">Pcs</th><th style="width:75px; text-align:right;">Ord MC</th><th style="width:75px; text-align:right;">Stk MC</th><th class="pnd-mc-col" style="width:75px; text-align:right;">Pnd MC</th><th class="calc-col" style="width:75px; text-align:right;">Net Cnt</th><th class="calc-col" style="width:75px; text-align:right;">HL Cnt</th><th class="calc-col" style="width:75px; text-align:right;">HOSO Cnt</th><th style="width:90px; text-align:right;">Ord Qty</th><th style="width:90px; text-align:right;">Avl Stk</th><th style="width:85px; text-align:right;">Utilized</th><th style="width:130px; text-align:left;">Ref Stock</th><th style="width:90px; text-align:right;">Pnd Prd</th><th style="background:rgba(245, 158, 11, 0.1); color:var(--warning); width:95px; text-align:right;">REQ HLSO</th><th style="background:rgba(245, 158, 11, 0.1); color:var(--warning); width:95px; text-align:right;">REQ HOSO</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -255,41 +275,41 @@
                     {% for po_no, records in grouped_req %}
                         {% set first_row = records[0] %}
                         <tr class="group-row" data-company="{{ first_row.company_name }}">
-                            <td colspan="16" style="background:rgba(255,255,255,0.5); color:#121d9a;">
+                            <td colspan="16" style="background:transparent; color:var(--accent); text-align:left !important; padding-left:10px;">
                                 <i class="fa-solid fa-file-invoice"></i> PO: <b>{{ po_no }}</b> | {{ first_row.buyer }}
                             </td>
-                            <td class="pnd-mc-col">{{ (records | sum(attribute='no_of_mc') - records | sum(attribute='stock_mc'|default(0))) | round(0) | int }}</td>
-                            <td colspan="10" style="background:rgba(255,255,255,0.5);"></td>
+                            <td class="pnd-mc-col" style="text-align:right !important; padding-right:8px;">{{ (records | sum(attribute='no_of_mc') - records | sum(attribute='stock_mc'|default(0))) | round(0) | int }}</td>
+                            <td colspan="10" style="background:transparent;"></td>
                         </tr>
                         {% for row in records %}
-                        <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}" data-freezer="" data-grade="{{ row.grade }}">
+                        <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}%" data-freezer="{{ row.freezer }}" data-grade="{{ row.grade }}">
                             <td>{{ row.sl_no }}</td>
-                            <td class="po-cell">{{ row.company_name }}</td>
+                            <td class="po-cell" style="text-align:left;">{{ row.company_name }}</td>
                             <td class="po-cell">{{ row.po_number }}</td>
-                            <td>{{ row.buyer }}</td>
+                            <td style="text-align:left;">{{ row.buyer }}</td>
                             <td>{{ row.shipment_date }}</td>
-                            <td>{{ row.packing_style }}</td>
-                            <td>{{ row.brand }}</td>
+                            <td style="text-align:left;">{{ row.packing_style }}</td>
+                            <td style="text-align:left;">{{ row.brand }}</td>
                             <td>{{ row.species }}</td>
-                            <td>{{ row.variety }}</td>
-                            <td>{{ row.count_glaze }}</td>
-                            <td>{{ row.weight_glaze }}</td>
+                            <td style="text-align:left;">{{ row.variety }}</td>
+                            <td>{{ row.count_glaze }}%</td>
+                            <td>{{ row.weight_glaze }}%</td>
                             <td>{{ row.grade }}</td>
                             <td>{{ row.nw_grade }}</td>
-                            <td>{{ row.no_of_pieces }}</td>
-                            <td>{{ row.no_of_mc }}</td>
-                            <td>{{ row.stock_mc }}</td>
-                            <td class="pnd-mc-col">{{ (row.no_of_mc|float - row.stock_mc|default(0)|float) | round(0) | int }}</td>
-                            <td class="calc-col">{{ row.net_count_calc }}</td>
-                            <td class="calc-col">{{ row.hl_count_calc }}</td>
-                            <td class="calc-col">{{ row.hoso_count_calc }}</td>
-                            <td>{{ row.ordered_qty }}</td>
-                            <td>{{ row.available_stock }}</td>
-                            <td><span class="util-badge" onclick='showDetails({{ row.util_json|safe }}, "Stock")'>{{ row.existed_stock_util }}</span></td>
-                            <td><span class="ref-badge" onclick='showDetails({{ row.ref_json|safe }}, "Ref")'>{{ row.ref_opt_stock }}</span></td>
-                            <td style="color:{{ 'red' if row.pending_production < 0 else 'green' }};">{{ row.pending_production }}</td>
-                            <td style="color:#c2410c;">{{ row.req_hlso_qty }}</td>
-                            <td style="color:#c2410c;">{{ row.req_hoso_qty }}</td>
+                            <td style="text-align:right;">{{ row.no_of_pieces }}</td>
+                            <td style="text-align:right;">{{ row.no_of_mc }}</td>
+                            <td style="text-align:right;">{{ row.stock_mc }}</td>
+                            <td class="pnd-mc-col" style="text-align:right;">{{ (row.no_of_mc|float - row.stock_mc|default(0)|float) | round(0) | int }}</td>
+                            <td class="calc-col" style="text-align:right;">{{ row.net_count_calc }}</td>
+                            <td class="calc-col" style="text-align:right;">{{ row.hl_count_calc }}</td>
+                            <td class="calc-col" style="text-align:right;">{{ row.hoso_count_calc }}</td>
+                            <td style="text-align:right;">{{ row.ordered_qty }}</td>
+                            <td style="text-align:right;">{{ row.available_stock }}</td>
+                            <td style="text-align:right;"><span class="util-badge" onclick='showDetails({{ row.util_json|safe }}, "Stock Tracking Breakdown")'>{{ row.existed_stock_util }}</span></td>
+                            <td style="text-align:left;"><span class="ref-badge" onclick='showDetails({{ row.ref_json|safe }}, "Referral Stock Location Maps")'>{{ row.ref_opt_stock }}</span></td>
+                            <td style="color:{{ 'var(--danger)' if row.pending_production < 0 else 'var(--success)' }}; text-align:right;">{{ row.pending_production }}</td>
+                            <td style="color:var(--warning); font-weight:700; text-align:right;">{{ row.req_hlso_qty }}</td>
+                            <td style="color:var(--warning); font-weight:700; text-align:right;">{{ row.req_hoso_qty }}</td>
                         </tr>
                         {% endfor %}
                     {% endfor %}
@@ -302,7 +322,7 @@
 {% if today_data %}
 <div class="full-width-grid">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-        <h3 style="font-size: 12px; color: var(--primary); margin: 0;"><i class="fa-solid fa-list-check"></i> Today's Log</h3>
+        <h3 style="font-size: 12px; color: var(--primary); margin: 0;"><i class="fa-solid fa-list-check"></i> Today's Production Transaction Log</h3>
         <div id="menuWrap">
             <button type="button" class="menu-trigger" onclick="toggleMenu()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="menuBox">
@@ -314,26 +334,26 @@
         <div class="table-wrap" style="max-height: 400px;">
             <table id="dataTable">
                 <thead>
-                    <tr><th>ID</th><th>Company</th><th>Batch</th><th>Type</th><th>Loc</th><th>Sps</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Grade</th><th>Style</th><th>MC</th><th>Loose</th><th>Total KG</th></tr>
+                    <tr><th style="width:55px;">ID</th><th style="width:140px; text-align:left;">Company</th><th style="width:95px;">Batch</th><th style="width:85px;">Type</th><th style="width:110px; text-align:left;">Loc</th><th style="width:75px;">Sps</th><th style="width:110px; text-align:left;">Brand</th><th style="width:120px; text-align:left;">Variety</th><th style="width:65px;">Glaze</th><th style="width:90px; text-align:left;">Freezer</th><th style="width:75px;">Grade</th><th style="width:130px; text-align:left;">Style</th><th style="width:70px; text-align:right;">MC</th><th style="width:70px; text-align:right;">Loose</th><th style="width:95px; text-align:right;">Total KG</th></tr>
                 </thead>
                 <tbody>
                     {% for r in today_data %}
                     <tr class="log-data-row" data-id="{{r.id}}" data-company="{{r.production_for}}" data-variety="{{r.variety_name}}" data-glaze="{{r.glaze}}" data-freezer="{{r.freezer}}" data-grade="{{r.grade}}">
                         <td>{{r.id}}</td>
-                        <td>{{r.production_for}}</td>
-                        <td style="font-weight:800">{{r.batch_number}}</td>
+                        <td style="text-align:left;">{{r.production_for}}</td>
+                        <td style="font-weight:800; color:var(--accent);">{{r.batch_number}}</td>
                         <td style="color:var(--success)">{{r.production_type}}</td>
-                        <td>{{r.production_at}}</td>
+                        <td style="text-align:left;">{{r.production_at}}</td>
                         <td>{{r.species}}</td>
-                        <td>{{r.brand}}</td>
-                        <td>{{r.variety_name}}</td>
-                        <td>{{r.glaze}}%</td>
-                        <td>{{r.freezer}}</td>
+                        <td style="text-align:left;">{{r.brand}}</td>
+                        <td style="text-align:left;">{{r.variety_name}}</td>
+                        <td>{{r.glaze}}</td>
+                        <td style="text-align:left;">{{r.freezer}}</td>
                         <td>{{r.grade}}</td>
-                        <td>{{r.packing_style}}</td>
-                        <td>{{r.no_of_mc}}</td>
-                        <td>{{r.loose}}</td>
-                        <td style="color:var(--accent)">{{r.production_qty}}</td>
+                        <td style="text-align:left;">{{r.packing_style}}</td>
+                        <td style="text-align:right;">{{r.no_of_mc}}</td>
+                        <td style="text-align:right;">{{r.loose}}</td>
+                        <td style="color:var(--accent); font-weight:800; text-align:right;">{{r.production_qty}}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -345,96 +365,145 @@
 
 <div id="entryModal" class="modal">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <h3 style="margin:0; font-size:14px; font-weight:800; color:var(--primary);"><i class="fa-solid fa-plus-circle"></i> PRODUCTION ENTRY</h3>
-            <span onclick="closeModal()" style="font-size:24px; cursor:pointer; color:#999;">&times;</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <h3 style="margin:0; font-size:13px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:0.5px;"><i class="fa-solid fa-plus-circle"></i> New Production Entry</h3>
+            <span onclick="closeModal()" style="font-size:24px; cursor:pointer; color:var(--text-muted);">&times;</span>
         </div>
         <form method="post" action="/processing/production" id="productionForm">
             <div class="form-grid">
-                <div class="field"><label>Production For</label><input type="text" list="c_list" name="production_for" required placeholder="Company" autocomplete="off"></div>
-                <div class="field"><label>Batch Number</label><input type="text" list="b_list" name="batch_number" required placeholder="Batch" autocomplete="off"></div>
-                <div class="field"><label>Species</label><input type="text" list="s_list" name="species" required placeholder="Species" autocomplete="off"></div>
-                <div class="field"><label>Variety</label><input type="text" list="v_list" name="variety_name" required placeholder="Variety" autocomplete="off"></div>
-                <div class="field"><label>Brand</label><input type="text" list="br_list" name="brand" required placeholder="Brand" autocomplete="off"></div>
-                <div class="field"><label>Grade</label><input type="text" list="g_list" name="grade" placeholder="Grade" autocomplete="off"></div>
-                <div class="field"><label>Glaze (%)</label><input type="text" list="gz_list" name="glaze" placeholder="Glaze" autocomplete="off"></div>
-                <div class="field"><label>Freezer</label><input type="text" list="f_list" name="freezer" placeholder="Freezer" autocomplete="off"></div>
+                
                 <div class="field">
-                    <label>Type</label>
-                    <select name="production_type" required>
-                        {% for pt in prod_types_list %}<option value="{{pt}}">{{pt}}</option>{% endfor %}
+                    <label>Production For</label>
+                    <select name="production_for" id="f_comp" onchange="handleCompanyChange()" required>
+                        <option value="">Select Company</option>
                     </select>
                 </div>
+
                 <div class="field">
-                    <label>Location</label>
-                    <select name="production_at" required>
-                        {% for loc in prod_at_list %}<option value="{{loc}}">{{loc}}</option>{% endfor %}
+                    <label>Location (Production At)</label>
+                    <select name="production_at" id="f_loc" onchange="handleLocationChange()" required>
+                        <option value="">Select Location</option>
                     </select>
                 </div>
+
+                <div class="field">
+                    <label>Batch / PO Number</label>
+                    <select name="batch_number" id="f_batch" onchange="loadBatchOrderSpecs()" required>
+                        <option value="">Select Batch</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Species</label>
+                    <select name="species" id="f_species" required>
+                        <option value="">Select Species</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Variety</label>
+                    <select name="variety_name" id="f_variety" required>
+                        <option value="">Select Variety</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Brand</label>
+                    <select name="brand" id="f_brand" required>
+                        <option value="">Select Brand</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Grade</label>
+                    <select name="grade" id="f_grade">
+                        <option value="">Select Grade</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Glaze (%)</label>
+                    <select name="glaze" id="f_glaze">
+                        <option value="">Select Glaze</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Freezer</label>
+                    <select name="freezer" id="f_freezer">
+                        <option value="">Select Freezer</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Production Type</label>
+                    <select name="production_type" id="f_type" required>
+                        <option value="">Select Type</option>
+                    </select>
+                </div>
+
                 <div class="field">
                     <label>Packing Style</label>
                     <select name="packing_style" id="packing_style" required onchange="calcQty()">
                         <option value="">Select Style</option>
-                        {% for p in packing_styles %}<option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">{{p.packing_style}}</option>{% endfor %}
                     </select>
                 </div>
+
                 <div class="field"><label>No of MC</label><input type="number" id="mc" name="no_of_mc" oninput="calcQty()" value="0"></div>
                 <div class="field"><label>Loose</label><input type="number" id="loose" name="loose" oninput="calcQty()" value="0"></div>
-                <div class="field"><label>Total KG</label><input type="number" step="0.01" id="kg" name="production_qty" readonly style="background:#f1f5f9; font-weight:800;"></div>
+                <div class="field"><label>Total KG</label><input type="number" step="0.01" id="kg" name="production_qty" readonly style="font-weight:800; color:var(--accent) !important; text-align:center;"></div>
             </div>
-            <div style="margin-top:20px; display:flex; gap:10px;">
-                <button type="submit" style="flex:2; background:var(--primary); color:white; border:none; padding:12px; border-radius:8px; font-weight:800;">SAVE ENTRY</button>
-                <button type="button" onclick="closeModal()" style="flex:1; background:#eee; border:none; border-radius:8px; font-weight:600;">CANCEL</button>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" onclick="closeModal()" style="background:var(--text-muted); color:white; border:none; padding:12px; border-radius:6px; font-weight:600; flex:1; cursor:pointer; text-transform:uppercase;">Cancel</button>
+                <button type="submit" id="submitBtn" style="flex:2; background:var(--accent); color:white; border:none; padding:12px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase;">Save Entry</button>
             </div>
         </form>
     </div>
 </div>
 
-<datalist id="c_list">{% for p in prod_for_list %}<option value="{{p}}">{% endfor %}</datalist>
-<datalist id="b_list">{% for b in batches %}<option value="{{b.batch_number}}">{% endfor %}</datalist>
-<datalist id="s_list">{% for s in species %}<option value="{{s}}">{% endfor %}</datalist>
-<datalist id="v_list">{% for v in varieties %}<option value="{{v}}">{% endfor %}</datalist>
-<datalist id="br_list">{% for b in brands %}<option value="{{b}}">{% endfor %}</datalist>
-<datalist id="g_list">{% for g in grades %}<option value="{{g}}">{% endfor %}</datalist>
-<datalist id="gz_list">{% for gz in glazes %}<option value="{{gz}}">{% endfor %}</datalist>
-<datalist id="f_list">{% for fz in freezers %}<option value="{{fz}}">{% endfor %}</datalist>
-
 <script>
 // ============================================================
-// 🔥 PRODUCTION UNIFIED SCRIPT - STABLE VERSION 2026
+// 🔥 PRODUCTION UNIFIED CASCADED STATE ENGINE - STABLE 2026
 // ============================================================
 
-let choiceInstances = {};
+const RAW_BRANDS = [{% for b in brands %}"{{b}}",{% endfor %}];
+const RAW_VARIETIES = [{% for v in varieties %}"{{v}}",{% endfor %}];
+const RAW_GLAZES = [{% for gz in glazes %}"{{gz}}",{% endfor %}];
+const RAW_FREEZERS = [{% for fz in freezers %}"{{fz}}",{% endfor %}];
+const RAW_GRADES = [{% for g in grades %}"{{g}}",{% endfor %}];
+const RAW_SPECIES = [{% for s in species %}"{{s}}",{% endfor %}];
+const RAW_TYPES = [{% for pt in prod_types_list %}"{{pt}}",{% endfor %}];
+const RAW_LOCATIONS = [{% for loc in prod_at_list %}"{{loc}}",{% endfor %}];
+const RAW_COMPANIES = [{% for p in prod_for_list %}"{{p}}",{% endfor %}];
 
-const soakingBatches = [ 
-    {% for s in soaking_data %} 
-    { batch: "{{s.batch_number}}", company: "{{s.production_for}}" }, 
-    {% endfor %} 
+const RAW_PACKING_STYLES = [
+    {% for p in packing_styles %}
+    { style: "{{p.packing_style}}", mc: parseFloat("{{p.mc_weight}}"), slab: parseFloat("{{p.slab_weight}}") },
+    {% endfor %}
 ];
+
+const SOAKING_MON_DATA = [
+    {% for s in soaking_data %}
+    { batch: "{{s.batch_number}}", comp: "{{s.production_for}}", loc: "{{s.production_at}}", varty: "{{s.variety_name}}", sps: "{{s.species}}" },
+    {% endfor %}
+];
+
+const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
+const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
+
+let selectedRowRef = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     initLogTable();
     initManualListeners(); 
     setInterval(updateTimers, 1000);
+    populateFilterBarDropdowns();
     
-    // BACKEND MESSAGES TO SWEETALERT CONVERSION SYSTEM
-    {% if success_msg or msg %}
-        Swal.fire({
-            title: 'Success!',
-            text: "{{ success_msg or msg }}",
-            icon: 'success',
-            timer: 3000,
-            confirmButtonColor: '#143465'
-        });
+    {% if success_msg %}
+        Swal.fire({ title: 'Success!', text: "{{ success_msg }}", icon: 'success', timer: 1500, showConfirmButton: false });
     {% endif %}
-
     {% if error_msg %}
-        Swal.fire({
-            title: 'Error!',
-            text: "{{ error_msg }}",
-            icon: 'error',
-            confirmButtonColor: '#dc2626'
-        });
+        Swal.fire({ title: 'Error!', text: "{{ error_msg }}", icon: 'error', confirmButtonColor: '#dc2626' });
     {% endif %}
     
     window.addEventListener('click', function(e) {
@@ -446,38 +515,190 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initManualListeners() {
-    const inputs = ["mc", "loose"];
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', calcQty);
+    ["mc", "loose"].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', calcQty);
     });
 }
 
 function calcQty() {
-    const mcInput = document.getElementById("mc");
-    const looseInput = document.getElementById("loose");
+    const mcCount = parseFloat(document.getElementById("mc").value) || 0;
+    const looseCount = parseFloat(document.getElementById("loose").value) || 0;
     const packingSelect = document.getElementById("packing_style"); 
     const kgInput = document.getElementById("kg"); 
 
-    if (!mcInput || !looseInput || !packingSelect || !kgInput) return;
-
-    let mcCount = parseFloat(mcInput.value) || 0;
-    let looseCount = parseFloat(looseInput.value) || 0;
-
+    if (!packingSelect || !kgInput) return;
     const selectedOption = packingSelect.options[packingSelect.selectedIndex];
     
     if (selectedOption && selectedOption.value !== "") {
         const mcWeight = parseFloat(selectedOption.getAttribute('data-mc')) || 0;
         const slabWeight = parseFloat(selectedOption.getAttribute('data-slab')) || 0;
-        
-        let totalQty = (mcCount * mcWeight) + (looseCount * slabWeight);
-        kgInput.value = totalQty.toFixed(2);
+        kgInput.value = ((mcCount * mcWeight) + (looseCount * slabWeight)).toFixed(2);
     } else {
         kgInput.value = "0.00";
     }
 }
 
-// MULTI-ATTRIBUTE UNIFIED DATA FILTER MATRIX
+function populateFilterBarDropdowns() {
+    const activeCompanies = new Set();
+    const activeVarieties = new Set();
+    const activeGlazes = new Set();
+    const activeFreezers = new Set();
+    const activeGrades = new Set();
+
+    SOAKING_MON_DATA.forEach(d => {
+        if(d.comp) activeCompanies.add(d.comp);
+        if(d.varty) activeVarieties.add(d.varty);
+    });
+    
+    RAW_GLAZES.forEach(g => activeGlazes.add(g));
+    RAW_FREEZERS.forEach(f => activeFreezers.add(f));
+    RAW_GRADES.forEach(g => activeGrades.add(g));
+
+    fillFilterSelect('filter_company', Array.from(activeCompanies).sort(), 'All Companies');
+    fillFilterSelect('filter_variety', Array.from(activeVarieties).sort(), 'All Varieties');
+    fillFilterSelect('filter_glaze', Array.from(activeGlazes).sort(), 'All Glazes');
+    fillFilterSelect('filter_freezer', Array.from(activeFreezers).sort(), 'All Freezers');
+    fillFilterSelect('filter_grade', Array.from(activeGrades).sort(), 'All Grades');
+}
+
+function fillFilterSelect(id, dataList, defaultText) {
+    const el = document.getElementById(id);
+    if(!el) return;
+    let html = `<option value="">${defaultText}</option>`;
+    dataList.forEach(item => {
+        html += `<option value="${item}">${item}</option>`;
+    });
+    el.innerHTML = html;
+}
+
+function initializeFormCompanies() {
+    const compSelect = document.getElementById("f_comp");
+    compSelect.innerHTML = '<option value="">Select Company</option>';
+
+    if (BACKEND_GLOBAL_COMPANY && BACKEND_GLOBAL_COMPANY !== "None" && BACKEND_GLOBAL_COMPANY !== "") {
+        let opt = document.createElement('option');
+        opt.value = BACKEND_GLOBAL_COMPANY; opt.innerText = BACKEND_GLOBAL_COMPANY;
+        compSelect.appendChild(opt); compSelect.value = BACKEND_GLOBAL_COMPANY;
+    } else {
+        const activeFormComps = [...new Set(SOAKING_MON_DATA.map(item => item.comp))].sort();
+        activeFormComps.forEach(comp => {
+            let opt = document.createElement('option'); opt.value = comp; opt.innerText = comp;
+            compSelect.appendChild(opt);
+        });
+    }
+    populateLocationsBasedOnCompany();
+}
+
+function handleCompanyChange() {
+    populateLocationsBasedOnCompany();
+}
+
+function populateLocationsBasedOnCompany() {
+    const compVal = document.getElementById('f_comp').value.trim().toUpperCase();
+    const locSelect = document.getElementById('f_loc');
+    locSelect.innerHTML = '<option value="">Select Location</option>';
+    resetCascadedFields();
+
+    if(!compVal) return;
+
+    if (BACKEND_GLOBAL_LOCATION && BACKEND_GLOBAL_LOCATION !== "None" && BACKEND_GLOBAL_LOCATION !== "") {
+        let opt = document.createElement('option');
+        opt.value = BACKEND_GLOBAL_LOCATION; opt.innerText = BACKEND_GLOBAL_LOCATION;
+        locSelect.appendChild(opt); locSelect.value = BACKEND_GLOBAL_LOCATION;
+    } else {
+        const relevantLocs = [...new Set(SOAKING_MON_DATA.filter(item => 
+            item.comp.trim().toUpperCase() === compVal
+        ).map(item => item.loc))].sort();
+        
+        relevantLocs.forEach(loc => {
+            let opt = document.createElement('option'); opt.value = loc; opt.innerText = loc;
+            locSelect.appendChild(opt);
+        });
+    }
+    handleLocationChange();
+}
+
+function handleLocationChange() {
+    resetCascadedFields();
+    const compVal = document.getElementById('f_comp').value.trim().toUpperCase();
+    const locVal = document.getElementById('f_loc').value.trim().toUpperCase();
+    const batchSelect = document.getElementById('f_batch');
+
+    if(!compVal || !locVal) return;
+
+    const relevantBatches = [...new Set(SOAKING_MON_DATA.filter(item => 
+        item.comp.trim().toUpperCase() === compVal && 
+        item.loc.trim().toUpperCase() === locVal
+    ).map(item => item.batch))].sort();
+
+    relevantBatches.forEach(batch => {
+        let opt = document.createElement('option'); opt.value = batch; opt.innerText = batch;
+        batchSelect.appendChild(opt);
+    });
+}
+
+function resetCascadedFields() {
+    document.getElementById('f_batch').innerHTML = '<option value="">Select Batch</option>';
+    document.getElementById('f_species').innerHTML = '<option value="">Select Species</option>';
+    document.getElementById('f_variety').innerHTML = '<option value="">Select Variety</option>';
+    setupStaticFormDropdowns();
+}
+
+function loadBatchOrderSpecs() {
+    const batchVal = document.getElementById("f_batch").value.trim();
+    const compVal = document.getElementById("f_comp").value.trim().toUpperCase();
+    const locVal = document.getElementById("f_loc").value.trim().toUpperCase();
+
+    const specSelect = document.getElementById("f_species");
+    const varSelect = document.getElementById("f_variety");
+
+    specSelect.innerHTML = '<option value="">Select Species</option>';
+    varSelect.innerHTML = '<option value="">Select Variety</option>';
+
+    if(!batchVal) { setupStaticFormDropdowns(); return; }
+
+    const matches = SOAKING_MON_DATA.filter(item => 
+        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal
+    );
+
+    if(matches.length > 0) {
+        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].sort();
+        const uniqueVars = [...new Set(matches.map(m => m.varty))].sort();
+
+        uniqueSpecs.forEach(s => { let opt = document.createElement('option'); opt.value = s; opt.innerText = s; specSelect.appendChild(opt); });
+        uniqueVars.forEach(v => { let opt = document.createElement('option'); opt.value = v; opt.innerText = v; varSelect.appendChild(opt); });
+
+        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
+        if(uniqueVars.length === 1) varSelect.value = uniqueVars[0];
+    } else {
+        setupStaticFormDropdowns();
+    }
+}
+
+function setupStaticFormDropdowns() {
+    fillStaticSelect('f_brand', RAW_BRANDS, 'Select Brand');
+    fillStaticSelect('f_grade', RAW_GRADES, 'Select Grade');
+    fillStaticSelect('f_glaze', RAW_GLAZES, 'Select Glaze');
+    fillStaticSelect('f_freezer', RAW_FREEZERS, 'Select Freezer');
+    fillStaticSelect('f_type', RAW_TYPES, 'Select Type');
+    
+    const packSelect = document.getElementById("packing_style");
+    packSelect.innerHTML = '<option value="">Select Style</option>';
+    RAW_PACKING_STYLES.forEach(p => {
+        let opt = document.createElement('option'); opt.value = p.style; opt.innerText = p.style;
+        opt.setAttribute('data-mc', p.mc); opt.setAttribute('data-slab', p.slab);
+        packSelect.appendChild(opt);
+    });
+}
+
+function fillStaticSelect(id, arrayData, defaultText) {
+    const el = document.getElementById(id); if(!el) return;
+    el.innerHTML = `<option value="">${defaultText}</option>`;
+    arrayData.sort().forEach(item => {
+        let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt);
+    });
+}
+
 function applyGlobalFilters() {
     const co = document.getElementById("filter_company")?.value.toLowerCase() || "";
     const varty = document.getElementById("filter_variety")?.value.toLowerCase() || "";
@@ -489,10 +710,9 @@ function applyGlobalFilters() {
     const tables = ["soakingTable", "floorTable", "reqTable", "dataTable"];
     
     tables.forEach(tableId => {
-        const table = document.getElementById(tableId);
-        if(!table) return;
-
+        const table = document.getElementById(tableId); if(!table) return;
         const rows = table.querySelectorAll("tbody tr");
+        
         rows.forEach(row => {
             if (row.classList.contains('group-row')) {
                 const groupCo = (row.getAttribute("data-company") || "").toLowerCase();
@@ -506,7 +726,6 @@ function applyGlobalFilters() {
             const rFz = (row.getAttribute("data-freezer") || "").toLowerCase();
             const rGd = (row.getAttribute("data-grade") || "").toLowerCase();
             const text = row.innerText.toLowerCase();
-            
             const targetGlaze = glaze.replace('%', '');
 
             const matchFilters = 
@@ -517,7 +736,6 @@ function applyGlobalFilters() {
                 (!grade || rGd === grade || rGd.includes(grade));
                 
             const matchSearch = !search || text.includes(search);
-            
             row.style.display = (matchFilters && matchSearch) ? "" : "none";
         });
     });
@@ -525,76 +743,41 @@ function applyGlobalFilters() {
 
 async function updateSoakingStatus(id, status) {
     if (status === 'Completed') {
-        const res = await Swal.fire({
-            title: 'Complete Soaking?',
-            text: "This batch will move to production logs.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#166534'
-        });
+        const res = await Swal.fire({ title: 'Complete Soaking?', text: "This batch will move to production logs.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#166534' });
         if (!res.isConfirmed) return location.reload();
     }
-
     try {
         const response = await fetch(`/processing/production/update_soaking_status/${id}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ status: status })
         });
-        if (response.ok) {
-            Swal.fire({
-                title: 'Updated!',
-                text: 'Soaking status has been changed successfully.',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => location.reload());
-        }
-    } catch (err) {
-        Swal.fire('Error', 'Update failed', 'error');
-    }
+        if (response.ok) location.reload();
+    } catch (err) { Swal.fire('Error', 'Update failed', 'error'); }
 }
 
 function markRejectionCompleted(id) {
-    Swal.fire({
-        title: 'Confirm',
-        text: 'Floor balance processed?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#166534'
-    }).then(res => {
+    Swal.fire({ title: 'Confirm', text: 'Floor balance processed?', icon: 'question', showCancelButton: true, confirmButtonColor: '#166534' }).then(res => {
         if(res.isConfirmed) {
-            fetch(`/processing/production/complete_rejection/${id}`, { method: 'POST' })
-            .then(() => {
-                Swal.fire({
-                    title: 'Processed!',
-                    text: 'Floor balance entry completed.',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => location.reload());
-            });
+            fetch(`/processing/production/complete_rejection/${id}`, { method: 'POST' }).then(() => location.reload());
         }
     });
 }
 
-function openModal() { document.getElementById("entryModal").style.display = "flex"; }
-function closeModal() { document.getElementById("entryModal").style.display = "none"; }
-
-function toggleMenu() {
-    const menu = document.getElementById('menuBox');
-    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+function openModal() { 
+    document.getElementById("entryModal").style.display = "flex"; 
+    initializeFormCompanies();
 }
 
-let selectedRowRef = null;
+function closeModal() { document.getElementById("entryModal").style.display = "none"; document.getElementById("productionForm").reset(); }
+function toggleMenu() { const menu = document.getElementById('menuBox'); menu.style.display = (menu.style.display === 'block') ? 'none' : 'block'; }
+
 function initLogTable() {
     const rows = document.querySelectorAll("#dataTable tbody tr.log-data-row");
     rows.forEach(r => {
         r.onclick = () => {
-            rows.forEach(x => x.classList.remove("selected"));
-            r.classList.add("selected");
+            rows.forEach(x => x.classList.remove("selected")); r.classList.add("selected");
             selectedRowRef = r;
-            document.getElementById("menuBtn").style.display = "block";
         }
     });
 }
@@ -602,44 +785,39 @@ function initLogTable() {
 function deleteRow() {
     if (!selectedRowRef) return;
     const id = selectedRowRef.dataset.id;
-    Swal.fire({
-        title: 'Delete Log?',
-        text: "Are you sure? This action cannot be undone.",
-        icon: 'error',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626'
-    }).then(res => {
+    Swal.fire({ title: 'Delete Log?', text: "Confirm deletion permanently.", icon: 'error', showCancelButton: true, confirmButtonColor: '#dc2626' }).then(res => {
         if(res.isConfirmed) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/processing/production/delete/${id}`;
-            document.body.appendChild(form);
-            form.submit();
+            const form = document.createElement('form'); form.method = 'POST'; form.action = `/processing/production/delete/${id}`;
+            document.body.appendChild(form); form.submit();
         }
     });
 }
 
 function updateTimers() {
     document.querySelectorAll(".timer-cell").forEach(cell => {
-        const startStr = cell.dataset.start;
-        if (!startStr) return;
-        
-        const start = new Date(startStr);
-        const now = new Date();
-        const diff = now - start;
-        
-        if (diff < 0) {
-            cell.innerText = "00:00:00";
-            return;
-        }
+        const startStr = cell.dataset.start; if (!startStr) return;
+        const diff = new Date() - new Date(startStr);
+        if (diff < 0) { cell.innerText = "00:00:00"; return; }
         
         const hrs = Math.floor(diff / 3600000).toString().padStart(2, '0');
         const mins = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
         const secs = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-        
         cell.innerText = `${hrs}:${mins}:${secs}`;
     });
 }
+
+function showDetails(data, title) {
+    if(!data || data.length === 0) return Swal.fire(title, 'No historical trace tracking recorded.', 'info');
+    let content = `<div style="max-height:300px; overflow-y:auto;"><table class="dash-table" style="font-size:11px; width:100%;"><thead><tr><th>Trace Info</th><th>Value/Qty</th></tr></thead><tbody>`;
+    data.forEach(d => { content += `<tr><td style="text-align:left;">${d.po_no || d.location}</td><td style="text-align:right; font-weight:bold;">${d.utilized || d.available}</td></tr>`; });
+    content += `</tbody></table></div>`;
+    Swal.fire({ title: title, html: content, confirmButtonColor: '#143465' });
+}
+
+document.getElementById("productionForm").onsubmit = function() {
+    const btn = document.getElementById("submitBtn");
+    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+};
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

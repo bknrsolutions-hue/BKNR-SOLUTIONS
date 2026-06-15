@@ -1,6 +1,6 @@
 import json
 import re
-import pytz  # 🟢 Added import to prevent NameError crash
+import pytz  
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -20,8 +20,9 @@ from app.database.models.criteria import (
 # Centralized calculation service
 from app.services.floor_balance import get_floor_balance
 from app.utils.timezone import ist_now 
+from app.utils.global_filters import get_global_filters
 
-router = APIRouter(tags=["SOAKING"]) # Prefixed to match standard processing lines
+router = APIRouter(tags=["SOAKING"]) 
 templates = Jinja2Templates(directory="app/templates")
 
 # =====================================================
@@ -29,44 +30,64 @@ templates = Jinja2Templates(directory="app/templates")
 # =====================================================
 @router.get("/soaking", response_class=HTMLResponse)
 def show_soaking(request: Request, db: Session = Depends(get_db)):
+    # 1. FETCH UNIVERSAL GLOBAL FILTERS FROM RUNTIME CONTEXT
+    global_production_for, global_location = get_global_filters(request)
+
     company_id = request.session.get("company_code")
     email = request.session.get("email")
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # 🟢 100% Protected IST Time Context
+    # 100% Protected IST Time Context
     now_ist = ist_now()
     current_date = now_ist.date()
 
-    # Searchable Dropdowns Data
+    # FETCH USER PERMITTED LOCATIONS FROM SESSION MULTIPLE CHECK
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    # Master Dropdown lists filtered securely
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
     species_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).all() if s[0]]
     chemical_list = [c[0] for c in db.query(chemicals.chemical_name).filter(chemicals.company_id == company_id).all() if c[0]]
-    prod_locs = [p[0] for p in db.query(production_at.production_at).filter(production_at.company_id == company_id).all() if p[0]]
-    prod_for_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if pf[0]]
+    
+    # Form Production Locations drop list (Locked to User Allowed Permissions)
+    pl_q = db.query(production_at.production_at).filter(production_at.company_id == company_id)
+    if user_allowed_locations:
+        pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+    prod_locs = [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]]
 
-    # 1. Today's Entries (IST Bound Range)
-    today_data = db.query(Soaking).filter(Soaking.company_id == company_id, Soaking.date == current_date).order_by(Soaking.id.desc()).all()
+    prod_for_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
 
-    # 2. Main Floor Balance Logic
+    # DASHBOARD QUEUE LOCKDOWN: రీసెంట్ ఎంట్రీ లాగ్‌లు గ్లోబల్ హెడర్ సెలెక్షన్స్‌కు సింక్ అయి ఐసోలేట్ అవుతాయి
+    today_q = db.query(Soaking).filter(Soaking.company_id == company_id, Soaking.date == current_date)
+    if global_production_for:
+        today_q = today_q.filter(func.trim(Soaking.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(Soaking.production_at) == func.trim(global_location))
+    elif user_allowed_locations:
+        today_q = today_q.filter(func.upper(func.trim(Soaking.production_at)).in_(user_allowed_locations))
+        
+    today_data = today_q.order_by(Soaking.id.desc()).all()
+
+    # 2. Main Floor Balance Logic Matrix
     combos = set()
-    # RMP Sources
     rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.production_for, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_id).all()
     for r in rmp_q: 
         if r.batch_number: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
     
-    # Grading Sources
     grad_q = db.query(Grading.batch_number, Grading.graded_count, Grading.species, Grading.variety_name, Grading.production_for, Grading.peeling_at).filter(Grading.company_id == company_id).all()
     for r in grad_q: 
         if r.batch_number: combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
     
-    # Peeling Sources
     peel_q = db.query(Peeling.batch_number, Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.production_for, Peeling.peeling_at).filter(Peeling.company_id == company_id).all()
     for r in peel_q: 
         if r.batch_number: combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
 
-    # Reprocess Sources
     repro_q = db.query(Reprocess.new_batch_id, Reprocess.grade, Reprocess.species, Reprocess.variety, Reprocess.production_for, Reprocess.production_at).filter(Reprocess.company_id == company_id, Reprocess.reprocess_type != 'SALES').all()
     for r in repro_q:
         if r.new_batch_id: combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS"))
@@ -74,61 +95,56 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     rows_batch = []
     for batch, count, species_val, variety, prod_for, location, s_type in combos:
         loc = location if location else "Floor"
+        loc_clean = loc.strip().upper()
+        
+        # FLOOR DASHBOARD TREE LOCKDOWN: గ్లోబల్ హెడర్ మరియు యూజర్ పర్మిషన్స్ కి అనుగుణంగా స్టాక్ ఫిల్టర్ అవుతుంది
+        if user_allowed_locations and loc_clean != "FLOOR" and loc_clean not in user_allowed_locations:
+            continue
+        if global_location and loc_clean != global_location.strip().upper():
+            continue
+        if global_production_for and prod_for and str(prod_for).strip().upper() != global_production_for.strip().upper():
+            continue
+            
         clean_count = str(count).strip() if count else None
         
-        # Centralized floor balance service execution loop
         qty = get_floor_balance(
-            db=db, 
-            company_id=company_id, 
-            location=loc, 
-            batch=batch, 
-            count=clean_count, 
-            species=species_val if species_val != "N/A" else None, 
-            variety=variety if variety != "N/A" else None,
-            production_for=prod_for if prod_for != "N/A" else None,
-            source_type=s_type
+            db=db, company_id=company_id, location=loc, batch=batch, count=clean_count, 
+            species=species_val if species_val != "N/A" else None, variety=variety if variety != "N/A" else None,
+            production_for=prod_for if prod_for != "N/A" else None, source_type=s_type
         )
         
-        # Rejection logic matching layout parameters
         rej_qty = 0.0
         if variety in ["HOSO", "HLSO"]:
             rej_qty = db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)).filter(
-                Soaking.company_id == company_id,
-                Soaking.production_at == loc,
-                Soaking.batch_number == batch,
-                func.trim(cast(Soaking.in_count, String)) == clean_count,
-                Soaking.variety_name == variety
+                Soaking.company_id == company_id, Soaking.production_at == loc, Soaking.batch_number == batch,
+                func.trim(cast(Soaking.in_count, String)) == clean_count, Soaking.variety_name == variety
             ).scalar() or 0
 
         if qty and qty > 0.01:
             rows_batch.append({
-                "batch": batch or "N/A", 
-                "variety": variety or "N/A", 
-                "count": count or "N/A",
-                "species": species_val or "N/A", 
-                "production_for": prod_for or "General Stock",
-                "location": loc, 
-                "rejection_qty": round(rej_qty, 2),
-                "available_qty": round(qty, 2),
+                "batch": batch or "N/A", "variety": variety or "N/A", "count": count or "N/A",
+                "species": species_val or "N/A", "production_for": prod_for or "General Stock",
+                "location": loc, "rejection_qty": round(rej_qty, 2), "available_qty": round(qty, 2),
             })
 
     rows_batch = sorted(rows_batch, key=lambda x: (str(x["production_for"]), str(x["location"]), str(x["batch"])))
 
+    # 🟢 🔴 FIXED CONTEXT PIPELINE: గ్లోబల్ ఫిల్టర్స్ వాల్యూస్ కూడా ఫ్రంటెండ్ కి పాస్ అవుతాయి బᱨదర్!
     return templates.TemplateResponse(
         request=request,
         name="processing/soaking.html",
         context={
             "varieties": variety_list, "species": species_list, "chemicals": chemical_list,
             "production_locations": prod_locs, "prod_for_list": prod_for_list, "today_data": today_data,
-            "rows_batch": rows_batch
+            "rows_batch": rows_batch,
+            "global_production_for": global_production_for or "",
+            "global_location": global_location or ""
         }
     )
 
-
 # =====================================================
-# API ENDPOINTS: DYNAMIC DATA FETCHING (SERVICE LINKED)
+# API ENDPOINTS: DYNAMIC DATA FETCHING
 # =====================================================
-
 @router.get("/soaking/get_count/{batch}")
 def get_count(batch: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
@@ -150,13 +166,11 @@ def get_count(batch: str, request: Request, db: Session = Depends(get_db)):
         if not cnt or str(cnt).upper() == "N/A": continue
         location = loc if loc else "Floor"
         
-        # 🟢 Service code execution ensures only counts with active stock display
         qty = get_floor_balance(db, company_id, location, batch, cnt, spc, var, source_type=s_type)
         if qty > 0.01:
             valid_counts.add(str(cnt).strip())
 
     return {"counts": sorted(list(valid_counts))}
-
 
 @router.get("/soaking/get_available_qty")
 def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, request: Request, db: Session = Depends(get_db)):
@@ -168,46 +182,41 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
     is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_id).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # Direct Central Service Fetch Mapping
-    qty = get_floor_balance(
-        db=db, 
-        company_id=company_id, 
-        location=location, 
-        batch=clean_batch, 
-        count=clean_count, 
-        species=species, 
-        variety=variety,
-        source_type=s_type
-    )
+    qty = get_floor_balance(db=db, company_id=company_id, location=location, batch=clean_batch, count=clean_count, species=species, variety=variety, source_type=s_type)
     return {"available_qty": round(qty, 2) if qty else 0}
-
 
 @router.get("/soaking/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
     
-    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for).all()
-    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for).all()
-    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for).all()
-    r4 = db.query(distinct(Reprocess.new_batch_id)).filter(Reprocess.company_id == company_id, Reprocess.production_for == prod_for).all()
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for)
+    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for)
+    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for)
+    r4 = db.query(distinct(Reprocess.new_batch_id)).filter(Reprocess.company_id == company_id, Reprocess.production_for == prod_for)
     
-    all_batches = set([b[0] for b in r1 if b[0]]) | set([b[0] for b in r2 if b[0]]) | set([b[0] for b in r3 if b[0]]) | set([b[0] for b in r4 if b[0]])
+    if user_allowed_locations:
+        r1 = r1.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
+        r2 = r2.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
+        r3 = r3.filter(func.upper(func.trim(Peeling.peeling_at)).in_(user_allowed_locations))
+        r4 = r4.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
+
+    all_batches = set([b[0] for b in r1.all() if b[0]]) | set([b[0] for b in r2.all() if b[0]]) | set([b[0] for b in r3.all() if b[0]]) | set([b[0] for b in r4.all() if b[0]])
     
     valid_batches = []
     for b_no in all_batches:
-        # 🟢 Validation loop checks that batch has active structural floor stock remaining
         total_bal = get_floor_balance(db, company_id, None, b_no, None, None, None)
         if total_bal > 0.01:
             valid_batches.append(b_no)
 
     return {"batches": sorted(valid_batches)}
 
-
 # =====================================================
 # SAVE / UPDATE / DELETE
 # =====================================================
-
 @router.post("/soaking")
 def save_soaking(
     request: Request, db: Session = Depends(get_db),
@@ -228,23 +237,14 @@ def save_soaking(
     is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_id).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # Validation check using correct parameters linked straight to the service code
     avail = get_floor_balance(
-        db=db, 
-        company_id=company_id, 
-        location=production_at, 
-        batch=clean_batch, 
-        count=clean_count, 
-        species=species_name, 
-        variety=variety_name,
-        production_for=production_for,
-        source_type=s_type
+        db=db, company_id=company_id, location=production_at, batch=clean_batch, count=clean_count, 
+        species=species_name, variety=variety_name, production_for=production_for, source_type=s_type
     )
 
     if in_qty > (avail + 0.05):
         return JSONResponse({"error": f"Insufficient balance at {production_at}. Available: {avail}, Needed: {in_qty}"}, status_code=400)
 
-    # 🟢 Cleaned Timezone Handling to completely eliminate NameErrors
     current_ist = ist_now()
     today_dt = current_ist.date()
 
@@ -283,7 +283,6 @@ def save_soaking(
     refresh_floor_balance(db, company_id)
     return RedirectResponse("/processing/soaking", status_code=303)
 
-
 @router.post("/soaking/update/{id}")
 def update_soaking(
     id: int, request: Request, db: Session = Depends(get_db),
@@ -316,7 +315,6 @@ def update_soaking(
         db.commit()
         refresh_floor_balance(db, company_id)
     return RedirectResponse("/processing/soaking", status_code=303)
-
 
 @router.post("/soaking/delete/{id}")
 def delete_soaking(id: int, request: Request, db: Session = Depends(get_db)):

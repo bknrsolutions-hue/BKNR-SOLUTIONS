@@ -22,8 +22,9 @@ from app.database.models.criteria import (
     production_for as ProductionForMaster,
     production_types, HOSO_HLSO_Yields, grade_to_hoso
 )
+from app.utils.global_filters import get_global_filters
 
-router = APIRouter(tags=["PRODUCTION"]) # Aligned prefix cleanly with processing apps
+router = APIRouter(tags=["PRODUCTION"]) 
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -32,19 +33,10 @@ templates = Jinja2Templates(directory="app/templates")
 # -----------------------------------------------------
 def get_today_range():
     now = ist_now()
-
-    start = now.replace(
-        hour=9,
-        minute=0,
-        second=0,
-        microsecond=0
-    )
-
+    start = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if now < start:
         start -= timedelta(days=1)
-
     end = start + timedelta(days=1) - timedelta(seconds=1)
-
     return start, end
 
 
@@ -52,7 +44,6 @@ def get_today_range():
 # HELPER: EXTRACT NUMERIC VALUE FROM STRING
 # -----------------------------------------------------
 def extract_number(value, default=0):
-    """Safely extract number from string like '10%' or 'NWNC'"""
     if not value:
         return default
     match = re.search(r'(\d+\.?\d*)', str(value))
@@ -63,7 +54,6 @@ def extract_number(value, default=0):
 # HELPER: BUILD STOCK KEY
 # -----------------------------------------------------
 def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, freezer):
-    """Consistent stock key generation"""
     return "|".join([
         str(prod_for or "").strip().upper(),
         str(species or "").strip().lower(),
@@ -78,8 +68,12 @@ def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, fre
 # -----------------------------------------------------
 # HELPER: GET COMMON TEMPLATE DATA
 # -----------------------------------------------------
-def get_common_data(db: Session, company_code: str):
-    """Fetch all dropdown data for template"""
+def get_common_data(db: Session, company_code: str, user_allowed_locations: list):
+    """Fetch dropdown master data aligned securely with user permissions"""
+    pl_q = db.query(production_at).filter(production_at.company_id == company_code)
+    if user_allowed_locations:
+        pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+        
     return {
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
         "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
@@ -88,8 +82,8 @@ def get_common_data(db: Session, company_code: str):
         "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
-        "prod_at_list": [p.production_at for p in db.query(production_at).filter(production_at.company_id == company_code).all()],
-        "prod_for_list": [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]],
+        "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
+        "prod_for_list": [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if pf[0]],
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }
 
@@ -105,11 +99,21 @@ def production_page(
     to_date: Optional[str] = None,
     edit_id: Optional[int] = None
 ):
+    # 🟢 FETCH UNIVERSAL GLOBAL FILTERS FROM RUNTIME CONTEXT
+    global_production_for, global_location = get_global_filters(request)
+
     company_code = request.session.get("company_code")
     email = request.session.get("email")
 
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=302)
+
+    # 🟢 FETCH USER PERMITTED LOCATIONS MULTI-PERMISSION CHECK
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     # ========== 1. LOAD MASTER DATA ==========
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
@@ -118,9 +122,17 @@ def production_page(
     v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
     grade_map_list = db.query(grade_to_hoso).filter(grade_to_hoso.company_id == company_code).all()
 
-    # ========== 2. BUILD STOCK POOL ==========
+    # ========== 2. BUILD STOCK POOL (User Allowed Locations & Global Lockdown) ==========
     stock_pool = {}
     for s in all_stock:
+        s_loc_clean = str(s.location or "").strip().upper()
+        if user_allowed_locations and s_loc_clean != "FLOOR" and s_loc_clean not in user_allowed_locations:
+            continue
+        if global_location and s_loc_clean != global_location.strip().upper():
+            continue
+        if global_production_for and str(s.production_for or "").strip().upper() != global_production_for.strip().upper():
+            continue
+
         key = build_stock_key(
             s.production_for, s.species, s.variety, 
             s.grade, s.packing_style, s.glaze, s.freezer
@@ -130,56 +142,43 @@ def production_page(
         stock_pool[key] = stock_pool.get(key, 0.0) + net_qty
 
     # ========== 3. PRODUCTION AGGREGATION SUBQUERY ==========
-    produced_sub = (
-        db.query(
-            Production.batch_number,
-            Production.brand,
-            Production.variety_name,
-            Production.grade,
-            Production.packing_style,
-            func.sum(Production.no_of_mc).label("total_produced")
-        )
-        .filter(Production.company_id == company_code)
-        .group_by(
-            Production.batch_number, 
-            Production.brand, 
-            Production.variety_name, 
-            Production.grade, 
-            Production.packing_style
-        )
-        .subquery()
-    )
-
-    # ========== 4. PENDING ORDERS QUERY ==========
-    q_req = (
-        db.query(
-            pending_orders,
-            func.coalesce(produced_sub.c.total_produced, 0).label("produced_mc_count")
-        )
-        .outerjoin(
-            produced_sub, 
-            and_(
-                pending_orders.po_number == produced_sub.c.batch_number,
-                pending_orders.brand == produced_sub.c.brand,
-                pending_orders.variety == produced_sub.c.variety_name,
-                pending_orders.grade == produced_sub.c.grade,
-                pending_orders.packing_style == produced_sub.c.packing_style
-            )
-        )
-        .filter(pending_orders.company_id == company_code)
-    )
+    prod_sub_q = db.query(
+        Production.batch_number, Production.brand, Production.variety_name,
+        Production.grade, Production.packing_style, func.sum(Production.no_of_mc).label("total_produced")
+    ).filter(Production.company_id == company_code)
     
-    # Date Filters
+    if global_location:
+        prod_sub_q = prod_sub_q.filter(func.trim(Production.production_at) == func.trim(global_location))
+    elif user_allowed_locations:
+        prod_sub_q = prod_sub_q.filter(func.upper(func.trim(Production.production_at)).in_(user_allowed_locations))
+        
+    produced_sub = prod_sub_q.group_by(
+        Production.batch_number, Production.brand, Production.variety_name, Production.grade, Production.packing_style
+    ).subquery()
+
+    # ========== 4. PENDING ORDERS QUERY (Global Sync) ==========
+    q_req = db.query(
+        pending_orders, func.coalesce(produced_sub.c.total_produced, 0).label("produced_mc_count")
+    ).outerjoin(
+        produced_sub, 
+        and_(
+            pending_orders.po_number == produced_sub.c.batch_number,
+            pending_orders.brand == produced_sub.c.brand,
+            pending_orders.variety == produced_sub.c.variety_name,
+            pending_orders.grade == produced_sub.c.grade,
+            pending_orders.packing_style == produced_sub.c.packing_style
+        )
+    ).filter(pending_orders.company_id == company_code)
+    
+    if global_production_for:
+        q_req = q_req.filter(func.trim(pending_orders.company_name) == func.trim(global_production_for))
+        
     if from_date:
-        try:
-            q_req = q_req.filter(pending_orders.date >= datetime.strptime(from_date, "%Y-%m-%d").date())
-        except ValueError:
-            pass
+        try: q_req = q_req.filter(pending_orders.date >= datetime.strptime(from_date, "%Y-%m-%d").date())
+        except ValueError: pass
     if to_date:
-        try:
-            q_req = q_req.filter(pending_orders.date <= datetime.strptime(to_date, "%Y-%m-%d").date())
-        except ValueError:
-            pass
+        try: q_req = q_req.filter(pending_orders.date <= datetime.strptime(to_date, "%Y-%m-%d").date())
+        except ValueError: pass
 
     requirements_data = q_req.order_by(pending_orders.sl_no.asc()).all()
 
@@ -191,7 +190,6 @@ def production_page(
         r = row.pending_orders
         r.actual_produced_mc = float(row.produced_mc_count or 0)
         
-        # Extract Values
         current_row_comp = str(r.company_name or "").strip().upper()
         p_spec = str(r.species or "").strip().lower()
         p_var = str(r.variety or "").strip().lower()
@@ -199,19 +197,15 @@ def production_page(
         p_pack = str(r.packing_style or "").strip().lower()
         p_frz = str(r.freezer or "N/A").strip().lower()
         
-        # Glaze Calculations
         p_c_gl_val = extract_number(r.count_glaze, 0)
         c_gl_factor = (100 - p_c_gl_val) / 100 if p_c_gl_val < 100 else 1.0
-        
         p_w_gl_val = extract_number(r.weight_glaze, 0)
         w_gl_factor = (100 - p_w_gl_val) / 100 if p_w_gl_val < 100 else 1.0
 
-        # Stock Key & Available Stock
         exact_key = build_stock_key(current_row_comp, p_spec, p_var, p_grad, p_pack, r.count_glaze, r.freezer)
         opening_bal = round(stock_pool.get(exact_key, 0.0), 2)
         r.available_stock = opening_bal
 
-        # MC Weight & Ordered Qty
         mc_wt = 1.0
         slab_wt = 0.0
         p_match = next((ps for ps in p_styles if str(ps.packing_style).strip().lower() == p_pack), None)
@@ -222,61 +216,43 @@ def production_page(
         else:
             r.ordered_qty = 0.0
 
-        # Stock Utilization
         r.existed_stock_util = min(opening_bal, r.ordered_qty) if opening_bal > 0 else 0.0
-        
         if exact_key not in usage_history:
             usage_history[exact_key] = []
         
         remaining_bal = round(opening_bal - r.ordered_qty, 2)
         usage_history[exact_key].append({
-            "po_no": r.po_number or "N/A", 
-            "available": opening_bal,
-            "utilized": round(r.existed_stock_util, 2), 
-            "balance": remaining_bal
+            "po_no": r.po_number or "N/A", "available": opening_bal,
+            "utilized": round(r.existed_stock_util, 2), "balance": remaining_bal
         })
         r.util_json = json.dumps(usage_history[exact_key])
         stock_pool[exact_key] = remaining_bal
 
-        # Net Count Calculation
-        try:
-            r.net_count_calc = round((float(r.no_of_pieces or 0) / 2.20462) / c_gl_factor, 2) if r.no_of_pieces else 0
-        except (ZeroDivisionError, TypeError):
-            r.net_count_calc = 0
+        try: r.net_count_calc = round((float(r.no_of_pieces or 0) / 2.20462) / c_gl_factor, 2) if r.no_of_pieces else 0
+        except (ZeroDivisionError, TypeError): r.net_count_calc = 0
 
-        # NW Grade Mapping
         r.nw_grade = "-"
         rel_grades = [gm for gm in grade_map_list if str(gm.species).strip().lower() == p_spec]
         if rel_grades and r.net_count_calc > 0:
             nearest_gm = min(rel_grades, key=lambda x: abs(float(x.hlso_count or 0) - r.net_count_calc))
             r.nw_grade = nearest_gm.nw_grade if nearest_gm.nw_grade else "-"
 
-        # Referral Stock Calculation
         r.ref_opt_stock = 0.0
         ref_details = []
         p_gl_full_text = str(r.count_glaze or "").strip().upper()
         is_order_nwnc = "NWNC" in p_gl_full_text or p_c_gl_val == 0
         
         for s in all_stock:
-            if str(s.production_for or "").strip().upper() != current_row_comp:
-                continue
-            
+            if str(s.production_for or "").strip().upper() != current_row_comp: continue
             s_gl_num = str(int(extract_number(s.glaze, 0)))
             match_ref = False
             
-            if (str(s.species).strip().lower() == p_spec and 
-                str(s.variety).strip().lower() == p_var and 
-                str(s.freezer or "N/A").strip().lower() == p_frz):
-                
+            if (str(s.species).strip().lower() == p_spec and str(s.variety).strip().lower() == p_var and str(s.freezer or "N/A").strip().lower() == p_frz):
                 if is_order_nwnc:
-                    if (str(s.grade).strip().lower() == p_grad and 
-                        s_gl_num == "0" and 
-                        str(s.packing_style).strip().lower() != p_pack):
+                    if (str(s.grade).strip().lower() == p_grad and s_gl_num == "0" and str(s.packing_style).strip().lower() != p_pack):
                         match_ref = True
                 else:
-                    if (r.nw_grade != "-" and 
-                        str(s.grade).strip().lower() == str(r.nw_grade).strip().lower() and 
-                        s_gl_num == "0"):
+                    if (r.nw_grade != "-" and str(s.grade).strip().lower() == str(r.nw_grade).strip().lower() and s_gl_num == "0"):
                         match_ref = True
             
             if match_ref:
@@ -284,28 +260,23 @@ def production_page(
                 if s_qty > 0:
                     r.ref_opt_stock += s_qty
                     ref_details.append({
-                        "po_no": f"LOC: {str(s.location or 'N/A').upper()}", 
-                        "available": round(s_qty, 2), 
-                        "utilized": f"AT: {str(s.production_at or 'N/A').upper()}", 
-                        "balance": round(s_qty, 2)
+                        "po_no": f"LOC: {str(s.location or 'N/A').upper()}", "available": round(s_qty, 2), 
+                        "utilized": f"AT: {str(s.production_at or 'N/A').upper()}", "balance": round(s_qty, 2)
                     })
 
         r.ref_opt_stock = round(r.ref_opt_stock, 2)
         r.ref_json = json.dumps(ref_details)
 
-        # Stock MC & Pending Calculations
         r.stock_mc = int(opening_bal / mc_wt) if mc_wt > 0 else 0
         r.pending_production = round(r.existed_stock_util - r.ordered_qty, 2)
         r.prod_pending_mc = int(float(r.no_of_mc or 0) - r.actual_produced_mc)
         
-        # Yield Calculations
         v_data = next((v for v in v_records if str(v.variety_name).strip().lower() == p_var), None)
         peeling_y = float(v_data.peeling_yield or 100) / 100 if v_data else 1.0
         soaking_y = float(v_data.soaking_yield or 100) / 100 if v_data else 1.0
         
         r.hl_count_calc = round(r.net_count_calc * peeling_y * soaking_y, 2) if r.net_count_calc > 0 else 0
         
-        # HOSO/HLSO Requirements
         r.hoso_count_calc = 0
         r.req_hlso_qty = 0
         r.req_hoso_qty = 0
@@ -327,55 +298,54 @@ def production_page(
         
         final_pending_list.append(r)
 
-    # ========== 6. SOAKING & REJECTION DATA ==========
-    rejection_data = db.query(Soaking).filter(
-        Soaking.company_id == company_code, 
-        Soaking.rejection_qty > 0, 
-        Soaking.status != 'Completed'
-    ).all()
+    # ========== 6. SOAKING & REJECTION DATA QUEUE (User Scope Filters Locked) ==========
+    soak_rej_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.rejection_qty > 0, Soaking.status != 'Completed')
+    soak_mon_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.status != 'Completed', Soaking.in_qty > 0)
     
-    soaking_monitor = db.query(Soaking).filter(
-        Soaking.company_id == company_code, 
-        Soaking.status != 'Completed', 
-        Soaking.in_qty > 0
-    ).order_by(Soaking.date.asc(), Soaking.sintex_number.asc()).all()
+    if global_production_for:
+        soak_rej_q = soak_rej_q.filter(func.trim(Soaking.production_for) == func.trim(global_production_for))
+        soak_mon_q = soak_mon_q.filter(func.trim(Soaking.production_for) == func.trim(global_production_for))
+    if global_location:
+        soak_rej_q = soak_rej_q.filter(func.trim(Soaking.production_at) == func.trim(global_location))
+        soak_mon_q = soak_mon_q.filter(func.trim(Soaking.production_at) == func.trim(global_location))
+    elif user_allowed_locations:
+        soak_rej_q = soak_rej_q.filter(func.upper(func.trim(Soaking.production_at)).in_(user_allowed_locations))
+        soak_mon_q = soak_mon_q.filter(func.upper(func.trim(Soaking.production_at)).in_(user_allowed_locations))
+
+    rejection_data = soak_rej_q.all()
+    soaking_monitor = soak_mon_q.order_by(Soaking.date.asc(), Soaking.sintex_number.asc()).all()
 
     # ========== 7. BATCH DATA FOR DROPDOWN ==========
     batches_with_company = [
         {"batch_number": g.batch_number, "production_for": g.production_for} 
-        for g in db.query(GateEntry).filter(GateEntry.company_id == company_code).order_by(GateEntry.id.desc()).all() 
-        if g.batch_number
+        for g in db.query(GateEntry).filter(GateEntry.company_id == company_code).order_by(GateEntry.id.desc()).all() if g.batch_number
     ]
 
-    # ========== 8. TODAY'S LOGS ==========
+    # ========== 8. TODAY'S TRANSACTION LOGS ==========
     start, end = get_today_range()
-    today_data = db.query(Production).filter(
-        Production.company_id == company_code, 
-        Production.date >= start.date(), 
-        Production.date <= end.date()
-    ).order_by(Production.id.desc()).all()
+    today_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= start.date(), Production.date <= end.date())
+    
+    if global_production_for:
+        today_q = today_q.filter(func.trim(Production.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(Production.production_at) == func.trim(global_location))
+    elif user_allowed_locations:
+        today_q = today_q.filter(func.upper(func.trim(Production.production_at)).in_(user_allowed_locations))
+        
+    today_data = today_q.order_by(Production.id.desc()).all()
 
-    # ========== 9. EDIT DATA (if editing) ==========
+    # ========== 9. EDIT DATA ==========
     edit_data = None
     if edit_id:
-        edit_data = db.query(Production).filter(
-            Production.id == edit_id, 
-            Production.company_id == company_code
-        ).first()
+        edit_data = db.query(Production).filter(Production.id == edit_id, Production.company_id == company_code).first()
 
-    # ========== 10. POP SESSION MESSAGE & MAP FOR SWEETALERT ==========
+    # ========== 10. POP SESSION MESSAGE ==========
     session_msg = request.session.pop("message", None)
-    success_msg = None
-    error_msg = None
-    
-    if session_msg:
-        if "✔" in session_msg or "Successfully" in session_msg or "ok" in session_msg:
-            success_msg = session_msg
-        else:
-            error_msg = session_msg
+    success_msg = session_msg if session_msg and ("✔" in session_msg or "Successfully" in session_msg or "ok" in session_msg) else None
+    error_msg = session_msg if session_msg and not success_msg else None
 
-    # ========== 11. BUILD RESPONSE (Fixed TemplateResponse) ==========
-    common_data = get_common_data(db, company_code)
+    # ========== 11. BUILD RESPONSE ==========
+    common_data = get_common_data(db, company_code, user_allowed_locations)
     
     return templates.TemplateResponse(
         request=request,
@@ -392,7 +362,9 @@ def production_page(
             "edit_data": edit_data,
             "message": session_msg,
             "success_msg": success_msg,
-            "error_msg": error_msg
+            "error_msg": error_msg,
+            "global_production_for": global_production_for or "",
+            "global_location": global_location or ""
         }
     )
 
@@ -410,25 +382,19 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
         if not company_code:
             return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
         
-        entry = db.query(Soaking).filter(
-            Soaking.id == id, 
-            Soaking.company_id == company_code
-        ).first()
-        
+        entry = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_code).first()
         if entry:
             entry.status = new_status
             db.commit()
             return JSONResponse({"status": "ok", "message": "Status updated"})
-        
         return JSONResponse({"status": "error", "message": "Entry not found"}, status_code=404)
-    
     except Exception as e:
         db.rollback()
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
 # -----------------------------------------------------
-# API: COMPLETE REJECTION & AUTO-ADD SOAKING OFFSET (WITH PRODUCTION_FOR)
+# API: COMPLETE REJECTION & AUTO-ADD SOAKING OFFSET
 # -----------------------------------------------------
 @router.post("/production/complete_rejection/{soaking_id}")
 def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(get_db)):
@@ -439,50 +405,24 @@ def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(
         if not company_code:
             return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
         
-        # 1. Soaking table lo unna original rejection row ni find cheyyi
-        old_entry = db.query(Soaking).filter(
-            Soaking.id == soaking_id, 
-            Soaking.company_id == company_code
-        ).first()
-
+        old_entry = db.query(Soaking).filter(Soaking.id == soaking_id, Soaking.company_id == company_code).first()
         if not old_entry:
             return JSONResponse({"status": "error", "message": "Entry not found"}, status_code=404)
 
-        # 2. Patha record status ni 'Completed' ga marchu
         old_entry.status = "Completed"
-
-        # 3. AUTOMATIC GA SOAKING LO KOTHA RECORD ADD CHEYYI
-        # rejection quantity ni positive chesi counter-entry vesthunnam
         offset_qty = abs(old_entry.rejection_qty)
-        
-        # 🟢 Microsecond Rollover Protection Engine Deployment
         current_ist = ist_now()
         
         new_soaking_record = Soaking(
-            date=current_ist.date(),
-            time=current_ist.time(),
-            batch_number=old_entry.batch_number,
-            production_at=old_entry.production_at,
-            production_for=getattr(old_entry, 'production_for', None), 
-            variety_name=old_entry.variety_name,
-            species=old_entry.species,
-            in_count=old_entry.in_count,
-            sintex_number=f"AUTO-CLR-{old_entry.sintex_number}", 
-            rejection_qty=-offset_qty, 
-            in_qty=0, 
-            status="Completed", 
-            company_id=company_code,
-            email=email
+            date=current_ist.date(), time=current_ist.time(), batch_number=old_entry.batch_number,
+            production_at=old_entry.production_at, production_for=getattr(old_entry, 'production_for', None), 
+            variety_name=old_entry.variety_name, species=old_entry.species, in_count=old_entry.in_count,
+            sintex_number=f"AUTO-CLR-{old_entry.sintex_number}", rejection_qty=-offset_qty, 
+            in_qty=0, status="Completed", company_id=company_code, email=email
         )
-
         db.add(new_soaking_record)
         db.commit()
-
-        return JSONResponse({
-            "status": "ok", 
-            "message": f"Successfully completed and offset entry added in Soaking."
-        })
-    
+        return JSONResponse({"status": "ok", "message": "Successfully completed and offset entry added."})
     except Exception as e:
         db.rollback()
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
@@ -493,21 +433,10 @@ def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(
 # -----------------------------------------------------
 @router.post("/production")
 def save_production(
-    request: Request,
-    batch_number: str = Form(...),
-    brand: str = Form(...),
-    variety_name: str = Form(...),
-    glaze: str = Form(""),
-    freezer: str = Form(""),
-    packing_style: str = Form(...),
-    grade: str = Form(""),
-    species: str = Form(...),
-    no_of_mc: int = Form(0),
-    loose: int = Form(0),
-    production_qty: float = Form(0.0),
-    production_type: str = Form(""),
-    production_at: str = Form(""),
-    production_for: str = Form(...),
+    request: Request, batch_number: str = Form(...), brand: str = Form(...), variety_name: str = Form(...),
+    glaze: str = Form(""), freezer: str = Form(""), packing_style: str = Form(...), grade: str = Form(""),
+    species: str = Form(...), no_of_mc: int = Form(0), loose: int = Form(0), production_qty: float = Form(0.0),
+    production_type: str = Form(""), production_at: str = Form(""), production_for: str = Form(...),
     db: Session = Depends(get_db)
 ):
     try:
@@ -517,47 +446,25 @@ def save_production(
         if not company_code or not email:
             return RedirectResponse("/auth/login", status_code=302)
 
-        # Production Qty After Glaze Adjustment
         final_production_qty = float(production_qty or 0)
         glaze_text = str(glaze or "").strip().upper()
 
         if "NWNC" not in glaze_text:
             glaze_percent = extract_number(glaze_text, 0)
             if glaze_percent > 0:
-                final_production_qty = round(
-                    final_production_qty * ((100 - glaze_percent) / 100),
-                    3
-                )
+                final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
 
-        # 🟢 Microsecond Rollover Protection Engine Deployment
         current_ist = ist_now()
-
         obj = Production(
-            batch_number=batch_number,
-            brand=brand,
-            variety_name=variety_name,
-            glaze=glaze,
-            freezer=freezer,
-            packing_style=packing_style,
-            grade=grade,
-            species=species,
-            no_of_mc=no_of_mc,
-            loose=loose,
-            production_qty=final_production_qty,
-            production_type=production_type,
-            production_at=production_at,
-            production_for=production_for,
-            company_id=company_code,
-            email=email,
-            date=current_ist.date(),
-            time=current_ist.time()
+            batch_number=batch_number, brand=brand, variety_name=variety_name, glaze=glaze, freezer=freezer,
+            packing_style=packing_style, grade=grade, species=species, no_of_mc=no_of_mc, loose=loose,
+            production_qty=final_production_qty, production_type=production_type, production_at=production_at,
+            production_for=production_for, company_id=company_code, email=email, date=current_ist.date(), time=current_ist.time()
         )
         db.add(obj)
         db.commit()
-
         request.session["message"] = "✔ Production Saved Successfully!"
         return RedirectResponse("/processing/production", status_code=303)
-    
     except Exception as e:
         db.rollback()
         request.session["message"] = f"❌ Error: {str(e)}"
@@ -565,14 +472,13 @@ def save_production(
 
 
 # -----------------------------------------------------
-# EDIT PRODUCTION (Redirect with edit_id)
+# EDIT PRODUCTION
 # -----------------------------------------------------
 @router.get("/production/edit/{id}", response_class=HTMLResponse)
 def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
-    
     return RedirectResponse(f"/processing/production?edit_id={id}", status_code=303)
 
 
@@ -581,47 +487,26 @@ def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
 # -----------------------------------------------------
 @router.post("/production/update/{id}")
 def update_production(
-    id: int,
-    request: Request,
-    batch_number: str = Form(...),
-    brand: str = Form(...),
-    variety_name: str = Form(...),
-    glaze: str = Form(""),
-    freezer: str = Form(""),
-    packing_style: str = Form(...),
-    grade: str = Form(""),
-    species: str = Form(...),
-    no_of_mc: int = Form(0),
-    loose: int = Form(0),
-    production_qty: float = Form(0.0),
-    production_type: str = Form(""),
-    production_at: str = Form(""),
-    production_for: str = Form(...),
+    id: int, request: Request, batch_number: str = Form(...), brand: str = Form(...), variety_name: str = Form(...),
+    glaze: str = Form(""), freezer: str = Form(""), packing_style: str = Form(...), grade: str = Form(""),
+    species: str = Form(...), no_of_mc: int = Form(0), loose: int = Form(0), production_qty: float = Form(0.0),
+    production_type: str = Form(""), production_at: str = Form(""), production_for: str = Form(...),
     db: Session = Depends(get_db)
 ):
     try:
         company_code = request.session.get("company_code")
-        
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
         
-        entry = db.query(Production).filter(
-            Production.id == id, 
-            Production.company_id == company_code
-        ).first()
-
+        entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
         if entry:
-            # Production Qty After Glaze Adjustment
             final_production_qty = float(production_qty or 0)
             glaze_text = str(glaze or "").strip().upper()
 
             if "NWNC" not in glaze_text:
                 glaze_percent = extract_number(glaze_text, 0)
                 if glaze_percent > 0:
-                    final_production_qty = round(
-                        final_production_qty * ((100 - glaze_percent) / 100),
-                        3
-                    )
+                    final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
 
             entry.batch_number = batch_number
             entry.brand = brand
@@ -641,9 +526,7 @@ def update_production(
             request.session["message"] = "✔ Production Updated Successfully!"
         else:
             request.session["message"] = "❌ Entry not found!"
-
         return RedirectResponse("/processing/production", status_code=303)
-    
     except Exception as e:
         db.rollback()
         request.session["message"] = f"❌ Error: {str(e)}"
@@ -657,24 +540,17 @@ def update_production(
 def delete_production(id: int, request: Request, db: Session = Depends(get_db)):
     try:
         company_code = request.session.get("company_code")
-        
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
         
-        entry = db.query(Production).filter(
-            Production.id == id, 
-            Production.company_id == company_code
-        ).first()
-        
+        entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
         if entry:
             db.delete(entry)
             db.commit()
             request.session["message"] = "🗑 Production Deleted Successfully!"
         else:
             request.session["message"] = "❌ Entry not found!"
-        
         return RedirectResponse("/processing/production", status_code=303)
-    
     except Exception as e:
         db.rollback()
         request.session["message"] = f"❌ Error: {str(e)}"

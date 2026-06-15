@@ -1,6 +1,6 @@
 /* ==========================================================
    BKNR ERP UNIVERSAL UI STANDARD (DARK MODE FIRST)
-   Version 3.0 - Enterprise Theme Enforcer (Full Version)
+   Version 3.7 - Enterprise Theme Enforcer (Full Version)
 ========================================================== */
 
 /* ==========================================================
@@ -189,10 +189,12 @@ button, .btn {
     resize: vertical;
 }
 
-/* Table Wrapper */
-.table-wrap{
+/* Table Wrapper [🟢 SYNTAX FIXED BY GEMINI] */
+.table-wrap {
     background: var(--card-bg) !important;
-} width: 100%; overflow: auto; }
+    width: 100%; 
+    overflow: auto; 
+}
 .section { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
@@ -293,18 +295,26 @@ button, .btn {
 
 button:hover, .btn:hover { background: var(--row-even) !important; }
 
-/* Action Buttons (Save/Primary/Add) */
-.btn-primary, .btn-save, .btn-add, .save {
-    background: var(--primary) !important;
+/* 🟢 🔴 UPGRADED: PREMIUM ROYAL BLUE ACTION BUTTONS WITH NEUMORPHIC GLOW ENGINE */
+.btn-primary, .btn-save, .btn-add, .save, .btn-toggle {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important;
     color: #ffffff !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #1d4ed8 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.btn-primary:hover, .btn-save:hover, .btn-add:hover, .save:hover {
-    background: var(--accent) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+.btn-primary:hover, .btn-save:hover, .btn-add:hover, .save:hover, .btn-toggle:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%) !important;
+    transform: translateY(-1.5px);
+    box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    letter-spacing: 0.8px;
+}
+
+.btn-primary:active, .btn-save:active, .btn-add:active, .save:active, .btn-toggle:active {
+    transform: translateY(0.5px);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
 }
 
 /* ==========================================================
@@ -397,6 +407,7 @@ input:disabled, select:disabled, textarea:disabled {
         border-color: #000000 !important;
     }
 }
+
 /* ==========================================================
    BKNR ERP - THE ULTIMATE THEME ENFORCER
 ========================================================== */
@@ -684,4 +695,71 @@ html[data-theme="dark"] .panel-title {
 html[data-theme="dark"] hr {
 
     border-color: var(--border) !important;
+}
+
+/* ==========================================================
+   10. 🟢 BKNR STRICT COLUMN DATA FORMATTING UTILITIES 🟢
+========================================================== */
+
+/* Phone Numbers Column - Center aligned, monospace digit tracker */
+.cell-phone {
+    text-align: center !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+}
+
+/* General Standard Text Columns - Left aligned, capitalized tokens */
+.cell-text {
+    text-align: left !important;
+    text-transform: capitalize;
+}
+
+/* Weights, Quantities, and Decimal Numeric Metrics - Right aligned, bold font bounds */
+.cell-number {
+    text-align: right !important;
+    font-weight: 700 !important;
+}
+
+/* Large Block Address Grid Cell Layout */
+.cell-address {
+    text-align: left !important;
+    white-space: normal !important;
+    min-width: 260px;
+    line-height: 1.4;
+}
+
+/* Government Authorized Tax PAN Cards Identity */
+.cell-pan {
+    text-align: center !important;
+    text-transform: uppercase !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+}
+
+/* Government Unique Identification Aadhaar Cards Matrix */
+.cell-aadhaar {
+    text-align: center !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px;
+    color: var(--accent) !important;
+}
+
+/* Bank Account Sequences Book-Ledger */
+.cell-account {
+    text-align: left !important;
+    font-family: monospace !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+/* Banking IFSC Routing Wire Systems Code */
+.cell-ifsc {
+    text-align: center !important;
+    text-transform: uppercase !important;
+    font-family: monospace !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
 }

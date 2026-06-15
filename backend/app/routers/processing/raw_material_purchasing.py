@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -18,6 +17,7 @@ from app.database.models.criteria import (
     HOSO_HLSO_Yields, packing_styles, peeling_at
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -32,18 +32,15 @@ def get_today_range():
         start -= timedelta(days=1)
     end = start + timedelta(days=1) - timedelta(seconds=1)
     return start, end
-    
-    
-    
-    
 
 # -----------------------------------------------------
-# HOSO SUMMARY CALCULATION
+# HOSO SUMMARY CALCULATION (🟢 🔴 FIXED: NOW WITH USER PERMISSIONS & GLOBAL FILTERS WORKING)
 # -----------------------------------------------------
-def get_hoso_summary_data(db: Session, company_code: str):
+def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
     start, _ = get_today_range()
     
-    purchased = db.query(
+    # Base Raw Material Purchased Query Formulation
+    purch_q = db.query(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.count,
         func.sum(RawMaterialPurchasing.received_qty).label("total_rec")
@@ -51,11 +48,27 @@ def get_hoso_summary_data(db: Session, company_code: str):
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.date >= start.date(),
         func.upper(RawMaterialPurchasing.variety_name) == 'HOSO'
-    ).group_by(RawMaterialPurchasing.species, RawMaterialPurchasing.count).all()
+    )
     
+    # Apply Global Filter layer on received today calculations
+    if global_p_for:
+        purch_q = purch_q.filter(func.trim(RawMaterialPurchasing.production_for) == func.trim(global_p_for))
+    if global_loc:
+        purch_q = purch_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_loc))
+    elif user_allowed_locations:
+        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+        if allowed_clean:
+            purch_q = purch_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(allowed_clean))
+            
+    purchased = purch_q.group_by(RawMaterialPurchasing.species, RawMaterialPurchasing.count).all()
     rec_map = {f"{str(p.species).strip().upper()}|{str(p.count).strip().upper()}": float(p.total_rec or 0) for p in purchased}
 
-    all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+    # Stock Entry Base formulation
+    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
+    if global_p_for:
+        stock_q = stock_q.filter(func.trim(stock_entry.production_for) == func.trim(global_p_for))
+        
+    all_stock = stock_q.all()
     stock_pool = {}
     for s in all_stock:
         s_gl = re.search(r'(\d+)', str(s.glaze or "0"))
@@ -64,7 +77,14 @@ def get_hoso_summary_data(db: Session, company_code: str):
         qty = float(s.quantity or 0)
         stock_pool[key] = stock_pool.get(key, 0.0) + (qty if str(s.cargo_movement_type).upper() == "IN" else -qty)
 
-    rows = db.query(pending_orders).filter(pending_orders.company_id == company_code).all()
+    # Pending Orders Base Query Layered dynamically with target filters
+    po_q = db.query(pending_orders).filter(pending_orders.company_id == company_code)
+    
+    # 🟢 🔴 REQUIREMENT TABLE SECURITY SYNC: Global company & Allowed allocations filter lock
+    if global_p_for:
+        po_q = po_q.filter(func.trim(pending_orders.company_name) == func.trim(global_p_for))
+    
+    rows = po_q.all()
     yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
     p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
@@ -134,12 +154,41 @@ def get_hoso_summary_data(db: Session, company_code: str):
     ], drill_down_dict
 
 # -----------------------------------------------------
-# REUSABLE PAGE RENDERER
+# REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
-    hoso_summary, drill_down = get_hoso_summary_data(db, company_code)
+    # Fetch universal filters layer first
+    global_production_for, global_location = get_global_filters(request)
     
-    gate_entries = db.query(GateEntry).filter(GateEntry.company_id == company_code).order_by(GateEntry.id.desc()).all()
+    # FETCH USER ALLOWED PERMISSIONS LIST
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = session_locations
+
+    # 🟢 🔴 REFACTOR: ఇప్పుడు సమ్మరీ క్యాలిక్యులేషన్ కూడా యూజర్ పర్మిషన్స్ మరియు గ్లోబల్ ఫిల్టర్స్ కి మ్యాచ్ అయి మారుతుంది!
+    hoso_summary, drill_down = get_hoso_summary_data(
+        db=db, 
+        company_code=company_code, 
+        user_allowed_locations=user_allowed_locations,
+        global_p_for=global_production_for,
+        global_loc=global_location
+    )
+    
+    # Gate Entry query strict filtering
+    gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code)
+    if user_allowed_locations:
+        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+        if allowed_clean:
+            gate_q = gate_q.filter(func.upper(func.trim(GateEntry.receiving_center)).in_(allowed_clean))
+            
+    if global_location:
+        gate_q = gate_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_location))
+    if global_production_for:
+        gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(global_production_for))
+        
+    gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
     prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
     
     prod_batch_map = {}
@@ -150,23 +199,47 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
             if g.batch_number not in prod_batch_map[g.production_for]:
                 prod_batch_map[g.production_for].append(g.batch_number)
 
-    # Master data for Searchable Columns [2026-01-24]
+    # Master data sets
     supplier_list = [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
     species_list = [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()]
     hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
-    peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
+    
+    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+    if user_allowed_locations:
+        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+        if allowed_clean:
+            peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+    if global_location:
+        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_location))
+        
+    peeling_locs = [p.peeling_at for p in peeling_q.order_by(peeling_at.peeling_at).all()]
 
     start, end = get_today_range()
-    today_data = db.query(RawMaterialPurchasing).filter(
+    today_q = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == company_code,
         and_(
             RawMaterialPurchasing.date >= start.date(), 
             RawMaterialPurchasing.date <= end.date()
         )
-    ).order_by(RawMaterialPurchasing.id.desc()).all()
+    )
+    
+    if global_production_for:
+        today_q = today_q.filter(func.trim(RawMaterialPurchasing.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_location))
+        
+    today_data = today_q.order_by(RawMaterialPurchasing.id.desc()).all()
 
-    # ✅ FIXED: TemplateResponse for new FastAPI versions
+    batch_supplier_map = {}
+    for g in gate_entries:
+        if g.batch_number:
+            batch_supplier_map[g.batch_number] = {
+                "supplier": g.supplier_name if g.supplier_name else "",
+                "prod_for": g.production_for if g.production_for else "",
+                "receiving_center": g.receiving_center if g.receiving_center else ""
+            }
+
     return templates.TemplateResponse(
         request=request,
         name="processing/raw_material_purchasing.html",
@@ -179,7 +252,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
             "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
             "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
             "prod_batch_map_json": json.dumps(prod_batch_map), 
-            "batch_supplier_map_json": json.dumps({g.batch_number: {"supplier": g.supplier_name, "prod_for": g.production_for} for g in gate_entries}),
+            "batch_supplier_map_json": json.dumps(batch_supplier_map), 
             "message": request.session.pop("message", None)
         }
     )
@@ -229,10 +302,7 @@ def save_rmp(
     )
     db.add(entry)
     db.commit()
-    refresh_floor_balance(
-        db,
-        comp_code
-        )
+    refresh_floor_balance(db, comp_code)
     request.session["message"] = "✔ Saved Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -262,11 +332,7 @@ def update_rmp(
     entry.material_boxes, entry.remarks = material_boxes, remarks
     
     db.commit()
-    
-    refresh_floor_balance(
-        db,
-        comp_code
-        )
+    refresh_floor_balance(db, comp_code)
     request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -277,9 +343,6 @@ def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
     if entry:
         db.delete(entry)
         db.commit()
-        refresh_floor_balance(
-            db,
-            comp_code
-        )
+        refresh_floor_balance(db, comp_code)
     request.session["message"] = "🗑 Deleted Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)

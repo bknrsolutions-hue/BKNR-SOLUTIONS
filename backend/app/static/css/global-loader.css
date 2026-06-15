@@ -1,16 +1,17 @@
 /* ==========================================================
    BKNR ERP GLOBAL LOADER (LIGHT + DARK MODE)
+   Version 3.5 - Centralized Performance Sync
 ========================================================== */
 
 :root {
-    --loader-bg: rgba(255, 255, 255, 0.98);
+    --loader-bg: rgba(244, 246, 249, 0.98);
     --loader-card: #ffffff;
-    --loader-border: #e2e8f0;
+    --loader-border: #d6dde7;
 
     --loader-spin-base: #e2e8f0;
     --loader-spin-top: #2563eb;
 
-    --loader-text: #0f172a;
+    --loader-text: #1f2937;
     --loader-subtext: #64748b;
 }
 
@@ -20,8 +21,8 @@ html[data-theme="dark"],
 body[data-theme="dark"], 
 [data-theme="dark"],
 .dark-mode {
-    --loader-bg: linear-gradient(135deg, #020617 0%, #0f172a 100%);
-    --loader-card: #0f172a;
+    --loader-bg: rgba(15, 23, 42, 0.98);
+    --loader-card: #1e293b;
     --loader-border: #334155;
 
     --loader-spin-base: #334155;
@@ -32,7 +33,7 @@ body[data-theme="dark"],
 }
 
 /* ==========================================================
-   LOADER OVERLAY
+   LOADER OVERLAY Workspace
 ========================================================== */
 #globalLoader {
     position: fixed;
@@ -48,35 +49,35 @@ body[data-theme="dark"],
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 
-    transition: all .25s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* ==========================================================
-   LOADER CARD
+   LOADER CONTAINER CARD
 ========================================================== */
 .loader-container {
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    min-width: 220px;
+    min-width: 240px;
     padding: 30px;
 
-    background: var(--loader-card);
-    border: 1px solid var(--loader-border);
+    background: var(--loader-card) !important;
+    border: 1px solid var(--loader-border) !important;
     border-radius: 16px;
+    font-family: 'Inter', sans-serif;
 
-    box-shadow:
-        0 10px 25px rgba(0,0,0,.08),
-        0 4px 10px rgba(0,0,0,.04);
+    box-shadow: 0 10px 25px rgba(0,0,0,.1), 0 4px 10px rgba(0,0,0,.05);
+    transition: transform 0.3s ease;
 }
 
 /* ==========================================================
-   SPINNER
+   SPINNER WHEEL ENGINE
 ========================================================== */
 .loader-spinner {
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
 
     border: 5px solid var(--loader-spin-base);
     border-top: 5px solid var(--loader-spin-top);
@@ -92,28 +93,33 @@ body[data-theme="dark"],
 }
 
 /* ==========================================================
-   TEXT COMPONENTS
+   TEXT COMPONENTS TYPOGRAPHY
 ========================================================== */
 .loader-text {
     margin-top: 18px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
-    letter-spacing: .4px;
+    letter-spacing: .5px;
     color: var(--loader-text);
+    text-transform: uppercase;
 }
 
 .loader-subtext {
     margin-top: 6px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--loader-subtext);
+    letter-spacing: 0.3px;
 }
 
 /* ==========================================================
-   HIDE ANIMATION
+   HIDE ANIMATION PIPELINE WITH SCALE EFFECT
 ========================================================== */
 #globalLoader.hide {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+}
+#globalLoader.hide .loader-container {
+    transform: scale(0.95);
 }

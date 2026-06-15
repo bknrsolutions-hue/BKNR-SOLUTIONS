@@ -61,7 +61,7 @@ def get_available_qty(
 
 
 # =====================================================
-# API: GET VALID BATCHES - UPDATED FOR DUAL FILTER MODE
+# API: GET VALID BATCHES - 🔴 FIXED SYNTAX ERROR HERE
 # =====================================================
 @router.get("/get_valid_batches/{production_for}/{location}")
 def get_valid_batches(production_for: str, location: str, request: Request, db: Session = Depends(get_db)):
@@ -69,22 +69,33 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
     if not company_code:
         return {"batches": []}
 
-    # 🟢 GLOBAL OVERRIDE LOGIC: పేరెంట్ విండో ఫిల్టర్స్ మారితే ఆటోమేటిక్‌గా ఇక్కడ కూడా వాల్యూస్ బైండ్ అవుతాయి
     global_p_for, global_loc = get_global_filters(request)
     if global_p_for: production_for = global_p_for
     if global_loc: location = global_loc
 
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [loc.strip().upper() for loc in session_locations if loc.strip()]
+
+    if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
+        return {"batches": []}
+
     rmp_q = db.query(RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, RawMaterialPurchasing.species)\
-        .filter(RawMaterialPurchasing.company_id == company_code, func.trim(RawMaterialPurchasing.production_for) == func.trim(production_for),
-                func.trim(RawMaterialPurchasing.peeling_at) == func.trim(location), RawMaterialPurchasing.variety_name == "HOSO").all()
+        .filter(RawMaterialPurchasing.company_id == company_code, 
+                func.trim(RawMaterialPurchasing.production_for) == func.trim(production_for),
+                func.trim(RawMaterialPurchasing.peeling_at) == func.trim(location), 
+                RawMaterialPurchasing.variety_name == "HOSO").all()
     
     grad_q = db.query(Grading.batch_number, Grading.graded_count, Grading.species)\
-        .filter(Grading.company_id == company_code, func.trim(Grading.production_for) == func.trim(production_for),
-                func.trim(Grading.peeling_at) == func.trim(location), Grading.variety_name == "HOSO").all()
+        .filter(Grading.company_id == company_code, 
+                func.trim(Grading.production_for) == func.trim(production_for),
+                func.trim(Grading.peeling_at) == func.trim(location), 
+                Grading.variety_name == "HOSO").all()
     
     repro_q = db.query(Reprocess.new_batch_id, Reprocess.grade, Reprocess.species)\
-        .filter(Reprocess.company_id == company_code, func.trim(Reprocess.production_for) == func.trim(production_for),
-                func.trim(Reprocess.production_at) == func.trim(location), Reprocess.variety == "HOSO").all()
+        .filter(Reprocess.company_id == company_code, 
+                func.trim(Reprocess.production_for) == func.trim(production_for),
+                func.trim(Reprocess.production_at) == func.trim(location), 
+                Reprocess.variety == "HOSO").all()
 
     valid_batches = set()
     for b_num, count, spec in rmp_q:
@@ -96,6 +107,7 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
             valid_batches.add(b_num)
 
     for b_num, count, spec in repro_q:
+        # 🟢 FIXED: "Image background" టెక్స్ట్ ఇక్కడి నుండి పూర్తిగా తీసేశాను
         if b_num and get_floor_balance(db, company_code, location, b_num, count, spec, "HOSO", source_type="REPROCESS") > 0.01:
             valid_batches.add(b_num)
 
@@ -103,7 +115,7 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
 
 
 # =====================================================
-# API: GET HOSO COUNTS - UPDATED FOR DUAL FILTER MODE
+# API: GET HOSO COUNTS
 # =====================================================
 @router.get("/get_hoso/{production_for}/{location}/{batch}")
 def get_hoso_counts(production_for: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
@@ -111,19 +123,36 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
     if not company_code:
         return {"counts": []}
 
-    # 🟢 GLOBAL OVERRIDE LOGIC: ఇక్కడ కూడా గ్లోబల్ హెడర్ కండిషన్స్ లాక్ చేస్తున్నాం
     global_p_for, global_loc = get_global_filters(request)
     if global_p_for: production_for = global_p_for
     if global_loc: location = global_loc
 
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [loc.strip().upper() for loc in session_locations if loc.strip()]
+
+    if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
+        return {"counts": []}
+
     rmp_c = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species).filter(
-        RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.variety_name == "HOSO").all()
+        RawMaterialPurchasing.batch_number == batch, 
+        RawMaterialPurchasing.company_id == company_code, 
+        func.trim(RawMaterialPurchasing.production_for) == func.trim(production_for),
+        func.trim(RawMaterialPurchasing.peeling_at) == func.trim(location),
+        RawMaterialPurchasing.variety_name == "HOSO").all()
     
     grad_c = db.query(Grading.graded_count, Grading.species).filter(
-        Grading.batch_number == batch, Grading.company_id == company_code, Grading.variety_name == "HOSO").all()
+        Grading.batch_number == batch, 
+        Grading.company_id == company_code, 
+        func.trim(Grading.production_for) == func.trim(production_for),
+        func.trim(Grading.peeling_at) == func.trim(location),
+        Grading.variety_name == "HOSO").all()
     
     repro_c = db.query(Reprocess.grade, Reprocess.species).filter(
-        Reprocess.new_batch_id == batch, Reprocess.company_id == company_code, Reprocess.variety == "HOSO").all()
+        Reprocess.new_batch_id == batch, 
+        Reprocess.company_id == company_code, 
+        func.trim(Reprocess.production_for) == func.trim(production_for),
+        func.trim(Reprocess.production_at) == func.trim(location),
+        Reprocess.variety == "HOSO").all()
 
     stock_counts = set()
     for c, s in rmp_c:
@@ -151,7 +180,7 @@ def get_contractor_rate(contractor: str, request: Request, db: Session = Depends
 
 
 # =====================================================
-# MAIN VIEW: DE-HEADING PAGE (WITH INTERCEPT CONTROL)
+# MAIN VIEW: DE-HEADING PAGE
 # =====================================================
 @router.get("/de_heading", response_class=HTMLResponse)
 def show_de_heading(request: Request, db: Session = Depends(get_db)):
@@ -161,19 +190,32 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else session_locations
+    allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+
     contractor_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_code).order_by(contractors.contractor_name).all()]
     species_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_code).order_by(SpeciesMaster.species_name).all()]
-    peeling_locs = [p.peeling_at for p in db.query(peeling_at).filter(peeling_at.company_id == company_code).all()]
-    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
 
-    # Today's local data tracking filtered strictly via Global Selection Context Matrix
-    today_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == ist_now().date())
-    
     if global_production_for:
-        today_q = today_q.filter(func.trim(DeHeading.production_for) == func.trim(global_production_for))
+        prod_for_list = [global_production_for]
+    else:
+        prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if p[0]]
+
+    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+    if global_location:
+        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_location))
+    elif allowed_clean:
+        peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+    peeling_locs = [p.peeling_at for p in peeling_q.all()]
+
+    today_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == ist_now().date())
     if global_location:
         today_q = today_q.filter(func.trim(DeHeading.peeling_at) == func.trim(global_location))
-        
+    elif allowed_clean:
+        today_q = today_q.filter(func.upper(func.trim(DeHeading.peeling_at)).in_(allowed_clean))
+    if global_production_for:
+        today_q = today_q.filter(func.trim(DeHeading.production_for) == func.trim(global_production_for))
     today_data = today_q.order_by(DeHeading.id.desc()).all()
 
     combos = set()
@@ -190,8 +232,9 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     for b_num, c_val, s_val, p_for, loc, s_type in combos:
         if not b_num or not loc: continue
         
-        if global_production_for and str(p_for).strip() != str(global_production_for).strip(): continue
         if global_location and str(loc).strip() != str(global_location).strip(): continue
+        if not global_location and allowed_clean and str(loc).strip().upper() not in allowed_clean: continue
+        if global_production_for and str(p_for).strip() != str(global_production_for).strip(): continue
         
         avail = get_floor_balance(db, company_code, loc, b_num, c_val, s_val, "HOSO", source_type=s_type)
         if avail > 0.01:
@@ -218,7 +261,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# ACTION: SAVE DE-HEADING (IST Calibrated & Sync Enabled)
+# ACTION: SAVE DE-HEADING
 # =====================================================
 @router.post("/de_heading")
 def save_de_heading(request: Request, db: Session = Depends(get_db), 
@@ -258,16 +301,14 @@ def save_de_heading(request: Request, db: Session = Depends(get_db),
         email=email, company_id=company_code
     )
     db.add(new_entry)
-    
     add_deheading_to_grading_pool(db, new_entry)
-    
     db.commit()
     refresh_floor_balance(db, company_code)
     return RedirectResponse("/processing/de_heading", status_code=303)
 
 
 # =====================================================
-# ACTION: DELETE (Sync and Pipeline Rollback Enabled)
+# ACTION: DELETE
 # =====================================================
 @router.post("/de_heading/delete/{id}")
 def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
@@ -279,7 +320,6 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
         return JSONResponse({"error": "Record not found"}, status_code=404)
         
     remove_deheading_from_grading_pool(db, row)
-    
     db.delete(row)
     db.commit()
     refresh_floor_balance(db, company_code)

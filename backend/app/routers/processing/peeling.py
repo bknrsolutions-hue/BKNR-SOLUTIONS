@@ -9,7 +9,6 @@ from app.utils.timezone import ist_now
 from sqlalchemy import func, distinct
 from app.services.floor_balance_sync import refresh_floor_balance
 
-
 from app.database import get_db
 from app.database.models.processing import Grading, Peeling, RawMaterialPurchasing
 from app.database.models.reprocess import Reprocess
@@ -25,15 +24,16 @@ from app.database.models.criteria import (
 from app.database.models.inventory_management import pending_orders, stock_entry
 # Centralized calculation service
 from app.services.floor_balance import get_floor_balance 
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["PEELING"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-# 🟢 HELPER: DYNAMIC INPUT HLSO RESOLVER
-# ఫామ్‌లో ఏ వెరైటీ ఉన్నా సరే, స్టాక్ చెకింగ్ కోసం ఒరిజినల్ HLSO / HLSO G2 పేరును వెతికి పట్టుకుంటుంది
+# =====================================================
+# HELPER: DYNAMIC INPUT HLSO RESOLVER
+# =====================================================
 def resolve_input_hlso_variety(db: Session, company_code: str, batch: str, count: str, species: str) -> str:
-    # 1. RMP లో చెక్ చెయ్
     r = db.query(RawMaterialPurchasing.variety_name).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.batch_number == batch,
@@ -43,7 +43,6 @@ def resolve_input_hlso_variety(db: Session, company_code: str, batch: str, count
     ).first()
     if r: return r[0]
     
-    # 2. Grading లో చెక్ చెయ్
     g = db.query(Grading.variety_name).filter(
         Grading.company_id == company_code,
         Grading.batch_number == batch,
@@ -53,7 +52,6 @@ def resolve_input_hlso_variety(db: Session, company_code: str, batch: str, count
     ).first()
     if g: return g[0]
     
-    # 3. Reprocess లో చెక్ చెయ్
     rp = db.query(Reprocess.variety).filter(
         Reprocess.company_id == company_code,
         Reprocess.new_batch_id == batch,
@@ -63,24 +61,33 @@ def resolve_input_hlso_variety(db: Session, company_code: str, batch: str, count
     ).first()
     if rp: return rp[0]
     
-    return "HLSO" # సేఫ్‌గా డీఫాల్ట్ ఫాల్‌బ్యాక్
+    return "HLSO"
 
 
 # =====================================================
-# DASHBOARD PAGE - COMPANY FILTERING WITH IST SYNC
+# DASHBOARD PAGE - USER PERMISSIONS & GLOBAL FILTER LAYERS SYNC
 # =====================================================
 @router.get("/peeling", response_class=HTMLResponse)
 def show_peeling(request: Request, db: Session = Depends(get_db)):
+    global_production_for, global_location = get_global_filters(request)
+
     email = request.session.get("email")
     company_id = request.session.get("company_code")
 
     if not email or not company_id:
         return RedirectResponse("/auth/login", status_code=303)
     
-    # 1. FLOOR BALANCE CALCULATION (INCLUDING REPROCESS)
+    # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION (Multi-permission array support)
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    
+    # 1. FLOOR BALANCE CALCULATION MATRIX
     combos = set()
     
-    # RMP records
+    # RMP records filtering
     rmp_q = db.query(
         RawMaterialPurchasing.batch_number, RawMaterialPurchasing.count, 
         RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, 
@@ -89,7 +96,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     for r in rmp_q: 
         if r.batch_number: combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
 
-    # Grading (In) records - Excluding HOSO
+    # Grading records
     grading_data = db.query(
         Grading.batch_number, Grading.graded_count, Grading.species, 
         Grading.variety_name, Grading.production_for, Grading.peeling_at
@@ -97,7 +104,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     for g in grading_data:
         if g.batch_number: combos.add((g.batch_number, g.graded_count, g.species, g.variety_name, g.production_for, g.peeling_at or "Floor", "RMP"))
 
-    # Peeling (Out) records
+    # Peeling records
     peeling_data = db.query(
         Peeling.batch_number, Peeling.hlso_count, Peeling.species, 
         Peeling.variety_name, Peeling.production_for, Peeling.peeling_at
@@ -116,12 +123,18 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     hlso_floor_balance = []
     for batch, count, spc, variety, prod_for, location, s_type in combos:
         loc = location if location else "Floor"
+        loc_clean = loc.strip().upper()
+        
+        # 🟢 🔴 USER PERMISSION & GLOBAL LOCATION SECURE LAYER
+        if user_allowed_locations and loc_clean != "FLOOR" and loc_clean not in user_allowed_locations:
+            continue
+        if global_location and loc_clean != global_location.strip().upper():
+            continue
+        if global_production_for and prod_for and str(prod_for).strip().upper() != global_production_for.strip().upper():
+            continue
         
         qty = get_floor_balance(
-            db=db, 
-            company_id=company_id, 
-            location=loc, 
-            batch=batch, 
+            db=db, company_id=company_id, location=loc, batch=batch, 
             count=count if count != "N/A" else None, 
             species=spc if spc != "N/A" else None, 
             variety=variety if variety != "N/A" else None,
@@ -131,19 +144,19 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         
         if qty and qty > 0.01:
             hlso_floor_balance.append({
-                "batch": batch or "N/A", 
-                "variety": variety or "N/A", 
-                "count": count or "N/A",
-                "species": spc or "N/A", 
-                "production_for": prod_for or "General Stock", 
-                "location": loc,
-                "available_qty": round(qty, 2)
+                "batch": batch or "N/A", "variety": variety or "N/A", "count": count or "N/A",
+                "species": spc or "N/A", "production_for": prod_for or "General Stock", 
+                "location": loc, "available_qty": round(qty, 2)
             })
     
     hlso_floor_balance = sorted(hlso_floor_balance, key=lambda x: (str(x["production_for"]), str(x["location"]), str(x["batch"])))
 
-    # 2. REQUIRED HLSO (DRILL DOWN LOGIC)
-    p_orders = db.query(pending_orders).filter(pending_orders.company_id == company_id).all()
+    # 2. REQUIRED HLSO REQUIREMENTS SYNC LAYER
+    po_q = db.query(pending_orders).filter(pending_orders.company_id == company_id)
+    if global_production_for:
+        po_q = po_q.filter(func.trim(pending_orders.company_name) == func.trim(global_production_for))
+        
+    p_orders = po_q.all()
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_id).all()
     v_records = db.query(varieties).filter(varieties.company_id == company_id).all()
     p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_id).all()
@@ -202,14 +215,35 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 hlso_summary[summary_key]["total_kg"] += req_hlso_qty
                 drill_down_data["hlso"][summary_key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hlso_qty})
 
-    # 3. MASTER LISTS
+    # 3. MASTER DROPDOWN LISTS ENFORCEMENT
     variety_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
     contractor_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
     species_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
-    peeling_at_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).order_by(peeling_at.peeling_at).all() if pa[0]]
-    prod_for_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
+    
+    # Peeling locations drop list protected with user permissions constraints
+    pa_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id)
+    if user_allowed_locations:
+        pa_q = pa_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+    if global_location:
+        pa_q = pa_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_location))
+    peeling_at_list = [pa[0] for pa in pa_q.order_by(peeling_at.peeling_at).all() if pa[0]]
 
-    today_data = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date()).order_by(Peeling.id.desc()).all()
+    # Production For drop master list
+    pf_q = db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id)
+    if global_production_for:
+        pf_q = pf_q.filter(func.trim(ProductionForMaster.production_for) == func.trim(global_production_for))
+    prod_for_list = [pf[0] for pf in pf_q.order_by(ProductionForMaster.production_for).all() if pf[0]]
+
+    # Today's Transaction Logs Query Filtration
+    today_q = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
+    if global_production_for:
+        today_q = today_q.filter(func.trim(Peeling.production_for) == func.trim(global_production_for))
+    if global_location:
+        today_q = today_q.filter(func.trim(Peeling.peeling_at) == func.trim(global_location))
+    elif user_allowed_locations:
+        today_q = today_q.filter(func.upper(func.trim(Peeling.peeling_at)).in_(user_allowed_locations))
+        
+    today_data = today_q.order_by(Peeling.id.desc()).all()
     success_msg = request.session.pop("success_msg", None)
 
     return templates.TemplateResponse(
@@ -227,20 +261,29 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# SEARCHABLE DROPDOWN HELPERS
+# SEARCHABLE DROPDOWN HELPERS (WITH PERMISSION PROTECTION LAYER)
 # =====================================================
-
 @router.get("/peeling/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
     
-    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for, RawMaterialPurchasing.variety_name.ilike("%HLSO%")).all()
-    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for, Grading.variety_name.ilike("%HLSO%")).all()
-    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for, Peeling.variety_name.ilike("%HLSO%")).all()
-    r4 = db.query(distinct(Reprocess.new_batch_id)).filter(Reprocess.company_id == company_id, Reprocess.production_for == prod_for, Reprocess.variety.ilike("%HLSO%")).all()
+    # Fetch permissions list
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    r1 = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.production_for == prod_for, RawMaterialPurchasing.variety_name.ilike("%HLSO%"))
+    r2 = db.query(distinct(Grading.batch_number)).filter(Grading.company_id == company_id, Grading.production_for == prod_for, Grading.variety_name.ilike("%HLSO%"))
+    r3 = db.query(distinct(Peeling.batch_number)).filter(Peeling.company_id == company_id, Peeling.production_for == prod_for, Peeling.variety_name.ilike("%HLSO%"))
+    r4 = db.query(distinct(Reprocess.new_batch_id)).filter(Reprocess.company_id == company_id, Reprocess.production_for == prod_for, Reprocess.variety.ilike("%HLSO%"))
     
-    all_batches = set([b[0] for b in r1 if b[0]]) | set([b[0] for b in r2 if b[0]]) | set([b[0] for b in r3 if b[0]]) | set([b[0] for b in r4 if b[0]])
+    if user_allowed_locations:
+        r1 = r1.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
+        r2 = r2.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
+        r3 = r3.filter(func.upper(func.trim(Peeling.peeling_at)).in_(user_allowed_locations))
+        r4 = r4.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
+
+    all_batches = set([b[0] for b in r1.all() if b[0]]) | set([b[0] for b in r2.all() if b[0]]) | set([b[0] for b in r3.all() if b[0]]) | set([b[0] for b in r4.all() if b[0]])
     
     valid_batches = []
     for b_no in all_batches:
@@ -249,25 +292,15 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
             valid_batches.append(b_no)
     return {"batches": sorted(valid_batches)}
 
+
 @router.get("/peeling/get_hlso/{batch}")
 def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     
-    c1 = db.query(Grading.graded_count, Grading.species, Grading.variety_name, Grading.peeling_at).filter(
-        Grading.company_id == company_id, Grading.batch_number == batch, Grading.variety_name.ilike("%HLSO%")
-    ).all()
-    
-    c2 = db.query(Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.peeling_at).filter(
-        Peeling.company_id == company_id, Peeling.batch_number == batch, Peeling.variety_name.ilike("%HLSO%")
-    ).all()
-    
-    c3 = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.peeling_at).filter(
-        RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.variety_name.ilike("%HLSO%")
-    ).all()
-    
-    c4 = db.query(Reprocess.grade, Reprocess.species, Reprocess.variety, Reprocess.production_at).filter(
-        Reprocess.company_id == company_id, Reprocess.new_batch_id == batch, Reprocess.variety.ilike("%HLSO%")
-    ).all()
+    c1 = db.query(Grading.graded_count, Grading.species, Grading.variety_name, Grading.peeling_at).filter(Grading.company_id == company_id, Grading.batch_number == batch, Grading.variety_name.ilike("%HLSO%")).all()
+    c2 = db.query(Peeling.hlso_count, Peeling.species, Peeling.variety_name, Peeling.peeling_at).filter(Peeling.company_id == company_id, Peeling.batch_number == batch, Peeling.variety_name.ilike("%HLSO%")).all()
+    c3 = db.query(RawMaterialPurchasing.count, RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, RawMaterialPurchasing.peeling_at).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.variety_name.ilike("%HLSO%")).all()
+    c4 = db.query(Reprocess.grade, Reprocess.species, Reprocess.variety, Reprocess.production_at).filter(Reprocess.company_id == company_id, Reprocess.new_batch_id == batch, Reprocess.variety.ilike("%HLSO%")).all()
     
     combos = set()
     for row in c1: combos.add((row[0], row[1], row[2], row[3]))
@@ -296,19 +329,15 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
         "variety_map": variety_map
     }
 
+
 # =====================================================
-# API: GET AVAILABLE QTY (🟢 PROTECTED WITH DYNAMIC RESOLVER)
+# API: GET AVAILABLE QTY
 # =====================================================
 @router.get("/peeling/get_available_qty")
 def get_available_qty(
-    location: str = Query(...), 
-    batch: str = Query(...), 
-    count: str = Query(...), 
-    species_name: str = Query(...), 
-    variety_name: str = Query(...),
-    production_for: str = Query(...), 
-    request: Request = None, 
-    db: Session = Depends(get_db)
+    location: str = Query(...), batch: str = Query(...), count: str = Query(...), 
+    species_name: str = Query(...), variety_name: str = Query(...),
+    production_for: str = Query(...), request: Request = None, db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
     if not company_code:
@@ -320,50 +349,35 @@ def get_available_qty(
     is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_code).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # 🛠️ FIX: ఆటోమేటిక్‌గా ఫ్లోర్ లోని ఒరిజినల్ ఇన్పుట్ HLSO వెరైటీని రిజాల్వ్ చేస్తుంది
     search_variety = resolve_input_hlso_variety(db, company_code, clean_batch, clean_count, species_name)
 
     qty = get_floor_balance(
-        db=db, 
-        company_id=company_code, 
-        location=location, 
-        batch=clean_batch, 
-        count=clean_count, 
-        species=species_name, 
-        variety=search_variety, # 🟢 Passed true input variety name
-        production_for=production_for,
-        source_type=s_type
+        db=db, company_id=company_code, location=location, batch=clean_batch, 
+        count=clean_count, species=species_name, variety=search_variety, 
+        production_for=production_for, source_type=s_type
     )
     return {"available_qty": round(qty, 2) if qty else 0}
 
+
 @router.get("/peeling/get_rate")
-def get_rate(
-    request: Request,
-    contractor: str = Query(...), 
-    variety: str = Query(...), 
-    db: Session = Depends(get_db)
-):
+def get_rate(request: Request, contractor: str = Query(...), variety: str = Query(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     row = db.query(peeling_rates.rate).filter(
-        peeling_rates.company_id == company_id, 
-        peeling_rates.contractor_name == contractor, 
-        peeling_rates.variety_name == variety
+        peeling_rates.company_id == company_id, peeling_rates.contractor_name == contractor, peeling_rates.variety_name == variety
     ).order_by(peeling_rates.effective_from.desc()).first()
     return {"rate": float(row[0]) if row else 0}
 
 
 # =====================================================
-# ACTION: SAVE PEELING (🟢 ALWAYS CHECKS TRU HLSO QTY)
+# ACTION: SAVE PEELING 
 # =====================================================
 @router.post("/peeling")
-def save_peeling(request: Request, db: Session = Depends(get_db), 
-                 production_for: str = Form(...), location: str = Form(...), 
-                 batch_number: str = Form(...), in_count: str = Form(...), 
-                 species: str = Form(...), variety: str = Form(...),
-                 hlso_qty: float = Form(...), peeled_qty: float = Form(...), 
-                 yield_percent: str = Form(...), contractor_name: str = Form(...), 
-                 rate: float = Form(...), amount: float = Form(...)):
-    
+def save_peeling(
+    request: Request, db: Session = Depends(get_db), production_for: str = Form(...), location: str = Form(...), 
+    batch_number: str = Form(...), in_count: str = Form(...), species: str = Form(...), variety: str = Form(...),
+    hlso_qty: float = Form(...), peeled_qty: float = Form(...), yield_percent: str = Form(...), 
+    contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...)
+):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: 
@@ -372,25 +386,14 @@ def save_peeling(request: Request, db: Session = Depends(get_db),
     clean_batch = str(batch_number).strip()
     clean_count = str(in_count).strip()
 
-    is_repro = db.query(Reprocess).filter(
-        Reprocess.new_batch_id == clean_batch, 
-        Reprocess.company_id == company_code
-    ).first()
+    is_repro = db.query(Reprocess).filter(Reprocess.new_batch_id == clean_batch, Reprocess.company_id == company_code).first()
     s_type = "REPROCESS" if is_repro else "RMP"
 
-    # 🛠️ FIX: ఫామ్‌లో PD/PDTO ఓవర్‌రైట్ అయినా, ఫ్లోర్ బ్యాలెన్స్ కోసం కచ్చితంగా ఇన్పుట్ HLSO (HLSO/HLSO G2) నే డైనమిక్ గా వెతుకుతుంది
     search_variety = resolve_input_hlso_variety(db, company_code, clean_batch, clean_count, species)
     
     avail = get_floor_balance(
-        db, 
-        company_code, 
-        location, 
-        clean_batch, 
-        clean_count, 
-        species, 
-        search_variety, # 🟢 Locked to input HLSO specifications mapping
-        production_for=production_for,
-        source_type=s_type
+        db, company_code, location, clean_batch, clean_count, 
+        species, search_variety, production_for=production_for, source_type=s_type
     )
     
     if hlso_qty > (avail + 0.1):
@@ -405,24 +408,11 @@ def save_peeling(request: Request, db: Session = Depends(get_db),
 
     current_ist = ist_now()
 
-    # Database Entry
     new_entry = Peeling(
-        production_for=production_for, 
-        peeling_at=location, 
-        batch_number=clean_batch, 
-        hlso_count=clean_count,
-        species=species, 
-        variety_name=variety, # ఇక్కడ క్లయింట్ కి కావలసిన PD/PDTO రికార్డ్ అవుతుంది
-        hlso_qty=hlso_qty, 
-        peeled_qty=peeled_qty, 
-        yield_percent=clean_yield,
-        contractor_name=contractor_name, 
-        rate=rate, 
-        amount=amount, 
-        date=current_ist.date(),  
-        time=current_ist.time(),  
-        email=email, 
-        company_id=company_code
+        production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
+        species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
+        contractor_name=contractor_name, rate=rate, amount=amount, 
+        date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
     )
     
     try:
@@ -434,6 +424,7 @@ def save_peeling(request: Request, db: Session = Depends(get_db),
         db.rollback()
         print(f"Database Error: {str(e)}") 
         return JSONResponse({"error": f"Database Error: {str(e)}"}, status_code=500)
+
 
 @router.post("/peeling/delete/{id}")
 def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
