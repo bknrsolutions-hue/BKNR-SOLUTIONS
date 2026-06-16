@@ -5,12 +5,12 @@
 <title>PRODUCTION CONTROL - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="[https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap)" rel="stylesheet">
+<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
+<script src="[https://cdn.jsdelivr.net/npm/sweetalert2@11](https://cdn.jsdelivr.net/npm/sweetalert2@11)"></script>
 
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 
 <style>
     :root{
@@ -41,6 +41,7 @@
         --text-muted:#94a3b8;
         --danger: #f87171;
         --success: #4ade80;
+        --warning: #fbbf24;
         --card-bg: #1e293b;
         --header-bg: #0f172a;
         --row-hover: #1e293b;
@@ -63,10 +64,11 @@
     .header-titles h2 { margin: 0; font-size: 14px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
     
     .btn-new { 
-        background: var(--accent) !important; 
-        color: white !important; border: none !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: all 0.2s ease;
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important; 
+        color: white !important; border: 1px solid #1d4ed8 !important; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 5px; text-transform: uppercase;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15); transition: all 0.2s ease;
     }
-    .btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-new:hover { background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%) !important; transform: translateY(-1.5px); box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important; }
 
     /* UNIFIED FILTER BAR */
     .filter-bar {
@@ -80,7 +82,7 @@
     .filter-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
     .filter-field.search-field { min-width: 220px; flex: 2; }
     .filter-field label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .filter-field select, .filter-field input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--card-bg); color: var(--text); font-weight: 600; height: 36px; }
+    .filter-field select, .filter-field input { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); outline: none; font-size: 11px; width: 100%; background: var(--bg); color: var(--text); font-weight: 600; height: 36px; }
 
     @media(max-width: 768px) {
         .filter-bar { padding: 10px 12px; gap: 12px; flex-wrap: nowrap !important; overflow-x: auto !important; justify-content: flex-start; }
@@ -96,7 +98,6 @@
 
     .full-width-grid { margin: 0 10px 15px; }
 
-    /* 🟢 REMOVED ALL EXTRA PANEL COLOUR BORDERS */
     .panel { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .panel-header { padding: 10px; background: var(--header-bg); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; color: var(--text); text-transform: uppercase; }
 
@@ -282,7 +283,7 @@
                             <td colspan="10" style="background:transparent;"></td>
                         </tr>
                         {% for row in records %}
-                        <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}%" data-freezer="{{ row.freezer }}" data-grade="{{ row.grade }}">
+                        <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}" data-freezer="{{ row.freezer }}" data-grade="{{ row.grade }}">
                             <td>{{ row.sl_no }}</td>
                             <td class="po-cell" style="text-align:left;">{{ row.company_name }}</td>
                             <td class="po-cell">{{ row.po_number }}</td>
@@ -292,8 +293,8 @@
                             <td style="text-align:left;">{{ row.brand }}</td>
                             <td>{{ row.species }}</td>
                             <td style="text-align:left;">{{ row.variety }}</td>
-                            <td>{{ row.count_glaze }}%</td>
-                            <td>{{ row.weight_glaze }}%</td>
+                            <td>{{ row.count_glaze }}</td>
+                            <td>{{ row.weight_glaze }}</td>
                             <td>{{ row.grade }}</td>
                             <td>{{ row.nw_grade }}</td>
                             <td style="text-align:right;">{{ row.no_of_pieces }}</td>
@@ -566,7 +567,9 @@ function fillFilterSelect(id, dataList, defaultText) {
     if(!el) return;
     let html = `<option value="">${defaultText}</option>`;
     dataList.forEach(item => {
-        html += `<option value="${item}">${item}</option>`;
+        // Glaze కి పక్కన % సింబల్ అలైన్ చేయడం కోసం
+        let displayItem = (id === 'filter_glaze') ? item + '%' : item;
+        html += `<option value="${item}">${displayItem}</option>`;
     });
     el.innerHTML = html;
 }
@@ -699,13 +702,14 @@ function fillStaticSelect(id, arrayData, defaultText) {
     });
 }
 
+// 🟢 🔴 FIXED UNIFIED JAVASCRIPT FILTER MATRIX: గ్లేజ్ మరియు మిగతా స్ట్రింగ్స్ ని నార్మలైజ్ చేసి పక్కాగా మ్యాచ్ అయ్యేలా లాక్ చేసాను చిన్నా
 function applyGlobalFilters() {
-    const co = document.getElementById("filter_company")?.value.toLowerCase() || "";
-    const varty = document.getElementById("filter_variety")?.value.toLowerCase() || "";
-    const glaze = document.getElementById("filter_glaze")?.value.toLowerCase() || "";
-    const freezer = document.getElementById("filter_freezer")?.value.toLowerCase() || "";
-    const grade = document.getElementById("filter_grade")?.value.toLowerCase() || "";
-    const search = document.getElementById("global_search")?.value.toLowerCase() || "";
+    const co = document.getElementById("filter_company")?.value.toLowerCase().trim() || "";
+    const varty = document.getElementById("filter_variety")?.value.toLowerCase().trim() || "";
+    const glaze = document.getElementById("filter_glaze")?.value.toLowerCase().trim() || "";
+    const freezer = document.getElementById("filter_freezer")?.value.toLowerCase().trim() || "";
+    const grade = document.getElementById("filter_grade")?.value.toLowerCase().trim() || "";
+    const search = document.getElementById("global_search")?.value.toLowerCase().trim() || "";
     
     const tables = ["soakingTable", "floorTable", "reqTable", "dataTable"];
     
@@ -715,24 +719,27 @@ function applyGlobalFilters() {
         
         rows.forEach(row => {
             if (row.classList.contains('group-row')) {
-                const groupCo = (row.getAttribute("data-company") || "").toLowerCase();
+                const groupCo = (row.getAttribute("data-company") || "").toLowerCase().trim();
                 row.style.display = (!co || groupCo.includes(co)) ? "" : "none";
                 return;
             }
 
-            const rCo = (row.getAttribute("data-company") || "").toLowerCase();
-            const rVa = (row.getAttribute("data-variety") || "").toLowerCase();
-            const rGz = (row.getAttribute("data-glaze") || "").toLowerCase().replace('%', '');
-            const rFz = (row.getAttribute("data-freezer") || "").toLowerCase();
-            const rGd = (row.getAttribute("data-grade") || "").toLowerCase();
+            const rCo = (row.getAttribute("data-company") || "").toLowerCase().trim();
+            const rVa = (row.getAttribute("data-variety") || "").toLowerCase().trim();
+            
+            // 🔴 % క్యారెక్టర్ మరియు ఖాళీ స్పేస్ లు సింక్ అవ్వడానికి క్లీన్ లాజిక్
+            let rGz = (row.getAttribute("data-glaze") || "").toLowerCase().trim().replace('%', '');
+            let targetGlaze = glaze.replace('%', '');
+
+            const rFz = (row.getAttribute("data-freezer") || "").toLowerCase().trim();
+            const rGd = (row.getAttribute("data-grade") || "").toLowerCase().trim();
             const text = row.innerText.toLowerCase();
-            const targetGlaze = glaze.replace('%', '');
 
             const matchFilters = 
-                (!co || rCo.includes(co)) && 
-                (!varty || rVa.includes(varty)) &&
-                (!glaze || rGz === targetGlaze || rGz.includes(targetGlaze)) &&
-                (!freezer || rFz.includes(freezer) || rFz === freezer) &&
+                (!co || rCo === co || rCo.includes(co)) && 
+                (!varty || rVa === varty || rVa.includes(varty)) &&
+                (!glaze || rGz === targetGlaze) &&
+                (!freezer || rFz === freezer || rFz.includes(freezer)) &&
                 (!grade || rGd === grade || rGd.includes(grade));
                 
             const matchSearch = !search || text.includes(search);
@@ -813,11 +820,6 @@ function showDetails(data, title) {
     content += `</tbody></table></div>`;
     Swal.fire({ title: title, html: content, confirmButtonColor: '#143465' });
 }
-
-document.getElementById("productionForm").onsubmit = function() {
-    const btn = document.getElementById("submitBtn");
-    if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
-};
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

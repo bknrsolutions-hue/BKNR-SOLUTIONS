@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 
 <style>
 :root{
@@ -93,11 +93,11 @@ body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-
 .field { display: flex; flex-direction: column; }
 .section-title { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px;}
 
-.field label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.3px; }
+.field label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.3px; }
 .field input, .field select {
   padding: 8px 12px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 12px; background: var(--card-bg);
-  outline: none; width: 100%; color: var(--primary); font-weight: 600; transition: 0.2s; height: 36px;
+  outline: none; width: 100%; color: var(--text); font-weight: 600; transition: 0.2s; height: 36px;
 }
 .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 .field input { text-transform: uppercase !important; }
@@ -131,7 +131,7 @@ body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-
   padding: 10px 24px; border-radius: 6px; font-size: 11px;
   font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px;
 }
-.btn-clear { background: var(--bg); color: var(--text-muted); }
+.btn-clear { background: var(--bg); color: var(--muted); }
 .btn:hover { opacity: 0.9; }
 
 /* TOP INLINE 3-DOT MENU */
@@ -146,12 +146,13 @@ body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-
 .menu-item { padding: 10px 14px; font-size: 11px; font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
 .menu-item:hover { background: var(--row-hover); color: var(--accent); }
 
-/* COMPACT TABLE AREA - 🔴 FORCE TABLE ON ALL SCREEN SIZES */
+/* COMPACT TABLE AREA */
 .table-wrap {
   background: var(--card-bg) !important;
-  width: 100%; max-width: 1400px; margin: 0 auto 40px; 
+  width: 95%; max-width: 1400px; margin: 0 auto 40px; 
   border-radius: 8px; border: 1px solid var(--border); 
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; display: block !important; 
+  -webkit-overflow-scrolling: touch;
 }
 table { width: 100%; border-collapse: collapse; min-width: 1450px; table-layout: fixed !important; display: table !important; }
 
@@ -182,8 +183,6 @@ tr.selected { background: var(--processing-bg) !important; }
   .section, .table-header-bar { width: 95%; }
   .actions { flex-direction: column-reverse; }
   .btn, .btn-toggle { width: 100% !important; height: 36px; padding: 0 !important; line-height: 1; }
-  
-  /* 🔴 ప్యాడింగ్ తగ్గించి మొబైల్‌లో కూడా టేబుల్ అలైన్‌మెంట్ పక్కాగా ఉండేలా లాక్ చేశాను */
   th { padding: 6px 3px !important; font-size: 9px !important; }
   td { padding: 6px 3px !important; font-size: 9px !important; }
 }
@@ -195,7 +194,7 @@ tr.selected { background: var(--processing-bg) !important; }
 
 <div class="header">
   <div class="header-titles">
-      <h2>Gate Entry</h2>
+      <h2>Gate Entry Control Panel</h2>
   </div>
 </div>
 
@@ -206,7 +205,7 @@ tr.selected { background: var(--processing-bg) !important; }
       
       <div class="field">
         <label>Production For</label>
-        <select name="production_for" id="prod_for" required>
+        <select name="production_for" id="prod_for" required onchange="handleCompanyChange()">
           <option value="" disabled selected>Select Company</option>
           {% for p in prod_for_list %}
           <option value="{{p}}">{{p}}</option>
@@ -216,54 +215,54 @@ tr.selected { background: var(--processing-bg) !important; }
 
       <div class="field">
         <label>Factory Name</label>
-        <input list="factory_list" name="receiving_center" id="receiving_dd" required placeholder="Search/Type..." autocomplete="off">
-        <datalist id="factory_list">
-          {% for p in peeling_ats %}<option value="{{p}}"></option>{% endfor %}
-        </datalist>
+        <select name="receiving_center" id="receiving_dd" required onchange="handleFactoryChange()">
+          <option value="">Select Factory</option>
+          {% for p in peeling_ats %}<option value="{{p}}">{{p}}</option>{% endfor %}
+        </select>
       </div>
 
       <div class="field">
         <label>Gate Pass Number</label>
-        <input name="gate_pass_number" id="gp_num" required placeholder="Ex: GP-101" autocomplete="off">
+        <input name="gate_pass_number" id="gp_num" readonly style="background:var(--header-bg);" placeholder="Auto Generated">
       </div>
 
       <div class="field">
         <label>Batch Number</label>
-        <input name="batch_number" id="batch_num" required placeholder="Ex: B-101" autocomplete="off">
+        <input name="batch_number" id="batch_num" readonly style="background:var(--header-bg);" placeholder="Auto Generated">
       </div>
 
       <div class="field">
         <label>Challan Number</label>
-        <input name="challan_number" id="challan_num" required placeholder="Ex: CH-101" autocomplete="off">
+        <input name="challan_number" id="challan_num" readonly style="background:var(--header-bg);" placeholder="Auto Generated">
       </div>
 
       <div class="field">
         <label>Supplier Name</label>
-        <input list="supp_list" name="supplier_name" id="supplier_dd" required placeholder="Search/Type..." autocomplete="off">
-        <datalist id="supp_list">
-          {% for s in suppliers %}<option value="{{s}}"></option>{% endfor %}
-        </datalist>
+        <select name="supplier_name" id="supplier_dd" required>
+          <option value="">Select Supplier</option>
+          {% for s in suppliers %}<option value="{{s}}">{{s}}</option>{% endfor %}
+        </select>
       </div>
 
       <div class="field">
         <label>Location</label>
-        <input list="loc_list" name="purchasing_location" id="location_dd" required placeholder="Search/Type..." autocomplete="off">
-        <datalist id="loc_list">
-          {% for l in locations %}<option value="{{l}}"></option>{% endfor %}
-        </datalist>
+        <select name="purchasing_location" id="location_dd" required>
+          <option value="">Select Location</option>
+          {% for l in locations %}<option value="{{l}}">{{l}}</option>{% endfor %}
+        </select>
       </div>
 
       <div class="field">
         <label>Vehicle Number</label>
-        <input list="veh_list" name="vehicle_number" id="vehicle_dd" required placeholder="Search/Type..." autocomplete="off">
-        <datalist id="veh_list">
-          {% for v in vehicles %}<option value="{{v}}"></option>{% endfor %}
-        </datalist>
+        <select name="vehicle_number" id="vehicle_dd" required>
+          <option value="">Select Vehicle</option>
+          {% for v in vehicles %}<option value="{{v}}">{{v}}</option>{% endfor %}
+        </select>
       </div>
 
-      <div class="field"><label>Mat. Boxes</label><input type="number" step="any" name="no_of_material_boxes" value="0" autocomplete="off"></div>
-      <div class="field"><label>Empty Boxes</label><input type="number" step="any" name="no_of_empty_boxes" value="0" autocomplete="off"></div>
-      <div class="field"><label>Ice Boxes</label><input type="number" step="any" name="no_of_ice_boxes" value="0" autocomplete="off"></div>
+      <div class="field"><label>Mat. Boxes</label><input type="number" step="any" name="no_of_material_boxes" value="0"></div>
+      <div class="field"><label>Empty Boxes</label><input type="number" step="any" name="no_of_empty_boxes" value="0"></div>
+      <div class="field"><label>Ice Boxes</label><input type="number" step="any" name="no_of_ice_boxes" value="0"></div>
     </div>
 
     <div class="actions">
@@ -317,18 +316,18 @@ tr.selected { background: var(--processing-bg) !important; }
       <tr data-id="{{ r.id }}" onclick="selectRowOrCard(this)">
         <td>{{ r.id }}</td>
         <td style="color:var(--muted)">{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
-        <td style="font-weight:600">{{ r.production_for }}</td>
-        <td>{{ r.receiving_center }}</td>
+        <td style="font-weight:600; text-align:left !important;">{{ r.production_for }}</td>
+        <td style="text-align:left !important;">{{ r.receiving_center }}</td>
         <td>{{ r.gate_pass_number }}</td>
         <td style="font-weight:800; color:var(--accent)">{{ r.batch_number }}</td>
         <td>{{ r.challan_number }}</td>
-        <td>{{ r.supplier_name }}</td>
-        <td>{{ r.purchasing_location }}</td>
+        <td style="text-align:left !important;">{{ r.supplier_name }}</td>
+        <td style="text-align:left !important;">{{ r.purchasing_location }}</td>
         <td>{{ r.vehicle_number }}</td>
-        <td style="color:var(--accent);">{{ r.no_of_material_boxes }}</td>
-        <td>{{ r.no_of_empty_boxes }}</td>
-        <td>{{ r.no_of_ice_boxes }}</td>
-        <td style="font-size:10px; color:var(--muted)">{{ r.email.split('@')[0] if r.email else '' }}</td>
+        <td style="color:var(--accent); text-align:right !important;">{{ r.no_of_material_boxes }}</td>
+        <td style="text-align:right !important;">{{ r.no_of_empty_boxes }}</td>
+        <td style="text-align:right !important;">{{ r.no_of_ice_boxes }}</td>
+        <td style="font-size:10px; color:var(--muted); text-align:left !important;">{{ r.email.split('@')[0] if r.email else '' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -377,20 +376,22 @@ function getNextSequence(val) {
     return parts.join('-');
 }
 
-document.getElementById("prod_for").addEventListener("change", function() {
+// 🟢 🔴 CASCADE RESET RULE: కంపెనీ మారినప్పుడు ఫ్యాక్టరీ మరియు ఆటో సింక్ ఫీల్డ్స్ క్లియర్ అవుతాయి
+function handleCompanyChange() {
     document.getElementById("receiving_dd").value = "";
     document.getElementById("batch_num").value = "";
     document.getElementById("challan_num").value = "";
     document.getElementById("gp_num").value = "";
-});
+}
 
-document.getElementById("receiving_dd").addEventListener("input", function() {
+// 🟢 🔴 CASCADE CALCULATION RULE: ఫ్యాక్టరీ ఫిక్స్ అవ్వగానే బ్యాకెండ్ సింక్ సిస్టమ్ రన్ అవుతుంది
+function handleFactoryChange() {
     const pName = document.getElementById("prod_for").value;
-    const fName = this.value.trim().toUpperCase();
+    const fName = document.getElementById("receiving_dd").value.trim().toUpperCase();
     
     if(!pName) {
         Swal.fire({icon: 'warning', title: 'Select Company First!'});
-        this.value = "";
+        document.getElementById("receiving_dd").value = "";
         return;
     }
 
@@ -408,13 +409,7 @@ document.getElementById("receiving_dd").addEventListener("input", function() {
         document.getElementById("challan_num").value = "";
         document.getElementById("gp_num").value = "";
     }
-});
-
-document.getElementById("entryForm").addEventListener("submit", function() {
-    this.querySelectorAll("input[type=text], input:not([type])").forEach(input => {
-        input.value = input.value.toUpperCase().trim();
-    });
-});
+}
 
 document.getElementById("entryForm").onsubmit = async (e) => {
     e.preventDefault();

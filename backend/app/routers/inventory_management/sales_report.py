@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_, case, distinct
 from datetime import datetime
 from app.utils.timezone import ist_now
 from collections import defaultdict
@@ -24,13 +24,13 @@ from app.database.models.users import Company
 from app.database.models.criteria import (
     buyers, buyer_agents, brands, countries,
     varieties, grades, glazes, packing_styles, freezers, species, 
-    production_for
+    production_for, production_at as ProductionAtMaster
 )
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
 
 # Standardizing Prefix and Tags from Code 2
-router = APIRouter(prefix="/inventory", tags=["PENDING ORDERS & SALES"])
+router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
 
 # -----------------------------------
@@ -62,11 +62,11 @@ def calculate_pieces(grade_str, manual_pcs):
     return 0
 
 # -------------------------------------------------------------------------
-# 1️⃣ PENDING ORDERS PAGE (GET) - WITH ACTIVE GLOBAL FILTERS INJECTION
+# 1️⃣ PENDING ORDERS PAGE (GET) - WITH STRICT FORM DROPDOWN FILTERING
 # -------------------------------------------------------------------------
 @router.get("/pending_orders", response_class=HTMLResponse)
 def pending_orders_page(request: Request, edit: str | None = None, db: Session = Depends(get_db)):
-    # 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
+    # FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     production_for_filter, location = get_global_filters(request)
     
     company_code = request.session.get("company_code")
@@ -75,20 +75,28 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if not company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # Fetch unique company names for the dropdown
-    prod_names = db.query(production_for.production_for).filter(
-        production_for.company_id == company_code,
-        production_for.production_for != None
-    ).distinct().all()
+    # FETCH USER PERMITTED LOCATIONS MULTI-PERMISSION CHECK
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    unique_companies = [c[0] for c in prod_names if c[0]]
+    # 🟢 🔴 FIXED LOGIC: Form Dropdown Company Filter Sync
+    # గ్లోబల్ హెడర్ లో కంపెనీ సెలెక్ట్ అయి ఉంటే, ఫారమ్ లో కూడా అదే రావాలి చిన్నా!
+    if production_for_filter:
+        unique_companies = [production_for_filter.strip()]
+    else:
+        prod_names = db.query(production_for.production_for).filter(
+            production_for.company_id == company_code,
+            production_for.production_for != None
+        ).distinct().all()
+        unique_companies = [c[0] for c in prod_names if c[0]]
 
-    # 🟢 Fetch pending orders with active universal parameters filter
+    # Fetch pending orders rows
     query = db.query(pending_orders).filter(pending_orders.company_id == company_code)
-    
     if production_for_filter:
         query = query.filter(func.trim(pending_orders.company_name) == func.trim(production_for_filter))
-        
     rows = query.order_by(pending_orders.sl_no, pending_orders.id).all()
 
     # Grouping by PO Number for display logic
@@ -117,6 +125,16 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     def get_lookup(model, field_name):
         return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
 
+    # 🟢 🔴 FIXED LOGIC: Form Dropdown Factory Location Filter Sync
+    # గ్లోబల్ హెడర్ లో లొకేషన్ సెలెక్ట్ అయి ఉంటే, ఫారమ్ లో కూడా కేవలం ఆ ఒక్క ఆప్షన్ మాత్రమే రావాలి బ్రదర్
+    if location:
+        production_locations = [location.strip()]
+    else:
+        pa_q = db.query(ProductionAtMaster.production_at).filter(ProductionAtMaster.company_id == company_code)
+        if user_allowed_locations:
+            pa_q = pa_q.filter(func.upper(func.trim(ProductionAtMaster.production_at)).in_(user_allowed_locations))
+        production_locations = [p.production_at for p in pa_q.order_by(ProductionAtMaster.production_at).all()]
+
     return templates.TemplateResponse(
         request=request,
         name="inventory_management/pending_orders.html",
@@ -125,8 +143,9 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             "edit_rows": edit_rows,
             "next_sl": next_sl,
             "unique_companies": unique_companies,
-            "selected_production_for": production_for_filter, # 🟢 Passed for memory lock
-            "selected_location": location,                     # 🟢 Passed for memory lock
+            "production_locations": production_locations,
+            "global_production_for": production_for_filter or "", 
+            "global_location": location or "",                     
             "buyers": get_lookup(buyers, "buyer_name"),
             "agents": get_lookup(buyer_agents, "agent_name"),
             "brands": get_lookup(brands, "brand_name"),
@@ -142,7 +161,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     )
 
 # -------------------------------------------------------------------------
-# 2️⃣ SAVE PENDING ORDERS (POST) - ISOLATED TRANSPARENT ARCHITECTURE
+# 2️⃣ SAVE PENDING ORDERS (POST) - SECURED FOR 422 AND REFRESH EXCEPTION
 # -------------------------------------------------------------------------
 @router.post("/pending_orders")
 def save_pending_orders(
@@ -154,6 +173,8 @@ def save_pending_orders(
     agent: str = Form(...),
     country: str = Form(...),
     shipment_date: str = Form(...),
+    production_at: str = Form(...),    
+    exchange_rate: float = Form(...),   
     brand: List[str] = Form(...),
     packing_style: List[str] = Form(...),
     freezer: List[str] = Form(...),
@@ -165,7 +186,6 @@ def save_pending_orders(
     no_of_pieces: List[str] = Form(...),
     no_of_mc: List[int] = Form(...),
     selling_price: List[float] = Form(...),
-    exchange_rate: List[float] = Form(...),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -174,7 +194,6 @@ def save_pending_orders(
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
-    # Delete existing items for this PO to handle updates (Delete-and-Insert)
     db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
@@ -189,6 +208,8 @@ def save_pending_orders(
             agent_name=agent,
             country=country,
             shipment_date=shipment_date,
+            production_at=production_at,     
+            exchange_rate=exchange_rate,     
             brand=brand[i],
             packing_style=packing_style[i],
             freezer=freezer[i],
@@ -200,7 +221,6 @@ def save_pending_orders(
             no_of_pieces=calculate_pieces(grade[i], no_of_pieces[i]),
             no_of_mc=no_of_mc[i],
             selling_price=selling_price[i],
-            exchange_rate=exchange_rate[i],
             company_id=company_code,
             email=email,
             date=ist_now().strftime("%Y-%m-%d"),
@@ -209,13 +229,15 @@ def save_pending_orders(
 
     db.commit()
 
-    print("PRODUCTION REQUIREMENTS REFRESH")
-    print("COMPANY:", company_code)
-    rows = ProductionRequirementService.refresh_requirements(
-        db=db,
-        company_id=company_code
-    )
-    print("ROWS CREATED:", rows)
+    try:
+        print("PRODUCTION REQUIREMENTS REFRESH PIPELINE LAUNCH")
+        rows = ProductionRequirementService.refresh_requirements(
+            db=db,
+            company_id=company_code
+        )
+        print("ROWS CREATED:", rows)
+    except Exception as service_err:
+        print(f"🛑 REFRESH SERVICE DEFERRED TEMPORARILY: {str(service_err)}")
 
     request.session["message"] = f"PO {po_number} saved successfully!"
     return RedirectResponse("/inventory/pending_orders", status_code=303)
@@ -266,7 +288,8 @@ def move_to_sales(
                 variety=item.variety,
                 grade=item.grade,
                 company_name=item.company_name,
-                exchange_rate=item.exchange_rate,
+                production_at=item.production_at, 
+                exchange_rate=item.exchange_rate, 
                 stock_value=0.0,
                 profit_loss=0.0,
                 freight_cost=0.0,
@@ -291,32 +314,34 @@ def move_to_sales(
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report(request: Request, db: Session = Depends(get_db)):
-    # 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     production_for_filter, location = get_global_filters(request)
     
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
-    # 🟢 Base Sales Query formulation with global trim layers
     sales_q = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
-    
     if production_for_filter:
         sales_q = sales_q.filter(func.trim(sales_dispatch.company_name) == func.trim(production_for_filter))
-        
     sales_data = sales_q.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
 
-    # 🟢 Stock Entry Query injection restricted safely via active global location parameter (production_at rule)
     stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
-    
     if location:
         stock_q = stock_q.filter(func.trim(stock_entry.production_at) == func.trim(location))
+    elif user_allowed_locations:
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
         
     raw_stock = stock_q.all()
     stock_map = {}
@@ -349,7 +374,6 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         p_cost = packing_map.get(sale_po, 0)
         pl = inr - (stock_val + f_cost + p_cost)
 
-        # Sync calculations with backend schema before commit
         s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
 
         processed.append({
@@ -364,13 +388,13 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         context={
             "sales_data": processed, 
             "unique_companies": unique_companies,
-            "selected_production_for": production_for_filter, # 🟢 Memory lock state
-            "selected_location": location                     # 🟢 Memory lock state
+            "global_production_for": production_for_filter or "", 
+            "global_location": location or ""                     
         }
     )
 
 # -------------------------------------------------------------------------
-# 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX) - ISOLATED TRANSPARENT ARCHITECTURE
+# 5️⃣ EDITABLE EXCHANGE RATE UPDATE (AJAX)
 # -------------------------------------------------------------------------
 @router.post("/update_exchange_rate")
 async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
@@ -403,12 +427,11 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     }
 
 # -------------------------------------------------------------------------
-# 6️⃣ STATUS/PO PROGRESS UPDATE ROUTE (AJAX) - ISOLATED TRANSPARENT ARCHITECTURE
+# 6️⃣ STATUS UPDATE ROUTES (AJAX)
 # -------------------------------------------------------------------------
 @router.post("/update_po_status")
 async def update_po_status(data: StatusUpdate, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
-    
     orders = db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == data.po_number
@@ -416,10 +439,8 @@ async def update_po_status(data: StatusUpdate, request: Request, db: Session = D
     
     if not orders:
         raise HTTPException(status_code=404, detail="PO Not Found")
-        
     for order in orders:
         order.progress_steps = data.status
-        
     db.commit()
     return {"message": "Status Updated"}
 

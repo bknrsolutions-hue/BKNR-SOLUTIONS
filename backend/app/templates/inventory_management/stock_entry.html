@@ -4,103 +4,144 @@
 <meta charset="UTF-8">
 <title>Stock Entry – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
 
 <style>
 :root{ 
-    --primary:#143465; --secondary: #1e293b; --accent: #3b82f6; --border:#d6dde7; 
-    --bg:#f4f6f9; --card:#ffffff; --text:#1f2937; --muted:#64748b;
+    /* 🌟 LIGHT MODE VARIABLES */
+    --primary:#0f172a; --secondary: #1e293b; --accent: #2563eb; --border:#e2e8f0; 
+    --bg:#f1f5f9; --card:#ffffff; --text:#1e293b; --muted:#64748b;
     --card-bg: #ffffff; --header-bg: #f8fafc;
+    --row-hover: #f1f7ff;
+    --processing-bg: #dbeafe;
 }
+
+[data-theme="dark"] {
+    /* 🌟 DARK MODE VARIABLES */
+    --primary:#f8fafc; 
+    --accent:#3b82f6;  
+    --border:#334155;  
+    --bg:#0f172a;      
+    --text:#e2e8f0;
+    --muted:#94a3b8;
+    --card-bg: #1e293b;
+    --header-bg: #0f172a;
+    --row-hover: #1e293b;
+    --processing-bg: #1e3a8a;
+}
+
 *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
-body{ background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
+body{ background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
+
+/* Elegant Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
 /* HEADER */
 .header{ padding:16px 25px; border-bottom:1px solid var(--border); background:var(--card-bg); display: flex; justify-content: space-between; align-items: center; }
-.header-titles h2{margin:0;font-size:20px;color:var(--primary); font-weight: 800;}
-.header-titles p{margin:4px 0 0;font-size:12px;color:var(--muted); font-weight: 500;}
+.header-titles h2{margin:0;font-size:16px;color:var(--primary); font-weight: 800; text-transform: uppercase;}
+.header-titles p{margin:4px 0 0;font-size:11px;color:var(--muted); font-weight: 500;}
 
 @media(max-width: 600px) {
     .header { padding: 12px 15px; }
-    .header-titles h2 { font-size: 16px; }
+    .header-titles h2 { font-size: 14px; }
     .header-titles p { font-size: 10px; }
 }
 
-.section{ margin:15px; background:var(--card); padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.section-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.section{ margin:15px; background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.section-title { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
 
-/* 🟢 FORM GRID - DESKTOP, TABLET & MOBILE STACKING (NOT FILTER BAR) */
+/* 🟢 FORM GRID */
 .form-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
-@media(max-width:1200px){ .form-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(max-width:1400px){ .form-grid{ grid-template-columns:repeat(4,1fr); } }
+@media(max-width:1100px){ .form-grid{ grid-template-columns:repeat(3,1fr); } }
 @media(max-width:768px){ .form-grid{ grid-template-columns:repeat(2,1fr); } }
-/* మొబైల్‌ లో కాలమ్స్ అన్నీ ఒకదాని కింద ఒకటి పద్ధతిగా కూర్చుంటాయి */
 @media(max-width:500px){ .form-grid{ grid-template-columns:1fr !important; gap:12px; } }
 
 .field{ display:flex; flex-direction:column; gap: 5px; }
-.field label{ font-size:11px; font-weight:700; color:var(--muted); text-transform: uppercase; }
+.field label { font-size:9px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
 @media(max-width: 500px) {
-    .field label { font-size: 10px; }
+    .field label { font-size: 8px; }
 }
 
 /* Select and Input Box sizing */
 .field select, .field input { 
     width: 100%; 
-    height: 40px; 
+    height: 38px; 
     padding: 0 12px; 
-    border-radius: 8px; 
+    border-radius: 6px; 
     border: 1px solid var(--border); 
-    font-size: 13px; 
+    font-size: 12px; 
     font-family: inherit;
     color: var(--text);
     background: var(--card-bg); 
     outline: none; 
     transition: 0.2s; 
-    appearance: auto;
+    font-weight: 600;
 }
-.field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
 
-@media(max-width: 500px) {
-    .field select, .field input { height: 38px !important; font-size: 12px !important; }
-}
-
-.hidden{display:none}
+.hidden{display:none !important;}
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
-.btn{ padding:10px 24px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--card-bg); transition: 0.2s; white-space: nowrap; }
-.btn-primary{ background:var(--accent); color:#fff; border:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
-.btn-search { background: var(--secondary); color: #fff; border: none; }
 
-/* 🟢 TABLE RESPONSIVE WRAPPER (TABLES ONLY SCROLL) */
-.table-container { width: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 15px 0 0; border-radius: 10px; border: 1px solid var(--border); background: var(--card-bg) !important; }
-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-th, td { padding: 12px 8px; border: 1px solid #edf2f7; text-align: center; white-space: nowrap; }
-th { background: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 10px; position: sticky; top: 0; }
-td { color: var(--primary); font-weight: 600; }
+/* PREMIUM RMP-STYLE ROYAL BLUE BUTTON WITH GLOW EFFECT */
+.btn-primary{ 
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important; 
+    color: #fff !important; border: 1px solid #1d4ed8 !important; padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px; white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15); transition: all 0.2s ease;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%) !important;
+    transform: translateY(-1.5px); box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
 
-.text-green { color: #16a34a; font-weight: 800; }
-.text-red { color: #dc2626; font-weight: 800; }
-tbody tr:hover { background: #f8fbff; }
-input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; }
+.btn-search { 
+    background: var(--secondary) !important; color: #fff !important; border: 1px solid var(--border) !important; padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: nowrap;
+}
+.btn-search:hover { opacity: 0.9; }
+
+.btn-clear { background: var(--bg); color: var(--text); padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); text-transform: uppercase; }
+
+/* UNIVERSAL SCROLL WRAPPER ENFORCER */
+.table-container { width: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 15px 0 0; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg) !important; display: block !important; }
+table { width: 100%; border-collapse: collapse; text-align: center !important; table-layout: fixed !important; display: table !important; }
+
+/* PANEL & DATA TABLES TYPOGRAPHY LOCK */
+th, td { padding: 10px 6px; border: 1px solid var(--border) !important; text-align: center !important; white-space: nowrap; display: table-cell !important; }
+th { background: var(--header-bg) !important; color: var(--text) !important; font-weight: 800; text-transform: uppercase; font-size: 9.5px !important; position: sticky; top: 0; z-index: 10; }
+td { color: var(--text) !important; font-weight: 600; font-size: 10px !important; overflow: hidden; text-overflow: ellipsis; }
+
+.text-green { color: var(--success) !important; font-weight: 800; }
+.text-red { color: var(--danger) !important; font-weight: 800; }
+tbody tr:hover { background: var(--row-hover) !important; }
+input[readonly] { background: var(--header-bg) !important; color: var(--text) !important; font-weight: 700; cursor: not-allowed; }
+
+/* Inline Grid Input Sizes */
+.report-input-cell { width: 80px; padding: 6px; border: 1px solid var(--accent); border-radius: 4px; background: var(--card-bg); color: var(--text); height: 30px !important; text-align: center; font-weight: bold; outline: none; }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
 <div class="header">
   <div class="header-titles">
-      <h2>Stock Entry</h2>
+      <h2>Stock Entry Control Centre</h2>
       <p><i class="fa-solid fa-right-left"></i> IN Entry & Report-based OUT</p>
   </div>
 </div>
 
 <div class="section">
   <div class="form-grid" style="grid-template-columns: 1fr;">
-    <div class="field" style="max-width: 250px; width: 100%;">
+    <div class="field" style="max-width: 280px; width: 100%;">
       <label>Cargo Movement Type</label>
-      <select id="movement" onchange="toggleMode()" style="border-width: 2px; border-color: var(--accent);">
+      <select id="movement" onchange="toggleMode()" style="border-width: 2px; border-color: var(--accent); font-weight: 800;">
         <option value="">-- Choose Movement --</option>
         <option value="IN">📥 STOCK IN</option>
         <option value="OUT">📤 STOCK OUT</option>
@@ -109,107 +150,100 @@ input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; 
   </div>
 </div>
 
-<form method="post" action="/inventory/stock_entry">
+<form method="post" action="/inventory/stock_entry" id="stockInForm">
 <div class="section hidden" id="inBox">
     <div class="section-title"><i class="fa-solid fa-circle-down"></i> Stock In Details</div>
     <div class="form-grid">
       <div class="field"><label>Production For</label>
-        <select name="production_for" id="in_prod_for" onchange="filterInBatches()" required>
-          <option value="">Select</option>
+        <select name="production_for" id="in_prod_for" onchange="handleInCompanyChange()" required>
+          <option value="">Select Company</option>
           {% for p in production_for_list %}<option value="{{p}}">{{p}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Production At</label>
-        <select name="production_at" id="in_prod_at" onchange="filterInBatches()" required>
-          <option value="">Select</option>
+        <select name="production_at" id="in_prod_at" onchange="handleInLocationChange()" required>
+          <option value="">Select Location</option>
           {% for p in production_places %}<option value="{{p}}">{{p}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Batch</label>
-        <select name="batch_number" id="in_batch" required>
+        <select name="batch_number" id="in_batch" onchange="loadBatchOrderSpecs()" required>
           <option value="">Select Company & Location First</option>
         </select>
       </div>
       <div class="field"><label>Type of Production</label>
-        <select name="type_of_production">
+        <select name="type_of_production" id="in_type">
           <option value="N/A">N/A</option>
-          {% for p in production_types %}<option>{{p}}</option>{% endfor %}
         </select>
       </div>
-      <div class="field"><label>Location (Stock)</label>
-        <select name="location" required>
-          <option value="">Select</option>
-          {% for l in locations %}<option>{{l}}</option>{% endfor %}
+      
+      <div class="field">
+        <label>Location (Stock)</label>
+        <select name="location" id="in_stock_loc" required>
+          <option value="">Select Coldstore</option>
+          {% for l in locations %}
+            <option value="{{l}}">{{l}}</option>
+          {% endfor %}
         </select>
       </div>
+      
       <div class="field"><label>Brand</label>
-        <select name="brand" required>
-          <option value="">Select</option>
-          {% for b in brands %}<option>{{b}}</option>{% endfor %}
+        <select name="brand" id="f_brand" required>
+          <option value="">Select Brand</option>
         </select>
       </div>
       <div class="field"><label>Freezer</label>
-        <select name="freezer" required>
-          <option value="">Select</option>
-          {% for f in freezers %}<option>{{f}}</option>{% endfor %}
+        <select name="freezer" id="f_freezer" required>
+          <option value="">Select Freezer</option>
         </select>
       </div>
       <div class="field"><label>Packing Style</label>
         <select name="packing_style" id="packer" onchange="calcQty()" required>
-          <option value="">Select</option>
-          {% for p in packing_styles %}
-          <option value="{{p.packing_style}}" data-mc="{{p.mc_weight}}" data-slab="{{p.slab_weight}}">{{p.packing_style}}</option>
-          {% endfor %}
+          <option value="">Select Style</option>
         </select>
       </div>
       <div class="field"><label>Glaze</label>
-        <select name="glaze" required>
-          <option value="">Select</option>
-          {% for g in glazes %}<option>{{g}}</option>{% endfor %}
+        <select name="glaze" id="f_glaze" required>
+          <option value="">Select Glaze</option>
         </select>
       </div>
       <div class="field"><label>Species</label>
-        <select name="species" required>
-          <option value="">Select</option>
-          {% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}
+        <select name="species" id="f_species" required>
+          <option value="">Select Species</option>
         </select>
       </div>
       <div class="field"><label>Variety</label>
-        <select name="variety" required>
-          <option value="">Select</option>
-          {% for v in varieties %}<option>{{v}}</option>{% endfor %}
+        <select name="variety" id="f_variety" required>
+          <option value="">Select Variety</option>
         </select>
       </div>
       <div class="field"><label>Grade</label>
-        <select name="grade" required>
-          <option value="">Select</option>
-          {% for g in grades %}<option>{{g}}</option>{% endfor %}
+        <select name="grade" id="f_grade" required>
+          <option value="">Select Grade</option>
         </select>
       </div>
       <div class="field"><label>No of MC</label>
-        <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0" required>
+        <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0" value="0" autocomplete="off" required>
       </div>
       <div class="field"><label>Loose</label>
-        <input id="loose" name="loose" type="number" oninput="calcQty()" placeholder="0" required>
+        <input id="loose" name="loose" type="number" oninput="calcQty()" placeholder="0" value="0" autocomplete="off" required>
       </div>
       <div class="field"><label>Total Qty</label>
-        <input id="qty" name="quantity" readonly placeholder="0.00">
+        <input id="qty" name="quantity" readonly placeholder="0.00" style="text-align: center;">
       </div>
       <div class="field"><label>Purpose</label>
-        <select name="purpose">
-          <option value="">Select</option>
-          {% for p in purposes %}<option>{{p}}</option>{% endfor %}
+        <select name="purpose" id="f_purpose">
+          <option value="">Select Purpose</option>
         </select>
       </div>
       <div class="field"><label>PO Number</label>
-        <select name="po_number">
+        <select name="po_number" id="f_po">
           <option value="N/A">N/A</option>
-          {% for p in po_numbers %}<option>{{p}}</option>{% endfor %}
         </select>
       </div>
     </div>
     <div class="actions">
-      <button class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE STOCK IN</button>
+      <button type="submit" class="btn btn-primary" id="submitInBtn"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE STOCK IN</button>
     </div>
 </div>
 </form>
@@ -218,39 +252,115 @@ input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; 
     <div class="section-title"><i class="fa-solid fa-circle-up"></i> Stock Out Search</div>
     <form id="outForm" method="post" action="/inventory/stock_out_save">
     <div class="form-grid">
-      <div class="field"><label>Production For</label><select name="production_for"><option value="">Select</option>{% for p in production_for_list %}<option>{{p}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Production At</label><select name="production_at" required><option value="">Select</option>{% for p in production_places %}<option>{{p}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Brand</label><select name="brand" required><option value="">Select</option>{% for b in brands %}<option>{{b}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Freezer</label><select name="freezer" required><option value="">Select</option>{% for f in freezers %}<option>{{f}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Packing Style</label><select name="packing_style" required><option value="">Select</option>{% for p in packing_styles %}<option>{{p.packing_style}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Glaze</label><select name="glaze" required><option value="">Select</option>{% for g in glazes %}<option>{{g}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Species</label><select name="species" required><option value="">Select</option>{% for s in species %}<option value="{{s}}">{{s}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Variety</label><select name="variety" required><option value="">Select</option>{% for v in varieties %}<option>{{v}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Grade</label><select name="grade" required><option value="">Select</option>{% for g in grades %}<option>{{g}}</option>{% endfor %}</select></div>
-      <div class="field"><label>Purpose</label><select name="purpose"><option value="">Select</option>{% for p in purposes %}<option>{{p}}</option>{% endfor %}</select></div>
-      <div class="field"><label>PO Number</label><select name="po_number"><option value="N/A">N/A</option>{% for p in po_numbers %}<option>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Production For</label>
+        <select name="production_for" id="out_prod_for" onchange="handleOutFilterChange()">
+            <option value="">Select Company</option>
+            {% for p in production_for_list %}<option value="{{p}}">{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Production At</label>
+        <select name="production_at" id="out_prod_at" onchange="handleOutFilterChange()" required>
+            <option value="">Select Location</option>
+            {% for p in production_places %}<option value="{{p}}">{{p}}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Brand</label>
+        <select name="brand" id="out_brand" required><option value="">Select Brand</option></select>
+      </div>
+      <div class="field"><label>Freezer</label>
+        <select name="freezer" id="out_freezer" required><option value="">Select Freezer</option></select>
+      </div>
+      <div class="field"><label>Packing Style</label>
+        <select name="packing_style" id="out_packer" required><option value="">Select Style</option></select>
+      </div>
+      <div class="field"><label>Glaze</label>
+        <select name="glaze" id="out_glaze" required><option value="">Select Glaze</option></select>
+      </div>
+      <div class="field"><label>Species</label>
+        <select name="species" id="out_species" required><option value="">Select Species</option></select>
+      </div>
+      <div class="field"><label>Variety</label>
+        <select name="variety" id="out_variety" required><option value="">Select Variety</option></select>
+      </div>
+      <div class="field"><label>Grade</label>
+        <select name="grade" id="out_grade" required><option value="">Select Grade</option></select>
+      </div>
+      <div class="field"><label>Purpose</label>
+        <select name="purpose" id="out_purpose"><option value="">Select Purpose</option></select>
+      </div>
+      <div class="field"><label>PO Number</label>
+        <select name="po_number" id="out_po"><option value="N/A">N/A</option></select>
+      </div>
     </div>
     <div style="margin-top: 20px;"><button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button></div>
+    
     <div class="table-container">
-        <table id="reportTable" class="hidden">
-        <thead><tr><th>Location</th><th>Batch Number</th><th>Available MC</th><th>Available Loose</th><th style="background: rgba(255,255,255,0.5);">OUT MC</th><th style="background: rgba(255,255,255,0.5);">OUT Loose</th></tr></thead>
+        <table id="reportTable" class="hidden" style="min-width: 800px;">
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Batch Number</th>
+                <th>Available MC</th>
+                <th>Available Loose</th>
+                <th style="background: var(--header-bg) !important; width: 110px;">OUT MC</th>
+                <th style="background: var(--header-bg) !important; width: 110px;">OUT Loose</th>
+            </tr>
+        </thead>
         <tbody id="reportRows"></tbody>
         </table>
     </div>
     <div id="hiddenInputs"></div>
-    <div class="actions hidden" id="outSaveBox"><button class="btn btn-primary"><i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT</button></div>
+    <div class="actions hidden" id="outSaveBox"><button type="submit" class="btn btn-primary" id="submitOutBtn"><i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT</button></div>
     </form>
 </div>
 
 {% if table_data %}
 <div class="section">
-    <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Transactions</div>
+    <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Warehouse Transactions</div>
     <div class="table-container">
-        <table>
-        <thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Batch</th><th>Stock Loc</th><th>Prod For</th><th>Prod At</th><th>Purpose</th><th>PO No</th><th>Brand</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Lse</th><th>Total Qty</th><th>User</th></tr></thead>
+        <table style="min-width: 1750px;">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 90px;">Date</th>
+                <th style="width: 65px;">Type</th>
+                <th style="width: 100px;">Batch</th>
+                <th style="width: 110px; text-align: left;">Stock Loc</th>
+                <th style="width: 140px; text-align: left;">Prod For</th>
+                <th style="width: 120px; text-align: left;">Prod At</th>
+                <th style="width: 110px; text-align: left;">Purpose</th>
+                <th style="width: 95px;">PO No</th>
+                <th style="width: 110px; text-align: left;">Brand</th>
+                <th style="width: 80px;">Species</th>
+                <th style="width: 115px; text-align: left;">Variety</th>
+                <th style="width: 75px;">Grade</th>
+                <th style="width: 65px; text-align: right;">MC</th>
+                <th style="width: 65px; text-align: right;">Lse</th>
+                <th style="width: 95px; text-align: right;">Total Qty</th>
+                <th style="width: 110px; text-align: left;">User</th>
+            </tr>
+        </thead>
         <tbody>
         {% for r in table_data %}
-        <tr><td>{{r.id}}</td><td>{{r.date}}</td><td class="{{ 'text-green' if r.cargo_movement_type == 'IN' else 'text-red' }}">{{r.cargo_movement_type}}</td><td>{{r.batch_number}}</td><td>{{r.location}}</td><td>{{r.production_for or ""}}</td><td>{{r.production_at}}</td><td>{{r.purpose or ""}}</td><td>{{r.po_number or ""}}</td><td>{{r.brand}}</td><td style="font-weight: 700; color: var(--accent);">{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td><td>{{r.no_of_mc}}</td><td>{{r.loose}}</td><td style="font-weight: 700;">{{r.quantity}}</td><td style="font-size: 9px; color: var(--muted);">{{r.email.split('@')[0]}}</td></tr>
+        <tr>
+            <td>{{r.id}}</td>
+            <td>{{r.date}}</td>
+            <td class="{{ 'text-green' if r.cargo_movement_type == 'IN' else 'text-red' }}">{{r.cargo_movement_type}}</td>
+            <td style="font-weight: 700; color: var(--accent);">{{r.batch_number}}</td>
+            <td style="text-align: left;">{{r.location}}</td>
+            <td style="text-align: left;">{{r.production_for or ""}}</td>
+            <td style="text-align: left;">{{r.production_at}}</td>
+            <td style="text-align: left;">{{r.purpose or ""}}</td>
+            <td>{{r.po_number or ""}}</td>
+            <td style="text-align: left;">{{r.brand}}</td>
+            <td style="font-weight: 700; color: var(--accent);">{{r.species}}</td>
+            <td style="text-align: left;">{{r.variety}}</td>
+            <td>{{r.grade}}</td>
+            <td style="text-align: right !important; padding-right: 8px;">{{r.no_of_mc}}</td>
+            <td style="text-align: right !important; padding-right: 8px;">{{r.loose}}</td>
+            <td style="font-weight: 800; text-align: right !important; padding-right: 8px;">{{r.quantity}}</td>
+            <td style="font-size: 10px; color: var(--muted); text-align: left;">{{r.email.split('@')[0] if r.email else ''}}</td>
+        </tr>
         {% endfor %}
         </tbody>
         </table>
@@ -259,21 +369,88 @@ input[readonly] { background: #f1f5f9; color: var(--primary); font-weight: 700; 
 {% endif %}
 
 <script>
+// ============================================================
+// 🔥 STOCK CONTROL PIPELINE CASCADE MASTER LOGIC 2026
+// ============================================================
+
+const RAW_BRANDS = [{% for b in brands %}"{{b}}",{% endfor %}];
+const RAW_VARIETIES = [{% for v in varieties %}"{{v}}",{% endfor %}];
+const RAW_GLAZES = [{% for gz in glazes %}"{{gz}}",{% endfor %}];
+const RAW_FREEZERS = [{% for fz in freezers %}"{{fz}}",{% endfor %}];
+const RAW_GRADES = [{% for g in grades %}"{{g}}",{% endfor %}];
+const RAW_SPECIES = [{% for s in species %}"{{s}}",{% endfor %}];
+const RAW_TYPES = [{% for pt in production_types %}"{{pt}}",{% endfor %}];
+const RAW_PURPOSES = [{% for p in purposes %}"{{p}}",{% endfor %}];
+const RAW_POS = [{% for p in po_numbers %}"{{p}}",{% endfor %}];
+const RAW_COLDSTORES = [{% for l in locations %}"{{l}}",{% endfor %}];
+
+const RAW_PACKING_STYLES = [
+    {% for p in packing_styles %}
+    { style: "{{p.packing_style}}", mc: parseFloat("{{p.mc_weight}}"), slab: parseFloat("{{p.slab_weight}}") },
+    {% endfor %}
+];
+
 const batchMap = [
     {% for b in batch_data_list %}
     { batch: "{{b.batch_number}}", company: "{{b.production_for}}", location: "{{b.production_at}}" },
     {% endfor %}
 ];
 
+const SOAKING_MON_DATA = [
+    {% for s in soaking_data %}
+    { batch: "{{s.batch_number}}", comp: "{{s.production_for}}", loc: "{{s.production_at}}", varty: "{{s.variety_name}}", sps: "{{s.species}}" },
+    {% endfor %}
+];
+
+const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
+const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
+
+window.onload = function() {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    
+    // 🟢 🔴 CRITICAL LOCK: గ్లోబల్ హెడర్ ఫిల్టర్స్ వాల్యూస్ ఉంటే, సెలెక్షన్ ఆప్షన్స్ ని ఇక్కడే సింక్ చేస్తున్నాను చిన్నా
+    if (BACKEND_GLOBAL_COMPANY && BACKEND_GLOBAL_COMPANY !== "None" && BACKEND_GLOBAL_COMPANY !== "") {
+        document.getElementById("in_prod_for").value = BACKEND_GLOBAL_COMPANY;
+        document.getElementById("out_prod_for").value = BACKEND_GLOBAL_COMPANY;
+    }
+    if (BACKEND_GLOBAL_LOCATION && BACKEND_GLOBAL_LOCATION !== "None" && BACKEND_GLOBAL_LOCATION !== "") {
+        document.getElementById("in_prod_at").value = BACKEND_GLOBAL_LOCATION;
+        document.getElementById("out_prod_at").value = BACKEND_GLOBAL_LOCATION;
+    }
+    
+    setupStaticFormDropdowns();
+    filterInBatches();
+}
+
+function handleInCompanyChange() {
+    filterInBatches();
+}
+
+function handleInLocationChange() {
+    filterInBatches();
+}
+
+function handleOutFilterChange() {
+    // Hooks reserved for down-stream validation controls
+}
+
 function filterInBatches() {
-    const company = document.getElementById('in_prod_for').value;
-    const location = document.getElementById('in_prod_at').value;
+    const company = document.getElementById('in_prod_for').value.trim().toUpperCase();
+    const location = document.getElementById('in_prod_at').value.trim().toUpperCase();
     const batchDropdown = document.getElementById('in_batch');
     
-    batchDropdown.innerHTML = '<option value="">-- Select Batch --</option>';
+    batchDropdown.innerHTML = '<option value="">Select Batch</option>';
+    resetCascadedFields();
     
     if(company && location) {
-        const filtered = batchMap.filter(i => i.company === company && i.location === location);
+        const filtered = batchMap.filter(i => 
+            (i.company || "").trim().toUpperCase() === company && 
+            (i.location || "").trim().toUpperCase() === location
+        );
+        
         if(filtered.length > 0) {
             filtered.forEach(item => {
                 batchDropdown.innerHTML += `<option value="${item.batch}">${item.batch}</option>`;
@@ -284,6 +461,98 @@ function filterInBatches() {
     }
 }
 
+function loadBatchOrderSpecs() {
+    const batchVal = document.getElementById("in_batch").value.trim();
+    const compVal = document.getElementById("in_prod_for").value.trim().toUpperCase();
+    const locVal = document.getElementById("in_prod_at").value.trim().toUpperCase();
+
+    const specSelect = document.getElementById("f_species");
+    const varSelect = document.getElementById("f_variety");
+
+    specSelect.innerHTML = '<option value="">Select Species</option>';
+    varSelect.innerHTML = '<option value="">Select Variety</option>';
+
+    if(!batchVal) { setupStaticFormDropdowns(); return; }
+
+    const matches = SOAKING_MON_DATA.filter(item => 
+        item.batch === batchVal && (item.comp || "").toUpperCase() === compVal && (item.loc || "").toUpperCase() === locVal
+    );
+
+    if(matches.length > 0) {
+        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].sort();
+        const uniqueVars = [...new Set(matches.map(m => m.varty))].sort();
+
+        uniqueSpecs.forEach(s => { let opt = document.createElement('option'); opt.value = s; opt.innerText = s; specSelect.appendChild(opt); });
+        uniqueVars.forEach(v => { let opt = document.createElement('option'); opt.value = v; opt.innerText = v; varSelect.appendChild(opt); });
+
+        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
+        if(uniqueVars.length === 1) varSelect.value = uniqueVars[0];
+    } else {
+        setupStaticFormDropdowns();
+    }
+}
+
+function setupStaticFormDropdowns() {
+    fillStaticSelect('f_brand', RAW_BRANDS, 'Select Brand');
+    fillStaticSelect('f_grade', RAW_GRADES, 'Select Grade');
+    fillStaticSelect('f_glaze', RAW_GLAZES, 'Select Glaze');
+    fillStaticSelect('f_freezer', RAW_FREEZERS, 'Select Freezer');
+    fillStaticSelect('in_type', RAW_TYPES, 'Select Type');
+    fillStaticSelect('f_purpose', RAW_PURPOSES, 'Select Purpose');
+    fillStaticSelect('f_po', RAW_POS, 'Select PO Number');
+    
+    // 🟢 🔴 FIXED LOGIC: లొకేషన్ మాస్టర్ లుకప్ డేటా రిఫ్రెష్ అయినా కరెక్ట్ గా బైండ్ అవుతుంది
+    if(document.getElementById("in_stock_loc").options.length <= 1) {
+        fillStaticSelect('in_stock_loc', RAW_COLDSTORES, 'Select Coldstore');
+    }
+    if(document.getElementById("f_species").options.length <= 1) {
+        fillStaticSelect('f_species', RAW_SPECIES, 'Select Species');
+    }
+    if(document.getElementById("f_variety").options.length <= 1) {
+        fillStaticSelect('f_variety', RAW_VARIETIES, 'Select Variety');
+    }
+    
+    const packSelect = document.getElementById("packer");
+    packSelect.innerHTML = '<option value="">Select Style</option>';
+    RAW_PACKING_STYLES.forEach(p => {
+        let opt = document.createElement('option'); opt.value = p.style; opt.innerText = p.style;
+        opt.setAttribute('data-mc', p.mc); opt.setAttribute('data-slab', p.slab);
+        packSelect.appendChild(opt);
+    });
+
+    // 📤 STOCK OUT SEARCH DROPDOWNS SETUP
+    fillStaticSelect('out_brand', RAW_BRANDS, 'Select Brand');
+    fillStaticSelect('out_freezer', RAW_FREEZERS, 'Select Freezer');
+    fillStaticSelect('out_glaze', RAW_GLAZES, 'Select Glaze');
+    fillStaticSelect('out_species', RAW_SPECIES, 'Select Species');
+    fillStaticSelect('out_variety', RAW_VARIETIES, 'Select Variety');
+    fillStaticSelect('out_grade', RAW_GRADES, 'Select Grade');
+    fillStaticSelect('out_purpose', RAW_PURPOSES, 'Select Purpose');
+    fillStaticSelect('out_po', RAW_POS, 'Select PO Number');
+    
+    const outPackSelect = document.getElementById("out_packer");
+    outPackSelect.innerHTML = '<option value="">Select Style</option>';
+    RAW_PACKING_STYLES.forEach(p => {
+        let opt = document.createElement('option'); opt.value = p.style; opt.innerText = p.style;
+        outPackSelect.appendChild(opt);
+    });
+}
+
+function fillStaticSelect(id, arrayData, defaultText) {
+    const el = document.getElementById(id); if(!el) return;
+    const currentVal = el.value;
+    el.innerHTML = `<option value="">${defaultText}</option>`;
+    arrayData.sort().forEach(item => {
+        let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt);
+    });
+    if(currentVal) el.value = currentVal;
+}
+
+function resetCascadedFields() {
+    document.getElementById('f_species').innerHTML = '<option value="">Select Species</option>';
+    document.getElementById('f_variety').innerHTML = '<option value="">Select Variety</option>';
+}
+
 function toggleMode(){
   const movement = document.getElementById('movement').value;
   document.getElementById('inBox').classList.toggle("hidden", movement!=="IN");
@@ -292,7 +561,10 @@ function toggleMode(){
 
 function calcQty(){
   const opt = document.getElementById('packer').selectedOptions[0];
-  if(!opt) return;
+  if(!opt || opt.value === "") {
+     document.getElementById('qty').value = "0.00";
+     return;
+  }
   const mcW = Number(opt.dataset.mc || 0);
   const slW = Number(opt.dataset.slab || 0);
   const mcVal = Number(document.getElementById('mc').value || 0);
@@ -310,26 +582,34 @@ async function searchStock(){
   const reportRows = document.getElementById('reportRows');
   const hiddenInputs = document.getElementById('hiddenInputs');
   
+  if(data.length === 0) {
+      Swal.fire('No Inventory', 'No matching available stock found in coldstore.', 'info');
+      reportTable.classList.add("hidden");
+      outSaveBox.classList.add("hidden");
+      return;
+  }
+
   reportTable.classList.remove("hidden");
   outSaveBox.classList.remove("hidden");
   reportRows.innerHTML=""; hiddenInputs.innerHTML="";
   
   data.forEach((r,i)=>{
-    reportRows.innerHTML+=`<tr><td>${r.location}</td><td><span class="text-green">${r.batch}</span></td><td>${r.mc}</td><td>${r.loose}</td>
-      <td><input type="number" id="mc_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent); height:30px !important;"></td>
-      <td><input type="number" id="lo_${i}" class="btn" style="width:70px; padding:5px; border: 1px solid var(--accent); height:30px !important;"></td></tr>`;
-    hiddenInputs.innerHTML+=`<input type="hidden" name="out_batch" value="${r.batch}"><input type="hidden" name="out_location" value="${r.location}">
-      <input type="hidden" name="out_mc" id="hmc_${i}"><input type="hidden" name="out_loose" id="hlo_${i}">`;
+    reportRows.innerHTML+=`<tr>
+      <td style="text-align: left !important; padding-left: 10px;">${r.location}</td>
+      <td><span class="text-green">${r.batch}</span></td>
+      <td style="text-align: right !important; padding-right: 15px;">${r.mc}</td>
+      <td style="text-align: right !important; padding-right: 15px;">${r.loose}</td>
+      <td><input type="number" id="mc_${i}" class="report-input-cell" min="0" max="${r.mc}" placeholder="0"></td>
+      <td><input type="number" id="lo_${i}" class="report-input-cell" min="0" max="${r.loose}" placeholder="0"></td>
+    </tr>`;
+    
+    hiddenInputs.innerHTML+=`
+      <input type="hidden" name="out_batch" value="${r.batch}">
+      <input type="hidden" name="out_location" value="${r.location}">
+      <input type="hidden" name="out_mc" id="hmc_${i}">
+      <input type="hidden" name="out_loose" id="hlo_${i}">`;
   });
 }
-
-document.getElementById('outForm').onsubmit=()=>{
-  document.querySelectorAll("[id^=hmc_]").forEach((h,i)=>{
-    h.value=document.getElementById("mc_"+i).value||0;
-    document.getElementById("hlo_"+i).value=document.getElementById("lo_"+i).value||0;
-  });
-  return true;
-};
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

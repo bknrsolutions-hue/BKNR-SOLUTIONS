@@ -63,6 +63,7 @@ class pending_orders(Base):
 
     id = Column(Integer, primary_key=True)
     company_name = Column(String(255)) 
+    production_at = Column(String(255), nullable=True)
     po_number = Column(String)
     buyer = Column(String)
     agent_name = Column(String)
@@ -112,6 +113,7 @@ class sales_dispatch(Base):
     grade = Column(String, nullable=True)
     po_number = Column(String(255), nullable=True)
     company_name = Column(String(255)) 
+    production_at = Column(String(255), nullable=True)
     exchange_rate = Column(Float, default=83.50)
     stock_value = Column(Float, default=0.0)
     profit_loss = Column(Float, default=0.0)
