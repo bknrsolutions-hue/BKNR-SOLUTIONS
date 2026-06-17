@@ -5,7 +5,7 @@
 <title>PEELING MANAGEMENT - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -47,7 +47,7 @@
   --processing-bg: #1e3a8a;
 }
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0;}
 body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
 
 /* Elegant Scrollbars */
@@ -180,7 +180,30 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
             <button class="tab-btn" onclick="openTab(event, 'contractorSum')">Contractor Analysis</button>
         </div>
         <div id="otherFloor" class="tab-content active">
-            <div class="table-container"><table class="dash-table"><thead><tr><th style="width:40%;">Hierarchy / Batch</th><th style="width:25%;">Variety</th><th style="width:15%;">Count</th><th style="width:20%;">Qty</th></tr></thead><tbody id="otherFloorBody"></tbody></table></div>
+            <div class="table-container">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th style="width:65%;">Variety</th>
+                            <th style="width:35%;">Available Qty (KG)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="varietySummaryBody">
+                        {% if variety_summary %}
+                            {% for v in variety_summary %}
+                            <tr>
+                                <td style="text-align:left !important; padding-left:15px;"><b>{{ v.variety_name }}</b></td>
+                                <td style="text-align:right !important; padding-right:15px; font-weight:800; color:var(--accent);">
+                                    {{ "{:,.2f}".format(v.total_hlso) }} KG
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="2" style="text-align:center; padding:15px; color:var(--text-muted);">No live stock found</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div id="dailySum" class="tab-content">
             <div class="table-container"><table class="dash-table"><thead><tr><th>Company > Loc > Variety</th><th style="width:30%;">Qty (KG)</th></tr></thead><tbody id="todaySummaryBody"></tbody></table></div>
@@ -253,7 +276,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
         <tbody id="mainTableBody">
             {% for r in today_data %}
             <tr data-id="{{r.id}}" data-batch="{{r.batch_number}}" data-comp="{{r.production_for}}" data-spec="{{r.species}}" data-var="{{r.variety_name}}" data-cnt="{{r.hlso_count}}" data-qty="{{r.peeled_qty}}" data-loc="{{r.peeling_at}}" data-cont="{{r.contractor_name}}" data-amt="{{r.amount}}" onclick="selectRow(this)">
-                <td style="font-weight:700; color:var(--accent);">${item.batch || '-'}</td>
+                <td style="font-weight:700; color:var(--accent);">{{ r.batch_number }}</td>
                 <td style="text-align:left;">{{r.production_for}}</td>
                 <td>{{r.species}}</td>
                 <td style="color:var(--accent); text-align:left;">{{r.variety_name}}</td>
@@ -313,7 +336,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
 
                 <div class="field">
                     <label>HLSO In (Qty)</label>
-                    <input type="number" step="0.01" name="hlso_qty" id="f_qty_in" required placeholder="0.00">
+                    <input type="number" step="0.01" name="hlso_qty" id="f_qty_in" autocomplete="off" required placeholder="0.00">
                     <span style="font-size:10px; color:var(--accent); font-weight:700; text-align:center;">Stock: <b id="floor_display">0.00</b> KG</span>
                 </div>
 
@@ -327,7 +350,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
 
                 <div class="field">
                     <label>Peeled Out (Qty)</label>
-                    <input type="number" step="0.01" name="peeled_qty" id="f_qty_out" required placeholder="0.00">
+                    <input type="number" step="0.01" name="peeled_qty" id="f_qty_out" autocomplete="off" required placeholder="0.00">
                 </div>
 
                 <div class="field">
@@ -359,24 +382,52 @@ const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }
 
 let selectedRowId = null;
 
-window.onload = () => {
+document.addEventListener("DOMContentLoaded", () => {
     try {
         const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
         if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
     } catch(e) {}
-    populateSearchableFilters();
-    runDashboard();
-};
+    
+    // Success Toast Popup
+    const msg = "{{ success_msg if success_msg else '' }}";
+    if(msg && msg.trim() !== "") {
+        Swal.fire({
+            title: "Saved!",
+            text: msg,
+            icon: "success",
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
 
-function populateSearchableFilters() {
-    const comps = new Set();
-    const locs = new Set();
-    RAW_FLOOR.forEach(e => {
-        if(e.production_for) comps.add(e.production_for);
-        if(e.location) locs.add(e.location);
-    });
-    fillDropdown('companyFilter', Array.from(comps).sort(), 'All Companies');
-    fillDropdown('locFilter', Array.from(locs).sort(), 'All Locations');
+    // Inject Back-end Global Filter Context
+    if (BACKEND_GLOBAL_COMPANY && BACKEND_GLOBAL_COMPANY !== "None" && BACKEND_GLOBAL_COMPANY !== "") {
+        const compFilterEl = document.getElementById("companyFilter");
+        if(compFilterEl) {
+            compFilterEl.innerHTML = `<option value="${BACKEND_GLOBAL_COMPANY}">${BACKEND_GLOBAL_COMPANY}</option>`;
+            compFilterEl.value = BACKEND_GLOBAL_COMPANY;
+        }
+    } else {
+        populateSearchableFilters('companyFilter', 'production_for', 'All Companies');
+    }
+
+    if (BACKEND_GLOBAL_LOCATION && BACKEND_GLOBAL_LOCATION !== "None" && BACKEND_GLOBAL_LOCATION !== "") {
+        const locFilterEl = document.getElementById("locFilter");
+        if(locFilterEl) {
+            locFilterEl.innerHTML = `<option value="${BACKEND_GLOBAL_LOCATION}">${BACKEND_GLOBAL_LOCATION}</option>`;
+            locFilterEl.value = BACKEND_GLOBAL_LOCATION;
+        }
+    } else {
+        populateSearchableFilters('locFilter', 'location', 'All Locations');
+    }
+
+    runDashboard();
+});
+
+function populateSearchableFilters(id, dataKey, defaultText) {
+    const uniqueVals = new Set();
+    RAW_FLOOR.forEach(e => { if(e[dataKey]) uniqueVals.add(e[dataKey]); });
+    fillDropdown(id, Array.from(uniqueVals).sort(), defaultText);
 }
 
 function fillDropdown(id, data, defaultText) {
@@ -461,6 +512,12 @@ function buildFloorTable(type, bodyId) {
 }
 
 function buildTodaySummary() {
+    // 🟢 🔴 FIXED LOGIC: గ్లోబల్ లొకేషన్ 'FLOOR' లేదా 'OTHER FLOOR' యాక్టివ్ గా ఉన్నప్పుడు జావాస్క్రిప్ట్ ఈ ట్యాబ్ బాడీని ఓవర్‌రైట్ చేయకుండా రిటర్న్ అవుతుంది చిన్నా!
+    const lF = document.getElementById('locFilter').value.trim().toUpperCase();
+    if (lF === "FLOOR" || lF === "OTHER FLOOR") {
+        return;
+    }
+
     const todaySummaryBody = document.getElementById("todaySummaryBody");
     const contractorSummaryBody = document.getElementById("contractorSummaryBody");
     
@@ -718,6 +775,10 @@ function closeModal() {
 }
 
 function resetFilters() { 
+    if(BACKEND_GLOBAL_COMPANY || BACKEND_GLOBAL_LOCATION) {
+        runDashboard();
+        return;
+    }
     document.getElementById('companyFilter').value=""; 
     document.getElementById('locFilter').value=""; 
     runDashboard(); 

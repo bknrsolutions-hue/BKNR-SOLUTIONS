@@ -99,6 +99,19 @@
         .dashboard { width: 100%; padding: 12px 8px 30px 8px; margin: 0; }
         @media(min-width: 768px) { .dashboard { width: 94%; margin: auto; padding: 16px 0 30px 0; } }
         
+        /* 🌟 TOP FILTER BAR CSS GENERATION */
+        .top-filter-bar {
+            background: var(--card-bg); padding: 12px 18px; margin-bottom: 20px;
+            border-radius: var(--radius-premium); border: 1px solid var(--border-color);
+            display: flex; gap: 16px; align-items: center; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .filter-node { display: flex; flex-direction: column; gap: 4px; }
+        .filter-node label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+        .top-filter-bar select {
+            padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color);
+            background: var(--slate-bg); color: var(--text-main); font-weight: 600; font-size: 11.5px; outline: none; min-width: 160px; height: 32px;
+        }
+
         .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
         @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
         @media(min-width: 1200px) { .cards { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
@@ -219,20 +232,15 @@
         #entryFrame { width: 100%; flex-grow: 1; border: none; background: transparent; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         /* 🌟 TABLE HORIZONTAL SCROLL FIX 🌟 */
-.rm-summary-box, .summary-card {
-    overflow-x: auto !important; 
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch; /* ఫోన్లలో వెన్నలా స్క్రోల్ అవ్వడానికి */
-}
-
-.rm-table {
-    min-width: 600px !important; /* టేబుల్ కుదించుకుపోకుండా ఫోర్స్ చేస్తుంది */
-}
-
-.rm-table th, .rm-table td {
-    white-space: nowrap !important; /* టెక్స్ట్ కింది లైన్‌కి రాకుండా ఆపుతుంది */
-}
+        .rm-summary-box, .summary-card {
+            overflow-x: auto !important; 
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch; 
+        }
+        .rm-table { min-width: 600px !important; }
+        .rm-table th, .rm-table td { white-space: nowrap !important; }
     </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -242,6 +250,20 @@
 <body>
 
 <div class="dashboard">
+
+    <div class="top-filter-bar">
+        <div class="filter-node">
+            <label>Global Company</label>
+            <select id="mainCompanyFilter" onchange="applyGlobalDashboardFilters()">
+                </select>
+        </div>
+        <div class="filter-node">
+            <label>Global Location</label>
+            <select id="mainLocationFilter" onchange="applyGlobalDashboardFilters()">
+                </select>
+        </div>
+    </div>
+
     <div class="cards">
         <div class="card blue" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
             <div class="card-meta">
@@ -402,7 +424,7 @@
 
     <div class="section-head">Live Floor Balance Details <hr></div>
     <div class="floor-box">
-        <iframe src="/reports/floor_balance_report" id="floorReportFrame" class="floor-frame"></iframe>
+        <iframe src="" id="floorReportFrame" class="floor-frame"></iframe>
     </div>
 </div>
 
@@ -422,7 +444,11 @@
     const chartTextColor = isDark ? '#94a3b8' : '#475569';
     const chartGridColor = isDark ? '#334155' : '#f1f5f9';
 
-    const hours = {{ hourly_labels | tojson }};
+    // Back-end session variables mapped cleanly into frontend memory state
+    const PARENT_GLOBAL_COMPANY = window.parent.document.getElementById('global_production_for') ? window.parent.document.getElementById('global_production_for').value : "";
+    const PARENT_GLOBAL_LOCATION = window.parent.document.getElementById('global_location') ? window.parent.document.getElementById('global_location').value : "";
+
+    const hours = {{ hourly_labels | tojson if hourly_labels else '[]' }};
     
     const chartOptions = { 
         responsive: true, 
@@ -436,19 +462,70 @@
 
     new Chart(document.getElementById("dhChart"), {
         type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ dh_hourly_data }}, backgroundColor: '#ea580c', borderRadius: 4 }] }, 
+        data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#ea580c', borderRadius: 4 }] }, 
         options: chartOptions
     });
     new Chart(document.getElementById("peelingChart"), {
         type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data }}, backgroundColor: '#0d9488', borderRadius: 4 }] }, 
+        data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#0d9488', borderRadius: 4 }] }, 
         options: chartOptions
     });
     new Chart(document.getElementById("prodChart"), {
         type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ prod_hourly_data }}, backgroundColor: '#4f46e5', borderRadius: 4 }] }, 
+        data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#4f46e5', borderRadius: 4 }] }, 
         options: chartOptions
     });
+
+    // 🌟 🟢 🔴 FIXED FILTER BAR DOM INJECTION & ROUTING LOGIC 🌟
+    window.addEventListener("DOMContentLoaded", () => {
+        setupMainDashboardFilterSelectors();
+    });
+
+    function setupMainDashboardFilterSelectors() {
+        const compSelect = document.getElementById("mainCompanyFilter");
+        const locSelect = document.getElementById("mainLocationFilter");
+
+        // Pull active dropdown nodes directly from BKNR Master ERP Header Frame
+        const parentCompNode = window.parent.document.getElementById('global_production_for');
+        const parentLocNode = window.parent.document.getElementById('global_location');
+
+        if(parentCompNode) {
+            compSelect.innerHTML = parentCompNode.innerHTML;
+            compSelect.value = parentCompNode.value;
+        } else {
+            compSelect.innerHTML = `<option value="">All Companies</option>`;
+        }
+
+        if(parentLocNode) {
+            locSelect.innerHTML = parentLocNode.innerHTML;
+            locSelect.value = parentLocNode.value;
+        } else {
+            locSelect.innerHTML = `<option value="">All Locations</option>`;
+        }
+
+        // Build filtered target source for live floor iframe link
+        const params = new URLSearchParams();
+        if(compSelect.value) params.append("production_for", compSelect.value);
+        if(locSelect.value) params.append("location", locSelect.value);
+
+        document.getElementById("floorReportFrame").src = "/reports/floor_balance_report?" + params.toString();
+    }
+
+    function applyGlobalDashboardFilters() {
+        const compVal = document.getElementById("mainCompanyFilter").value;
+        const locVal = document.getElementById("mainLocationFilter").value;
+
+        // Force write context back to master session frame to lock filters across modules
+        const parentCompNode = window.parent.document.getElementById('global_production_for');
+        const parentLocNode = window.parent.document.getElementById('global_location');
+        
+        if(parentCompNode) { parentCompNode.value = compVal; parentCompNode.dispatchEvent(new Event('change')); }
+        if(parentLocNode) { parentLocNode.value = locVal; parentLocNode.dispatchEvent(new Event('change')); }
+
+        // Fetch current active URL state and enforce synchronization reload
+        const currentUrl = new URL(window.location.href);
+        window.location.href = currentUrl.pathname; 
+    }
 
     // 🌟 POP-UP (MODAL) OPEN & THEME INJECTION 🌟
     function openEntryModal(url, title) {
@@ -471,7 +548,6 @@
         }
     }
 
-    // 🌟 MASTER IFRAME THEME INJECTOR FOR POP-UP & FLOOR BALANCE 🌟
     function injectThemeIntoIframe(iframeId) {
         const iframeEl = document.getElementById(iframeId);
         if(!iframeEl) return;
@@ -479,12 +555,9 @@
         iframeEl.addEventListener("load", function() {
             try {
                 const frameDoc = this.contentDocument || this.contentWindow.document;
-                const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
-                
-                // 1. సెట్ థీమ్ (Set Theme inside Iframe)
+                const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
                 frameDoc.documentElement.setAttribute("data-theme", currentTheme);
                 
-                // 2. గ్లోబల్ CSS లింక్ (Inject Master CSS inside Iframe)
                 if (!frameDoc.getElementById('master-theme-enforcer')) {
                     let enforceLink = frameDoc.createElement("link");
                     enforceLink.id = "master-theme-enforcer";
@@ -498,12 +571,10 @@
         });
     }
 
-    // ఈ రెండు ఐఫ్రేమ్స్ లోకి (మోడల్ & ఫ్లోర్ బ్యాలెన్స్) డార్క్ మోడ్ ని బలవంతంగా పంపిస్తున్నాం
     injectThemeIntoIframe('entryFrame');
     injectThemeIntoIframe('floorReportFrame');
 
-
-    // ⚡️ OPTIMIZED REAL-TIME SYNCHRONIZATION WITH INSTANT PARSING BREAKS (YOUR ORIGINAL LOGIC)
+    // ⚡️ OPTIMIZED REAL-TIME SYNCHRONIZATION WITH INSTANT PARSING BREAKS
     function syncLiveFloorFromIframe() {
         try {
             const iframe = document.getElementById("floorReportFrame");
@@ -556,7 +627,6 @@
     if (iframeEl) {
         iframeEl.addEventListener("load", function() {
             syncLiveFloorFromIframe(); 
-            
             try {
                 const iframeDoc = iframeEl.contentDocument || iframeEl.contentWindow.document;
                 const observer = new MutationObserver(syncLiveFloorFromIframe);

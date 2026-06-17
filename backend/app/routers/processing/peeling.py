@@ -20,7 +20,7 @@ from app.database.models.criteria import (
     packing_styles,
     production_for as ProductionForMaster
 )
-from app.database.models.inventory_management import pending_orders, stock_entry
+from app.database.models.inventory_management import stock_entry, pending_orders
 from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["PEELING"])
@@ -142,6 +142,12 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_id).all()
     masters = get_cached_masters(db, company_id)
     
+    # PERFORMANCE OPTIMIZATION LOCK
+    variety_master_map = {
+        v.variety_name.lower().strip(): v
+        for v in db.query(varieties).filter(varieties.company_id == company_id).all()
+    }
+    
     stock_pool = {}
     for s in all_stock:
         gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
@@ -176,7 +182,9 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
         if pending_prod < 0:
             abs_pending = abs(pending_prod)
-            v_data = next((v for v in db.query(varieties).filter(varieties.company_id == company_id).all() if str(v.variety_name).strip().lower() == p_var), None)
+            
+            # O(1) Fast Memory Lookup
+            v_data = variety_master_map.get(p_var)
             peeling_y = float(v_data.peeling_yield or 100) / 100 if v_data else 1.0
             soaking_y = float(v_data.soaking_yield or 100) / 100 if v_data else 1.0
             
@@ -194,7 +202,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                 drill_down_data["hlso"][summary_key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hlso_qty})
 
     # =====================================================
-    # 🟢 ⚡ 3rd TABLE TABS SYSTEM ALIGNMENT (COMPLETE FIX)
+    # 3rd TABLE TABS SYSTEM ALIGNMENT
     # =====================================================
     # Tab 1: Today's Raw Log Logs 
     today_q = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
@@ -226,20 +234,55 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     contractor_summary_q = contractor_q.group_by(Peeling.contractor_name).all()
     contractor_summary = [{"contractor_name": r[0], "total_hlso": round(r[1] or 0, 2), "total_peeled": round(r[2] or 0, 2), "total_amount": round(r[3] or 0, 2)} for r in contractor_summary_q]
 
-    # Tab 3: Variety Summary Aggregation (Variety Summary Fixed!)
-    variety_q = db.query(
-        Peeling.variety_name, 
-        func.sum(Peeling.hlso_qty).label("total_hlso"), 
-        func.sum(Peeling.peeled_qty).label("total_peeled"), 
-        func.avg(func.nullif(Peeling.yield_percent, 0)).label("avg_yield")
-    ).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
+    # =====================================================
+    # Tab 3 : Variety Summary (Live Inventory Direct Read)
+    # =====================================================
+    variety_summary_q = db.query(
+        FloorBalance.variety.label("variety_name"),
+        func.sum(FloorBalance.available_qty).label("qty")
+    ).filter(
+        FloorBalance.company_id == company_id,
+        FloorBalance.available_qty > 0.01,
+        func.upper(func.trim(FloorBalance.variety)).notin_(["HOSO", "HLSO"])
+    )
+
     if global_production_for:
-        variety_q = variety_q.filter(func.upper(func.trim(Peeling.production_for)) == global_production_for.strip().upper())
+        variety_summary_q = variety_summary_q.filter(func.upper(func.trim(FloorBalance.production_for)) == global_production_for.strip().upper())
+
     if global_location:
-        variety_q = variety_q.filter(func.upper(func.trim(Peeling.peeling_at)) == global_location.strip().upper())
-        
-    variety_summary_q = variety_q.group_by(Peeling.variety_name).all()
-    variety_summary = [{"variety_name": r[0], "total_hlso": round(r[1] or 0, 2), "total_peeled": round(r[2] or 0, 2), "avg_yield": round(r[3] or 0, 2)} for r in variety_summary_q]
+        g_loc_clean = global_location.strip().upper()
+        if g_loc_clean in ["FLOOR", "OTHER FLOOR"]:
+            variety_summary_q = variety_summary_q.filter(or_(
+                func.upper(func.trim(FloorBalance.location)) == "FLOOR",
+                func.upper(func.trim(FloorBalance.location)) == "OTHER FLOOR",
+                FloorBalance.location == None,
+                func.trim(FloorBalance.location) == ""
+            ))
+        else:
+            variety_summary_q = variety_summary_q.filter(func.upper(func.trim(FloorBalance.location)) == g_loc_clean)
+    elif user_allowed_locations:
+        variety_summary_q = variety_summary_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
+
+    variety_summary_q = (
+        variety_summary_q
+        .group_by(FloorBalance.variety)
+        .order_by(FloorBalance.variety)
+        .all()
+    )
+
+    variety_summary = [
+        {
+            "variety_name": r.variety_name,
+            "total_hlso": round(r.qty or 0, 2),   
+            "total_peeled": 0,
+            "avg_yield": 0
+        }
+        for r in variety_summary_q
+    ]
+
+    print("GLOBAL LOCATION =", global_location)
+    print("VARIETY SUMMARY RAW =", variety_summary_q)
+    print("VARIETY SUMMARY COUNT =", len(variety_summary))
 
     pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
     success_msg = request.session.pop("success_msg", None)
@@ -253,9 +296,9 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
             "species": masters["species"], 
             "peeling_locations": pa_list, 
             "prod_for_list": masters["prod_for_list"],
-            "today_data": today_data,                    # Tab 1
-            "contractor_summary": contractor_summary,    # Tab 2
-            "variety_summary": variety_summary,          # Tab 3 Data Filled
+            "today_data": today_data,                    
+            "contractor_summary": contractor_summary,    
+            "variety_summary": variety_summary,          
             "hlso_floor_balance": hlso_floor_balance, 
             "hlso_summary": list(hlso_summary.values()), 
             "drill_down_json": json.dumps(drill_down_data)
@@ -386,7 +429,9 @@ def save_peeling(
     except: clean_yield = 0.0
 
     current_ist = ist_now()
+    input_variety = live_record.variety if live_record else "HLSO"
 
+    # 🟢 🔴 FIXED: ఎక్స్‌ట్రా కాలమ్ తీసేసి డైరెక్ట్ గా నీ ఒరిజినల్ 'variety_name' లోపలికే డేటాను బైండ్ చేశాను చిన్నా!
     new_entry = Peeling(
         production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
         species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
@@ -396,7 +441,6 @@ def save_peeling(
     db.add(new_entry)
     
     # ⚡ 1. Deduct input HLSO stock atomically
-    input_variety = live_record.variety if live_record else "HLSO"
     update_floor_balance_row(
         db, company_code, clean_batch, clean_count, species, input_variety, 
         location, production_for, qty_delta=-hlso_qty, email=email
@@ -423,9 +467,10 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
     row = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.id == id).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
-        
+
     clean_loc = "FLOOR" if not row.peeling_at or row.peeling_at.strip() == "" else row.peeling_at.strip().upper()
 
+    # 🟢 🔴 FIXED: ఎక్స్‌ట్రా కాలమ్ లేకపోయినా బగ్ రాకుండా... లైవ్ టేబుల్ నుండి ఒరిజినల్ ఇన్పుట్ వెరైటీని డైనమిక్ గా రికవరీ చేస్తుంది!
     input_record = db.query(FloorBalance.variety).filter(
         FloorBalance.company_id == company_id, 
         or_(
@@ -438,9 +483,10 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
         FloorBalance.variety.ilike("%HLSO%"),
         func.upper(func.trim(FloorBalance.production_for)) == row.production_for.strip().upper()
     ).first()
+    
     resolved_input_var = input_record[0] if input_record else "HLSO"
 
-    # ⚡ Inverse Stock Mutation Rollbacks
+    # ⚡ Inverse Stock Mutation Rollbacks (100% Accurate Recovery)
     update_floor_balance_row(
         db, company_id, row.batch_number, row.hlso_count, row.species, resolved_input_var, 
         row.peeling_at, row.production_for, qty_delta=row.hlso_qty, email=email
