@@ -194,7 +194,9 @@ class coldstore_locations(Base, metacolumns):
     __tablename__ = "coldstore_locations"
     id = Column(Integer, primary_key=True)
     coldstore_location = Column(String(255), nullable=False, index=True)
-    __table_args__ = (UniqueConstraint("company_id", "coldstore_location", name="uix_company_cold"),)
+    production_for = Column(String(255), nullable=True, index=True)
+    production_at = Column(String(255), nullable=True, index=True)
+    __table_args__ = (UniqueConstraint("company_id", "coldstore_location","production_at","production_for", name="uix_company_cold"),)
 
 class freezers(Base, metacolumns):
     __tablename__ = "freezers"

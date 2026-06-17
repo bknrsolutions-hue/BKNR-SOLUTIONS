@@ -38,23 +38,23 @@ body{ margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px
   background: var(--card-bg); padding: 15px 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: none; /* JS will handle auto-open */
+  display: none;
 }
 
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
 @media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(4, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
 
 .field { display: flex; flex-direction: column; }
 .form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px;}
 
 label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
-input {
+input, select {
   padding: 8px 12px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 13px; background: var(--card-bg);
-  outline: none; width: 100%; transition: 0.2s;
+  outline: none; width: 100%; transition: 0.2s; height: 37px;
 }
-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
 
 /* CONTROL ACTIONS HEAD */
 .table-header-bar {
@@ -64,8 +64,9 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 2
 }
 .table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; padding-top: 8px;}
 
-.top-actions { margin: 0; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
-.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; }
+/* 🌟 STYLING FIXED FOR STACKED BUTTONS LOOK */
+.top-actions { margin: 0; display: flex; flex-direction: column; gap: 6px; justify-content: flex-end; width: 150px; }
+.btn-toggle { background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; text-transform: uppercase; width: 100%; height: 36px; }
 
 .actions { text-align: center; display: flex; justify-content: center; gap: 8px; margin-top: 15px; width: 100%; }
 .btn {
@@ -116,6 +117,7 @@ tr.selected { background: #eff6ff !important; }
   .form-container, .table-header-bar { width: 95%; }
   .actions { flex-direction: column-reverse; }
   .btn, .btn-toggle { width: 100% !important; height: 36px; padding: 0 !important; line-height: 1; }
+  .top-actions { width: 100% !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -131,38 +133,39 @@ tr.selected { background: #eff6ff !important; }
   </div>
 </div>
 
-<!-- FORM AREA -->
 <form onsubmit="submitLocation(event)" id="locationForm">
   <div class="form-container" id="formSection">
     
-    <!-- Location Profile Grid -->
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-warehouse"></i> Location Profile</div>
+      
       <div class="field">
         <label>Location Name</label>
         <input type="text" id="location_name" required placeholder="Enter Location Name">
       </div>
+
+      <div class="field">
+        <label>Production For</label>
+        <select id="production_for" required></select>
+      </div>
+
+      <div class="field">
+        <label>Plant Location (Production At)</label>
+        <select id="production_at" required>
+            <option value="">Select Active Plant</option>
+            {% for p in production_at_list %}
+            <option value="{{ p.production_at }}">{{ p.production_at }}</option>
+            {% endfor %}
+        </select>
+      </div>
     </div>
 
-    <!-- Metadata Hidden Fields -->
     <input type="hidden" id="record_id">
     <input type="hidden" id="meta_email" value="{{ email }}">
     <input type="hidden" id="meta_company_id" value="{{ company_id }}">
 
-    <!-- Setup Wizard Buttons -->
     <div class="actions">
       <button class="btn btn-primary" type="submit" id="submitBtn">SAVE LOCATION</button>
-      
-      {% if today_data %}
-      <button 
-          type="button" 
-          class="btn" 
-          onclick="window.location.href='/criteria/setup/next'" 
-          style="background: var(--accent); color: white; border: none;">
-          NEXT <i class="fa-solid fa-arrow-right"></i>
-      </button>
-      {% endif %}
-
       <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
     </div>
   </div>
@@ -174,12 +177,11 @@ tr.selected { background: #eff6ff !important; }
 
 {% if today_data %}
 
-<!-- CONTROL ACTIONS HEADER BAR -->
 <div class="table-header-bar">
     <h3 class="table-title">Location Data Logs</h3>
     
     <div style="display: flex; gap: 10px; align-items: flex-start;">
-        <!-- Add New & Next Buttons Stacked Neatly -->
+        
         <div class="top-actions" id="toggleActionArea">
             <button class="btn-toggle" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Location</button>
             
@@ -188,13 +190,12 @@ tr.selected { background: #eff6ff !important; }
                 type="button" 
                 class="btn-toggle" 
                 onclick="window.location.href='/criteria/setup/next'" 
-                style="background: var(--accent); color: white; border: none; width: 100%;">
+                style="background: var(--accent); color: white; border: none;">
                 NEXT STEP <i class="fa-solid fa-arrow-right"></i>
             </button>
             {% endif %}
         </div>
 
-        <!-- RIGHT INLINE 3-DOT MENU -->
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
@@ -208,10 +209,10 @@ tr.selected { background: #eff6ff !important; }
     </div>
 </div>
 
-<!-- MOBILE VIEW CARD LIST -->
 <div class="mobile-card-list">
     {% for row in today_data %}
     <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.coldstore_location }}"
+         data-prodfor="{{ row.production_for if row.production_for else '' }}" data-prodat="{{ row.production_at if row.production_at else '' }}"
          data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
          onclick="selectRowOrCard(this)">
         <div class="card-row">
@@ -221,6 +222,14 @@ tr.selected { background: #eff6ff !important; }
         <div class="card-row">
             <span class="card-label">Location Name</span>
             <span class="card-val" style="color:var(--accent);">{{ row.coldstore_location }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Production For</span>
+            <span class="card-val">{{ row.production_for if row.production_for else 'N/A' }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Production At</span>
+            <span class="card-val"><span class="kpi-badge" style="background:#1e293b; color:#fff; font-size:8px;">{{ row.production_at if row.production_at else 'N/A' }}</span></span>
         </div>
         <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
             <span class="card-label">Created At</span>
@@ -234,13 +243,14 @@ tr.selected { background: #eff6ff !important; }
     {% endfor %}
 </div>
 
-<!-- COMPACT FULL TABLE VIEW -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
       <tr>
         <th style="width:50px;">ID</th>
         <th>Location Name</th>
+        <th>Production For</th>
+        <th>Production At</th>
         <th>Date</th>
         <th>Time</th>
         <th>Email</th>
@@ -250,10 +260,13 @@ tr.selected { background: #eff6ff !important; }
     <tbody>
       {% for row in today_data %}
       <tr data-id="{{ row.id }}" data-name="{{ row.coldstore_location }}"
+          data-prodfor="{{ row.production_for if row.production_for else '' }}" data-prodat="{{ row.production_at if row.production_at else '' }}"
           data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
           onclick="selectRowOrCard(this)">
         <td>{{ row.id }}</td>
         <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.coldstore_location }}</td>
+        <td style="font-weight:600; color:var(--text);">{{ row.production_for if row.production_for else '' }}</td>
+        <td><span style="font-size:10px; font-weight:800; background:#f1f5f9; padding:4px 8px; border-radius:4px; color:var(--primary);">{{ row.production_at if row.production_at else '' }}</span></td>
         <td style="color: #475569;">{{ row.date if row.date else '' }}</td>
         <td style="color: #64748b;">{{ row.time if row.time else '' }}</td>
         <td style="color: #0284c7; font-size: 11px;">{{ row.email if row.email else '' }}</td>
@@ -269,11 +282,7 @@ tr.selected { background: #eff6ff !important; }
 <script>
 let selectedElement = null;
 
-/* -------------------------------------
-   AUTO-OPEN ON EMPTY OR LOAD LOCAL DATA
--------------------------------------- */
 window.onload = function() {
-    // 1. Load LocalStorage Fallback if Jinja tags empty
     const email = localStorage.getItem("userEmail");
     const company = localStorage.getItem("companyID");
     
@@ -284,16 +293,22 @@ window.onload = function() {
         document.getElementById("meta_company_id").value = company || "";
     }
 
-    // 2. Setup Wizard Auto-Open Logic
+    const compSelect = document.getElementById("production_for");
+    const parentCompNode = window.parent.document.getElementById('global_production_for');
+    if(parentCompNode && compSelect) {
+        compSelect.innerHTML = parentCompNode.innerHTML;
+        if(compSelect.options[0] && compSelect.options[0].value === "") {
+            compSelect.options[0].text = "Select Corporate Entity";
+        }
+    }
+
     const tableBody = document.querySelector("#dataTable tbody");
     const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
 
     if (rows === 0) {
         document.getElementById("formSection").style.display = "block";
         const toggle = document.getElementById("toggleActionArea");
-        if (toggle) {
-            toggle.style.display = "none";
-        }
+        if (toggle) { toggle.style.display = "none"; }
     }
 }
 
@@ -308,13 +323,12 @@ function toggleForm() {
     }
 }
 
-/* -------------------------------------
-   SUBMIT FORM USING FORMDATA
--------------------------------------- */
 async function submitLocation(e){
   e.preventDefault();
 
   const location_name = document.getElementById("location_name").value.trim();
+  const production_for = document.getElementById("production_for").value; 
+  const production_at = document.getElementById("production_at").value;   
   const record_id = document.getElementById("record_id").value;
 
   const now = new Date();
@@ -331,6 +345,8 @@ async function submitLocation(e){
   }
 
   fd.append("location_name", location_name);
+  fd.append("production_for", production_for); 
+  fd.append("production_at", production_at);   
   fd.append("date", date);
   fd.append("time", time);
   fd.append("email", email);
@@ -346,11 +362,11 @@ async function submitLocation(e){
         location.reload();
     });
   } else {
-    Swal.fire({icon:'error', title:'Save Failed: ' + await res.text()});
+    const errData = await res.json();
+    Swal.fire({icon:'error', title:'Save Failed', text: errData.error || 'Server Configuration Error'});
   }
 }
 
-/* ------------------- ROW / CARD SELECTION SYNC ------------------- */
 function selectRowOrCard(el) {
   document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
   
@@ -367,13 +383,14 @@ document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
   d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
-/* ------------------- EDIT & DELETE ACTIONS ------------------- */
 function editSelected(){
   if(!selectedElement) return;
   const d = selectedElement.dataset;
   
   document.getElementById("record_id").value = d.id;
   document.getElementById("location_name").value = d.name;
+  document.getElementById("production_for").value = d.prodfor; 
+  document.getElementById("production_at").value = d.prodat;   
   
   document.getElementById("submitBtn").innerText = "UPDATE LOCATION";
   document.getElementById("formSection").style.display = "block";
@@ -403,17 +420,19 @@ async function deleteSelected(){
   });
 }
 
-/* ------------------- EXTRAS ACTIONS ------------------- */
 function printSelected(){
   if(!selectedElement) return;
-
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
+  const prodfor = selectedElement.dataset.prodfor;
+  const prodat = selectedElement.dataset.prodat;
 
   const p = window.open("", "_blank");
   p.document.write("<h3>Cold Store Location Details</h3>");
   p.document.write("<p><b>ID:</b> "+id+"</p>");
   p.document.write("<p><b>Location Name:</b> "+name+"</p>");
+  p.document.write("<p><b>Production For:</b> "+prodfor+"</p>");
+  p.document.write("<p><b>Production At:</b> "+prodat+"</p>");
   p.document.close();
   p.print();
 }
@@ -422,13 +441,13 @@ function exportPDF(){ printSelected(); }
 
 function exportExcel(){
   if(!selectedElement) return;
-
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
+  const prodfor = selectedElement.dataset.prodfor;
+  const prodat = selectedElement.dataset.prodat;
 
-  const data = `ID\tLocation Name\n${id}\t${name}`;
+  const data = `ID\tLocation Name\tProduction For\tProduction At\n${id}\t${name}\t${prodfor}\t${prodat}`;
   const blob = new Blob([data], {type:"application/vnd.ms-excel"});
-
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

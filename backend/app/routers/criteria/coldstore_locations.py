@@ -1,19 +1,24 @@
+
 # app/routers/criteria/coldstore_locations.py
 
-from fastapi import APIRouter, Request, Form, Depends
+import logging
+from datetime import date, datetime
+from fastapi import APIRouter, Depends, Form, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.criteria import coldstore_locations
+# 🟢 🔴 production_at మోడల్‌ని కూడా ఇక్కడ ఇంపోర్ట్ చేశాను చిన్నా!
+from app.database.models.criteria import coldstore_locations, production_at
 
-router = APIRouter(tags=["COLDSTORE LOCATIONS"])
+router = APIRouter(prefix="", tags=["COLDSTORE LOCATIONS"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------
-# PAGE – LOAD
+# PAGE – LOAD (🔥 Context Synced for Plant & Production For)
 # ---------------------------------------------------------
 @router.get("/coldstore_locations")
 def coldstore_locations_page(request: Request, db: Session = Depends(get_db)):
@@ -31,30 +36,38 @@ def coldstore_locations_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # ✅ FIX: TemplateResponse arguments updated
+    # 🟢 🔴 డమ్మీ డేటా లేకుండా లైవ్ ప్రొడక్షన్ లొకేషన్స్ లిస్ట్‌ని ఇక్కడి నుండి లాగాను!
+    plants = (
+        db.query(production_at)
+        .filter(production_at.company_id == company_code)
+        .all()
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="criteria/coldstore_locations.html",
         context={
             "today_data": rows,
+            "production_at_list": plants,  # 👈 ఇక్కడ లైవ్ ప్లాంట్స్ పాస్ అవుతాయి!
             "email": email,
             "company_id": company_code,
-            "message": ""
-        }
+            "message": "",
+        },
     )
 
-
 # ---------------------------------------------------------
-# SAVE / UPDATE
+# SAVE / UPDATE (🔥 Production For & Production At Integrated)
 # ---------------------------------------------------------
 @router.post("/coldstore_locations")
 def save_coldstore_location(
     request: Request,
     location_name: str = Form(...),
+    production_for: str = Form(...),  # 👈 New Premium Column Form Data
+    production_at: str = Form(...),   # 👈 New Premium Column Form Data
     id: str = Form(""),
     date: str = Form(""),
     time: str = Form(""),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
 
     email = request.session.get("email")
@@ -66,27 +79,43 @@ def save_coldstore_location(
     # Safe ID conversion
     record_id = int(id) if id and id.isdigit() else None
 
-    # Duplicate check
-    duplicate = db.query(coldstore_locations).filter(
-        coldstore_locations.coldstore_location == location_name,
-        coldstore_locations.company_id == company_code,
-        coldstore_locations.id != record_id
-    ).first()
+    # 🟢 🔴 DUPLICATE CHECK: Validated against specific corporate entity and specific plant floor location
+    duplicate = (
+        db.query(coldstore_locations)
+        .filter(
+            coldstore_locations.coldstore_location == location_name,
+            coldstore_locations.production_for == production_for,  # 👈 Added to duplicate gate lock
+            coldstore_locations.production_at == production_at,    # 👈 Added to duplicate gate lock
+            coldstore_locations.company_id == company_code,
+            coldstore_locations.id != record_id,
+        )
+        .first()
+    )
 
     if duplicate:
-        return JSONResponse({"error": f"Location '{location_name}' already exists!"}, status_code=400)
+        return JSONResponse(
+            {"error": f"Location '{location_name}' already exists for {production_for} at {production_at}!"},
+            status_code=400,
+        )
 
     # UPDATE
     if record_id:
-        row = db.query(coldstore_locations).filter(
-            coldstore_locations.id == record_id,
-            coldstore_locations.company_id == company_code
-        ).first()
+        row = (
+            db.query(coldstore_locations)
+            .filter(
+                coldstore_locations.id == record_id,
+                coldstore_locations.company_id == company_code,
+            )
+            .first()
+        )
 
         if not row:
             return JSONResponse({"error": "Record not found"}, status_code=404)
 
+        # Original states updated cleanly
         row.coldstore_location = location_name
+        row.production_for = production_for  # 👈 Sync Update
+        row.production_at = production_at    # 👈 Sync Update
         row.date = date
         row.time = time
         row.email = email
@@ -95,15 +124,16 @@ def save_coldstore_location(
     else:
         new_row = coldstore_locations(
             coldstore_location=location_name,
+            production_for=production_for,  # 👈 Enforce new column context mappings
+            production_at=production_at,    # 👈 Enforce new column context mappings
             date=date,
             time=time,
             email=email,
-            company_id=company_code
+            company_id=company_code,
         )
         db.add(new_row)
 
     db.commit()
-
     return JSONResponse({"success": True})
 
 
@@ -119,10 +149,8 @@ def delete_coldstore_location(id: int, request: Request, db: Session = Depends(g
         return JSONResponse({"error": "Session Invalid"}, status_code=401)
 
     db.query(coldstore_locations).filter(
-        coldstore_locations.id == id,
-        coldstore_locations.company_id == company_code
+        coldstore_locations.id == id, coldstore_locations.company_id == company_code
     ).delete()
 
     db.commit()
-
     return JSONResponse({"status": "ok"})
