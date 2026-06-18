@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Executive KPI Reference Center | BKNR ERP</title>
+<title>Executive Costing Reference Center | BKNR ERP</title>
 
-<!-- Theme Initialization Script to Prevent Flicker -->
 <script>
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
@@ -132,7 +131,7 @@
   }
 
   .header-title h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: var(--primary-dark); }
-  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px;}
 
   .control-bar { display: flex; gap: 6px; }
   .btn-action {
@@ -189,7 +188,7 @@
   .filter-inputs-wrapper { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; flex: 1; }
   .input-field { display: flex; align-items: center; gap: 8px; min-width: 200px; }
   .input-field label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; }
-  .input-field input {
+  .input-field input, .input-field select {
     padding: 6px 10px;
     border: 1px solid var(--border-color);
     background: var(--input-bg);
@@ -237,34 +236,51 @@
     gap: 6px;
   }
 
-  /* KPI GRID */
-  .kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
-  @media(min-width:576px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
-  @media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
+  /* ==========================================================
+     🌟 INVENTORY STYLE KPI CARDS (GRADIENT BACKGROUNDS)
+  ========================================================== */
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media(min-width: 480px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+  @media(min-width: 1200px) { .cards { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
 
-  .ref-kpi-card {
-    padding: 14px; 
-    border-radius: var(--radius-premium); 
-    display: flex; flex-direction: column; justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
-    background: var(--kpi-card-bg); 
-    border: 1px solid var(--border-color);
+  .card { 
+      padding: 14px 14px; border-radius: var(--radius-premium); cursor: default; 
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
   }
-  .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1); }
-  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; overflow: hidden; }
-  .ref-kpi-value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 4px; letter-spacing: -0.5px; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1); }
 
-  /* Logic State Cards */
-  .state-success, .profit-card { background: var(--emerald-bg) !important; border: 1px solid var(--emerald-border) !important; }
-  .state-success .ref-kpi-value, .profit-card .ref-kpi-value { color: var(--emerald) !important; }
+  .card-meta { text-align: left; overflow: hidden; }
+  .label { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 4px; letter-spacing: -0.5px; }
   
-  .state-danger, .loss-card { background: var(--rose-bg) !important; border: 1px solid var(--rose-border) !important; }
-  .state-danger .ref-kpi-value, .loss-card .ref-kpi-value { color: var(--rose) !important; }
-  
-  .state-warning, .warning-card { background: var(--amber-bg) !important; border: 1px solid var(--amber-border) !important; }
-  .state-warning .ref-kpi-value, .warning-card .ref-kpi-value { color: var(--amber) !important; }
+  .card-icon-zone {
+      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;
+      background: #ffffff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.08); flex-shrink: 0;
+  }
+
+  [data-theme="dark"] .value { color: #f8fafc; }
+  [data-theme="dark"] .card-icon-zone { background: #1e293b !important; }
+
+  /* Colors */
+  .blue { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; } .blue .card-icon-zone { color: #2563eb; }
+  .green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; } .green .card-icon-zone { color: #16a34a; }
+  .orange { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; } .orange .card-icon-zone { color: #ea580c; }
+  .purple { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; } .purple .card-icon-zone { color: #7c3aed; }
+  .teal { background: linear-gradient(135deg, #f0fdf4 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; } .teal .card-icon-zone { color: #0d9488; }
+  .pink { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; } .pink .card-icon-zone { color: #db2777; }
+  .gray { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; } .gray .card-icon-zone { color: #475569; }
+  .indigo { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; } .indigo .card-icon-zone { color: #4f46e5; }
+  .red { background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fecaca; } .red .card-icon-zone { color: #dc2626; }
+
+  [data-theme="dark"] .blue { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); border-color: #1e40af; }
+  [data-theme="dark"] .green { background: linear-gradient(135deg, #14532d 0%, #166534 100%); border-color: #166534; }
+  [data-theme="dark"] .orange { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); border-color: #9a3412; }
+  [data-theme="dark"] .purple { background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%); border-color: #5b21b6; }
+  [data-theme="dark"] .pink { background: linear-gradient(135deg, #831843 0%, #9d174d 100%); border-color: #9d174d; }
+  [data-theme="dark"] .indigo { background: linear-gradient(135deg, #312e81 0%, #3730a3 100%); border-color: #3730a3; }
+  [data-theme="dark"] .red { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); border-color: #991b1b; }
 
   /* ALERTS PANEL */
   .exception-box {
@@ -334,8 +350,6 @@
   .prod-net-margin { font-size: 11px; font-weight: 700; margin-top: 2px; }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
 
@@ -343,7 +357,7 @@
 
   <div class="header-panel">
     <div class="header-title">
-      <h2>COSTING DASHBOARD</h2>
+      <h2><i class="fa-solid fa-file-invoice-dollar" style="color:var(--accent-blue); margin-right:6px;"></i> COSTING DASHBOARD</h2>
       <p>Active Node Terminal Reference Trace: {{ email or 'Anonymous Corporate System Session' }}</p>
     </div>
     <div class="control-bar">
@@ -376,6 +390,11 @@
             {% endfor %}
           </select>
         </div>
+        <div class="input-field"><label>Location</label>
+          <select name="location">
+            <option value="">All Locations</option>
+            </select>
+        </div>
         <div class="input-field"><label>From</label><input type="date" name="from_date" value="{{ from_date }}"></div>
         <div class="input-field"><label>To</label><input type="date" name="to_date" value="{{ to_date }}"></div>
       </div>
@@ -383,19 +402,66 @@
     </form>
   </div>
 
-  <div class="kpi-matrix-grid">
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Raw Material Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(rmp_cost)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Production Cost</span><span class="ref-kpi-value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
-    <div class="ref-kpi-card state-warning"><span class="ref-kpi-meta">Conversion / Kg</span><span class="ref-kpi-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Payroll Resource</span><span class="ref-kpi-value">₹{{"{:.0f}".format(payroll_cost)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Utility Expense</span><span class="ref-kpi-value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Packaging Supply</span><span class="ref-kpi-value">₹{{"{:.0f}".format(packaging_cost)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Logistics Fleet</span><span class="ref-kpi-value">₹{{"{:.0f}".format(logistics_cost)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Inventory Asset</span><span class="ref-kpi-value">₹{{"{:.0f}".format(inventory_value)}}</span></div>
-    <div class="ref-kpi-card"><span class="ref-kpi-meta">Gross Sales Pool</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales)}}</span></div>
-    <div class="ref-kpi-card state-warning"><span class="ref-kpi-meta">Arrears Pending</span><span class="ref-kpi-value">₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
-    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}"><span class="ref-kpi-meta">Gross Margin</span><span class="ref-kpi-value">₹{{"{:.0f}".format(total_sales - total_expense)}}</span></div>
-    <div class="ref-kpi-card {% if total_sales - total_expense < 0 %}state-danger{% else %}state-success{% endif %}"><span class="ref-kpi-meta">Net Ratio</span><span class="ref-kpi-value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</span></div>
+  <div class="cards">
+    <div class="card blue">
+        <div class="card-meta"><div class="label">Raw Material Cost</div><div class="value">₹{{"{:.0f}".format(rmp_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-boxes-stacked"></i></div>
+    </div>
+    
+    <div class="card orange">
+        <div class="card-meta"><div class="label">Production Cost</div><div class="value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-industry"></i></div>
+    </div>
+    
+    <div class="card amber">
+        <div class="card-meta"><div class="label">Conversion / Kg</div><div class="value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-scale-balanced"></i></div>
+    </div>
+    
+    <div class="card pink">
+        <div class="card-meta"><div class="label">Payroll Resource</div><div class="value">₹{{"{:.0f}".format(payroll_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
+    </div>
+    
+    <div class="card gray">
+        <div class="card-meta"><div class="label">Utility Expense</div><div class="value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-plug"></i></div>
+    </div>
+    
+    <div class="card purple">
+        <div class="card-meta"><div class="label">Packaging Supply</div><div class="value">₹{{"{:.0f}".format(packaging_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-box-open"></i></div>
+    </div>
+    
+    <div class="card indigo">
+        <div class="card-meta"><div class="label">Logistics Fleet</div><div class="value">₹{{"{:.0f}".format(logistics_cost)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-truck-fast"></i></div>
+    </div>
+    
+    <div class="card blue">
+        <div class="card-meta"><div class="label">Inventory Asset</div><div class="value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-warehouse"></i></div>
+    </div>
+    
+    <div class="card green">
+        <div class="card-meta"><div class="label">Gross Sales Pool</div><div class="value">₹{{"{:.0f}".format(total_sales)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+    </div>
+    
+    <div class="card red">
+        <div class="card-meta"><div class="label">Arrears Pending</div><div class="value">₹{{"{:.0f}".format(receivable_outstanding)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+    </div>
+    
+    <div class="card {% if total_sales - total_expense < 0 %}red{% else %}green{% endif %}">
+        <div class="card-meta"><div class="label">Gross Margin</div><div class="value">₹{{"{:.0f}".format(total_sales - total_expense)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-sack-dollar"></i></div>
+    </div>
+    
+    <div class="card {% if total_sales - total_expense < 0 %}red{% else %}green{% endif %}">
+        <div class="card-meta"><div class="label">Net Ratio</div><div class="value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-percent"></i></div>
+    </div>
   </div>
 
   <div class="exception-box">

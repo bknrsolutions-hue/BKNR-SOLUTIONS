@@ -271,7 +271,7 @@ body {
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
 /* =========================================================
-   🌟 MOBILE ONLY: CATEGORIES MODAL & APP GRID
+   🌟 MOBILE ONLY: CATEGORIES MODAL & APP GRID (UPGRADED)
 ========================================================= */
 .mobile-categories-modal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -285,6 +285,9 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     border-top: 1px solid var(--border-light); position: relative;
 }
+/* 🟢 Force pure white in light mode for the bottom sheet */
+[data-theme="light"] .mobile-cat-content { background: #ffffff; }
+
 .mobile-categories-modal.show .mobile-cat-content { transform: translateY(0); }
 .mobile-cat-content::before { content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: var(--text-tertiary); border-radius: 10px; opacity: 0.5; }
 
@@ -295,27 +298,46 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
     color: var(--text-primary); font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s;
 }
-[data-theme="light"] .m-cat-btn { background: rgba(0,0,0,0.02); }
-.m-cat-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
-.m-cat-btn-left { display: flex; align-items: center; gap: 16px; }
-.m-cat-btn-left i { font-size: 20px; width: 30px; text-align: center; }
+/* 🟢 Light mode pure white buttons with soft shadow */
+[data-theme="light"] .m-cat-btn { 
+    background: #ffffff; 
+    border: 1px solid rgba(0,0,0,0.05); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
 
-.m-cat-dash i { color: var(--corp-dash); }
-.m-cat-ops i { color: var(--corp-ops); }
-.m-cat-fin i { color: var(--corp-fin); }
-.m-cat-rep i { color: var(--corp-rep); }
-.m-cat-hr i { color: var(--corp-hr); }
+.m-cat-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
+[data-theme="light"] .m-cat-btn:active { background: #f8fafc; }
+
+.m-cat-btn-left { display: flex; align-items: center; gap: 16px; }
+
+/* 🟢 Icon Styling with Tinted Backgrounds */
+.m-cat-btn-left i { 
+    font-size: 18px; width: 36px; height: 36px; 
+    display: flex; align-items: center; justify-content: center; 
+    border-radius: 10px; 
+}
+
+/* Vivid Icon Colors and Soft Background Tints */
+.m-cat-dash i { color: var(--corp-dash); background: rgba(59, 130, 246, 0.1); }
+.m-cat-ops i { color: var(--corp-ops); background: rgba(234, 88, 12, 0.1); }
+.m-cat-fin i { color: var(--corp-fin); background: rgba(16, 185, 129, 0.1); }
+.m-cat-rep i { color: var(--corp-rep); background: rgba(139, 92, 246, 0.1); }
+.m-cat-hr i { color: var(--corp-hr); background: rgba(236, 72, 153, 0.1); }
 
 .mobile-app-grid-overlay {
     position: fixed; inset: 0; background: var(--bg-app); z-index: 2010;
     display: none; flex-direction: column; opacity: 0; transition: 0.3s;
 }
+/* Force White Background in Light Mode */
+[data-theme="light"] .mobile-app-grid-overlay { background: #f8fafc; }
 .mobile-app-grid-overlay.show { display: flex; opacity: 1; }
 
 .m-grid-header {
     height: var(--header-h); padding: 0 20px; display: flex; align-items: center; gap: 16px;
     background: var(--surface-panel); border-bottom: 1px solid var(--border-light); z-index: 10;
 }
+[data-theme="light"] .m-grid-header { background: #ffffff; border-bottom: 1px solid rgba(0,0,0,0.05); }
+
 .m-grid-back-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: var(--text-primary); width: 40px; height: 40px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 [data-theme="light"] .m-grid-back-btn { background: rgba(0,0,0,0.03); }
 .m-grid-back-btn:active { transform: scale(0.95); }
@@ -329,6 +351,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     border-radius: 16px; display: flex; flex-direction: column; align-items: center; padding: 20px 12px;
     gap: 14px; text-align: center; cursor: pointer; box-shadow: var(--shadow-soft); transition: 0.2s;
 }
+[data-theme="light"] .grid-app-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
 .grid-app-card:active { transform: scale(0.96); }
 
 .grid-app-icon-wrapper {
@@ -382,7 +405,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
-<!-- 🌟 1. DESKTOP ORIGINAL SIDEBAR (Hidden by Default) -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="brand-wrapper">
@@ -400,7 +422,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     </div>
 </div>
 
-<!-- 🌟 2. MAIN APP WORKSPACE -->
 <div class="app-container">
     <div class="app-header">
         <div class="header-left-meta">
@@ -409,12 +430,10 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
             
-            <!-- 🌟 🟢 🔴 MOBILE ONLY: Top Left Menu Button (TEXT) -->
             <button class="mobile-top-menu-btn" onclick="toggleMobileCategories()" title="Open App Menu">
                 MENU
             </button>
 
-            <!-- 🌟 🟢 🔴 MOBILE ONLY: Top Left Home Button -->
             <button class="header-home-btn" onclick="goHomeAction()" title="Home Workspace Screen">
                 <i class="fa-solid fa-house"></i>
             </button>
@@ -426,17 +445,14 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
         
         <div class="header-right-actions">
             
-            <!-- 🌟 🟢 🔴 HELP & SUPPORT BUTTON -->
             <div class="header-support-btn" onclick="loadPage('/support/my_tickets', null)" title="Help & Support">
                 <i class="fa-solid fa-headset"></i>
             </div>
 
-            <!-- THEME TOGGLE -->
             <div class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Mode">
                 <i class="fa-solid fa-sun"></i>
             </div>
             
-            <!-- USER PROFILE -->
             <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)">
                 <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
                 <span>{{ request.session.get('name') }}</span>
@@ -483,7 +499,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     </div>
 </div>
 
-<!-- 🌟 3. MOBILE ONLY: CATEGORIES BOTTOM SHEET MODAL (Opens via Top Menu Button) -->
 <div class="mobile-categories-modal" id="mobileCatModal" onclick="closeMobileCategories(event)">
     <div class="mobile-cat-content" onclick="event.stopPropagation()">
         <div class="m-cat-title">SELECT WORKSPACE</div>
@@ -511,7 +526,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     </div>
 </div>
 
-<!-- 🌟 4. MOBILE ONLY: CORPORATE APP GRID FULL SCREEN OVERLAY -->
 <div class="mobile-app-grid-overlay" id="mobileAppGridOverlay">
     <div class="m-grid-header">
         <button class="m-grid-back-btn" onclick="closeMobileAppGrid()"><i class="fa-solid fa-arrow-left"></i></button>

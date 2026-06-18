@@ -43,11 +43,6 @@
     --hover-bg: rgba(255, 255, 255, 0.04);
     --chart-grid: #334155;
     --sub-bg: #1e2640;
-    --accent-blue: #3b82f6;
-    --emerald: #10b981;
-    --rose: #f43f5e;
-    --amber: #f59e0b;
-    --indigo: #6366f1;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -64,24 +59,53 @@
   .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;}
   .date-badge { font-size: 10px; font-weight: 800; background: var(--slate-bg); color: var(--accent-blue); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
 
-  /* EXECUTIVE KPI GRID (CEO VIEW) */
-  .kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  @media(min-width:480px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media(min-width:768px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
-  @media(min-width:1024px) { .kpi-matrix-grid { grid-template-columns: repeat(6, 1fr); } }
+  /* ==========================================================
+     🌟 INVENTORY STYLE KPI CARDS (GRADIENT BACKGROUNDS)
+  ========================================================== */
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media(min-width: 480px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+  @media(min-width: 1200px) { .cards { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
 
-  .ref-kpi-card {
-    padding: 14px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+  .card { 
+      padding: 14px 14px; border-radius: var(--radius-premium); cursor: pointer; 
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
   }
-  .ref-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); border-color: var(--accent-blue); }
-  .ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; z-index: 2; }
-  .ref-kpi-value { font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 4px; letter-spacing: -0.5px; z-index: 2; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1); }
+  .card:active { transform: scale(0.96); }
+
+  .card-meta { text-align: left; overflow: hidden; }
+  .label { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .value { font-size: 19px; font-weight: 800; color: #000000; margin-top: 4px; letter-spacing: -0.5px; }
+  .value small { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-left: 2px; text-transform: uppercase; }
   
-  .kpi-highlight { border-bottom: 4px solid var(--accent-blue); }
-  .kpi-profit { border-bottom: 4px solid var(--emerald); }
-  .kpi-warn { border-bottom: 4px solid var(--amber); }
-  .kpi-danger { border-bottom: 4px solid var(--rose); }
+  .card-icon-zone {
+      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;
+      background: #ffffff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  }
+
+  [data-theme="dark"] .value { color: #f8fafc; }
+  [data-theme="dark"] .card-icon-zone { background: #1e293b !important; }
+
+  /* Colors */
+  .blue { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; } .blue .card-icon-zone { color: #2563eb; }
+  .green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; } .green .card-icon-zone { color: #16a34a; }
+  .orange { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; } .orange .card-icon-zone { color: #ea580c; }
+  .purple { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; } .purple .card-icon-zone { color: #7c3aed; }
+  .teal { background: linear-gradient(135deg, #f0fdf4 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; } .teal .card-icon-zone { color: #0d9488; }
+  .pink { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; } .pink .card-icon-zone { color: #db2777; }
+  .gray { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; } .gray .card-icon-zone { color: #475569; }
+  .indigo { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; } .indigo .card-icon-zone { color: #4f46e5; }
+  .red { background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fecaca; } .red .card-icon-zone { color: #dc2626; }
+
+  [data-theme="dark"] .blue { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); border-color: #1e40af; }
+  [data-theme="dark"] .green { background: linear-gradient(135deg, #14532d 0%, #166534 100%); border-color: #166534; }
+  [data-theme="dark"] .orange { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); border-color: #9a3412; }
+  [data-theme="dark"] .purple { background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%); border-color: #5b21b6; }
+  [data-theme="dark"] .pink { background: linear-gradient(135deg, #831843 0%, #9d174d 100%); border-color: #9d174d; }
+  [data-theme="dark"] .indigo { background: linear-gradient(135deg, #312e81 0%, #3730a3 100%); border-color: #3730a3; }
+  [data-theme="dark"] .red { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); border-color: #991b1b; }
 
   /* TABS NAVIGATION */
   .tabs-wrapper { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -163,7 +187,6 @@
 
 <div class="dashboard-container">
 
-  <!-- HEADER -->
   <div class="header-panel">
     <div class="header-title">
       <h2><i class="fa-solid fa-users-gear" style="color:var(--accent-blue); margin-right:6px;"></i> Enterprise HR Intelligence</h2>
@@ -172,25 +195,68 @@
     <div class="date-badge"><i class="fa-solid fa-location-dot"></i> Unit: {{ actual_location or 'ALL UNITS' }} | {{ production_for }}</div>
   </div>
 
-  <!-- 🌟 1. EXECUTIVE WORKFORCE SUMMARY (12 KPIs) -->
-  <div class="kpi-matrix-grid">
-    <div class="ref-kpi-card kpi-highlight" onclick="openKpiModal('TOTAL_STAFF')"><div class="ref-kpi-meta">Total Manpower</div><div class="ref-kpi-value">{{ total_employees }}</div></div>
-    <div class="ref-kpi-card kpi-profit" onclick="openKpiModal('ACTIVE_STAFF')"><div class="ref-kpi-meta">Active Force</div><div class="ref-kpi-value">{{ active_employees }}</div></div>
-    <div class="ref-kpi-card kpi-profit" onclick="openKpiModal('PRESENT')"><div class="ref-kpi-meta">Present % Today</div><div class="ref-kpi-value">{{ present_pct }}%</div></div>
-    <div class="ref-kpi-card kpi-warn" onclick="openKpiModal('ABSENT')"><div class="ref-kpi-meta">Absent Today</div><div class="ref-kpi-value">{{ absent_today }}</div></div>
+  <div class="cards">
+    <div class="card blue" onclick="openKpiModal('TOTAL_STAFF')">
+        <div class="card-meta"><div class="label">Total Manpower</div><div class="value">{{ total_employees }}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
+    </div>
     
-    <div class="ref-kpi-card kpi-danger"><div class="ref-kpi-meta">Labour Cost / KG</div><div class="ref-kpi-value" style="color:var(--rose);">₹{{ cost_per_kg }}</div></div>
-    <div class="ref-kpi-card kpi-highlight"><div class="ref-kpi-meta">Est. Labour Cost Today</div><div class="ref-kpi-value">₹{{"{:.0f}".format(labor_cost_today)}}</div></div>
-    <div class="ref-kpi-card kpi-warn" onclick="openKpiModal('OT_TODAY')"><div class="ref-kpi-meta">OT Hours Logged</div><div class="ref-kpi-value">{{ ot_hours_today }} Hrs</div></div>
-    <div class="ref-kpi-card kpi-profit"><div class="ref-kpi-meta">Employee Productivity</div><div class="ref-kpi-value">{{ employee_productivity }}%</div></div>
+    <div class="card green" onclick="openKpiModal('ACTIVE_STAFF')">
+        <div class="card-meta"><div class="label">Active Force</div><div class="value">{{ active_employees }}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-user-check"></i></div>
+    </div>
+    
+    <div class="card teal" onclick="openKpiModal('PRESENT')">
+        <div class="card-meta"><div class="label">Present % Today</div><div class="value">{{ present_pct }}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-clipboard-user"></i></div>
+    </div>
+    
+    <div class="card orange" onclick="openKpiModal('ABSENT')">
+        <div class="card-meta"><div class="label">Absent Today</div><div class="value">{{ absent_today }}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-user-xmark"></i></div>
+    </div>
+    
+    <div class="card pink">
+        <div class="card-meta"><div class="label">Labour Cost / KG</div><div class="value">₹{{ cost_per_kg }}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-scale-unbalanced"></i></div>
+    </div>
+    
+    <div class="card indigo">
+        <div class="card-meta"><div class="label">Est. Labour Cost</div><div class="value">₹{{"{:.0f}".format(labor_cost_today)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+    </div>
+    
+    <div class="card purple" onclick="openKpiModal('OT_TODAY')">
+        <div class="card-meta"><div class="label">OT Hours Logged</div><div class="value">{{ ot_hours_today }} <small>Hrs</small></div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-clock"></i></div>
+    </div>
+    
+    <div class="card green">
+        <div class="card-meta"><div class="label">Productivity</div><div class="value">{{ employee_productivity }}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
+    </div>
 
-    <div class="ref-kpi-card kpi-highlight" onclick="openKpiModal('PERMANENT')"><div class="ref-kpi-meta">Permanent Labor %</div><div class="ref-kpi-value">{{ perm_pct }}%</div></div>
-    <div class="ref-kpi-card kpi-highlight" onclick="openKpiModal('CONTRACT')"><div class="ref-kpi-meta">Contract Labor %</div><div class="ref-kpi-value">{{ contract_pct }}%</div></div>
-    <div class="ref-kpi-card kpi-highlight"><div class="ref-kpi-meta">Average Net Salary</div><div class="ref-kpi-value">₹{{"{:.0f}".format(avg_salary)}}</div></div>
-    <div class="ref-kpi-card kpi-danger"><div class="ref-kpi-meta">Attrition Rate (YTD)</div><div class="ref-kpi-value" style="color:var(--rose);">{{ attrition_rate }}%</div></div>
+    <div class="card blue" onclick="openKpiModal('PERMANENT')">
+        <div class="card-meta"><div class="label">Permanent Labor</div><div class="value">{{ perm_pct }}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-building-user"></i></div>
+    </div>
+    
+    <div class="card orange" onclick="openKpiModal('CONTRACT')">
+        <div class="card-meta"><div class="label">Contract Labor</div><div class="value">{{ contract_pct }}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-helmet-safety"></i></div>
+    </div>
+    
+    <div class="card gray">
+        <div class="card-meta"><div class="label">Avg Net Salary</div><div class="value">₹{{"{:.0f}".format(avg_salary)}}</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-money-check-dollar"></i></div>
+    </div>
+    
+    <div class="card red">
+        <div class="card-meta"><div class="label">Attrition (YTD)</div><div class="value">{{ attrition_rate }}%</div></div>
+        <div class="card-icon-zone"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+    </div>
   </div>
 
-  <!-- 🌟 TABS CONTROLLER -->
   <div class="tabs-wrapper">
     <button class="tab-btn active" onclick="switchTab('tab-ops', this)"><i class="fa-solid fa-stopwatch"></i> Operations & Shifts</button>
     <button class="tab-btn" onclick="switchTab('tab-cost', this)"><i class="fa-solid fa-indian-rupee-sign"></i> Cost Centers & Payroll</button>
@@ -198,13 +264,9 @@
     <button class="tab-btn" onclick="switchTab('tab-directory', this)"><i class="fa-solid fa-address-book"></i> Master Directory</button>
   </div>
 
-  <!-- ==========================================
-       TAB 1: WORKFORCE OPERATIONS & SHIFTS
-  ========================================== -->
   <div id="tab-ops" class="tab-content active">
     <div class="core-layout-grid">
       
-      <!-- 2. ATTENDANCE HEAT MAP -->
       <div class="section-card col-span-full">
         <div class="section-header"><div><i class="fa-solid fa-fire-flame-curved" style="color:var(--rose);"></i> 7-Day Department Attendance Heatmap</div></div>
         <div class="table-wrap">
@@ -228,7 +290,6 @@
         </div>
       </div>
 
-      <!-- 3. SHIFT PERFORMANCE DASHBOARD -->
       <div class="section-card span-large-2">
         <div class="section-header"><div><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-blue);"></i> Shift Performance Matrix</div></div>
         <div class="table-wrap">
@@ -252,7 +313,6 @@
         </div>
       </div>
 
-      <!-- PRODUCTIVITY & DEMOGRAPHICS -->
       <div class="section-card">
         <div class="section-header"><div><i class="fa-solid fa-chart-simple" style="color:var(--indigo);"></i> Hours Logged Spectrum</div></div>
         <div class="chart-box"><canvas id="prodChart"></canvas></div>
@@ -260,13 +320,9 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       TAB 2: COST CENTERS, PAYROLL & CONTRACTORS
-  ========================================== -->
   <div id="tab-cost" class="tab-content">
     <div class="core-layout-grid">
       
-      <!-- 4. DEPARTMENT COST CENTER -->
       <div class="section-card span-large-2">
         <div class="section-header"><div><i class="fa-solid fa-building" style="color:var(--accent-blue);"></i> Department Cost Center</div></div>
         <div class="table-wrap">
@@ -286,7 +342,6 @@
         </div>
       </div>
 
-      <!-- 5. CONTRACTOR ANALYTICS -->
       <div class="section-card span-large-2">
         <div class="section-header"><div><i class="fa-solid fa-helmet-safety" style="color:var(--amber);"></i> Contractor Performance</div></div>
         <div class="table-wrap">
@@ -305,7 +360,6 @@
         </div>
       </div>
 
-      <!-- 6. OT APPROVAL CENTER -->
       <div class="section-card span-large-2">
         <div class="section-header"><div><i class="fa-solid fa-money-bill-transfer" style="color:var(--emerald);"></i> Overtime Control Center</div></div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
@@ -316,7 +370,6 @@
         </div>
       </div>
 
-      <!-- 7. PAYROLL INTELLIGENCE -->
       <div class="section-card span-large-2">
         <div class="section-header"><div><i class="fa-solid fa-money-check-dollar" style="color:var(--accent-blue);"></i> Salary Tier Distribution</div></div>
         <div class="chart-box"><canvas id="salaryChart"></canvas></div>
@@ -325,13 +378,9 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       TAB 3: COMPLIANCE, RISKS & LIFECYCLE
-  ========================================== -->
   <div id="tab-compliance" class="tab-content">
     <div class="core-layout-grid">
       
-      <!-- 8. STATUTORY COMPLIANCE MONITOR -->
       <div class="section-card">
         <div class="section-header"><div><i class="fa-solid fa-scale-balanced" style="color:var(--emerald);"></i> Statutory Coverage</div></div>
         <div class="gauge-container" style="margin-top:4px;">
@@ -349,7 +398,6 @@
         </div>
       </div>
 
-      <!-- 9. EMPLOYEE RISK CENTER -->
       <div class="section-card">
         <div class="section-header"><div><i class="fa-solid fa-biohazard" style="color:var(--rose);"></i> Master Risk Registry</div></div>
         <div class="alert-box" style="height: 100%;">
@@ -362,7 +410,6 @@
         </div>
       </div>
 
-      <!-- 13. SALARY ADVANCE TOWER -->
       <div class="section-card">
         <div class="section-header"><div><i class="fa-solid fa-hand-holding-dollar" style="color:var(--amber);"></i> Salary Advance Control</div></div>
         <div class="data-row"><span>Total Disbursed YTD</span><span>₹{{"{:,.0f}".format(adv_issued)}}</span></div>
@@ -376,7 +423,6 @@
         {% endfor %}
       </div>
 
-      <!-- 10. BIRTHDAYS & LEAVES -->
       <div class="section-card">
         <div class="section-header"><div><i class="fa-solid fa-cake-candles" style="color:var(--indigo);"></i> Calendar & Leaves</div></div>
         <div class="data-row"><span>Upcoming Birthdays (7D)</span><span class="badge" style="background:var(--accent-blue);color:#fff;">{{ bday_7|length }}</span></div>
@@ -395,9 +441,6 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       TAB 4: MASTER EMPLOYEE DIRECTORY
-  ========================================== -->
   <div id="tab-directory" class="tab-content">
     <div class="section-card col-span-full">
       <div class="section-header"><div><i class="fa-solid fa-address-book" style="color:var(--accent-blue);"></i> Searchable Master Directory</div></div>
@@ -446,7 +489,6 @@
 
 </div>
 
-<!-- 🟢 🔴 11. DYNAMIC KPI POPUP MODAL -->
 <div id="kpiModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -507,7 +549,7 @@ new Chart(document.getElementById("salaryChart"), {
 });
 
 // ==========================================
-// 🟢 KPI POPUP ENGINE (AJAX FETCH)
+// 🟢 KPI POPUP ENGINE (AJAX FETCH WITH FILTERS)
 // ==========================================
 async function openKpiModal(kpiType) {
     const titleObj = document.getElementById('kpiModalTitle');
@@ -515,13 +557,21 @@ async function openKpiModal(kpiType) {
     const tbody = document.getElementById('kpiModalTbody');
     
     titleObj.innerText = "Loading...";
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Filtered Data...</td></tr>`;
     document.getElementById('kpiModal').style.display = 'flex';
 
     try {
         const urlParams = new URLSearchParams(window.location.search);
+        
         const loc = urlParams.get('location') || "";
-        const res = await fetch(`/api/hr/hr_kpi_details?kpi_type=${kpiType}&location=${loc}`);
+        const prod_for = urlParams.get('production_for') || "";
+        const dept = urlParams.get('dept_filter') || "";
+        const type = urlParams.get('type_filter') || "";
+        const status = urlParams.get('status_filter') || "";
+
+        const apiUrl = `/api/hr/hr_kpi_details?kpi_type=${kpiType}&location=${loc}&production_for=${prod_for}&dept_filter=${dept}&type_filter=${type}&status_filter=${status}`;
+        
+        const res = await fetch(apiUrl);
         const result = await res.json();
 
         if(result.status === "success") {
