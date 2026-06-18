@@ -115,7 +115,8 @@ class ProductionRequirementService:
                 nearest_gm = min(rel_grades, key=lambda x: abs(float(x.hlso_count or 0) - net_count_calc))
                 nw_grade = nearest_gm.nw_grade if nearest_gm.nw_grade else "-"
 
-            ref_opt_stock = 0.0
+            # 🟢 🔴 FIXED: Changed from ref_opt_stock to referral_stock
+            referral_stock = 0.0
             ref_details = []
             p_gl_full_text = str(r.count_glaze or "").strip().upper()
             is_order_nwnc = "NWNC" in p_gl_full_text or p_c_gl_val == 0
@@ -137,7 +138,8 @@ class ProductionRequirementService:
                 if match_ref:
                     s_qty = float(s.quantity or 0) if str(s.cargo_movement_type).upper() == "IN" else -float(s.quantity or 0)
                     if s_qty > 0:
-                        ref_opt_stock += s_qty
+                        # 🟢 🔴 FIXED
+                        referral_stock += s_qty
                         ref_details.append({
                             "po_no": f"LOC: {str(s.location or 'N/A').upper()}", 
                             "available": round(s_qty, 2), 
@@ -181,7 +183,7 @@ class ProductionRequirementService:
                     po_date=r.date,
                     customer_name=r.buyer,
                     species=r.species,
-                    variety=r.variety.strip().upper(), # 🟢 Standardized variant names tracking
+                    variety=r.variety.strip().upper(), 
                     grade=r.grade,
                     packing_style=r.packing_style,
                     freezer=r.freezer,
@@ -202,9 +204,8 @@ class ProductionRequirementService:
                     req_hoso_qty=req_hoso_qty,
                     stock_mc=stock_mc,
                     prod_pending_mc=prod_pending_mc,
-                    ref_opt_stock=round(ref_opt_stock, 2),
-                    util_json=json.dumps(usage_history[exact_key]),
-                    ref_json=json.dumps(ref_details),
+                    # 🟢 🔴 FIXED: Changed keyword to match your actual DB Model
+                    referral_stock=round(referral_stock, 2),
                     snapshot_date=date.today(),
                     calculation_date=date.today(),
                     status="READY" if pending_production >= 0 else "PENDING"

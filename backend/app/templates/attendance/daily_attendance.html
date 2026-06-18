@@ -2,333 +2,358 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>GATE TERMINAL ATTENDANCE - BKNR SOLUTIONS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIVE TERMINAL - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+    function syncThemeFromParent() {
+        try {
+            if (window.parent && window.parent.document) {
+                const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+            }
+        } catch(e) {}
+    }
+    syncThemeFromParent();
+    window.addEventListener('load', syncThemeFromParent);
+</script>
+
 <style>
 :root {
-  --primary: #143465; 
-  --accent: #3b82f6; 
-  --border: #d6dde7; 
-  --bg: #f4f6f9;
+  --primary: #0f172a; 
+  --accent: #2563eb; 
+  --border: #e2e8f0; 
+  --bg: #f8fafc;
   --card: #ffffff; 
-  --text: #1f2937; 
+  --text: #1e293b; 
   --muted: #64748b; 
-  --success: #166534; 
+  --success: #16a34a; 
   --danger: #dc2626; 
-  --warning: #d97706;
+  --warning: #ea580c;
+  --info: #0284c7; 
   
-  --card-hover: #f8fafc;
+  --card-hover: #f1f5f9;
   --sub-bg: #eff6ff;
-  --table-border: #edf2f7;
-  --text-heading: #143465;
+  --table-border: #f1f5f9;
+  --text-heading: #0f172a;
   --input-bg: #ffffff;
 }
 
-/* DARK MODE DESIGN OVERRIDES */
-body.dark-mode {
-  --primary: #60a5fa; 
+[data-theme="dark"] {
+  --primary: #f8fafc; 
   --accent: #3b82f6; 
   --border: #334155; 
-  --bg: #0f172a;       
-  --card: #1e293b;     
-  --text: #f8fafc;     
+  --bg: #020617;       
+  --card: #0f172a;     
+  --text: #f1f5f9;     
   --muted: #94a3b8;    
   --success: #22c55e; 
   --danger: #ef4444; 
   --warning: #f59e0b;
+  --info: #38bdf8;
   
-  --card-hover: #334155;
-  --sub-bg: #1e2640;   
-  --table-border: #334155;
+  --card-hover: #1e293b;
+  --sub-bg: #1e293b;   
+  --table-border: #1e293b;
   --text-heading: #f8fafc;
   --input-bg: #0f172a;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
-body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 60px; overflow-x: hidden; transition: background 0.2s, color 0.2s;}
+
+html, body { 
+    margin: 0; padding: 0; 
+    min-height: 100vh;
+    width: 100vw; 
+    overflow-x: hidden; 
+    background: var(--bg); color: var(--text); 
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
+}
+
+.terminal-wrapper {
+    display: flex; flex-direction: column; 
+    min-height: 100dvh; width: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 20px); 
+}
 
 /* --- HEADER --- */
 .header-dash {
-  background: var(--card); padding: 15px 25px; border-bottom: 1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); padding: 12px 20px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
   position: sticky; top: 0; z-index: 100;
 }
-.header-titles h2{margin:0; font-size:18px; color:var(--text-heading); font-weight: 800;}
-#clock { background: var(--sub-bg); color: var(--accent); padding: 6px 20px; border-radius: 20px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; }
+.header-titles h2{margin:0; font-size:15px; color:var(--text-heading); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;}
+.plant-badge { font-size:11px; background:var(--sub-bg); color:var(--accent); padding:3px 8px; border-radius:4px; margin-left:8px; display: inline-block;}
 
-.theme-toggle-btn {
-  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; 
-  padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+.header-actions { display: flex; align-items: center; gap: 10px; }
+#clock { background: var(--text-heading); color: var(--card); padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; letter-spacing: 1px;}
+#voiceToggle { background: var(--sub-bg); color: var(--accent); border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+#voiceToggle.muted { background: #fee2e2; color: #dc2626; }
+
+/* SHIFT COLORS PALETTE */
+.btn-shift-0 { background: #2563eb; } .border-shift-0 { border-left: 4px solid #2563eb !important; } .bg-shift-0 { background: #eff6ff !important; color: #2563eb !important; border: 1px solid #bfdbfe; }
+.btn-shift-1 { background: #0d9488; } .border-shift-1 { border-left: 4px solid #0d9488 !important; } .bg-shift-1 { background: #f0fdfa !important; color: #0d9488 !important; border: 1px solid #99f6e4; }
+.btn-shift-2 { background: #7c3aed; } .border-shift-2 { border-left: 4px solid #7c3aed !important; } .bg-shift-2 { background: #f5f3ff !important; color: #7c3aed !important; border: 1px solid #ddd6fe; }
+.btn-shift-3 { background: #d97706; } .border-shift-3 { border-left: 4px solid #d97706 !important; } .bg-shift-3 { background: #fffbeb !important; color: #d97706 !important; border: 1px solid #fde68a; }
+.btn-shift-4 { background: #db2777; } .border-shift-4 { border-left: 4px solid #db2777 !important; } .bg-shift-4 { background: #fdf2f8 !important; color: #db2777 !important; border: 1px solid #fbcfe8; }
+.btn-shift-default { background: var(--text-heading); } .border-shift-default { border-left: 4px solid var(--text-heading) !important; } .bg-shift-default { background: var(--table-border) !important; color: var(--text-heading) !important; }
+
+[data-theme="dark"] .bg-shift-0 { background: #1e3a8a !important; color: #93c5fd !important; border-color: #1e40af;}
+[data-theme="dark"] .bg-shift-1 { background: #134e4a !important; color: #5eead4 !important; border-color: #115e59;}
+[data-theme="dark"] .bg-shift-2 { background: #4c1d95 !important; color: #c4b5fd !important; border-color: #5b21b6;}
+[data-theme="dark"] .bg-shift-3 { background: #78350f !important; color: #fcd34d !important; border-color: #92400e;}
+[data-theme="dark"] .bg-shift-4 { background: #831843 !important; color: #f9a8d4 !important; border-color: #9d174d;}
+
+/* --- LIVE SHIFT CARDS --- */
+.shift-stats-grid { 
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; 
+    padding: 15px 20px; flex-shrink: 0;
 }
-.theme-toggle-btn:hover { color: var(--accent); background: var(--card-hover); }
-
-@media(max-width:800px){ 
-    .header-dash { flex-direction: column; gap: 10px; text-align: center; }
+.s-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; 
+    padding: 12px; cursor: pointer; transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
+.s-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+.s-card.active-filter { background: var(--sub-bg); box-shadow: 0 0 0 1px var(--border) inset;}
 
-/* --- STATS GRID --- */
-.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 20px 25px 0; }
-@media(max-width:1200px){ .stats-grid { grid-template-columns: repeat(3, 1fr); } }
-@media(max-width:600px){ .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-
-.stat-card { 
-    background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); 
-    display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    cursor: pointer; transition: 0.2s;
-}
-.stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-.stat-card.active { border: 2px solid var(--accent); background: var(--sub-bg); }
-.stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
-.stat-info h4 { margin: 0; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.stat-info h2 { margin: 2px 0 0; font-size: 18px; font-weight: 800; color: var(--text-heading); }
+.s-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.s-name { font-size: 11px; font-weight: 800; color: var(--text-heading); text-transform: uppercase; }
+.s-metrics { display: flex; gap: 8px; }
+.m-item { flex: 1; background: var(--bg); border-radius: 6px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--table-border);}
+.m-val { font-size: 16px; font-weight: 800; line-height: 1;}
+.m-lbl { font-size: 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px;}
 
 /* --- MAIN LAYOUT --- */
-.main-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px 25px; align-items: start; }
-@media(max-width:1024px){ .main-layout { grid-template-columns: 1fr; } }
+.main-layout { 
+    display: flex; flex-direction: column; gap: 15px; 
+    padding: 0 15px 25px; flex: 1; min-width: 0; 
+}
+@media(min-width: 768px) { .main-layout { flex-direction: row; padding: 0 20px 20px; } }
 
-/* --- LEFT TERMINAL CONTROL --- */
-.control-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: sticky; top: 90px; }
+/* --- CONTROLS --- */
+.control-card { 
+    background: var(--card); border-radius: 12px; border: 1px solid var(--border); 
+    padding: 15px; flex-shrink: 0; display: flex; flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+@media(min-width: 768px) { .control-card { width: 300px; position: sticky; top: 75px; height: fit-content; } }
+
 .id-input { 
-    width: 100%; padding: 12px; font-size: 20px; font-weight: 800; border: 2px solid var(--border); 
-    border-radius: 10px; text-align: center; margin-bottom: 15px; outline: none; transition: 0.2s; 
-    color: var(--text-heading); background: var(--input-bg);
+    width: 100%; padding: 12px; font-size: 18px; font-weight: 800; border: 2px solid var(--border); 
+    border-radius: 8px; text-align: center; margin-bottom: 15px; outline: none; 
+    color: var(--text-heading); background: var(--input-bg); transition: 0.2s; letter-spacing: 1px;
 }
-.id-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.id-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+.terminal-actions { display: flex; flex-direction: column; gap: 10px; }
+.shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.break-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .btn { 
-    border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; color: white; 
-    display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; text-transform: uppercase; 
+    border: none; padding: 12px 8px; border-radius: 8px; font-weight: 700; cursor: pointer; color: white; 
+    display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; text-transform: uppercase; 
+    transition: transform 0.1s, opacity 0.2s; letter-spacing: 0.5px;
 }
-.btn-in { background: var(--success); }
+.btn:active { transform: scale(0.98); }
+.btn:hover { opacity: 0.9; }
 .btn-out { background: var(--warning); }
-.btn-exit { background: var(--danger); grid-column: span 2; margin-top: 2px; }
+.btn-break-in { background: var(--info); }
+.btn-exit { background: var(--danger); width: 100%; margin-top: 4px;}
 
-/* --- SUMMARY BLOCKS --- */
-.summary-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-@media(max-width:600px){ .summary-section { grid-template-columns: 1fr; } }
-.sub-table-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 15px; max-height: 200px; overflow-y: auto; }
-.sub-table-card h3 { margin: 0 0 10px; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 800; }
-.mini-table { width: 100%; font-size: 11px; border-collapse: collapse; }
-.mini-table tr { cursor: pointer; }
-.mini-table tr:hover { background: var(--card-hover); }
-.mini-table th { text-align: left; padding: 4px; color: var(--muted); border-bottom: 1px solid var(--border); }
-.mini-table td { padding: 6px 4px; border-bottom: 1px solid var(--table-border); font-weight: 600; color: var(--text-heading); }
-.active-filter-row { background: var(--sub-bg) !important; color: var(--accent) !important; }
+/* --- LIVE DATA AREA --- */
+.data-area { 
+    display: flex; flex-direction: column; flex: 1; min-width: 0; 
+    background: var(--card); border: 1px solid var(--border); 
+    border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
 
-/* --- RIGHT MAIN TABLE LAYOUT --- */
-.section-header { padding: 5px 0 10px; display: flex; justify-content: space-between; align-items: center; }
+.section-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); background: var(--card-hover); border-radius: 12px 12px 0 0;}
+#rowCount { font-size:11px; font-weight:700; color:var(--text-heading); letter-spacing: 0.5px;}
+
+/* MENU */
 #threeDotsMenu { position: relative; }
-.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-heading); }
-.menu-item:hover { background: var(--card-hover); color: var(--accent); }
+.menu-trigger { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: 0.2s;}
+.menu-trigger:hover { background: var(--border); color: var(--text-heading); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 36px; background: var(--card); border: 1px solid var(--border); width: 180px; z-index: 1001; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden;}
+.menu-item { padding: 12px 15px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--text-heading); transition: 0.2s;}
+.menu-item:hover { background: var(--sub-bg); color: var(--accent); }
 
-/* CLEAN TABLE WRAPPER - NATURAL PAGE SCROLLING */
-.table-wrap { 
-    background: var(--card); 
-    border-radius: 12px; 
-    border: 1px solid var(--border); 
-    overflow-x: auto; /* Horizontal scroll for columns if needed */
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
-    margin-bottom: 20px;
-}
-.main-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 900px; text-align: center; }
-
-/* FIXED THEAD DURING PAGE SCROLL */
+/* MAIN TABLE */
+.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 500px; text-align: left; }
 .main-table thead th { 
-    background: var(--card-hover); 
-    padding: 12px 10px; 
-    border-bottom: 2px solid var(--border); 
-    color: var(--muted); 
-    text-transform: uppercase; 
-    font-weight: 700; 
+    background: var(--bg); padding: 10px 15px; border-bottom: 1px solid var(--border); 
+    color: var(--muted); text-transform: uppercase; font-weight: 700; white-space: nowrap; letter-spacing: 0.5px;
 }
-.main-table tbody td { padding: 12px 10px; border-bottom: 1px solid var(--table-border); color: var(--text-heading); font-weight: 600; }
+.main-table tbody td { padding: 12px 15px; border-bottom: 1px solid var(--table-border); color: var(--text-heading); font-weight: 500; }
+.main-table tbody tr:hover { background: var(--card-hover); }
 
-/* Timeline Stream Badges */
-.chip { font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; }
+/* Badges */
+.chip { font-size: 9px; font-weight: 700; padding: 3px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;}
 .c-in { color: #166534; background: #dcfce7; }
-.c-out { color: #92400e; background: #fef3c7; }
+.c-out { color: #9a3412; background: #ffedd5; }
 .c-exit { color: #991b1b; background: #fee2e2; }
 
-body.dark-mode .c-in { color: #22c55e; background: #14532d; }
-body.dark-mode .c-out { color: #fbbf24; background: #78350f; }
-body.dark-mode .c-exit { color: #f87171; background: #7f1d1d; }
+[data-theme="dark"] .c-in { color: #4ade80; background: #14532d; }
+[data-theme="dark"] .c-out { color: #fb923c; background: #7c2d12; }
+[data-theme="dark"] .c-exit { color: #f87171; background: #7f1d1d; }
 
-.badge { padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-.s-open { background: #dcfce7; color: #166534; }
-.s-away { background: #fef3c7; color: #92400e; }
-.s-closed { background: #f1f5f9; color: #475569; }
+.status-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.s-open .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2); }
+.s-away .dot { background: var(--warning); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2); }
+.shift-badge { font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; display: inline-block;}
 
-body.dark-mode .s-open { background: #14532d; color: #22c55e; }
-body.dark-mode .s-away { background: #78350f; color: #fbbf24; }
-body.dark-mode .s-closed { background: #334155; color: #cbd5e1; }
-
-.duty-label { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
-.dt-double { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
-.dt-single { color: var(--success); background: #ecfdf5; border: 1px solid #a7f3d0; }
-.dt-half { color: var(--warning); background: #fffbeb; border: 1px solid #fde68a; }
-.dt-absent { color: var(--danger); background: #fef2f2; border: 1px solid #fecaca; }
-.dt-onduty { color: var(--accent); background: #eff6ff; border: 1px solid #bfdbfe; }
-
-body.dark-mode .dt-double { color: #c084fc; background: #2e1065; border-color: #581c87; }
-body.dark-mode .dt-single { color: #4ade80; background: #064e3b; border-color: #065f46; }
-body.dark-mode .dt-half { color: #fbbf24; background: #451a03; border-color: #78350f; }
-body.dark-mode .dt-absent { color: #f87171; background: #4c0519; border-color: #881337; }
-body.dark-mode .dt-onduty { color: #60a5fa; background: #1e3a8a; border-color: #1e40af; }
-
-/* --- AUDIT PANEL --- */
+/* AUDIT PANEL */
 .audit-panel { 
-    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card); 
-    border-left: 3px solid var(--primary); display: none; flex-direction: column; 
-    z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: background 0.2s;
+    position: fixed; right: 0; top: 0; bottom: 0; width: 100%; background: var(--card); 
+    display: none; flex-direction: column; z-index: 5500; 
 }
-@media(max-width:400px){ .audit-panel { width: 100%; } }
+@media(min-width: 768px) { .audit-panel { width: 400px; border-left: 1px solid var(--border); box-shadow: -5px 0 25px rgba(0,0,0,0.1); } }
+
+/* Mobile Adjustments */
+@media(max-width: 600px){ 
+    .header-dash { padding: 10px 15px; }
+    .shift-stats-grid { padding: 10px 15px; grid-template-columns: 1fr 1fr; }
+    .main-layout { padding: 0 15px 20px; gap: 12px;}
+    .control-card { padding: 12px; }
+}
+
+/* 🟢 🔴 OVERLAY FOR MISSING GLOBAL FILTER */
+#lockOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+    z-index: 9999; display: flex; align-items: center; justify-content: center;
+    text-align: center; color: white; flex-direction: column; padding: 20px;
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 </head>
 
 <body>
 
-<div class="header-dash">
-    <div class="header-titles"><h2>Live Gate Terminal System</h2></div>
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <button id="themeToggle" class="theme-toggle-btn" title="Toggle Theme Layout">
-            <i class="fa-solid fa-moon"></i>
-        </button>
-        <div id="clock">00:00:00</div>
-    </div>
+<!-- COMPULSORY GLOBAL FILTER ENFORCEMENT OVERLAY -->
+{% if not actual_location %}
+<div id="lockOverlay">
+    <i class="fa-solid fa-lock" style="font-size: 60px; color: var(--danger); margin-bottom: 25px;"></i>
+    <h2 style="font-size: 26px; font-weight: 800; margin-bottom: 12px;">Terminal Locked</h2>
+    <p style="font-size: 14px; max-width: 420px; line-height: 1.6; color: #cbd5e1;">Please select a specific <b>Plant / Unit</b> from the Global Filter menu at the top to activate this Gate Terminal.</p>
 </div>
+{% endif %}
 
-<div class="stats-grid">
-    <div class="stat-card active" id="card-ALL" onclick="setFilter('ALL', 'STATUS')">
-        <div class="stat-icon" style="background: #143465;"><i class="fa-solid fa-users"></i></div>
-        <div class="stat-info"><h4>TOTAL ACTIVE</h4><h2 id="stat-total">0</h2></div>
-    </div>
-    <div class="stat-card" id="card-OPEN" onclick="setFilter('OPEN', 'STATUS')">
-        <div class="stat-icon" style="background: var(--success);"><i class="fa-solid fa-door-open"></i></div>
-        <div class="stat-info"><h4>Inside Now</h4><h2 id="stat-in">0</h2></div>
-    </div>
-    <div class="stat-card" id="card-AWAY" onclick="setFilter('AWAY', 'STATUS')">
-        <div class="stat-icon" style="background: var(--warning);"><i class="fa-solid fa-mug-hot"></i></div>
-        <div class="stat-info"><h4>On Break</h4><h2 id="stat-away">0</h2></div>
-    </div>
-    <div class="stat-card" id="card-HALF" onclick="setFilter('HALF', 'DUTY')">
-        <div class="stat-icon" style="background: #f59e0b;"><i class="fa-solid fa-star-half-stroke"></i></div>
-        <div class="stat-info"><h4>Half Shift</h4><h2 id="stat-half">0</h2></div>
-    </div>
-    <div class="stat-card" id="card-SINGLE" onclick="setFilter('SINGLE', 'DUTY')">
-        <div class="stat-icon" style="background: var(--accent);"><i class="fa-solid fa-user-check"></i></div>
-        <div class="stat-info"><h4>Single Shift</h4><h2 id="stat-single">0</h2></div>
-    </div>
-    <div class="stat-card" id="card-DOUBLE" onclick="setFilter('DOUBLE', 'DUTY')">
-        <div class="stat-icon" style="background: #7c3aed;"><i class="fa-solid fa-bolt"></i></div>
-        <div class="stat-info"><h4>Double Shift</h4><h2 id="stat-double">0</h2></div>
-    </div>
-</div>
+<div class="terminal-wrapper">
 
-<div class="main-layout">
-    <div class="control-card">
-        <label style="font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 6px; text-align: center;">Scan Employee Identity</label>
-        <input id="emp_id" class="id-input" placeholder="SCAN EMBEDDED ID" autofocus autocomplete="off" onkeyup="if(event.key==='Enter') triggerPunch('IN')">
+    <!-- HEADER -->
+    <div class="header-dash">
+        <div class="header-titles">
+            <h2>Live Terminal Monitor 
+                {% if actual_location %}
+                <span class="plant-badge"><i class="fa-solid fa-location-dot"></i> {{ actual_location }}</span>
+                {% endif %}
+            </h2>
+        </div>
+        <div class="header-actions">
+            <!-- VOICE TOGGLE -->
+            <button id="voiceToggle" onclick="toggleVoice()" title="Toggle Voice Feedback">
+                <i class="fa-solid fa-volume-high" id="voiceIcon"></i>
+            </button>
+            <div id="clock">00:00:00</div>
+        </div>
+    </div>
+
+    <!-- LIVE SHIFT CARDS -->
+    <div class="shift-stats-grid" id="shiftDashboard"></div>
+
+    <!-- MAIN BODY -->
+    <div class="main-layout">
         
-        <div class="btn-grid">
-            <button class="btn btn-in" onclick="triggerPunch('IN')"><i class="fa-solid fa-right-to-bracket"></i> Check In</button>
-            <button class="btn btn-out" onclick="triggerPunch('OUT')"><i class="fa-solid fa-coffee"></i> Break Out</button>
-            <button class="btn btn-exit" onclick="triggerPunch('EXIT')"><i class="fa-solid fa-right-from-bracket"></i> Register Checkout</button>
-        </div>
-    </div>
+        <!-- CONTROLS -->
+        <div class="control-card">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 8px; text-align: center; letter-spacing: 0.5px;">Scan ID Badge</label>
+            <input id="emp_id" class="id-input" placeholder="SCAN ID" autofocus autocomplete="off" onkeyup="if(event.key==='Enter') triggerPunch('IN')" {% if not actual_location %}disabled{% endif %}>
+            
+            <div class="terminal-actions">
+                <!-- COLORED SHIFT BUTTONS -->
+                <div class="shift-grid">
+                    {% if shifts and shifts|length > 0 %}
+                        {% for s in shifts %}
+                        <button class="btn btn-shift-{{ loop.index0 }}" onclick="triggerPunch('IN', '{{ s.shift_name }}')" {% if not actual_location %}disabled{% endif %}>
+                            <i class="fa-solid fa-right-to-bracket"></i> {{ s.shift_name }} In
+                        </button>
+                        {% endfor %}
+                    {% else %}
+                        <button class="btn btn-shift-default" style="grid-column: span 2;" onclick="triggerPunch('IN', 'GENERAL')" {% if not actual_location %}disabled{% endif %}>
+                            <i class="fa-solid fa-right-to-bracket"></i> Check In (Default)
+                        </button>
+                    {% endif %}
+                </div>
 
-    <div style="display: flex; flex-direction: column;">
-        <div class="summary-section">
-            <div class="sub-table-card">
-                <h3>Department Metrics Summary</h3>
-                <table class="mini-table">
-                    <thead><tr><th>Department</th><th class="text-right">Active</th><th class="text-right">Closed</th><th class="text-right">Total</th></tr></thead>
-                    <tbody id="dept-summary"></tbody>
-                </table>
-            </div>
-            <div class="sub-table-card">
-                <h3>Designation Metrics Summary</h3>
-                <table class="mini-table">
-                    <thead><tr><th>Designation Title</th><th class="text-right">Active</th><th class="text-right">Closed</th><th class="text-right">Total</th></tr></thead>
-                    <tbody id="desg-summary"></tbody>
-                </table>
+                <div class="break-grid">
+                    <button class="btn btn-out" onclick="triggerPunch('OUT')" {% if not actual_location %}disabled{% endif %}><i class="fa-solid fa-mug-hot"></i> Break Out</button>
+                    <button class="btn btn-break-in" onclick="triggerPunch('IN')" {% if not actual_location %}disabled{% endif %}><i class="fa-solid fa-street-view"></i> Break In</button>
+                </div>
+
+                <button class="btn btn-exit" onclick="triggerPunch('EXIT')" {% if not actual_location %}disabled{% endif %}><i class="fa-solid fa-power-off"></i> Check Out Shift</button>
             </div>
         </div>
 
-        <div class="section-header">
-            <div id="rowCount" style="font-size:12px; font-weight:800; color:var(--text-heading);">0 RECORD LOG LINES FOUND</div>
-            <div id="threeDotsMenu">
-                <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                <div id="dropdownMenu">
-                    <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-clock-rotate-left" style="color:var(--muted)"></i> View Punch History</div>
-                    <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
-                    <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel Report</div>
+        <!-- LIVE DATA TABLE AREA -->
+        <div class="data-area">
+            <div class="section-header">
+                <div id="rowCount">0 ACTIVE PERSONNEL</div>
+                <div id="threeDotsMenu">
+                    <button class="menu-trigger" id="dotsBtn" {% if not actual_location %}disabled{% endif %}><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    <div id="dropdownMenu">
+                        <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-list-check"></i> Terminal Log</div>
+                        <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Live List</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="table-wrap">
-            <table class="main-table">
-                <thead>
-                    <tr>
-                        <th class="text-left" style="padding-left:15px;">Employee Identification Context</th>
-                        <th>Timeline Stream Progression Flow</th>
-                        <th class="text-right">Duty Hrs</th>
-                        <th>Payroll Type</th>
-                        <th>Terminal Status</th>
-                    </tr>
-                </thead>
-                <tbody id="rows"></tbody>
-            </table>
+            <div class="table-wrap">
+                <table class="main-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 250px;">Personnel Info</th>
+                            <th>Active Shift</th>
+                            <th>Movement Timeline</th>
+                            <th style="text-align: right;">Current State</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
-    <div style="padding:12px; background:#143465; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-        <b style="font-size:12px;">PUNCH TRANSACTION TELEMETRY ARCHIVE</b>
-        <span onclick="toggleAuditPanel(false)" style="cursor:pointer; font-size:20px; font-weight:bold;">&times;</span>
+    <div style="padding:15px 20px; background:var(--card); border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <b style="font-size:12px; color:var(--text-heading); text-transform: uppercase;">Terminal Telemetry</b>
+        <button onclick="toggleAuditPanel(false)" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px; padding:0;">&times;</button>
     </div>
-    <div id="auditContent" style="padding:10px; overflow-y:auto; flex:1; background:var(--bg);"></div>
+    <div id="auditContent" style="padding:15px; overflow-y:auto; flex:1; background:var(--bg);"></div>
 </div>
 
 <script>
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/attendance' : '/attendance';
-    
     let rawData = [];
-    let filterVal = 'ALL';
-    let filterType = 'STATUS';
-
-    const themeToggleBtn = document.getElementById("themeToggle");
+    let filterShift = 'ALL';
+    let isVoiceEnabled = true; 
     
-    function initTheme() {
-        const storedTheme = localStorage.getItem("gate-terminal-theme");
-        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        
-        if (storedTheme === "dark" || (!storedTheme && systemPrefersDark)) {
-            document.body.classList.add("dark-mode");
-            themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
-        } else {
-            document.body.classList.remove("dark-mode");
-            themeToggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
-        }
-    }
+    // 🟢 🔴 Explicit Location Variable Injection for Fetch bypass
+    const activeLocation = "{{ actual_location or '' }}";
 
-    themeToggleBtn.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        localStorage.setItem("gate-terminal-theme", isDark ? "dark" : "light");
-        themeToggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-    });
-
-    initTheme();
+    const serverShifts = [
+        {% for s in shifts %}
+        { name: "{{ s.shift_name }}", colorIdx: {{ loop.index0 }} }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
 
     setInterval(() => { 
         document.getElementById("clock").innerText = new Date().toLocaleTimeString("en-GB"); 
@@ -347,7 +372,37 @@ body.dark-mode .dt-onduty { color: #60a5fa; background: #1e3a8a; border-color: #
         }
     });
 
-    async function triggerPunch(action) {
+    function toggleVoice() {
+        isVoiceEnabled = !isVoiceEnabled;
+        const btn = document.getElementById('voiceToggle');
+        const icon = document.getElementById('voiceIcon');
+        if(isVoiceEnabled) {
+            btn.classList.remove('muted');
+            icon.className = 'fa-solid fa-volume-high';
+        } else {
+            btn.classList.add('muted');
+            icon.className = 'fa-solid fa-volume-xmark';
+        }
+    }
+
+    function playVoiceFeedback(action, empName) {
+        if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel(); 
+        
+        let message = "";
+        if(action === 'IN') message = "Welcome, " + empName;
+        else if(action === 'OUT') message = "Break started, " + empName;
+        else if(action === 'EXIT') message = "Checkout successful, Goodbye " + empName;
+
+        if(message !== "") {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.rate = 1.0; 
+            utterance.pitch = 1.1; 
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    async function triggerPunch(action, shiftName = 'GENERAL') {
         const input = document.getElementById("emp_id");
         const valToken = input.value.trim();
         if (!valToken) return;
@@ -357,115 +412,115 @@ body.dark-mode .dt-onduty { color: #60a5fa; background: #1e3a8a; border-color: #
             const res = await fetch(`${API_BASE}/entry`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ employee_id: valToken, action: action })
+                // 🟢 🔴 Passing the location explicitly to bypass Fetch cookie dropping
+                body: JSON.stringify({ employee_id: valToken, action: action, shift_name: shiftName, location: activeLocation })
             });
             const data = await res.json();
             
             if (res.ok && data.success) {
-                Swal.fire({ icon: 'success', title: `Punch Registered: ${data.employee_name}`, timer: 1000, showConfirmButton: false });
+                playVoiceFeedback(action, data.employee_name);
+                Swal.fire({ icon: 'success', title: `Authorized: ${data.employee_name}`, timer: 1000, showConfirmButton: false });
                 input.value = ""; 
                 input.focus();
                 loadData();
             } else {
-                Swal.fire("Terminal Refusal", data.error || "Operational Validation Dropped", "error");
+                if(data.error === "GLOBAL_FILTER_REQUIRED") {
+                    Swal.fire("Denied", "Please select a specific Plant from Global Filter.", "error");
+                } else {
+                    Swal.fire("Denied", data.error || "Validation Dropped", "error");
+                }
             }
         } catch (e) { 
             Swal.fire("Connection Drop", "Network endpoint stream unavailable", "error"); 
         }
     }
 
-    function setFilter(val, type) {
-        filterVal = val;
-        filterType = type;
-        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-        if(type === 'STATUS' || type === 'DUTY') {
-            const card = document.getElementById(`card-${val}`);
-            if(card) card.classList.add('active');
-        }
-        renderAll();
-    }
-
-    function renderAll() {
-        renderSummary();
+    function setFilter(shiftName) {
+        filterShift = shiftName;
+        renderDashboard(); 
         renderTable();
     }
 
-    function renderSummary() {
-        const dBody = document.getElementById("dept-summary");
-        const dsBody = document.getElementById("desg-summary");
-        let depts = {}, desgs = {};
+    function renderDashboard() {
+        const dash = document.getElementById("shiftDashboard");
+        const liveEmployees = rawData.filter(r => r.status !== 'CLOSED');
+        let html = '';
+        
+        let allActiveCls = (filterShift === 'ALL') ? 'active-filter' : '';
+        html += `<div class="s-card border-shift-default ${allActiveCls}" onclick="setFilter('ALL')">
+                    <div class="s-head"><span class="s-name">ALL ACTIVE</span></div>
+                    <div class="s-metrics">
+                        <div class="m-item"><span class="m-val" style="color:var(--success)">${liveEmployees.filter(r=>r.status==='OPEN').length}</span><span class="m-lbl">Present</span></div>
+                        <div class="m-item"><span class="m-val" style="color:var(--warning)">${liveEmployees.filter(r=>r.status==='AWAY').length}</span><span class="m-lbl">On Break</span></div>
+                    </div>
+                 </div>`;
 
-        rawData.forEach(r => {
-            let d = r.department || 'GENERAL', ds = r.designation || 'STAFF';
-            if(!depts[d]) depts[d] = {a:0, c:0};
-            if(!desgs[ds]) desgs[ds] = {a:0, c:0};
-            r.status === 'CLOSED' ? depts[d].c++ : depts[d].a++;
-            r.status === 'CLOSED' ? desgs[ds].c++ : desgs[ds].a++;
+        serverShifts.forEach(s => {
+            let sData = liveEmployees.filter(r => r.shift_name === s.name);
+            let activeCls = (filterShift === s.name) ? 'active-filter' : '';
+            
+            html += `<div class="s-card border-shift-${s.colorIdx} ${activeCls}" onclick="setFilter('${s.name}')">
+                        <div class="s-head"><span class="s-name">${s.name}</span></div>
+                        <div class="s-metrics">
+                            <div class="m-item"><span class="m-val" style="color:var(--success)">${sData.filter(r=>r.status==='OPEN').length}</span><span class="m-lbl">Present</span></div>
+                            <div class="m-item"><span class="m-val" style="color:var(--warning)">${sData.filter(r=>r.status==='AWAY').length}</span><span class="m-lbl">On Break</span></div>
+                        </div>
+                     </div>`;
         });
-
-        dBody.innerHTML = Object.keys(depts).map(k => `<tr class="${(filterType==='DEPT' && filterVal===k)?'active-filter-row':''}" onclick="setFilter('${k}', 'DEPT')"><td>${k}</td><td class="text-right">${depts[k].a}</td><td class="text-right">${depts[k].c}</td><td class="text-right" style="color:var(--accent); font-weight:800;">${depts[k].a+depts[k].c}</td></tr>`).join('');
-        dsBody.innerHTML = Object.keys(desgs).map(k => `<tr class="${(filterType==='DESG' && filterVal===k)?'active-filter-row':''}" onclick="setFilter('${k}', 'DESG')"><td>${k}</td><td class="text-right">${desgs[k].a}</td><td class="text-right">${desgs[k].c}</td><td class="text-right" style="color:var(--accent); font-weight:800;">${desgs[k].a+desgs[k].c}</td></tr>`).join('');
+        
+        dash.innerHTML = html;
     }
 
     function renderTable() {
         const body = document.getElementById("rows");
         body.innerHTML = "";
         
-        const filtered = rawData.filter(r => {
-            if(filterVal === 'ALL') return true;
-            if(filterType === 'STATUS') return r.status === filterVal;
-            if(filterType === 'DUTY') return r.duty_type === filterVal;
-            if(filterType === 'DEPT') return (r.department || 'GENERAL') === filterVal;
-            if(filterType === 'DESG') return (r.designation || 'STAFF') === filterVal;
-            return true;
-        });
+        let filtered = rawData.filter(r => r.status !== 'CLOSED');
+        if(filterShift !== 'ALL') { filtered = filtered.filter(r => r.shift_name === filterShift); }
 
-        document.getElementById("rowCount").innerText = `${filtered.length} ACTIVE TRANSITS CAPTURED`;
+        document.getElementById("rowCount").innerText = `${filtered.length} ACTIVE PERSONNEL`;
 
         if(filtered.length === 0) {
-            body.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:var(--muted)">No sync records match current filter selections.</td></tr>`;
+            body.innerHTML = `<tr><td colspan="4" style="padding:40px; text-align:center; color:var(--muted); font-size:11px; font-weight:500;">No active personnel in this view.</td></tr>`;
             return;
         }
 
         filtered.forEach(r => {
-            let dtClass = r.status === 'CLOSED' ? `dt-${r.duty_type.toLowerCase()}` : 'dt-onduty';
-            const timeline = (r.movements || []).map(m => `<div class="chip c-${m.type.toLowerCase()}">${m.type} ${m.time}</div>`).join(' <i class="fa fa-chevron-right" style="font-size:7px;color:var(--border)"></i> ');
+            const timeline = (r.movements || []).map(m => `<div class="chip c-${m.type.toLowerCase()}">${m.type} ${m.time}</div>`).join(' <i class="fa fa-angle-right" style="font-size:8px;color:var(--border)"></i> ');
             
+            let statusMarkup = '';
+            if(r.status === 'OPEN') statusMarkup = `<div class="status-indicator s-open"><div class="dot"></div> INSIDE</div>`;
+            else if (r.status === 'AWAY') statusMarkup = `<div class="status-indicator s-away"><div class="dot"></div> ON BREAK</div>`;
+
+            let shiftColorClass = 'bg-shift-default';
+            let foundShift = serverShifts.find(x => x.name === r.shift_name);
+            if(foundShift) shiftColorClass = 'bg-shift-' + foundShift.colorIdx;
+
             body.innerHTML += `
-                <tr class="data-row">
-                    <td class="text-left" style="padding-left:15px;">
-                        <div style="font-weight:800; color:var(--text-heading); font-size:12px;">${r.employee_id}</div>
-                        <div style="font-size:10px; color:var(--muted); margin-top:2px;"><b>${r.employee_name}</b></div>
-                        <div style="font-size:9px; color:var(--accent); margin-top:1px;">${r.department} &bull; ${r.designation}</div>
+                <tr>
+                    <td>
+                        <div style="font-weight:700; color:var(--text-heading); font-size:11px;">${r.employee_name}</div>
+                        <div style="font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:0.5px;">${r.employee_id}</div>
                     </td>
-                    <td><div style="display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap">${timeline}</div></td>
-                    <td class="text-right" style="font-weight:800; color:var(--text-heading); font-size:12px;">${parseFloat(r.working_hours).toFixed(2)} <span style="font-size:9px; color:var(--muted)">HRS</span></td>
-                    <td><span class="duty-label ${dtClass}">${r.status === 'CLOSED' ? r.duty_type : 'ON-DUTY'}</span></td>
-                    <td><span class="badge s-${r.status.toLowerCase()}">${r.status}</span></td>
+                    <td><span class="shift-badge ${shiftColorClass}">${r.shift_name || 'GENERAL'}</span></td>
+                    <td><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${timeline}</div></td>
+                    <td style="text-align:right;">${statusMarkup}</td>
                 </tr>`;
         });
     }
 
     async function loadData() {
         try {
-            const res = await fetch(`${API_BASE}/today_all`);
+            // 🟢 🔴 Added explicit location to GET fetch as well
+            const res = await fetch(`${API_BASE}/today_all?location=${activeLocation}`);
+            if(!res.ok) {
+                const err = await res.json();
+                if(err.error === "GLOBAL_FILTER_REQUIRED") return; 
+            }
             rawData = await res.json();
-            let counts = { OPEN: 0, AWAY: 0, HALF: 0, SINGLE: 0, DOUBLE: 0 };
-            rawData.forEach(r => {
-                if(r.status === 'OPEN') counts.OPEN++;
-                if(r.status === 'AWAY') counts.AWAY++;
-                if(r.duty_type === 'HALF') counts.HALF++;
-                if(r.duty_type === 'SINGLE') counts.SINGLE++;
-                if(r.duty_type === 'DOUBLE') counts.DOUBLE++;
-            });
-            document.getElementById("stat-total").innerText = rawData.length;
-            document.getElementById("stat-in").innerText = counts.OPEN;
-            document.getElementById("stat-away").innerText = counts.AWAY;
-            document.getElementById("stat-half").innerText = counts.HALF;
-            document.getElementById("stat-single").innerText = counts.SINGLE;
-            document.getElementById("stat-double").innerText = counts.DOUBLE;
-            renderAll();
-        } catch (e) { console.error("Realtime fetch channel error context drop."); }
+            renderDashboard();
+            renderTable();
+        } catch (e) { console.error("Data stream interrupted."); }
     }
 
     function toggleAuditPanel(show) {
@@ -476,27 +531,29 @@ body.dark-mode .dt-onduty { color: #60a5fa; background: #1e3a8a; border-color: #
     async function showAllAuditLogs() {
         toggleAuditPanel(true);
         const content = document.getElementById("auditContent");
-        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Synchronization channel...</div>`;
+        content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:30px;"><i class="fa-solid fa-circle-notch fa-spin"></i> Syncing...</div>`;
         try {
             const res = await fetch(`${API_BASE}/audit_all`);
             const logs = await res.json();
             if(Array.isArray(logs) && logs.length > 0) {
                 content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05); color:var(--text);">
-                        <b>${l.timestamp}</b> | Action Scope: ${l.invoice_no}<br>
-                        <small style="color:var(--accent); font-weight:600;">${l.details}</small><br>
-                        <small style="color:var(--muted)">Operator Terminal: ${l.user}</small>
+                    <div style="border-left:3px solid var(--accent); margin-bottom:10px; background:var(--card); padding:12px; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                        <div style="font-size:10px; color:var(--muted); margin-bottom:4px; font-weight:600;">${l.timestamp}</div>
+                        <div style="color:var(--text-heading); font-weight:600; font-size:11px; line-height:1.4;">${l.details}</div>
                     </div>`).join('');
             } else {
-                content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No transaction logs traced.</div>`;
+                content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:30px;">No terminal logs.</div>`;
             }
-        } catch (e) { content.innerHTML = `Sync connection dropped.`; }
+        } catch (e) { content.innerHTML = `<div style="color:var(--danger); text-align:center;">Log fetch failed</div>`; }
     }
 
-    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
+    // 🟢 🔴 Pass explicit location to Excel Export
+    function executeExcelExport() { window.location.href = `${API_BASE}/export/excel?location=${activeLocation}`; }
 
+    {% if actual_location %}
     loadData();
     setInterval(loadData, 15000);
+    {% endif %}
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

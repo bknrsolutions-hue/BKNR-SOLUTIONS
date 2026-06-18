@@ -39,7 +39,6 @@
 *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{ background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
 
-/* Elegant Scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
@@ -65,34 +64,34 @@ body{ background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x:
 @media(max-width:768px){ .form-grid{ grid-template-columns:repeat(2,1fr); } }
 @media(max-width:500px){ .form-grid{ grid-template-columns:1fr !important; gap:12px; } }
 
-.field{ display:flex; flex-direction:column; gap: 5px; }
+.field{ display:flex; flex-direction:column; gap: 5px; position: relative; }
 .field label { font-size:9px; font-weight:700; color:var(--muted); text-transform: uppercase; }
 
 @media(max-width: 500px) {
     .field label { font-size: 8px; }
 }
 
-/* Select and Input Box sizing */
 .field select, .field input { 
-    width: 100%; 
-    height: 38px; 
-    padding: 0 12px; 
-    border-radius: 6px; 
-    border: 1px solid var(--border); 
-    font-size: 12px; 
-    font-family: inherit;
-    color: var(--text);
-    background: var(--card-bg); 
-    outline: none; 
-    transition: 0.2s; 
-    font-weight: 600;
+    width: 100%; height: 38px; padding: 0 12px; border-radius: 6px; 
+    border: 1px solid var(--border); font-size: 12px; font-family: inherit;
+    color: var(--text); background: var(--card-bg); outline: none; transition: 0.2s; font-weight: 600;
 }
 .field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+.field input:disabled { background: var(--bg); cursor: not-allowed; opacity: 0.7; }
+
+/* 🟢 🔴 SEARCHABLE DROPDOWN (AUTOCOMPLETE LIST) STYLES */
+.autocomplete-list {
+    position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px;
+    overflow-y: auto; background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 6px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.15); display: none;
+}
+.autocomplete-list.active { display: block; }
+.autocomplete-item { padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); }
+.autocomplete-item:hover, .autocomplete-item.selected { background: var(--row-hover); color: var(--accent); }
 
 .hidden{display:none !important;}
 .actions{ margin-top:20px; display:flex; justify-content:flex-end; gap:12px; }
 
-/* PREMIUM RMP-STYLE ROYAL BLUE BUTTON WITH GLOW EFFECT */
 .btn-primary{ 
     background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important; 
     color: #fff !important; border: 1px solid #1d4ed8 !important; padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; min-width: 120px; white-space: nowrap;
@@ -103,18 +102,11 @@ body{ background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x:
     transform: translateY(-1.5px); box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
-.btn-search { 
-    background: var(--secondary) !important; color: #fff !important; border: 1px solid var(--border) !important; padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: nowrap;
-}
+.btn-search { background: var(--secondary) !important; color: #fff !important; border: 1px solid var(--border) !important; padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: nowrap;}
 .btn-search:hover { opacity: 0.9; }
 
-.btn-clear { background: var(--bg); color: var(--text); padding: 10px 24px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); text-transform: uppercase; }
-
-/* UNIVERSAL SCROLL WRAPPER ENFORCER */
 .table-container { width: auto; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 15px 0 0; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg) !important; display: block !important; }
 table { width: 100%; border-collapse: collapse; text-align: center !important; table-layout: fixed !important; display: table !important; }
-
-/* PANEL & DATA TABLES TYPOGRAPHY LOCK */
 th, td { padding: 10px 6px; border: 1px solid var(--border) !important; text-align: center !important; white-space: nowrap; display: table-cell !important; }
 th { background: var(--header-bg) !important; color: var(--text) !important; font-weight: 800; text-transform: uppercase; font-size: 9.5px !important; position: sticky; top: 0; z-index: 10; }
 td { color: var(--text) !important; font-weight: 600; font-size: 10px !important; overflow: hidden; text-overflow: ellipsis; }
@@ -124,8 +116,17 @@ td { color: var(--text) !important; font-weight: 600; font-size: 10px !important
 tbody tr:hover { background: var(--row-hover) !important; }
 input[readonly] { background: var(--header-bg) !important; color: var(--text) !important; font-weight: 700; cursor: not-allowed; }
 
-/* Inline Grid Input Sizes */
 .report-input-cell { width: 80px; padding: 6px; border: 1px solid var(--accent); border-radius: 4px; background: var(--card-bg); color: var(--text); height: 30px !important; text-align: center; font-weight: bold; outline: none; }
+
+/* Block Cover for Unselected State */
+.lock-cover { position: relative; }
+.lock-cover::after {
+    content: 'Select Production For & At first';
+    position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 14px;
+    z-index: 100; border-radius: 12px;
+}
+.lock-cover.unlocked::after { display: none; }
 </style>
 </head>
 <body>
@@ -150,27 +151,34 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
   </div>
 </div>
 
-<form method="post" action="/inventory/stock_entry" id="stockInForm">
-<div class="section hidden" id="inBox">
+<form method="post" action="/inventory/stock_entry" id="stockInForm" onsubmit="return validateBeforeSubmit()">
+<div class="section hidden lock-cover" id="inBox">
     <div class="section-title"><i class="fa-solid fa-circle-down"></i> Stock In Details</div>
-    <div class="form-grid">
+    
+    <div class="form-grid" style="position: relative; z-index: 101;">
       <div class="field"><label>Production For</label>
-        <select name="production_for" id="in_prod_for" onchange="handleInCompanyChange()" required>
+        <select name="production_for" id="in_prod_for" onchange="handleInFilterChange()" required>
           <option value="">Select Company</option>
           {% for p in production_for_list %}<option value="{{p}}">{{p}}</option>{% endfor %}
         </select>
       </div>
       <div class="field"><label>Production At</label>
-        <select name="production_at" id="in_prod_at" onchange="handleInLocationChange()" required>
+        <select name="production_at" id="in_prod_at" onchange="handleInFilterChange()" required>
           <option value="">Select Location</option>
           {% for p in production_places %}<option value="{{p}}">{{p}}</option>{% endfor %}
         </select>
       </div>
-      <div class="field"><label>Batch</label>
-        <select name="batch_number" id="in_batch" onchange="loadBatchOrderSpecs()" required>
-          <option value="">Select Company & Location First</option>
-        </select>
+    </div>
+
+    <div class="form-grid" style="margin-top: 16px;">
+      
+      <div class="field">
+        <label>Batch</label>
+        <input type="text" id="in_batch_search" placeholder="Type to search batch..." autocomplete="off" onfocus="showAutocomplete('in_batch_list')" oninput="filterAutocomplete(this, 'in_batch_list')" required disabled>
+        <input type="hidden" name="batch_number" id="in_batch_hidden">
+        <div id="in_batch_list" class="autocomplete-list"></div>
       </div>
+      
       <div class="field"><label>Type of Production</label>
         <select name="type_of_production" id="in_type">
           <option value="N/A">N/A</option>
@@ -179,48 +187,31 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
       
       <div class="field">
         <label>Location (Stock)</label>
-        <select name="location" id="in_stock_loc" required>
-          <option value="">Select Coldstore</option>
-          {% for l in locations %}
-            <option value="{{l}}">{{l}}</option>
-          {% endfor %}
-        </select>
+        <input type="text" id="in_loc_search" placeholder="Search coldstore..." autocomplete="off" onfocus="showAutocomplete('in_loc_list')" oninput="filterAutocomplete(this, 'in_loc_list')" required disabled>
+        <input type="hidden" name="location" id="in_loc_hidden">
+        <div id="in_loc_list" class="autocomplete-list"></div>
       </div>
       
       <div class="field"><label>Brand</label>
-        <select name="brand" id="f_brand" required>
-          <option value="">Select Brand</option>
-        </select>
+        <select name="brand" id="f_brand" required><option value="">Select Brand</option></select>
       </div>
       <div class="field"><label>Freezer</label>
-        <select name="freezer" id="f_freezer" required>
-          <option value="">Select Freezer</option>
-        </select>
+        <select name="freezer" id="f_freezer" required><option value="">Select Freezer</option></select>
       </div>
       <div class="field"><label>Packing Style</label>
-        <select name="packing_style" id="packer" onchange="calcQty()" required>
-          <option value="">Select Style</option>
-        </select>
+        <select name="packing_style" id="packer" onchange="calcQty()" required><option value="">Select Style</option></select>
       </div>
       <div class="field"><label>Glaze</label>
-        <select name="glaze" id="f_glaze" required>
-          <option value="">Select Glaze</option>
-        </select>
+        <select name="glaze" id="f_glaze" required><option value="">Select Glaze</option></select>
       </div>
       <div class="field"><label>Species</label>
-        <select name="species" id="f_species" required>
-          <option value="">Select Species</option>
-        </select>
+        <select name="species" id="f_species" required><option value="">Select Species</option></select>
       </div>
       <div class="field"><label>Variety</label>
-        <select name="variety" id="f_variety" required>
-          <option value="">Select Variety</option>
-        </select>
+        <select name="variety" id="f_variety" required><option value="">Select Variety</option></select>
       </div>
       <div class="field"><label>Grade</label>
-        <select name="grade" id="f_grade" required>
-          <option value="">Select Grade</option>
-        </select>
+        <select name="grade" id="f_grade" required><option value="">Select Grade</option></select>
       </div>
       <div class="field"><label>No of MC</label>
         <input id="mc" name="no_of_mc" type="number" oninput="calcQty()" placeholder="0" value="0" autocomplete="off" required>
@@ -232,26 +223,27 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
         <input id="qty" name="quantity" readonly placeholder="0.00" style="text-align: center;">
       </div>
       <div class="field"><label>Purpose</label>
-        <select name="purpose" id="f_purpose">
-          <option value="">Select Purpose</option>
-        </select>
+        <select name="purpose" id="f_purpose"><option value="">Select Purpose</option></select>
       </div>
       <div class="field"><label>PO Number</label>
         <select name="po_number" id="f_po">
-          <option value="N/A">N/A</option>
+          <option value="">Select PO Number</option>
+          <option value="N/A">N/A (No PO)</option>
         </select>
       </div>
     </div>
+    
     <div class="actions">
       <button type="submit" class="btn btn-primary" id="submitInBtn"><i class="fa-solid fa-cloud-arrow-up"></i> SAVE STOCK IN</button>
     </div>
 </div>
 </form>
 
-<div class="section hidden" id="outBox">
+<div class="section hidden lock-cover" id="outBox">
     <div class="section-title"><i class="fa-solid fa-circle-up"></i> Stock Out Search</div>
     <form id="outForm" method="post" action="/inventory/stock_out_save">
-    <div class="form-grid">
+    
+    <div class="form-grid" style="position: relative; z-index: 101;">
       <div class="field"><label>Production For</label>
         <select name="production_for" id="out_prod_for" onchange="handleOutFilterChange()">
             <option value="">Select Company</option>
@@ -264,6 +256,9 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
             {% for p in production_places %}<option value="{{p}}">{{p}}</option>{% endfor %}
         </select>
       </div>
+    </div>
+
+    <div class="form-grid" style="margin-top: 16px;">
       <div class="field"><label>Brand</label>
         <select name="brand" id="out_brand" required><option value="">Select Brand</option></select>
       </div>
@@ -289,9 +284,13 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
         <select name="purpose" id="out_purpose"><option value="">Select Purpose</option></select>
       </div>
       <div class="field"><label>PO Number</label>
-        <select name="po_number" id="out_po"><option value="N/A">N/A</option></select>
+        <select name="po_number" id="out_po">
+          <option value="">Select PO Number</option>
+          <option value="N/A">N/A (No PO)</option>
+        </select>
       </div>
     </div>
+    
     <div style="margin-top: 20px;"><button type="button" class="btn btn-search" onclick="searchStock()"><i class="fa-solid fa-magnifying-glass"></i> SEARCH AVAILABLE STOCK</button></div>
     
     <div class="table-container">
@@ -318,22 +317,23 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
 <div class="section">
     <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Warehouse Transactions</div>
     <div class="table-container">
-        <table style="min-width: 1750px;">
+        <table style="min-width: 1850px;">
         <thead>
             <tr>
-                <th style="width: 60px;">ID</th>
+                <th style="width: 50px;">ID</th>
                 <th style="width: 90px;">Date</th>
+                <th style="width: 80px;">Time</th>
                 <th style="width: 65px;">Type</th>
                 <th style="width: 100px;">Batch</th>
-                <th style="width: 110px; text-align: left;">Stock Loc</th>
+                <th style="width: 120px; text-align: left;">Stock Loc</th>
                 <th style="width: 140px; text-align: left;">Prod For</th>
                 <th style="width: 120px; text-align: left;">Prod At</th>
                 <th style="width: 110px; text-align: left;">Purpose</th>
                 <th style="width: 95px;">PO No</th>
                 <th style="width: 110px; text-align: left;">Brand</th>
-                <th style="width: 80px;">Species</th>
-                <th style="width: 115px; text-align: left;">Variety</th>
-                <th style="width: 75px;">Grade</th>
+                <th style="width: 90px;">Species</th>
+                <th style="width: 120px; text-align: left;">Variety</th>
+                <th style="width: 80px;">Grade</th>
                 <th style="width: 65px; text-align: right;">MC</th>
                 <th style="width: 65px; text-align: right;">Lse</th>
                 <th style="width: 95px; text-align: right;">Total Qty</th>
@@ -345,6 +345,7 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
         <tr>
             <td>{{r.id}}</td>
             <td>{{r.date}}</td>
+            <td style="color: var(--muted); font-size: 9px !important;">{{r.time.strftime('%H:%M:%S') if r.time else ''}}</td>
             <td class="{{ 'text-green' if r.cargo_movement_type == 'IN' else 'text-red' }}">{{r.cargo_movement_type}}</td>
             <td style="font-weight: 700; color: var(--accent);">{{r.batch_number}}</td>
             <td style="text-align: left;">{{r.location}}</td>
@@ -382,7 +383,6 @@ const RAW_SPECIES = [{% for s in species %}"{{s}}",{% endfor %}];
 const RAW_TYPES = [{% for pt in production_types %}"{{pt}}",{% endfor %}];
 const RAW_PURPOSES = [{% for p in purposes %}"{{p}}",{% endfor %}];
 const RAW_POS = [{% for p in po_numbers %}"{{p}}",{% endfor %}];
-const RAW_COLDSTORES = [{% for l in locations %}"{{l}}",{% endfor %}];
 
 const RAW_PACKING_STYLES = [
     {% for p in packing_styles %}
@@ -396,12 +396,6 @@ const batchMap = [
     {% endfor %}
 ];
 
-const SOAKING_MON_DATA = [
-    {% for s in soaking_data %}
-    { batch: "{{s.batch_number}}", comp: "{{s.production_for}}", loc: "{{s.production_at}}", varty: "{{s.variety_name}}", sps: "{{s.species}}" },
-    {% endfor %}
-];
-
 const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
 const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
 
@@ -411,7 +405,6 @@ window.onload = function() {
         if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
     } catch(e) {}
     
-    // 🟢 🔴 CRITICAL LOCK: గ్లోబల్ హెడర్ ఫిల్టర్స్ వాల్యూస్ ఉంటే, సెలెక్షన్ ఆప్షన్స్ ని ఇక్కడే సింక్ చేస్తున్నాను చిన్నా
     if (BACKEND_GLOBAL_COMPANY && BACKEND_GLOBAL_COMPANY !== "None" && BACKEND_GLOBAL_COMPANY !== "") {
         document.getElementById("in_prod_for").value = BACKEND_GLOBAL_COMPANY;
         document.getElementById("out_prod_for").value = BACKEND_GLOBAL_COMPANY;
@@ -422,74 +415,132 @@ window.onload = function() {
     }
     
     setupStaticFormDropdowns();
-    filterInBatches();
+    checkUnlockState("in");
+    checkUnlockState("out");
 }
 
-function handleInCompanyChange() {
-    filterInBatches();
+function toggleMode(){
+  const movement = document.getElementById('movement').value;
+  document.getElementById('inBox').classList.toggle("hidden", movement!=="IN");
+  document.getElementById('outBox').classList.toggle("hidden", movement!=="OUT");
 }
 
-function handleInLocationChange() {
-    filterInBatches();
-}
-
-function handleOutFilterChange() {
-    // Hooks reserved for down-stream validation controls
-}
-
-function filterInBatches() {
-    const company = document.getElementById('in_prod_for').value.trim().toUpperCase();
-    const location = document.getElementById('in_prod_at').value.trim().toUpperCase();
-    const batchDropdown = document.getElementById('in_batch');
+// 🟢 🔴 UNLOCK STATE CHECKER
+function checkUnlockState(mode) {
+    const pFor = document.getElementById(`${mode}_prod_for`).value;
+    const pAt = document.getElementById(`${mode}_prod_at`).value;
+    const box = document.getElementById(`${mode}Box`);
     
-    batchDropdown.innerHTML = '<option value="">Select Batch</option>';
-    resetCascadedFields();
-    
-    if(company && location) {
-        const filtered = batchMap.filter(i => 
-            (i.company || "").trim().toUpperCase() === company && 
-            (i.location || "").trim().toUpperCase() === location
-        );
-        
-        if(filtered.length > 0) {
-            filtered.forEach(item => {
-                batchDropdown.innerHTML += `<option value="${item.batch}">${item.batch}</option>`;
-            });
-        } else {
-            batchDropdown.innerHTML = '<option value="">No Batch Found</option>';
+    if(pFor && pAt) {
+        box.classList.add("unlocked");
+        if(mode === "in") {
+            document.getElementById("in_batch_search").disabled = false;
+            document.getElementById("in_loc_search").disabled = false;
+            loadDynamicLookups();
+        }
+    } else {
+        box.classList.remove("unlocked");
+        if(mode === "in") {
+            document.getElementById("in_batch_search").disabled = true;
+            document.getElementById("in_loc_search").disabled = true;
+            document.getElementById("in_batch_search").value = "";
+            document.getElementById("in_loc_search").value = "";
+            document.getElementById("in_batch_hidden").value = "";
+            document.getElementById("in_loc_hidden").value = "";
         }
     }
 }
 
-function loadBatchOrderSpecs() {
-    const batchVal = document.getElementById("in_batch").value.trim();
-    const compVal = document.getElementById("in_prod_for").value.trim().toUpperCase();
-    const locVal = document.getElementById("in_prod_at").value.trim().toUpperCase();
+// 🟢 🔴 FILTER REFRESH HANDLER
+function handleInFilterChange() { 
+    document.getElementById("in_batch_search").value = "";
+    document.getElementById("in_batch_hidden").value = "";
+    document.getElementById("in_loc_search").value = "";
+    document.getElementById("in_loc_hidden").value = "";
+    
+    checkUnlockState("in"); 
+}
+function handleOutFilterChange() { checkUnlockState("out"); }
 
-    const specSelect = document.getElementById("f_species");
-    const varSelect = document.getElementById("f_variety");
+// 🟢 🔴 AJAX DYNAMIC LOOKUPS FOR BATCH & LOCATION
+async function loadDynamicLookups() {
+    const pFor = document.getElementById("in_prod_for").value;
+    const pAt = document.getElementById("in_prod_at").value;
 
-    specSelect.innerHTML = '<option value="">Select Species</option>';
-    varSelect.innerHTML = '<option value="">Select Variety</option>';
-
-    if(!batchVal) { setupStaticFormDropdowns(); return; }
-
-    const matches = SOAKING_MON_DATA.filter(item => 
-        item.batch === batchVal && (item.comp || "").toUpperCase() === compVal && (item.loc || "").toUpperCase() === locVal
-    );
-
-    if(matches.length > 0) {
-        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].sort();
-        const uniqueVars = [...new Set(matches.map(m => m.varty))].sort();
-
-        uniqueSpecs.forEach(s => { let opt = document.createElement('option'); opt.value = s; opt.innerText = s; specSelect.appendChild(opt); });
-        uniqueVars.forEach(v => { let opt = document.createElement('option'); opt.value = v; opt.innerText = v; varSelect.appendChild(opt); });
-
-        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
-        if(uniqueVars.length === 1) varSelect.value = uniqueVars[0];
-    } else {
-        setupStaticFormDropdowns();
+    if(pFor && pAt) {
+        const matchedBatches = batchMap.filter(i => (i.company || "").trim().toUpperCase() === pFor.toUpperCase() && (i.location || "").trim().toUpperCase() === pAt.toUpperCase());
+        const batchArr = matchedBatches.map(m => m.batch);
+        renderAutocompleteList(batchArr, "in_batch_list", "in_batch_search", "in_batch_hidden");
     }
+
+    // 🔥 FIXED: LOCATIONS FETCHED ONLY BASED ON 'PRODUCTION AT' (PLANT)
+    if(pAt) {
+        try {
+            const response = await fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(pAt)}`);
+            if(response.ok) {
+                const data = await response.json();
+                renderAutocompleteList(data.locations, "in_loc_list", "in_loc_search", "in_loc_hidden");
+            }
+        } catch(err) { console.error("Location lookup failed"); }
+    }
+}
+
+// 🟢 🔴 NATIVE JAVASCRIPT SEARCHABLE AUTOCOMPLETE ENGINE
+function renderAutocompleteList(dataArray, listId, inputId, hiddenId) {
+    const listEl = document.getElementById(listId);
+    listEl.innerHTML = "";
+    
+    if(dataArray.length === 0) {
+        listEl.innerHTML = '<div class="autocomplete-item" style="color:var(--danger);">No Match Found</div>';
+        return;
+    }
+    
+    dataArray.forEach(item => {
+        let div = document.createElement("div");
+        div.className = "autocomplete-item";
+        div.innerText = item;
+        div.onclick = function() {
+            document.getElementById(inputId).value = item;
+            document.getElementById(hiddenId).value = item;
+            listEl.classList.remove("active");
+            if(inputId === "in_batch_search") loadBatchSpecs(item); 
+        };
+        listEl.appendChild(div);
+    });
+}
+
+function showAutocomplete(listId) {
+    document.querySelectorAll(".autocomplete-list").forEach(el => el.classList.remove("active"));
+    const relInput = document.getElementById(listId.replace("_list", "_search"));
+    if(relInput && !relInput.disabled) {
+        document.getElementById(listId).classList.add("active");
+    }
+}
+
+function filterAutocomplete(input, listId) {
+    const filter = input.value.toUpperCase();
+    const items = document.getElementById(listId).getElementsByClassName("autocomplete-item");
+    for (let i = 0; i < items.length; i++) {
+        let txtValue = items[i].textContent || items[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            items[i].style.display = "";
+        } else {
+            items[i].style.display = "none";
+        }
+    }
+    document.getElementById(listId.replace("_list", "_hidden")).value = "";
+}
+
+// Hide autocomplete on outside click
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".field")) {
+        document.querySelectorAll(".autocomplete-list").forEach(el => el.classList.remove("active"));
+    }
+});
+
+
+function loadBatchSpecs(batchVal) {
+    // Optional Expansion hook
 }
 
 function setupStaticFormDropdowns() {
@@ -499,18 +550,9 @@ function setupStaticFormDropdowns() {
     fillStaticSelect('f_freezer', RAW_FREEZERS, 'Select Freezer');
     fillStaticSelect('in_type', RAW_TYPES, 'Select Type');
     fillStaticSelect('f_purpose', RAW_PURPOSES, 'Select Purpose');
-    fillStaticSelect('f_po', RAW_POS, 'Select PO Number');
     
-    // 🟢 🔴 FIXED LOGIC: లొకేషన్ మాస్టర్ లుకప్ డేటా రిఫ్రెష్ అయినా కరెక్ట్ గా బైండ్ అవుతుంది
-    if(document.getElementById("in_stock_loc").options.length <= 1) {
-        fillStaticSelect('in_stock_loc', RAW_COLDSTORES, 'Select Coldstore');
-    }
-    if(document.getElementById("f_species").options.length <= 1) {
-        fillStaticSelect('f_species', RAW_SPECIES, 'Select Species');
-    }
-    if(document.getElementById("f_variety").options.length <= 1) {
-        fillStaticSelect('f_variety', RAW_VARIETIES, 'Select Variety');
-    }
+    fillStaticSelect('f_species', RAW_SPECIES, 'Select Species');
+    fillStaticSelect('f_variety', RAW_VARIETIES, 'Select Variety');
     
     const packSelect = document.getElementById("packer");
     packSelect.innerHTML = '<option value="">Select Style</option>';
@@ -528,7 +570,6 @@ function setupStaticFormDropdowns() {
     fillStaticSelect('out_variety', RAW_VARIETIES, 'Select Variety');
     fillStaticSelect('out_grade', RAW_GRADES, 'Select Grade');
     fillStaticSelect('out_purpose', RAW_PURPOSES, 'Select Purpose');
-    fillStaticSelect('out_po', RAW_POS, 'Select PO Number');
     
     const outPackSelect = document.getElementById("out_packer");
     outPackSelect.innerHTML = '<option value="">Select Style</option>';
@@ -536,6 +577,10 @@ function setupStaticFormDropdowns() {
         let opt = document.createElement('option'); opt.value = p.style; opt.innerText = p.style;
         outPackSelect.appendChild(opt);
     });
+
+    // PO Number with Default 
+    fillStaticSelect('f_po', RAW_POS, 'Select PO Number');
+    fillStaticSelect('out_po', RAW_POS, 'Select PO Number');
 }
 
 function fillStaticSelect(id, arrayData, defaultText) {
@@ -548,28 +593,20 @@ function fillStaticSelect(id, arrayData, defaultText) {
     if(currentVal) el.value = currentVal;
 }
 
-function resetCascadedFields() {
-    document.getElementById('f_species').innerHTML = '<option value="">Select Species</option>';
-    document.getElementById('f_variety').innerHTML = '<option value="">Select Variety</option>';
-}
-
-function toggleMode(){
-  const movement = document.getElementById('movement').value;
-  document.getElementById('inBox').classList.toggle("hidden", movement!=="IN");
-  document.getElementById('outBox').classList.toggle("hidden", movement!=="OUT");
-}
-
 function calcQty(){
   const opt = document.getElementById('packer').selectedOptions[0];
-  if(!opt || opt.value === "") {
-     document.getElementById('qty').value = "0.00";
-     return;
-  }
-  const mcW = Number(opt.dataset.mc || 0);
-  const slW = Number(opt.dataset.slab || 0);
-  const mcVal = Number(document.getElementById('mc').value || 0);
-  const looseVal = Number(document.getElementById('loose').value || 0);
+  if(!opt || opt.value === "") { document.getElementById('qty').value = "0.00"; return; }
+  const mcW = Number(opt.dataset.mc || 0); const slW = Number(opt.dataset.slab || 0);
+  const mcVal = Number(document.getElementById('mc').value || 0); const looseVal = Number(document.getElementById('loose').value || 0);
   document.getElementById('qty').value = ((mcVal * mcW) + (looseVal * slW)).toFixed(2);
+}
+
+function validateBeforeSubmit() {
+    const batchHidden = document.getElementById("in_batch_hidden").value;
+    const locHidden = document.getElementById("in_loc_hidden").value;
+    if(!batchHidden) { Swal.fire('Error', 'Please select a valid Batch from the dropdown.', 'error'); return false; }
+    if(!locHidden) { Swal.fire('Error', 'Please select a valid Coldstore Location from the dropdown.', 'error'); return false; }
+    return true;
 }
 
 async function searchStock(){
@@ -584,13 +621,11 @@ async function searchStock(){
   
   if(data.length === 0) {
       Swal.fire('No Inventory', 'No matching available stock found in coldstore.', 'info');
-      reportTable.classList.add("hidden");
-      outSaveBox.classList.add("hidden");
+      reportTable.classList.add("hidden"); outSaveBox.classList.add("hidden");
       return;
   }
 
-  reportTable.classList.remove("hidden");
-  outSaveBox.classList.remove("hidden");
+  reportTable.classList.remove("hidden"); outSaveBox.classList.remove("hidden");
   reportRows.innerHTML=""; hiddenInputs.innerHTML="";
   
   data.forEach((r,i)=>{

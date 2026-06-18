@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Stre
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, desc, func
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, date
 from app.utils.timezone import ist_now
@@ -16,8 +16,11 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
-from app.database.models.attendance import DailyAttendance, EmployeeRegistration
-from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
+from app.database.models.attendance import DailyAttendance, EmployeeRegistration, Shift
+from app.database.models.processing import AuditLog
+
+# 🌐 UNIVERSAL GLOBAL FILTERS HELPER
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["ATTENDANCE"])
 templates = Jinja2Templates(directory="app/templates")
@@ -29,32 +32,62 @@ logger = logging.getLogger(__name__)
 # ============================================================
 class AttendanceEntrySchema(BaseModel):
     employee_id: str
-    action: str  # IN, OUT, EXIT
+    action: str  
+    shift_name: str = "GENERAL"  
+    location: str = None  # 👈 🟢 FETCH DROP FIX: Added Location to Payload
+
+
+# ============================================================
+# 🟢 🔴 HELPER: STRICT LOCATION CHECK
+# ============================================================
+def get_strict_location(request: Request):
+    _, global_location = get_global_filters(request)
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    actual_location = global_location.strip().upper() if global_location and global_location.upper() != "ALL" else None
+    
+    if not actual_location and user_allowed_locations and len(user_allowed_locations) == 1:
+        actual_location = user_allowed_locations[0]
+
+    return actual_location, user_allowed_locations
 
 
 # ============================================================
 # 📅 1. PAGE LOAD (GET)
 # ============================================================
 @router.get("/daily", response_class=HTMLResponse)
-def daily_attendance_page(request: Request):
+def daily_attendance_page(request: Request, db: Session = Depends(get_db)):
     email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
+    actual_location, _ = get_strict_location(request)
+
+    plant_shifts = []
+    if actual_location and actual_location != "UNASSIGNED":
+        plant_shifts = db.query(Shift).filter(
+            Shift.company_id == company_code, 
+            Shift.is_active == True,
+            func.upper(func.trim(Shift.production_at)) == actual_location
+        ).all()
+
     return templates.TemplateResponse(
         request=request,
         name="attendance/daily_attendance.html",
         context={
             "email": email,
-            "company_id": company_code
+            "company_id": company_code,
+            "shifts": plant_shifts,
+            "actual_location": actual_location  
         }
     )
 
 
 # ============================================================
-# ⏱️ 2. ATTENDANCE ENTRY (IN / OUT / EXIT - POST JSON Payload)
+# ⏱️ 2. ATTENDANCE ENTRY (IN / OUT / EXIT - POST JSON)
 # ============================================================
 @router.post("/entry")
 async def attendance_entry(
@@ -68,13 +101,21 @@ async def attendance_entry(
     if not company_id or not email:
         return JSONResponse({"success": False, "error": "INVALID_SESSION"}, status_code=401)
 
+    # 🟢 🔴 Explicit Location Fallback Fix
+    frontend_location = payload.location.strip().upper() if payload.location else None
+    backend_location, _ = get_strict_location(request)
+    actual_location = frontend_location or backend_location
+    
+    if not actual_location:
+        return JSONResponse({"success": False, "error": "GLOBAL_FILTER_REQUIRED"}, status_code=400)
+
     input_id = payload.employee_id.strip()
-    action = payload.action.upper().strip() # IN, OUT, EXIT
+    action = payload.action.upper().strip()
+    shift_name = payload.shift_name.strip() 
 
     now = ist_now()
     time_str = now.strftime("%H:%M")
 
-    # DYNAMIC ID SEARCH (e.g., '1' -> '%00001')
     search_pattern = f"%{input_id.zfill(5)}"
 
     emp = db.query(EmployeeRegistration).filter(
@@ -88,14 +129,12 @@ async def attendance_entry(
 
     full_employee_id = emp.employee_id
 
-    # Active duty check (OPEN or AWAY)
     duty = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
         DailyAttendance.status != "CLOSED"
     ).first()
 
-    # CLOSED duty count for the day
     duty_count = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
@@ -103,7 +142,6 @@ async def attendance_entry(
         DailyAttendance.status == "CLOSED"
     ).count()
 
-    # --- LOGIC STREAM MANAGEMENT ---
     try:
         audit_details = ""
         
@@ -114,29 +152,31 @@ async def attendance_entry(
             if duty_count >= 2 and not duty:
                 return JSONResponse({"success": False, "error": "DAILY_DUTY_LIMIT_REACHED"}, status_code=403)
 
-            if duty: # Re-entry from Break (AWAY -> OPEN)
+            if duty: 
                 movements = list(duty.movements) if duty.movements else []
-                movements.append({"type": "IN", "time": time_str})
+                movements.append({"type": "IN", "time": time_str, "shift": shift_name})
                 duty.movements = movements
                 duty.status = "OPEN"
                 flag_modified(duty, "movements")
-                audit_details = f"Re-entry In at {time_str}"
-            else: # Fresh Entry
+                audit_details = f"Re-entry In at {time_str} [{shift_name}]"
+            else: 
                 new_duty = DailyAttendance(
                     company_id=company_id,
                     employee_id=full_employee_id,
                     employee_name=emp.employee_name,
                     designation=emp.designation, 
-                    employee_type=emp.employee_type,
+                    employee_type=emp.employee_type, 
+                    production_at=actual_location,   
                     duty_date=date.today(),
                     first_in=now,
-                    movements=[{"type": "IN", "time": time_str}],
+                    shift_name=shift_name,
+                    movements=[{"type": "IN", "time": time_str, "shift": shift_name}],
                     status="OPEN"
                 )
                 db.add(new_duty)
-                audit_details = f"Fresh Shift Punch In at {time_str}"
+                audit_details = f"Fresh Shift Punch In at {time_str} (Loc: {actual_location}) [{shift_name}]"
 
-        elif action == "OUT": # BREAK
+        elif action == "OUT": 
             if not duty: 
                 return JSONResponse({"success": False, "error": "NO_ACTIVE_DUTY"}, status_code=400)
             if duty.status == "AWAY": 
@@ -149,7 +189,7 @@ async def attendance_entry(
             flag_modified(duty, "movements")
             audit_details = f"Break Out at {time_str}"
 
-        elif action == "EXIT": # FINAL EXIT
+        elif action == "EXIT": 
             if not duty: 
                 return JSONResponse({"success": False, "error": "NO_ACTIVE_DUTY"}, status_code=400)
             
@@ -159,14 +199,32 @@ async def attendance_entry(
             duty.exit_time = now
             duty.status = "CLOSED"
             
-            # Working Hours Calculation
-            diff = now - duty.first_in
+            safe_now = now.replace(tzinfo=None)
+            safe_first_in = duty.first_in.replace(tzinfo=None) if duty.first_in else safe_now
+            
+            diff = safe_now - safe_first_in
             wh = round(diff.total_seconds() / 3600, 2)
             duty.working_hours = wh
-            flag_modified(duty, "movements")
-            audit_details = f"Final Shift Close at {time_str} ({wh} Hrs Worked)"
 
-        # 📜 Operational Audit Log Trace Injection
+            if wh >= 14:
+                duty.duty_type = "DOUBLE"
+                duty.calculated_ot_hours = round(wh - 16, 2) if wh > 16 else 0.0
+            elif wh >= 8:
+                duty.duty_type = "SINGLE"
+                duty.calculated_ot_hours = round(wh - 8, 2) if wh > 8 else 0.0
+            elif wh >= 4:
+                duty.duty_type = "HALF"
+                duty.calculated_ot_hours = 0.0
+            else:
+                duty.duty_type = "ABSENT"
+                duty.calculated_ot_hours = 0.0
+
+            duty.ot_status = "PENDING"
+            duty.approved_ot_hours = 0.0
+
+            flag_modified(duty, "movements")
+            audit_details = f"Final Shift Close at {time_str} ({wh} Hrs Worked - Duty: {duty.duty_type})"
+
         db.add(AuditLog(
             table_name="daily_attendance", record_id=emp.id, company_id=company_id,
             field_name=f"PUNCH_{action}", old_value="ATTENDANCE_STREAM", 
@@ -184,15 +242,22 @@ async def attendance_entry(
 
 
 # ============================================================
-# 📊 3. FETCH TODAY'S ATTENDANCE DATA (GET AJAX)
+# 📊 3. FETCH TODAY'S DATA
 # ============================================================
 @router.get("/today_all")
-def today_attendance_list(request: Request, db: Session = Depends(get_db)):
+def today_attendance_list(request: Request, location: str = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id: 
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    rows = db.query(
+    # 🟢 🔴 Support query param location if fetch drops cookie
+    backend_location, _ = get_strict_location(request)
+    actual_location = location.strip().upper() if location else backend_location
+
+    if not actual_location:
+        return JSONResponse({"error": "GLOBAL_FILTER_REQUIRED"}, status_code=400)
+
+    query = db.query(
         DailyAttendance, 
         EmployeeRegistration.department,
         EmployeeRegistration.designation
@@ -204,28 +269,19 @@ def today_attendance_list(request: Request, db: Session = Depends(get_db)):
         )
     ).filter(
         DailyAttendance.company_id == company_id,
+        DailyAttendance.production_at == actual_location, 
         or_(
             DailyAttendance.duty_date == date.today(),
             DailyAttendance.status != "CLOSED"
         )
-    ).order_by(DailyAttendance.first_in.desc()).all()
+    )
+
+    rows = query.order_by(DailyAttendance.first_in.desc()).all()
 
     results = []
     for da, dept, desg in rows:
         wh = float(da.working_hours or 0)
-        
-        # PAYROLL LOGIC (Based on Working Hours)
-        if da.status != "CLOSED":
-            duty_type = "ON-DUTY"
-        else:
-            if wh >= 14:
-                duty_type = "DOUBLE"   
-            elif wh >= 6:
-                duty_type = "SINGLE"   
-            elif wh >= 4:
-                duty_type = "HALF"     
-            else:
-                duty_type = "ABSENT"   
+        duty_type = da.duty_type if da.status == "CLOSED" else "ON-DUTY"
         
         results.append({
             "employee_id": da.employee_id,
@@ -235,13 +291,15 @@ def today_attendance_list(request: Request, db: Session = Depends(get_db)):
             "working_hours": wh,
             "duty_type": duty_type,
             "status": da.status,
+            "shift_name": da.shift_name,
+            "calculated_ot_hours": da.calculated_ot_hours or 0.0,
             "movements": da.movements or []
         })
     return results
 
 
 # ============================================================
-# 📜 4. MASTER AUDIT HISTORY LOG ENGINE (GET)
+# 📜 4. AUDIT & EXPORT
 # ============================================================
 @router.get("/audit_all")
 async def get_all_attendance_audit(request: Request, db: Session = Depends(get_db)):
@@ -258,22 +316,25 @@ async def get_all_attendance_audit(request: Request, db: Session = Depends(get_d
     return [{
         "timestamp": l.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.edited_by.split('@')[0],
-        "invoice_no": l.field_name, # Event string mapping token redirection 
+        "invoice_no": l.field_name, 
         "action": "PUNCH TRANSACTION",
         "details": l.new_value
     } for l in logs]
 
 
-# ============================================================
-# 📈 5. GLOBAL MASTER EXCEL EXPORT LEDGER (GET)
-# ============================================================
 @router.get("/export/excel")
-def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
+def export_attendance_excel(request: Request, location: str = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    rows = db.query(
+    backend_location, _ = get_strict_location(request)
+    actual_location = location.strip().upper() if location else backend_location
+
+    if not actual_location:
+        return RedirectResponse("/attendance/daily", status_code=302)
+
+    query = db.query(
         DailyAttendance, 
         EmployeeRegistration.department
     ).join(
@@ -284,8 +345,11 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
         )
     ).filter(
         DailyAttendance.company_id == company_id,
+        DailyAttendance.production_at == actual_location, 
         DailyAttendance.duty_date == date.today()
-    ).order_by(DailyAttendance.first_in.desc()).all()
+    )
+
+    rows = query.order_by(DailyAttendance.first_in.desc()).all()
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -301,7 +365,7 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
         top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
     )
 
-    headers = ["Sl No", "Employee ID", "Employee Name", "Department", "Designation", "First In", "Status", "Working Hours", "Duty Allocation"]
+    headers = ["Sl No", "Employee ID", "Employee Name", "Department", "Designation", "Shift", "First In", "Status", "Working Hours", "Duty Allocation", "Calculated OT", "OT Status"]
     ws.append(headers)
 
     for col_num, header in enumerate(headers, 1):
@@ -312,7 +376,7 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
 
     for idx, (da, dept) in enumerate(rows, 1):
         wh = float(da.working_hours or 0)
-        duty_type = "ON-DUTY" if da.status != "CLOSED" else ("DOUBLE" if wh >= 14 else ("SINGLE" if wh >= 6 else ("HALF" if wh >= 4 else "ABSENT")))
+        duty_type = da.duty_type if da.status == "CLOSED" else "ON-DUTY"
         
         row_data = [
             idx,
@@ -320,10 +384,13 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
             da.employee_name,
             dept or "GENERAL",
             da.designation or "STAFF",
+            da.shift_name or "GENERAL",
             da.first_in.strftime("%H:%M:%S") if da.first_in else "-",
             da.status,
             wh,
-            duty_type
+            duty_type,
+            da.calculated_ot_hours,
+            da.ot_status
         ]
         ws.append(row_data)
         
@@ -332,10 +399,10 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
             cell = ws.cell(row=curr_row, column=col_idx)
             cell.font = data_font
             cell.border = thin_border
-            if col_idx == 8:
+            if col_idx in [9, 11]:  
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal="right")
-            elif col_idx in [1, 2, 6, 7, 9]:
+            elif col_idx in [1, 2, 6, 7, 8, 10, 12]:  
                 cell.alignment = Alignment(horizontal="center")
 
     for col in ws.columns:
@@ -347,7 +414,7 @@ def export_attendance_excel(request: Request, db: Session = Depends(get_db)):
     wb.save(stream)
     stream.seek(0)
 
-    filename = f"Attendance_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"{actual_location}_Attendance_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

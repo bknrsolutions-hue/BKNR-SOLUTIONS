@@ -104,16 +104,20 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     masters = get_cached_masters(db, company_code)
 
+    # 🟢 🔴 FIXED: STRICT GLOBAL LOCATION OVERRIDE FOR PEELING DROPDOWN
     peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
     if global_location:
-        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_location))
+        peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)) == global_location.strip().upper())
     elif user_allowed_locations:
         peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
     peeling_locs = [p.peeling_at for p in peeling_q.all()]
 
+    # 🟢 🔴 FIXED: STRICT GLOBAL PRODUCTION FOR OVERRIDE
+    final_prod_for_list = [global_production_for] if global_production_for else masters["prod_for_list"]
+
     today_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == ist_now().date())
     if global_location:
-        today_q = today_q.filter(func.trim(DeHeading.peeling_at) == func.trim(global_location))
+        today_q = today_q.filter(func.upper(func.trim(DeHeading.peeling_at)) == global_location.strip().upper())
     elif user_allowed_locations:
         today_q = today_q.filter(func.upper(func.trim(DeHeading.peeling_at)).in_(user_allowed_locations))
     if global_production_for:
@@ -150,9 +154,14 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request=request, name="processing/de_heading.html",
         context={
-            "contractors": masters["contractors"], "species": masters["species"], "peeling_locations": peeling_locs,
-            "prod_for_list": masters["prod_for_list"], "today_data": today_data, "hoso_floor_balance": hoso_floor_balance_list,
-            "selected_production_for": global_production_for, "selected_location": global_location              
+            "contractors": masters["contractors"], 
+            "species": masters["species"], 
+            "peeling_locations": peeling_locs,         # 👈 Injecting Strictly Filtered Data
+            "prod_for_list": final_prod_for_list,      # 👈 Injecting Strictly Filtered Data
+            "today_data": today_data, 
+            "hoso_floor_balance": hoso_floor_balance_list,
+            "selected_production_for": global_production_for, 
+            "selected_location": global_location              
         }
     )
 
@@ -284,13 +293,13 @@ def save_de_heading(
         deheading_at, production_for, qty_delta=-hoso_qty, email=email
     )
 
-    # 🟢 ⚡ 2. Issue 2 Fix: Add newly generated HLSO stock cleanly to running balance row
+    # 🟢 ⚡ 2. Add newly generated HLSO stock cleanly to running balance row
     update_floor_balance_row(
         db, company_code, clean_batch, clean_count, species, "HLSO", 
         deheading_at, production_for, qty_delta=hlso_qty, email=email
     )
 
-    # 🟢 ⚡ Issue 1 Fix: Synchronize pool *after* successful floor balance state mutations
+    # 🟢 ⚡ 3. Synchronize pool *after* successful floor balance state mutations
     add_deheading_to_grading_pool(db, new_entry)
 
     db.commit()
@@ -312,7 +321,7 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
         
     remove_deheading_from_grading_pool(db, row)
     
-    # 🟢 ⚡ Issue 3 Fix: Full Dual Inventory Stock Inverse Reversals Execution
+    # 🟢 ⚡ Full Dual Inventory Stock Inverse Reversals Execution
     # 1. HOSO back (+ Delta)
     update_floor_balance_row(
         db, company_code, row.batch_number, row.hoso_count, row.species, "HOSO", 

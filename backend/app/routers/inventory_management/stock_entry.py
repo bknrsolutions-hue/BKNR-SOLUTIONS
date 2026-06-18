@@ -99,7 +99,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
                 "production_at": rb.production_at
             })
 
-    # FIXED: Company dropdown filters bound correctly
+    # Company dropdown filters bound correctly
     pf_q = db.query(production_for.production_for).filter(production_for.company_id == company_code)
     if global_production_for:
         pf_q = pf_q.filter(func.trim(production_for.production_for) == func.trim(global_production_for))
@@ -113,7 +113,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         .filter(species_model.company_id == company_code).order_by(species_model.species_name).all()
     ]
 
-    # 🟢 🔴 FIXED: "Production At" (Second Column Dropdown) layout control synced with Global Location
+    # "Production At" (Second Column Dropdown) layout control synced with Global Location
     pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
     if global_location:
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)) == global_location.strip().upper())
@@ -121,7 +121,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
     production_places_list = [p.production_at for p in pa_q.order_by(production_at.production_at).all()]
 
-    # 🟢 🔴 FIXED: Coldstore Locations dropdown syncing with active parameters boundary
+    # Initial Coldstore Locations dropdown loading (Will be filtered dynamically on UI via AJAX)
     cl_q = db.query(coldstore_locations.coldstore_location).filter(coldstore_locations.company_id == company_code)
     if user_allowed_locations:
         cl_q = cl_q.filter(func.upper(func.trim(coldstore_locations.coldstore_location)).in_(user_allowed_locations))
@@ -158,6 +158,39 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+# -----------------------------------------------------
+# 🟢 🔴 NEW: DYNAMIC COLDSTORE LOOKUP BY PLANT (PRODUCTION AT) ONLY
+# -----------------------------------------------------
+@router.get("/get_matched_coldstores")
+def get_matched_coldstores(
+    request: Request, 
+    production_at: str = Query(...), 
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # Multi-permission location restriction fallback sync
+    session_locations = request.session.get("allowed_locations", [])
+    if isinstance(session_locations, str):
+        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
+    else:
+        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    # 🔥 FIXED: Querying coldstores strictly based on 'production_at' (Plant) ONLY
+    query = db.query(coldstore_locations.coldstore_location).filter(
+        coldstore_locations.company_id == company_code,
+        coldstore_locations.production_at == production_at
+    )
+
+    if user_allowed_locations:
+        query = query.filter(func.upper(func.trim(coldstore_locations.coldstore_location)).in_(user_allowed_locations))
+
+    matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
+    loc_list = [r.coldstore_location for r in matched_rows]
+
+    return JSONResponse({"locations": loc_list})
 # -----------------------------------------------------
 # SAVE STOCK IN
 # -----------------------------------------------------

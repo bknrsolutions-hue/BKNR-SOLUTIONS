@@ -61,7 +61,7 @@
 }
 
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; -webkit-font-smoothing: antialiased;}
 
 /* HEADER */
 .header {
@@ -85,7 +85,7 @@ body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40p
 
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
 @media(min-width:768px){ .form-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(5, 1fr); } }
+@media(min-width:1200px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
 
 .field { display: flex; flex-direction: column; }
 .form-title-inner { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; grid-column: 1 / -1; border-bottom: 1px dashed var(--border); padding-bottom: 3px; transition: border-color 0.3s;}
@@ -93,7 +93,7 @@ body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40p
 label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; transition: color 0.3s;}
 input, select {
   padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text);
+  border-radius: 6px; font-size: 13px; background: var(--input-bg); color: var(--text); font-weight: 500;
   outline: none; width: 100%; transition: 0.2s;
 }
 input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
@@ -109,9 +109,9 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 
 .top-actions { margin: 0; display: flex; justify-content: flex-end; }
 .btn-toggle { background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; transition: background 0.3s;}
-.btn-toggle:hover { opacity: 0.9; }
+.btn-toggle:hover { opacity: 0.9; transform: translateY(-1px);}
 
-.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.actions { text-align: center; display: flex; justify-content: center; gap: 10px; margin-top: 10px; grid-column: 1 / -1;}
 .btn {
   background: var(--accent); color: white; border: none;
   padding: 10px 24px; border-radius: 6px; font-size: 12px;
@@ -134,11 +134,11 @@ input::placeholder { color: var(--muted); opacity: 0.7; }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
 th {
-  background: var(--th-bg); color: var(--muted); padding: 8px 6px;
+  background: var(--th-bg); color: var(--muted); padding: 10px 8px;
   font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border);
   text-align: center; white-space: nowrap; transition: background 0.3s, border-color 0.3s;
 }
-td { padding: 8px 6px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text); text-align: center; white-space: nowrap; transition: border-color 0.3s;}
+td { padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 11.5px; color: var(--text); text-align: center; white-space: nowrap; transition: border-color 0.3s; font-weight: 500;}
 tr:hover { background: var(--row-hover); cursor: pointer; }
 tr.selected { background: var(--row-selected) !important; }
 
@@ -163,6 +163,11 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
   .actions { flex-direction: column; }
   .btn { width: 100%; }
 }
+@media(max-width: 600px){
+  .header { padding: 12px; }
+  .form-container { padding: 12px; }
+  input, select { padding: 6px 10px; font-size: 12px; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -177,11 +182,24 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
 </div>
 
 <form action="/attendance/shifts/add" method="POST" id="shiftForm">
+  <!-- 🟢 🔴 HIDDEN FIELD FOR EDIT/UPDATE -->
+  <input type="hidden" name="shift_id" id="shift_id" value="">
+
   <div class="form-container" id="formSection">
     
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-clock"></i> Shift Configuration</div>
       
+      <div class="field">
+        <label>Plant / Location *</label>
+        <select name="production_at" required>
+            <option value="">-- Select Plant --</option>
+            {% for s in sites %}
+            <option value="{{ s.production_at }}">{{ s.production_at }}</option>
+            {% endfor %}
+        </select>
+      </div>
+
       <div class="field">
         <label>Shift Name</label>
         <input type="text" name="shift_name" id="shift_name" required placeholder="e.g., General Shift, Night Shift">
@@ -209,11 +227,11 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
           <option value="True">Yes</option>
         </select>
       </div>
-    </div>
 
-    <div class="actions">
-      <button class="btn btn-primary" type="submit">SAVE SHIFT</button>
-      <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+      <div class="actions">
+        <button class="btn btn-primary" id="submitBtn" type="submit">SAVE SHIFT</button>
+        <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
+      </div>
     </div>
   </div>
 </form>
@@ -240,7 +258,9 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+            <!-- 🟢 🔴 EDIT OPTION ADDED HERE -->
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen-to-square"></i> Edit Shift</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px solid var(--border);"><i class="fa-solid fa-trash"></i> Delete</div>
             <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
             <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
           </div>
@@ -250,14 +270,19 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
 
 {% if shifts %}
 
+<!-- Mobile Cards -->
 <div class="mobile-card-list">
     {% for row in shifts %}
-    <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.shift_name }}" data-start="{{ row.start_time }}"
+    <div class="data-card" data-id="{{ row.id }}" data-plant="{{ row.production_at or '-' }}" data-name="{{ row.shift_name }}" data-start="{{ row.start_time }}"
          data-end="{{ row.end_time }}" data-break="{{ row.break_minutes }}" data-night="{{ row.is_night_shift }}"
          onclick="selectRowOrCard(this)">
         <div class="card-row">
             <span class="card-label">ID</span>
             <span class="card-val">#{{ row.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Plant (At)</span>
+            <span class="card-val" style="color:var(--primary);">{{ row.production_at or '-' }}</span>
         </div>
         <div class="card-row">
             <span class="card-label">Shift Name</span>
@@ -279,12 +304,14 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
     {% endfor %}
 </div>
 
+<!-- Desktop Table -->
 <div class="table-wrap">
   <table id="dataTable">
     <thead>
       <tr>
         <th style="width:50px;">ID</th>
-        <th>Shift Name</th>
+        <th class="text-left" style="width: 150px;">Plant (At)</th>
+        <th class="text-left">Shift Name</th>
         <th>Start Time</th>
         <th>End Time</th>
         <th>Break Minutes</th>
@@ -294,10 +321,11 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
     </thead>
     <tbody>
       {% for row in shifts %}
-      <tr data-id="{{ row.id }}" data-name="{{ row.shift_name }}" data-start="{{ row.start_time }}"
+      <tr data-id="{{ row.id }}" data-plant="{{ row.production_at or '-' }}" data-name="{{ row.shift_name }}" data-start="{{ row.start_time }}"
           data-end="{{ row.end_time }}" data-break="{{ row.break_minutes }}" data-night="{{ row.is_night_shift }}"
           onclick="selectRowOrCard(this)">
         <td>{{ row.id }}</td>
+        <td class="text-left" style="font-weight:700;">{{ row.production_at or '-' }}</td>
         <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.shift_name }}</td>
         <td style="font-weight:600; color: #10b981;"><i class="fa-regular fa-clock mr-1"></i> {{ row.start_time }}</td>
         <td style="font-weight:600; color: #f59e0b;"><i class="fa-regular fa-clock mr-1"></i> {{ row.end_time }}</td>
@@ -309,7 +337,7 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
             <span style="color: var(--muted);">No ☀️</span>
           {% endif %}
         </td>
-        <td style="color: #0284c7; font-size: 11px;">{{ row.email if row.email else 'System' }}</td>
+        <td style="color: #0284c7; font-size: 11px;">{{ row.email.split('@')[0] if row.email else 'System' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -324,7 +352,6 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select { ba
 {% endif %}
 
 <script>
-// Observe theme mutations to trigger specific visual recalcs if needed (CSS mostly handles it)
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.attributeName === "data-theme") {
@@ -340,6 +367,7 @@ function toggleForm() {
     const f = document.getElementById("formSection");
     const t = document.getElementById("toggleActionArea");
     if(f.style.display === "none" || f.style.display === "") {
+        clearForm(); // Clear any existing data before opening for new entry
         f.style.display = "block";
         t.style.display = "none";
     } else {
@@ -363,6 +391,35 @@ document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
   d.style.display = (d.style.display === "block") ? "none" : "block";
 });
 
+// 🟢 🔴 EDIT SELECTED FUNCTION
+function editSelected() {
+    if(!selectedElement) return;
+    
+    const d = selectedElement.dataset;
+    
+    // 1. Populate form fields
+    document.getElementById("shift_id").value = d.id;
+    document.getElementById("shift_name").value = d.name;
+    document.getElementById("start_time").value = d.start.slice(0,5); // e.g. "09:00:00" -> "09:00"
+    document.getElementById("end_time").value = d.end.slice(0,5);
+    document.getElementById("break_minutes").value = d.break;
+    document.getElementById("is_night_shift").value = d.night === "True" ? "True" : "False";
+    
+    const prodAtField = document.querySelector('select[name="production_at"]');
+    if(prodAtField) prodAtField.value = d.plant !== '-' ? d.plant : '';
+
+    // 2. Change Button Text
+    document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-floppy-disk'></i> UPDATE SHIFT";
+
+    // 3. Show Form, Hide Menu
+    document.getElementById("formSection").style.display = "block";
+    document.getElementById("toggleActionArea").style.display = "none";
+    document.getElementById("dropdownMenu").style.display = "none";
+
+    // 4. Scroll to Top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 async function deleteSelected(){
   if(!selectedElement) return;
   
@@ -376,7 +433,6 @@ async function deleteSelected(){
   }).then(async (result) => {
     if (result.isConfirmed) {
       const id = selectedElement.dataset.id;
-      
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = `/attendance/shifts/delete/${id}`;
@@ -393,6 +449,7 @@ function printSelected(){
   const p = window.open("", "_blank");
   p.document.write("<h3>Shift Configuration Profile</h3><hr>");
   p.document.write("<p><b>Internal ID:</b> #"+d.id+"</p>");
+  p.document.write("<p><b>Plant (At):</b> "+d.plant+"</p>");
   p.document.write("<p><b>Shift Name:</b> "+d.name+"</p>");
   p.document.write("<p><b>Start Time:</b> "+d.start+"</p>");
   p.document.write("<p><b>End Time:</b> "+d.end+"</p>");
@@ -406,7 +463,7 @@ function exportExcel(){
   if(!selectedElement) return;
 
   const d = selectedElement.dataset;
-  const data = `ID\tShift Name\tStart Time\tEnd Time\tBreak Minutes\tNight Shift\n${d.id}\t${d.name}\t${d.start}\t${d.end}\t${d.break}\t${d.night}`;
+  const data = `ID\tPlant (At)\tShift Name\tStart Time\tEnd Time\tBreak Minutes\tNight Shift\n${d.id}\t${d.plant}\t${d.name}\t${d.start}\t${d.end}\t${d.break}\t${d.night}`;
   const blob = new Blob([data], {type:"application/vnd.ms-excel"});
 
   const url = URL.createObjectURL(blob);
@@ -419,6 +476,9 @@ function exportExcel(){
 function clearForm(){
   selectedElement = null;
   document.getElementById("shiftForm").reset();
+  document.getElementById("shift_id").value = ""; // Reset hidden ID
+  document.getElementById("submitBtn").innerHTML = "SAVE SHIFT"; // Reset Button Text
+
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   

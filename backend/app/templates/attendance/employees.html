@@ -12,9 +12,10 @@
         :root{ 
             --primary:#143465; --accent:#3b82f6; --success:#10b981; --border:#e2e8f0; 
             --border-ultra-light:#f1f5f9; --bg:#f8fafc; --muted:#64748b; --danger:#ef4444; 
+            --card-bg: #ffffff;
         }
         *{box-sizing:border-box; margin:0; padding:0; font-family: 'Inter', sans-serif;}
-        body{background:var(--bg); color: #334155; overflow-x: hidden;}
+        body{background:var(--bg); color: #334155; overflow-x: hidden; -webkit-font-smoothing: antialiased;}
 
         /* ====== HEADER ====== */
         .header{ 
@@ -33,9 +34,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             max-width: 450px;
         }
-        @media(max-width: 600px) { 
-            .filter-section { grid-template-columns: 1fr; gap: 8px; max-width: 100%; margin: 10px; } 
-        }
         .filter-input-group { display: flex; flex-direction: column; gap: 4px; }
         .filter-input-group label { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
         .filter-input-group input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 400; outline: none; }
@@ -44,74 +42,94 @@
         /* ====== MODAL (FORM POPUP) ====== */
         #formModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
-            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
         }
         .modal-content {
-            background: var(--card-bg); margin: 0 auto; width: 100%; height: 100%; max-width: 100%; max-height: 100vh; overflow-y: auto; position: relative;
+            background: var(--card-bg); margin: 0 auto; width: 100%; height: 100%; 
+            max-width: 100%; max-height: 100vh; overflow-y: auto; position: relative;
         }
         @media(min-width: 768px) {
-            .modal-content { margin: 30px auto; width: 95%; max-width: 1300px; height: auto; max-height: 90vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+            .modal-content { margin: 20px auto; width: 95%; max-width: 1300px; height: auto; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         }
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card-bg); z-index: 10; }
-        .close-modal { font-size: 24px; cursor: pointer; color: var(--muted); }
+        .modal-header { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--card-bg); z-index: 10; }
+        .close-modal { font-size: 24px; cursor: pointer; color: var(--muted); line-height: 1; }
+        .close-modal:hover { color: var(--danger); }
 
-        /* ====== FORM GRID ====== */
-        .form-container { padding: 15px 15px 80px; }
-        .form-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
-        @media(min-width: 601px) and (max-width: 1000px) { .form-grid{grid-template-columns:repeat(2,1fr)} }
-        @media(min-width: 1001px) and (max-width: 1400px) { .form-grid{grid-template-columns:repeat(4,1fr)} }
-        @media(min-width: 1401px) { .form-grid{grid-template-columns:repeat(6,1fr)} }
+        /* ====== FORM GRID (MOBILE COMPACT) ====== */
+        .form-container { padding: 12px 15px 70px; }
+        .form-grid{ display:grid; grid-template-columns: 1fr; gap:10px; }
+        @media(min-width: 600px) { .form-grid{grid-template-columns:repeat(2,1fr); gap:12px;} }
+        @media(min-width: 1000px) { .form-grid{grid-template-columns:repeat(4,1fr)} }
+        @media(min-width: 1400px) { .form-grid{grid-template-columns:repeat(6,1fr)} }
 
-        .section-title{ grid-column:1/-1; font-weight:800; color:var(--primary); margin:20px 0 5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-        .field{ display:flex; flex-direction:column; gap:4px; grid-column: span 1; }
+        .section-title{ grid-column:1/-1; font-weight:800; color:var(--primary); margin:15px 0 2px; border-bottom: 2px solid #f1f5f9; padding-bottom: 4px; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+        .field{ display:flex; flex-direction:column; gap:3px; grid-column: span 1; }
         @media(min-width: 1001px) { .field.span-3 { grid-column: span 3; } }
-        label{ font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing: 0.5px;}
-        input,select,textarea{ width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; transition: 0.2s; }
-        textarea{min-height:60px; resize: vertical;}
-        input[readonly]{background:var(--header-bg); font-weight:700; color: var(--primary); cursor: not-allowed;}
-        .hidden{display:none}
+        
+        label{ font-size:9px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing: 0.3px;}
+        input, select, textarea{ width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-weight: 500; outline:none; transition: 0.2s; background: #fff; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
+        textarea{min-height:50px; resize: vertical;}
+        input[readonly]{background:#f8fafc; font-weight:700; color: var(--primary); cursor: not-allowed;}
+        
+        /* 🟢 🔴 Validation Pseudo Styling */
+        input.invalid-format { border-color: #ef4444 !important; background: #fef2f2; }
+        input.valid-format { border-color: #10b981 !important; background: #ecfdf5; }
+        input:invalid:not(:placeholder-shown) { border-color: #fca5a5; }
+        .hidden{display:none !important;}
 
         /* ====== MODAL ACTIONS ====== */
-        .modal-actions{ position:fixed; bottom:0; left:0; right:0; padding:12px 20px; background:rgba(255,255,255,0.95); border-top:1px solid var(--border); display:flex; justify-content:flex-end; z-index: 10; }
-        @media(min-width: 768px) { .modal-actions { position: sticky; } }
-        .btn-save{ padding:10px 20px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-weight:800; cursor:pointer; font-size:12px; display: flex; align-items: center; gap: 6px; }
+        .modal-actions{ position:fixed; bottom:0; left:0; right:0; padding:10px 15px; background:rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-top:1px solid var(--border); display:flex; justify-content:flex-end; z-index: 10; gap: 10px; }
+        @media(min-width: 768px) { .modal-actions { position: sticky; border-radius: 0 0 12px 12px; } }
+        .btn-save{ padding:10px 18px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-weight:800; cursor:pointer; font-size:11px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
 
         /* ====== FLOOR BALANCE STYLE ULTRA-COMPACT TABLE ====== */
-        .table-header-tool { padding: 10px 15px 5px; display: flex; justify-content: space-between; align-items: center; }
+        .table-header-tool { padding: 10px 15px 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .table-header-tool h3 { margin: 0; font-size: 13px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
 
         .table-wrap{
-            margin: 4px 10px 40px; background:var(--card-bg); border-radius: 8px;
-            border:1px solid var(--border); overflow: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            margin: 4px 10px 20px; background:var(--card-bg); border-radius: 8px;
+            border:1px solid var(--border); overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             -webkit-overflow-scrolling: touch;
         }
 
-        table{ width:100%; border-collapse:collapse; table-layout: fixed; min-width: 3800px; } /* Fixed layout for structural consistency */
+        table{ width:100%; border-collapse:collapse; table-layout: fixed; min-width: 4000px; } 
         
-        /* Width allocation for columns matching floor tracker style */
         th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         thead th{
-            background: var(--bg); padding: 6px 4px; font-size: 8.5px; font-weight: 700;
+            background: #f1f5f9; padding: 8px 6px; font-size: 9px; font-weight: 800;
             text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
             border-right: 1px solid var(--border-ultra-light); position: sticky; top: 0; z-index: 5;
         }
         tbody td{ 
-            padding: 6px 4px; font-size: 9px; font-weight: 600; color: #1e293b;
+            padding: 8px 6px; font-size: 10.5px; font-weight: 600; color: #1e293b;
             border-bottom: 1px solid var(--border-ultra-light); border-right: 1px solid var(--border-ultra-light); 
             text-align: center;
         }
         tbody tr:hover{ background: #f8fafc; cursor:pointer; }
         tbody tr.selected{ background: #eff6ff !important; border-left: 3px solid var(--accent); }
 
-        /* Badge and status adjustments */
-        .status-badge { padding: 2px 5px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 3px 6px; border-radius: 4px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; }
 
         #threeDotsMenu{ position:relative; display: none; }
-        .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-        #dropdownMenu{ display:none; position:absolute; right:0; top: 32px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; width:180px; box-shadow:0 4px 12px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
-        .menu-item{ padding:10px 12px; font-size:12px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
-        .menu-item:hover{background:#f1f5ff; color: var(--accent);}
+        .menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        #dropdownMenu{ display:none; position:absolute; right:0; top: 34px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; width:180px; box-shadow:0 4px 15px rgba(0,0,0,.15); z-index: 1000; overflow: hidden; }
+        .menu-item{ padding:12px 14px; font-size:12px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; color: var(--primary); }
+        .menu-item:hover{background:#f0f7ff; color: var(--accent);}
+
+        /* 📱 MOBILE RESPONSIVE OVERRIDES */
+        @media(max-width: 600px) {
+            .header { padding: 10px; flex-direction: column; align-items: flex-start; gap: 10px; }
+            .filter-section { grid-template-columns: 1fr; gap: 8px; max-width: 100%; margin: 10px; } 
+            .btn-save { width: 100%; justify-content: center; }
+            .modal-header { padding: 10px 15px; }
+            .form-container { padding: 10px 12px 60px; }
+            input, select, textarea { padding: 6px 8px; height: 34px; font-size: 13px; }
+            label { font-size: 8.5px; margin-bottom: 1px;}
+            .section-title { margin: 10px 0 2px; font-size: 10px; }
+        }
     </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -123,11 +141,11 @@
 <div class="header">
     <div>
         <h2><i class="fa-solid fa-id-card-clip"></i> {{ request.session.get('company_name', 'EMPLOYEE REGISTER') }} Master</h2>
-        <p>Employee Management </p>
+        <p>Employee Registration & Profile Management </p>
     </div>
-    <div style="display: flex; gap: 12px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; justify-content: flex-end;">
         <input type="hidden" id="companyFilter" value="{{ request.session.get('company_code', '') }}">
-        <button class="btn-save" style="background:var(--accent); padding:8px 12px; font-size:11px;" onclick="openForm()"><i class="fa-solid fa-plus"></i> NEW REGISTRATION</button>
+        <button class="btn-save" style="background:var(--accent); padding:8px 14px; font-size:10px;" onclick="openForm()"><i class="fa-solid fa-plus"></i> NEW REGISTRATION</button>
     </div>
 </div>
 
@@ -146,10 +164,11 @@
     </div>
 </div>
 
+<!-- ================== REGISTRATION MODAL WITH VALIDATIONS ================== -->
 <div id="formModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 style="margin:0; font-size:14px; color:var(--primary);">
+            <h2 style="margin:0; font-size:13px; color:var(--primary); font-weight: 800;">
                 <i class="fa-solid fa-user-pen"></i> {% if edit_data %} Edit Employee Record {% else %} New Employee Master Entry {% endif %}
             </h2>
             <span class="close-modal" onclick="closeForm()">&times;</span>
@@ -161,7 +180,7 @@
                     
                     <div class="section-title"><i class="fa-solid fa-address-card"></i> 1. Primary & Personal Info</div>
                     <div class="field"><label>Employee ID</label><input name="employee_id" value="{% if edit_data %}{{ edit_data.employee_id }}{% else %}{{ next_employee_id }}{% endif %}" readonly></div>
-                    <div class="field"><label>Full Name</label><input name="employee_name" value="{{ edit_data.employee_name if edit_data else '' }}" required></div>
+                    <div class="field"><label>Full Name *</label><input name="employee_name" value="{{ edit_data.employee_name if edit_data else '' }}" required maxlength="100" placeholder="Enter full name"></div>
                     <div class="field">
                         <label>Gender</label>
                         <select name="gender">
@@ -169,7 +188,7 @@
                             <option value="Female" {% if edit_data and edit_data.gender == 'Female' %}selected{% endif %}>Female</option>
                         </select>
                     </div>
-                    <div class="field"><label>Date of Birth</label><input name="dob" value="{{ edit_data.dob if edit_data else '' }}" type="date"></div>
+                    <div class="field"><label>Date of Birth</label><input name="dob" value="{{ edit_data.dob if edit_data else '' }}" type="date" max="{{ request.session.get('today_date') }}"></div>
                     <div class="field">
                         <label>Blood Group</label>
                         <select name="blood_group">
@@ -187,9 +206,22 @@
                         </select>
                     </div>
 
-                    <div class="section-title"><i class="fa-solid fa-briefcase"></i> 2. Work & Employment</div>
-                    <div class="field"><label>Designation</label><input name="designation" value="{{ edit_data.designation if edit_data else '' }}"></div>
-                    <div class="field"><label>Department</label><input name="department" value="{{ edit_data.department if edit_data else '' }}"></div>
+                    <div class="section-title"><i class="fa-solid fa-briefcase"></i> 2. Work & Employment Settings</div>
+                    <div class="field">
+                        <label>Production For (Company)</label>
+                        <input value="{{ request.session.get('company_name', 'Default Company') }}" readonly style="background:#f8fafc; font-weight:700; color:var(--primary);">
+                    </div>
+                    <div class="field">
+                        <label>Production At (Plant) *</label>
+                        <select name="production_at" required>
+                            <option value="">-- Select Plant Location --</option>
+                            {% for s in sites %}
+                            <option value="{{ s.production_at }}" {% if edit_data and edit_data.production_at == s.production_at %}selected{% endif %}>{{ s.production_at }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field"><label>Designation</label><input name="designation" value="{{ edit_data.designation if edit_data else '' }}" maxlength="100"></div>
+                    <div class="field"><label>Department</label><input name="department" value="{{ edit_data.department if edit_data else '' }}" maxlength="100"></div>
                     <div class="field">
                         <label>Employee Type</label>
                         <select name="employee_type" id="empType" onchange="toggleContractor()">
@@ -208,10 +240,9 @@
                         </select>
                     </div>
                     <div class="field"><label>Joining Date</label><input name="joining_date" value="{{ edit_data.joining_date if edit_data else '' }}" type="date"></div>
-                    <div class="field"><label>Reporting To</label><input name="reporting_to" value="{{ edit_data.reporting_to if edit_data else '' }}"></div>
-                    <div class="field"><label>Work Location</label><input name="location" value="{{ edit_data.location if edit_data else '' }}"></div>
+                    <div class="field"><label>Reporting To</label><input name="reporting_to" value="{{ edit_data.reporting_to if edit_data else '' }}" maxlength="100"></div>
                     <div class="field">
-                        <label>Status</label>
+                        <label>Current Status</label>
                         <select name="status" id="status" onchange="toggleResign()">
                             <option value="ACTIVE" {% if edit_data and edit_data.status == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
                             <option value="RESIGNED" {% if edit_data and edit_data.status == 'RESIGNED' %}selected{% endif %}>RESIGNED</option>
@@ -219,59 +250,62 @@
                     </div>
                     <div class="field" id="resignDateField" style="{% if not edit_data or edit_data.status != 'RESIGNED' %}display:none;{% endif %}"><label>Resignation Date</label><input name="resignation_date" value="{{ edit_data.resignation_date if edit_data else '' }}" type="date"></div>
 
-                    <div class="section-title"><i class="fa-solid fa-money-bill-wave"></i> 3. Salary Structure</div>
-                    <div class="field"><label>Gross Salary</label><input name="current_salary" id="gross_salary" value="{{ edit_data.current_salary if edit_data else '0.00' }}" readonly style="background:var(--card-bg)9e6; font-weight:bold; color:var(--primary);"></div>
-                    <div class="field"><label>Basic Salary</label><input name="basic_salary" class="sal-input" value="{{ edit_data.basic_salary if edit_data else '0.00' }}" type="number" step="0.01"></div>
-                    <div class="field"><label>H.R.A</label><input name="hra" class="sal-input" value="{{ edit_data.hra if edit_data else '0.00' }}" type="number" step="0.01"></div>
-                    <div class="field"><label>Conveyance</label><input name="conveyance_allowance" class="sal-input" value="{{ edit_data.conveyance_allowance if edit_data else '0.00' }}" type="number" step="0.01"></div>
-                    <div class="field"><label>Other Allowance</label><input name="other_expenses" class="sal-input" value="{{ edit_data.other_expenses if edit_data else '0.00' }}" type="number" step="0.01"></div>
-                    <div class="field"><label>TDS Deduction (%)</label><input name="tds" value="{{ edit_data.tds if edit_data else '0.00' }}" type="number" step="0.01"></div>
+                    <div class="section-title"><i class="fa-solid fa-money-bill-wave"></i> 3. Salary Structure (₹)</div>
+                    <div class="field"><label>Gross Salary</label><input name="current_salary" id="gross_salary" value="{{ edit_data.current_salary if edit_data else '0.00' }}" readonly style="background:#f8fafc; font-weight:800; color:var(--success);"></div>
+                    <div class="field"><label>Basic Salary</label><input name="basic_salary" class="sal-input" value="{{ edit_data.basic_salary if edit_data else '0.00' }}" type="number" step="0.01" min="0"></div>
+                    <div class="field"><label>H.R.A</label><input name="hra" class="sal-input" value="{{ edit_data.hra if edit_data else '0.00' }}" type="number" step="0.01" min="0"></div>
+                    <div class="field"><label>Conveyance</label><input name="conveyance_allowance" class="sal-input" value="{{ edit_data.conveyance_allowance if edit_data else '0.00' }}" type="number" step="0.01" min="0"></div>
+                    <div class="field"><label>Other Allowance</label><input name="other_expenses" class="sal-input" value="{{ edit_data.other_expenses if edit_data else '0.00' }}" type="number" step="0.01" min="0"></div>
+                    <div class="field"><label>TDS Deduction (%)</label><input name="tds" value="{{ edit_data.tds if edit_data else '0.00' }}" type="number" step="0.01" min="0" max="100"></div>
 
                     <div class="section-title"><i class="fa-solid fa-building-columns"></i> 4. Bank & Statutory Info</div>
-                    <div class="field"><label>Bank Name</label><input name="bank_name" value="{{ edit_data.bank_name if edit_data else '' }}"></div>
-                    <div class="field"><label>Branch Name</label><input name="branch_name" value="{{ edit_data.branch_name if edit_data else '' }}"></div>
-                    <div class="field"><label>A/C Holder Name</label><input name="account_holder_name" value="{{ edit_data.account_holder_name if edit_data else '' }}"></div>
-                    <div class="field"><label>Account Number</label><input name="account_number" value="{{ edit_data.account_number if edit_data else '' }}"></div>
-                    <div class="field"><label>IFSC Code</label><input name="ifsc_code" value="{{ edit_data.ifsc_code if edit_data else '' }}"></div>
-                    <div class="field"><label>PAN Card No</label><input name="pan_number" value="{{ edit_data.pan_number if edit_data else '' }}"></div>
-                    <div class="field"><label>Aadhar Number</label><input name="aadhar_number" value="{{ edit_data.aadhar_number if edit_data else '' }}"></div>
-                    <div class="field"><label>UAN Number</label><input name="uan_number" value="{{ edit_data.uan_number if edit_data else '' }}"></div>
+                    <div class="field"><label>Bank Name</label><input name="bank_name" value="{{ edit_data.bank_name if edit_data else '' }}" maxlength="100"></div>
+                    <div class="field"><label>Branch Name</label><input name="branch_name" value="{{ edit_data.branch_name if edit_data else '' }}" maxlength="100"></div>
+                    <div class="field"><label>A/C Holder Name</label><input name="account_holder_name" value="{{ edit_data.account_holder_name if edit_data else '' }}" maxlength="100"></div>
+                    
+                    <!-- 🟢 🔴 LIVE JS VALIDATED INPUTS -->
+                    <div class="field"><label>Account Number</label><input name="account_number" value="{{ edit_data.account_number if edit_data else '' }}" pattern="[0-9]{9,18}" title="Account number should be between 9 to 18 digits" placeholder="Enter Acc No"></div>
+                    <div class="field"><label>IFSC Code</label><input type="text" name="ifsc_code" id="ifsc_input" value="{{ edit_data.ifsc_code if edit_data else '' }}" placeholder="e.g. SBIN0001234" style="text-transform: uppercase;" maxlength="11"></div>
+                    <div class="field"><label>PAN Card No</label><input type="text" name="pan_number" id="pan_input" value="{{ edit_data.pan_number if edit_data else '' }}" placeholder="e.g. ABCDE1234F" style="text-transform: uppercase;" maxlength="10"></div>
+                    
+                    <div class="field"><label>Aadhar Number</label><input name="aadhar_number" value="{{ edit_data.aadhar_number if edit_data else '' }}" pattern="[0-9]{12}" maxlength="12" title="Aadhar must be exactly 12 digits" placeholder="12 Digit No"></div>
+                    <div class="field"><label>UAN Number</label><input name="uan_number" value="{{ edit_data.uan_number if edit_data else '' }}" pattern="[0-9]{12}" maxlength="12" title="UAN must be exactly 12 digits" placeholder="12 Digit No"></div>
 
                     <div class="section-title"><i class="fa-solid fa-location-dot"></i> 5. Contact & Address Info</div>
-                    <div class="field"><label>Mobile No</label><input name="mobile" value="{{ edit_data.mobile if edit_data else '' }}" required></div>
-                    <div class="field"><label>Official Email</label><input name="official_email" value="{{ edit_data.official_email if edit_data else '' }}"></div>
-                    <div class="field"><label>Personal Email</label><input name="personal_email" value="{{ edit_data.personal_email if edit_data else '' }}"></div>
-                    <div class="field"><label>Emergency Contact Name</label><input name="emergency_name" value="{{ edit_data.emergency_name if edit_data else '' }}"></div>
-                    <div class="field"><label>Emergency Mobile</label><input name="emergency_mobile" value="{{ edit_data.emergency_mobile if edit_data else '' }}"></div>
-                    <div class="field span-3"><label>Present Address</label><textarea name="present_address">{{ edit_data.present_address if edit_data else '' }}</textarea></div>
-                    <div class="field span-3"><label>Permanent Address</label><textarea name="permanent_address">{{ edit_data.permanent_address if edit_data else '' }}</textarea></div>
+                    <div class="field"><label>Mobile No *</label><input name="mobile" value="{{ edit_data.mobile if edit_data else '' }}" required pattern="[0-9]{10}" maxlength="10" title="Must be a valid 10 digit mobile number" placeholder="10 Digit Mobile"></div>
+                    <div class="field"><label>Official Email</label><input name="official_email" type="email" value="{{ edit_data.official_email if edit_data else '' }}" placeholder="name@company.com"></div>
+                    <div class="field"><label>Personal Email</label><input name="personal_email" type="email" value="{{ edit_data.personal_email if edit_data else '' }}" placeholder="personal@email.com"></div>
+                    <div class="field"><label>Emergency Contact Name</label><input name="emergency_name" value="{{ edit_data.emergency_name if edit_data else '' }}" maxlength="100"></div>
+                    <div class="field"><label>Emergency Mobile</label><input name="emergency_mobile" value="{{ edit_data.emergency_mobile if edit_data else '' }}" pattern="[0-9]{10}" maxlength="10" title="10 digit mobile number" placeholder="Optional"></div>
+                    <div class="field span-3"><label>Present Address</label><textarea name="present_address" style="height: 38px;">{{ edit_data.present_address if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>Permanent Address</label><textarea name="permanent_address" style="height: 38px;">{{ edit_data.permanent_address if edit_data else '' }}</textarea></div>
 
                     <div class="section-title"><i class="fa-solid fa-user-tag"></i> 6. Skills & Extra Info</div>
-                    <div class="field span-3"><label>Skills</label><textarea name="skills" placeholder="Java, Python, Accounting, etc.">{{ edit_data.skills if edit_data else '' }}</textarea></div>
-                    <div class="field span-3"><label>About Employee</label><textarea name="about">{{ edit_data.about if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>Skills</label><textarea name="skills" placeholder="Java, Python, Accounting, etc." style="height: 38px;">{{ edit_data.skills if edit_data else '' }}</textarea></div>
+                    <div class="field span-3"><label>About Employee</label><textarea name="about" style="height: 38px;">{{ edit_data.about if edit_data else '' }}</textarea></div>
                     
                     <input type="hidden" name="company_id" value="{{ request.session.get('company_code') }}">
                 </div>
             </div>
 
             <div class="modal-actions">
-                <button type="button" class="btn-save" style="background: #64748b; margin-right: 10px;" onclick="closeForm()">CANCEL</button>
-                <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %} UPDATE  {% else %} SAVE MASTER {% endif %}</button>
+                <button type="button" class="btn-save" style="background: #e2e8f0; color:#334155;" onclick="closeForm()">CANCEL</button>
+                <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> {% if edit_data %} UPDATE RECORD {% else %} SAVE MASTER {% endif %}</button>
             </div>
         </form>
     </div>
 </div>
 
 <div class="table-header-tool">
-    <h3><i class="fa-solid fa-database"></i> All Master Records</h3>
+    <h3><i class="fa-solid fa-database"></i> Database Index</h3>
     <div id="threeDotsMenu">
         <button class="menu-trigger" id="menuBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div id="dropdownMenu">
             <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
             <div class="menu-item" onclick="printSelected()"><i class="fa-solid fa-print"></i> Print View</div>
-            <div class="menu-item" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Download PDF</div>
-            <div class="menu-item" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Export All Excel</div>
-            <div class="menu-item" onclick="deleteSelected()" style="color: var(--danger);"><i class="fa-solid fa-trash-can"></i> Delete Permanently</div>
+            <div class="menu-item" onclick="exportPDF()"><i class="fa-solid fa-file-pdf" style="color:var(--danger)"></i> Download PDF</div>
+            <div class="menu-item" onclick="exportExcel()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
+            <div class="menu-item" onclick="deleteSelected()" style="color: var(--danger); border-top: 1px solid #f1f5f9;"><i class="fa-solid fa-trash-can"></i> Delete Permanently</div>
         </div>
     </div>
 </div>
@@ -281,24 +315,24 @@
         <thead>
             <tr>
                 <th style="display:none; width: 50px;">Company ID</th>
-                <th style="border-left: 4px solid var(--accent); width: 80px;">Emp ID</th>
-                <th style="width: 140px;">Full Name</th>
+                <th style="border-left: 4px solid var(--accent); width: 85px;">Emp ID</th>
+                <th style="width: 150px; text-align: left;">Full Name</th>
                 <th style="width: 80px;">Status</th>
-                <th style="width: 120px;">Designation</th>
-                <th style="width: 120px;">Department</th>
+                <th style="width: 130px; text-align: left; color:var(--primary);">Prod At (Plant)</th>
+                <th style="width: 130px; text-align: left;">Designation</th>
+                <th style="width: 120px; text-align: left;">Department</th>
                 <th style="width: 100px;">Mobile</th>
-                <th style="width: 150px;">Official Email</th>
-                <th style="width: 100px;">Emp Type</th>
+                <th style="width: 150px; text-align: left;">Official Email</th>
+                <th style="width: 90px;">Emp Type</th>
                 <th style="width: 100px;">Joining Date</th>
-                <th style="width: 100px;">Location</th>
-                <th style="width: 120px;">Reporting To</th>
-                <th style="background:var(--card-bg)9e6; border-left: 2px solid #fde68a; width: 100px;">Gross Total</th>
-                <th style="background:var(--card-bg)9e6; width: 90px;">Basic</th>
-                <th style="background:var(--card-bg)9e6; width: 90px;">HRA</th>
-                <th style="background:var(--card-bg)9e6; width: 90px;">Conveyance</th>
-                <th style="background:var(--card-bg)9e6; width: 90px;">Other Exp.</th>
-                <th style="background:var(--card-bg)9e6; width: 80px;">TDS (%)</th>
-                <th style="background:#f0f7ff; border-left: 2px solid #bae6fd; width: 120px;">Bank Name</th>
+                <th style="width: 130px; text-align: left;">Reporting To</th>
+                <th style="background:#f8fafc; border-left: 2px solid #fde68a; width: 100px;">Gross Total</th>
+                <th style="background:#f8fafc; width: 90px;">Basic</th>
+                <th style="background:#f8fafc; width: 90px;">HRA</th>
+                <th style="background:#f8fafc; width: 90px;">Conveyance</th>
+                <th style="background:#f8fafc; width: 90px;">Other Exp.</th>
+                <th style="background:#f8fafc; width: 80px;">TDS (%)</th>
+                <th style="background:#f0f7ff; border-left: 2px solid #bae6fd; width: 130px; text-align: left;">Bank Name</th>
                 <th style="background:#f0f7ff; width: 140px;">Account No</th>
                 <th style="background:#f0f7ff; width: 100px;">IFSC Code</th>
                 <th style="background:#f0f7ff; width: 110px;">PAN No</th>
@@ -308,9 +342,9 @@
                 <th style="width: 100px;">DOB</th>
                 <th style="width: 80px;">Blood Group</th>
                 <th style="width: 100px;">Marital Status</th>
-                <th style="width: 100px;">Emergency No</th>
+                <th style="width: 110px;">Emergency No</th>
                 <th style="width: 100px;">Resign Date</th>
-                <th style="width: 120px;">Contractor</th>
+                <th style="width: 120px; text-align: left;">Contractor</th>
                 <th style="width: 100px;">Created At</th>
             </tr>
         </thead>
@@ -318,41 +352,41 @@
             {% for e in employees %}
             <tr data-id="{{ e.employee_id }}" data-dbid="{{ e.id }}">
                 <td style="display:none;">{{ e.company_id }}</td> 
-                <td style="font-weight: 700; color: var(--accent-blue); border-left: 3px solid var(--accent); text-align: left; padding-left: 8px;">{{ e.employee_id }}</td>
-                <td style="text-align: left;">{{ e.employee_name }}</td>
+                <td style="font-weight: 800; color: var(--accent); border-left: 3px solid var(--accent); text-align: left; padding-left: 10px;">{{ e.employee_id }}</td>
+                <td style="text-align: left; font-weight: 700;">{{ e.employee_name }}</td>
                 <td>
                     <span class="status-badge" style="background: {{ '#dcfce7' if e.status == 'ACTIVE' else '#fee2e2' }}; color: {{ '#166534' if e.status == 'ACTIVE' else '#991b1b' }};">
                         {{ e.status }}
                     </span>
                 </td>
-                <td>{{ e.designation }}</td>
-                <td>{{ e.department }}</td>
-                <td>{{ e.mobile }}</td>
-                <td style="text-align: left;">{{ e.official_email or '-' }}</td>
-                <td>{{ e.employee_type }}</td>
-                <td>{{ e.joining_date }}</td>
-                <td>{{ e.location }}</td>
-                <td>{{ e.reporting_to }}</td>
-                <td style="background:var(--card-bg)df5; font-weight: 700; color: var(--success);">{{ e.current_salary }}</td>
-                <td style="background:var(--card-bg)df5;">{{ e.basic_salary }}</td>
-                <td style="background:var(--card-bg)df5;">{{ e.hra }}</td>
-                <td style="background:var(--card-bg)df5;">{{ e.conveyance_allowance }}</td>
-                <td style="background:var(--card-bg)df5;">{{ e.other_expenses }}</td>
-                <td style="background:var(--card-bg)df5;">{{ e.tds }}</td>
-                <td style="background:#f8fbff; text-align: left;">{{ e.bank_name }}</td>
-                <td style="background:#f8fbff;">{{ e.account_number }}</td>
-                <td style="background:#f8fbff;">{{ e.ifsc_code }}</td>
-                <td style="background:#f8fbff;">{{ e.pan_number }}</td>
-                <td style="background:#f8fbff;">{{ e.aadhar_number }}</td>
-                <td style="background:#f8fbff;">{{ e.uan_number }}</td>
-                <td>{{ e.gender }}</td>
-                <td>{{ e.dob }}</td>
-                <td>{{ e.blood_group }}</td>
-                <td>{{ e.marital_status }}</td>
-                <td>{{ e.emergency_mobile }}</td>
-                <td>{{ e.resignation_date or '-' }}</td>
-                <td>{{ e.contractor_name or '-' }}</td>
-                <td style="font-size: 8.5px; color: var(--muted);">{{ e.created_at.strftime('%Y-%m-%d') if e.created_at else '-' }}</td>
+                <td style="text-align: left; font-weight: 700;">{{ e.production_at or '-' }}</td>
+                <td style="text-align: left; color: var(--muted);">{{ e.designation or '-' }}</td>
+                <td style="text-align: left;">{{ e.department or '-' }}</td>
+                <td>{{ e.mobile or '-' }}</td>
+                <td style="text-align: left; color: var(--accent);">{{ e.official_email or '-' }}</td>
+                <td>{{ e.employee_type or '-' }}</td>
+                <td>{{ e.joining_date or '-' }}</td>
+                <td style="text-align: left;">{{ e.reporting_to or '-' }}</td>
+                <td style="background:#f8fafc; font-weight: 800; color: var(--success); text-align: right; padding-right: 15px;">{{ e.current_salary }}</td>
+                <td style="background:#f8fafc; text-align: right; padding-right: 15px;">{{ e.basic_salary }}</td>
+                <td style="background:#f8fafc; text-align: right; padding-right: 15px;">{{ e.hra }}</td>
+                <td style="background:#f8fafc; text-align: right; padding-right: 15px;">{{ e.conveyance_allowance }}</td>
+                <td style="background:#f8fafc; text-align: right; padding-right: 15px;">{{ e.other_expenses }}</td>
+                <td style="background:#f8fafc; text-align: right; padding-right: 15px;">{{ e.tds }}</td>
+                <td style="background:#f8fbff; text-align: left; padding-left: 10px;">{{ e.bank_name or '-' }}</td>
+                <td style="background:#f8fbff; font-weight: 700;">{{ e.account_number or '-' }}</td>
+                <td style="background:#f8fbff;">{{ e.ifsc_code or '-' }}</td>
+                <td style="background:#f8fbff;">{{ e.pan_number or '-' }}</td>
+                <td style="background:#f8fbff;">{{ e.aadhar_number or '-' }}</td>
+                <td style="background:#f8fbff;">{{ e.uan_number or '-' }}</td>
+                <td>{{ e.gender or '-' }}</td>
+                <td>{{ e.dob or '-' }}</td>
+                <td>{{ e.blood_group or '-' }}</td>
+                <td>{{ e.marital_status or '-' }}</td>
+                <td>{{ e.emergency_mobile or '-' }}</td>
+                <td style="color: var(--danger);">{{ e.resignation_date or '-' }}</td>
+                <td style="text-align: left;">{{ e.contractor_name or '-' }}</td>
+                <td style="font-size: 8px; color: var(--muted);">{{ e.created_at.strftime('%Y-%m-%d') if e.created_at else '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -371,12 +405,58 @@ function checkMessages() {
     let msg = "{{ message }}";
     if (msg && msg !== "None") {
         let icon = msg.includes("✅") ? "success" : "error";
-        Swal.fire({ title: 'System', text: msg, icon: icon, timer: 3000, showConfirmButton: false });
+        Swal.fire({ title: 'System Info', text: msg, icon: icon, timer: 3000, showConfirmButton: false });
     }
 }
 
 function openForm() { modal.style.display = "block"; document.body.style.overflow = "hidden"; }
 function closeForm() { if ("{{ edit_data }}" !== "") { location.href = "/attendance/employee/register"; } else { modal.style.display = "none"; document.body.style.overflow = "auto"; } }
+
+// 🟢 🔴 JAVASCRIPT LIVE REGEX VALIDATION (PAN & IFSC)
+document.addEventListener("DOMContentLoaded", function() {
+    const panInput = document.getElementById('pan_input');
+    const ifscInput = document.getElementById('ifsc_input');
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+    if(panInput) {
+        panInput.addEventListener("input", function() {
+            let val = this.value.toUpperCase().trim();
+            this.value = val;
+            if (val === "") {
+                this.classList.remove("invalid-format", "valid-format");
+                this.setCustomValidity("");
+            } else if (panRegex.test(val)) {
+                this.classList.remove("invalid-format");
+                this.classList.add("valid-format");
+                this.setCustomValidity("");
+            } else {
+                this.classList.remove("valid-format");
+                this.classList.add("invalid-format");
+                this.setCustomValidity("Invalid PAN Card Format! (e.g. ABCDE1234F)");
+            }
+        });
+    }
+
+    if(ifscInput) {
+        ifscInput.addEventListener("input", function() {
+            let val = this.value.toUpperCase().trim();
+            this.value = val;
+            if (val === "") {
+                this.classList.remove("invalid-format", "valid-format");
+                this.setCustomValidity("");
+            } else if (ifscRegex.test(val)) {
+                this.classList.remove("invalid-format");
+                this.classList.add("valid-format");
+                this.setCustomValidity("");
+            } else {
+                this.classList.remove("valid-format");
+                this.classList.add("invalid-format");
+                this.setCustomValidity("Invalid IFSC Code Format! (e.g. SBIN0001234)");
+            }
+        });
+    }
+});
 
 document.querySelectorAll('.sal-input').forEach(input => {
     input.addEventListener('input', () => {
@@ -414,17 +494,15 @@ function filterTable() {
     let locFilter = document.getElementById("searchLocation").value.toUpperCase();
 
     document.querySelectorAll("#empTable tbody tr").forEach(row => {
-        let companyVal = row.cells[0].innerText.toUpperCase();
         let idVal = row.cells[1].innerText.toUpperCase();
         let nameVal = row.cells[2].innerText.toUpperCase();
-        let locVal = row.cells[10].innerText.toUpperCase(); 
+        let locVal = row.cells[4].innerText.toUpperCase(); // Prod At Column
 
-        let matchesCompany = (companyVal === currentComp || currentComp === "");
         let matchesID = idVal.includes(idFilter);
         let matchesName = nameVal.includes(nameFilter);
         let matchesLocation = locVal.includes(locFilter);
 
-        row.style.display = (matchesCompany && matchesID && matchesName && matchesLocation) ? "" : "none";
+        row.style.display = (matchesID && matchesName && matchesLocation) ? "" : "none";
     });
 }
 
@@ -438,21 +516,31 @@ function toggleResign(){
 
 function confirmSubmit(event) {
     event.preventDefault();
+    const form = event.target;
+    
+    // 🟢 Front-end check validity hook
+    if(!form.checkValidity()){
+        form.reportValidity();
+        return false;
+    }
+    
     Swal.fire({
         title: 'Confirm Save?',
-        text: "Are you sure you want to save this ?",
+        text: "Are you sure you want to save this employee record?",
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#143465',
         confirmButtonText: 'Yes, Save!'
-    }).then((result) => { if (result.isConfirmed) event.target.submit(); });
+    }).then((result) => { 
+        if (result.isConfirmed) form.submit(); 
+    });
 }
 
 function deleteSelected() { 
     if(selectedRow) {
         Swal.fire({
             title: 'Delete Forever?',
-            text: "This cannot be undone in SQL Database!",
+            text: "This cannot be undone in the SQL Database!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
