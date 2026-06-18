@@ -94,6 +94,7 @@ class ContainerLog(Base):
     
     # 🆕 Added Columns
     po_number = Column(String(100), index=True) 
+    production_at = Column(String(100), index=True)
     container_no = Column(String(50), unique=True)
     size = Column(String(20)) # 20ft / 40ft
     

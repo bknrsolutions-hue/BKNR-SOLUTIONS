@@ -408,7 +408,7 @@
     }
     window.addEventListener("resize", adjustFloorIframeHeightToWindowEnd);
 
-    // 🟢 🔴 MAIN FIX: Iframe URL Sync Logic
+    // 🟢 🔴 Iframe URL Sync Logic
     function syncIframeAndListenToParentHeader() {
         const parentCompNode = window.parent.document.getElementById('global_production_for');
         const parentLocNode = window.parent.document.getElementById('global_location');
@@ -453,9 +453,18 @@
         }
     }
 
+    // 🟢 🔴 FIXED: Iframe Modal కి కూడా URL Parameters (Filters) పాస్ చేస్తున్నాం
     function openEntryModal(url, title) {
         document.getElementById('modalTitle').innerText = title;
-        document.getElementById('entryFrame').src = url + "?view=dashboard";
+        
+        // పైన URL లో ఏమేమి ఫిల్టర్స్ ఉన్నాయో వాటిని పట్టుకుంటున్నాం
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('view', 'dashboard'); // View పారామీటర్ ని యాడ్ చేస్తున్నాం
+        
+        // Iframe SRC కి ఫిల్టర్స్ అటాచ్ చేసి పంపిస్తున్నాం
+        const iframeUrl = url + "?" + urlParams.toString();
+        
+        document.getElementById('entryFrame').src = iframeUrl;
         document.getElementById('entryModal').style.display = 'block';
         document.body.style.overflow = 'hidden'; 
     }

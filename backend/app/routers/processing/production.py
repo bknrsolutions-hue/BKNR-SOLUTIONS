@@ -101,6 +101,9 @@ def production_page(
 ):
     # 🟢 FETCH UNIVERSAL GLOBAL FILTERS FROM RUNTIME CONTEXT
     global_production_for, global_location = get_global_filters(request)
+    
+    g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    g_loc_clean = global_location.strip().upper() if global_location else None
 
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -125,12 +128,14 @@ def production_page(
     # ========== 2. BUILD STOCK POOL (User Allowed Locations & Global Lockdown) ==========
     stock_pool = {}
     for s in all_stock:
-        s_loc_clean = str(s.location or "").strip().upper()
+        # 🟢 FIX: checking production_at instead of location
+        s_loc_clean = str(s.production_at or "").strip().upper()
+        
         if user_allowed_locations and s_loc_clean != "FLOOR" and s_loc_clean not in user_allowed_locations:
             continue
-        if global_location and s_loc_clean != global_location.strip().upper():
+        if g_loc_clean and g_loc_clean != "ALL" and s_loc_clean != g_loc_clean:
             continue
-        if global_production_for and str(s.production_for or "").strip().upper() != global_production_for.strip().upper():
+        if g_prod_clean and g_prod_clean != "ALL" and str(s.production_for or "").strip().upper() != g_prod_clean:
             continue
 
         key = build_stock_key(
@@ -147,8 +152,9 @@ def production_page(
         Production.grade, Production.packing_style, func.sum(Production.no_of_mc).label("total_produced")
     ).filter(Production.company_id == company_code)
     
-    if global_location:
-        prod_sub_q = prod_sub_q.filter(func.trim(Production.production_at) == func.trim(global_location))
+    # 🟢 FIX: "ALL" bypass for Production Subquery
+    if g_loc_clean and g_loc_clean != "ALL":
+        prod_sub_q = prod_sub_q.filter(func.upper(func.trim(Production.production_at)) == g_loc_clean)
     elif user_allowed_locations:
         prod_sub_q = prod_sub_q.filter(func.upper(func.trim(Production.production_at)).in_(user_allowed_locations))
         
@@ -170,8 +176,13 @@ def production_page(
         )
     ).filter(pending_orders.company_id == company_code)
     
-    if global_production_for:
-        q_req = q_req.filter(func.trim(pending_orders.company_name) == func.trim(global_production_for))
+    # 🟢 FIX: "ALL" bypass for Pending Orders
+    if g_prod_clean and g_prod_clean != "ALL":
+        q_req = q_req.filter(func.upper(func.trim(pending_orders.company_name)) == g_prod_clean)
+    if g_loc_clean and g_loc_clean != "ALL":
+        q_req = q_req.filter(func.upper(func.trim(pending_orders.production_at)) == g_loc_clean)
+    elif user_allowed_locations:
+        q_req = q_req.filter(func.upper(func.trim(pending_orders.production_at)).in_(user_allowed_locations))
         
     if from_date:
         try: q_req = q_req.filter(pending_orders.date >= datetime.strptime(from_date, "%Y-%m-%d").date())
@@ -243,7 +254,13 @@ def production_page(
         is_order_nwnc = "NWNC" in p_gl_full_text or p_c_gl_val == 0
         
         for s in all_stock:
+            # 🟢 FIX: Ensure ref_opt_stock loop respects filters
             if str(s.production_for or "").strip().upper() != current_row_comp: continue
+            
+            s_loc_clean = str(s.production_at or "").strip().upper()
+            if user_allowed_locations and s_loc_clean != "FLOOR" and s_loc_clean not in user_allowed_locations: continue
+            if g_loc_clean and g_loc_clean != "ALL" and s_loc_clean != g_loc_clean: continue
+
             s_gl_num = str(int(extract_number(s.glaze, 0)))
             match_ref = False
             
@@ -302,12 +319,12 @@ def production_page(
     soak_rej_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.rejection_qty > 0, Soaking.status != 'Completed')
     soak_mon_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.status != 'Completed', Soaking.in_qty > 0)
     
-    if global_production_for:
-        soak_rej_q = soak_rej_q.filter(func.trim(Soaking.production_for) == func.trim(global_production_for))
-        soak_mon_q = soak_mon_q.filter(func.trim(Soaking.production_for) == func.trim(global_production_for))
-    if global_location:
-        soak_rej_q = soak_rej_q.filter(func.trim(Soaking.production_at) == func.trim(global_location))
-        soak_mon_q = soak_mon_q.filter(func.trim(Soaking.production_at) == func.trim(global_location))
+    if g_prod_clean and g_prod_clean != "ALL":
+        soak_rej_q = soak_rej_q.filter(func.upper(func.trim(Soaking.production_for)) == g_prod_clean)
+        soak_mon_q = soak_mon_q.filter(func.upper(func.trim(Soaking.production_for)) == g_prod_clean)
+    if g_loc_clean and g_loc_clean != "ALL":
+        soak_rej_q = soak_rej_q.filter(func.upper(func.trim(Soaking.production_at)) == g_loc_clean)
+        soak_mon_q = soak_mon_q.filter(func.upper(func.trim(Soaking.production_at)) == g_loc_clean)
     elif user_allowed_locations:
         soak_rej_q = soak_rej_q.filter(func.upper(func.trim(Soaking.production_at)).in_(user_allowed_locations))
         soak_mon_q = soak_mon_q.filter(func.upper(func.trim(Soaking.production_at)).in_(user_allowed_locations))
@@ -325,10 +342,11 @@ def production_page(
     start, end = get_today_range()
     today_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= start.date(), Production.date <= end.date())
     
-    if global_production_for:
-        today_q = today_q.filter(func.trim(Production.production_for) == func.trim(global_production_for))
-    if global_location:
-        today_q = today_q.filter(func.trim(Production.production_at) == func.trim(global_location))
+    # 🟢 FIX: "ALL" bypass for Today's logs
+    if g_prod_clean and g_prod_clean != "ALL":
+        today_q = today_q.filter(func.upper(func.trim(Production.production_for)) == g_prod_clean)
+    if g_loc_clean and g_loc_clean != "ALL":
+        today_q = today_q.filter(func.upper(func.trim(Production.production_at)) == g_loc_clean)
     elif user_allowed_locations:
         today_q = today_q.filter(func.upper(func.trim(Production.production_at)).in_(user_allowed_locations))
         

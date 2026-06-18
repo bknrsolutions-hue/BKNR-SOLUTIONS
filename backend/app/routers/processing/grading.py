@@ -49,6 +49,9 @@ def get_today_range():
 def show_grading(request: Request, db: Session = Depends(get_db)):
     # 1. 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     global_production_for, global_location = get_global_filters(request)
+    
+    g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    g_loc_clean = global_location.strip().upper() if global_location else None
 
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -82,10 +85,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         Grading.date >= start.date(),
         Grading.date <= end.date()
     )
-    if global_production_for:
-        today_q = today_q.filter(func.trim(Grading.production_for) == func.trim(global_production_for))
-    if global_location:
-        today_q = today_q.filter(func.trim(Grading.peeling_at) == func.trim(global_location))
+    
+    # 🟢 Bypass "ALL" for Today's logic
+    if g_prod_clean and g_prod_clean != "ALL":
+        today_q = today_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
+        
+    if g_loc_clean and g_loc_clean != "ALL":
+        today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
     elif user_allowed_locations:
         today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
 
@@ -95,9 +101,18 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     p_orders_q = db.query(pending_orders).filter(pending_orders.company_id == company_code)
     stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
     
-    if global_production_for:
-        p_orders_q = p_orders_q.filter(func.trim(pending_orders.company_name) == func.trim(global_production_for))
-        stock_q = stock_q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
+    # Production For Filter (Bypass "ALL")
+    if g_prod_clean and g_prod_clean != "ALL":
+        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.company_name)) == g_prod_clean)
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_for)) == g_prod_clean)
+
+    # Location / Production At Filter (Bypass "ALL")
+    if g_loc_clean and g_loc_clean != "ALL":
+        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.production_at)) == g_loc_clean)
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)) == g_loc_clean)
+    elif user_allowed_locations:
+        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.production_at)).in_(user_allowed_locations))
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
         
     p_orders = p_orders_q.all()
     all_stock = stock_q.all()
@@ -108,11 +123,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
     stock_pool = {}
     for s in all_stock:
-        s_loc_clean = str(s.location or "").strip().upper()
+        # 🟢 FIX: Use production_at instead of location
+        s_loc_clean = str(s.production_at or "").strip().upper()
+        
         # Permission and runtime filters check for requirements pool matching layouts
         if user_allowed_locations and s_loc_clean != "FLOOR" and s_loc_clean not in user_allowed_locations:
             continue
-        if global_location and s_loc_clean != global_location.strip().upper():
+        if g_loc_clean and g_loc_clean != "ALL" and s_loc_clean != g_loc_clean:
             continue
 
         s_gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
@@ -186,10 +203,11 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     # 4. HIGH PERFORMANCE TABLE DATA CALL ENGINE
     pending_pool_q = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code)
     
-    if global_production_for:
-        pending_pool_q = pending_pool_q.filter(func.trim(HlsoForGrading.production_for) == func.trim(global_production_for))
-    if global_location:
-        pending_pool_q = pending_pool_q.filter(func.trim(HlsoForGrading.peeling_at) == func.trim(global_location))
+    if g_prod_clean and g_prod_clean != "ALL":
+        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.production_for)) == g_prod_clean)
+        
+    if g_loc_clean and g_loc_clean != "ALL":
+        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)) == g_loc_clean)
     elif user_allowed_locations:
         pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)).in_(user_allowed_locations))
 
@@ -203,7 +221,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
             "hlso_summary": list(hlso_summary.values()), "hoso_summary": list(hoso_summary.values()),
             "deheading_pending": deheading_pending,
             "global_production_for": global_production_for or "", 
-            "global_location": global_location or "",             
+            "global_location": global_location or "",              
             "drill_down_json": json.dumps(drill_down_data), "edit_data": None,
             "message": request.session.pop("message", None)
         }
@@ -218,23 +236,28 @@ def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
     if not company_code: return {"batches": []}
 
     global_p_for, global_loc = get_global_filters(request)
-    if global_p_for: company = global_p_for
+    
+    g_prod_clean = global_p_for.strip().upper() if global_p_for else None
+    if g_prod_clean and g_prod_clean != "ALL":
+        company = g_prod_clean
+        
+    g_loc_clean = global_loc.strip().upper() if global_loc else None
 
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     r1_q = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
         RawMaterialPurchasing.company_id == company_code,
-        func.trim(RawMaterialPurchasing.production_for) == func.trim(company)
+        func.upper(func.trim(RawMaterialPurchasing.production_for)) == func.upper(func.trim(company))
     )
     r2_q = db.query(distinct(Reprocess.new_batch_id)).filter(
         Reprocess.company_id == company_code,
-        func.trim(Reprocess.production_for) == func.trim(company)
+        func.upper(func.trim(Reprocess.production_for)) == func.upper(func.trim(company))
     )
 
-    if global_loc:
-        r1_q = r1_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_loc))
-        r2_q = r2_q.filter(func.trim(Reprocess.production_at) == func.trim(global_loc))
+    if g_loc_clean and g_loc_clean != "ALL":
+        r1_q = r1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == g_loc_clean)
+        r2_q = r2_q.filter(func.upper(func.trim(Reprocess.production_at)) == g_loc_clean)
     elif user_allowed_locations:
         r1_q = r1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
         r2_q = r2_q.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
@@ -254,7 +277,12 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
     if not company_code: return {"counts": []}
 
     global_p_for, global_loc = get_global_filters(request)
-    if global_p_for: company = global_p_for
+    g_prod_clean = global_p_for.strip().upper() if global_p_for else None
+    
+    if g_prod_clean and g_prod_clean != "ALL":
+        company = g_prod_clean
+        
+    g_loc_clean = global_loc.strip().upper() if global_loc else None
 
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
@@ -262,17 +290,17 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
     c1_q = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.batch_number == batch,
-        func.trim(RawMaterialPurchasing.production_for) == func.trim(company)
+        func.upper(func.trim(RawMaterialPurchasing.production_for)) == func.upper(func.trim(company))
     )
     c2_q = db.query(distinct(Reprocess.grade)).filter(
         Reprocess.company_id == company_code,
         Reprocess.new_batch_id == batch,
-        func.trim(Reprocess.production_for) == func.trim(company)
+        func.upper(func.trim(Reprocess.production_for)) == func.upper(func.trim(company))
     )
 
-    if global_loc:
-        c1_q = c1_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_loc))
-        c2_q = c2_q.filter(func.trim(Reprocess.production_at) == func.trim(global_loc))
+    if g_loc_clean and g_loc_clean != "ALL":
+        c1_q = c1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == g_loc_clean)
+        c2_q = c2_q.filter(func.upper(func.trim(Reprocess.production_at)) == g_loc_clean)
     elif user_allowed_locations:
         c1_q = c1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
         c2_q = c2_q.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
@@ -431,5 +459,5 @@ def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
         rollback_grading_consumption(db, entry)
         db.delete(entry)
         db.commit()
-        refresh_floor_balance(company_code)
+        refresh_floor_balance(db, company_code)
     return JSONResponse({"status": "ok"})

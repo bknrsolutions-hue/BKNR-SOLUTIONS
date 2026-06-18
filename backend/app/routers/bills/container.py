@@ -15,8 +15,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from app.database import get_db
 from app.database.models.bills import ContainerLog, PurchaseInvoice  
 from app.database.models.processing import AuditLog 
-from app.database.models.criteria import vendors
+from app.database.models.criteria import vendors, production_at # 🟢 ADDED: production_at
 from app.database.models.inventory_management import pending_orders, sales_dispatch
+from app.utils.global_filters import get_global_filters # 🟢 ADDED: Global Filters
 
 router = APIRouter(
     prefix="/container",
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 class ContainerLogisticsSchema(BaseModel):
     po_number: str
+    production_at: str  # 🟢 ADDED: Location Field
     container_no: str
     size: str
     shipping_line_id: int
@@ -39,16 +41,17 @@ class ContainerLogisticsSchema(BaseModel):
     local_cost: float
     handling: float
     detention: float
-    gst_percent: float # ఫ్రంట్-ఎండ్ కాలిక్యులేషన్ కోసం స్కీమాలో ఉంటుంది, కానీ DB లో స్టోర్ అవ్వదు
+    gst_percent: float
 
 
 # ============================================================
-# 🚢 1. MAIN ENTRY PAGE (GET) - FIXED FOR NATIVE DATE FILTER
+# 🚢 1. MAIN ENTRY PAGE (GET) - FIXED FOR NATIVE DATE & LOCATION FILTER
 # ============================================================
 @router.get("/entry", response_class=HTMLResponse)
 def container_entry_page(
     request: Request,
     fy: str = Query(None), # Financial Year Query Param
+    location: str = Query(None), # 🟢 ADDED: Location Query Param
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
@@ -56,6 +59,20 @@ def container_entry_page(
 
     if not email or not comp_code:
         return RedirectResponse("/", status_code=302)
+
+    # 🟢 1. Location Filters Setup
+    _, cookie_loc = get_global_filters(request)
+    global_location = location if location is not None else cookie_loc
+    g_loc_clean = global_location.strip().upper() if global_location else None
+
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+
+    # 🟢 2. Production At List for Dropdown
+    pl_q = db.query(production_at.production_at).filter(production_at.company_id == comp_code)
+    if user_allowed_locations:
+        pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+    production_at_list = [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]]
 
     # 🔹 Vendors (Shipping Lines)
     vendor_list = db.query(vendors).filter(
@@ -86,7 +103,7 @@ def container_entry_page(
 
     po_list = sorted(list(po_set))
 
-    # 🔹 ⚡ HISTORY WITH NEW NATIVE DATE OVERSIGHT
+    # 🔹 ⚡ HISTORY WITH NEW NATIVE DATE & LOCATION OVERSIGHT
     container_history = []
     if fy:
         selected_year = int(fy)
@@ -94,29 +111,36 @@ def container_entry_page(
         end_date = dt.date(selected_year + 1, 3, 31)
 
         try:
-            # టేబుల్‌ లో ఇప్పుడు 'date' కాలమ్ ఉంది కాబట్టి డైరెక్ట్‌గా ఫిల్టర్ చేస్తున్నాం
-            container_history = (
-                db.query(ContainerLog, vendors.name.label("v_name"))
-                .join(vendors, ContainerLog.vendor_id == vendors.id)
-                .filter(
-                    ContainerLog.company_id == comp_code,
-                    ContainerLog.date >= start_date,
-                    ContainerLog.date <= end_date
-                )
-                .order_by(desc(ContainerLog.id))
-                .all()
+            # Base Query
+            query = db.query(ContainerLog, vendors.name.label("v_name")).join(
+                vendors, ContainerLog.vendor_id == vendors.id
+            ).filter(
+                ContainerLog.company_id == comp_code,
+                ContainerLog.date >= start_date,
+                ContainerLog.date <= end_date
             )
+
+            # 🟢 Apply Location Filter
+            if g_loc_clean and g_loc_clean != "ALL":
+                query = query.filter(func.upper(func.trim(ContainerLog.production_at)) == g_loc_clean)
+            elif user_allowed_locations:
+                query = query.filter(func.upper(func.trim(ContainerLog.production_at)).in_(user_allowed_locations))
+
+            container_history = query.order_by(desc(ContainerLog.id)).all()
             
-            # ఒకవేళ కొత్త డేట్ కాలమ్ అప్‌డేట్ అవ్వని పాత రికార్డులు ఉంటే, వాటి కోసం ఫాల్‌బ్యాక్ సేఫ్ లోడింగ్:
+            # ఫాల్‌బ్యాక్ సేఫ్ లోడింగ్
             if not container_history:
-                container_history = (
-                    db.query(ContainerLog, vendors.name.label("v_name"))
-                    .join(vendors, ContainerLog.vendor_id == vendors.id)
-                    .filter(ContainerLog.company_id == comp_code)
-                    .order_by(desc(ContainerLog.id))
-                    .limit(100)
-                    .all()
-                )
+                fb_query = db.query(ContainerLog, vendors.name.label("v_name")).join(
+                    vendors, ContainerLog.vendor_id == vendors.id
+                ).filter(ContainerLog.company_id == comp_code)
+                
+                if g_loc_clean and g_loc_clean != "ALL":
+                    fb_query = fb_query.filter(func.upper(func.trim(ContainerLog.production_at)) == g_loc_clean)
+                elif user_allowed_locations:
+                    fb_query = fb_query.filter(func.upper(func.trim(ContainerLog.production_at)).in_(user_allowed_locations))
+                    
+                container_history = fb_query.order_by(desc(ContainerLog.id)).limit(100).all()
+                
         except Exception as e:
             logger.error(f"FETCH CONTAINER LOGS ERROR: {e}")
             container_history = []
@@ -130,7 +154,9 @@ def container_entry_page(
             "po_list": po_list,
             "comp_code": comp_code,
             "email": email,
-            "selected_fy": fy
+            "selected_fy": fy,
+            "production_at_list": production_at_list,   # 🟢 ADDED
+            "selected_location": global_location or ""  # 🟢 ADDED
         }
     )
 
@@ -151,16 +177,15 @@ async def save_container_log(
         return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
-        # 🧮 Calculations
         subtotal = payload.ocean_cost + payload.local_cost + payload.handling + payload.detention
         tax_calculated = round((subtotal * payload.gst_percent) / 100, 2)
         grand_total = round(subtotal + tax_calculated, 2)
 
-        # ఇక్కడ default గా ఇవాల్టి 'date' ని సేవ్‌ చేస్తున్నాం 📅
         new_entry = ContainerLog(
             company_id=comp_code,
             unit_id=request.session.get("unit_id", 0),
             po_number=(payload.po_number or "N/A").upper().strip(),
+            production_at=(payload.production_at or "").upper().strip(), # 🟢 ADDED
             container_no=payload.container_no.upper().strip(),
             size=payload.size,
             vendor_id=payload.shipping_line_id,
@@ -170,13 +195,12 @@ async def save_container_log(
             detention=payload.detention,
             lended_total=grand_total,
             vessel_name="",
-            date=dt.date.today()  # Default current transaction entry date
+            date=dt.date.today() 
         )
 
         db.add(new_entry)
         db.flush()
 
-        # 📜 Add Initial Operational Audit Entry
         db.add(AuditLog(
             table_name="container_logistics", record_id=new_entry.id, company_id=comp_code,
             field_name="CREATE", old_value="NONE", new_value=new_entry.container_no,
@@ -217,9 +241,10 @@ async def update_container_log(
         if not entry:
             return JSONResponse({"success": False, "message": "Logistics entry record not found"}, status_code=404)
 
-        # 📜 Field Level Tracking (DB Columns Only)
+        # 📜 Field Level Tracking
         tracked_fields = {
             "po_number": (payload.po_number or "N/A").upper().strip(),
+            "production_at": (payload.production_at or "").upper().strip(), # 🟢 ADDED
             "container_no": payload.container_no.upper().strip(),
             "size": payload.size,
             "vendor_id": payload.shipping_line_id,
@@ -240,7 +265,6 @@ async def update_container_log(
                 ))
                 setattr(entry, key, new_val)
 
-        # 🧮 Re-calculations (Grand total update)
         subtotal = entry.ocean_cost + entry.local_cost + entry.handling + entry.detention
         tax_calculated = round((subtotal * payload.gst_percent) / 100, 2)
         entry.lended_total = round(subtotal + tax_calculated, 2)
@@ -344,7 +368,8 @@ def export_container_excel(request: Request, db: Session = Depends(get_db)):
         top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
     )
 
-    headers = ["Sl No", "PO Number", "Container No", "Size", "Vendor Line", "Ocean Freight", "Local Trans", "Handling", "Detention", "Grand Total"]
+    # 🟢 ADDED "Production At" in Excel Headers
+    headers = ["Sl No", "PO Number", "Production At", "Container No", "Size", "Vendor Line", "Ocean Freight", "Local Trans", "Handling", "Detention", "Grand Total"]
     ws.append(headers)
 
     for col_num, header in enumerate(headers, 1):
@@ -355,7 +380,7 @@ def export_container_excel(request: Request, db: Session = Depends(get_db)):
 
     for idx, (log, v_name) in enumerate(logs, 1):
         row_data = [
-            idx, log.po_number, log.container_no, log.size, v_name,
+            idx, log.po_number, log.production_at, log.container_no, log.size, v_name,
             log.ocean_cost, log.local_cost, log.handling, log.detention, log.lended_total
         ]
         ws.append(row_data)
@@ -365,22 +390,24 @@ def export_container_excel(request: Request, db: Session = Depends(get_db)):
             cell = ws.cell(row=curr_row, column=col_idx)
             cell.font = data_font
             cell.border = thin_border
-            if col_idx in [6, 7, 8, 9, 10]:
+            # 🟢 Adjusted Column Indices for Currency Format due to new column
+            if col_idx in [7, 8, 9, 10, 11]:
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal="right")
-            elif col_idx in [1, 2, 3, 4]:
+            elif col_idx in [1, 2, 3, 4, 5]:
                 cell.alignment = Alignment(horizontal="center")
 
     last_row = ws.max_row
     total_row_idx = last_row + 1
     ws.cell(row=total_row_idx, column=1, value="Total Summary").font = total_font
-    ws.merge_cells(start_row=total_row_idx, start_column=1, end_row=total_row_idx, end_column=5)
+    ws.merge_cells(start_row=total_row_idx, start_column=1, end_row=total_row_idx, end_column=6)
     ws.cell(row=total_row_idx, column=1).alignment = Alignment(horizontal="right")
 
-    ws.cell(row=total_row_idx, column=6, value=f"=SUM(F2:F{last_row})").number_format = '#,##0.00'
-    ws.cell(row=total_row_idx, column=10, value=f"=SUM(J2:J{last_row})").number_format = '#,##0.00'
+    # 🟢 Adjusted Summation Formula Target Columns
+    ws.cell(row=total_row_idx, column=7, value=f"=SUM(G2:G{last_row})").number_format = '#,##0.00'
+    ws.cell(row=total_row_idx, column=11, value=f"=SUM(K2:K{last_row})").number_format = '#,##0.00'
 
-    for col in [6, 10]:
+    for col in [7, 11]:
         c = ws.cell(row=total_row_idx, column=col)
         c.font = total_font
         c.alignment = Alignment(horizontal="right")

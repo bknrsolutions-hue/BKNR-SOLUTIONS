@@ -11,7 +11,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
 
 <style>
 :root {
@@ -107,11 +106,11 @@ body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11p
 /* PREMIUM DATA TABLE STYLE */
 .table-wrap { margin: 12px 10px; background: var(--card-bg) !important; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .data-container { overflow: auto; max-height: 550px; }
-.main-table { width: 100%; border-collapse: collapse; text-align: center !important; min-width: 1950px; table-layout: fixed !important; }
+.main-table { width: 100%; border-collapse: collapse; text-align: center !important; min-width: 1750px; table-layout: fixed !important; }
 
 /* TYPOGRAPHY MATRIX LOCK */
-.main-table thead th { background: var(--header-bg) !important; padding: 8px 4px; border-bottom: 2px solid var(--border) !important; border: 1px solid var(--border) !important; color: var(--text-main) !important; text-transform: uppercase; font-weight: 800; font-size: 9.5px !important; position: sticky; top: 0; z-index: 100; white-space: nowrap; text-align: center !important; }
-.main-table tbody td { padding: 6px 4px; border-bottom: 1px solid var(--border) !important; border: 1px solid var(--border) !important; color: var(--text-main) !important; font-weight: 600; font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center !important; }
+.main-table thead th { background: var(--header-bg) !important; padding: 4px 4px; border-bottom: 2px solid var(--border) !important; border: 1px solid var(--border) !important; color: var(--text-main) !important; text-transform: uppercase; font-weight: 800; font-size: 9.5px !important; position: sticky; top: 0; z-index: 100; white-space: nowrap; text-align: center !important; }
+.main-table tbody td { padding: 2px 2px; border-bottom: 1px solid var(--border) !important; border: 1px solid var(--border) !important; color: var(--text-main) !important; font-weight: 600; font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center !important; }
 
 /* Merged Cell Premium Architecture */
 tbody td.merged-cell { background: var(--header-bg) !important; font-weight: 700; border-bottom: 1px solid var(--border) !important; vertical-align: middle; color: var(--text-main) !important; }
@@ -169,7 +168,6 @@ tr.selected-row td { background: var(--processing-bg) !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-universal-standard.css">
 </head>
 
 <body>
@@ -365,8 +363,8 @@ tr.selected-row td { background: var(--processing-bg) !important; }
               <td>{{ r.brand }}</td>
               <td>{{ r.packing_style }}</td>
               <td>{{ r.freezer }}</td>
-              <td>{{ r.count_glaze }}%</td>
-              <td>{{ r.weight_glaze }}%</td>
+              <td>{{ r.count_glaze }}</td>
+              <td>{{ r.weight_glaze }}</td>
               <td>{{ r.species }}</td>
               <td>{{ r.variety }}</td>
               <td>{{ r.grade }}</td>

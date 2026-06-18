@@ -94,6 +94,10 @@ def update_floor_balance_row(
 @router.get("/peeling", response_class=HTMLResponse)
 def show_peeling(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location = get_global_filters(request)
+    
+    g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    g_loc_clean = global_location.strip().upper() if global_location else None
+
     email = request.session.get("email")
     company_id = request.session.get("company_code")
 
@@ -113,11 +117,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         FloorBalance.available_qty > 0.01
     )
 
-    if global_production_for:
-        live_q = live_q.filter(func.upper(func.trim(FloorBalance.production_for)) == global_production_for.strip().upper())
+    if g_prod_clean and g_prod_clean != "ALL":
+        live_q = live_q.filter(func.upper(func.trim(FloorBalance.production_for)) == g_prod_clean)
     
-    if global_location:
-        g_loc_clean = global_location.strip().upper()
+    if g_loc_clean and g_loc_clean != "ALL":
         if g_loc_clean in ["FLOOR", "OTHER FLOOR"]:
             live_q = live_q.filter(or_(
                 func.upper(func.trim(FloorBalance.location)) == "FLOOR",
@@ -133,13 +136,27 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     live_records = live_q.order_by(FloorBalance.production_for, FloorBalance.location, FloorBalance.batch_number).all()
     hlso_floor_balance = [{"batch": r.batch_number or "N/A", "variety": r.variety or "N/A", "count": r.count or "N/A", "species": r.species or "N/A", "production_for": r.production_for or "General Stock", "location": r.location or "Floor", "available_qty": round(r.available_qty, 2)} for r in live_records]
     
-    # 2nd TABLE: REQUIRED HLSO REQUIREMENTS SYNC LAYER
+    # =====================================================
+    # 🟢 2nd TABLE: REQUIRED HLSO REQUIREMENTS SYNC LAYER (FIXED LOCATION FILTERS)
+    # =====================================================
     po_q = db.query(pending_orders).filter(pending_orders.company_id == company_id)
-    if global_production_for:
-        po_q = po_q.filter(func.upper(func.trim(pending_orders.company_name)) == global_production_for.strip().upper())
+    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_id)
+
+    # Production For Filter
+    if g_prod_clean and g_prod_clean != "ALL":
+        po_q = po_q.filter(func.upper(func.trim(pending_orders.company_name)) == g_prod_clean)
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_for)) == g_prod_clean)
+
+    # Strict Location / Production At Filter
+    if g_loc_clean and g_loc_clean != "ALL":
+        po_q = po_q.filter(func.upper(func.trim(pending_orders.production_at)) == g_loc_clean)
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)) == g_loc_clean)
+    elif user_allowed_locations:
+        po_q = po_q.filter(func.upper(func.trim(pending_orders.production_at)).in_(user_allowed_locations))
+        stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
         
     p_orders = po_q.all()
-    all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_id).all()
+    all_stock = stock_q.all()
     masters = get_cached_masters(db, company_id)
     
     # PERFORMANCE OPTIMIZATION LOCK
@@ -150,6 +167,14 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     
     stock_pool = {}
     for s in all_stock:
+        # 🟢 FIX: Location check in python loop (Using production_at)
+        s_loc_clean = str(s.production_at or "").strip().upper()
+        
+        if user_allowed_locations and s_loc_clean != "FLOOR" and s_loc_clean not in user_allowed_locations:
+            continue
+        if g_loc_clean and g_loc_clean != "ALL" and s_loc_clean != g_loc_clean:
+            continue
+
         gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
         gl_val = gl_match.group(1) if gl_match else "0"
         key = f"{str(s.production_for or '').strip().upper()}|{str(s.species).strip().lower()}|{str(s.variety).strip().lower()}|{str(s.grade).strip().lower()}|{str(s.packing_style).strip().lower()}|{gl_val}"
@@ -206,10 +231,9 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     # =====================================================
     # Tab 1: Today's Raw Log Logs 
     today_q = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
-    if global_production_for:
-        today_q = today_q.filter(func.upper(func.trim(Peeling.production_for)) == global_production_for.strip().upper())
-    if global_location:
-        g_loc_clean = global_location.strip().upper()
+    if g_prod_clean and g_prod_clean != "ALL":
+        today_q = today_q.filter(func.upper(func.trim(Peeling.production_for)) == g_prod_clean)
+    if g_loc_clean and g_loc_clean != "ALL":
         if g_loc_clean in ["FLOOR", "OTHER FLOOR"]:
             today_q = today_q.filter(or_(func.upper(func.trim(Peeling.peeling_at)) == "FLOOR", func.upper(func.trim(Peeling.peeling_at)) == "OTHER FLOOR", Peeling.peeling_at == None, func.trim(Peeling.peeling_at) == ""))
         else:
@@ -226,10 +250,13 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         func.sum(Peeling.peeled_qty).label("total_peeled"), 
         func.sum(Peeling.amount).label("total_amount")
     ).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
-    if global_production_for:
-        contractor_q = contractor_q.filter(func.upper(func.trim(Peeling.production_for)) == global_production_for.strip().upper())
-    if global_location:
-        contractor_q = contractor_q.filter(func.upper(func.trim(Peeling.peeling_at)) == global_location.strip().upper())
+    
+    if g_prod_clean and g_prod_clean != "ALL":
+        contractor_q = contractor_q.filter(func.upper(func.trim(Peeling.production_for)) == g_prod_clean)
+    if g_loc_clean and g_loc_clean != "ALL":
+        contractor_q = contractor_q.filter(func.upper(func.trim(Peeling.peeling_at)) == g_loc_clean)
+    elif user_allowed_locations:
+        contractor_q = contractor_q.filter(func.upper(func.trim(Peeling.peeling_at)).in_(user_allowed_locations))
         
     contractor_summary_q = contractor_q.group_by(Peeling.contractor_name).all()
     contractor_summary = [{"contractor_name": r[0], "total_hlso": round(r[1] or 0, 2), "total_peeled": round(r[2] or 0, 2), "total_amount": round(r[3] or 0, 2)} for r in contractor_summary_q]
@@ -246,11 +273,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         func.upper(func.trim(FloorBalance.variety)).notin_(["HOSO", "HLSO"])
     )
 
-    if global_production_for:
-        variety_summary_q = variety_summary_q.filter(func.upper(func.trim(FloorBalance.production_for)) == global_production_for.strip().upper())
+    if g_prod_clean and g_prod_clean != "ALL":
+        variety_summary_q = variety_summary_q.filter(func.upper(func.trim(FloorBalance.production_for)) == g_prod_clean)
 
-    if global_location:
-        g_loc_clean = global_location.strip().upper()
+    if g_loc_clean and g_loc_clean != "ALL":
         if g_loc_clean in ["FLOOR", "OTHER FLOOR"]:
             variety_summary_q = variety_summary_q.filter(or_(
                 func.upper(func.trim(FloorBalance.location)) == "FLOOR",
@@ -279,10 +305,6 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         }
         for r in variety_summary_q
     ]
-
-    print("GLOBAL LOCATION =", global_location)
-    print("VARIETY SUMMARY RAW =", variety_summary_q)
-    print("VARIETY SUMMARY COUNT =", len(variety_summary))
 
     pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
     success_msg = request.session.pop("success_msg", None)
@@ -333,13 +355,21 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
 def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id: return {"counts": [], "species_map": {}, "variety_map": {}}
+    
+    global_p_for, global_loc = get_global_filters(request)
+    g_loc_clean = global_loc.strip().upper() if global_loc else None
 
-    records = db.query(FloorBalance.count, FloorBalance.species, FloorBalance.variety).filter(
+    records_q = db.query(FloorBalance.count, FloorBalance.species, FloorBalance.variety).filter(
         FloorBalance.company_id == company_id,
         FloorBalance.batch_number == batch.strip(),
         FloorBalance.variety.ilike("%HLSO%"),
         FloorBalance.available_qty > 0.01
-    ).all()
+    )
+    
+    if g_loc_clean and g_loc_clean != "ALL":
+        records_q = records_q.filter(func.upper(func.trim(FloorBalance.location)) == g_loc_clean)
+
+    records = records_q.all()
     
     valid_counts, species_map, variety_map = set(), {}, {}
     for count, spc, var in records:
@@ -431,7 +461,6 @@ def save_peeling(
     current_ist = ist_now()
     input_variety = live_record.variety if live_record else "HLSO"
 
-    # 🟢 🔴 FIXED: ఎక్స్‌ట్రా కాలమ్ తీసేసి డైరెక్ట్ గా నీ ఒరిజినల్ 'variety_name' లోపలికే డేటాను బైండ్ చేశాను చిన్నా!
     new_entry = Peeling(
         production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
         species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
@@ -470,7 +499,6 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
 
     clean_loc = "FLOOR" if not row.peeling_at or row.peeling_at.strip() == "" else row.peeling_at.strip().upper()
 
-    # 🟢 🔴 FIXED: ఎక్స్‌ట్రా కాలమ్ లేకపోయినా బగ్ రాకుండా... లైవ్ టేబుల్ నుండి ఒరిజినల్ ఇన్పుట్ వెరైటీని డైనమిక్ గా రికవరీ చేస్తుంది!
     input_record = db.query(FloorBalance.variety).filter(
         FloorBalance.company_id == company_id, 
         or_(

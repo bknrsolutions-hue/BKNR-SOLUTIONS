@@ -83,6 +83,11 @@ def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations
     # 🟢 🔴 REQUIREMENT TABLE SECURITY SYNC: Global company & Allowed allocations filter lock
     if global_p_for:
         po_q = po_q.filter(func.trim(pending_orders.company_name) == func.trim(global_p_for))
+    if global_loc:
+        po_q = po_q.filter(
+           func.trim(pending_orders.production_at)
+           == func.trim(global_loc)
+    )
     
     rows = po_q.all()
     yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()

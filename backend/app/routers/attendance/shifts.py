@@ -61,25 +61,28 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
     )
 
     # 🟢 🔴 APPLY GLOBAL FILTERS (ప్లాంట్ వైజ్ ఫిల్టరింగ్)
-    if global_location:
+    if global_location and global_location != "ALL":
         query = query.filter(func.upper(func.trim(Shift.production_at)) == global_location.strip().upper())
     elif user_allowed_locations:
         query = query.filter(func.upper(func.trim(Shift.production_at)).in_(user_allowed_locations))
 
     all_shifts = query.order_by(Shift.id.desc()).all()
 
+    # 🟢 🔴 UPDATED: Template Response with Global Filters
     return templates.TemplateResponse(
-        "admin/shifts.html",
-        {
-            "request": request,
+        request=request,
+        name="admin/shifts.html",
+        context={
             "company": ctx["company_info"],
             "sites": site_list,          
             "shifts": all_shifts,
             "email": ctx["email"],
-            "message": request.session.pop("message", None)
+            "message": request.session.pop("message", None),
+            # ఫ్రంట్-ఎండ్ సింక్ కోసం గ్లోబల్ ఫిల్టర్స్ పంపిస్తున్నాం
+            "global_location": global_location or "",
+            "global_production_for": global_production_for or ""
         }
     )
-
 # =========================================================
 # 2. SAVE & UPDATE SHIFT (POST)
 # =========================================================

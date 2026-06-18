@@ -457,3 +457,24 @@ async def update_status(request: Request, db: Session = Depends(get_db)):
     sale_item.status = new_status
     db.commit()
     return {"status": "success"}
+@router.post("/pending_orders/delete_po/{po_number}")
+def delete_po(
+    po_number: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+
+    db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        pending_orders.po_number == po_number
+    ).delete()
+
+    db.commit()
+
+    request.session["message"] = f"PO {po_number} deleted successfully"
+
+    return RedirectResponse(
+        "/inventory/pending_orders",
+        status_code=303
+    )

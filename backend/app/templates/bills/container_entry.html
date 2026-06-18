@@ -5,7 +5,7 @@
 <title>CONTAINER LOGISTICS MANAGEMENT - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -20,7 +20,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- HEADER --- */
 .header-dash {
-  background: var(--card-bg); padding: 15px 25px; border-bottom: 1px solid var(--border);
+  background: var(--card); padding: 15px 25px; border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
@@ -34,7 +34,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- FIXED SMALL SIZE FILTERS (6-COLUMN EQUIVALENT WIDTH) --- */
 .filter-bar { 
-  background: var(--card-bg); padding: 10px 25px; border-bottom: 1px solid var(--border); 
+  background: var(--card); padding: 10px 25px; border-bottom: 1px solid var(--border); 
   display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; 
 }
 .filter-item { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 130px; max-width: 180px; }
@@ -49,7 +49,7 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
     font-weight: 600; 
     outline: none; 
     width: 100%; 
-    background: var(--card-bg); 
+    background: var(--card); 
     color: var(--text); 
     height: 34px; 
     appearance: auto;
@@ -74,19 +74,17 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- THREE DOTS UNIVERSAL MENU --- */
 #threeDotsMenu { position: relative; display: none; margin-right: 10px; }
-.menu-trigger { background: var(--card-bg); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 40px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .menu-item { padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 
 /* --- MAIN TABLE (COMPACT) --- */
 .table-wrap{
-    background: var(--card-bg) !important;
-} margin: 0 25px 25px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-@media(max-width:800px){ .table-wrap{
-    background: var(--card-bg) !important;
-} margin: 0 10px 25px; } }
+    margin: 0 25px 25px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+}
+@media(max-width:800px){ .table-wrap{ margin: 0 10px 25px; } }
 
 .main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1200px; }
 .main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
@@ -102,7 +100,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 /* --- MODAL MANAGEMENT (4-COLUMN GRID) --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: var(--card-bg); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content { background: var(--card); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -121,7 +119,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     outline: none; 
     width: 100%; 
     color: var(--primary); 
-    background: var(--card-bg);
+    background: var(--card);
     appearance: auto;
     -webkit-appearance: auto;
     text-align: left;
@@ -131,15 +129,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
-    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card-bg); 
+    position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card); 
     border-left: 3px solid var(--primary); display: none; flex-direction: column; 
     z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -152,12 +148,22 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <div class="filter-bar">
     <div class="filter-item">
         <label style="color:var(--accent)">Financial Year *</label>
-        <select id="f_fy" onchange="changeFY(this.value)">
+        <select id="f_fy" onchange="changeFilter('fy', this.value)">
             <option value="">-- SELECT FY --</option>
             {% set start_yr = 2024 %}
             {% set end_yr = 2027 %}
             {% for y in range(start_yr, end_yr) %}
             <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-item">
+        <label>Location (Production At)</label>
+        <select id="f_location" onchange="changeFilter('location', this.value)">
+            <option value="">-- ALL LOCATIONS --</option>
+            {% for loc in production_at_list %}
+            <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
             {% endfor %}
         </select>
     </div>
@@ -194,7 +200,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             <tr>
                 <th width="40">Sl</th>
                 <th>PO Number</th>
-                <th>Container No</th>
+                <th>Production At</th> <th>Container No</th>
                 <th>Size</th>
                 <th>Vendor (Shipping Line)</th>
                 <th class="text-right">Ocean Freight</th>
@@ -208,7 +214,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <tbody id="tableBody">
             {% if not container_history %}
             <tr>
-                <td colspan="11" class="empty-state">
+                <td colspan="12" class="empty-state">
                     <i class="fa-solid fa-anchor"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to load active logistics data ledger.</span>
@@ -219,13 +225,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <tr class="data-row" 
                     data-id="{{ log.id }}" 
                     data-po="{{ log.po_number }}"
+                    data-location="{{ log.production_at }}" 
                     data-vendor-id="{{ log.shipping_line_id }}"
                     data-total="{{ log.lended_total }}"
                     onclick="selectRow(this, '{{ log.id }}')">
                     
                     <td class="slno">0</td>
                     <td style="font-weight:700;">{{ log.po_number }}</td>
-                    <td>{{ log.container_no }}</td>
+                    <td style="font-weight:700; color:var(--accent);">{{ log.production_at or 'N/A' }}</td> <td>{{ log.container_no }}</td>
                     <td>{{ log.size }}</td>
                     <td class="text-left">{{ v_name }}</td>
                     <td class="text-right">{{ "{:,.2f}".format(log.ocean_cost or 0) }}</td>
@@ -257,6 +264,16 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                         <select id="modalPoNumber" required>
                             <option value="N/A">N/A</option>
                             {% for po in po_list %}<option value="{{ po }}">{{ po }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Location (Production At)</label>
+                        <select id="modalLocation" required>
+                            <option value="">-- Select Location --</option>
+                            {% for loc in production_at_list %}
+                            <option value="{{ loc }}">{{ loc }}</option>
+                            {% endfor %}
                         </select>
                     </div>
 
@@ -365,10 +382,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         }
     });
 
-    function changeFY(val) {
-        if(!val) return;
+    // 🟢 ADDED: Unified Filter Change Function
+    function changeFilter(param, val) {
         const url = new URL(window.location.href);
-        url.searchParams.set('fy', val);
+        if(val) url.searchParams.set(param, val);
+        else url.searchParams.delete(param);
         window.location.href = url.toString();
     }
 
@@ -434,7 +452,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('modalGrandTotal').innerText = "₹ " + grand.toLocaleString('en-IN', {minimumFractionDigits: 2});
     }
 
-    /* 🟢 REMOVED: Check for Financial Year selection before opening modal */
     function openModal() {
         document.getElementById("containerForm").reset();
         document.getElementById("modalTitle").innerText = "New Logistics Entry";
@@ -465,7 +482,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             
             if(Array.isArray(logs) && logs.length > 0) {
                 content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card-bg); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                         <b>${l.timestamp}</b> | Container: ${l.container_no || 'N/A'}<br>
                         ${l.action}: ${l.details}<br>
                         <small>User Operator: ${l.user}</small>
@@ -481,8 +498,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     async function saveContainerLogistics(event) {
         event.preventDefault();
         
+        // 🟢 ADDED: production_at in Payload
         const payload = {
             po_number: document.getElementById("modalPoNumber").value,
+            production_at: document.getElementById("modalLocation").value,
             container_no: document.getElementById("modalContainerNo").value.trim().toUpperCase(),
             size: document.getElementById("modalSize").value,
             shipping_line_id: parseInt(document.getElementById("modalVendorId").value),
@@ -522,16 +541,21 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         document.getElementById("modalEntryId").value = globalSelectedId;
         document.getElementById("modalPoNumber").value = row.getAttribute("data-po");
-        document.getElementById("modalContainerNo").value = row.cells[2].innerText;
-        document.getElementById("modalSize").value = row.cells[3].innerText;
+        
+        // 🟢 ADDED: Fetch Location from data attribute
+        document.getElementById("modalLocation").value = row.getAttribute("data-location") || "";
+        
+        // Update column indices based on the new "Production At" column
+        document.getElementById("modalContainerNo").value = row.cells[3].innerText;
+        document.getElementById("modalSize").value = row.cells[4].innerText;
         document.getElementById("modalVendorId").value = row.getAttribute("data-vendor-id");
         
-        document.getElementById("modalOceanCost").value = parseFloat(row.cells[5].innerText.replace(/,/g, ''));
-        document.getElementById("modalLocalCost").value = parseFloat(row.cells[6].innerText.replace(/,/g, ''));
-        document.getElementById("modalHandling").value = parseFloat(row.cells[7].innerText.replace(/,/g, ''));
-        document.getElementById("modalDetention").value = parseFloat(row.cells[8].innerText.replace(/,/g, ''));
+        document.getElementById("modalOceanCost").value = parseFloat(row.cells[6].innerText.replace(/,/g, ''));
+        document.getElementById("modalLocalCost").value = parseFloat(row.cells[7].innerText.replace(/,/g, ''));
+        document.getElementById("modalHandling").value = parseFloat(row.cells[8].innerText.replace(/,/g, ''));
+        document.getElementById("modalDetention").value = parseFloat(row.cells[9].innerText.replace(/,/g, ''));
         
-        const gstVal = row.cells[9].innerText.replace('%','').trim();
+        const gstVal = row.cells[10].innerText.replace('%','').trim();
         document.getElementById("modalGstPercent").value = gstVal;
 
         calculateModalTotals();

@@ -9,7 +9,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<!-- 🌟 SYNC THEME WITH PARENT 🌟 -->
 <script>
     function syncTheme() {
         try {
@@ -702,15 +701,12 @@
     </div>
 </div>
 
-<!-- 🟢 FILTER PANEL -->
 <div class="filter-panel-wrapper no-print">
-    <form method="get" id="filterForm" class="filters" action="/inventory_dashboard">
+    <form method="get" id="filterForm" class="filters" action="/dashboard/inventory_dashboard">
         
-        <!-- 🟢 🔴 HIDDEN INPUTS FOR PARENT HEADER SYNC -->
         <input type="hidden" name="location" id="hidden_location" value="">
         <input type="hidden" name="production_for" id="hidden_prod_for" value="">
 
-        <!-- FY Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Financial Year *</label>
             <div class="searchable-dropdown-container">
@@ -731,15 +727,26 @@
                     <input type="text" placeholder="Search FY..." onkeyup="filterDropdownList('dropdown_fy', this.value)">
                     <ul class="dropdown-options-list">
                         {% for y in financial_years %}
-                        <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}" onclick="selectDropdownOption('sel_fy', '{{ y }}', 'FY {{ y }}-{{ (y|int) + 1 }}')">FY {{ y }}-{{ (y|int) + 1 }}</li>
+                        <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}"
+                        onclick="selectDropdownOption(
+                            'sel_fy',
+                            '{{ y }}-{{ (y|int)+1 }}',
+                            'FY {{ y }}-{{ (y|int)+1 }}'
+                        )">
+                            FY {{ y }}-{{ (y|int)+1 }}
+                        </li>
                         {% endfor %}
                     </ul>
                 </div>
-                <input type="hidden" id="sel_fy" name="sel_fy" value="{{ sel_fy if sel_fy else selected_fy }}">
+                <input
+                    type="hidden"
+                    id="sel_fy"
+                    name="sel_fy"
+                    value="{{ sel_fy }}"
+                >
             </div>
         </div>
 
-        <!-- Species Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Species *</label>
             <div class="searchable-dropdown-container">
@@ -760,7 +767,6 @@
             </div>
         </div>
 
-        <!-- Variety Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Variety *</label>
             <div class="searchable-dropdown-container">
@@ -781,7 +787,6 @@
             </div>
         </div>
 
-        <!-- Grade Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Grade *</label>
             <div class="searchable-dropdown-container">
@@ -802,7 +807,6 @@
             </div>
         </div>
 
-        <!-- Client Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Client *</label>
             <div class="searchable-dropdown-container">
@@ -837,7 +841,6 @@
     <button class="tab-btn" id="aging_tab_btn" onclick="openTab(event,'aging_tab')">Aging</button>
 </div>
 
-<!-- LIVE INVENTORY TAB -->
 <div id="live_tab" class="tab-content active">
     <div class="rm-summary-box">
         <div class="panel-header">
@@ -897,7 +900,6 @@
     </div>
 </div>
 
-<!-- OPENING TAB -->
 <div id="opening_tab" class="tab-content">
     <div class="rm-summary-box">
         <div class="panel-header"><h3>Opening Stock Summary</h3></div>
@@ -925,7 +927,6 @@
     </div>
 </div>
 
-<!-- COMPARISON TAB -->
 <div id="comparison_tab" class="tab-content">
     <div class="chart-grid">
         <div class="chart-box"><h3>FY Comparison</h3><canvas id="fyChart"></canvas></div>
@@ -933,7 +934,6 @@
     </div>
 </div>
 
-<!-- AGING TAB -->
 <div id="aging_tab" class="tab-content">
     <div class="age-boxes">
         <div class="age-card" style="border-left: 5px solid var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
