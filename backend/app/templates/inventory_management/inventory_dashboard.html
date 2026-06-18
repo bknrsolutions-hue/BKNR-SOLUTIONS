@@ -179,7 +179,7 @@
         border-color: var(--accent);
     }
 
-    /* 🟢 FILTERS BAR - SOAKING REPORT EXACT STYLE WITH HORIZONTAL SCROLL IN MOBILE */
+    /* 🟢 FILTERS BAR */
     .filter-panel-wrapper {
         padding: 0 16px 12px;
     }
@@ -227,7 +227,6 @@
         color: var(--primary);
     }
 
-    /* Searchable Dropdown Sizing & Borders aligned with Soaking Report */
     .searchable-dropdown-container {
         position: relative;
         width: 100%;
@@ -666,19 +665,19 @@
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
     </div>
     
-    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales">
+    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales" style="text-decoration:none;">
         <h4>Sales</h4>
         <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
     </a>
     
-    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess">
+    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess" style="text-decoration:none;">
         <h4>Reprocess</h4>
         <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
         <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
     </a>
     
-    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh">
+    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh" style="text-decoration:none;">
         <h4>Fresh</h4>
         <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
         <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
@@ -703,10 +702,14 @@
     </div>
 </div>
 
-<!-- 🟢 FILTER PANEL - PLACED DIRECTLY BELOW KPI GRID AND SEPARATED FROM TABLES -->
+<!-- 🟢 FILTER PANEL -->
 <div class="filter-panel-wrapper no-print">
-    <form method="get" id="filterForm" class="filters" action="">
+    <form method="get" id="filterForm" class="filters" action="/inventory_dashboard">
         
+        <!-- 🟢 🔴 HIDDEN INPUTS FOR PARENT HEADER SYNC -->
+        <input type="hidden" name="location" id="hidden_location" value="">
+        <input type="hidden" name="production_for" id="hidden_prod_for" value="">
+
         <!-- FY Searchable Dropdown -->
         <div class="fbox">
             <label style="color:var(--accent)">Financial Year *</label>
@@ -728,7 +731,7 @@
                     <input type="text" placeholder="Search FY..." onkeyup="filterDropdownList('dropdown_fy', this.value)">
                     <ul class="dropdown-options-list">
                         {% for y in financial_years %}
-                        <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}" onclick="selectDropdownOption('sel_fy', '{{ y }}', 'FY {{ y }}-{{ (y|int) + 1 }}', true)">FY {{ y }}-{{ (y|int) + 1 }}</li>
+                        <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}" onclick="selectDropdownOption('sel_fy', '{{ y }}', 'FY {{ y }}-{{ (y|int) + 1 }}')">FY {{ y }}-{{ (y|int) + 1 }}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -941,6 +944,52 @@
 </div>
 
 <script>
+// 🟢 🔴 SYNC PARENT FILTERS LOGIC
+function syncParentFiltersToForm() {
+    try {
+        if(window.parent && window.parent.document) {
+            const parentCompNode = window.parent.document.getElementById('global_production_for');
+            const parentLocNode = window.parent.document.getElementById('global_location');
+
+            if(parentCompNode) document.getElementById('hidden_prod_for').value = parentCompNode.value;
+            if(parentLocNode) document.getElementById('hidden_location').value = parentLocNode.value;
+        }
+    } catch(e) {}
+}
+
+function listenToParentHeader() {
+    try {
+        if(window.parent && window.parent.document) {
+            const parentCompNode = window.parent.document.getElementById('global_production_for');
+            const parentLocNode = window.parent.document.getElementById('global_location');
+            
+            if(parentCompNode && !parentCompNode.dataset.invListener) {
+                parentCompNode.dataset.invListener = "true";
+                parentCompNode.addEventListener("change", () => { 
+                    syncParentFiltersToForm();
+                    document.getElementById('filterForm').submit(); 
+                });
+            }
+            if(parentLocNode && !parentLocNode.dataset.invListener) {
+                parentLocNode.dataset.invListener = "true";
+                parentLocNode.addEventListener("change", () => { 
+                    syncParentFiltersToForm();
+                    document.getElementById('filterForm').submit(); 
+                });
+            }
+        }
+    } catch(e) {}
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    syncParentFiltersToForm();
+    listenToParentHeader();
+});
+
+document.getElementById('filterForm').addEventListener('submit', function() {
+    syncParentFiltersToForm();
+});
+
 // MutationObserver to catch dynamic theme changes
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -987,16 +1036,13 @@ function filterDropdownList(wrapperId, query) {
     });
 }
 
-function selectDropdownOption(hiddenInputId, val, displayName, isFYChange = false) {
+function selectDropdownOption(hiddenInputId, val, displayName) {
     document.getElementById(hiddenInputId).value = val;
     let parentWrapper = document.getElementById(hiddenInputId).previousElementSibling;
     if(parentWrapper) parentWrapper.style.display = 'none';
     
-    if(isFYChange) {
-        changeFY(val);
-    } else {
-        document.getElementById('filterForm').submit();
-    }
+    syncParentFiltersToForm(); // Capture latest global filters before submit
+    document.getElementById('filterForm').submit();
 }
 
 document.addEventListener('click', function(event) {
@@ -1006,13 +1052,6 @@ document.addEventListener('click', function(event) {
         });
     }
 });
-
-function changeFY(val) {
-    if(!val) return;
-    let url = new URL(window.location.href);
-    url.searchParams.set('sel_fy', val);
-    window.location.href = url.toString();
-}
 
 function openTab(evt, tabId){
     document.querySelectorAll('.tab-content').forEach(tab => { tab.classList.remove('active'); });

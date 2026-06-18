@@ -44,7 +44,6 @@
             color: var(--text-main); 
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            /* Main Dashboard dynamic single screen view */
             overflow-y: auto; 
             transition: background 0.3s ease, color 0.3s ease;
         }
@@ -151,7 +150,6 @@
         }
         .summary-card td { border-bottom: 1px solid #f1f5f9 !important; }
 
-        /* 🌟 STRETCH TO VIEWPORT END - REMOVED DEFAULT SCROLL OVERLAYS */
         .floor-box { 
             background: var(--card-bg); border-radius: var(--radius-premium); 
             border: 1px solid var(--border-color); overflow: hidden; 
@@ -393,61 +391,65 @@
         } 
     };
 
-    new Chart(document.getElementById("dhChart"), {
-        type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#ea580c', borderRadius: 4 }] }, 
-        options: chartOptions
-    });
-    new Chart(document.getElementById("peelingChart"), {
-        type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#0d9488', borderRadius: 4 }] }, 
-        options: chartOptions
-    });
-    new Chart(document.getElementById("prodChart"), {
-        type: 'bar', 
-        data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#4f46e5', borderRadius: 4 }] }, 
-        options: chartOptions
-    });
+    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#ea580c', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#0d9488', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#4f46e5', borderRadius: 4 }] }, options: chartOptions });
 
     window.addEventListener("DOMContentLoaded", () => {
         syncIframeAndListenToParentHeader();
         adjustFloorIframeHeightToWindowEnd(); 
     });
 
-    // 🌟 FULL REMAINING SCREEN DYNAMIC HEIGHT AUTO-CALCULATOR
     function adjustFloorIframeHeightToWindowEnd() {
         const frame = document.getElementById("floorReportFrame");
         if (!frame) return;
-        
-        const offsetTop = frame.getBoundingClientRect().top + window.scrollY;
-        // Remaining dynamic screen view area boundary selection
         const availableHeight = window.innerHeight - frame.getBoundingClientRect().top - 15; 
-        
-        if (availableHeight > 250) {
-            frame.style.height = availableHeight + "px";
-        }
+        if (availableHeight > 250) { frame.style.height = availableHeight + "px"; }
     }
     window.addEventListener("resize", adjustFloorIframeHeightToWindowEnd);
 
+    // 🟢 🔴 MAIN FIX: Iframe URL Sync Logic
     function syncIframeAndListenToParentHeader() {
         const parentCompNode = window.parent.document.getElementById('global_production_for');
         const parentLocNode = window.parent.document.getElementById('global_location');
 
-        const pComp = parentCompNode ? parentCompNode.value : "";
-        const pLoc = parentLocNode ? parentLocNode.value : "";
+        const pComp = parentCompNode ? parentCompNode.value : null;
+        const pLoc = parentLocNode ? parentLocNode.value : null;
 
-        const params = new URLSearchParams();
-        if(pComp) params.append("production_for", pComp);
-        if(pLoc) params.append("location", pLoc);
-        document.getElementById("floorReportFrame").src = "/reports/floor_balance_report?" + params.toString();
+        const urlParams = new URLSearchParams(window.location.search);
+        let needReload = false;
+
+        // Force Sync: Check if parent values exist and are different from current URL
+        if (pLoc !== null && urlParams.get('location') !== pLoc) {
+            urlParams.set('location', pLoc);
+            needReload = true;
+        }
+        if (pComp !== null && urlParams.get('production_for') !== pComp) {
+            urlParams.set('production_for', pComp);
+            needReload = true;
+        }
+
+        // If mismatch detected, update URL and reload exactly with the filter params
+        if (needReload) {
+            window.location.search = urlParams.toString();
+            return; 
+        }
+
+        document.getElementById("floorReportFrame").src = "/reports/floor_balance_report?" + urlParams.toString();
 
         if(parentCompNode && !parentCompNode.dataset.listenerAttached) {
             parentCompNode.dataset.listenerAttached = "true";
-            parentCompNode.addEventListener("change", () => { window.location.reload(); });
+            parentCompNode.addEventListener("change", () => { 
+                urlParams.set('production_for', parentCompNode.value);
+                window.location.search = urlParams.toString();
+            });
         }
         if(parentLocNode && !parentLocNode.dataset.listenerAttached) {
             parentLocNode.dataset.listenerAttached = "true";
-            parentLocNode.addEventListener("change", () => { window.location.reload(); });
+            parentLocNode.addEventListener("change", () => { 
+                urlParams.set('location', parentLocNode.value);
+                window.location.search = urlParams.toString();
+            });
         }
     }
 
@@ -465,34 +467,19 @@
         location.reload(); 
     }
 
-    window.onclick = function(event) {
-        if (event.target == document.getElementById('entryModal')) { closeEntryModal(); }
-    }
+    window.onclick = function(event) { if (event.target == document.getElementById('entryModal')) { closeEntryModal(); } }
 
     function injectThemeIntoIframe(iframeId) {
         const iframeEl = document.getElementById(iframeId);
         if(!iframeEl) return;
-        
         iframeEl.addEventListener("load", function() {
             try {
                 const frameDoc = this.contentDocument || this.contentWindow.document;
                 const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
                 frameDoc.documentElement.setAttribute("data-theme", currentTheme);
-                
-                // 🌟 FORCE LOCK IFRAME TOP VIEWPORT POSITION (Sub total pina untundi)
                 this.contentWindow.scrollTo(0, 0);
                 if(frameDoc.body) frameDoc.body.scrollTop = 0;
-
-                if (!frameDoc.getElementById('master-theme-enforcer')) {
-                    let enforceLink = frameDoc.createElement("link");
-                    enforceLink.id = "master-theme-enforcer";
-                    enforceLink.rel = "stylesheet";
-                    enforceLink.href = "/static/css/bknr-standard.css?v=" + new Date().getTime(); 
-                    frameDoc.head.appendChild(enforceLink);
-                }
-            } catch(e) {
-                console.warn("Iframe target injection error handling checked.");
-            }
+            } catch(e) {}
         });
     }
 
@@ -503,7 +490,6 @@
         try {
             const iframe = document.getElementById("floorReportFrame");
             if (!iframe) return;
-
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             if (!iframeDoc) return;
 
@@ -523,7 +509,6 @@
             let computedTotal = 0;
             const iframeRows = iframeDoc.querySelectorAll("table tbody tr");
             let parsedRows = false;
-
             for (let i = 0; i < iframeRows.length; i++) {
                 const row = iframeRows[i];
                 if (row.style.display !== "none") {
@@ -538,13 +523,10 @@
                     }
                 }
             }
-
             if (parsedRows && computedTotal > 0) {
                 document.getElementById("liveFloorKpiVal").innerText = computedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
-        } catch (e) {
-            console.log("Telemetry check logs.");
-        }
+        } catch (e) {}
     }
 
     const iframeEl = document.getElementById("floorReportFrame");
@@ -552,13 +534,6 @@
         iframeEl.addEventListener("load", function() {
             syncLiveFloorFromIframe(); 
             adjustFloorIframeHeightToWindowEnd(); 
-            try {
-                const iframeDoc = iframeEl.contentDocument || iframeEl.contentWindow.document;
-                const observer = new MutationObserver(syncLiveFloorFromIframe);
-                observer.observe(iframeDoc.body, { attributes: true, childList: true, subtree: true });
-            } catch(err) {
-                setInterval(syncLiveFloorFromIframe, 400);
-            }
         });
     }
 </script>
