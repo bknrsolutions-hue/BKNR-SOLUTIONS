@@ -40,7 +40,7 @@
     --radius-panel: 24px;
     --radius-element: 12px;
     --header-h: 76px;
-    --sidebar-w: 290px; 
+    --sidebar-w: 300px; 
 
     /* Corporate Solid Palettes Matching Global CSS */
     --corp-dash: #3b82f6; /* Blue */
@@ -103,7 +103,7 @@ body {
 }
 .sidebar.open { left: 0; }
 
-.sidebar-brand { height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid var(--border-light); }
+.sidebar-brand { height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;}
 .brand-wrapper { display: flex; flex-direction: column; gap: 2px; }
 .brand-title { font-weight: 800; font-size: 21px; letter-spacing: -0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 12px; }
 .brand-title i { color: var(--corp-dash); font-size: 24px; }
@@ -122,8 +122,8 @@ body {
 .pillar-title { padding: 0 32px 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-tertiary); }
 
 .submenu-heading-text {
-    font-size: 13px; font-weight: 700; color: var(--text-secondary); padding: 12px 24px 12px 32px; cursor: pointer; display: flex; align-items: center;
-    transition: all 0.2s ease; margin: 0 16px; border-radius: var(--radius-element);
+    font-size: 12px; font-weight: 800; color: var(--text-tertiary); padding: 10px 16px; cursor: pointer; display: flex; align-items: center;
+    transition: all 0.2s ease; margin: 0 16px 8px; border-radius: var(--radius-element); text-transform: uppercase; letter-spacing: 0.5px;
 }
 .submenu-heading-text:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); }
 [data-theme="light"] .submenu-heading-text:hover { background: rgba(0, 0, 0, 0.03); }
@@ -132,31 +132,59 @@ body {
 .submenu-heading-block.open .submenu-heading-text .sub-chevron { transform: rotate(90deg); color: var(--corp-dash); }
 
 .reports-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
-.submenu-heading-block.open .reports-container { max-height: 2500px; padding: 6px 0; }
+.submenu-heading-block.open .reports-container { max-height: 2500px; padding: 0 0 6px 0; }
 
-.submenu-item-row { display: flex; align-items: center; justify-content: space-between; margin: 2px 16px; border-radius: var(--radius-element); }
+/* 🌟 SIDEBAR MENU CARDS (WHITE BG IN LIGHT MODE + COLORED ICONS) 🌟 */
+.submenu-item-row { margin: 0 16px 8px; }
 .submenu-item {
-    display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; flex-grow: 1; text-decoration: none; white-space: nowrap; gap: 10px; border-radius: var(--radius-element); transition: all 0.2s ease;
+    display: flex; align-items: center; justify-content: space-between; 
+    padding: 8px 12px; color: var(--text-secondary); font-size: 13px; font-weight: 600; 
+    cursor: pointer; flex-grow: 1; text-decoration: none; white-space: nowrap; 
+    border-radius: var(--radius-element); transition: all 0.2s ease;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border-light); 
 }
-.submenu-item i { width: 24px; text-align: center; color: var(--text-tertiary); font-size: 14px; margin-right: 8px;}
-.submenu-item:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); transform: translateX(2px); }
-[data-theme="light"] .submenu-item:hover { background: rgba(0, 0, 0, 0.03); }
-.submenu-item:hover i { color: var(--corp-dash); }
+[data-theme="light"] .submenu-item {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    color: var(--text-main);
+}
+.submenu-item:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-color: var(--corp-dash); color: var(--text-primary); }
 
-.submenu-item.active { color: #ffffff; background: var(--corp-dash); font-weight: 700; }
-.submenu-item.active i { color: #ffffff; }
-.submenu-item.active:hover { transform: none; background: var(--corp-dash); } 
+.submenu-item > div { display: flex; align-items: center; gap: 12px; }
 
-.submenu-heading-block .submenu-item { padding-left: 50px; font-size: 13px; font-weight: 500;}
-.submenu-heading-block .submenu-item.active { padding-left: 50px; font-weight: 600;}
-.submenu-heading-block .submenu-item i { display: none; } 
+.submenu-item i { 
+    width: 34px; height: 34px; font-size: 14px; 
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; margin-right: 0; transition: 0.2s;
+}
+
+/* Category specific colors for BOTH menus */
+.cat-DASHBOARDS i { color: var(--corp-dash); background: rgba(59, 130, 246, 0.1); }
+.cat-OPERATIONS i { color: var(--corp-ops); background: rgba(234, 88, 12, 0.1); }
+.cat-FINANCE i { color: var(--corp-fin); background: rgba(16, 185, 129, 0.1); }
+.cat-REPORTS i { color: var(--corp-rep); background: rgba(139, 92, 246, 0.1); }
+.cat-HRMS i { color: var(--corp-hr); background: rgba(236, 72, 153, 0.1); }
+.cat-MASTERS i { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+.cat-ADMIN i { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+.cat-HELP i { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
+.cat-SUPER i { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+/* Active State Overrides */
+.submenu-item.active { background: var(--corp-dash); color: #fff; border-color: var(--corp-dash); }
+.submenu-item.active i { background: rgba(255,255,255,0.2) !important; color: #fff !important; }
+
+/* Submenu Adjustments */
+.submenu-heading-block .submenu-item { padding-left: 12px; font-size: 12.5px; }
+.submenu-heading-block .submenu-item.active { padding-left: 12px; font-weight: 700; }
+.submenu-heading-block .submenu-item i { display: flex; width: 30px; height: 30px; font-size: 12px; }
 
 .kpi-badge {
     font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); text-transform: uppercase; border: 1px solid var(--border-light); letter-spacing: 0.5px;
 }
 [data-theme="light"] .kpi-badge { background: rgba(0, 0, 0, 0.05); }
 
-.sidebar-footer { padding: 24px; border-top: 1px solid var(--border-light); text-align: center;}
+.sidebar-footer { padding: 24px; border-top: 1px solid var(--border-light); text-align: center; flex-shrink: 0;}
 .footer-quote { font-size: 10px; color: var(--text-tertiary); margin-bottom: 8px; font-weight: 600;}
 .sidebar-footer .footer-powered { font-size: 11px; font-weight: 800; color: var(--text-primary); letter-spacing: 1px; }
 
@@ -248,14 +276,27 @@ body {
 .dropdown-pillar-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); padding-left: 8px; }
 
 .dropdown-submenu-list { display: flex; flex-direction: column; gap: 4px; }
+
+/* 🌟 PROFILE DROPDOWN MENU CARDS 🌟 */
+.dropdown-item-row { margin-bottom: 6px; }
 .dropdown-submenu-item {
     display: flex; align-items: center; justify-content: space-between; width: 100%;
-    padding: 10px 12px; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer;
-    text-decoration: none; border-radius: 8px; transition: 0.2s;
+    padding: 8px 12px; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer;
+    text-decoration: none; border-radius: var(--radius-element); transition: 0.2s;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border-light);
 }
-.dropdown-submenu-item i { width: 22px; text-align: center; color: var(--text-tertiary); font-size: 14px; margin-right: 8px;}
-.dropdown-submenu-item:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); }
-[data-theme="light"] .dropdown-submenu-item:hover { background: rgba(0,0,0,0.03); }
+[data-theme="light"] .dropdown-submenu-item {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    color: var(--text-main);
+}
+.dropdown-submenu-item:hover { transform: translateY(-2px); border-color: var(--corp-dash); color: var(--text-primary); }
+
+.dropdown-submenu-item > div { display: flex; align-items: center; gap: 12px; }
+.dropdown-submenu-item i {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 14px; margin-right: 0;
+}
+
 .dropdown-logout-btn {
     width: 100%; height: 42px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);
     color: #ef4444; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer;
@@ -271,7 +312,7 @@ body {
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
 /* =========================================================
-   🌟 MOBILE ONLY: CATEGORIES MODAL & APP GRID (UPGRADED)
+   🌟 MOBILE ONLY: CATEGORIES MODAL & APP GRID
 ========================================================= */
 .mobile-categories-modal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -285,9 +326,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     border-top: 1px solid var(--border-light); position: relative;
 }
-/* 🟢 Force pure white in light mode for the bottom sheet */
 [data-theme="light"] .mobile-cat-content { background: #ffffff; }
-
 .mobile-categories-modal.show .mobile-cat-content { transform: translateY(0); }
 .mobile-cat-content::before { content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: var(--text-tertiary); border-radius: 10px; opacity: 0.5; }
 
@@ -298,13 +337,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
     color: var(--text-primary); font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s;
 }
-/* 🟢 Light mode pure white buttons with soft shadow */
-[data-theme="light"] .m-cat-btn { 
-    background: #ffffff; 
-    border: 1px solid rgba(0,0,0,0.05); 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-}
-
+[data-theme="light"] .m-cat-btn { background: #ffffff; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
 .m-cat-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
 [data-theme="light"] .m-cat-btn:active { background: #f8fafc; }
 
@@ -328,7 +361,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     position: fixed; inset: 0; background: var(--bg-app); z-index: 2010;
     display: none; flex-direction: column; opacity: 0; transition: 0.3s;
 }
-/* Force White Background in Light Mode */
 [data-theme="light"] .mobile-app-grid-overlay { background: #f8fafc; }
 .mobile-app-grid-overlay.show { display: flex; opacity: 1; }
 
@@ -908,12 +940,14 @@ function renderOrganizedMenu() {
 
         html += `<div class="pillar-block"><div class="pillar-title">${cat.title}</div><div class="menu-wrapper">`;
 
+        const catClass = `cat-${cat.title.split(' ')[0]}`;
+
         if (cat.items) {
             cat.items.forEach(item => {
                 const [permissionKey, route, icon, label, badge] = item;
                 if (!allow(permissionKey)) return;
                 html += `<div class="submenu-item-row">
-                            <a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                            <a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                 <div><i class="fa-solid ${icon}"></i> ${label}</div>
                                 <span class="kpi-badge">${badge}</span>
                             </a>
@@ -933,7 +967,7 @@ function renderOrganizedMenu() {
                 allowedSubItems.forEach(item => {
                     const [permissionKey, route, icon, label, badge] = item;
                     html += `<div class="submenu-item-row">
-                                <a class="submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                                <a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                     <div><i class="fa-solid ${icon}"></i> ${label}</div>
                                     <span class="kpi-badge">${badge}</span>
                                 </a>
@@ -944,7 +978,7 @@ function renderOrganizedMenu() {
         }
         html += `</div></div>`;
     });
-    sidebarMenu.innerHTML = html;
+    document.getElementById("sidebarMenu").innerHTML = html;
 }
 
 function renderDropdownConsoleMenu() {
@@ -969,6 +1003,8 @@ function renderDropdownConsoleMenu() {
         const titleClass = cat.roleRequired ? "dropdown-pillar-title super-admin-title" : "dropdown-pillar-title";
         html += `<div class="dropdown-pillar-block"><div class="${titleClass}">${cat.title}</div><div class="dropdown-submenu-list">`;
 
+        const catClass = `cat-${cat.title.split(' ')[0]}`;
+
         if (cat.items) {
             cat.items.forEach(item => {
                 const [permissionKey, route, icon, label, badge] = item;
@@ -976,7 +1012,7 @@ function renderDropdownConsoleMenu() {
                 const isSuperAdminBlock = cat.roleRequired ? "super-badge" : "";
                 
                 html += `<div class="dropdown-item-row">
-                            <a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                            <a class="dropdown-submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                 <div><i class="fa-solid ${icon}"></i> ${label}</div>
                                 <span class="kpi-badge ${isSuperAdminBlock}">${badge}</span>
                             </a>
@@ -996,7 +1032,7 @@ function renderDropdownConsoleMenu() {
                 allowedSubItems.forEach(item => {
                     const [permissionKey, route, icon, label, badge] = item;
                     html += `<div class="dropdown-item-row" style="margin:2px 0 2px 14px;">
-                                <a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', this)">
+                                <a class="dropdown-submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)">
                                     <div><i class="fa-solid ${icon}"></i> ${label}</div>
                                     <span class="kpi-badge">${badge}</span>
                                 </a>

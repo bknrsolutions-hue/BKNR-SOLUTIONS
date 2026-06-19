@@ -54,14 +54,6 @@
         --table-th-bg: #f8fafc;
         --table-td-border: #f1f5f9;
         
-        --kpi-opening-bg: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); --kpi-opening-bd: #bfdbfe; --kpi-opening-text: #1e40af;
-        --kpi-closing-bg: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); --kpi-closing-bd: #bbf7d0; --kpi-closing-text: #065f46;
-        --kpi-sales-bg: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); --kpi-sales-bd: #fbcfe8; --kpi-sales-text: #991b1b;
-        --kpi-rep-bg: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); --kpi-rep-bd: #ffedd5; --kpi-rep-text: #92400e;
-        --kpi-fresh-bg: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); --kpi-fresh-bd: #e9d5ff; --kpi-fresh-text: #5b21b6;
-        --kpi-reg-bg: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); --kpi-reg-bd: #80deea; --kpi-reg-text: #006064;
-        --kpi-dead-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); --kpi-dead-bd: #fca5a5; --kpi-dead-text: #c53030;
-        --kpi-mc-bg: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); --kpi-mc-bd: #ccfbf1; --kpi-mc-text: #0369a1;
         --kpi-val: #000000;
     }
 
@@ -71,17 +63,17 @@
         --panel: #1e293b;
         --card-bg: #1e293b;
         --primary: #f8fafc;
-        --accent: #60a5fa;
+        --accent: #3b82f6;
         --accent-light: rgba(59, 130, 246, 0.2);
-        --success: #22c55e;
-        --success-light: rgba(22, 163, 74, 0.15);
-        --warning: #fbbf24;
+        --success: #10b981;
+        --success-light: rgba(16, 185, 129, 0.15);
+        --warning: #f59e0b;
         --warning-light: rgba(245, 158, 11, 0.15);
         --danger: #ef4444;
-        --danger-light: rgba(225, 29, 72, 0.15);
-        --reprocess: #a78bfa;
-        --reprocess-light: rgba(124, 58, 237, 0.15);
-        --fresh: #22d3ee;
+        --danger-light: rgba(239, 68, 68, 0.15);
+        --reprocess: #8b5cf6;
+        --reprocess-light: rgba(139, 92, 246, 0.15);
+        --fresh: #06b6d4;
         --fresh-light: rgba(6, 182, 212, 0.15);
         --orange: #f97316;
         --border: #334155; 
@@ -94,15 +86,7 @@
         --table-th-bg: #0f172a;
         --table-td-border: #1e293b;
 
-        --kpi-opening-bg: rgba(37, 99, 235, 0.15); --kpi-opening-bd: rgba(37, 99, 235, 0.3); --kpi-opening-text: #60a5fa;
-        --kpi-closing-bg: rgba(22, 163, 74, 0.15); --kpi-closing-bd: rgba(22, 163, 74, 0.3); --kpi-closing-text: #4ade80;
-        --kpi-sales-bg: rgba(219, 39, 119, 0.15); --kpi-sales-bd: rgba(219, 39, 119, 0.3); --kpi-sales-text: #f472b6;
-        --kpi-rep-bg: rgba(234, 88, 12, 0.15); --kpi-rep-bd: rgba(234, 88, 12, 0.3); --kpi-rep-text: #fb923c;
-        --kpi-fresh-bg: rgba(124, 58, 237, 0.15); --kpi-fresh-bd: rgba(124, 58, 237, 0.3); --kpi-fresh-text: #a78bfa;
-        --kpi-reg-bg: rgba(6, 182, 212, 0.15); --kpi-reg-bd: rgba(6, 182, 212, 0.3); --kpi-reg-text: #22d3ee;
-        --kpi-dead-bg: rgba(220, 38, 38, 0.15); --kpi-dead-bd: rgba(220, 38, 38, 0.3); --kpi-dead-text: #f87171;
-        --kpi-mc-bg: rgba(14, 165, 233, 0.15); --kpi-mc-bd: rgba(14, 165, 233, 0.3); --kpi-mc-text: #38bdf8;
-        --kpi-val: #f8fafc;
+        --kpi-val: #ffffff;
     }
 
     * {
@@ -320,6 +304,9 @@
         .fbox label { font-size: 7.5px; }
     }
 
+    /* ==========================================================
+       🌟 NEW KPI CARDS (WHITE BG WITH COLORED ICONS)
+    ========================================================== */
     .kpi-grid {
         padding: 14px 16px 8px;
         display: grid;
@@ -339,20 +326,42 @@
         justify-content: space-between;
         cursor: pointer;
         text-decoration: none;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
     }
 
     .kpi-card:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+        border-color: var(--accent);
+    }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
     }
 
     .kpi-card h4 {
         font-size: 10px;
         text-transform: uppercase;
-        margin-bottom: 6px;
         letter-spacing: 0.8px;
         font-weight: 800;
-        opacity: 0.9;
+        color: var(--sub);
+    }
+
+    .kpi-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
     }
 
     .kpi-card .value {
@@ -364,40 +373,21 @@
     }
 
     .kpi-card .amt-sub {
-        font-size: 10px;
-        font-weight: 800;
-        margin-top: 6px;
-        padding: 3px 6px;
-        border-radius: 4px;
-        display: inline-block;
-        background: var(--bg);
-        width: fit-content;
-        opacity: 0.8;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 4px;
+        color: var(--sub);
     }
 
-    .kpi-opening { background: var(--kpi-opening-bg); border: 1px solid var(--kpi-opening-bd); color: var(--kpi-opening-text); }
-    .kpi-opening h4 { color: var(--kpi-opening-text); }
-    
-    .kpi-closing { background: var(--kpi-closing-bg); border: 1px solid var(--kpi-closing-bd); color: var(--kpi-closing-text); }
-    .kpi-closing h4 { color: var(--kpi-closing-text); }
-
-    .kpi-sales { background: var(--kpi-sales-bg); border: 1px solid var(--kpi-sales-bd); color: var(--kpi-sales-text); }
-    .kpi-sales h4 { color: var(--kpi-sales-text); }
-
-    .kpi-reprocess { background: var(--kpi-rep-bg); border: 1px solid var(--kpi-rep-bd); color: var(--kpi-rep-text); }
-    .kpi-reprocess h4 { color: var(--kpi-rep-text); }
-
-    .kpi-fresh { background: var(--kpi-fresh-bg); border: 1px solid var(--kpi-fresh-bd); color: var(--kpi-fresh-text); }
-    .kpi-fresh h4 { color: var(--kpi-fresh-text); }
-
-    .kpi-reglaze { background: var(--kpi-reg-bg); border: 1px solid var(--kpi-reg-bd); color: var(--kpi-reg-text); }
-    .kpi-reglaze h4 { color: var(--kpi-reg-text); }
-
-    .kpi-dead { background: var(--kpi-dead-bg); border: 1px solid var(--kpi-dead-bd); color: var(--kpi-dead-text); }
-    .kpi-dead h4 { color: var(--kpi-dead-text); }
-
-    .kpi-mc { background: var(--kpi-mc-bg); border: 1px solid var(--kpi-mc-bd); color: var(--kpi-mc-text); }
-    .kpi-mc h4 { color: var(--kpi-mc-text); }
+    /* 🟢 Icon Styling with Tinted Backgrounds */
+    .kpi-blue .kpi-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+    .kpi-green .kpi-icon { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+    .kpi-pink .kpi-icon { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+    .kpi-orange .kpi-icon { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
+    .kpi-purple .kpi-icon { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+    .kpi-cyan .kpi-icon { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
+    .kpi-red .kpi-icon { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .kpi-teal .kpi-icon { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
 
     .tabs {
         display: flex;
@@ -642,7 +632,7 @@
 <div class="header">
     <div class="header-top">
         <div class="header-title">
-            <h1><i class="fas fa-boxes-stacked"></i> Inventory Intelligence</h1>
+            <h1><i class="fas fa-boxes-stacked"></i> Inventory Dashboard</h1>
         </div>
         <div class="company-box">
             <div class="badge">{{ request.session.get('company_code') }}</div>
@@ -652,52 +642,92 @@
 </div>
 
 <div class="kpi-grid">
-    <div class="kpi-card kpi-opening" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
-        <h4>Opening</h4>
-        <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
+    <div class="kpi-card kpi-blue" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
+        <div class="kpi-header">
+            <h4>Opening</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-box-open"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
+            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
+        </div>
     </div>
     
-    <div class="kpi-card kpi-closing" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
-        <h4>Closing</h4>
-        <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
+    <div class="kpi-card kpi-green" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
+        <div class="kpi-header">
+            <h4>Closing</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
+            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
+        </div>
     </div>
     
-    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-sales" style="text-decoration:none;">
-        <h4>Sales</h4>
-        <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
+    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-pink" style="text-decoration:none;">
+        <div class="kpi-header">
+            <h4>Sales</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
+            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
+        </div>
     </a>
     
-    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-reprocess" style="text-decoration:none;">
-        <h4>Reprocess</h4>
-        <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
-        <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
+    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-orange" style="text-decoration:none;">
+        <div class="kpi-header">
+            <h4>Reprocess</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+        </div>
+        <div>
+            <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
+            <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
+        </div>
     </a>
     
-    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-fresh" style="text-decoration:none;">
-        <h4>Fresh</h4>
-        <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
+    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-purple" style="text-decoration:none;">
+        <div class="kpi-header">
+            <h4>Fresh Stock</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
+            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
+        </div>
     </a>
 
-    <div class="kpi-card kpi-reglaze">
-        <h4>Reglaze Prod.</h4>
-        <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
-        <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
+    <div class="kpi-card kpi-cyan">
+        <div class="kpi-header">
+            <h4>Reglaze Prod.</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
+            <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
+        </div>
     </div>
 
-    <div class="kpi-card kpi-dead">
-        <h4>Dead Stock</h4>
-        <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
-        <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
+    <div class="kpi-card kpi-red">
+        <div class="kpi-header">
+            <h4>Dead Stock</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
+            <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
+        </div>
     </div>
     
-    <div class="kpi-card kpi-mc">
-        <h4>Total MC</h4>
-        <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
-        <div class="amt-sub">Boxes</div>
+    <div class="kpi-card kpi-teal">
+        <div class="kpi-header">
+            <h4>Total MC</h4>
+            <div class="kpi-icon"><i class="fa-solid fa-cubes"></i></div>
+        </div>
+        <div>
+            <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
+            <div class="amt-sub">Boxes Active</div>
+        </div>
     </div>
 </div>
 
@@ -949,7 +979,7 @@ function syncParentFiltersToForm() {
     try {
         if(window.parent && window.parent.document) {
             const parentCompNode = window.parent.document.getElementById('global_production_for');
-            const parentLocNode = window.parent.document.getElementById('global_location');
+            const parentLocNode = window.parent.document.getElementById('global_location') || window.parent.document.getElementById('global_plant_location');
 
             if(parentCompNode) document.getElementById('hidden_prod_for').value = parentCompNode.value;
             if(parentLocNode) document.getElementById('hidden_location').value = parentLocNode.value;
@@ -961,7 +991,7 @@ function listenToParentHeader() {
     try {
         if(window.parent && window.parent.document) {
             const parentCompNode = window.parent.document.getElementById('global_production_for');
-            const parentLocNode = window.parent.document.getElementById('global_location');
+            const parentLocNode = window.parent.document.getElementById('global_location') || window.parent.document.getElementById('global_plant_location');
             
             if(parentCompNode && !parentCompNode.dataset.invListener) {
                 parentCompNode.dataset.invListener = "true";

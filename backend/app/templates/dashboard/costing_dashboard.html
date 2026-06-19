@@ -55,7 +55,6 @@
     --table-header: #f8fafc;
     --strip-bg: #f8fafc;
     --input-bg: #ffffff;
-    --kpi-card-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     --value-text: #000000;
   }
 
@@ -92,7 +91,6 @@
     --table-header: #0f172a;
     --strip-bg: #111827;
     --input-bg: #0f172a;
-    --kpi-card-bg: var(--card-bg);
     --value-text: #ffffff;
   }
 
@@ -175,42 +173,82 @@
   .strip-label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
   .strip-value { font-size: 14px; font-weight: 800; margin-top: 2px; color: var(--value-text); }
 
-  /* FILTER PANEL */
+  /* 🟢 🔴 FILTER PANEL (SINGLE ROW WITH HORIZONTAL SCROLL) */
   .filter-panel {
     background: var(--card-bg);
-    padding: 12px 20px;
+    padding: 12px 16px;
     border-radius: var(--radius-premium);
     margin-bottom: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
-  .filter-form { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
-  .filter-inputs-wrapper { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; flex: 1; }
-  .input-field { display: flex; align-items: center; gap: 8px; min-width: 200px; }
-  .input-field label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; }
+  .filter-panel::-webkit-scrollbar { height: 4px; }
+  .filter-panel::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+  .filter-form { 
+    display: flex; 
+    align-items: flex-end; 
+    flex-wrap: nowrap; 
+    gap: 14px; 
+    width: max-content; 
+    min-width: 100%; 
+  }
+  
+  .filter-inputs-wrapper { 
+    display: flex; 
+    flex-wrap: nowrap; 
+    gap: 12px; 
+    align-items: flex-end; 
+    flex: 1; 
+  }
+
+  .input-field { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 6px; 
+    flex-shrink: 0; 
+    min-width: 140px; 
+    align-items: flex-start;
+  }
+  
+  .input-field label { 
+    font-size: 9px; 
+    font-weight: 800; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+    white-space: nowrap; 
+    letter-spacing: 0.5px; 
+  }
+  
   .input-field input, .input-field select {
     padding: 6px 10px;
     border: 1px solid var(--border-color);
     background: var(--input-bg);
     border-radius: var(--radius-md);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-main);
     outline: none;
     width: 100%;
+    height: 34px;
     color-scheme: dark light;
   }
 
-  /* Choices.js Dropdown Optimization Overrides */
-  .choices-container-custom { min-width: 260px; }
+  /* Choices.js Dropdown Optimization Overrides for Single Row Layout */
+  .choices-container-custom { min-width: 240px; }
   .choices__inner {
     background-color: var(--input-bg) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-md) !important;
-    padding: 2px 8px !important;
-    min-height: 32px !important;
+    padding: 0 10px !important;
+    min-height: 34px !important;
+    display: flex !important;
+    align-items: center !important;
     font-size: 11px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     color: var(--text-main) !important;
   }
   .choices__list--dropdown {
@@ -225,7 +263,8 @@
     background: var(--accent-blue);
     color: #fff;
     border: none;
-    padding: 8px 16px;
+    padding: 0 16px;
+    height: 34px;
     border-radius: var(--radius-md);
     font-weight: 700;
     font-size: 11px;
@@ -234,10 +273,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-shrink: 0;
   }
+  .btn-sync:hover { filter: brightness(1.1); }
 
   /* ==========================================================
-     🌟 INVENTORY STYLE KPI CARDS (GRADIENT BACKGROUNDS)
+     🌟 KPI CARDS (WHITE BG WITH COLORED ICONS)
   ========================================================== */
   .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
   @media(min-width: 480px) { .cards { grid-template-columns: repeat(3, 1fr); } }
@@ -245,42 +286,32 @@
   @media(min-width: 1200px) { .cards { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
 
   .card { 
-      padding: 14px 14px; border-radius: var(--radius-premium); cursor: default; 
+      padding: 14px; border-radius: var(--radius-premium); cursor: default; 
       display: flex; align-items: center; justify-content: space-between; gap: 6px;
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
+      background: var(--card-bg); border: 1px solid var(--border-color);
   }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1); }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: var(--accent-blue); }
 
   .card-meta { text-align: left; overflow: hidden; }
   .label { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
   .value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 4px; letter-spacing: -0.5px; }
   
   .card-icon-zone {
-      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;
-      background: #ffffff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.08); flex-shrink: 0;
+      width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
   }
 
-  [data-theme="dark"] .value { color: #f8fafc; }
-  [data-theme="dark"] .card-icon-zone { background: #1e293b !important; }
-
-  /* Colors */
-  .blue { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; } .blue .card-icon-zone { color: #2563eb; }
-  .green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; } .green .card-icon-zone { color: #16a34a; }
-  .orange { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #ffedd5; } .orange .card-icon-zone { color: #ea580c; }
-  .purple { background: linear-gradient(135deg, #f5f3ff 0%, #e9d5ff 100%); border: 1px solid #e9d5ff; } .purple .card-icon-zone { color: #7c3aed; }
-  .teal { background: linear-gradient(135deg, #f0fdf4 0%, #ccfbf1 100%); border: 1px solid #ccfbf1; } .teal .card-icon-zone { color: #0d9488; }
-  .pink { background: linear-gradient(135deg, #fdf2f8 0%, #fbcfe8 100%); border: 1px solid #fbcfe8; } .pink .card-icon-zone { color: #db2777; }
-  .gray { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; } .gray .card-icon-zone { color: #475569; }
-  .indigo { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e0e7ff; } .indigo .card-icon-zone { color: #4f46e5; }
-  .red { background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fecaca; } .red .card-icon-zone { color: #dc2626; }
-
-  [data-theme="dark"] .blue { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); border-color: #1e40af; }
-  [data-theme="dark"] .green { background: linear-gradient(135deg, #14532d 0%, #166534 100%); border-color: #166534; }
-  [data-theme="dark"] .orange { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); border-color: #9a3412; }
-  [data-theme="dark"] .purple { background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%); border-color: #5b21b6; }
-  [data-theme="dark"] .pink { background: linear-gradient(135deg, #831843 0%, #9d174d 100%); border-color: #9d174d; }
-  [data-theme="dark"] .indigo { background: linear-gradient(135deg, #312e81 0%, #3730a3 100%); border-color: #3730a3; }
-  [data-theme="dark"] .red { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); border-color: #991b1b; }
+  /* 🟢 Icon Styling with Tinted Backgrounds */
+  .blue .card-icon-zone { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+  .green .card-icon-zone { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+  .orange .card-icon-zone { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
+  .purple .card-icon-zone { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+  .teal .card-icon-zone { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
+  .pink .card-icon-zone { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+  .gray .card-icon-zone { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+  .indigo .card-icon-zone { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+  .red .card-icon-zone { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .amber .card-icon-zone { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
 
   /* ALERTS PANEL */
   .exception-box {
@@ -376,6 +407,7 @@
     <div class="strip-item"><p class="strip-label">CCC Track</p><p class="strip-value" style="color:var(--accent-blue);">{{ cash_conversion_cycle }} Days</p></div>
   </div>
 
+  <!-- 🟢 HORIZONTAL SCROLL FILTER PANEL -->
   <div class="filter-panel">
     <form class="filter-form" method="GET" action="/dashboard/costing_dashboard">
       <div class="filter-inputs-wrapper">
@@ -393,7 +425,8 @@
         <div class="input-field"><label>Location</label>
           <select name="location">
             <option value="">All Locations</option>
-            </select>
+            <!-- Backend dynamic list renders here -->
+          </select>
         </div>
         <div class="input-field"><label>From</label><input type="date" name="from_date" value="{{ from_date }}"></div>
         <div class="input-field"><label>To</label><input type="date" name="to_date" value="{{ to_date }}"></div>
@@ -438,7 +471,7 @@
         <div class="card-icon-zone"><i class="fa-solid fa-truck-fast"></i></div>
     </div>
     
-    <div class="card blue">
+    <div class="card teal">
         <div class="card-meta"><div class="label">Inventory Asset</div><div class="value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-warehouse"></i></div>
     </div>

@@ -76,7 +76,9 @@ class DailyAttendance(Base, metacolumns):
     calculated_ot_hours = Column(Float, default=0.0)      # System calculate chesina hours
     approved_ot_hours = Column(Float, default=0.0)        # Manager approve cheshaka save ayye hours
     ot_status = Column(String(20), default="PENDING")     # PENDING, APPROVED, REJECTED
-    ot_approved_by = Column(String(100), nullable=True)   # Approve chesina manager email
+    ot_approved_by = Column(String(100), nullable=True) 
+    duty_status = Column(String(20), default="PENDING")
+    duty_approved_by = Column(String(100))  # Approve chesina manager email
     
     duty_date = Column(Date)
     first_in = Column(DateTime)

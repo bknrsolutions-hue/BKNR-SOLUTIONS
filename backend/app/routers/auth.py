@@ -17,6 +17,9 @@ from app.database.models.users import Company, User, OTPTable, UserLoginActivity
 from app.security.password_handler import hash_password, verify_password
 from app.services.setup_service import SetupService
 
+# 🟢 ADDED: Criteria Models for Global Dropdowns (Locations & Companies)
+from app.database.models.criteria import production_at as ProductionAtModel, production_for as ProductionForModel
+
 # =====================================================
 router = APIRouter(prefix="/auth", tags=["AUTH"])
 templates = Jinja2Templates(directory="app/templates")
@@ -143,7 +146,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
         otp=otp,
         extra=json.dumps(extra_data),
         is_used=False,
-        created_at=get_ist_time() # 🟢 Synchronized to IST
+        created_at=get_ist_time() 
     ))
     db.commit()
 
@@ -162,6 +165,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 
     return {"message": "OTP sent successfully"}
 
+
 # =====================================================
 # 2. VERIFY OTP
 # =====================================================
@@ -174,13 +178,14 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
         OTPTable.is_used.is_(False)
     ).first()
 
-    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN): # 🟢 Synchronized to IST
+    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN): 
         raise HTTPException(400, "OTP expired or invalid")
 
     rec.is_used = True
     db.commit()
 
     return {"message": "OTP verified"}
+
 
 # =====================================================
 # 3. SET PASSWORD
@@ -228,6 +233,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
 
     return {"company_id": company.company_code}
 
+
 # =====================================================
 # 4. LOGIN
 # =====================================================
@@ -252,22 +258,29 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(400, "Invalid credentials")
 
     # =====================================
+    # 🟢 FETCH UNIQUE DROPDOWN DATA (Locations & Companies)
+    # =====================================
+    companies_q = db.query(ProductionForModel.production_for).filter(
+        ProductionForModel.company_id == company.company_code
+    ).distinct().all()
+    companies_list = [c[0] for c in companies_q if c[0]]
+
+    locations_q = db.query(ProductionAtModel.production_at).filter(
+        ProductionAtModel.company_id == company.company_code
+    ).distinct().all()
+    locations_list = [l[0] for l in locations_q if l[0]]
+
+    # =====================================
     # GET NEXT MASTER / CHECK SETUP
     # =====================================
     setup_completed = SetupService.is_completed(db, company.company_code)
     next_page = SetupService.get_next_master(db, company.company_code)
 
-    print("================================")
-    print("COMPANY CODE =", company.company_code)
-    print("SETUP COMPLETED =", setup_completed)
-    print("NEXT PAGE =", next_page)
-    print("================================")
-
     if setup_completed and not company.setup_completed:
         company.setup_completed = True
         db.commit()
 
-    # 🟢 Save Login Activity Block Inserted with Explicit IST Timestamp
+    # Save Login Activity
     activity = UserLoginActivity(
         user_id=user.id,
         company_id=company.company_code,
@@ -278,7 +291,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     db.add(activity)
     db.commit()
 
-    # 🟢 Added "last_activity" to track 30 min idle time
+    # 🟢 Add everything to the active Session securely
     request.session.update({
         "email": user.email,
         "company_id": company.id,
@@ -287,18 +300,25 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions,
+        "allowed_locations": locations_list, # By default attaching all locations
+        "companies_list": companies_list,    # Dropdown Options - Companies
+        "locations_list": locations_list,    # Dropdown Options - Locations
         "setup_completed": setup_completed,
         "last_activity": get_ist_time().timestamp() 
     })
 
+    # Return JSON with the arrays so frontend can cache them if needed
     response = JSONResponse({
         "status": "success",
         "message": "Login Successful",
         "setup_completed": setup_completed,
-        "next_page": next_page
+        "next_page": next_page,
+        "companies": companies_list,
+        "locations": locations_list
     })
 
     return response
+
 
 # =====================================================
 # 5. FORGOT PASSWORD
@@ -306,13 +326,9 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
 
-    print("EMAIL:", data.email)
-
     user = db.query(User).filter(
         User.email == data.email
     ).first()
-
-    print("USER:", user)
 
     if not user:
         raise HTTPException(404, "Email not registered")
@@ -324,21 +340,17 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
         email=data.email,
         otp=token,
         is_used=False,
-        created_at=get_ist_time() # 🟢 Synchronized to IST
+        created_at=get_ist_time() 
     ))
     db.commit()
 
     reset_link = f"{request.base_url}auth/reset-password?token={token}"
 
     print("RESET LINK:", reset_link)
-
-    # send_email(
-    #     data.email,
-    #     "BKNR ERP – Reset Password",
-    #     f"<a href='{reset_link}'>Reset Password</a>"
-    # )
+    # send_email(data.email, "BKNR ERP – Reset Password", f"<a href='{reset_link}'>Reset Password</a>")
 
     return {"message": "Reset link sent"}
+
 
 # =====================================================
 # 6. RESET PASSWORD PAGE
@@ -351,7 +363,7 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
         OTPTable.is_used.is_(False)
     ).first()
 
-    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN): # 🟢 Synchronized to IST
+    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN): 
         return HTMLResponse("<h3>Link expired</h3>")
 
     return templates.TemplateResponse(
@@ -359,6 +371,7 @@ def reset_password_page(request: Request, token: str, db: Session = Depends(get_
         name="reset_password.html",
         context={"token": token}
     )
+
 
 # =====================================================
 # 7. RESET PASSWORD SAVE
@@ -389,6 +402,7 @@ def reset_password(
 
     return RedirectResponse("/", status_code=303)
 
+
 # =====================================================
 # 8. LOGOUT 
 # =====================================================
@@ -418,7 +432,6 @@ def logout(
             )
 
             if activity:
-                # 🛠️ FIX: Logouts strictly mapped using same IST timeline
                 current_ist = get_ist_time()
                 activity.logout_at = current_ist
 
@@ -431,8 +444,9 @@ def logout(
 
     return RedirectResponse("/", status_code=303)
 
+
 # =====================================================
-# 9. 🟢 SESSION HEARTBEAT (FIXED: NO FOREVER ACTIVE BUG)
+# 9. 🟢 SESSION HEARTBEAT (FIXED)
 # =====================================================
 @router.post("/heartbeat")
 def session_heartbeat(request: Request, db: Session = Depends(get_db)):
@@ -445,7 +459,6 @@ def session_heartbeat(request: Request, db: Session = Depends(get_db)):
     current_time = get_ist_time().timestamp()
     inactive_minutes = (current_time - float(last_activity)) / 60
 
-    # 30 నిమిషాలు దాటితే ఆటోమేటిక్ గా లాగౌట్ ఎంట్రీ పడిపోతుంది
     if inactive_minutes > 30:
         user = db.query(User).filter(User.email == email).first()
         if user:
@@ -462,21 +475,17 @@ def session_heartbeat(request: Request, db: Session = Depends(get_db)):
         request.session.clear()
         return JSONResponse({"status": "expired", "message": "Session Timeout"}, status_code=401)
 
-    # 🟢 FIXED: request.session["last_activity"] = current_time ని ఇక్కడి నుండి తీసేశాను!
-    # హార్ట్‌బీట్ కేవలం సెషన్ బతికే ఉందో లేదో మాత్రమే రిటర్న్ చేస్తుంది.
     return {"status": "active"}
 
+
 # =====================================================
-# 10. 🟢 NEW ROUTE: REAL USER ACTIVITY TRACKER
+# 10. 🟢 REAL USER ACTIVITY TRACKER
 # =====================================================
 @router.post("/activity")
 def update_activity(request: Request):
-    """
-    ఫ్రంటెండ్ నుండి మౌస్ మూవ్‌మెంట్, కీ ప్రెస్, క్లిక్ లేదా టచ్ జరిగినప్పుడు 
-    మాత్రమే ఈ రూట్ కాల్ అయ్యి సెషన్‌లో కరెంట్ టైమ్‌స్టాంప్‌ను అప్‌డేట్ చేస్తుంది.
-    """
     request.session["last_activity"] = get_ist_time().timestamp()
     return {"status": "ok"}
+
 
 # =====================================================
 # 11. 🟢 BROWSER / TAB CLOSE AUTO LOGOUT
@@ -499,3 +508,33 @@ def tab_close_logout(request: Request, db: Session = Depends(get_db)):
 
         request.session.clear()
     return {"status": "logged_out"}
+
+
+# =====================================================
+# 12. 🟢 FETCH GLOBAL DROPDOWNS EXPLICITLY (AJAX SAFE)
+# =====================================================
+@router.get("/global-dropdowns")
+def get_global_dropdowns(request: Request, db: Session = Depends(get_db)):
+    """
+    ఎప్పుడైనా ఫ్రంట్-ఎండ్ అప్లికేషన్ (Javascript/AJAX) ద్వారా డ్రాప్‌డౌన్ 
+    డేటా తెచ్చుకోవాలంటే ఈ ఎండ్‌పాయింట్ ని కాల్ చేయొచ్చు.
+    """
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"status": "error", "message": "Unauthorized Session"}, status_code=401)
+        
+    companies_q = db.query(ProductionForModel.production_for).filter(
+        ProductionForModel.company_id == comp_code
+    ).distinct().all()
+    companies_list = [c[0] for c in companies_q if c[0]]
+
+    locations_q = db.query(ProductionAtModel.production_at).filter(
+        ProductionAtModel.company_id == comp_code
+    ).distinct().all()
+    locations_list = [l[0] for l in locations_q if l[0]]
+    
+    return JSONResponse({
+        "status": "success",
+        "companies": companies_list,
+        "locations": locations_list
+    })

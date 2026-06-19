@@ -43,7 +43,7 @@ def get_secure_hr_scope(db: Session, comp_code: str, global_location: str | None
         elif user_allowed_locations:
             emp_base_q = emp_base_q.filter(func.upper(func.trim(emp_loc_col)).in_(user_allowed_locations))
             
-    return emp_base_q.subquery(), g_loc_clean, emp_loc_col
+    return emp_base_q, g_loc_clean, emp_loc_col
 
 
 # ============================================================
@@ -240,7 +240,7 @@ def hr_command_center(
         risk_no_photo = base_emp.filter(or_(EmployeeRegistration.photo_path == None, EmployeeRegistration.photo_path == "")).count()
         risk_no_mobile = base_emp.filter(or_(EmployeeRegistration.mobile == None, EmployeeRegistration.mobile == "")).count()
         
-        stat_emp_ids = secure_hr(db.query(EmployeeStatutoryMaster.employee_id), EmployeeStatutoryMaster).subquery()
+        stat_emp_ids = secure_hr(db.query(EmployeeStatutoryMaster.employee_id), EmployeeStatutoryMaster)
         risk_missing_statutory = base_emp.filter(~EmployeeRegistration.employee_id.in_(stat_emp_ids)).count()
 
         # ---------------------------------------------------------
@@ -277,7 +277,7 @@ def hr_command_center(
         top_10_advances = base_adv.filter(EmployeeSalaryAdvance.remaining_balance > 0).order_by(EmployeeSalaryAdvance.remaining_balance.desc()).limit(10).all()
 
         # ---------------------------------------------------------
-        # 🌟 10. ARRAYS FOR CHARTING (Missing variables fixed here)
+        # 🌟 10. ARRAYS FOR CHARTING 
         # ---------------------------------------------------------
         work_hours_ranges = secure_hr(db.query(
             func.count(case((DailyAttendance.working_hours < 4, DailyAttendance.id))).label("under_4"),
@@ -320,6 +320,27 @@ def hr_command_center(
         if status_filter: dir_query = dir_query.filter(EmployeeRegistration.status == status_filter)
         directory_list = dir_query.order_by(EmployeeRegistration.employee_id).all()
 
+        # ---------------------------------------------------------
+        # 🌟 11. APPROVALS QUEUE (OT & DUTY)
+        # ---------------------------------------------------------
+        pending_ot_count = base_att.filter(
+            DailyAttendance.ot_status == "PENDING",
+            DailyAttendance.calculated_ot_hours > 0
+        ).count()
+
+        pending_ot_rows = base_att.filter(
+            DailyAttendance.ot_status == "PENDING",
+            DailyAttendance.calculated_ot_hours > 0
+        ).all()
+
+        # Safe fallback in case duty_status isn't in DB yet
+        if hasattr(DailyAttendance, 'duty_status'):
+            pending_duty_count = base_att.filter(DailyAttendance.duty_status == "PENDING").count()
+            pending_duty_rows = base_att.filter(DailyAttendance.duty_status == "PENDING").all()
+        else:
+            pending_duty_count = 0
+            pending_duty_rows = []
+
     except Exception as router_err:
         logger.critical(f"Premium HR Dashboard Pipeline Crash: {str(router_err)}")
         raise router_err
@@ -338,7 +359,7 @@ def hr_command_center(
             "ot_hours_today": round(ot_hours_today, 1), "labor_cost_today": round(labor_cost_today, 0), "cost_per_kg": round(cost_per_kg, 2),
             "contract_pct": round(contract_pct, 1), "perm_pct": round(perm_pct, 1), "avg_salary": round(avg_salary, 0),
             "employee_productivity": round(employee_productivity, 1), "attrition_rate": round(attrition_rate, 1), "enps_score": 88, 
-            # Arrays for charts (Fixes the Undefined error)
+            # Arrays for charts 
             "productivity_data": productivity_data,
             "salary_tiers": salary_tiers,
             "gender_labels": gender_labels,
@@ -353,15 +374,16 @@ def hr_command_center(
             "dept_cost_center": dept_cost_center, "contractor_analytics": contractor_analytics,
             # OT & Payroll
             "ot_center": ot_center,
+            "pending_ot_count": pending_ot_count, "pending_duty_count": pending_duty_count,
+            "pending_ot_rows": pending_ot_rows, "pending_duty_rows": pending_duty_rows,
             # Compliance & Risk
             "pf_coverage_pct": round(pf_coverage_pct, 1), "esi_coverage_pct": round(esi_coverage_pct, 1),
             "stat_missing_uan": stat_missing_uan, "stat_missing_esi": stat_missing_esi,
             "risk_no_pan": risk_no_pan, "risk_no_aadhar": risk_no_aadhar, "risk_no_bank": risk_no_bank, 
             "risk_no_photo": risk_no_photo, "risk_no_mobile": risk_no_mobile,
             "risk_missing_statutory": risk_missing_statutory,
-            # Calendar
+            # Calendar & Leaves
             "bday_7": bday_7, "bday_30": bday_30, "anniv_7": anniv_7,
-            # Advances & Leaves
             "adv_issued": round(adv_issued, 0), "adv_balance": round(adv_balance, 0), "adv_recovery_pct": round(adv_recovery_pct, 1),
             "top_10_advances": top_10_advances, "leave_module": leave_module,
             # General
@@ -392,7 +414,6 @@ async def get_hr_kpi_details(
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     today = date.today()
-    start_of_month = today.replace(day=1)
     
     allowed_emp_ids, g_loc_clean, emp_loc_col = get_secure_hr_scope(db, comp_code, global_location, user_allowed_locations)
 
@@ -439,3 +460,71 @@ async def get_hr_kpi_details(
         return {"status": "success", "mode": "ATTENDANCE", "data": result_data}
 
     return JSONResponse({"status": "error", "message": "Unknown drilldown vector criteria"}, status_code=400)
+
+
+# ============================================================
+# 🟢 🔴 3. POST ROUTES FOR APPROVAL WORKFLOWS (ACTION HANDLERS)
+# ============================================================
+
+@router.post("/approve_ot/{att_id}")
+def approve_ot_action(att_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code: return RedirectResponse(url="/auth/login", status_code=303)
+    
+    att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
+    if att_record:
+        att_record.ot_status = "APPROVED"
+        att_record.approved_ot_hours = att_record.calculated_ot_hours
+        att_record.ot_approved_by = email
+        db.commit()
+        
+    return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)
+
+
+@router.post("/reject_ot/{att_id}")
+def reject_ot_action(att_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code: return RedirectResponse(url="/auth/login", status_code=303)
+    
+    att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
+    if att_record:
+        att_record.ot_status = "REJECTED"
+        att_record.approved_ot_hours = 0.0
+        att_record.ot_approved_by = email
+        db.commit()
+        
+    return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)
+
+
+@router.post("/approve_duty/{att_id}")
+def approve_duty_action(att_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code: return RedirectResponse(url="/auth/login", status_code=303)
+    
+    # Needs duty_status field in DB
+    if hasattr(DailyAttendance, 'duty_status'):
+        att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
+        if att_record:
+            att_record.duty_status = "APPROVED"
+            # Optional: tracking who approved it
+            db.commit()
+            
+    return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)
+
+
+@router.post("/reject_duty/{att_id}")
+def reject_duty_action(att_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code: return RedirectResponse(url="/auth/login", status_code=303)
+    
+    if hasattr(DailyAttendance, 'duty_status'):
+        att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
+        if att_record:
+            att_record.duty_status = "REJECTED"
+            db.commit()
+            
+    return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)

@@ -17,7 +17,6 @@
 *{box-sizing:border-box;font-family:Inter,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* HEADER & RESPONSIVE RESTRUCTURE */
 .header-container{background:var(--card-bg);padding:12px 15px;border-bottom:1px solid var(--border)}
 .header-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
 .header-main h2{margin:0;font-size:15px;font-weight:800;color:var(--primary)}
@@ -35,11 +34,10 @@ body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;f
 .filters label{font-size:8px;font-weight:800;color:var(--muted);display:block;margin-bottom:2px;text-transform:uppercase}
 .filters input,.filters select{padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);font-weight:600;width:100%}
 
-/* ULTRA COMPACT TABLE SYSTEM */
 .section{margin:8px 10px;background:var(--card-bg);border-radius:8px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
 .table-wrap{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}
-th{background:var(--header-bg);font-size:8.5px;font-weight:800;text-transform:uppercase;padding:8px 6px;border:1px solid var(--border);position:sticky;top:0;z-index:20}
+th{background:var(--header-bg);font-size:8.5px;font-weight:800;text-transform:uppercase;padding:8px 6px;border:1px solid var(--border);position:sticky;top:0;z-index:20; text-align:center;}
 td{padding:6px;border:1px solid #edf2f7;text-align:center}
 
 .name-sticky{position:sticky;left:0;background:var(--card-bg);font-weight:700;text-align:left;border-right:2px solid var(--primary);min-width:180px;z-index:10}
@@ -49,55 +47,49 @@ td{padding:6px;border:1px solid #edf2f7;text-align:center}
 .clickable:hover{background: #f0f7ff !important; outline: 1px solid var(--accent);}
 
 .payout-col{background:#ecfdf5;color:#065f46;font-weight:900;font-size:11.5px;text-align:right;padding-right:10px}
-.adjust-input{width:44px;padding:3px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:var(--card-bg)7ed; color:#c2410c; font-size:10px}
+.adjust-input{width:44px;padding:3px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:#fff7ed; color:#c2410c; font-size:10px}
 .adjust-input:disabled { background:#f1f5f9; color:#94a3b8; cursor:not-allowed; border-color:#e2e8f0; }
 
 tbody tr.selected { background-color: #f0f7ff !important; }
 tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
 
-/* MODAL STRUCTURE */
+/* 🟢 UPDATED ATTENDANCE SHADES */
+.att-a { color:var(--danger); font-weight:400; opacity:0.5; }
+.att-hp { background:#fffbeb !important; color:var(--warning) !important; font-weight:700; }
+.att-p { background:#f0fdf4 !important; color:var(--success) !important; font-weight:700; }
+.att-1-5p { background:#dbeafe !important; color:#1d4ed8 !important; font-weight:800; }
+.att-2p { background:#dcfce7 !important; color:#15803d !important; font-weight:900; }
+.att-2-5p { background:#fef08a !important; color:#b45309 !important; font-weight:900; }
+.att-3p { background:#fecaca !important; color:#b91c1c !important; font-weight:900; }
+
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;backdrop-filter:blur(2px)}
-.modal-box{background:var(--card-bg);width:95%;max-width:750px;margin:5% auto;border-radius:12px;padding:15px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
-@media(max-width:480px) { .modal-box { margin:10px auto; height:calc(100vh - 20px); max-height:none; } }
+.modal-box{background:var(--card-bg);width:95%;max-width:800px;margin:5% auto;border-radius:12px;padding:15px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
 .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:8px}
 .close{cursor:pointer;font-size:22px;color:var(--danger)}
 
-/* ATTENDANCE SHADES */
-.att-2p{background:#dcfce7 !important; color:#15803d !important; font-weight:900}
-.att-p{background:#f0fdf4 !important; color:var(--success) !important; font-weight:700}
-.att-hp{background:var(--card-bg)beb !important; color:var(--warning) !important; font-weight:700}
-.att-a{color:var(--danger); font-weight:400; opacity:0.5}
-
-/* TIMELINE CHIPS */
 .chip { font-size: 8.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid transparent; margin: 1px; }
 .c-in { color: var(--success); background: #ecfdf5; border-color: #a7f3d0; }
-.c-out { color: var(--warning); background: var(--card-bg)beb; border-color: #fde68a; }
+.c-out { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
 .c-exit { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
 .badge-blue{background:#eff6ff; color:#1d4ed8; padding:2px 5px; border-radius:4px; font-size:9.5px; font-weight:700}
 
 #printSection { display: none; }
 
-/* PRINT STYLES */
 @media print {
   @page { size: landscape; margin: 10mm; }
   body { background: var(--card-bg); color: #000; overflow: visible; height: auto; }
   .header-container, .filters, button, .modal, .adjust-input { display: none !important; }
   .section { margin: 0; padding: 0; border: none; overflow: visible; display: block; }
-  .table-wrap{
-    background: var(--card-bg) !important;
-} overflow: visible; display: block; }
+  .table-wrap{ background: var(--card-bg) !important; overflow: visible; display: block; }
   table { width: 100%; border: 1px solid #000; font-size: 9px; }
   th, td { border: 1px solid #000 !important; padding: 5px 3px !important; }
   .name-sticky { position: static !important; background: transparent !important; border-right: 1px solid #000 !important; }
-  .att-2p, .att-p, .att-hp { font-weight: bold !important; background: transparent !important; }
   body.print-single-mode #payrollTable { display: none !important; }
   body.print-single-mode #printSection { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; }
   body.print-single-mode #printSection * { visibility: visible !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
 <body>
@@ -109,7 +101,7 @@ tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
       <p id="monthDisplay" style="font-size:10px;color:var(--muted);font-weight:700;margin:2px 0 0 0"></p>
     </div>
     <div class="btn-group-layout">
-        <button id="btnPrintSelected" class="btn-action-size" onclick="printSelectedRow()" style="background:var(--accent); display:none;"><i class="fa-solid fa-print"></i> Print Selected</button>
+        <button id="btnPrintSelected" class="btn-action-size" onclick="printSelectedRow()" style="background:var(--accent); display:none;"><i class="fa-solid fa-print"></i> Print Payslip</button>
         <button class="btn-action-size" onclick="generateSheet()" style="background:var(--primary);"><i class="fa-solid fa-sync"></i> Recalculate</button>
         <button class="btn-action-size" onclick="printFullLedger()" style="background:var(--success);"><i class="fa-solid fa-print"></i> Export Ledger</button>
     </div>
@@ -155,10 +147,11 @@ tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
         <table style="width:100%">
           <thead>
             <tr style="background:#f8fafc">
-                <th style="text-align:left; padding:8px 4px;">Date</th>
-                <th style="text-align:left; padding:8px 4px;">Timeline (Gate Entry/Exit)</th>
-                <th style="padding:8px 4px;">Work Hrs</th>
-                <th style="padding:8px 4px;">Status</th>
+                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Date</th>
+                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Shift</th>
+                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Timeline (Gate Entry/Exit)</th>
+                <th style="padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Work Hrs</th>
+                <th style="padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Status</th>
             </tr>
           </thead>
           <tbody id="modalBody"></tbody>
@@ -205,18 +198,25 @@ async function generateSheet(){
 
  document.getElementById("monthDisplay").innerText=data.month_name.toUpperCase() + " " + month.split('-')[0] + " - PAYROLL SUMMARY";
 
- // HEADER
+ // 🟢 ORGANIZED HEADER GROUPS
  let head=`<tr>
  <th rowspan="2" class="name-sticky">Employee & ID</th>
  <th colspan="${data.days_in_month}">Daily Attendance</th>
- <th colspan="5" style="background:#1e293b;color:#fff">Work Summary</th>
- <th colspan="6" style="background:#143465;color:#fff">Deductions</th>
+ <th colspan="6" style="background:#1e293b;color:#fff">Duty Summary</th>
+ <th colspan="2" style="background:#ea580c;color:#fff">Overtime</th>
+ <th colspan="4" style="background:#143465;color:#fff">Financials (₹)</th>
+ <th colspan="6" style="background:#dc2626;color:#fff">Deductions (₹)</th>
  <th rowspan="2" class="payout-col" style="background:#059669; color:#fff">Net Payout</th>
  </tr><tr>`;
 
  for(let i=1;i<=data.days_in_month;i++) head+=`<th>${i}</th>`;
 
- head+=`<th>Gross</th><th>Actual P.</th><th>Bonus</th><th>Adj</th><th>Earned</th><th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th></tr>`;
+ // 🟢 SUB-HEADER
+ head+=`
+ <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>3P</th><th>Total</th>
+ <th style="color:#fcd34d">OT Hrs</th><th>OT Pay</th>
+ <th>Gross</th><th>Bonus</th><th>Adj</th><th>Earned</th>
+ <th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th></tr>`;
  document.getElementById("thead").innerHTML=head;
 
  // BODY
@@ -232,27 +232,48 @@ async function generateSheet(){
 
   for(let i=1;i<=data.days_in_month;i++){
     const st = emp.att_map[i] || 'A';
-    let cls = st === '2P' ? 'att-2p' : st === 'P' ? 'att-p' : st === 'HP' ? 'att-hp' : 'att-a';
+    let cls = 'att-a';
+    if(st === 'HP') cls = 'att-hp';
+    else if(st === 'P') cls = 'att-p';
+    else if(st === '1.5P') cls = 'att-1-5p';
+    else if(st === '2P') cls = 'att-2p';
+    else if(st === '2.5P') cls = 'att-2-5p';
+    else if(st === '3P') cls = 'att-3p';
     
     body+=`<td class="${cls} clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', ${i})">${st}</td>`;
   }
 
   body+=`
-  <td style="font-weight:600">₹${fmt.format(emp.base_sal)}</td>
+  <!-- 🟢 DUTY SUMMARY -->
+  <td style="color:var(--warning)">${emp.duty_counts['HP']}</td>
+  <td style="color:var(--success)">${emp.duty_counts['1P']}</td>
+  <td style="color:#1d4ed8">${emp.duty_counts['1.5P']}</td>
+  <td style="color:#15803d; font-weight:800">${emp.duty_counts['2P']}</td>
+  <td style="color:#b91c1c; font-weight:800">${emp.duty_counts['3P']}</td>
   
-  <td class="clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:800; color:var(--accent); text-decoration:underline">
+  <td class="clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:900; color:var(--accent); text-decoration:underline; background:#f8fafc;">
     ${emp.actual_duties}
   </td>
 
+  <!-- 🟢 OVERTIME -->
+  <td style="font-weight:800; color:#ea580c; background:#fff7ed">${emp.ot_hours}</td>
+  <td style="font-weight:800; color:#c2410c; background:#ffedd5">₹${fmt.format(emp.ot_earnings)}</td>
+
+  <!-- 🟢 FINANCIALS -->
+  <td style="font-weight:600">₹${fmt.format(emp.base_sal)}</td>
   <td style="font-weight:800; color:var(--success)">+${emp.extra_holidays}</td>
   <td><input class="adjust-input" type="number" step="0.5" value="${emp.saved_adjustment}" ${isLocked} onchange="saveAdjustment('${emp.id}',this.value)"></td>
   <td style="font-weight:800; background:#f0f9ff">₹${fmt.format(emp.earned_gross)}</td>
+  
+  <!-- 🟢 DEDUCTIONS -->
   <td style="color:var(--danger); font-weight:700">₹${fmt.format(emp.salary_advance)}</td>
   <td>₹${fmt.format(emp.pf)}</td>
   <td>₹${fmt.format(emp.esi)}</td>
   <td>₹${emp.pt}</td>
   <td>₹${emp.lwf}</td>
   <td>₹${emp.tds}</td>
+  
+  <!-- 🟢 NET PAY -->
   <td class="payout-col">₹${fmt.format(emp.net_pay)}</td>
   </tr>`;
  });
@@ -277,6 +298,12 @@ function printSelectedRow() {
     if (!selectedRowData) return;
     
     const printContainer = document.getElementById("printSection");
+    
+    let otRow = '';
+    if(selectedRowData.ot_hours > 0) {
+        otRow = `<tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left; font-weight:700;">Overtime (OT) Pay <span style="font-size:10px; color:#64748b;">(${selectedRowData.ot_hours} Hrs)</span></td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; font-weight:700; color:#ea580c;">+₹${fmt.format(selectedRowData.ot_earnings)}</td></tr>`;
+    }
+
     printContainer.innerHTML = `
         <div style="padding:20px; font-family:Inter,sans-serif;">
             <h2 style="color:#143465; border-bottom:2px solid #143465; padding-bottom:8px; text-align:center;">BKNR SOLUTIONS - PAYROLL PAYSPLIT MASTER</h2>
@@ -285,6 +312,7 @@ function printSelectedRow() {
                 <tr><td style="text-align:left; font-weight:800; width:150px;">Employee Name:</td><td style="text-align:left;">${selectedRowData.name}</td></tr>
                 <tr><td style="text-align:left; font-weight:800;">Employee ID:</td><td style="text-align:left;">${selectedRowData.id}</td></tr>
                 <tr><td style="text-align:left; font-weight:800;">Department:</td><td style="text-align:left;">${selectedRowData.dept}</td></tr>
+                <tr><td style="text-align:left; font-weight:800;">Total Active Duties:</td><td style="text-align:left; color:#2563eb; font-weight:800;">${selectedRowData.actual_duties} Days</td></tr>
             </table>
             <table style="width:100%; border:1px solid #d6dde7; border-collapse:collapse; font-size:12px;">
                 <thead>
@@ -294,8 +322,9 @@ function printSelectedRow() {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Gross Base Salary</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">₹${fmt.format(selectedRowData.base_sal)}</td></tr>
-                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Earned Gross Total</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; font-weight:700;">₹${fmt.format(selectedRowData.earned_gross)}</td></tr>
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Gross Base Salary (Monthly)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">₹${fmt.format(selectedRowData.base_sal)}</td></tr>
+                    ${otRow}
+                    <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Earned Gross Total</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; font-weight:800;">₹${fmt.format(selectedRowData.earned_gross)}</td></tr>
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#dc2626;">Salary Advance</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#dc2626;">-₹${fmt.format(selectedRowData.salary_advance)}</td></tr>
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Provident Fund (PF)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.pf)}</td></tr>
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Employee State Insurance (ESI)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.esi)}</td></tr>
@@ -329,14 +358,15 @@ async function showAttendance(empId, name, day = null){
    }
 
    html += `<tr>
-     <td style="font-weight:600; padding:8px; border-bottom:1px solid #eee; text-align:left">${d.date}</td>
-     <td style="padding:8px; border-bottom:1px solid #eee; text-align:left">${timeline}</td>
-     <td style="font-weight:800; color:var(--accent); padding:8px; border-bottom:1px solid #eee">${d.hours} hrs</td>
-     <td style="padding:8px; border-bottom:1px solid #eee"><span class="badge-blue">${d.status}</span></td>
+     <td style="font-weight:600; padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${d.date}</td>
+     <td style="font-weight:800; color:var(--primary); padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${d.shift}</td>
+     <td style="padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${timeline}</td>
+     <td style="font-weight:800; color:var(--accent); padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:center">${d.hours} hrs</td>
+     <td style="padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:center"><span class="badge-blue">${d.status}</span></td>
    </tr>`;
  });
 
- document.getElementById("modalBody").innerHTML = html || "<tr><td colspan='4' style='padding:20px'>No attendance records found for this selection.</td></tr>";
+ document.getElementById("modalBody").innerHTML = html || "<tr><td colspan='5' style='padding:20px; text-align:center;'>No attendance records found for this selection.</td></tr>";
  document.getElementById("attModal").style.display = "block";
 }
 
