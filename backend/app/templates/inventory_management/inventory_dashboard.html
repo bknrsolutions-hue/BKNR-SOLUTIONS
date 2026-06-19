@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>BKNR ERP | Corporate Inventory Intelligence</title>
@@ -22,72 +33,42 @@
     window.addEventListener('load', syncTheme);
 </script>
 
-<style>
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
+}
+
     /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
-    :root {
-        /* LIGHT MODE */
-        --bg: #f1f5f9; 
-        --panel: #ffffff;
-        --card-bg: #ffffff;
-        --primary: #0f172a;
-        --accent: #2563eb;
-        --accent-light: #eff6ff;
-        --success: #10b981;
-        --success-light: #ecfdf5;
-        --warning: #f59e0b;
-        --warning-light: #fffbeb;
-        --danger: #ef4444;
-        --danger-light: #fef2f2;
-        --reprocess: #7c3aed;
-        --reprocess-light: #f5f3ff;
-        --fresh: #0891b2;
-        --fresh-light: #ecfeff;
-        --orange: #ea580c;
-        --border: #e2e8f0; 
-        --text: #0f172a; 
-        --sub: #475569; 
-        --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
-        --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.04);
-        --radius: 12px;
-        --header-bg: rgba(255, 255, 255, 0.85);
+    
 
-        --table-th-bg: #f8fafc;
-        --table-td-border: #f1f5f9;
-        
-        --kpi-val: #000000;
-    }
-
-    [data-theme="dark"] {
-        /* DARK MODE */
-        --bg: #0f172a; 
-        --panel: #1e293b;
-        --card-bg: #1e293b;
-        --primary: #f8fafc;
-        --accent: #3b82f6;
-        --accent-light: rgba(59, 130, 246, 0.2);
-        --success: #10b981;
-        --success-light: rgba(16, 185, 129, 0.15);
-        --warning: #f59e0b;
-        --warning-light: rgba(245, 158, 11, 0.15);
-        --danger: #ef4444;
-        --danger-light: rgba(239, 68, 68, 0.15);
-        --reprocess: #8b5cf6;
-        --reprocess-light: rgba(139, 92, 246, 0.15);
-        --fresh: #06b6d4;
-        --fresh-light: rgba(6, 182, 212, 0.15);
-        --orange: #f97316;
-        --border: #334155; 
-        --text: #f8fafc; 
-        --sub: #94a3b8; 
-        --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-        --header-bg: rgba(15, 23, 42, 0.85);
-
-        --table-th-bg: #0f172a;
-        --table-td-border: #1e293b;
-
-        --kpi-val: #ffffff;
-    }
+    
 
     * {
         margin: 0;
@@ -625,6 +606,7 @@
     }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 
 <body>
@@ -636,7 +618,6 @@
         </div>
         <div class="company-box">
             <div class="badge">{{ request.session.get('company_code') }}</div>
-            <div class="badge">FY: {{ current_fy_name }}</div>
         </div>
     </div>
 </div>

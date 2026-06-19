@@ -1,0 +1,230 @@
+/* ==========================================================
+   BKNR ERP MASTERS / CRITERIA SCREEN STYLES
+   Standardized layout for all entity master files
+   Supports light/dark theme variables natively
+========================================================== */
+
+/* 1. Body & Fonts */
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+/* 2. Header Style */
+.header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--card-bg) !important; 
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border) !important;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2 {
+    margin: 0; font-size: 16px; 
+    color: var(--text) !important; 
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 8px;
+}
+.header-titles h2 i {
+    color: var(--accent);
+}
+
+/* 3. Form Container */
+.form-container {
+    width: 95%; max-width: 1400px; margin: 15px auto;
+    background: var(--card-bg) !important; 
+    padding: 20px; border-radius: 12px;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.form-grid { 
+    display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px; 
+}
+@media(min-width:768px){ 
+    .form-grid { grid-template-columns: repeat(2, 1fr); } 
+}
+@media(min-width:1200px){ 
+    .form-grid { grid-template-columns: repeat(4, 1fr); } 
+}
+
+.field { 
+    display: flex; flex-direction: column; width: 100%; 
+}
+.form-title-inner { 
+    font-size: 12px; font-weight: 800; color: var(--accent); 
+    text-transform: uppercase; margin-bottom: 10px; grid-column: 1 / -1; 
+    border-bottom: 1px dashed var(--border); padding-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+}
+
+label { 
+    font-size: 11px; font-weight: 700; color: var(--text-muted); 
+    text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;
+}
+input, select, textarea {
+    padding: 10px 14px !important; border: 1px solid var(--border) !important;
+    border-radius: 8px !important; font-size: 13px !important; 
+    background: var(--bg) !important; color: var(--text) !important;
+    outline: none; width: 100%; transition: 0.2s; font-weight: 500;
+}
+input:focus, select:focus, textarea:focus { 
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important; 
+}
+textarea {
+    resize: vertical; min-height: 80px;
+}
+
+/* 4. Table Toolbar and Control Area */
+.table-header-bar {
+    width: 95%; max-width: 1400px; margin: 20px auto 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative;
+    gap: 15px;
+}
+.table-title { 
+    font-size: 14px; font-weight: 800; color: var(--text); 
+    text-transform: uppercase; margin: 0; 
+}
+.top-actions { 
+    margin: 0; display: flex; gap: 8px; justify-content: flex-end; 
+}
+
+/* Actions buttons area inside form container */
+.actions { 
+    text-align: center; display: flex; justify-content: flex-start; gap: 12px; margin-top: 15px; 
+}
+
+/* Buttons style overrides */
+.btn, .btn-toggle {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
+    height: 38px !important;
+}
+
+.btn-primary, .btn-toggle.btn-primary {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.btn-primary:hover, .btn-toggle.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%) !important;
+    transform: translateY(-1.5px);
+    box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-clear { 
+    background: var(--bg) !important; 
+    color: var(--text) !important; 
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+}
+.btn-clear:hover {
+    background: var(--border) !important;
+    transform: translateY(-1px);
+}
+
+.btn-next { 
+    background: linear-gradient(135deg, #047857 0%, #10b981 50%, #34d399 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #065f46 !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    text-transform: uppercase;
+    transition: 0.2s;
+    height: 38px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
+}
+.btn-next:hover { 
+    background: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%) !important;
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45) !important;
+}
+
+/* 5. 3-Dot Dropdown Menu */
+.menu-container { position: relative; }
+.dots-trigger { 
+    background: var(--card-bg) !important; 
+    color: var(--text) !important; 
+    border: 1px solid var(--border) !important; 
+    width: 38px; height: 38px; border-radius: 8px; cursor: pointer; 
+    font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; 
+}
+.dots-trigger:hover { 
+    background: var(--bg) !important; border-color: var(--accent) !important; color: var(--accent) !important;
+}
+#dropdownMenu { 
+    display: none; position: absolute; right: 0; top: 44px; 
+    background: var(--card-bg) !important; 
+    border: 1px solid var(--border) !important; 
+    border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 170px; z-index: 1000; overflow: hidden; 
+}
+.menu-item { 
+    padding: 12px 14px; font-size: 12px; font-weight: 600; 
+    border-bottom: 1px solid var(--border) !important; cursor: pointer; 
+    color: var(--text) !important; display: flex; align-items: center; gap: 8px; transition: 0.2s; text-align: left; 
+}
+.menu-item:last-child { border-bottom: none !important; }
+.menu-item:hover { 
+    background: var(--row-hover) !important; color: var(--accent) !important; padding-left: 18px; 
+}
+.menu-item.danger:hover { color: var(--danger) !important; }
+
+/* 6. Responsive Table */
+.table-wrap {
+    background: var(--card-bg) !important; width: 95%; max-width: 1400px; 
+    margin: 0 auto 40px; border-radius: 12px; border: 1px solid var(--border) !important; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; 
+}
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+th {
+    background: var(--header-bg) !important; color: var(--text-muted) !important; padding: 12px 10px;
+    font-size: 10px !important; text-transform: uppercase; border-bottom: 2px solid var(--border) !important;
+    text-align: center; white-space: nowrap; font-weight: 800; letter-spacing: 0.5px;
+}
+td { 
+    padding: 12px 10px; border-bottom: 1px solid var(--border) !important; 
+    font-size: 12px !important; color: var(--text) !important; text-align: center; white-space: nowrap; font-weight: 500;
+}
+tr { transition: background 0.2s; }
+tr:hover { background: var(--row-hover) !important; cursor: pointer; }
+tr.selected { background: var(--row-selected) !important; }
+
+/* 7. Mobile Card List */
+.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
+.data-card { 
+    background: var(--card-bg) !important; border: 1px solid var(--border) !important; 
+    border-radius: 12px; padding: 16px; margin-bottom: 12px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: 0.2s; 
+}
+.data-card.selected { border: 2px solid var(--accent) !important; background: var(--row-selected) !important; }
+.card-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; align-items: center;}
+.card-row:last-child { margin-bottom: 0; }
+.card-label { color: var(--text-muted); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
+.card-val { font-weight: 700; color: var(--text); }
+
+/* 8. Mobile Media Queries */
+@media(max-width: 1024px){
+    .table-wrap { display: none !important; }
+    .mobile-card-list { display: block !important; }
+    .form-container, .table-header-bar { width: 95%; }
+    .actions { flex-direction: column; }
+    .btn { width: 100% !important; }
+}

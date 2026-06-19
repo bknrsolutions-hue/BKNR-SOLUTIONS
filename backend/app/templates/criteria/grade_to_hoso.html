@@ -6,76 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-  :root {
-    --primary: #143465;
-    --accent: #3b82f6;
-    --bg: #f3f4f6;
-    --border: #d1d5db;
-    --text: #1f2937;
-    --success: #059669;
-  }
-
-  body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
-  
-  /* HEADER */
-  .header {
-    background: var(--card-bg); padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-  .header h2 { margin: 0; font-size: 18px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-
-  /* FILTER BAR */
-  .filter-section {
-    margin: 15px 20px; display: flex; align-items: center; gap: 15px;
-    background: var(--card-bg); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);
-  }
-  .filter-section label { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
-  
-  select {
-    padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);
-    font-size: 13px; outline: none; background: #f9fafb; min-width: 150px;
-  }
-
-  /* TABLE AREA */
-  .table-wrap{
-    background: var(--card-bg) !important;
-}
-    margin: 0 20px 20px; background: var(--card-bg); border-radius: 10px;
-    border: 1px solid var(--border); overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  
-  thead th {
-    background: #f8fafc; color: #64748b; font-weight: 700; 
-    text-transform: uppercase; font-size: 11px; padding: 12px;
-    text-align: center; border-bottom: 2px solid var(--border);
-    position: sticky; top: 0;
-  }
-
-  tbody td { padding: 12px; text-align: center; border-bottom: 1px solid #f1f5f9; }
-  
-  tr:hover { background: #f8fbff; }
-
-  /* BADGES */
-  .badge-hlso { background: #eff6ff; color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 700; }
-  .badge-hoso { background: #ecfdf5; color: var(--success); padding: 4px 8px; border-radius: 4px; font-weight: 700; }
-  .badge-none { color: #9ca3af; font-style: italic; }
-  
-  .nw-grade { font-weight: 800; color: var(--primary); }
-
-  @media (max-width: 768px) {
-    .filter-section { flex-direction: column; align-items: flex-start; }
-    .table-wrap{
-    background: var(--card-bg) !important;
-} overflow-x: auto; }
-  }
-</style>
+<link rel="stylesheet" href="/static/css/bknr-masters.css">
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">

@@ -34,7 +34,10 @@ class ProductionRequirementService:
         # ==========================================
         # 2. DATA EXTRACTION WITH SECURITY LOCKS
         # ==========================================
-        orders_q = db.query(pending_orders).filter(pending_orders.company_id == company_id)
+        orders_q = db.query(pending_orders).filter(
+            pending_orders.company_id == company_id,
+            (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+        )
         stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_id)
 
         if production_for_filter:

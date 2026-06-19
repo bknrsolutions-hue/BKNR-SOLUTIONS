@@ -426,7 +426,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in rows.opening_floor_balance %}
+                    {% for row in opening_floor_balance %}
                     <tr>
                         <td class="sl-no" style="background:var(--amber-sub-bg); color:#f59e0b;">{{ loop.index }}</td>
                         <td style="font-weight:800; color:var(--accent-blue);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
@@ -440,7 +440,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     {% else %}
                     <tr><td colspan="8" class="text-center text-muted" style="padding: 10px;">No Stock found at Opening Cut-off Time.</td></tr>
                     {% endfor %}
-                    {% if rows.opening_floor_balance %}
+                    {% if opening_floor_balance %}
                     <tr class="amber-subtotal">
                         <td colspan="6" class="text-right">TOTAL OPENING FLOOR BALANCE:</td>
                         <td class="qty-cell" style="background:var(--amber-sub-bg);">{{ "%.2f"|format(card.floor_opening_qty) }}</td>
@@ -472,7 +472,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in rows.closing_floor_balance %}
+                    {% for row in closing_floor_balance %}
                     <tr>
                         <td class="sl-no" style="background:var(--danger-sub-bg); color:var(--danger)">{{ loop.index }}</td>
                         <td style="font-weight:800; color:var(--danger);">{{ row.batch_number | default(row.batch) | default('-') }}</td>
@@ -486,7 +486,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     {% else %}
                     <tr><td colspan="8" class="text-center text-muted" style="padding: 6px;">No Stock Left at Closing Cut-off Time.</td></tr>
                     {% endfor %}
-                    {% if rows.closing_floor_balance %}
+                    {% if closing_floor_balance %}
                     <tr class="danger-subtotal">
                         <td colspan="6" class="text-right">TOTAL CLOSING FLOOR BALANCE:</td>
                         <td class="qty-cell" style="background:var(--danger-sub-bg);">{{ "%.2f"|format(card.floor_closing_qty) }}</td>

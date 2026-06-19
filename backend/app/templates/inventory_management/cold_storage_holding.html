@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <title>Cold Storage Holding – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,18 +19,39 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-:root{
-  --primary:#143465;
-  --accent: #3b82f6;
-  --border:#d6dde7;
-  --bg:#f4f6f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --muted:#64748b;
-  --success: #166534;
-  --danger: #991b1b;
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
 }
+
+
 
 *{box-sizing:border-box;font-family: 'Inter', sans-serif;}
 body{margin:0;background:var(--bg);color:var(--text)}

@@ -44,7 +44,10 @@ def pending_orders_report_page(
         return RedirectResponse("/auth/login", status_code=302)
 
     # 2. Pending Orders Base Query
-    q = db.query(pending_orders).filter(pending_orders.company_id == comp_code)
+    q = db.query(pending_orders).filter(
+        pending_orders.company_id == comp_code,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
     
     # 🟢 FIX: Applying Global Production For filter to company_name
     if production_for:

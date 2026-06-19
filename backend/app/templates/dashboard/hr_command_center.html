@@ -9,574 +9,1320 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-  /* ==========================================================
-     🌟 LIGHT & DARK THEME VARIABLES
-  ========================================================== */
-  :root {
-    --slate-bg: #f1f5f9; 
-    --card-bg: #ffffff;
-    --border-color: #e2e8f0;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --hover-bg: #f8fafc;
-    --chart-grid: #e2e8f0;
-    --accent-blue: #2563eb;
-    --emerald: #059669;
-    --rose: #e11d48;
-    --amber: #d97706;
-    --indigo: #4f46e5;
-    --radius-premium: 12px;
-    --radius-md: 8px;
-    --sub-bg: #eff6ff;
-  }
+/* ==========================================================
+   🌟 DESIGN TOKENS — LIGHT & DARK
+========================================================== */
+:root {
+  --slate-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --hover-bg: #f8fafc;
+  --chart-grid: #e2e8f0;
+  --accent-blue: #2563eb;
+  --emerald: #059669;
+  --rose: #e11d48;
+  --amber: #d97706;
+  --indigo: #4f46e5;
+  --violet: #7c3aed;
+  --radius-premium: 12px;
+  --radius-md: 8px;
+  --sub-bg: #eff6ff;
+  --shadow-sm: 0 4px 12px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 24px rgba(15,23,42,0.08);
+}
 
-  [data-theme="dark"] {
-    --slate-bg: #0f172a; 
-    --card-bg: #1e293b;
-    --border-color: #334155;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --hover-bg: rgba(255, 255, 255, 0.04);
-    --chart-grid: #334155;
-    --sub-bg: #1e2640;
-  }
+[data-theme="dark"] {
+  --slate-bg: #0f172a;
+  --card-bg: #1e293b;
+  --border-color: #334155;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --hover-bg: rgba(255,255,255,0.04);
+  --chart-grid: #334155;
+  --sub-bg: #1e2640;
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-  body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding: 12px 8px; font-size: 11px; transition: 0.3s ease; }
-  .dashboard-container { width: 100%; max-width: 1600px; margin: 0 auto; }
-  @media(min-width: 768px) { body { padding: 16px; } }
+/* ==========================================================
+   🏗️ BASE LAYOUT
+========================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding: 10px 8px; font-size: 11px; transition: background 0.3s ease, color 0.3s ease; }
+.dashboard-container { width: 100%; max-width: 1700px; margin: 0 auto; }
+@media(min-width:768px) { body { padding: 14px 16px; } }
 
-  /* HEADER */
-  .header-panel {
-    background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius-premium); margin-bottom: 12px; 
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
-  }
-  .header-title h2 { font-size: 16px; font-weight: 900; text-transform: uppercase; color: var(--text-main); letter-spacing: -0.5px;}
-  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;}
-  .date-badge { font-size: 10px; font-weight: 800; background: var(--slate-bg); color: var(--accent-blue); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+/* ==========================================================
+   📌 HEADER PANEL
+========================================================== */
+.header-panel {
+  background: var(--card-bg);
+  padding: 12px 18px;
+  border-radius: var(--radius-premium);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.header-title h2 { font-size: 15px; font-weight: 900; text-transform: uppercase; color: var(--text-main); letter-spacing: -0.4px; }
+.header-title p { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.date-badge { font-size: 10px; font-weight: 800; background: var(--slate-bg); color: var(--accent-blue); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); white-space: nowrap; }
+.refresh-btn { padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-muted); font-size: 10px; font-weight: 800; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+.refresh-btn:hover { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
 
-  /* ==========================================================
-     🌟 NEW KPI CARDS (WHITE BG WITH COLORED ICONS)
-  ========================================================== */
-  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  @media(min-width: 480px) { .cards { grid-template-columns: repeat(3, 1fr); } }
-  @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
-  @media(min-width: 1200px) { .cards { grid-template-columns: repeat(7, 1fr); gap: 12px; } }
+/* ==========================================================
+   📊 KPI CARDS ROW
+========================================================== */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+@media(min-width:480px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+@media(min-width:1100px) { .cards { grid-template-columns: repeat(7, 1fr); } }
 
-  .card { 
-      padding: 14px; border-radius: var(--radius-premium); cursor: pointer; 
-      display: flex; align-items: center; justify-content: space-between; gap: 6px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); transition: all 0.2s ease;
-      background: var(--card-bg); border: 1px solid var(--border-color); 
-  }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: var(--accent-blue); }
-  .card:active { transform: scale(0.96); }
+.card {
+  padding: 13px 12px;
+  border-radius: var(--radius-premium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 0 0 var(--radius-premium) var(--radius-premium);
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.card:hover::before { opacity: 1; }
+.card:active { transform: scale(0.97); }
 
-  .card-meta { text-align: left; overflow: hidden; }
-  .label { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-  .value { font-size: 19px; font-weight: 800; color: var(--text-main); margin-top: 4px; letter-spacing: -0.5px; }
-  .value small { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-left: 2px; text-transform: uppercase; }
-  
-  .card-icon-zone {
-      width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
-  }
+.blue::before   { background: #3b82f6; }
+.green::before  { background: #10b981; }
+.orange::before { background: #ea580c; }
+.purple::before { background: #8b5cf6; }
+.teal::before   { background: #14b8a6; }
+.pink::before   { background: #ec4899; }
+.gray::before   { background: #64748b; }
+.indigo::before { background: #6366f1; }
+.red::before    { background: #ef4444; }
+.amber::before  { background: #f59e0b; }
+.violet::before { background: #7c3aed; }
 
-  /* 🟢 Icon Styling with Tinted Backgrounds */
-  .blue .card-icon-zone { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-  .green .card-icon-zone { color: #10b981; background: rgba(16, 185, 129, 0.1); }
-  .orange .card-icon-zone { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
-  .purple .card-icon-zone { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
-  .teal .card-icon-zone { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
-  .pink .card-icon-zone { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
-  .gray .card-icon-zone { color: #64748b; background: rgba(100, 116, 139, 0.1); }
-  .indigo .card-icon-zone { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
-  .red .card-icon-zone { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-  .amber .card-icon-zone { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.card-meta { text-align: left; overflow: hidden; flex: 1; }
+.label { font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.7px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.value { font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 3px; letter-spacing: -0.5px; line-height: 1; }
+.value small { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-left: 2px; }
+.card-delta { font-size: 9px; font-weight: 700; margin-top: 3px; }
+.delta-up   { color: var(--emerald); }
+.delta-down { color: var(--rose); }
+.delta-flat { color: var(--text-muted); }
 
-  /* TABS NAVIGATION */
-  .tabs-wrapper { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .tabs-wrapper::-webkit-scrollbar { display: none; }
-  .tab-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: var(--radius-premium); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);}
-  .tab-btn.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
-  .tab-content { display: none; animation: fadeIn 0.3s ease; }
-  .tab-content.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.card-icon-zone {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.blue   .card-icon-zone { color: #3b82f6;  background: rgba(59,130,246,0.1); }
+.green  .card-icon-zone { color: #10b981;  background: rgba(16,185,129,0.1); }
+.orange .card-icon-zone { color: #ea580c;  background: rgba(234,88,12,0.1); }
+.purple .card-icon-zone { color: #8b5cf6;  background: rgba(139,92,246,0.1); }
+.teal   .card-icon-zone { color: #14b8a6;  background: rgba(20,184,166,0.1); }
+.pink   .card-icon-zone { color: #ec4899;  background: rgba(236,72,153,0.1); }
+.gray   .card-icon-zone { color: #64748b;  background: rgba(100,116,139,0.1); }
+.indigo .card-icon-zone { color: #6366f1;  background: rgba(99,102,241,0.1); }
+.red    .card-icon-zone { color: #ef4444;  background: rgba(239,68,68,0.1); }
+.amber  .card-icon-zone { color: #f59e0b;  background: rgba(245,158,11,0.1); }
+.violet .card-icon-zone { color: #7c3aed;  background: rgba(124,58,237,0.1); }
 
-  /* CORE LAYOUT GRIDS */
-  .core-layout-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
-  @media(min-width:768px){.core-layout-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }}
-  @media(min-width:1200px){.core-layout-grid { grid-template-columns: repeat(3, 1fr); }}
-  @media(min-width:1400px){.span-large-2 { grid-column: span 2; } .col-span-full { grid-column: 1 / -1; }}
+/* ==========================================================
+   🗂️ TABS
+========================================================== */
+.tabs-wrapper {
+  display: flex; gap: 6px; margin-bottom: 14px;
+  overflow-x: auto; padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.tabs-wrapper::-webkit-scrollbar { display: none; }
+.tab-btn {
+  background: var(--card-bg); color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 9px 16px; border-radius: var(--radius-premium);
+  font-size: 10.5px; font-weight: 800; cursor: pointer;
+  white-space: nowrap; transition: 0.2s;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); box-shadow: 0 4px 14px rgba(37,99,235,0.25); }
+.tab-btn:hover:not(.active) { border-color: var(--accent-blue); color: var(--accent-blue); }
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* SECTION CARDS */
-  .section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 16px 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-  .section-header { font-size: 11px; font-weight: 900; text-transform: uppercase; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; letter-spacing: 0.5px;}
+/* Tab counter badge */
+.tab-counter {
+  background: rgba(255,255,255,0.25); 
+  border-radius: 4px; padding: 1px 5px;
+  font-size: 9px; font-weight: 900; letter-spacing: 0;
+}
+.tab-btn:not(.active) .tab-counter { background: var(--slate-bg); color: var(--text-main); }
 
-  /* TABLES & LISTS */
-  .data-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-size: 11.5px; font-weight: 700; color: var(--text-main); border-bottom: 1px solid var(--slate-bg); }
-  .data-row:nth-child(even) { background: var(--hover-bg); }
-  .data-row span:first-child { color: var(--text-muted); font-weight: 600; }
-  .data-row span:last-child { font-weight: 800; color: var(--text-main); }
-  
-  .table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
-  table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 11px; }
-  th { background: var(--slate-bg); padding: 10px 12px; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left; }
-  td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); }
-  tr:hover { background: var(--hover-bg); }
-  .text-right { text-align: right; }
-  .text-center { text-align: center; }
+/* ==========================================================
+   🧱 LAYOUT GRIDS
+========================================================== */
+.core-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+@media(min-width:768px)  { .core-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; } }
+@media(min-width:1200px) { .core-grid { grid-template-columns: repeat(3,1fr); } }
+@media(min-width:1400px) { .span-2 { grid-column: span 2; } .span-3 { grid-column: span 3; } }
 
-  /* BUTTONS */
-  .action-btn { border: none; padding: 6px 12px; border-radius: 6px; color: #fff; font-weight: 800; font-size: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-  .action-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+/* ==========================================================
+   🗃️ SECTION CARDS
+========================================================== */
+.section-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-premium);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.section-header {
+  font-size: 10.5px; font-weight: 900; text-transform: uppercase;
+  color: var(--text-main); margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border-color); padding-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+.section-header .sh-left { display: flex; align-items: center; gap: 6px; }
+.section-header .sh-right { display: flex; gap: 6px; align-items: center; }
 
-  /* HEATMAP STYLES */
-  .hm-cell { text-align: center; font-weight: 800; border-radius: 4px; margin: 2px; }
-  .hm-high { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
-  .hm-mid { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
-  .hm-low { background: rgba(225, 29, 72, 0.15); color: var(--rose); }
+/* ==========================================================
+   📋 TABLE SYSTEM
+========================================================== */
+.table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.table-wrap.scrollable { max-height: 420px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 11px; }
+thead { position: sticky; top: 0; z-index: 1; }
+th {
+  background: var(--slate-bg); padding: 9px 12px;
+  font-size: 9.5px; text-transform: uppercase; font-weight: 800;
+  color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-align: left;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); }
+tr:last-child td { border-bottom: none; }
+tr:hover { background: var(--hover-bg); }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.td-bold { font-weight: 800 !important; }
+.td-blue  { color: var(--accent-blue) !important; font-weight: 800 !important; }
+.td-green { color: var(--emerald) !important; font-weight: 800 !important; }
+.td-rose  { color: var(--rose) !important; font-weight: 800 !important; }
+.td-amber { color: var(--amber) !important; font-weight: 800 !important; }
+.empty-state { padding: 28px; text-align: center; color: var(--text-muted); font-weight: 700; font-size: 11px; }
+.empty-state i { font-size: 22px; display: block; margin-bottom: 8px; color: var(--emerald); }
 
-  /* BADGES & WIDGETS */
-  .badge { padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; display: inline-block; text-transform: uppercase; }
-  .chart-box { height: 180px; position: relative; width: 100%; margin-top: auto; padding-top: 6px; }
-  .gauge-container { margin-bottom: 12px; }
-  .progress-track { width: 100%; background: var(--slate-bg); height: 6px; border-radius: 10px; overflow: hidden; margin-top: 6px; border: 1px solid var(--border-color); }
-  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
-  .ot-card { background: var(--slate-bg); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md); text-align: center; }
-  .ot-card h4 { font-size: 9px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
-  .ot-card h2 { font-size: 18px; color: var(--text-main); font-weight: 900; }
+/* ==========================================================
+   🔲 DATA ROW PAIRS
+========================================================== */
+.data-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; font-size: 11px; font-weight: 700;
+  color: var(--text-main); border-bottom: 1px solid var(--hover-bg);
+}
+.data-row:last-child { border-bottom: none; }
+.data-row span:first-child { color: var(--text-muted); font-weight: 600; font-size: 10.5px; }
+.data-row span:last-child { font-weight: 800; }
 
-  /* RISK REGISTRY */
-  .alert-box { background: rgba(225, 29, 72, 0.05); padding: 14px; border-radius: var(--radius-premium); border: 1px solid rgba(225, 29, 72, 0.2); width: 100%; }
-  .alert-title { font-size: 11px; font-weight: 900; color: var(--rose); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(225, 29, 72, 0.2); padding-bottom: 6px; }
-  .alert-item { display: flex; justify-content: space-between; align-items: center; color: var(--rose); font-size: 11px; font-weight: 700; padding: 6px 0; border-bottom: 1px solid rgba(225, 29, 72, 0.1); }
-  .alert-item:last-child { border-bottom: none; }
+/* ==========================================================
+   🏷️ BADGES
+========================================================== */
+.badge {
+  padding: 3px 8px; border-radius: 4px;
+  font-size: 9px; font-weight: 800;
+  display: inline-flex; align-items: center;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.badge-green  { background: rgba(5,150,105,0.1); color: var(--emerald); }
+.badge-red    { background: rgba(225,29,72,0.1);  color: var(--rose); }
+.badge-amber  { background: rgba(217,119,6,0.1);  color: var(--amber); }
+.badge-blue   { background: rgba(37,99,235,0.1);  color: var(--accent-blue); }
+.badge-solid-green { background: var(--emerald);  color: #fff; }
+.badge-solid-red   { background: var(--rose);     color: #fff; }
+.badge-solid-amber { background: var(--amber);    color: #fff; }
+.badge-solid-blue  { background: var(--accent-blue); color: #fff; }
+.badge-slate  { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); }
 
-  /* MODAL POPUP */
-  .modal-overlay { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
-  .modal-content { background: var(--card-bg); width: 100%; max-width: 900px; max-height: 85vh; border-radius: var(--radius-premium); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); animation: fadeIn 0.3s ease; }
-  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--slate-bg); }
-  .modal-header h3 { font-size: 14px; font-weight: 900; color: var(--accent-blue); text-transform: uppercase; }
-  .close-btn { background: var(--card-bg); border: 1px solid var(--border-color); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-weight: bold; transition: 0.2s; }
-  .close-btn:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
-  .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+/* ==========================================================
+   📈 CHARTS & PROGRESS
+========================================================== */
+.chart-box { height: 180px; position: relative; width: 100%; padding-top: 4px; }
+.chart-box-lg { height: 220px; position: relative; width: 100%; padding-top: 4px; }
+.progress-track { width: 100%; background: var(--slate-bg); height: 6px; border-radius: 10px; overflow: hidden; margin-top: 5px; border: 1px solid var(--border-color); }
+.progress-fill { height: 100%; border-radius: 10px; transition: width 0.6s ease; }
+.gauge-row { margin-bottom: 10px; }
+.gauge-label { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; color: var(--text-main); margin-bottom: 3px; }
+.gauge-label span:last-child { font-weight: 800; }
 
-  .filter-bar { background: var(--slate-bg); padding: 10px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color); display: flex; gap: 10px; flex-wrap: wrap; }
-  .filter-bar select, .filter-bar input { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-weight: 700; background: var(--card-bg); color: var(--text-main); outline: none; flex: 1; min-width: 120px; }
-  .filter-bar input { flex: 2; min-width: 200px; }
+/* ==========================================================
+   🔢 STAT MINI-CARDS (OT Center, Leave cards)
+========================================================== */
+.mini-cards-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 10px; }
+@media(min-width:480px) { .mini-cards-row { grid-template-columns: repeat(4,1fr); } }
+.mini-card {
+  background: var(--slate-bg); border: 1px solid var(--border-color);
+  padding: 10px 12px; border-radius: var(--radius-md); text-align: center;
+}
+.mini-card h4 { font-size: 9px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; }
+.mini-card .mini-val { font-size: 20px; color: var(--text-main); font-weight: 900; line-height: 1; }
+
+/* ==========================================================
+   🚨 ALERT / RISK BOXES
+========================================================== */
+.alert-box {
+  background: rgba(225,29,72,0.05); padding: 12px;
+  border-radius: var(--radius-md); border: 1px solid rgba(225,29,72,0.2); width: 100%;
+}
+.alert-title {
+  font-size: 10px; font-weight: 900; color: var(--rose);
+  text-transform: uppercase; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+  border-bottom: 1px solid rgba(225,29,72,0.2); padding-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.alert-item {
+  display: flex; justify-content: space-between; align-items: center;
+  color: var(--rose); font-size: 10.5px; font-weight: 700;
+  padding: 5px 0; border-bottom: 1px solid rgba(225,29,72,0.08);
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-item-val { font-weight: 900; font-size: 11px; }
+
+/* ==========================================================
+   ⚡ ACTION BUTTONS
+========================================================== */
+.action-btn {
+  border: none; padding: 5px 10px; border-radius: 5px; color: #fff;
+  font-weight: 800; font-size: 9.5px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: 0.15s; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.action-btn:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.12); }
+.btn-approve { background: var(--emerald); }
+.btn-reject  { background: var(--rose); }
+.btn-view    { background: var(--accent-blue); }
+
+/* ==========================================================
+   🔍 FILTER BAR
+========================================================== */
+.filter-bar {
+  background: var(--slate-bg); padding: 10px; border-radius: var(--radius-md);
+  margin-bottom: 12px; border: 1px solid var(--border-color);
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.filter-bar select,
+.filter-bar input {
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color);
+  font-size: 11px; font-weight: 700; background: var(--card-bg);
+  color: var(--text-main); outline: none; flex: 1; min-width: 110px;
+}
+.filter-bar input { flex: 2; min-width: 180px; }
+
+/* ==========================================================
+   🪟 MODAL SYSTEM
+========================================================== */
+.modal-overlay {
+  display: none; position: fixed; z-index: 2000; inset: 0;
+  background: rgba(15,23,42,0.65); backdrop-filter: blur(5px);
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal-content {
+  background: var(--card-bg); width: 100%; max-width: 960px;
+  max-height: 88vh; border-radius: var(--radius-premium);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color); animation: fadeIn 0.25s ease;
+}
+.modal-header {
+  padding: 14px 18px; border-bottom: 1px solid var(--border-color);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--slate-bg); flex-shrink: 0;
+}
+.modal-header h3 { font-size: 13px; font-weight: 900; color: var(--accent-blue); text-transform: uppercase; }
+.close-btn {
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: bold; transition: 0.2s;
+}
+.close-btn:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+.modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+
+/* ==========================================================
+   🗓️ HEATMAP
+========================================================== */
+.hm-cell { text-align: center; font-weight: 800; border-radius: 4px; }
+.hm-high { background: rgba(5,150,105,0.15); color: var(--emerald); }
+.hm-mid  { background: rgba(245,158,11,0.15); color: var(--amber); }
+.hm-low  { background: rgba(225,29,72,0.15);  color: var(--rose); }
+.hm-zero { background: var(--slate-bg); color: var(--text-muted); }
+
+/* ==========================================================
+   👤 EMPLOYEE CARD (Directory)
+========================================================== */
+.emp-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+
+/* ==========================================================
+   📊 SECTION DIVIDERS
+========================================================== */
+.sub-label {
+  font-size: 9px; font-weight: 900; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin: 10px 0 6px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ==========================================================
+   📱 RESPONSIVE HELPERS
+========================================================== */
+@media(max-width:767px) {
+  .hide-mobile { display: none !important; }
+  .header-title h2 { font-size: 13px; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+
 <script>
-    function syncThemeFromParent() {
-        try { if (window.parent && window.parent.document) { document.documentElement.setAttribute("data-theme", window.parent.document.documentElement.getAttribute("data-theme")); } } catch(e) {}
-    }
-    syncThemeFromParent(); window.addEventListener('load', syncThemeFromParent);
+  function syncThemeFromParent() {
+    try {
+      if (window.parent && window.parent.document) {
+        document.documentElement.setAttribute(
+          "data-theme",
+          window.parent.document.documentElement.getAttribute("data-theme")
+        );
+      }
+    } catch(e) {}
+  }
+  syncThemeFromParent();
+  window.addEventListener('load', syncThemeFromParent);
 </script>
 </head>
 <body>
 
 <div class="dashboard-container">
 
+  <!-- ================================================
+       📌 HEADER
+  ================================================ -->
   <div class="header-panel">
     <div class="header-title">
-      <h2><i class="fa-solid fa-users-gear" style="color:var(--accent-blue); margin-right:6px;"></i> Enterprise HR Intelligence</h2>
-      <p>{{ company_id }} | Master Control Center</p>
+      <h2><i class="fa-solid fa-users-gear" style="color:var(--accent-blue); margin-right:7px;"></i>Enterprise HR Intelligence</h2>
+      <p>{{ company_id }} | Master Command Center &nbsp;·&nbsp; Live Data Feed</p>
     </div>
-    <div class="date-badge"><i class="fa-solid fa-location-dot"></i> Unit: {{ actual_location or 'ALL UNITS' }} | {{ production_for }}</div>
+    <div class="header-right">
+      <div class="date-badge">
+        <i class="fa-solid fa-location-dot"></i>
+        {{ actual_location or 'ALL UNITS' }}
+        {% if production_for %} &nbsp;·&nbsp; {{ production_for }}{% endif %}
+      </div>
+      <button class="refresh-btn" onclick="window.location.reload()">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
   </div>
 
+  <!-- ================================================
+       📊 KPI CARDS — 14 METRICS
+  ================================================ -->
   <div class="cards">
+
+    <!-- 1. Total Manpower -->
     <div class="card blue" onclick="openKpiModal('TOTAL_STAFF')">
-        <div class="card-meta"><div class="label">Total Manpower</div><div class="value">{{ total_employees }}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
+      <div class="card-meta">
+        <div class="label">Total Manpower</div>
+        <div class="value">{{ total_employees }}</div>
+        <div class="card-delta delta-flat">All registered staff</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
     </div>
-    
+
+    <!-- 2. Active Force -->
     <div class="card green" onclick="openKpiModal('ACTIVE_STAFF')">
-        <div class="card-meta"><div class="label">Active Force</div><div class="value">{{ active_employees }}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-user-check"></i></div>
+      <div class="card-meta">
+        <div class="label">Active Force</div>
+        <div class="value">{{ active_employees }}</div>
+        <div class="card-delta delta-up">Currently active</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-user-check"></i></div>
     </div>
-    
+
+    <!-- 3. Present % Today -->
     <div class="card teal" onclick="openKpiModal('PRESENT')">
-        <div class="card-meta"><div class="label">Present % Today</div><div class="value">{{ present_pct }}%</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-clipboard-user"></i></div>
+      <div class="card-meta">
+        <div class="label">Present Today</div>
+        <div class="value">{{ present_pct }}%</div>
+        <div class="card-delta {% if present_pct|float >= 85 %}delta-up{% else %}delta-down{% endif %}">
+          {{ 'Good turnout' if present_pct|float >= 85 else 'Below target' }}
+        </div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-clipboard-user"></i></div>
     </div>
-    
+
+    <!-- 4. Absent Today -->
     <div class="card orange" onclick="openKpiModal('ABSENT')">
-        <div class="card-meta"><div class="label">Absent Today</div><div class="value">{{ absent_today }}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-user-xmark"></i></div>
+      <div class="card-meta">
+        <div class="label">Absent Today</div>
+        <div class="value">{{ absent_today }}</div>
+        <div class="card-delta delta-down">Unaccounted</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-user-xmark"></i></div>
     </div>
-    
+
+    <!-- 5. Labour Cost / KG -->
     <div class="card pink">
-        <div class="card-meta"><div class="label">Labour Cost / KG</div><div class="value">₹{{ cost_per_kg }}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-scale-unbalanced"></i></div>
+      <div class="card-meta">
+        <div class="label">Labour Cost/KG</div>
+        <div class="value">₹{{ cost_per_kg }}</div>
+        <div class="card-delta delta-flat">Per kg processed</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-scale-unbalanced"></i></div>
     </div>
-    
+
+    <!-- 6. Est. Labour Cost Today -->
     <div class="card indigo">
-        <div class="card-meta"><div class="label">Est. Labour Cost</div><div class="value">₹{{"{:.0f}".format(labor_cost_today)}}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+      <div class="card-meta">
+        <div class="label">Est. Labour Cost</div>
+        <div class="value">₹{{ "{:.0f}".format(labor_cost_today) }}</div>
+        <div class="card-delta delta-flat">Today's estimate</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-indian-rupee-sign"></i></div>
     </div>
-    
+
+    <!-- 7. OT Hours Today -->
     <div class="card purple" onclick="openKpiModal('OT_TODAY')">
-        <div class="card-meta"><div class="label">OT Hours Logged</div><div class="value">{{ ot_hours_today }} <small>Hrs</small></div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-clock"></i></div>
+      <div class="card-meta">
+        <div class="label">OT Hours Logged</div>
+        <div class="value">{{ ot_hours_today }}<small>Hrs</small></div>
+        <div class="card-delta delta-amber" style="color:var(--amber);">Pending approval</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-clock"></i></div>
     </div>
-    
+
+    <!-- 8. Productivity -->
     <div class="card green">
-        <div class="card-meta"><div class="label">Productivity</div><div class="value">{{ employee_productivity }}%</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
+      <div class="card-meta">
+        <div class="label">Productivity</div>
+        <div class="value">{{ employee_productivity }}%</div>
+        <div class="card-delta {% if employee_productivity|float >= 80 %}delta-up{% else %}delta-down{% endif %}">
+          Efficiency index
+        </div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
     </div>
 
+    <!-- 9. Permanent Labour % -->
     <div class="card blue" onclick="openKpiModal('PERMANENT')">
-        <div class="card-meta"><div class="label">Permanent Labor</div><div class="value">{{ perm_pct }}%</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-building-user"></i></div>
+      <div class="card-meta">
+        <div class="label">Permanent Labor</div>
+        <div class="value">{{ perm_pct }}%</div>
+        <div class="card-delta delta-flat">of workforce</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-building-user"></i></div>
     </div>
-    
+
+    <!-- 10. Contract Labour % -->
     <div class="card orange" onclick="openKpiModal('CONTRACT')">
-        <div class="card-meta"><div class="label">Contract Labor</div><div class="value">{{ contract_pct }}%</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-helmet-safety"></i></div>
+      <div class="card-meta">
+        <div class="label">Contract Labor</div>
+        <div class="value">{{ contract_pct }}%</div>
+        <div class="card-delta delta-flat">of workforce</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-helmet-safety"></i></div>
     </div>
-    
+
+    <!-- 11. Avg Net Salary -->
     <div class="card gray">
-        <div class="card-meta"><div class="label">Avg Net Salary</div><div class="value">₹{{"{:.0f}".format(avg_salary)}}</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-money-check-dollar"></i></div>
+      <div class="card-meta">
+        <div class="label">Avg Net Salary</div>
+        <div class="value">₹{{ "{:.0f}".format(avg_salary) }}</div>
+        <div class="card-delta delta-flat">Per employee</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-money-check-dollar"></i></div>
     </div>
-    
+
+    <!-- 12. Attrition YTD -->
     <div class="card red">
-        <div class="card-meta"><div class="label">Attrition (YTD)</div><div class="value">{{ attrition_rate }}%</div></div>
-        <div class="card-icon-zone"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+      <div class="card-meta">
+        <div class="label">Attrition (YTD)</div>
+        <div class="value">{{ attrition_rate }}%</div>
+        <div class="card-delta {% if attrition_rate|float <= 5 %}delta-up{% else %}delta-down{% endif %}">
+          {{ 'Under control' if attrition_rate|float <= 5 else 'Needs attention' }}
+        </div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
     </div>
 
+    <!-- 13. Pending OT Approvals -->
     <div class="card amber" onclick="switchTab('tab-approvals', document.getElementById('btnTabApprovals'))">
-        <div class="card-meta">
-            <div class="label">Pending OT</div>
-            <div class="value">{{ pending_ot_count|default(0) }}</div>
-        </div>
-        <div class="card-icon-zone"><i class="fa-solid fa-stopwatch"></i></div>
+      <div class="card-meta">
+        <div class="label">Pending OT</div>
+        <div class="value">{{ pending_ot_count|default(0) }}</div>
+        <div class="card-delta" style="color:var(--amber);">Awaiting approval</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-stopwatch"></i></div>
     </div>
 
+    <!-- 14. Pending Duty Approvals -->
     <div class="card red" onclick="switchTab('tab-approvals', document.getElementById('btnTabApprovals'))">
-        <div class="card-meta">
-            <div class="label">Pending Duty</div>
-            <div class="value">{{ pending_duty_count|default(0) }}</div>
-        </div>
-        <div class="card-icon-zone"><i class="fa-solid fa-clipboard-check"></i></div>
+      <div class="card-meta">
+        <div class="label">Pending Duty</div>
+        <div class="value">{{ pending_duty_count|default(0) }}</div>
+        <div class="card-delta delta-down">Awaiting approval</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-clipboard-check"></i></div>
     </div>
+
   </div>
 
+  <!-- ================================================
+       🗂️ TABS NAVIGATION
+  ================================================ -->
   <div class="tabs-wrapper">
-    <button class="tab-btn active" onclick="switchTab('tab-ops', this)"><i class="fa-solid fa-stopwatch"></i> Operations & Shifts</button>
-    <button class="tab-btn" onclick="switchTab('tab-cost', this)"><i class="fa-solid fa-indian-rupee-sign"></i> Cost Centers & Payroll</button>
-    <button class="tab-btn" onclick="switchTab('tab-compliance', this)"><i class="fa-solid fa-shield-halved"></i> Compliance & Risks</button>
-    <button class="tab-btn" id="btnTabApprovals" onclick="switchTab('tab-approvals', this)"><i class="fa-solid fa-circle-check" style="color:var(--amber)"></i> Queue Approvals</button>
-    <button class="tab-btn" onclick="switchTab('tab-directory', this)"><i class="fa-solid fa-address-book"></i> Master Directory</button>
+    <button class="tab-btn active" onclick="switchTab('tab-ops', this)">
+      <i class="fa-solid fa-stopwatch"></i> Operations &amp; Shifts
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-cost', this)">
+      <i class="fa-solid fa-indian-rupee-sign"></i> Cost Centers &amp; Payroll
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-compliance', this)">
+      <i class="fa-solid fa-shield-halved"></i> Compliance &amp; Risks
+    </button>
+    <button class="tab-btn" id="btnTabApprovals" onclick="switchTab('tab-approvals', this)">
+      <i class="fa-solid fa-circle-check" style="color:var(--amber)"></i> Queue Approvals
+      {% set pending_total = (pending_ot_count|default(0)) + (pending_duty_count|default(0)) %}
+      {% if pending_total > 0 %}
+        <span class="tab-counter" style="background:var(--amber); color:#fff;">{{ pending_total }}</span>
+      {% endif %}
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-directory', this)">
+      <i class="fa-solid fa-address-book"></i> Master Directory
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-analytics', this)">
+      <i class="fa-solid fa-chart-pie"></i> Analytics
+    </button>
   </div>
 
+
+  <!-- ====================================================
+       TAB 1: OPERATIONS & SHIFTS
+  ==================================================== -->
   <div id="tab-ops" class="tab-content active">
-    <div class="core-layout-grid">
-      
-      <div class="section-card col-span-full">
-        <div class="section-header"><div><i class="fa-solid fa-fire-flame-curved" style="color:var(--rose);"></i> 7-Day Department Attendance Heatmap</div></div>
+    <div class="core-grid">
+
+      <!-- 7-Day Attendance Heatmap — Full Width -->
+      <div class="section-card span-3">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-fire-flame-curved" style="color:var(--rose);"></i>
+            7-Day Department Attendance Heatmap
+          </div>
+          <div class="sh-right">
+            <span class="badge badge-slate">Last 7 days</span>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Department</th>{% for d in heatmap_days %}<th class="text-center">{{ d }}</th>{% endfor %}</tr>
+              <tr>
+                <th>Department</th>
+                {% for d in heatmap_days %}
+                  <th class="text-center">{{ d }}</th>
+                {% endfor %}
+                <th class="text-right">Avg</th>
+              </tr>
             </thead>
             <tbody>
               {% for dept, counts in heatmap_data.items() %}
               <tr>
-                <td style="font-weight: 800;">{{ dept or 'GENERAL' }}</td>
+                <td class="td-bold">{{ dept or 'GENERAL' }}</td>
                 {% for c in counts %}
-                  {% if c > 10 %}<td class="hm-cell hm-high">{{ c }}</td>
-                  {% elif c > 0 %}<td class="hm-cell hm-mid">{{ c }}</td>
-                  {% else %}<td class="hm-cell hm-low">{{ c }}</td>{% endif %}
+                  {% if c > 10 %}
+                    <td class="hm-cell hm-high">{{ c }}</td>
+                  {% elif c > 0 %}
+                    <td class="hm-cell hm-mid">{{ c }}</td>
+                  {% else %}
+                    <td class="hm-cell hm-zero">—</td>
+                  {% endif %}
                 {% endfor %}
+                <td class="text-right td-bold">
+                  {% if counts %}{{ "%.0f"|format(counts|sum / counts|length) }}{% else %}0{% endif %}
+                </td>
               </tr>
+              {% else %}
+              <tr><td colspan="10" class="empty-state"><i class="fa-solid fa-calendar-xmark"></i>No heatmap data available</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="section-card span-large-2">
-        <div class="section-header"><div><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-blue);"></i> Shift Performance Matrix</div></div>
+      <!-- Shift Performance Matrix -->
+      <div class="section-card span-2">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-blue);"></i>
+            Shift Performance Matrix
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Shift Name</th><th class="text-right">Staff Count</th><th class="text-right">Total OT (Hrs)</th><th class="text-right">Efficiency %</th></tr>
+              <tr>
+                <th>Shift Name</th>
+                <th class="text-right">Staff Count</th>
+                <th class="text-right">Total OT (Hrs)</th>
+                <th class="text-right">Avg Hours</th>
+                <th class="text-right">Efficiency %</th>
+              </tr>
             </thead>
             <tbody>
               {% for s in shift_performance %}
               <tr>
-                <td style="font-weight: 800; color:var(--accent-blue);">{{ s.shift }}</td>
-                <td class="text-right" style="font-weight: 800;">{{ s.employees }}</td>
-                <td class="text-right" style="color:var(--amber); font-weight:800;">{{ s.ot_hrs }}</td>
+                <td class="td-blue">{{ s.shift }}</td>
+                <td class="text-right td-bold">{{ s.employees }}</td>
+                <td class="text-right td-amber">{{ s.ot_hrs }}</td>
+                <td class="text-right">{{ s.avg_hrs|default('—') }}</td>
                 <td class="text-right">
-                  <span class="badge" style="{% if s.efficiency > 80 %}background:var(--emerald);color:#fff;{% else %}background:var(--rose);color:#fff;{% endif %}">{{ s.efficiency }}%</span>
+                  {% if s.efficiency > 80 %}
+                    <span class="badge badge-solid-green">{{ s.efficiency }}%</span>
+                  {% elif s.efficiency > 60 %}
+                    <span class="badge badge-solid-amber">{{ s.efficiency }}%</span>
+                  {% else %}
+                    <span class="badge badge-solid-red">{{ s.efficiency }}%</span>
+                  {% endif %}
                 </td>
               </tr>
+              {% else %}
+              <tr><td colspan="5" class="empty-state"><i class="fa-solid fa-circle-exclamation"></i>No shift data</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
 
+      <!-- Hours Logged Spectrum Chart -->
       <div class="section-card">
-        <div class="section-header"><div><i class="fa-solid fa-chart-simple" style="color:var(--indigo);"></i> Hours Logged Spectrum</div></div>
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-chart-simple" style="color:var(--indigo);"></i>
+            Hours Logged Spectrum
+          </div>
+        </div>
         <div class="chart-box"><canvas id="prodChart"></canvas></div>
+        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+          <span class="badge" style="background:rgba(225,29,72,0.1);color:var(--rose);">● &lt;4h Undertime</span>
+          <span class="badge" style="background:rgba(37,99,235,0.1);color:var(--accent-blue);">● 4-8h Normal</span>
+          <span class="badge" style="background:rgba(5,150,105,0.1);color:var(--emerald);">● 8-12h OT</span>
+          <span class="badge" style="background:rgba(217,119,6,0.1);color:var(--amber);">● 12h+ Extended</span>
+        </div>
       </div>
+
+      <!-- Today's Present / Absent Quick Summary -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-calendar-day" style="color:var(--teal);"></i>
+            Today's Attendance Split
+          </div>
+          <span class="badge badge-blue">Live</span>
+        </div>
+        <div class="mini-cards-row" style="grid-template-columns: repeat(2,1fr);">
+          <div class="mini-card" style="border-top: 3px solid var(--emerald);">
+            <h4>Present</h4>
+            <div class="mini-val" style="color:var(--emerald);">{{ present_today|default(0) }}</div>
+          </div>
+          <div class="mini-card" style="border-top: 3px solid var(--rose);">
+            <h4>Absent</h4>
+            <div class="mini-val" style="color:var(--rose);">{{ absent_today }}</div>
+          </div>
+          <div class="mini-card" style="border-top: 3px solid var(--amber);">
+            <h4>Half Day</h4>
+            <div class="mini-val" style="color:var(--amber);">{{ half_day_today|default(0) }}</div>
+          </div>
+          <div class="mini-card" style="border-top: 3px solid var(--indigo);">
+            <h4>OT Workers</h4>
+            <div class="mini-val" style="color:var(--indigo);">{{ ot_workers_today|default(0) }}</div>
+          </div>
+        </div>
+        <div class="gauge-row" style="margin-top:8px;">
+          <div class="gauge-label">
+            <span>Attendance Rate</span>
+            <span style="color:var(--emerald);">{{ present_pct }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ present_pct }}%; background: {% if present_pct|float >= 85 %}var(--emerald){% elif present_pct|float >= 70 %}var(--amber){% else %}var(--rose){% endif %};"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
+
+  <!-- ====================================================
+       TAB 2: COST CENTERS & PAYROLL
+  ==================================================== -->
   <div id="tab-cost" class="tab-content">
-    <div class="core-layout-grid">
-      
-      <div class="section-card span-large-2">
-        <div class="section-header"><div><i class="fa-solid fa-building" style="color:var(--accent-blue);"></i> Department Cost Center</div></div>
+    <div class="core-grid">
+
+      <!-- Department Cost Center Table -->
+      <div class="section-card span-2">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-building" style="color:var(--accent-blue);"></i>
+            Department Cost Center
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Department</th><th class="text-right">Employees</th><th class="text-right">Salary Cost (₹)</th><th class="text-right">Avg Salary (₹)</th><th class="text-right">% of Total</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th class="text-right">Employees</th>
+                <th class="text-right">Salary Cost (₹)</th>
+                <th class="text-right">Avg Salary (₹)</th>
+                <th class="text-right">% of Total</th>
+              </tr>
+            </thead>
             <tbody>
               {% for d in dept_cost_center %}
               <tr>
-                <td style="font-weight: 800;">{{ d.dept }}</td><td class="text-right">{{ d.emps }}</td>
-                <td class="text-right" style="color:var(--rose); font-weight:800;">{{"{:,.0f}".format(d.total_sal)}}</td>
-                <td class="text-right">{{"{:,.0f}".format(d.avg_sal)}}</td>
-                <td class="text-right"><span class="badge" style="background:var(--slate-bg); color:var(--text-main); border:1px solid var(--border-color);">{{ d.cost_pct }}%</span></td>
+                <td class="td-bold">{{ d.dept }}</td>
+                <td class="text-right">{{ d.emps }}</td>
+                <td class="text-right td-rose">{{ "{:,.0f}".format(d.total_sal) }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(d.avg_sal) }}</td>
+                <td class="text-right">
+                  <span class="badge badge-slate">{{ d.cost_pct }}%</span>
+                </td>
               </tr>
+              {% else %}
+              <tr><td colspan="5" class="empty-state"><i class="fa-solid fa-building-circle-exclamation"></i>No dept data</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="section-card span-large-2">
-        <div class="section-header"><div><i class="fa-solid fa-helmet-safety" style="color:var(--amber);"></i> Contractor Performance</div></div>
+      <!-- Salary Chart -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-money-check-dollar" style="color:var(--accent-blue);"></i>
+            Salary Tier Distribution
+          </div>
+        </div>
+        <div class="chart-box-lg"><canvas id="salaryChart"></canvas></div>
+      </div>
+
+      <!-- Contractor Performance -->
+      <div class="section-card span-2">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-helmet-safety" style="color:var(--amber);"></i>
+            Contractor Performance Analytics
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Contractor Name</th><th class="text-right">Base Manpower</th><th class="text-right">Present Today</th><th class="text-right">Productivity %</th><th class="text-right">Net Payroll (₹)</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Contractor Name</th>
+                <th class="text-right">Base Manpower</th>
+                <th class="text-right">Present Today</th>
+                <th class="text-right">Attendance %</th>
+                <th class="text-right">Productivity %</th>
+                <th class="text-right">Net Payroll (₹)</th>
+              </tr>
+            </thead>
             <tbody>
               {% for c in contractor_analytics %}
               <tr>
-                <td style="font-weight: 800; color:var(--indigo);">{{ c.name }}</td><td class="text-right">{{ c.manpower }}</td><td class="text-right" style="color:var(--emerald); font-weight:800;">{{ c.present }}</td>
-                <td class="text-right"><span class="badge" style="{% if c.productivity >= 75 %}background:var(--emerald);color:#fff;{% else %}background:var(--rose);color:#fff;{% endif %}">{{ c.productivity }}%</span></td>
-                <td class="text-right" style="font-weight:800;">{{"{:,.0f}".format(c.salary)}}</td>
+                <td class="td-bold" style="color:var(--indigo);">{{ c.name }}</td>
+                <td class="text-right">{{ c.manpower }}</td>
+                <td class="text-right td-green">{{ c.present }}</td>
+                <td class="text-right">
+                  {% set att_pct = (c.present / c.manpower * 100)|round(0)|int if c.manpower > 0 else 0 %}
+                  <span class="badge {% if att_pct >= 80 %}badge-green{% elif att_pct >= 60 %}badge-amber{% else %}badge-red{% endif %}">{{ att_pct }}%</span>
+                </td>
+                <td class="text-right">
+                  <span class="badge {% if c.productivity >= 75 %}badge-solid-green{% else %}badge-solid-red{% endif %}">{{ c.productivity }}%</span>
+                </td>
+                <td class="text-right td-bold">{{ "{:,.0f}".format(c.salary) }}</td>
               </tr>
+              {% else %}
+              <tr><td colspan="6" class="empty-state"><i class="fa-solid fa-hard-hat"></i>No contractor data</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="section-card span-large-2">
-        <div class="section-header"><div><i class="fa-solid fa-money-bill-transfer" style="color:var(--emerald);"></i> Overtime Control Center</div></div>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-          <div class="ot-card"><h4>Pending OT</h4><h2 style="color:var(--amber);">{{ "{:.1f}".format(ot_center.PENDING) }}h</h2></div>
-          <div class="ot-card"><h4>Approved OT</h4><h2 style="color:var(--emerald);">{{ "{:.1f}".format(ot_center.APPROVED) }}h</h2></div>
-          <div class="ot-card"><h4>Rejected OT</h4><h2 style="color:var(--rose);">{{ "{:.1f}".format(ot_center.REJECTED) }}h</h2></div>
-          <div class="ot-card"><h4>Est. OT Cost</h4><h2 style="color:var(--rose);">₹{{ "{:,.0f}".format(ot_center.TOTAL_COST) }}</h2></div>
+      <!-- OT Control Center -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-money-bill-transfer" style="color:var(--emerald);"></i>
+            Overtime Control Center
+          </div>
         </div>
-      </div>
-
-      <div class="section-card span-large-2">
-        <div class="section-header"><div><i class="fa-solid fa-money-check-dollar" style="color:var(--accent-blue);"></i> Salary Tier Distribution</div></div>
-        <div class="chart-box"><canvas id="salaryChart"></canvas></div>
+        <div class="mini-cards-row">
+          <div class="mini-card" style="border-top:3px solid var(--amber);">
+            <h4>Pending OT</h4>
+            <div class="mini-val" style="color:var(--amber);">{{ "{:.1f}".format(ot_center.PENDING) }}h</div>
+          </div>
+          <div class="mini-card" style="border-top:3px solid var(--emerald);">
+            <h4>Approved OT</h4>
+            <div class="mini-val" style="color:var(--emerald);">{{ "{:.1f}".format(ot_center.APPROVED) }}h</div>
+          </div>
+          <div class="mini-card" style="border-top:3px solid var(--rose);">
+            <h4>Rejected OT</h4>
+            <div class="mini-val" style="color:var(--rose);">{{ "{:.1f}".format(ot_center.REJECTED) }}h</div>
+          </div>
+          <div class="mini-card" style="border-top:3px solid var(--rose);">
+            <h4>Est. OT Cost</h4>
+            <div class="mini-val" style="color:var(--rose); font-size:15px;">₹{{ "{:,.0f}".format(ot_center.TOTAL_COST) }}</div>
+          </div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">
+            <span>OT Approval Rate</span>
+            <span>{% set total_ot = ot_center.APPROVED + ot_center.REJECTED %}{{ "%.0f"|format(ot_center.APPROVED / total_ot * 100) if total_ot > 0 else 0 }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: {% set total_ot = ot_center.APPROVED + ot_center.REJECTED %}{{ (ot_center.APPROVED / total_ot * 100)|round(0)|int if total_ot > 0 else 0 }}%; background:var(--emerald);"></div>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 
+
+  <!-- ====================================================
+       TAB 3: COMPLIANCE & RISKS
+  ==================================================== -->
   <div id="tab-compliance" class="tab-content">
-    <div class="core-layout-grid">
-      
+    <div class="core-grid">
+
+      <!-- Statutory Coverage -->
       <div class="section-card">
-        <div class="section-header"><div><i class="fa-solid fa-scale-balanced" style="color:var(--emerald);"></i> Statutory Coverage</div></div>
-        <div class="gauge-container" style="margin-top:4px;">
-          <div class="data-row"><span>PF Coverage Ratio</span><span style="color:var(--emerald);">{{ pf_coverage_pct }}%</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width: {{ pf_coverage_pct }}%; background: var(--emerald);"></div></div>
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-scale-balanced" style="color:var(--emerald);"></i>
+            Statutory Coverage
+          </div>
         </div>
-        <div class="gauge-container" style="margin-top:8px;">
-          <div class="data-row"><span>ESI Coverage Ratio</span><span style="color:var(--accent-blue);">{{ esi_coverage_pct }}%</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width: {{ esi_coverage_pct }}%; background: var(--accent-blue);"></div></div>
+        <div class="gauge-row">
+          <div class="gauge-label">
+            <span>PF Coverage Ratio</span>
+            <span style="color:var(--emerald); font-weight:800;">{{ pf_coverage_pct }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ pf_coverage_pct }}%; background:var(--emerald);"></div>
+          </div>
         </div>
-        <div class="alert-box" style="margin-top:16px;">
-          <div class="alert-title"><i class="fa-solid fa-triangle-exclamation"></i> Statutory Voids</div>
-          <div class="alert-item"><span>Missing UAN Numbers</span><span>{{ stat_missing_uan }} Profiles</span></div>
-          <div class="alert-item"><span>Missing ESI Numbers</span><span>{{ stat_missing_esi }} Profiles</span></div>
+        <div class="gauge-row">
+          <div class="gauge-label">
+            <span>ESI Coverage Ratio</span>
+            <span style="color:var(--accent-blue); font-weight:800;">{{ esi_coverage_pct }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ esi_coverage_pct }}%; background:var(--accent-blue);"></div>
+          </div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">
+            <span>PT Covered Employees</span>
+            <span style="color:var(--indigo); font-weight:800;">{{ pt_coverage_pct|default(0) }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ pt_coverage_pct|default(0) }}%; background:var(--indigo);"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="alert-box">
+            <div class="alert-title"><i class="fa-solid fa-triangle-exclamation"></i> Statutory Voids</div>
+            <div class="alert-item">
+              <span>Missing UAN Numbers</span>
+              <span class="alert-item-val">{{ stat_missing_uan }} Profiles</span>
+            </div>
+            <div class="alert-item">
+              <span>Missing ESI Numbers</span>
+              <span class="alert-item-val">{{ stat_missing_esi }} Profiles</span>
+            </div>
+            <div class="alert-item">
+              <span>PF Not Applicable</span>
+              <span class="alert-item-val">{{ stat_pf_na|default(0) }} Employees</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Master Risk Registry (KYC) -->
       <div class="section-card">
-        <div class="section-header"><div><i class="fa-solid fa-biohazard" style="color:var(--rose);"></i> Master Risk Registry</div></div>
-        <div class="alert-box" style="height: 100%;">
-          <div class="alert-title"><i class="fa-solid fa-radiation"></i> Critical Missing KYC</div>
-          <div class="alert-item"><span>PAN Card Missing</span><span>{{ risk_no_pan }} Alerts</span></div>
-          <div class="alert-item"><span>Aadhaar Missing</span><span>{{ risk_no_aadhar }} Alerts</span></div>
-          <div class="alert-item"><span>Bank A/C Missing</span><span>{{ risk_no_bank }} Alerts</span></div>
-          <div class="alert-item"><span>Mobile No Missing</span><span>{{ risk_no_mobile }} Alerts</span></div>
-          <div class="alert-item"><span>Biometric/Photo Missing</span><span>{{ risk_no_photo }} Alerts</span></div>
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-biohazard" style="color:var(--rose);"></i>
+            Master Risk Registry
+          </div>
+        </div>
+        <div class="alert-box" style="height:100%;">
+          <div class="alert-title"><i class="fa-solid fa-radiation"></i> Critical Missing KYC Documents</div>
+          <div class="alert-item">
+            <span>PAN Card Missing</span>
+            <span class="alert-item-val">{{ risk_no_pan }} Alerts</span>
+          </div>
+          <div class="alert-item">
+            <span>Aadhaar Missing</span>
+            <span class="alert-item-val">{{ risk_no_aadhar }} Alerts</span>
+          </div>
+          <div class="alert-item">
+            <span>Bank A/C Missing</span>
+            <span class="alert-item-val">{{ risk_no_bank }} Alerts</span>
+          </div>
+          <div class="alert-item">
+            <span>Mobile No Missing</span>
+            <span class="alert-item-val">{{ risk_no_mobile }} Alerts</span>
+          </div>
+          <div class="alert-item">
+            <span>Biometric / Photo Missing</span>
+            <span class="alert-item-val">{{ risk_no_photo }} Alerts</span>
+          </div>
+          <div class="alert-item">
+            <span>Email Missing</span>
+            <span class="alert-item-val">{{ risk_no_email|default(0) }} Alerts</span>
+          </div>
         </div>
       </div>
 
+      <!-- Salary Advance Control -->
       <div class="section-card">
-        <div class="section-header"><div><i class="fa-solid fa-hand-holding-dollar" style="color:var(--amber);"></i> Salary Advance Control</div></div>
-        <div class="data-row"><span>Total Disbursed YTD</span><span>₹{{"{:,.0f}".format(adv_issued)}}</span></div>
-        <div class="data-row"><span>Total Recovered</span><span style="color:var(--emerald);">₹{{"{:,.0f}".format(adv_balance)}} ({{ adv_recovery_pct }}%)</span></div>
-        <div class="data-row" style="background: rgba(225,29,72,0.1); border:1px solid rgba(225,29,72,0.2); border-radius:6px; margin-top:8px;">
-          <span style="color:var(--rose);">Net Outstanding</span><span style="color:var(--rose);">₹{{"{:,.0f}".format(adv_balance)}}</span>
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-hand-holding-dollar" style="color:var(--amber);"></i>
+            Salary Advance Control
+          </div>
         </div>
-        <div style="font-size:9px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin:12px 0 6px;">Top Outstanding</div>
-        {% for a in top_10_advances[:5] %}
-        <div class="data-row" style="padding:4px 0; border:none; font-size:10px;"><span>&bull; {{ a.employee_name }}</span><span style="color:var(--rose);">₹{{"{:.0f}".format(a.remaining_balance)}}</span></div>
+        <div class="data-row">
+          <span>Total Disbursed (YTD)</span>
+          <span class="td-bold">₹{{ "{:,.0f}".format(adv_issued) }}</span>
+        </div>
+        <div class="data-row">
+          <span>Total Recovered</span>
+          <span style="color:var(--emerald); font-weight:800;">₹{{ "{:,.0f}".format(adv_balance) }} <span class="badge badge-green">{{ adv_recovery_pct }}%</span></span>
+        </div>
+        <div class="data-row" style="background:rgba(225,29,72,0.06); border-radius:6px; border:1px solid rgba(225,29,72,0.15); margin:6px 0; padding: 8px 10px;">
+          <span style="color:var(--rose);">Net Outstanding</span>
+          <span style="color:var(--rose); font-weight:900; font-size:13px;">₹{{ "{:,.0f}".format(adv_balance) }}</span>
+        </div>
+        <div class="sub-label">Top Outstanding Balances</div>
+        {% for a in top_10_advances[:6] %}
+        <div class="data-row" style="font-size:10.5px;">
+          <span>{{ a.employee_name }}</span>
+          <span style="color:var(--rose);">₹{{ "{:.0f}".format(a.remaining_balance) }}</span>
+        </div>
+        {% else %}
+        <div style="color:var(--text-muted); font-size:10px; padding:10px 0; text-align:center;">No outstanding advances</div>
         {% endfor %}
       </div>
 
+      <!-- Calendar & Leaves -->
       <div class="section-card">
-        <div class="section-header"><div><i class="fa-solid fa-cake-candles" style="color:var(--indigo);"></i> Calendar & Leaves</div></div>
-        <div class="data-row"><span>Upcoming Birthdays (7D)</span><span class="badge" style="background:var(--accent-blue);color:#fff;">{{ bday_7|length }}</span></div>
-        <div class="data-row"><span>Upcoming Birthdays (30D)</span><span class="badge" style="background:var(--slate-bg);color:var(--text-main); border:1px solid var(--border-color);">{{ bday_30|length }}</span></div>
-        <div class="data-row"><span>Work Anniversaries (7D)</span><span class="badge" style="background:var(--emerald);color:#fff;">{{ anniv_7|length }}</span></div>
-        
-        <div style="font-size:9px; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin:12px 0 6px;">Leave Balances (Company)</div>
-        <div style="display:flex; gap:8px;">
-          <div class="ot-card" style="flex:1; padding:8px;"><h4>CL</h4><h2 style="font-size:14px;">{{ leave_module.cl }}</h2></div>
-          <div class="ot-card" style="flex:1; padding:8px;"><h4>SL</h4><h2 style="font-size:14px;">{{ leave_module.sl }}</h2></div>
-          <div class="ot-card" style="flex:1; padding:8px;"><h4>EL</h4><h2 style="font-size:14px;">{{ leave_module.el }}</h2></div>
-          <div class="ot-card" style="flex:1; padding:8px; border-color:var(--amber);"><h4>Pending</h4><h2 style="font-size:14px; color:var(--amber);">{{ leave_module.pending_approvals }}</h2></div>
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-cake-candles" style="color:var(--indigo);"></i>
+            Calendar &amp; Leaves
+          </div>
+        </div>
+        <div class="data-row">
+          <span>Upcoming Birthdays (7D)</span>
+          <span class="badge badge-solid-blue">{{ bday_7|length }}</span>
+        </div>
+        <div class="data-row">
+          <span>Upcoming Birthdays (30D)</span>
+          <span class="badge badge-slate">{{ bday_30|length }}</span>
+        </div>
+        <div class="data-row">
+          <span>Work Anniversaries (7D)</span>
+          <span class="badge badge-solid-green">{{ anniv_7|length }}</span>
+        </div>
+        {% if bday_7 %}
+        <div class="sub-label">Upcoming Birthdays (Next 7 Days)</div>
+        {% for emp in bday_7[:4] %}
+        <div class="data-row" style="font-size:10px;">
+          <span>{{ emp.employee_name }}</span>
+          <span style="color:var(--indigo);">{{ emp.dob.strftime('%d %b') if emp.dob else '—' }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="sub-label" style="margin-top:12px;">Leave Balances (Company Aggregate)</div>
+        <div class="mini-cards-row">
+          <div class="mini-card">
+            <h4>CL</h4>
+            <div class="mini-val">{{ leave_module.cl }}</div>
+          </div>
+          <div class="mini-card">
+            <h4>SL</h4>
+            <div class="mini-val">{{ leave_module.sl }}</div>
+          </div>
+          <div class="mini-card">
+            <h4>EL</h4>
+            <div class="mini-val">{{ leave_module.el }}</div>
+          </div>
+          <div class="mini-card" style="border:1px solid var(--amber);">
+            <h4>Pending</h4>
+            <div class="mini-val" style="color:var(--amber);">{{ leave_module.pending_approvals }}</div>
+          </div>
         </div>
       </div>
 
     </div>
   </div>
 
+
+  <!-- ====================================================
+       TAB 4: APPROVAL QUEUES
+  ==================================================== -->
   <div id="tab-approvals" class="tab-content">
-      <div class="core-layout-grid">
-          
-          <div class="section-card col-span-full">
-              <div class="section-header"><div><i class="fa-solid fa-clock-rotate-left" style="color:var(--amber);"></i> Overtime (OT) Request Queue</div></div>
-              <div class="table-wrap">
-                  <table>
-                      <thead>
-                          <tr>
-                              <th>Emp ID</th>
-                              <th>Name</th>
-                              <th>Date</th>
-                              <th class="text-right">OT Hours</th>
-                              <th class="text-center">Action</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {% if pending_ot_rows %}
-                              {% for row in pending_ot_rows %}
-                              <tr>
-                                  <td style="font-weight: 800; color:var(--accent-blue);">{{ row.employee_id }}</td>
-                                  <td style="font-weight: 800;">{{ row.employee_name }}</td>
-                                  <td>{{ row.duty_date }}</td>
-                                  <td class="text-right" style="color:var(--amber); font-weight:900;">{{ row.calculated_ot_hours }} Hrs</td>
-                                  <td class="text-center">
-                                      <form method="post" action="/dashboard/approve_ot/{{ row.id }}" style="display:inline;">
-                                          <button type="submit" class="action-btn" style="background:var(--emerald);"><i class="fa-solid fa-check"></i> Approve</button>
-                                      </form>
-                                      <form method="post" action="/dashboard/reject_ot/{{ row.id }}" style="display:inline; margin-left:4px;">
-                                          <button type="submit" class="action-btn" style="background:var(--rose);"><i class="fa-solid fa-xmark"></i> Reject</button>
-                                      </form>
-                                  </td>
-                              </tr>
-                              {% endfor %}
-                          {% else %}
-                              <tr><td colspan="5" class="text-center" style="padding:30px; color:var(--text-muted); font-weight:700;"><i class="fa-solid fa-clipboard-check" style="font-size:24px; color:var(--emerald); display:block; margin-bottom:10px;"></i> All Caught Up! No Pending OT Requests.</td></tr>
-                          {% endif %}
-                      </tbody>
-                  </table>
-              </div>
-          </div>
+    <div class="core-grid">
 
-          <div class="section-card col-span-full">
-              <div class="section-header"><div><i class="fa-solid fa-user-check" style="color:var(--rose);"></i> Multiple Duty (Double/Triple) Queue</div></div>
-              <div class="table-wrap">
-                  <table>
-                      <thead>
-                          <tr>
-                              <th>Emp ID</th>
-                              <th>Name</th>
-                              <th>Date</th>
-                              <th class="text-center">Requested Duty</th>
-                              <th class="text-center">Action</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {% if pending_duty_rows %}
-                              {% for row in pending_duty_rows %}
-                              <tr>
-                                  <td style="font-weight: 800; color:var(--accent-blue);">{{ row.employee_id }}</td>
-                                  <td style="font-weight: 800;">{{ row.employee_name }}</td>
-                                  <td>{{ row.duty_date }}</td>
-                                  <td class="text-center">
-                                      <span class="badge" style="background:var(--rose); color:#fff; font-size:10px;">{{ row.duty_status }}</span>
-                                  </td>
-                                  <td class="text-center">
-                                      <form method="post" action="/dashboard/approve_duty/{{ row.id }}" style="display:inline;">
-                                          <button type="submit" class="action-btn" style="background:var(--emerald);"><i class="fa-solid fa-check"></i> Approve</button>
-                                      </form>
-                                      <form method="post" action="/dashboard/reject_duty/{{ row.id }}" style="display:inline; margin-left:4px;">
-                                          <button type="submit" class="action-btn" style="background:var(--rose);"><i class="fa-solid fa-xmark"></i> Reject</button>
-                                      </form>
-                                  </td>
-                              </tr>
-                              {% endfor %}
-                          {% else %}
-                              <tr><td colspan="5" class="text-center" style="padding:30px; color:var(--text-muted); font-weight:700;"><i class="fa-solid fa-clipboard-check" style="font-size:24px; color:var(--emerald); display:block; margin-bottom:10px;"></i> All Caught Up! No Pending Duty Requests.</td></tr>
-                          {% endif %}
-                      </tbody>
-                  </table>
-              </div>
+      <!-- OT Request Queue -->
+      <div class="section-card span-3">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-clock-rotate-left" style="color:var(--amber);"></i>
+            Overtime (OT) Request Queue
           </div>
-
+          <span class="badge badge-solid-amber">{{ pending_ot_count|default(0) }} Pending</span>
+        </div>
+        <div class="table-wrap scrollable">
+          <table>
+            <thead>
+              <tr>
+                <th>Emp ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Date</th>
+                <th>Shift</th>
+                <th class="text-right">OT Hours</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if pending_ot_rows %}
+                {% for row in pending_ot_rows %}
+                <tr>
+                  <td class="td-blue">{{ row.employee_id }}</td>
+                  <td class="td-bold">{{ row.employee_name }}</td>
+                  <td>{{ row.designation or '—' }}</td>
+                  <td>{{ row.duty_date }}</td>
+                  <td><span class="badge badge-blue">{{ row.shift_name or 'GENERAL' }}</span></td>
+                  <td class="text-right td-amber">{{ row.calculated_ot_hours }} Hrs</td>
+                  <td class="text-center">
+                    <form method="post" action="/dashboard/approve_ot/{{ row.id }}" style="display:inline;">
+                      <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-check"></i> Approve</button>
+                    </form>
+                    <form method="post" action="/dashboard/reject_ot/{{ row.id }}" style="display:inline; margin-left:4px;">
+                      <button type="submit" class="action-btn btn-reject"><i class="fa-solid fa-xmark"></i> Reject</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="7" class="empty-state">
+                  <i class="fa-solid fa-clipboard-check"></i>
+                  All Caught Up! No Pending OT Requests.
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <!-- Multiple Duty Queue -->
+      <div class="section-card span-3">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-user-check" style="color:var(--rose);"></i>
+            Multiple Duty (Double / Triple) Queue
+          </div>
+          <span class="badge badge-solid-red">{{ pending_duty_count|default(0) }} Pending</span>
+        </div>
+        <div class="table-wrap scrollable">
+          <table>
+            <thead>
+              <tr>
+                <th>Emp ID</th>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Shift</th>
+                <th class="text-center">Requested Duty</th>
+                <th class="text-right">Working Hrs</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if pending_duty_rows %}
+                {% for row in pending_duty_rows %}
+                <tr>
+                  <td class="td-blue">{{ row.employee_id }}</td>
+                  <td class="td-bold">{{ row.employee_name }}</td>
+                  <td>{{ row.duty_date }}</td>
+                  <td><span class="badge badge-blue">{{ row.shift_name or 'GENERAL' }}</span></td>
+                  <td class="text-center">
+                    <span class="badge badge-solid-red">{{ row.duty_status }}</span>
+                  </td>
+                  <td class="text-right td-bold">{{ row.working_hours|default('—') }}</td>
+                  <td class="text-center">
+                    <form method="post" action="/dashboard/approve_duty/{{ row.id }}" style="display:inline;">
+                      <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-check"></i> Approve</button>
+                    </form>
+                    <form method="post" action="/dashboard/reject_duty/{{ row.id }}" style="display:inline; margin-left:4px;">
+                      <button type="submit" class="action-btn btn-reject"><i class="fa-solid fa-xmark"></i> Reject</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="7" class="empty-state">
+                  <i class="fa-solid fa-clipboard-check"></i>
+                  All Caught Up! No Pending Duty Requests.
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
   </div>
 
+
+  <!-- ====================================================
+       TAB 5: MASTER DIRECTORY
+  ==================================================== -->
   <div id="tab-directory" class="tab-content">
-    <div class="section-card col-span-full">
-      <div class="section-header"><div><i class="fa-solid fa-address-book" style="color:var(--accent-blue);"></i> Searchable Master Directory</div></div>
+    <div class="section-card">
+      <div class="section-header">
+        <div class="sh-left">
+          <i class="fa-solid fa-address-book" style="color:var(--accent-blue);"></i>
+          Searchable Master Directory
+        </div>
+        <span class="badge badge-slate">{{ directory_list|length }} Records</span>
+      </div>
+
       <div class="filter-bar">
         <form method="GET" action="/dashboard/hr_command_center" id="filterForm">
           <select name="dept_filter" onchange="document.getElementById('filterForm').submit()">
             <option value="">All Departments</option>
-            {% for d in dept_cost_center %}<option value="{{ d.dept }}" {% if dept_filter == d.dept %}selected{% endif %}>{{ d.dept }}</option>{% endfor %}
+            {% for d in dept_cost_center %}
+              <option value="{{ d.dept }}" {% if dept_filter == d.dept %}selected{% endif %}>{{ d.dept }}</option>
+            {% endfor %}
           </select>
           <select name="type_filter" onchange="document.getElementById('filterForm').submit()">
             <option value="">All Tiers</option>
-            <option value="REGULAR" {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option>
+            <option value="REGULAR"    {% if type_filter == 'REGULAR' %}selected{% endif %}>REGULAR</option>
             <option value="CONTRACTOR" {% if type_filter == 'CONTRACTOR' %}selected{% endif %}>CONTRACTOR</option>
           </select>
           <select name="status_filter" onchange="document.getElementById('filterForm').submit()">
             <option value="">All States</option>
-            <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+            <option value="ACTIVE"   {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
             <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>INACTIVE</option>
           </select>
-          <input type="text" id="dirSearch" placeholder="🔍 Search Name, ID, Mobile..." onkeyup="searchDirectory()">
+          <input type="text" id="dirSearch" placeholder="🔍 Search Name, ID, Mobile, Dept..." oninput="searchDirectory()">
         </form>
       </div>
-      <div class="table-wrap" style="max-height: 500px;">
+
+      <div class="table-wrap scrollable">
         <table id="dirTable">
           <thead>
-            <tr><th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th><th>Manager</th><th>Mobile</th><th class="text-right">Salary</th><th>State</th></tr>
+            <tr>
+              <th>Emp ID</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Designation</th>
+              <th>Type</th>
+              <th>Reporting To</th>
+              <th>Mobile</th>
+              <th class="text-right">Net Salary</th>
+              <th>Joining Date</th>
+              <th>Status</th>
+            </tr>
           </thead>
           <tbody>
             {% for emp in directory_list %}
             <tr>
-              <td style="font-weight:800; color:var(--accent-blue);">{{ emp.employee_id }}</td>
-              <td style="font-weight:800;">{{ emp.employee_name }}</td>
+              <td class="td-blue">{{ emp.employee_id }}</td>
+              <td>
+                <div style="display:flex; align-items:center; gap:7px;">
+                  <div class="emp-avatar" style="background: hsl({{ loop.index0 * 47 % 360 }}, 60%, 50%);">
+                    {{ emp.employee_name[:1].upper() }}
+                  </div>
+                  <span class="td-bold">{{ emp.employee_name }}</span>
+                </div>
+              </td>
               <td>{{ emp.department or 'N/A' }}</td>
               <td>{{ emp.designation or 'N/A' }}</td>
-              <td>{{ emp.reporting_to or 'N/A' }}</td>
-              <td>{{ emp.mobile or 'N/A' }}</td>
-              <td class="text-right" style="font-weight:800;">₹{{"{:,.0f}".format(emp.current_salary)}}</td>
-              <td><span class="badge" style="{% if emp.status == 'ACTIVE' %}background:var(--emerald);color:#fff;{% else %}background:var(--rose);color:#fff;{% endif %}">{{ emp.status }}</span></td>
+              <td>
+                {% if emp.employee_type == 'CONTRACTOR' %}
+                  <span class="badge badge-amber">CONTRACT</span>
+                {% else %}
+                  <span class="badge badge-blue">REGULAR</span>
+                {% endif %}
+              </td>
+              <td>{{ emp.reporting_to or '—' }}</td>
+              <td>{{ emp.mobile or '—' }}</td>
+              <td class="text-right td-bold">₹{{ "{:,.0f}".format(emp.current_salary) }}</td>
+              <td>{{ emp.joining_date.strftime('%d-%m-%Y') if emp.joining_date else '—' }}</td>
+              <td>
+                <span class="badge {% if emp.status == 'ACTIVE' %}badge-solid-green{% else %}badge-solid-red{% endif %}">
+                  {{ emp.status }}
+                </span>
+              </td>
             </tr>
+            {% else %}
+            <tr><td colspan="10" class="empty-state"><i class="fa-solid fa-user-slash"></i>No employees found</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -584,131 +1330,352 @@
     </div>
   </div>
 
+
+  <!-- ====================================================
+       TAB 6: ANALYTICS
+  ==================================================== -->
+  <div id="tab-analytics" class="tab-content">
+    <div class="core-grid">
+
+      <!-- Monthly Attendance Trend -->
+      <div class="section-card span-2">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-chart-area" style="color:var(--emerald);"></i>
+            Monthly Attendance Trend (30 Days)
+          </div>
+        </div>
+        <div class="chart-box-lg"><canvas id="attendanceTrendChart"></canvas></div>
+      </div>
+
+      <!-- Gender / Employee Type Breakdown -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-chart-pie" style="color:var(--violet);"></i>
+            Workforce Composition
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="compositionChart"></canvas></div>
+        <div style="margin-top:10px;">
+          <div class="data-row">
+            <span>Permanent (Regular)</span>
+            <span class="badge badge-blue">{{ perm_pct }}%</span>
+          </div>
+          <div class="data-row">
+            <span>Contract Labour</span>
+            <span class="badge badge-amber">{{ contract_pct }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Department Headcount Bar -->
+      <div class="section-card span-2">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-sitemap" style="color:var(--indigo);"></i>
+            Department Headcount Distribution
+          </div>
+        </div>
+        <div class="chart-box-lg"><canvas id="deptHeadcountChart"></canvas></div>
+      </div>
+
+      <!-- Attrition & Increment Summary -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="sh-left">
+            <i class="fa-solid fa-person-walking-arrow-right" style="color:var(--rose);"></i>
+            Attrition &amp; Growth
+          </div>
+        </div>
+        <div class="data-row">
+          <span>Attrition Rate (YTD)</span>
+          <span class="badge {% if attrition_rate|float <= 5 %}badge-solid-green{% elif attrition_rate|float <= 10 %}badge-solid-amber{% else %}badge-solid-red{% endif %}">{{ attrition_rate }}%</span>
+        </div>
+        <div class="data-row">
+          <span>New Joinings (This Month)</span>
+          <span class="badge badge-solid-blue">{{ new_joinings_month|default(0) }}</span>
+        </div>
+        <div class="data-row">
+          <span>Resignations (This Month)</span>
+          <span class="badge badge-solid-red">{{ resignations_month|default(0) }}</span>
+        </div>
+        <div class="data-row">
+          <span>Increments Given (YTD)</span>
+          <span class="badge badge-solid-green">{{ increments_ytd|default(0) }}</span>
+        </div>
+        <div class="gauge-row" style="margin-top:10px;">
+          <div class="gauge-label">
+            <span>Retention Rate</span>
+            <span>{{ (100 - attrition_rate|float)|round(1) }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:{{ 100 - attrition_rate|float }}%; background:var(--emerald);"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.dashboard-container -->
+
+
+<!-- ================================================
+     🪟 KPI DRILLDOWN MODAL
+================================================ -->
+<div id="kpiModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="kpiModalTitle">Details</h3>
+      <button class="close-btn" onclick="closeKpiModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrap">
+        <table>
+          <thead id="kpiModalThead"></thead>
+          <tbody id="kpiModalTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div id="kpiModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="kpiModalTitle">Details</h3>
-            <button class="close-btn" onclick="closeKpiModal()"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="table-wrap">
-                <table class="main-table">
-                    <thead id="kpiModalThead"></thead>
-                    <tbody id="kpiModalTbody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
-// ==========================================
-// 🧭 TABS LOGIC
-// ==========================================
+// ============================================================
+// 🧭 TAB SWITCHING
+// ============================================================
 function switchTab(tabId, btnElement) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
-  btnElement.classList.add('active');
+  if (btnElement) btnElement.classList.add('active');
 }
 
-// ==========================================
-// 🔍 DIRECTORY SEARCH LOGIC
-// ==========================================
+// ============================================================
+// 🔍 DIRECTORY SEARCH
+// ============================================================
 function searchDirectory() {
-  let input = document.getElementById("dirSearch").value.toUpperCase();
-  let tr = document.getElementById("dirTable").getElementsByTagName("tr");
-  for (let i = 1; i < tr.length; i++) {
-    tr[i].style.display = tr[i].innerText.toUpperCase().indexOf(input) > -1 ? "" : "none";
+  const input = document.getElementById("dirSearch").value.toUpperCase();
+  const rows = document.getElementById("dirTable").getElementsByTagName("tr");
+  for (let i = 1; i < rows.length; i++) {
+    rows[i].style.display = rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
   }
 }
 
-// ==========================================
-// 🎨 DYNAMIC CHART ENGINE
-// ==========================================
-const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-Chart.defaults.color = getCssVar('--text-muted') || '#94a3b8'; 
-Chart.defaults.font.size = 9;
-Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+// ============================================================
+// 🎨 CHART SETUP
+// ============================================================
+const getCssVar = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+Chart.defaults.color         = '#64748b';
+Chart.defaults.font.size     = 9;
+Chart.defaults.font.family   = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.plugins.legend.display = false;
+
+// Hours Logged Spectrum
 new Chart(document.getElementById("prodChart"), {
   type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
-  data: { labels: ["<4h", "4-8h", "8-12h", "12h+"], datasets: [{ data: {{ productivity_data|tojson }}, backgroundColor: ["#e11d48", "#2563eb", "#059669", "#d97706"], borderRadius: 4 }] }
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } }
+    }
+  },
+  data: {
+    labels: ["<4h Undertime", "4-8h Normal", "8-12h OT", "12h+ Extended"],
+    datasets: [{
+      data: {{ productivity_data|tojson }},
+      backgroundColor: ["#fca5a5","#93c5fd","#6ee7b7","#fcd34d"],
+      borderRadius: 5,
+      borderSkipped: false
+    }]
+  }
 });
 
+// Salary Tier Chart
 new Chart(document.getElementById("salaryChart"), {
   type: "bar",
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{ x:{ grid:{ display:false } } } },
-  data: { labels: ["0-10k", "10k-20k", "20k-30k", "30k+"], datasets: [{ data: {{ salary_tiers|tojson }}, backgroundColor: ["#64748b", "#3b82f6", "#4f46e5", "#059669"], borderRadius: 4 }] }
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } }
+    }
+  },
+  data: {
+    labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
+    datasets: [{
+      data: {{ salary_tiers|tojson }},
+      backgroundColor: ["#94a3b8","#60a5fa","#818cf8","#34d399"],
+      borderRadius: 5,
+      borderSkipped: false
+    }]
+  }
 });
 
-// ==========================================
-// 🟢 KPI POPUP ENGINE (AJAX FETCH WITH FILTERS)
-// ==========================================
-async function openKpiModal(kpiType) {
-    const titleObj = document.getElementById('kpiModalTitle');
-    const thead = document.getElementById('kpiModalThead');
-    const tbody = document.getElementById('kpiModalTbody');
-    
-    titleObj.innerText = "Loading...";
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Filtered Data...</td></tr>`;
-    document.getElementById('kpiModal').style.display = 'flex';
+// Workforce Composition Doughnut
+new Chart(document.getElementById("compositionChart"), {
+  type: "doughnut",
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: "68%",
+    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9 }, padding: 8 } } }
+  },
+  data: {
+    labels: ["Permanent", "Contract"],
+    datasets: [{
+      data: [{{ perm_pct }}, {{ contract_pct }}],
+      backgroundColor: ["#3b82f6","#f59e0b"],
+      borderWidth: 0
+    }]
+  }
+});
 
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        const loc = urlParams.get('location') || "";
-        const prod_for = urlParams.get('production_for') || "";
-        const dept = urlParams.get('dept_filter') || "";
-        const type = urlParams.get('type_filter') || "";
-        const status = urlParams.get('status_filter') || "";
+// Attendance Trend Line
+new Chart(document.getElementById("attendanceTrendChart"), {
+  type: "line",
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { min: 0, max: 100, grid: { color: '#e2e8f0' }, ticks: { callback: v => v + '%', font: { size: 9 } } }
+    },
+    elements: { line: { tension: 0.4 }, point: { radius: 2 } }
+  },
+  data: {
+    labels: {{ attendance_trend_labels|default([])|tojson }},
+    datasets: [{
+      data: {{ attendance_trend_values|default([])|tojson }},
+      borderColor: "#2563eb",
+      backgroundColor: "rgba(37,99,235,0.08)",
+      fill: true,
+      borderWidth: 2
+    }]
+  }
+});
 
-        const apiUrl = `/dashboard/hr_kpi_details?kpi_type=${kpiType}&location=${loc}&production_for=${prod_for}&dept_filter=${dept}&type_filter=${type}&status_filter=${status}`;
-        
-        const res = await fetch(apiUrl);
-        const result = await res.json();
-
-        if(result.status === "success") {
-            tbody.innerHTML = '';
-            
-            if(result.mode === "EMPLOYEE") {
-                titleObj.innerText = "Employee Drilldown Registry";
-                thead.innerHTML = `<tr><th>Emp ID</th><th>Name</th><th>Dept</th><th>Designation</th><th>Aadhaar</th><th>Status</th></tr>`;
-                result.data.forEach(r => {
-                    let badge = r.status === 'ACTIVE' ? `background:var(--emerald);color:#fff;` : `background:var(--rose);color:#fff;`;
-                    tbody.innerHTML += `<tr>
-                        <td style="font-weight:800; color:var(--accent-blue);">${r.id}</td><td style="font-weight:800;">${r.name}</td>
-                        <td>${r.department}</td><td>${r.designation}</td>
-                        <td style="color:var(--text-muted); font-size:10px;">${r.aadhar}</td>
-                        <td><span class="badge" style="${badge}">${r.status}</span></td>
-                    </tr>`;
-                });
-            } else if (result.mode === "ATTENDANCE") {
-                titleObj.innerText = "Time & Attendance Track";
-                thead.innerHTML = `<tr><th>Emp ID</th><th>Name</th><th>Shift</th><th>Movement Flow</th><th class="text-right">Net Hrs</th><th class="text-right">OT Hrs</th></tr>`;
-                result.data.forEach(r => {
-                    tbody.innerHTML += `<tr>
-                        <td style="font-weight:800; color:var(--accent-blue);">${r.id}</td><td style="font-weight:800;">${r.name}</td>
-                        <td><span class="badge" style="background:var(--sub-bg); color:var(--accent-blue);">${r.shift}</span></td>
-                        <td style="font-size:10px;">${r.movements}</td>
-                        <td class="text-right" style="font-weight:800;">${r.hours.toFixed(1)}</td>
-                        <td class="text-right" style="color:var(--amber); font-weight:800;">${r.ot_hours.toFixed(1)}</td>
-                    </tr>`;
-                });
-            }
-
-            if(result.data.length === 0) tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:20px; color:var(--text-muted);">No records found matching this KPI criteria.</td></tr>`;
-        }
-    } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="color:var(--rose); padding:20px;">Connection Error.</td></tr>`;
+// Department Headcount Bar
+new Chart(document.getElementById("deptHeadcountChart"), {
+  type: "bar",
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } },
+      y: { grid: { display: false }, ticks: { font: { size: 9 } } }
     }
+  },
+  data: {
+    labels: {{ dept_cost_center|map(attribute='dept')|list|tojson }},
+    datasets: [{
+      data: {{ dept_cost_center|map(attribute='emps')|list|tojson }},
+      backgroundColor: [
+        "#3b82f6","#10b981","#f59e0b","#ef4444",
+        "#8b5cf6","#14b8a6","#ec4899","#6366f1","#64748b"
+      ],
+      borderRadius: 4, borderSkipped: false
+    }]
+  }
+});
+
+// ============================================================
+// 🟢 KPI POPUP ENGINE
+// ============================================================
+async function openKpiModal(kpiType) {
+  const titleEl = document.getElementById('kpiModalTitle');
+  const thead   = document.getElementById('kpiModalThead');
+  const tbody   = document.getElementById('kpiModalTbody');
+
+  titleEl.innerText = "Loading...";
+  tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-spinner fa-spin" style="font-size:18px;"></i><br>Fetching live filtered data...</td></tr>`;
+  document.getElementById('kpiModal').classList.add('open');
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const url = `/dashboard/hr_kpi_details?kpi_type=${kpiType}`
+              + `&location=${params.get('location') || ''}`
+              + `&production_for=${params.get('production_for') || ''}`
+              + `&dept_filter=${params.get('dept_filter') || ''}`
+              + `&type_filter=${params.get('type_filter') || ''}`
+              + `&status_filter=${params.get('status_filter') || ''}`;
+
+    const res    = await fetch(url);
+    const result = await res.json();
+
+    if (result.status === "success") {
+      tbody.innerHTML = '';
+
+      if (result.mode === "EMPLOYEE") {
+        titleEl.innerText = "Employee Drilldown Registry";
+        thead.innerHTML = `<tr>
+          <th>Emp ID</th><th>Name</th><th>Dept</th>
+          <th>Designation</th><th>Type</th><th>Aadhaar</th><th>Status</th>
+        </tr>`;
+        result.data.forEach(r => {
+          const badge = r.status === 'ACTIVE'
+            ? `class="badge badge-solid-green"` : `class="badge badge-solid-red"`;
+          const typeB = r.employee_type === 'CONTRACTOR'
+            ? `class="badge badge-amber"` : `class="badge badge-blue"`;
+          tbody.innerHTML += `<tr>
+            <td class="td-blue">${r.id}</td>
+            <td class="td-bold">${r.name}</td>
+            <td>${r.department}</td>
+            <td>${r.designation}</td>
+            <td><span ${typeB}>${r.employee_type || 'REGULAR'}</span></td>
+            <td style="color:var(--text-muted); font-size:10px;">${r.aadhar || '—'}</td>
+            <td><span ${badge}>${r.status}</span></td>
+          </tr>`;
+        });
+
+      } else if (result.mode === "ATTENDANCE") {
+        titleEl.innerText = "Time & Attendance Track";
+        thead.innerHTML = `<tr>
+          <th>Emp ID</th><th>Name</th><th>Shift</th>
+          <th>Movement Flow</th><th class="text-right">Net Hrs</th><th class="text-right">OT Hrs</th>
+        </tr>`;
+        result.data.forEach(r => {
+          tbody.innerHTML += `<tr>
+            <td class="td-blue">${r.id}</td>
+            <td class="td-bold">${r.name}</td>
+            <td><span class="badge badge-blue">${r.shift}</span></td>
+            <td style="font-size:10px; color:var(--text-muted);">${r.movements}</td>
+            <td class="text-right td-bold">${r.hours.toFixed(1)}</td>
+            <td class="text-right td-amber">${r.ot_hours.toFixed(1)}</td>
+          </tr>`;
+        });
+      }
+
+      if (result.data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No records found for this filter.</td></tr>`;
+      }
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--rose);">
+      <i class="fa-solid fa-circle-exclamation"></i>Connection Error. Please retry.
+    </td></tr>`;
+  }
 }
 
-function closeKpiModal() { document.getElementById('kpiModal').style.display = 'none'; }
+function closeKpiModal() {
+  document.getElementById('kpiModal').classList.remove('open');
+}
+
+// Close modal on overlay click
+document.getElementById('kpiModal').addEventListener('click', function(e) {
+  if (e.target === this) closeKpiModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeKpiModal(); });
 </script>
+
 <script src="/static/js/global-loader.js"></script>
 </body>
 </html>

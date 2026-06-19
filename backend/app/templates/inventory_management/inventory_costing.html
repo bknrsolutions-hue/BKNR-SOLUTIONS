@@ -581,10 +581,11 @@
                 const g = r.getAttribute('data-grade');
                 const v = r.getAttribute('data-variety');
                 const gl = r.getAttribute('data-glaze');
-                if(s && s !== "None") species.add(s);
-                if(g && g !== "None") grades.add(g);
-                if(v && v !== "None") varieties.add(v);
-                if(gl && gl !== "None") glazes.add(gl);
+                
+                if(s && s !== "None" && s !== "null" && s.trim() !== "") species.add(s);
+                if(g && g !== "None" && g !== "null" && g.trim() !== "") grades.add(g);
+                if(v && v !== "None" && v !== "null" && v.trim() !== "") varieties.add(v);
+                if(gl && gl !== "None" && gl !== "null" && gl.trim() !== "") glazes.add(gl);
             }
         });
         updateSelect("speciesFilter", species, "All Species");
@@ -796,6 +797,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         // 🟢 STRICT INITIAL SYNC - NO LOOPS
         syncParentScreenFilters();
+        populateDashboardFilters();
         applyFilters();
     });
 </script>

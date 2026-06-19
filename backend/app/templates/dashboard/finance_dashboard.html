@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Executive Finance Command Center | BKNR ERP</title>
+
+<script>
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root {
+    --primary-dark: #0f172a;
+    --slate-bg: #f1f5f9; 
+    --card-bg: #ffffff;
+    --accent-blue: #1d4ed8;
+    --border-color: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --radius-premium: 12px;
+    --radius-md: 8px;
+    --value-text: #000000;
+    --strip-bg: #f8fafc;
+    --input-bg: #ffffff;
+    
+    /* Logic Tones */
+    --emerald: #0d9488;
+    --emerald-bg: #f0fdf4;
+    --emerald-border: #bbf7d0;
+    --rose: #e11d48;
+    --rose-bg: #fff1f2;
+    --rose-border: #fecaca;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fef3c7;
+    --indigo: #4f46e5;
+    --indigo-bg: #eef2ff;
+  }
+
+  :root[data-theme="dark"] {
+    --primary-dark: #f8fafc; 
+    --slate-bg: #0f172a; 
+    --card-bg: #1e293b;
+    --accent-blue: #3b82f6;
+    --border-color: #334155;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --value-text: #ffffff;
+    --strip-bg: #111827;
+    --input-bg: #0f172a;
+    
+    --emerald: #10b981;
+    --emerald-bg: rgba(16, 185, 129, 0.05);
+    --emerald-border: rgba(16, 185, 129, 0.2);
+    --rose: #f43f5e;
+    --rose-bg: rgba(244, 63, 94, 0.05);
+    --rose-border: rgba(244, 63, 94, 0.2);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.05);
+    --amber-border: rgba(245, 158, 11, 0.2);
+    --indigo: #6366f1;
+    --indigo-bg: rgba(99, 102, 241, 0.05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: var(--slate-bg);
+    color: var(--text-main); 
+    padding: 16px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dashboard-container { 
+    width: 100%; 
+    max-width: 1600px;
+    margin: 0 auto; 
+  }
+
+  .header-panel {
+    background: var(--card-bg);
+    padding: 16px 20px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-title h1 { font-size: 18px; font-weight: 800; color: var(--primary-dark); }
+  .header-title p { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px;}
+
+  .control-bar { display: flex; gap: 8px; }
+  .btn-action {
+    background: var(--slate-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .btn-action:hover { background: var(--border-color); }
+
+  /* FILTER PANEL */
+  .filter-panel {
+    background: var(--card-bg);
+    padding: 14px 20px;
+    border-radius: var(--radius-premium);
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+  }
+  .filter-form { 
+    display: flex; 
+    align-items: flex-end; 
+    flex-wrap: wrap; 
+    gap: 16px; 
+  }
+  .input-field { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 6px; 
+    min-width: 160px;
+    flex: 1;
+  }
+  .input-field label { 
+    font-size: 9px; 
+    font-weight: 800; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+  }
+  .input-field input, .input-field select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-main);
+    outline: none;
+    height: 36px;
+  }
+  .btn-sync {
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    padding: 0 20px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-sync:hover { filter: brightness(1.1); }
+
+  /* KPI GRID */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .card { 
+      padding: 18px; border-radius: var(--radius-premium); 
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
+      background: var(--card-bg); border: 1px solid var(--border-color);
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: var(--accent-blue); }
+  .card-meta { text-align: left; }
+  .card-meta .label { font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; }
+  .card-meta .value { font-size: 22px; font-weight: 800; color: var(--value-text); margin-top: 6px; letter-spacing: -0.5px; }
+  .card-icon-zone {
+      width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+
+  .blue .card-icon-zone { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+  .green .card-icon-zone { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+  .red .card-icon-zone { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .purple .card-icon-zone { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+  .amber .card-icon-zone { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+
+  /* CHARTS & DETAILS GRID */
+  .grid-layout { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+  @media(min-width: 992px) { .grid-layout { grid-template-columns: repeat(2, 1fr); } }
+  @media(min-width: 1400px) { .grid-layout { grid-template-columns: repeat(3, 1fr); } }
+  
+  .span-2 { grid-column: span 1; }
+  @media(min-width: 1400px) { .span-2 { grid-column: span 2; } }
+
+  .section-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-premium);
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+  }
+  .section-header { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px; }
+  .visual-holder { position: relative; flex: 1; min-height: 220px; width: 100%; }
+
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .data-table th, .data-table td { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--border-color); }
+  .data-table th { text-transform: uppercase; font-size: 10px; color: var(--text-muted); background: var(--strip-bg); }
+  .data-table td { color: var(--primary-dark); }
+  .data-table tr:hover { background: var(--strip-bg); }
+</style>
+<link rel="stylesheet" href="/static/css/global-loader.css">
+</head>
+<body>
+
+<div class="dashboard-container">
+
+  <!-- Header -->
+  <div class="header-panel">
+    <div class="header-title">
+      <h1><i class="fa-solid fa-wallet" style="color:var(--accent-blue); margin-right:8px;"></i> FINANCE COMMAND CENTER</h1>
+      <p>System Trace Operator Session: {{ email or 'Admin Operational Mode' }}</p>
+    </div>
+    <div class="control-bar">
+      <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-panel">
+    <form class="filter-form" method="GET" action="/dashboard/finance_dashboard">
+      <div class="input-field">
+        <label><i class="fa-solid fa-building"></i> Select Entity</label>
+        <select name="company_id">
+          <option value="">All Corporate Mappings</option>
+          {% for comp in available_companies %}
+            <option value="{{ comp.code }}" {% if comp_code == comp.code or company_id == comp.code %}selected{% endif %}>
+              {{ comp.name }} ({{ comp.code }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="input-field">
+        <label>From Date</label>
+        <input type="date" name="from_date" value="{{ from_date }}">
+      </div>
+      <div class="input-field">
+        <label>To Date</label>
+        <input type="date" name="to_date" value="{{ to_date }}">
+      </div>
+      <button type="submit" class="btn-sync"><i class="fa-solid fa-rotate"></i> Sync Records</button>
+    </form>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="cards">
+    <div class="card blue">
+      <div class="card-meta">
+        <div class="label">Total Receivables</div>
+        <div class="value">₹{{"{:,}".format(receivables_outstanding)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+    </div>
+    <div class="card red">
+      <div class="card-meta">
+        <div class="label">Total Payables</div>
+        <div class="value">₹{{"{:,}".format(payables_outstanding)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-file-invoice"></i></div>
+    </div>
+    <div class="card green">
+      <div class="card-meta">
+        <div class="label">Bank & Liquid Cash</div>
+        <div class="value">₹{{"{:,}".format(bank_balance)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-building-columns"></i></div>
+    </div>
+    <div class="card purple">
+      <div class="card-meta">
+        <div class="label">Total Expenses</div>
+        <div class="value">₹{{"{:,}".format(total_expenses)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-receipt"></i></div>
+    </div>
+    <div class="card amber">
+      <div class="card-meta">
+        <div class="label">Net MTD Income</div>
+        <div class="value">₹{{"{:,}".format(net_profit)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
+    </div>
+  </div>
+
+  <!-- Visual Graphics -->
+  <div class="grid-layout">
+    
+    <!-- Cash Flow Trend Chart -->
+    <div class="section-card span-2">
+      <div class="section-header"><i class="fa-solid fa-chart-area" style="color:var(--emerald);"></i> Cash Flow Trajectory Trend</div>
+      <div class="visual-holder"><canvas id="cashFlowChart"></canvas></div>
+    </div>
+
+    <!-- Expense Structure Breakdown -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color:var(--accent-blue)"></i> Expense Distribution Share</div>
+      <div class="visual-holder"><canvas id="expenseChart"></canvas></div>
+    </div>
+
+    <!-- Receivables Aging Analysis -->
+    <div class="section-card span-2">
+      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Receivables Aging Profile</div>
+      <div class="visual-holder"><canvas id="agingChart"></canvas></div>
+    </div>
+
+    <!-- Liquid Working Capital Ratio Summary -->
+    <div class="section-card">
+      <div class="section-header"><i class="fa-solid fa-scale-balanced" style="color:var(--amber);"></i> Working Capital Asset Ratios</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Asset Stream</th>
+            <th style="text-align: right;">Amount Value (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Outstanding Book Receivables</td>
+            <td style="text-align: right; color:var(--emerald);">+₹{{"{:,}".format(receivables_outstanding)}}</td>
+          </tr>
+          <tr>
+            <td>Vendor Accounts Payable</td>
+            <td style="text-align: right; color:var(--rose);">-₹{{"{:,}".format(payables_outstanding)}}</td>
+          </tr>
+          <tr>
+            <td>Bank Reserves & Liquid Balances</td>
+            <td style="text-align: right; color:var(--accent-blue);">+₹{{"{:,}".format(bank_balance)}}</td>
+          </tr>
+          <tr>
+            <td>Operational Cash Outflows MTD</td>
+            <td style="text-align: right; color:var(--rose);">-₹{{"{:,}".format(total_expenses)}}</td>
+          </tr>
+          <tr style="font-weight: 800; background: var(--strip-bg);">
+            <td>Net Liquid Assets Ratio</td>
+            <td style="text-align: right; color:var(--primary-dark);">₹{{"{:,}".format(receivables_outstanding - payables_outstanding + bank_balance)}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+window.charts = {};
+
+function applyChartTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
+    Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
+    Chart.defaults.font.size = 10;
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.font.weight = '600';
+    
+    Object.values(window.charts).forEach(c => { if(c) c.update(); });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  applyChartTheme();
+
+  // 1. Cash Flow Inflow vs Outflow Trend Chart
+  window.charts.cashFlow = new Chart(document.getElementById("cashFlowChart"), {
+    type: "line",
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: value => '₹' + value.toLocaleString() } }
+      }
+    },
+    data: {
+      labels: {{ month_labels|tojson }},
+      datasets: [
+        { label: "Cash Inflows", data: {{ inflows|tojson }}, borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.1)", fill: true, tension: 0.3 },
+        { label: "Cash Outflows", data: {{ outflows|tojson }}, borderColor: "#f43f5e", backgroundColor: "rgba(244, 63, 94, 0.1)", fill: true, tension: 0.3 }
+      ]
+    }
+  });
+
+  // 2. Expense Breakdown Pie Chart
+  window.charts.expense = new Chart(document.getElementById("expenseChart"), {
+    type: "doughnut",
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10 } }
+      }
+    },
+    data: {
+      labels: {{ expense_categories|tojson }},
+      datasets: [{
+        data: {{ expense_amounts|tojson }},
+        backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6"]
+      }]
+    }
+  });
+
+  // 3. Receivables Aging Bar Chart
+  window.charts.aging = new Chart(document.getElementById("agingChart"), {
+    type: "bar",
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: value => '₹' + value.toLocaleString() } }
+      }
+    },
+    data: {
+      labels: ["Current (Not Due)", "1-30 Days", "31-60 Days", "61-90 Days", "90+ Days (Risk)"],
+      datasets: [{
+        label: "Aging Outstanding (INR)",
+        data: [
+          {{ aging_summary.current }},
+          {{ aging_summary.bucket_1_30 }},
+          {{ aging_summary.bucket_31_60 }},
+          {{ aging_summary.bucket_61_90 }},
+          {{ aging_summary.bucket_above_90 }}
+        ],
+        backgroundColor: ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#f43f5e"],
+        borderRadius: 6
+      }]
+    }
+  });
+
+  const observer = new MutationObserver(() => {
+    applyChartTheme();
+  });
+  observer.observe(document.documentElement, { attributes: true });
+});
+</script>
+<script src="/static/js/global-loader.js"></script>
+</body>
+</html>

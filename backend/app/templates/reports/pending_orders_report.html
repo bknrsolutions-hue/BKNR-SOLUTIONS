@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <title>Pending Orders Premium Detailed Report – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -28,55 +39,41 @@
     window.addEventListener('load', applyTheme);
 </script>
 
-<style>
-:root {
-    --primary: #143465;
-    --primary-light: #eef2ff;
-    --accent: #1e40af;
-    --border: #e2e8f0;
-    --bg: #f8fafc;
-    --panel: #ffffff;
-    --card-bg: #ffffff;
-    --text-main: #0f172a;
-    --text-sub: #64748b;
-    --success: #059669;
-    --danger: #dc2626;
-    --warning: #d97706;
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
     
-    --merged-cell-bg: #fdfdfd;
-    --subtotal-bg: #f1f5f9;
-    --highlight-bg: #f0fdf4;
-    --highlight-text: #15803d;
-    --currency-bg: #fef3c7;
-    --currency-text: #b45309;
-    --drill-bg: #fef3c7;
-    --drill-border: #fde68a;
-    --drill-text: #92400e;
-    --header-bg: rgba(255, 255, 255, 0.9);
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
 }
 
-[data-theme="dark"] {
-    --primary: #f8fafc;
-    --primary-light: rgba(59, 130, 246, 0.2);
-    --accent: #60a5fa;
-    --border: #334155;
-    --bg: #0f172a;
-    --panel: #1e293b;
-    --card-bg: #1e293b;
-    --text-main: #f8fafc;
-    --text-sub: #94a3b8;
-    
-    --merged-cell-bg: #1e293b;
-    --subtotal-bg: #0f172a;
-    --highlight-bg: rgba(22, 163, 74, 0.15);
-    --highlight-text: #4ade80;
-    --currency-bg: rgba(217, 119, 6, 0.15);
-    --currency-text: #fbbf24;
-    --drill-bg: rgba(245, 158, 11, 0.15);
-    --drill-border: rgba(245, 158, 11, 0.3);
-    --drill-text: #fcd34d;
-    --header-bg: rgba(30, 41, 59, 0.9);
-}
+
+
+
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
 body { background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.4; padding-bottom: 40px; transition: background 0.3s, color 0.3s; }
@@ -241,6 +238,7 @@ tbody td.po-cell-merged { background: var(--merged-cell-bg); font-weight: 700; c
 
 @media print { .header-dash, .filter-bar, .summary-header i { display: none !important; } }
 </style>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 
 <body>

@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <title>BKNR ERP | Premium Sales Intelligence</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -23,63 +34,42 @@
     window.addEventListener('load', syncTheme);
 </script>
 
-<style>
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
+}
+
 /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
-:root {
-    /* LIGHT MODE */
-    --primary: #4338ca; --primary-light: #eef2ff; --secondary: #0ea5e9;
-    --success: #059669; --danger: #dc2626; --warning: #d97706;
-    --bg: #f8fafc; --panel: #ffffff; --card-bg: #ffffff; --border: #e2e8f0;
-    --text-main: #0f172a; --text-sub: #64748b;
-    --header-bg: rgba(255, 255, 255, 0.9);
 
-    /* KPI Backgrounds & Icons */
-    --bg-rev: #f5f7ff; --bd-rev: #e0e7ff; --ic-rev: #4338ca;
-    --bg-pl: #f0fdf4; --bd-pl: #dcfce7; --ic-pl: #15803d;
-    --bg-debt: #fef5f5; --bd-debt: #fee2e2; --ic-debt: #b91c1c; 
-    --bg-yield: #f0fdfa; --bd-yield: #ccfbf1; --ic-yield: #0d9488;
-    --bg-cost: #fffbeb; --bd-cost: #fef3c7; --ic-cost: #b45309; 
-    --bg-pk: #fafafa; --bd-pk: #e4e4e7; --ic-pk: #52525b;
-    --bg-qty: #faf5ff; --bd-qty: #f3e8ff; --ic-qty: #6b21a8;
-    --bg-inv: #fdf2f8; --bd-inv: #fce7f3; --ic-inv: #be185d;
 
-    --chart-bg: #ffffff;
-    --table-th-bg: #f1f5f9;
-    --table-td-border: #f8fafc;
-    --merged-bg: #fafbfc;
-    --subtotal-bg: #f8fafc;
 
-    --pill-recv-bg: #ecfdf5; --pill-recv-col: #065f46; --pill-recv-bd: #a7f3d0;
-    --pill-unpd-bg: #fff1f2; --pill-unpd-col: #9f1239; --pill-unpd-bd: #fecdd3;
-}
-
-[data-theme="dark"] {
-    /* DARK MODE OVERRIDES */
-    --primary: #818cf8; --primary-light: rgba(99, 102, 241, 0.15); --secondary: #38bdf8;
-    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
-    --bg: #0f172a; --panel: #1e293b; --card-bg: #1e293b; --border: #334155;
-    --text-main: #f8fafc; --text-sub: #94a3b8;
-    --header-bg: rgba(15, 23, 42, 0.9);
-
-    /* Dark KPI Backgrounds */
-    --bg-rev: rgba(67, 56, 202, 0.15); --bd-rev: rgba(67, 56, 202, 0.3); --ic-rev: #818cf8;
-    --bg-pl: rgba(21, 128, 61, 0.15); --bd-pl: rgba(21, 128, 61, 0.3); --ic-pl: #4ade80;
-    --bg-debt: rgba(185, 28, 28, 0.15); --bd-debt: rgba(185, 28, 28, 0.3); --ic-debt: #f87171;
-    --bg-yield: rgba(13, 148, 136, 0.15); --bd-yield: rgba(13, 148, 136, 0.3); --ic-yield: #2dd4bf;
-    --bg-cost: rgba(180, 83, 9, 0.15); --bd-cost: rgba(180, 83, 9, 0.3); --ic-cost: #fbbf24;
-    --bg-pk: rgba(82, 82, 91, 0.15); --bd-pk: rgba(82, 82, 91, 0.3); --ic-pk: #a1a1aa;
-    --bg-qty: rgba(107, 33, 168, 0.15); --bd-qty: rgba(107, 33, 168, 0.3); --ic-qty: #c084fc;
-    --bg-inv: rgba(190, 24, 93, 0.15); --bd-inv: rgba(190, 24, 93, 0.3); --ic-inv: #f472b6;
-
-    --chart-bg: #1e293b;
-    --table-th-bg: #0f172a;
-    --table-td-border: #1e293b;
-    --merged-bg: #1e293b;
-    --subtotal-bg: #0f172a;
-
-    --pill-recv-bg: rgba(6, 95, 70, 0.2); --pill-recv-col: #34d399; --pill-recv-bd: #059669;
-    --pill-unpd-bg: rgba(159, 18, 57, 0.2); --pill-unpd-col: #fb7185; --pill-unpd-bd: #e11d48;
-}
 
 * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 11px; line-height: 1.5; transition: background 0.3s, color 0.3s; }

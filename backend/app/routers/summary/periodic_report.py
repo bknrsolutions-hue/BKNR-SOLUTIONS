@@ -492,6 +492,8 @@ async def get_periodic_summary_report(
             "rows": rows, 
             "card": card, 
             "subtotals": subtotals,
+            "opening_floor_balance": opening_floor_balance_list,
+            "closing_floor_balance": closing_floor_balance_list,
             "hoso_floor_balance": closing_floor_balance_list
         }
     )

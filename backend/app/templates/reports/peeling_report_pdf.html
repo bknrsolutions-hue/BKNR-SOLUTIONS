@@ -1,10 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <title>PEELING BILL | BKNR ERP</title>
 
-<style>
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
+}
+
 body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; color: #1e293b; background: var(--card-bg); }
 h2 { text-align: center; color: #0f172a; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; font-size: 16px; letter-spacing: 0.5px; }
 .subtitle { text-align: center; font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }

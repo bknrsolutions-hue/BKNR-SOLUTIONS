@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+<meta charset="utf-8">
+<title>JOURNAL ENTRIES - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
+}
+
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+.header-dash { background: var(--card); padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.filter-bar { background: var(--card); padding: 8px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 0 0 160px; }
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; height: 30px; }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 30px; }
+.table-wrap { margin: 0 20px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 900px; }
+.main-table th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 850px; }
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+
+/* Journal Lines Table */
+.lines-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+.lines-table th, .lines-table td { padding: 6px; border: 1px solid var(--border); text-align: center; }
+.lines-table select, .lines-table input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; }
+.btn-remove-line { background: var(--danger); color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+</style>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+</head>
+<body>
+
+<div class="header-dash">
+    <div class="header-titles"><h2>Journal Entry Book</h2></div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-item">
+        <label>Search Journal No</label>
+        <input type="text" id="searchBox" placeholder="Search..." onkeyup="applyFilters()">
+    </div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+</div>
+
+<div class="section-header">
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW JOURNAL ENTRY</button>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Journal No (Voucher)</th>
+                <th>Entry Date</th>
+                <th style="text-align: left;">Narration</th>
+                <th style="text-align: right;">Total Debit (₹)</th>
+                <th style="text-align: right;">Total Credit (₹)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not history %}
+            <tr><td colspan="6" style="padding:40px; color:var(--muted);">No journal entries registered yet.</td></tr>
+            {% else %}
+                {% for row in history %}
+                <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
+                    <td>{{ loop.index }}</td>
+                    <td style="font-weight:700;">{{ row.entry_no }}</td>
+                    <td>{{ row.entry_date }}</td>
+                    <td style="text-align: left;">{{ row.narration }}</td>
+                    <td style="text-align: right; color:var(--success); font-weight:700;">₹{{ "{:,.2f}".format(row.total_debit or 0.0) }}</td>
+                    <td style="text-align: right; color:var(--accent); font-weight:700;">₹{{ "{:,.2f}".format(row.total_credit or 0.0) }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Post Double Entry Journal</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="journalForm" onsubmit="saveJournal(event)">
+            <div class="form-grid">
+                <div class="field"><label>Journal No</label><input type="text" id="entry_no" placeholder="JV-YYYY-XXXX" required></div>
+                <div class="field"><label>Entry Date</label><input type="date" id="entry_date" required></div>
+                <div class="field"><label>Narration</label><input type="text" id="narration" required></div>
+            </div>
+
+            <div style="max-height: 250px; overflow-y: auto;">
+                <table class="lines-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Ledger Account</th>
+                            <th width="150">Debit (₹)</th>
+                            <th width="150">Credit (₹)</th>
+                            <th width="60">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linesBody">
+                        <!-- Dynamic lines will go here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 10px; display:flex; justify-content:space-between; align-items:center;">
+                <button type="button" class="btn-add" style="background:#64748b;" onclick="addJournalLine()"><i class="fa-solid fa-plus"></i> Add Line</button>
+                <div style="text-align: right; font-weight: 800; font-size: 11px;">
+                    <div>Total Debit: <span id="debitTotal" style="color:var(--success);">₹ 0.00</span></div>
+                    <div>Total Credit: <span id="creditTotal" style="color:var(--accent);">₹ 0.00</span></div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add">Post Journal Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let globalSelectedId = null;
+    let ledgerOptionsHtml = ``;
+    
+    {% for ledger in ledgers %}
+        ledgerOptionsHtml += `<option value="{{ ledger.ledger_name }}">{{ ledger.ledger_name }} ({{ ledger.ledger_group }})</option>`;
+    {% endfor %}
+
+    document.getElementById("dotsBtn").onclick = (e) => {
+        e.stopPropagation();
+        const m = document.getElementById("dropdownMenu");
+        m.style.display = (m.style.display === "block") ? "none" : "block";
+    };
+    document.addEventListener('click', () => { document.getElementById("dropdownMenu").style.display = 'none'; });
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    function openModal() { 
+        document.getElementById('entryModal').style.display = 'flex'; 
+        document.getElementById("linesBody").innerHTML = "";
+        addJournalLine();
+        addJournalLine(); // Start with 2 default lines
+    }
+    function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+    
+    function addJournalLine() {
+        const tbody = document.getElementById("linesBody");
+        const tr = document.createElement("tr");
+        tr.className = "line-item-row";
+        tr.innerHTML = `
+            <td>
+                <select class="line-ledger" required>
+                    <option value="" disabled selected>-- Select Account Ledger --</option>
+                    ${ledgerOptionsHtml}
+                </select>
+            </td>
+            <td><input type="number" step="any" class="line-debit" value="0.00" oninput="recalcJournalTotals()"></td>
+            <td><input type="number" step="any" class="line-credit" value="0.00" oninput="recalcJournalTotals()"></td>
+            <td><button type="button" class="btn-remove-line" onclick="removeJournalLine(this)">&times;</button></td>
+        `;
+        tbody.appendChild(tr);
+        recalcJournalTotals();
+    }
+
+    function removeJournalLine(btn) {
+        const rows = document.querySelectorAll(".line-item-row");
+        if (rows.length > 2) {
+            btn.closest("tr").remove();
+            recalcJournalTotals();
+        } else {
+            Swal.fire("Warning", "At least 2 lines are required for a double entry journal!", "warning");
+        }
+    }
+
+    function recalcJournalTotals() {
+        let debTotal = 0;
+        let credTotal = 0;
+        document.querySelectorAll(".line-item-row").forEach(row => {
+            const deb = parseFloat(row.querySelector(".line-debit").value) || 0;
+            const cred = parseFloat(row.querySelector(".line-credit").value) || 0;
+            debTotal += deb;
+            credTotal += cred;
+        });
+        document.getElementById("debitTotal").innerText = "₹ " + debTotal.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        document.getElementById("creditTotal").innerText = "₹ " + credTotal.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    }
+
+    function applyFilters() {
+        const query = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let count = 0;
+        rows.forEach(r => {
+            const match = r.textContent.toLowerCase().includes(query);
+            r.style.display = match ? "" : "none";
+            if (match) count++;
+        });
+        document.getElementById("rowCount").innerText = `${count} ENTRIES FOUND`;
+    }
+
+    function resetFilters() {
+        document.getElementById("searchBox").value = "";
+        applyFilters();
+    }
+
+    async function saveJournal(e) {
+        e.preventDefault();
+        
+        let debTotal = 0;
+        let credTotal = 0;
+        const lines = [];
+        
+        let valid = true;
+        document.querySelectorAll(".line-item-row").forEach(row => {
+            const led = row.querySelector(".line-ledger").value;
+            const deb = parseFloat(row.querySelector(".line-debit").value) || 0;
+            const cred = parseFloat(row.querySelector(".line-credit").value) || 0;
+            if(!led) valid = false;
+            
+            debTotal += deb;
+            credTotal += cred;
+            lines.push({ ledger_name: led, debit: deb, credit: cred });
+        });
+
+        if(!valid) {
+            Swal.fire("Validation Error", "All lines must have a ledger selected!", "error");
+            return;
+        }
+
+        if(debTotal !== credTotal || debTotal === 0) {
+            Swal.fire("Imbalance", "Total Debit must match Credit and be greater than 0!", "error");
+            return;
+        }
+
+        const payload = {
+            entry_no: document.getElementById("entry_no").value,
+            entry_date: document.getElementById("entry_date").value,
+            narration: document.getElementById("narration").value,
+            total_debit: debTotal,
+            total_credit: credTotal,
+            lines: lines
+        };
+
+        try {
+            const res = await fetch(`/finance_accounts/journal_entry/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire("Posted", "Journal transaction successfully posted", "success").then(() => location.reload());
+            } else { Swal.fire("Error", out.message, "error"); }
+        } catch(err) { Swal.fire("Error", "Network error", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const confirmDelete = await Swal.fire({ title: "Delete Journal Entry?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        if(confirmDelete.isConfirmed) {
+            try {
+                const res = await fetch(`/finance_accounts/journal_entry/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Journal entry removed", "success").then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Server error", "error"); }
+        }
+    }
+    
+    applyFilters();
+</script>
+</body>
+</html>

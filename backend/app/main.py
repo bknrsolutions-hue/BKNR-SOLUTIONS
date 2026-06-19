@@ -41,6 +41,8 @@ import app.database.models.general_stock
 import app.database.models.bills
 import app.database.models.attendance
 import app.database.models.requirements
+import app.database.models.payments
+import app.database.models.invoices
 # =====================================================
 # =====================================================
 # 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
@@ -69,6 +71,7 @@ if os.environ.get("RUN_MAIN") == "true" or not os.environ.get("UVICORN_RELOAD"):
         replace_existing=True
    )
     scheduler.start()
+    create_floor_balance_snapshot()
 
     print("✅ Daily Inventory Snapshot Scheduler Started")
     print("✅ Daily Floor Balance Snapshot Scheduler Started")
@@ -170,6 +173,7 @@ from app.routers.bills import router as bills_router
 from app.routers.attendance_router import router as attendance_router
 from app.routers.inventory_management.stock_entry import router as stock_entry_router
 from app.routers.inventory_management.pending_orders import router as pending_orders_router
+from app.routers.inventory_management.sales import router as sales_router
 from app.routers.page_loader import router as page_loader_router
 from app.routers.summary.processing import router as summary_processing_router
 from app.routers.summary.periodic_report import router as periodic_report_router
@@ -177,6 +181,8 @@ from app.routers.summary.inventory_costing import router as summary_inventory_co
 from app.routers.summary.floor_balance_value import router as summary_floor_balance_value_router
 from app.routers import data_management
 from app.routers import production_requirements
+from app.routers.finance_accounts import router as finance_accounts_router
+from app.routers.export_documents import router as export_documents_router
 
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
@@ -191,6 +197,7 @@ application.include_router(reports_router)
 application.include_router(dashboard_router)
 application.include_router(stock_entry_router)
 application.include_router(pending_orders_router)
+application.include_router(sales_router)
 application.include_router(page_loader_router)
 application.include_router(attendance_router)
 application.include_router(summary_processing_router)
@@ -200,6 +207,8 @@ application.include_router(summary_floor_balance_value_router)
 application.include_router(data_management.router)
 application.include_router(production_requirements.router)
 application.include_router(bills_router, prefix="/api")
+application.include_router(finance_accounts_router, prefix="/finance_accounts")
+application.include_router(export_documents_router, prefix="/export_documents")
 
 
 # =====================================================

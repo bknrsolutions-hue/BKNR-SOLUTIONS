@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="utf-8">
 <title>GENERAL STOCK REPORT | BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -21,25 +32,42 @@
     window.addEventListener('load', syncTheme);
 </script>
 
-<style>
-/* 🌟 THEME VARIABLES 🌟 */
-:root {
-    --primary: #4338ca; --primary-light: #eef2ff; --secondary: #0ea5e9;
-    --success: #059669; --danger: #dc2626; --warning: #d97706;
-    --bg: #f8fafc; --panel: #ffffff; --card-bg: #ffffff; --border: #e2e8f0;
-    --text-main: #0f172a; --text-sub: #64748b;
-    --input-bg: #ffffff;
-    --table-th-bg: #f1f5f9; --table-td-border: #f8fafc;
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
 }
 
-[data-theme="dark"] {
-    --primary: #818cf8; --primary-light: rgba(99, 102, 241, 0.15); --secondary: #38bdf8;
-    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
-    --bg: #0f172a; --panel: #1e293b; --card-bg: #1e293b; --border: #334155;
-    --text-main: #f8fafc; --text-sub: #94a3b8;
-    --input-bg: #0f172a;
-    --table-th-bg: #0f172a; --table-td-border: #1e293b;
-}
+/* 🌟 THEME VARIABLES 🌟 */
+
+
+
 
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
 body { margin: 0; background: var(--bg); color: var(--text-main); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
@@ -97,6 +125,7 @@ tfoot td { background: var(--table-th-bg); font-weight: 800; font-size: 11px; bo
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 
 <body>

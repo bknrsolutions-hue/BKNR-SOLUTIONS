@@ -753,7 +753,8 @@ const sidebarMenuData = [
             ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', 'LIVE'],
             ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', 'LIVE'],
             ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', 'LIVE'],
-            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', 'LIVE']
+            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', 'LIVE'],
+            ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', 'LIVE']
         ]
     },
     {
@@ -779,6 +780,18 @@ const sidebarMenuData = [
                     ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding', 'Cold'],
                     ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store']
                 ]
+            },
+            {
+                name: "Export Documents",
+                items: [
+                    ['export_shipment', '/export_documents/export_shipment/entry', 'fa-ship', 'Export Shipments', 'ExpOp'],
+                    ['commercial_invoice', '/export_documents/commercial_invoice/entry', 'fa-file-invoice', 'Commercial Invoices', 'ExpOp'],
+                    ['packing_list', '/export_documents/packing_list/entry', 'fa-file-lines', 'Packing Lists', 'ExpOp'],
+                    ['container_stuffing', '/export_documents/container_stuffing/entry', 'fa-truck-ramp-box', 'Container Stuffing', 'ExpOp'],
+                    ['shipping_bill', '/export_documents/shipping_bill/entry', 'fa-clipboard-check', 'Shipping Bills', 'ExpOp'],
+                    ['bill_of_lading', '/export_documents/bill_of_lading/entry', 'fa-file-contract', 'Bills of Lading', 'ExpOp'],
+                    ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp']
+                ]
             }
         ]
     },
@@ -794,6 +807,28 @@ const sidebarMenuData = [
                     ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight', 'Exp'],
                     ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
                     ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
+                ]
+            },
+            {
+                name: "Accounts & Ledgers",
+                items: [
+                    ['ledger_master', '/finance_accounts/ledger_master/entry', 'fa-folder-open', 'Ledger Master', 'Acc'],
+                    ['journal_entry', '/finance_accounts/journal_entry/entry', 'fa-book', 'Journal Entries', 'Acc']
+                ]
+            },
+            {
+                name: "Cash & Banking",
+                items: [
+                    ['bank_transaction', '/finance_accounts/bank_transaction/entry', 'fa-building-columns', 'Bank Transactions', 'Bank'],
+                    ['payment_receipt', '/finance_accounts/payment_receipt/entry', 'fa-file-invoice-dollar', 'Remittance & Receipts', 'Bank']
+                ]
+            },
+            {
+                name: "Payables & Receivables",
+                items: [
+                    ['customer_receivable', '/finance_accounts/customer_receivable/entry', 'fa-hand-holding-dollar', 'Customer Receivables', 'Fin'],
+                    ['vendor_payment', '/finance_accounts/vendor_payment/entry', 'fa-money-bill-transfer', 'Vendor Payments', 'Fin'],
+                    ['expense_voucher', '/finance_accounts/expense_voucher/entry', 'fa-receipt', 'Expense Vouchers', 'Fin']
                 ]
             }
         ]

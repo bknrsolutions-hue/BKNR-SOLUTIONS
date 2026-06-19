@@ -65,6 +65,7 @@ def costing_dashboard(
                     })
     except Exception as e:
         logger.warning(f"Error building unique company dropdown: {e}")
+        db.rollback()
         available_companies = [{"name": "Default Processing Corp", "code": session_comp_code}]
 
     # ---------------------------------------------------------
@@ -272,6 +273,7 @@ def costing_dashboard(
                 and_(stock_entry.company_id == comp_code, stock_entry.created_at < d90)
             ).scalar() or 0.0)
         except Exception:
+            db.rollback()
             fast_turn_q, std_hold_q, slow_clr_q, stagnant_q = 0.0, 0.0, 0.0, 0.0
 
         if (fast_turn_q + std_hold_q + slow_clr_q + stagnant_q) == 0:
@@ -372,6 +374,7 @@ def costing_dashboard(
             "inventory_aging_buckets": inventory_ageing_buckets,
             "top_products": top_products,
             "bottom_products": bottom_products,
+            "product_costing_matrix": sorted_products_by_margin,
             "month_labels": month_labels,
             "revenue_trend": revenue_trend,
             "expense_trend": expense_trend,

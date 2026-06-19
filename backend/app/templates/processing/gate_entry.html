@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
 <meta charset="UTF-8">
 <title>Gate Entry – BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,36 +23,41 @@
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 
-<style>
-:root{
-  /* 🌟 LIGHT MODE VARIABLES */
-  --primary: #0f172a;
-  --accent: #2563eb;
-  --border: #e2e8f0;
-  --bg: #f1f5f9;
-  --text: #1e293b;
-  --muted: #64748b;
-  --danger: #ef4444;
-  --card-bg: #ffffff;
-  --header-bg: #f8fafc;
-  --row-hover: #f1f7ff;
-  --processing-bg: #dbeafe;
+<style>:root {
+    /* Standard theme variables mapped to global standard styles */
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+
+    /* Report specific variables mapping */
+    --bg-light: var(--bg);
+    --panel-bg: var(--card-bg);
+    --sidebar-bg: var(--bg);
+    --primary-dark: var(--text);
+    --accent-blue: var(--accent);
+    --accent-glow: var(--accent);
+    --text-main: var(--text);
+    --border-color: var(--border);
+    --table-header-bg: var(--header-bg);
+    
+    /* Finance / Others specific mapping */
+    --card: var(--card-bg);
 }
 
-[data-theme="dark"] {
-  /* 🌟 DARK MODE VARIABLES */
-  --primary: #f8fafc;
-  --accent: #3b82f6;
-  --border: #334155;
-  --bg: #0f172a;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --danger: #f87171;
-  --card-bg: #1e293b;
-  --header-bg: #0f172a;
-  --row-hover: #1e293b;
-  --processing-bg: #1e3a8a;
-}
+
+
+
 
 *{ box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
 body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s ease, color 0.3s ease; }

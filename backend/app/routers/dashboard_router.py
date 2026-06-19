@@ -7,6 +7,7 @@ from app.routers.dashboard.processing_dashboard import router as processing_dash
 from app.routers.dashboard.inventory_dashboard import router as inventory_dashboard_router
 from app.routers.dashboard.hr_command_center import router as hr_command_center_router
 from app.routers.dashboard.costing_dashboard import router as costing_dashboard_router
+from app.routers.dashboard.finance_dashboard import router as finance_dashboard_router
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboards"])
 
@@ -15,3 +16,4 @@ router.include_router(processing_dashboard_router)
 router.include_router(inventory_dashboard_router)
 router.include_router(hr_command_center_router)
 router.include_router(costing_dashboard_router)
+router.include_router(finance_dashboard_router)
