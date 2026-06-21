@@ -42,6 +42,8 @@ def processing_dashboard(
     email = request.session.get("email")
 
     if not company_id or not email:
+        if request.query_params.get("format") == "json":
+            return JSONResponse({"status": "error", "message": "Session expired"}, status_code=401)
         return RedirectResponse("/auth/login", status_code=303)
 
     cookie_prod, cookie_loc = get_global_filters(request)
@@ -240,6 +242,32 @@ def processing_dashboard(
     floor_total = round(fb_q.scalar() or 0.0, 2)
 
     # 7. RESPONSE PAYLOAD
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "status": "success",
+            "gate_today": gate_today,
+            "rmp_today": round(rmp_today, 2),
+            "dh_today": round(dh_today, 2),
+            "grading_today": round(grading_today, 2),
+            "peeling_today": round(peeling_today, 2),
+            "soaking_today": round(soaking_today, 2),
+            "production_today": round(production_today, 2),
+            "floor_total": floor_total,
+            "rm_summary": rm_summary,
+            "hourly_labels": hourly_labels,
+            "dh_hourly_data": dh_hourly,
+            "peeling_hourly_data": peeling_hourly,
+            "prod_hourly_data": prod_hourly,
+            "att_stats": att_stats,
+            "dept_summary": dept_map,
+            "desg_summary": desg_map,
+            "from_date": str(from_date),
+            "to_date": str(to_date),
+            "hour_date": str(hour_date),
+            "global_location": global_location or "",
+            "global_production_for": global_production_for or ""
+        })
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard/processing_dashboard.html",

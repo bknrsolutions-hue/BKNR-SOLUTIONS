@@ -12,601 +12,188 @@
         }
         syncThemeFromParent();
     </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>BKNR ERP | Corporate Inventory Intelligence</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BKNR ERP | Corporate Inventory Intelligence</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<script>
-    function syncTheme() {
-        try {
-            if (window.parent && window.parent.document) {
-                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
-                document.documentElement.setAttribute("data-theme", pTheme);
-            }
-        } catch(e) {}
-    }
-    syncTheme();
-    window.addEventListener('load', syncTheme);
-</script>
-
-<style>:root {
-    /* Standard theme variables mapped to global standard styles */
-    --primary: var(--text);
-    --accent: var(--accent);
-    --border: var(--border);
-    --bg: var(--bg);
-    --header: var(--card-bg);
-    --text: var(--text);
-    --text-muted: var(--text-muted);
-    --muted: var(--text-muted);
-    --danger: var(--cancelled-text);
-    --success: var(--completed-text);
-    --card-bg: var(--card-bg);
-    --header-bg: var(--header-bg);
-    --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
-
-    /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
-    
-    /* Finance / Others specific mapping */
-    --card: var(--card-bg);
-}
-
-    /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
-    
-
-    
-
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    body {
-        background: var(--bg);
-        color: var(--text);
-        font-size: 11px;
-        -webkit-font-smoothing: antialiased;
-        transition: background 0.3s ease, color 0.3s ease;
-    }
-
-    .header {
-        background: var(--header-bg);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
-        padding: 14px 16px;
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        box-shadow: var(--shadow-sm);
-        transition: background 0.3s, border-color 0.3s;
-    }
-
-    .header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
-        gap: 10px;
-    }
-
-    .header-title h1 {
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: color 0.3s;
-    }
-
-    .header-title h1 i {
-        color: var(--accent);
-    }
-
-    .company-box {
-        display: flex;
-        gap: 6px;
-    }
-
-    .badge {
-        padding: 5px 10px;
-        border-radius: 6px;
-        background: var(--accent-light);
-        color: var(--accent);
-        font-weight: 700;
-        border: 1px solid var(--border);
-        font-size: 10px;
-        white-space: nowrap;
-        transition: 0.3s;
-    }
-
-    .badge:last-child {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-    }
-
-    /* 🟢 FILTERS BAR */
-    .filter-panel-wrapper {
-        padding: 0 16px 12px;
-    }
-    .filters {
-        display: flex;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        gap: 12px;
-        background: var(--card-bg);
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        -webkit-overflow-scrolling: touch;
-        justify-content: flex-start;
-        scrollbar-width: thin;
-        transition: 0.3s;
-    }
-    .filters::-webkit-scrollbar { height: 4px; }
-    .filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    @media (min-width: 992px) {
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            overflow-x: visible !important;
-            flex-wrap: wrap !important;
+    <script>
+        function syncTheme() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+                    document.documentElement.setAttribute("data-theme", pTheme);
+                }
+            } catch(e) {}
         }
-    }
+        syncTheme();
+        window.addEventListener('load', syncTheme);
+    </script>
 
-    .fbox {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        position: relative;
-        flex-shrink: 0 !important;
-        min-width: 120px;
-    }
-    @media(max-width: 600px) { .fbox { min-width: 110px; } }
-
-    .fbox label {
-        font-size: 8px;
-        text-transform: uppercase;
-        font-weight: 700;
-        padding-left: 2px;
-        color: var(--primary);
-    }
-
-    .searchable-dropdown-container {
-        position: relative;
-        width: 100%;
-    }
-
-    .dropdown-display-box {
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 3px 5px;
-        font-size: 10px;
-        background: var(--card-bg);
-        cursor: pointer;
-        font-weight: 500;
-        color: var(--text);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 24px !important;
-        transition: all 0.2s ease;
-    }
-    .dropdown-display-box:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
-
-    .dropdown-search-wrapper {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        margin-top: 4px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        max-height: 250px;
-        overflow-y: auto;
-    }
-
-    .dropdown-search-wrapper input {
-        border: none;
-        border-bottom: 1px solid var(--border);
-        padding: 6px 8px;
-        font-size: 10px;
-        width: 100%;
-        outline: none;
-        position: sticky;
-        top: 0;
-        background: var(--card-bg);
-        z-index: 10;
-        color: var(--text);
-    }
-
-    .dropdown-options-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .dropdown-options-list li {
-        padding: 6px 8px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 10px;
-        color: var(--text);
-    }
-
-    .dropdown-options-list li:hover,
-    .dropdown-options-list li.selected-option {
-        background: var(--accent-light);
-        color: var(--accent);
-    }
-
-    .fbox input.main-search-field {
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 3px 5px;
-        font-size: 10px;
-        background: var(--card-bg);
-        outline: none;
-        width: 100%;
-        color: var(--text);
-        font-weight: 500;
-        height: 24px !important;
-        border-left: 3px solid var(--accent) !important;
-        transition: all 0.2s ease;
-    }
-    .fbox input.main-search-field:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
-
-    @media(max-width: 600px) {
-        .fbox input.main-search-field { min-width: 150px !important; width: 150px !important; font-size: 9.5px; }
-        .dropdown-display-box { font-size: 9.5px; }
-        .fbox label { font-size: 7.5px; }
-    }
-
-    /* ==========================================================
-       🌟 NEW KPI CARDS (WHITE BG WITH COLORED ICONS)
-    ========================================================== */
-    .kpi-grid {
-        padding: 14px 16px 8px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
-    @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
-
-    .kpi-card {
-        border-radius: var(--radius);
-        padding: 14px;
-        box-shadow: var(--shadow-sm);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        cursor: pointer;
-        text-decoration: none;
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-        border-color: var(--accent);
-    }
-
-    .kpi-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
-    }
-
-    .kpi-card h4 {
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 800;
-        color: var(--sub);
-    }
-
-    .kpi-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        flex-shrink: 0;
-    }
-
-    .kpi-card .value {
-        font-size: 19px;
-        font-weight: 800;
-        line-height: 1.2;
-        letter-spacing: -0.5px;
-        color: var(--kpi-val);
-    }
-
-    .kpi-card .amt-sub {
-        font-size: 11px;
-        font-weight: 700;
-        margin-top: 4px;
-        color: var(--sub);
-    }
-
-    /* 🟢 Icon Styling with Tinted Backgrounds */
-    .kpi-blue .kpi-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-    .kpi-green .kpi-icon { color: #10b981; background: rgba(16, 185, 129, 0.1); }
-    .kpi-pink .kpi-icon { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
-    .kpi-orange .kpi-icon { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
-    .kpi-purple .kpi-icon { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
-    .kpi-cyan .kpi-icon { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
-    .kpi-red .kpi-icon { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-    .kpi-teal .kpi-icon { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
-
-    .tabs {
-        display: flex;
-        gap: 4px;
-        padding: 4px;
-        margin: 0 16px 12px;
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        max-width: fit-content;
-        transition: 0.3s;
-    }
-
-    .tab-btn {
-        border: none;
-        background: transparent;
-        border-radius: 6px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-weight: 700;
-        white-space: nowrap;
-        font-size: 11px;
-        color: var(--sub);
-        transition: all 0.2s ease;
-    }
-
-    .tab-btn.active {
-        background: var(--bg);
-        color: var(--accent);
-        box-shadow: var(--shadow-sm);
-    }
-
-    .tab-content {
-        display: none;
-        padding: 0 16px 20px;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    .rm-summary-box { 
-        background: var(--panel); 
-        border-radius: var(--radius); 
-        border: 1px solid var(--border); 
-        margin-bottom: 20px; 
-        overflow: hidden;
-        box-shadow: var(--shadow-sm);
-        transition: 0.3s;
-    }
-    
-    .panel-header {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border);
-        background: var(--card-bg);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: 0.3s;
-    }
-
-    .panel-header h3 {
-        font-size: 11px;
-        font-weight: 800;
-        color: var(--sub);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-    }
-
-    .footer-actions {
-        display: flex;
-        gap: 6px;
-    }
-
-    .action-btn {
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        background: var(--accent);
-        color: #fff;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 10px;
-        transition: 0.2s;
-    }
-
-    .action-btn:hover { opacity: 0.9; }
-
-    .excel-btn { background: var(--success); }
-
-    .table-wrap {
-        overflow: auto;
-        max-height: 550px;
-        scrollbar-width: thin;
-    }
-
-    .rm-table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        font-size: 9px; 
-    }
-    
-    .rm-table th { 
-        text-align: left; 
-        padding: 8px 10px; 
-        background: var(--table-th-bg); 
-        color: var(--sub); 
-        font-size: 9.5px; 
-        text-transform: uppercase; 
-        font-weight: 800;
-        letter-spacing: 0.8px;
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        transition: 0.3s;
-    }
-    
-    .rm-table td { 
-        padding: 8px 10px; 
-        border-bottom: 1px solid var(--table-td-border); 
-        font-weight: 700; 
-        color: var(--text); 
-        transition: 0.3s;
-    }
-    
-    .rm-table tbody tr:hover { 
-        background: var(--table-th-bg); 
-    }
-
-    .grand-total-row {
-        background: var(--table-th-bg) !important;
-        position: sticky;
-        bottom: 0;
-        z-index: 30;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-        transition: 0.3s;
-    }
-
-    .grand-total-row td {
-        border-top: 1px solid var(--accent) !important;
-        border-bottom: none !important;
-        color: var(--accent) !important;
-        padding: 8px 10px !important;
-        font-weight: 800 !important;
-        font-size: 10px !important;
-    }
-
-    @media(max-width:768px) {
-        .rm-table th:nth-child(4),
-        .rm-table td:nth-child(4) {
-            position: sticky;
-            left: 0;
-            z-index: 25;
-            background: var(--card-bg);
-            box-shadow: 2px 0 5px rgba(0,0,0,0.04);
+    <style>
+        /* 🌟 THEME VARIABLES (LIGHT/DARK) 🌟 */
+        :root {
+            /* Standard theme variables */
+            --bg: #f1f5f9; 
+            --panel: #ffffff;
+            --card-bg: #ffffff;
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --accent-light: #eff6ff;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --border: #e2e8f0; 
+            --text: #0f172a; 
+            --sub: #475569; 
+            --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
+            --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+            --radius: 12px;
+            --header-bg: rgba(255, 255, 255, 0.85);
+            --table-th-bg: #f8fafc;
+            --table-td-border: #f1f5f9;
+            --kpi-val: #000000;
         }
-        .rm-table th:nth-child(4) {
-            background: var(--table-th-bg);
+
+        [data-theme="dark"] {
+            /* DARK MODE */
+            --bg: #0f172a; 
+            --panel: #1e293b;
+            --card-bg: #1e293b;
+            --primary: #f8fafc;
+            --accent: #3b82f6;
+            --accent-light: rgba(59, 130, 246, 0.2);
+            --success: #10b981;
+            --success-light: rgba(16, 185, 129, 0.15);
+            --warning: #f59e0b;
+            --warning-light: rgba(245, 158, 11, 0.15);
+            --danger: #ef4444;
+            --danger-light: rgba(239, 68, 68, 0.15);
+            --border: #334155; 
+            --text: #f8fafc; 
+            --sub: #94a3b8; 
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --header-bg: rgba(15, 23, 42, 0.85);
+            --table-th-bg: #0f172a;
+            --table-td-border: #1e293b;
+            --kpi-val: #ffffff;
         }
-    }
 
-    .dead-row { background: var(--danger-light) !important; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text); font-size: 11px; -webkit-font-smoothing: antialiased; transition: background 0.3s ease, color 0.3s ease; }
 
-    .chart-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 14px;
-    }
+        .header { background: var(--header-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 16px; position: sticky; top: 0; z-index: 999; box-shadow: var(--shadow-sm); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .header-title h1 { font-size: 18px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .header-title h1 i { color: var(--accent); }
+        .company-box { display: flex; gap: 6px; }
+        .badge { padding: 5px 10px; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 700; border: 1px solid var(--accent); font-size: 10px; white-space: nowrap; }
 
-    .chart-box {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 16px;
-        height: 320px;
-        box-shadow: var(--shadow-sm);
-        transition: 0.3s;
-    }
+        /* ==========================================================
+           🌟 KPI CARDS 
+        ========================================================== */
+        .kpi-grid { padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+        @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
 
-    .chart-box h3 {
-        font-size: 10px;
-        font-weight: 800;
-        margin-bottom: 12px;
-        color: var(--sub);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-    }
+        .kpi-card { border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); position: relative; overflow: hidden; transition: 0.3s; cursor: pointer; text-decoration: none; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+        .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .kpi-card h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 800; color: var(--sub); }
+        .kpi-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+        .kpi-card .value { font-size: 19px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; color: var(--kpi-val); }
+        .kpi-card .amt-sub { font-size: 11px; font-weight: 700; margin-top: 4px; color: var(--sub); }
 
-    .age-boxes {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
-    }
+        .kpi-blue .kpi-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        .kpi-green .kpi-icon { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .kpi-pink .kpi-icon { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+        .kpi-orange .kpi-icon { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
+        .kpi-purple .kpi-icon { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+        .kpi-cyan .kpi-icon { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
+        .kpi-red .kpi-icon { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .kpi-teal .kpi-icon { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
 
-    .age-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px 14px;
-        text-align: center;
-        box-shadow: var(--shadow-sm);
-        transition: 0.3s;
-    }
+        /* ==========================================================
+           🌟 CHARTS SECTION (2 COLUMNS)
+        ========================================================== */
+        .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 0 16px 16px; }
+        @media(max-width: 992px) { .chart-grid { grid-template-columns: 1fr; } }
+        
+        .chart-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; height: 360px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+        .chart-box h3 { font-size: 11px; font-weight: 800; margin-bottom: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;}
+        .chart-container-inner { flex-grow: 1; position: relative; width: 100%; }
 
-    .age-card h4 {
-        font-size: 9px;
-        text-transform: uppercase;
-        color: var(--sub);
-        font-weight: 800;
-        letter-spacing: 0.6px;
-    }
+        /* ==========================================================
+           🌟 AGING CARDS (CLICK TO FILTER)
+        ========================================================== */
+        .age-wrapper { padding: 0 16px 16px; }
+        .age-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+        .age-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 14px; text-align: center; box-shadow: var(--shadow-sm); transition: 0.3s; cursor: pointer; }
+        .age-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .age-card.active-filter { border: 2px solid var(--accent); transform: translateY(-3px); box-shadow: 0 0 15px rgba(37, 99, 235, 0.2); }
+        .age-card h4 { font-size: 10px; text-transform: uppercase; color: var(--sub); font-weight: 800; letter-spacing: 0.6px; pointer-events: none;}
+        .age-card h2 { font-size: 24px; margin-top: 8px; font-weight: 800; color: var(--primary); transition: 0.3s; pointer-events: none;}
 
-    .age-card h2 { 
-        font-size: 22px; 
-        margin-top: 8px; 
-        font-weight: 800;
-        color: var(--primary);
-        transition: 0.3s;
-    }
+        /* ==========================================================
+           🌟 FILTERS BAR
+        ========================================================== */
+        .filter-panel-wrapper { padding: 0 16px 16px; }
+        .filters { display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; transition: 0.3s; }
+        .filters::-webkit-scrollbar { height: 4px; }
+        .filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        @media (min-width: 992px) { .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); overflow-x: visible !important; flex-wrap: wrap !important; } }
+        
+        .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; flex-shrink: 0 !important; min-width: 120px; }
+        .fbox label { font-size: 8px; text-transform: uppercase; font-weight: 700; padding-left: 2px; color: var(--primary); }
 
-    .age-green { background: var(--success-light); color: var(--success); padding: 3px 8px; border-radius: 6px; }
-    .age-yellow { background: var(--warning-light); color: var(--warning); padding: 3px 8px; border-radius: 6px; }
-    .age-orange { background: rgba(234, 88, 12, 0.15); color: #ea580c; padding: 3px 8px; border-radius: 6px; }
-    .age-red { background: var(--danger-light); color: var(--danger); padding: 3px 8px; border-radius: 6px; }
+        .searchable-dropdown-container { position: relative; width: 100%; }
+        .dropdown-display-box { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--card-bg); cursor: pointer; font-weight: 500; color: var(--text); display: flex; justify-content: space-between; align-items: center; height: 24px !important; }
+        .dropdown-search-wrapper { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; margin-top: 4px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); z-index: 1000; max-height: 250px; overflow-y: auto; }
+        .dropdown-search-wrapper input { border: none; border-bottom: 1px solid var(--border); padding: 6px 8px; font-size: 10px; width: 100%; outline: none; position: sticky; top: 0; background: var(--card-bg); z-index: 10; color: var(--text); }
+        .dropdown-options-list { list-style: none; padding: 0; margin: 0; }
+        .dropdown-options-list li { padding: 6px 8px; cursor: pointer; font-weight: 600; font-size: 10px; color: var(--text); }
+        .dropdown-options-list li:hover, .dropdown-options-list li.selected-option { background: var(--accent-light); color: var(--accent); }
+        .fbox input.main-search-field { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--card-bg); outline: none; width: 100%; color: var(--text); font-weight: 500; height: 24px !important; border-left: 3px solid var(--accent) !important; }
 
-    @media print {
-        .filters, .tabs, .action-btn { display: none !important; }
-        .section { border: none; margin: 0; }
-        body { background: var(--card-bg); padding: 0; }
-        .table-wrap { background: var(--card-bg) !important; overflow: visible; }
-    }
-</style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+        /* ==========================================================
+           🌟 TABLES SECTION 
+        ========================================================== */
+        .rm-summary-box { background: var(--panel); border-radius: var(--radius); border: 1px solid var(--border); margin: 0 16px 24px; overflow: hidden; box-shadow: var(--shadow-sm); transition: 0.3s; }
+        .panel-header { padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--card-bg); display: flex; justify-content: space-between; align-items: center; }
+        .panel-header h3 { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.8px; }
+        .footer-actions { display: flex; gap: 6px; }
+        .action-btn { border: none; padding: 6px 12px; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 10px; transition: 0.2s; }
+        .action-btn:hover { opacity: 0.9; }
+        .excel-btn { background: var(--success); }
+        
+        .table-wrap { overflow: auto; max-height: 550px; scrollbar-width: thin; }
+        .rm-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .rm-table th { text-align: left; padding: 8px 10px; background: var(--table-th-bg); color: var(--sub); font-size: 9.5px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+        .rm-table td { padding: 8px 10px; border-bottom: 1px solid var(--table-td-border); font-weight: 700; color: var(--text); transition: 0.3s; }
+        .rm-table tbody tr:hover { background: var(--table-th-bg); }
+        
+        .grand-total-row { background: var(--table-th-bg) !important; position: sticky; bottom: 0; z-index: 30; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); }
+        .grand-total-row td { border-top: 1px solid var(--accent) !important; border-bottom: none !important; color: var(--accent) !important; padding: 8px 10px !important; font-weight: 800 !important; font-size: 10px !important; }
+        
+        .dead-row { background: var(--danger-light) !important; }
+        .age-green { color: var(--success); font-weight: 800; }
+        .age-yellow { color: var(--warning); font-weight: 800; }
+        .age-orange { color: #ea580c; font-weight: 800; }
+        .age-red { color: var(--danger); font-weight: 800; }
+
+        @media print {
+            .filters, .action-btn { display: none !important; }
+            body { background: var(--card-bg); padding: 0; }
+            .table-wrap { background: var(--card-bg) !important; overflow: visible; max-height: none;}
+        }
+    </style>
 </head>
 
 <body>
@@ -623,98 +210,78 @@
 </div>
 
 <div class="kpi-grid">
-    <div class="kpi-card kpi-blue" onclick="scrollToDashboardTab('opening_tab_btn', 'opening_tab')">
-        <div class="kpi-header">
-            <h4>Opening</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-box-open"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div>
-            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div>
-        </div>
+    <div class="kpi-card kpi-blue" onclick="document.getElementById('openingStockBox').scrollIntoView({behavior: 'smooth', block: 'start'})">
+        <div class="kpi-header"><h4>Opening</h4><div class="kpi-icon"><i class="fa-solid fa-box-open"></i></div></div>
+        <div><div class="value">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_opening_value|default(0)) }}</div></div>
     </div>
-    
-    <div class="kpi-card kpi-green" onclick="scrollToDashboardTab('live_tab_btn', 'live_tab')">
-        <div class="kpi-header">
-            <h4>Closing</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div>
-            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div>
-        </div>
+    <div class="kpi-card kpi-green" onclick="document.getElementById('liveInventoryBox').scrollIntoView({behavior: 'smooth', block: 'start'})">
+        <div class="kpi-header"><h4>Closing</h4><div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div></div>
+        <div><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
     </div>
-    
     <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-pink" style="text-decoration:none;">
-        <div class="kpi-header">
-            <h4>Sales</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div>
-            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div>
-        </div>
+        <div class="kpi-header"><h4>Sales</h4><div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div></div>
+        <div><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
     </a>
-    
     <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-orange" style="text-decoration:none;">
-        <div class="kpi-header">
-            <h4>Reprocess</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
-        </div>
-        <div>
-            <div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div>
-            <div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div>
-        </div>
+        <div class="kpi-header"><h4>Reprocess</h4><div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div></div>
+        <div><div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
     </a>
-    
     <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-purple" style="text-decoration:none;">
-        <div class="kpi-header">
-            <h4>Fresh Stock</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div>
-            <div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div>
-        </div>
+        <div class="kpi-header"><h4>Fresh Stock</h4><div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div></div>
+        <div><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
     </a>
-
     <div class="kpi-card kpi-cyan">
-        <div class="kpi-header">
-            <h4>Reglaze Prod.</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ reglaze_qty|default(0) }} Kg</div>
-            <div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div>
-        </div>
+        <div class="kpi-header"><h4>Reglaze Prod.</h4><div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div></div>
+        <div><div class="value">{{ reglaze_qty|default(0) }} Kg</div><div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div></div>
     </div>
-
     <div class="kpi-card kpi-red">
-        <div class="kpi-header">
-            <h4>Dead Stock</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
-        </div>
-        <div>
-            <div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div>
-            <div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div>
-        </div>
+        <div class="kpi-header"><h4>Dead Stock</h4><div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div></div>
+        <div><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
     </div>
-    
     <div class="kpi-card kpi-teal">
-        <div class="kpi-header">
-            <h4>Total MC</h4>
-            <div class="kpi-icon"><i class="fa-solid fa-cubes"></i></div>
+        <div class="kpi-header"><h4>Total MC</h4><div class="kpi-icon"><i class="fa-solid fa-cubes"></i></div></div>
+        <div><div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div><div class="amt-sub">Boxes Active</div></div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-box">
+        <h3>Variety Stock Mix (Glaze Wise)</h3>
+        <div class="chart-container-inner"><canvas id="varietyChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+        <h3>Grade Stock Mix (Glaze Wise)</h3>
+        <div class="chart-container-inner"><canvas id="gradeChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+        <h3>Opening vs Closing (By Species)</h3>
+        <div class="chart-container-inner"><canvas id="opClChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+        <h3>Stock Movement Analysis</h3>
+        <div class="chart-container-inner"><canvas id="productionFlowChart"></canvas></div>
+    </div>
+</div>
+
+<div class="age-wrapper">
+    <div class="age-boxes">
+        <div class="age-card" style="border-left: 5px solid var(--success);" onclick="filterByAge(0, 30, this)">
+            <h4>0-30 Days</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2>
         </div>
-        <div>
-            <div class="value">{{ "{:,}".format(closing_stock_mc|default(0)) }}</div>
-            <div class="amt-sub">Boxes Active</div>
+        <div class="age-card" style="border-left: 5px solid var(--warning);" onclick="filterByAge(31, 90, this)">
+            <h4>31-90 Days</h4><h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2>
+        </div>
+        <div class="age-card" style="border-left: 5px solid #ea580c;" onclick="filterByAge(91, 700, this)">
+            <h4>91-700 Days</h4><h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2>
+        </div>
+        <div class="age-card" style="border-left: 5px solid var(--danger);" onclick="filterByAge(701, 99999, this)">
+            <h4>700+ Days (Dead)</h4><h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2>
         </div>
     </div>
 </div>
 
 <div class="filter-panel-wrapper no-print">
     <form method="get" id="filterForm" class="filters" action="/dashboard/inventory_dashboard">
-        
         <input type="hidden" name="location" id="hidden_location" value="">
         <input type="hidden" name="production_for" id="hidden_prod_for" value="">
 
@@ -739,22 +306,13 @@
                     <ul class="dropdown-options-list">
                         {% for y in financial_years %}
                         <li class="{% if selected_fy == y|string or sel_fy == y|string %}selected-option{% endif %}"
-                        onclick="selectDropdownOption(
-                            'sel_fy',
-                            '{{ y }}-{{ (y|int)+1 }}',
-                            'FY {{ y }}-{{ (y|int)+1 }}'
-                        )">
+                        onclick="selectDropdownOption('sel_fy','{{ y }}-{{ (y|int)+1 }}','FY {{ y }}-{{ (y|int)+1 }}')">
                             FY {{ y }}-{{ (y|int)+1 }}
                         </li>
                         {% endfor %}
                     </ul>
                 </div>
-                <input
-                    type="hidden"
-                    id="sel_fy"
-                    name="sel_fy"
-                    value="{{ sel_fy }}"
-                >
+                <input type="hidden" id="sel_fy" name="sel_fy" value="{{ sel_fy }}">
             </div>
         </div>
 
@@ -795,6 +353,26 @@
                     </ul>
                 </div>
                 <input type="hidden" id="sel_variety" name="sel_variety" value="{{ sel_variety if sel_variety else 'ALL' }}">
+            </div>
+        </div>
+
+        <div class="fbox">
+            <label style="color:var(--accent)">Glaze *</label>
+            <div class="searchable-dropdown-container">
+                <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_glaze')">
+                    <span id="label_glaze">{{ sel_glaze if sel_glaze and sel_glaze != 'ALL' else 'ALL GLAZES' }}</span>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+                <div class="dropdown-search-wrapper" id="dropdown_glaze">
+                    <input type="text" placeholder="Search Glaze..." onkeyup="filterDropdownList('dropdown_glaze', this.value)">
+                    <ul class="dropdown-options-list">
+                        <li class="{% if not sel_glaze or sel_glaze == 'ALL' %}selected-option{% endif %}" onclick="selectDropdownOption('sel_glaze', 'ALL', 'ALL GLAZES')">ALL GLAZES</li>
+                        {% for g in glazes_list %}
+                        <li class="{% if sel_glaze == g %}selected-option{% endif %}" onclick="selectDropdownOption('sel_glaze', '{{ g }}', '{{ g }}')">{{ g }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <input type="hidden" id="sel_glaze" name="sel_glaze" value="{{ sel_glaze if sel_glaze else 'ALL' }}">
             </div>
         </div>
 
@@ -840,117 +418,99 @@
 
         <div class="fbox">
             <label style="color:var(--sub)">Search *</label>
-            <input type="text" id="tableSearch" class="main-search-field" placeholder="Type to filter..." onkeyup="searchTable()">
+            <input type="text" id="tableSearch" class="main-search-field" placeholder="Type to filter..." onkeyup="applyAllFilters()">
         </div>
     </form>
 </div>
 
-<div class="tabs" id="dashboardTabsBlock">
-    <button class="tab-btn active" id="live_tab_btn" onclick="openTab(event,'live_tab')">Live Inventory</button>
-    <button class="tab-btn" id="opening_tab_btn" onclick="openTab(event,'opening_tab')">Opening Stock</button>
-    <button class="tab-btn" id="comparison_tab_btn" onclick="openTab(event,'comparison_tab')">Comparison</button>
-    <button class="tab-btn" id="aging_tab_btn" onclick="openTab(event,'aging_tab')">Aging</button>
-</div>
-
-<div id="live_tab" class="tab-content active">
-    <div class="rm-summary-box">
-        <div class="panel-header">
-            <h3>Live Closing Inventory</h3>
-            <div class="footer-actions">
-                <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')"><i class="fas fa-file-excel"></i> Excel</button>
-                <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
-            </div>
+<div class="rm-summary-box" id="liveInventoryBox">
+    <div class="panel-header">
+        <h3><i class="fa-solid fa-boxes-stacked"></i> Live Closing Inventory</h3>
+        <div class="footer-actions">
+            <button class="action-btn excel-btn" onclick="exportToExcel('liveInventoryTable','Live_Inventory')"><i class="fas fa-file-excel"></i> Excel</button>
+            <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
         </div>
-        <div class="table-wrap">
-            <table class="rm-table" id="liveInventoryTable">
-                <thead>
-                    <tr>
-                        <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
-                        <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th>
-                        <th style="text-align: right;">IN</th><th style="text-align: right;">OUT</th>
-                        <th style="text-align: right;">Cl MC</th><th style="text-align: right;">Loose</th><th style="text-align: right;">Cl Qty</th>
-                        <th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Inv Value</th><th>Ageing</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryBody">
-                    {% for row in stock_table_data %}
-                    {% set age = row.ageing_days|default(0) %}
-                    <tr class="{{ 'dead-row' if age > 700 else '' }}" 
-                        data-opening-qty="{{ row.opening_qty|default(0) }}" 
-                        data-closing-qty="{{ row.qty|default(0) }}" 
-                        data-opening-mc="{{ row.opening_mc|default(0) }}" 
-                        data-closing-mc="{{ row.mc|default(0) }}" 
-                        data-inv-val="{{ row.value|default(0) }}" 
-                        data-reprocess-qty="{{ row.reprocess_qty|default(0) }}" 
-                        data-reprocess-val="{{ row.reprocess_value|default(0) }}">
-                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
-                        <td align="right" style="color:var(--success);">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:var(--danger);">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
-                        <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
-                        <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent); font-weight:800;">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
-                        <td>
-                            {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
-                            {% elif age <= 90 %}<span class="age-yellow">{{ age }}D</span>
-                            {% elif age <= 700 %}<span class="age-orange">{{ age }}D</span>
-                            {% else %}<span class="age-red">{{ age }}D</span>{% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr class="grand-total-row">
-                        <td colspan="9" style="text-align: right;">GRAND TOTAL</td>
-                        <td align="right" id="foot_op_mc">{{ grand_opening_mc|default(0) }}</td><td></td><td align="right" id="foot_op_qty">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</td>
-                        <td></td><td></td>
-                        <td align="right" id="foot_cl_mc">{{ closing_stock_mc|default(0) }}</td><td></td><td align="right" id="foot_cl_qty">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</td>
-                        <td></td><td align="right" id="foot_cl_val">{{ "{:,.0f}".format(total_inventory_value|default(0)) }}</td><td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="rm-table" id="liveInventoryTable">
+            <thead>
+                <tr>
+                    <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
+                    <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th>
+                    <th style="text-align: right;">IN</th><th style="text-align: right;">OUT</th>
+                    <th style="text-align: right;">Cl MC</th><th style="text-align: right;">Loose</th><th style="text-align: right;">Cl Qty</th>
+                    <th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Inv Value</th><th>Ageing</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody">
+                {% for row in stock_table_data %}
+                {% set age = row.ageing_days|default(0) %}
+                <tr class="inv-row {{ 'dead-row' if age > 700 else '' }}" 
+                    data-age="{{ age }}"
+                    data-opening-qty="{{ row.opening_qty|default(0) }}" 
+                    data-in-qty="{{ row.in_qty|default(0) }}"
+                    data-out-qty="{{ row.out_qty|default(0) }}"
+                    data-closing-qty="{{ row.qty|default(0) }}" 
+                    data-opening-mc="{{ row.opening_mc|default(0) }}" 
+                    data-closing-mc="{{ row.mc|default(0) }}" 
+                    data-inv-val="{{ row.value|default(0) }}" 
+                    data-reprocess-qty="{{ row.reprocess_qty|default(0) }}" 
+                    data-reprocess-val="{{ row.reprocess_value|default(0) }}">
+                    <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
+                    <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td>
+                    <td align="right" style="color:var(--success);">{{ "{:,.2f}".format(row.in_qty|default(0)) }}</td><td align="right" style="color:var(--danger);">{{ "{:,.2f}".format(row.out_qty|default(0)) }}</td>
+                    <td align="right">{{ row.mc|default(0) }}</td><td align="right">{{ row.loose|default(0) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.2f}".format(row.qty|default(0)) }}</td>
+                    <td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color:var(--accent); font-weight:800;">{{ "{:,.0f}".format(row.value|default(0)) }}</td>
+                    <td>
+                        {% if age <= 30 %}<span class="age-green">{{ age }}D</span>
+                        {% elif age <= 90 %}<span class="age-yellow">{{ age }}D</span>
+                        {% elif age <= 700 %}<span class="age-orange">{{ age }}D</span>
+                        {% else %}<span class="age-red">{{ age }}D</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="grand-total-row">
+                    <td colspan="9" style="text-align: right;">GRAND TOTAL</td>
+                    <td align="right" id="foot_op_mc">{{ grand_opening_mc|default(0) }}</td><td></td><td align="right" id="foot_op_qty">{{ "{:,.2f}".format(opening_stock_qty|default(0)) }}</td>
+                    <td></td><td></td>
+                    <td align="right" id="foot_cl_mc">{{ closing_stock_mc|default(0) }}</td><td></td><td align="right" id="foot_cl_qty">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</td>
+                    <td></td><td align="right" id="foot_cl_val">{{ "{:,.0f}".format(total_inventory_value|default(0)) }}</td><td></td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 </div>
 
-<div id="opening_tab" class="tab-content">
-    <div class="rm-summary-box">
-        <div class="panel-header"><h3>Opening Stock Summary</h3></div>
-        <div class="table-wrap">
-            <table class="rm-table" id="openingTable">
-                <thead>
-                    <tr>
-                        <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
-                        <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th><th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Value</th><th>Age</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in stock_table_data %}
-                    {% if row.opening_qty != 0 %}
-                    {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
-                    <tr>
-                        <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
-                        <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="rm-summary-box" id="openingStockBox">
+    <div class="panel-header">
+        <h3><i class="fa-solid fa-box-open"></i> Opening Stock Summary</h3>
+        <div class="footer-actions">
+            <button class="action-btn excel-btn" onclick="exportToExcel('openingTable','Opening_Stock')"><i class="fas fa-file-excel"></i> Excel</button>
         </div>
     </div>
-</div>
-
-<div id="comparison_tab" class="tab-content">
-    <div class="chart-grid">
-        <div class="chart-box"><h3>FY Comparison</h3><canvas id="fyChart"></canvas></div>
-        <div class="chart-box"><h3>Variety Mix</h3><canvas id="varietyChart"></canvas></div>
-    </div>
-</div>
-
-<div id="aging_tab" class="tab-content">
-    <div class="age-boxes">
-        <div class="age-card" style="border-left: 5px solid var(--success);"><h4>0-30 D</h4><h2>{{ "{:,.2f}".format(age_30|default(0)) }}</h2></div>
-        <div class="age-card" style="border-left: 5px solid var(--warning);"><h4>31-90 D</h4><h2>{{ "{:,.2f}".format(age_90|default(0)) }}</h2></div>
-        <div class="age-card" style="border-left: 5px solid #ea580c;"><h4>91-700 D</h4><h2>{{ "{:,.2f}".format(age_700|default(0)) }}</h2></div>
-        <div class="age-card" style="border-left: 5px solid var(--danger);"><h4>700+ D</h4><h2>{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</h2></div>
+    <div class="table-wrap">
+        <table class="rm-table" id="openingTable">
+            <thead>
+                <tr>
+                    <th>#</th><th>Loc</th><th>Storage</th><th>Species</th><th>Variety</th><th>Packing</th><th>Glaze</th><th>Grade</th><th>Client</th>
+                    <th style="text-align: right;">Op MC</th><th style="text-align: right;">Op Loose</th><th style="text-align: right;">Op Qty</th><th style="text-align: right;">Avg Rate</th><th style="text-align: right;">Value</th><th>Age</th>
+                </tr>
+            </thead>
+            <tbody id="openingBody">
+                {% for row in stock_table_data %}
+                {% if row.opening_qty != 0 %}
+                {% set age = row.ageing_days|default(0) %}
+                {% set row_op_val = (row.opening_qty|default(0)) * (row.avg_rate|default(0)) %}
+                <tr class="op-row" data-age="{{ age }}">
+                    <td>{{ loop.index }}</td><td>{{ row.loc }}</td><td>{{ row.fr }}</td><td><strong>{{ row.sp }}</strong></td><td>{{ row.vr }}</td><td>{{ row.pk }}</td><td>{{ row.gl }}</td><td>{{ row.gr }}</td><td>{{ row.production_for }}</td>
+                    <td align="right">{{ row.opening_mc|default(0) }}</td><td align="right">{{ row.opening_loose|default(0) }}</td><td align="right">{{ "{:,.2f}".format(row.opening_qty|default(0)) }}</td><td align="right">{{ "{:,.2f}".format(row.avg_rate|default(0)) }}</td><td align="right" style="color: var(--accent); font-weight:800;">{{ "{:,.0f}".format(row_op_val) }}</td><td>{{ row.ageing_days|default(0) }}D</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -997,10 +557,6 @@ window.addEventListener('DOMContentLoaded', () => {
     listenToParentHeader();
 });
 
-document.getElementById('filterForm').addEventListener('submit', function() {
-    syncParentFiltersToForm();
-});
-
 // MutationObserver to catch dynamic theme changes
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -1017,18 +573,13 @@ function toggleSearchDropdown(id) {
     document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
         if(wrapper.id !== id) wrapper.style.display = 'none';
     });
-    
     let target = document.getElementById(id);
     if (target.style.display === 'block') {
         target.style.display = 'none';
     } else {
         target.style.display = 'block';
         let inputField = target.querySelector('input');
-        if(inputField) {
-            inputField.value = '';
-            inputField.focus();
-            filterDropdownList(id, ''); 
-        }
+        if(inputField) { inputField.value = ''; inputField.focus(); filterDropdownList(id, ''); }
     }
 }
 
@@ -1036,14 +587,9 @@ function filterDropdownList(wrapperId, query) {
     let container = document.getElementById(wrapperId);
     let filter = query.toUpperCase();
     let liItems = container.querySelectorAll('.dropdown-options-list li');
-    
     liItems.forEach(li => {
         let txtValue = li.textContent || li.innerText;
-        if (txtValue.toUpperCase().indexOf(filter) > -1) {
-            li.style.display = "";
-        } else {
-            li.style.display = "none";
-        }
+        li.style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
     });
 }
 
@@ -1051,52 +597,54 @@ function selectDropdownOption(hiddenInputId, val, displayName) {
     document.getElementById(hiddenInputId).value = val;
     let parentWrapper = document.getElementById(hiddenInputId).previousElementSibling;
     if(parentWrapper) parentWrapper.style.display = 'none';
-    
-    syncParentFiltersToForm(); // Capture latest global filters before submit
+    syncParentFiltersToForm();
     document.getElementById('filterForm').submit();
 }
 
 document.addEventListener('click', function(event) {
     if (!event.target.closest('.searchable-dropdown-container')) {
-        document.querySelectorAll('.dropdown-search-wrapper').forEach(wrapper => {
-            wrapper.style.display = 'none';
-        });
+        document.querySelectorAll('.dropdown-search-wrapper').forEach(w => w.style.display = 'none');
     }
 });
 
-function openTab(evt, tabId){
-    document.querySelectorAll('.tab-content').forEach(tab => { tab.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('active'); });
-    document.getElementById(tabId).classList.add('active');
-    
-    if(evt && evt.currentTarget) {
-        evt.currentTarget.classList.add('active');
-    } else if(evt) {
-        let TargetButton = document.getElementById(evt);
-        if(TargetButton) TargetButton.classList.add('active');
-    }
-}
+// 🟢 Unified Filter Logic (Search Box + Aging Cards)
+let globalAgeMin = 0;
+let globalAgeMax = 999999;
+let activeAgeCard = null;
 
-function scrollToDashboardTab(btnId, tabId) {
-    openTab(btnId, tabId);
-    let targetBlock = document.getElementById('dashboardTabsBlock');
-    if(targetBlock) {
-        targetBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function filterByAge(min, max, cardElement) {
+    if(activeAgeCard === cardElement) {
+        activeAgeCard.classList.remove('active-filter');
+        activeAgeCard = null;
+        globalAgeMin = 0;
+        globalAgeMax = 999999;
+    } else {
+        if(activeAgeCard) activeAgeCard.classList.remove('active-filter');
+        activeAgeCard = cardElement;
+        activeAgeCard.classList.add('active-filter');
+        globalAgeMin = min;
+        globalAgeMax = max;
     }
+    applyAllFilters();
 }
 
 const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
 const fmtVal = new Intl.NumberFormat('en-IN', { minimumFractionDigits:0, maximumFractionDigits:0 });
 
-function searchTable(){
-    let input = document.getElementById("tableSearch");
-    let filter = input.value.toUpperCase();
-    let rows = document.querySelectorAll("#inventoryBody tr");
+function applyAllFilters() {
+    let searchFilter = document.getElementById("tableSearch").value.toUpperCase();
+    
+    // Live Inventory Filtering & Recalculation
+    let liveRows = document.querySelectorAll("#inventoryBody tr.inv-row");
     let sumOpQty = 0, sumClQty = 0, sumOpMC = 0, sumClMC = 0, sumClVal = 0, sumReprocessQty = 0, sumReprocessVal = 0;
     
-    rows.forEach(tr => {
+    liveRows.forEach(tr => {
         let text = tr.innerText.toUpperCase();
-        if(text.indexOf(filter) > -1){
+        let age = parseInt(tr.getAttribute("data-age") || 0);
+        let matchesSearch = text.indexOf(searchFilter) > -1;
+        let matchesAge = (age >= globalAgeMin && age <= globalAgeMax);
+        
+        if(matchesSearch && matchesAge){
             tr.style.display = "";
             sumOpQty += parseFloat(tr.dataset.openingQty || 0);
             sumClQty += parseFloat(tr.dataset.closingQty || 0);
@@ -1114,8 +662,18 @@ function searchTable(){
     document.getElementById('foot_cl_mc').innerText = sumClMC.toLocaleString();
     document.getElementById('foot_cl_val').innerText = fmtVal.format(sumClVal);
     
-    document.getElementById('reprocessKpiQty').innerText = fmt.format(sumReprocessQty);
-    document.getElementById('reprocessKpiVal').innerText = "₹ " + fmtVal.format(sumReprocessVal);
+    // Opening Stock Filtering
+    let opRows = document.querySelectorAll("#openingBody tr.op-row");
+    opRows.forEach(tr => {
+        let text = tr.innerText.toUpperCase();
+        let age = parseInt(tr.getAttribute("data-age") || 0);
+        let matchesSearch = text.indexOf(searchFilter) > -1;
+        let matchesAge = (age >= globalAgeMin && age <= globalAgeMax);
+        tr.style.display = (matchesSearch && matchesAge) ? "" : "none";
+    });
+
+    // Update dynamic stacked charts based on visible data
+    updateDynamicCharts();
 }
 
 function exportToExcel(tableID, fileName){
@@ -1124,46 +682,275 @@ function exportToExcel(tableID, fileName){
     XLSX.writeFile(wb, fileName + ".xlsx");
 }
 
-let fyChartInst = null;
+/* ==========================================================
+   🌟 DYNAMIC CHARTS ENGINE (WITH LABELS & TOTALS)
+========================================================== */
+let opClChartInst = null;
+let flowChartInst = null;
 let varChartInst = null;
+let gradeChartInst = null;
 window.chartsInstance = true; 
+
+const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
+
+// CUSTOM PLUGIN TO DRAW LABELS INSIDE BARS AND TOTALS AT THE END
+const customDataLabelsPlugin = {
+    id: 'customDataLabels',
+    afterDatasetsDraw: (chart) => {
+        const ctx = chart.ctx;
+        const isHorizontal = chart.config.options.indexAxis === 'y';
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        
+        chart.data.labels.forEach((_, i) => {
+            let total = 0;
+            let lastValidMeta = null;
+            
+            chart.data.datasets.forEach((dataset, j) => {
+                const meta = chart.getDatasetMeta(j);
+                if (!meta.hidden && dataset.data[i] > 0) {
+                    total += dataset.data[i];
+                    lastValidMeta = meta;
+                    
+                    // Draw inner segment label
+                    const element = meta.data[i];
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '600 9px "Plus Jakarta Sans"';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    if (isHorizontal) {
+                        const startX = element.base;
+                        const width = element.x - startX;
+                        if (width > 22) { // only if there's enough space
+                            ctx.fillText(fmtVal.format(dataset.data[i]), startX + width / 2, element.y);
+                        }
+                    } else {
+                        const startY = element.base;
+                        const height = startY - element.y;
+                        if (height > 16) {
+                            ctx.fillText(fmtVal.format(dataset.data[i]), element.x, startY - height / 2);
+                        }
+                    }
+                }
+            });
+            
+            // Draw total label in empty space
+            if (total > 0 && lastValidMeta) {
+                const element = lastValidMeta.data[i];
+                ctx.fillStyle = isDark ? '#cbd5e1' : '#475569';
+                ctx.font = 'bold 10px "Plus Jakarta Sans"';
+                
+                if (isHorizontal) {
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(fmtVal.format(total), element.x + 5, element.y);
+                } else {
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(fmtVal.format(total), element.x, element.y - 5);
+                }
+            }
+        });
+    }
+};
+
+// SYNCHRONIZED LEGEND CLICK
+const syncLegendClick = function(e, legendItem, legend) {
+    const index = legendItem.datasetIndex;
+    const isVisible = varChartInst.isDatasetVisible(index);
+    
+    if (varChartInst) {
+        varChartInst.setDatasetVisibility(index, !isVisible);
+        varChartInst.update();
+    }
+    if (gradeChartInst) {
+        gradeChartInst.setDatasetVisibility(index, !isVisible);
+        gradeChartInst.update();
+    }
+};
+
+function updateDynamicCharts() {
+    let rows = document.querySelectorAll("#inventoryBody tr.inv-row");
+    let speciesMap = {};
+    let varietyMap = {};
+    let gradeMap = {};
+    let allGlazes = new Set();
+
+    rows.forEach(tr => {
+        if (tr.style.display !== "none") {
+            let species = tr.cells[3].innerText.trim();
+            let variety = tr.cells[4].innerText.trim();
+            let glaze = tr.cells[6].innerText.trim();
+            let grade = tr.cells[7].innerText.trim();
+            
+            let opQty = parseFloat(tr.dataset.openingQty || 0);
+            let clQty = parseFloat(tr.dataset.closingQty || 0);
+
+            // Group by Species for Op vs Cl Chart
+            if (!speciesMap[species]) speciesMap[species] = { op: 0, cl: 0 };
+            speciesMap[species].op += opQty;
+            speciesMap[species].cl += clQty;
+
+            // Group for Stacked Charts
+            if (clQty > 0) {
+                allGlazes.add(glaze);
+                if (!varietyMap[variety]) varietyMap[variety] = {};
+                if (!varietyMap[variety][glaze]) varietyMap[variety][glaze] = 0;
+                varietyMap[variety][glaze] += clQty;
+
+                if (!gradeMap[grade]) gradeMap[grade] = {};
+                if (!gradeMap[grade][glaze]) gradeMap[grade][glaze] = 0;
+                gradeMap[grade][glaze] += clQty;
+            }
+        }
+    });
+
+    let glazesArray = Array.from(allGlazes).sort();
+    let spLabels = Object.keys(speciesMap).sort();
+
+    // 1. Opening vs Closing Data
+    let opData = spLabels.map(sp => speciesMap[sp].op);
+    let clData = spLabels.map(sp => speciesMap[sp].cl);
+    if (opClChartInst) {
+        opClChartInst.data.labels = spLabels;
+        opClChartInst.data.datasets[0].data = opData;
+        opClChartInst.data.datasets[1].data = clData;
+        opClChartInst.update();
+    }
+
+    // 2. Variety (Stacked by Glaze)
+    let vLabels = Object.keys(varietyMap).sort();
+    let vDatasets = glazesArray.map((glaze, index) => {
+        return {
+            label: glaze,
+            data: vLabels.map(v => varietyMap[v][glaze] || 0),
+            backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
+        };
+    });
+    if (varChartInst) {
+        varChartInst.data.labels = vLabels;
+        varChartInst.data.datasets = vDatasets;
+        varChartInst.update();
+    }
+
+    // 3. Grade (Stacked by Glaze)
+    let gLabels = Object.keys(gradeMap).sort();
+    let gDatasets = glazesArray.map((glaze, index) => {
+        return {
+            label: glaze,
+            data: gLabels.map(g => gradeMap[g][glaze] || 0),
+            backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
+        };
+    });
+    if (gradeChartInst) {
+        gradeChartInst.data.labels = gLabels;
+        gradeChartInst.data.datasets = gDatasets;
+        gradeChartInst.update();
+    }
+}
 
 function renderCharts() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const chartTextColor = isDark ? '#94a3b8' : '#475569';
     const chartGridColor = isDark ? '#334155' : '#f1f5f9';
     
-    if(fyChartInst) fyChartInst.destroy();
+    if(opClChartInst) opClChartInst.destroy();
+    if(flowChartInst) flowChartInst.destroy();
     if(varChartInst) varChartInst.destroy();
+    if(gradeChartInst) gradeChartInst.destroy();
 
-    fyChartInst = new Chart(document.getElementById('fyChart'), {
-        type:'bar',
-        data:{ labels: {{ fy_labels|tojson if fy_labels else '[]' }}, datasets:[{ label:'Opening', data: {{ fy_opening|tojson if fy_opening else '[]' }}, backgroundColor:'#3b82f6' },{ label:'Closing', data: {{ fy_closing|tojson if fy_closing else '[]' }}, backgroundColor:'#10b981' }] },
-        options:{ 
-            responsive:true, 
-            maintainAspectRatio:false,
-            plugins: { legend: { labels: { color: chartTextColor } } },
-            scales: {
-                x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
-                y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }
-            }
-        }
-    });
+    // Register our custom plugin
+    Chart.register(customDataLabelsPlugin);
 
+    // 1. Variety (Stacked Horizontal) - SWAPPED
     varChartInst = new Chart(document.getElementById('varietyChart'), {
-        type:'doughnut',
-        data:{ labels: {{ variety_labels|tojson if variety_labels else '[]' }}, datasets:[{ data: {{ variety_values|tojson if variety_values else '[]' }}, backgroundColor:['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'], borderColor: isDark ? '#1e293b' : '#fff' }] },
-        options:{ 
-            responsive:true, 
-            maintainAspectRatio:false,
-            plugins: { legend: { position: 'right', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } }
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: { 
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+            layout: { padding: { right: 35 } },
+            plugins: { 
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } 
+            }, 
+            scales: { 
+                x: { stacked: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, 
+                y: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } } 
+            } 
         }
     });
+
+    // 2. Grade (Stacked Vertical) - SWAPPED
+    gradeChartInst = new Chart(document.getElementById('gradeChart'), {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            layout: { padding: { top: 20 } },
+            plugins: { 
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } 
+            }, 
+            scales: { 
+                x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } }, 
+                y: { stacked: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } } 
+            } 
+        }
+    });
+
+    // 3. Opening vs Closing (From Table)
+    opClChartInst = new Chart(document.getElementById('opClChart'), {
+        type:'bar',
+        data:{ labels: [], datasets:[{ label:'Opening Stock', data: [], backgroundColor:'#3b82f6' },{ label:'Closing Stock', data: [], backgroundColor:'#10b981' }] },
+        options:{ 
+            responsive:true, maintainAspectRatio:false, 
+            layout: { padding: { top: 20 } },
+            plugins: { legend: { labels: { color: chartTextColor } } }, 
+            scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } } } 
+        }
+    });
+
+    // 4. Stock Movement Analysis Line Chart
+    flowChartInst = new Chart(document.getElementById('productionFlowChart'), {
+        type: 'line',
+        data: {
+            labels: {{ flow_labels | default('[]') | safe }},
+            datasets: [
+                {
+                    label: "Fresh Production",
+                    data: {{ flow_fresh | default('[]') | safe }},
+                    borderColor: "#10b981", // Green
+                    backgroundColor: "rgba(16,185,129,.2)",
+                    tension: .4,
+                    fill: true
+                },
+                {
+                    label: "Reprocess",
+                    data: {{ flow_reprocess | default('[]') | safe }},
+                    borderColor: "#f59e0b", // Orange
+                    backgroundColor: "rgba(245,158,11,.2)",
+                    tension: .4,
+                    fill: true
+                },
+                {
+                    label: "OUT",
+                    data: {{ flow_out | default('[]') | safe }},
+                    borderColor: "#ef4444", // Red
+                    backgroundColor: "rgba(239,68,68,.2)",
+                    tension: .4,
+                    fill: true
+                }
+            ]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { labels: { color: chartTextColor } }, customDataLabels: false }, 
+            scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } } } 
+        }
+    });
+
+    updateDynamicCharts();
 }
 
-window.onload = function(){
-    renderCharts();
-}
+window.onload = function(){ renderCharts(); }
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

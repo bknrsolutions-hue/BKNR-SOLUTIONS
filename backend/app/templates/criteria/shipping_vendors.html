@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SHIPPING VENDOR MASTER | BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link rel="stylesheet" href="/static/css/bknr-masters.css">
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-titles">
+      <h2>Shipping Vendor Master</h2>
+  </div>
+  <div style="font-size:10px; font-weight:700; color: var(--muted)">BKNR ERP</div>
+</div>
+
+<form onsubmit="submitVendor(event)" id="vendorForm">
+  <div class="form-container" id="formSection">
+    
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-anchor"></i> Shipping Vendor Profile</div>
+      <div class="field">
+        <label>Vendor Name</label>
+        <input type="text" id="vendor_name" required placeholder="Enter Shipping Vendor Name">
+      </div>
+      <div class="field">
+        <label>Payment Cycle</label>
+        <input list="cycle_list" id="payment_cycle" placeholder="Select or Type Cycle..." onfocus="this.value=''">
+        <datalist id="cycle_list">
+            <option value="Immediate">
+            <option value="Advance">
+            <option value="7 Days">
+            <option value="15 Days">
+            <option value="30 Days">
+            <option value="45 Days">
+        </datalist>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-title-inner"><i class="fa-solid fa-building-columns"></i> Statutory & Banking Info</div>
+      <div class="field">
+        <label>GST Number</label>
+        <input type="text" id="gst_number" placeholder="Enter GSTIN">
+      </div>
+      <div class="field">
+        <label>Bank Name</label>
+        <input type="text" id="bank_name" placeholder="Enter Bank Name">
+      </div>
+      <div class="field">
+        <label>Account Number</label>
+        <input type="text" id="account_no" placeholder="Enter Account Number">
+      </div>
+      <div class="field">
+        <label>IFSC Code</label>
+        <input type="text" id="ifsc" placeholder="Enter IFSC Code">
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Address</label>
+        <textarea id="address" placeholder="Enter Full Address"></textarea>
+      </div>
+    </div>
+
+    <input type="hidden" id="record_id">
+    <input type="hidden" id="meta_email" value="{{ email }}">
+    <input type="hidden" id="meta_company_id" value="{{ company_id }}">
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE VENDOR</button>
+      
+      {% if today_data %}
+      <button 
+          type="button" 
+          class="btn btn-accent" 
+          onclick="window.location.href='/criteria/setup/next'">
+          NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+      </button>
+      {% endif %}
+
+      <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
+    </div>
+  </div>
+</form>
+
+{% if message %}
+<p style="text-align:center;color:var(--success);font-weight:700;font-size:12px;margin:10px 0;">{{ message }}</p>
+{% endif %}
+
+{% if today_data %}
+
+<div class="table-header-bar">
+    <h3 class="table-title">Shipping Vendor Data Logs</h3>
+    
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
+        <div class="top-actions" id="toggleActionArea">
+            <button class="btn-toggle btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Shipping Vendor</button>
+            
+            {% if today_data %}
+            <button 
+                type="button" 
+                class="btn btn-accent" 
+                onclick="window.location.href='/criteria/setup/next'" 
+                style="width: 100%;">
+                NEXT STEP <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="menu-container" id="threeDotsMenu">
+          <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+          <div id="dropdownMenu">
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Profile</div>
+            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print Sheet</div>
+            <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Record</div>
+          </div>
+        </div>
+    </div>
+</div>
+
+<div class="mobile-card-list">
+    {% for row in today_data %}
+    <div class="data-card" data-id="{{ row.id }}" 
+         data-name="{{ row.vendor_name }}" data-address="{{ row.address }}"
+         data-gst="{{ row.gst_number }}" data-bank="{{ row.bank_name }}"
+         data-acc="{{ row.account_no }}" data-ifsc="{{ row.ifsc }}"
+         data-cycle="{{ row.payment_cycle }}"
+         data-date="{{ row.date }}" data-time="{{ row.time }}" data-uemail="{{ row.email }}"
+         onclick="selectRowOrCard(this)">
+        <div class="card-row">
+            <span class="card-label">ID</span>
+            <span class="card-val">#{{ row.id }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Vendor Name</span>
+            <span class="card-val" style="color:var(--accent);">{{ row.vendor_name }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Cycle</span>
+            <span class="card-val">{{ row.payment_cycle if row.payment_cycle else '-' }}</span>
+        </div>
+        <div class="card-row" style="border-top: 1px dashed #f1f5f9; margin-top: 4px; padding-top: 4px;">
+            <span class="card-label">Created At</span>
+            <span class="card-val" style="font-size:10px; color:var(--muted);">{{ row.date }} {{ row.time }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th style="width:50px;">ID</th>
+        <th>Vendor Name</th>
+        <th>Address</th>
+        <th>GST Number</th>
+        <th>Bank Name</th>
+        <th>Account No</th>
+        <th>IFSC</th>
+        <th>Payment Cycle</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Created User</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in today_data %}
+      <tr data-id="{{ row.id }}" 
+          data-name="{{ row.vendor_name }}" data-address="{{ row.address }}"
+          data-gst="{{ row.gst_number }}" data-bank="{{ row.bank_name }}"
+          data-acc="{{ row.account_no }}" data-ifsc="{{ row.ifsc }}"
+          data-cycle="{{ row.payment_cycle }}"
+          data-date="{{ row.date }}" data-time="{{ row.time }}" data-uemail="{{ row.email }}"
+          onclick="selectRowOrCard(this)">
+        <td>{{ row.id }}</td>
+        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.vendor_name }}</td>
+        <td style="text-align:left; max-width:150px; overflow:hidden; text-overflow:ellipsis;">{{ row.address if row.address else '' }}</td>
+        <td style="font-family:monospace; font-weight:600;">{{ row.gst_number if row.gst_number else '' }}</td>
+        <td style="font-weight:600; color:#475569;">{{ row.bank_name if row.bank_name else '' }}</td>
+        <td>{{ row.account_no if row.account_no else '' }}</td>
+        <td style="font-family:monospace;">{{ row.ifsc if row.ifsc else '' }}</td>
+        <td style="font-weight:600; color:#16a34a;">{{ row.payment_cycle if row.payment_cycle else '' }}</td>
+        <td style="color: #475569;">{{ row.date if row.date else '' }}</td>
+        <td style="color: #64748b;">{{ row.time if row.time else '' }}</td>
+        <td style="color: #0284c7; font-size: 10px;">{{ row.email if row.email else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p style="text-align:center; color:var(--muted); font-size:12px; padding:15px; margin:0;">No Shipping Vendors configured in the registry yet.</p>
+{% endif %}
+
+<script>
+let selectedElement = null;
+
+window.onload = function() {
+    const email = localStorage.getItem("userEmail");
+    const company = localStorage.getItem("companyID");
+    
+    if(document.getElementById("meta_email") && !document.getElementById("meta_email").value) {
+        document.getElementById("meta_email").value = email || "";
+    }
+    if(document.getElementById("meta_company_id") && !document.getElementById("meta_company_id").value) {
+        document.getElementById("meta_company_id").value = company || "";
+    }
+
+    const tableBody = document.querySelector("#dataTable tbody");
+    const rows = tableBody ? tableBody.querySelectorAll("tr").length : 0;
+
+    if (rows === 0) {
+        document.getElementById("formSection").style.display = "block";
+        const toggle = document.getElementById("toggleActionArea");
+        if (toggle) {
+            toggle.style.display = "none";
+        }
+    }
+}
+
+function toggleForm() {
+    const f = document.getElementById("formSection");
+    const t = document.getElementById("toggleActionArea");
+    if(f.style.display === "none" || f.style.display === "") {
+        f.style.display = "block";
+        t.style.display = "none";
+    } else {
+        clearForm();
+    }
+}
+
+async function submitVendor(e){
+  e.preventDefault();
+  
+  const fd = new FormData();
+  const rid = document.getElementById("record_id").value;
+  if(rid) fd.append('id', rid);
+
+  fd.append('vendor_name', document.getElementById("vendor_name").value.trim());
+  fd.append('address', document.getElementById("address").value.trim());
+  fd.append('gst_number', document.getElementById("gst_number").value.trim());
+  fd.append('bank_name', document.getElementById("bank_name").value.trim());
+  fd.append('account_no', document.getElementById("account_no").value.trim());
+  fd.append('ifsc', document.getElementById("ifsc").value.trim());
+  fd.append('payment_cycle', document.getElementById("payment_cycle").value.trim());
+  
+  const now = new Date();
+  fd.append("date", now.toISOString().slice(0,10));
+  fd.append("time", now.toTimeString().slice(0,8));
+  fd.append('email', document.getElementById("meta_email").value);
+  fd.append('company_id', document.getElementById("meta_company_id").value);
+
+  const res = await fetch('/criteria/shipping_vendors', {method:'POST', body:fd});
+  if(res.ok){ 
+    Swal.fire({icon:'success', title:'Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+        location.reload();
+    });
+  } else { 
+    const errData = await res.json().catch(() => ({}));
+    Swal.fire({icon:'error', title: errData.error || 'Error saving record'});
+  }
+}
+
+function selectRowOrCard(el) {
+  document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+  
+  const id = el.dataset.id;
+  selectedElement = el;
+  
+  document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
+  document.getElementById("threeDotsMenu").style.display = "block";
+}
+
+document.getElementById('dotsBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const d = document.getElementById('dropdownMenu');
+  d.style.display = (d.style.display === "block") ? "none" : "block";
+});
+
+function editSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  
+  document.getElementById('record_id').value = d.id;
+  document.getElementById('vendor_name').value = d.name || '';
+  document.getElementById('address').value = d.address || '';
+  document.getElementById('gst_number').value = d.gst || '';
+  document.getElementById('bank_name').value = d.bank || '';
+  document.getElementById('account_no').value = d.acc || '';
+  document.getElementById('ifsc').value = d.ifsc || '';
+  document.getElementById('payment_cycle').value = d.cycle || '';
+  
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE DATA";
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("toggleActionArea").style.display = "none";
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteSelected(){
+  if(!selectedElement) return;
+  
+  Swal.fire({
+    title: 'Purge Shipping Vendor?',
+    text: "This execution clears out the mapped shipping vendor record.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: 'var(--danger)',
+    confirmButtonText: 'Yes, Delete Entity'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      const res = await fetch(`/criteria/shipping_vendors/delete/${selectedElement.dataset.id}`,{method:'POST'});
+      if(res.ok) location.reload();
+      else alert("Delete failed");
+    }
+  });
+}
+
+function printSelected(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+
+  const p = window.open("","_blank");
+  p.document.write(`
+    <html>
+    <head>
+      <title>Shipping Vendor - ${d.name}</title>
+      <link rel="stylesheet" href="/static/css/bknr-masters.css">
+    </head>
+    <body>
+      <h2>Shipping Vendor Details</h2>
+      <p><b>System ID:</b> #${d.id}</p>
+      
+      <div class="section-title">Core Identification</div>
+      <p><b>Vendor Name:</b> ${d.name || 'N/A'}</p>
+      <p><b>Office Address:</b> ${d.address || 'N/A'}</p>
+      <p><b>Payment Cycle:</b> ${d.cycle || 'N/A'}</p>
+      
+      <div class="section-title">Statutory & Banking details</div>
+      <p><b>GSTIN Code:</b> ${d.gst || 'N/A'}</p>
+      <p><b>Bank Name:</b> ${d.bank || 'N/A'}</p>
+      <p><b>Account Number:</b> ${d.acc || 'N/A'}</p>
+      <p><b>IFSC Clearance:</b> ${d.ifsc || 'N/A'}</p>
+      
+      <div class="section-title">Log Metadata</div>
+      <p><b>Created Date:</b> ${d.date || 'N/A'}</p>
+      <p><b>Created Time:</b> ${d.time || 'N/A'}</p>
+    </body>
+    </html>
+  `);
+  p.document.close();
+  setTimeout(() => { p.print(); }, 500);
+}
+
+function exportPDF(){ printSelected(); }
+
+function exportExcel(){
+  if(!selectedElement) return;
+  const d = selectedElement.dataset;
+  const headers = "ID\tVendor Name\tAddress\tGSTIN\tBank Name\tAccount No\tIFSC\tPayment Cycle\tDate\tTime\tCreated User\n";
+  const rowData = `${d.id}\t${d.name}\t${d.address||''}\t${d.gst||''}\t${d.bank||''}\t${d.acc||''}\t${d.ifsc||''}\t${d.cycle||''}\t${d.date||''}\t${d.time||''}\t${d.uemail||''}`;
+  
+  const blob = new Blob([headers + rowData], {type:"application/vnd.ms-excel"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Shipping_Vendor_${d.name}.xls`;
+  a.click();
+}
+
+function clearForm(){
+  selectedElement = null;
+  document.getElementById("vendorForm").reset();
+  document.getElementById("record_id").value = "";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE VENDOR";
+  document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
+  document.getElementById("threeDotsMenu").style.display = "none";
+  
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("toggleActionArea").style.display = "flex";
+}
+
+window.onclick = () => {
+    const d = document.getElementById("dropdownMenu");
+    if(d) d.style.display = "none";
+}
+</script>
+<script src="/static/js/global-loader.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,175 +25,201 @@
     </script>
 
     <style>
+        /* 🌟 CORPORATE VARIABLES (DARK MODE FIRST) 🌟 */
         :root {
-            --primary-dark: #0f172a;
-            --slate-bg: #f1f5f9; 
-            --card-bg: #ffffff;
-            --accent-blue: #1d4ed8;
-            --border-color: #e2e8f0;
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --text-value: #000000;
-            --radius-premium: 12px;
+            --bg-app: #060913; 
+            --surface-panel: #111827; 
+            --glass-bg: rgba(17, 24, 39, 0.85); 
+            
+            --text-primary: #f8fafc;       
+            --text-secondary: #94a3b8;     
+            --text-tertiary: #64748b;      
+            
+            --border-light: rgba(255, 255, 255, 0.08); 
+            --border-highlight: rgba(255, 255, 255, 0.15);
+            
+            --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+            --radius-panel: 20px;
+            --radius-element: 12px;
+
+            /* Corporate Semantic Colors */
+            --corp-primary: #2563EB; 
+            --corp-success: #10B981; 
+            --corp-warning: #F59E0B; 
+            --corp-danger:  #EF4444; 
+            --corp-info:    #8B5CF6; 
         }
 
-        [data-theme="dark"] {
-            --slate-bg: #0f172a; 
-            --card-bg: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-value: #ffffff;
+        /* 🌟 LIGHT MODE OVERRIDE 🌟 */
+        [data-theme="light"] {
+            --bg-app: #f1f5f9;             
+            --surface-panel: #ffffff;      
+            --glass-bg: rgba(255, 255, 255, 0.9); 
+            
+            --text-primary: #0f172a;       
+            --text-secondary: #475569;     
+            --text-tertiary: #94a3b8;      
+            
+            --border-light: rgba(0, 0, 0, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.8);
+            
+            --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.08);
+            --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.04);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--slate-bg);
-            color: var(--text-main); 
+            background: var(--bg-app);
+            color: var(--text-primary); 
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
             overflow-y: auto; 
             transition: background 0.3s ease, color 0.3s ease;
         }
 
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 10px; }
+
         .dashboard { 
-            width: 100%; padding: 12px 8px 0px 8px; margin: 0; 
-            display: flex; flex-direction: column; min-height: 100vh;
+            width: 100%; padding: 20px 16px; margin: 0; 
+            display: flex; flex-direction: column; min-height: 100vh; gap: 24px;
         }
-        @media(min-width: 768px) { .dashboard { width: 94%; margin: auto; padding: 16px 0 0px 0; } }
+        @media(min-width: 768px) { .dashboard { padding: 30px 40px; } }
 
         /* ==========================================================
-           🌟 KPI CARDS (WHITE BG WITH COLORED ICONS)
+           🌟 SECTION HEADERS
         ========================================================== */
-        .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-        @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
-        @media(min-width: 1200px) { .cards { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
-
-        .card { 
-            padding: 14px; border-radius: var(--radius-premium); cursor: pointer; 
-            display: flex; align-items: center; justify-content: space-between; gap: 6px;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); transition: all 0.2s ease;
-            background: var(--card-bg); border: 1px solid var(--border-color);
-        }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: #3b82f6; }
-        .card:active { transform: scale(0.96); }
-
-        .card-meta { text-align: left; overflow: hidden; }
-        .label { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-        .value { font-size: 19px; font-weight: 800; color: var(--text-value); margin-top: 4px; letter-spacing: -0.5px; }
-        .value small { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-left: 2px; text-transform: uppercase; }
-        
-        .card-icon-zone {
-            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
-        }
-
-        /* 🟢 Icon Styling with Tinted Backgrounds */
-        .blue .card-icon-zone { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-        .green .card-icon-zone { color: #10b981; background: rgba(16, 185, 129, 0.1); }
-        .orange .card-icon-zone { color: #ea580c; background: rgba(234, 88, 12, 0.1); }
-        .purple .card-icon-zone { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
-        .teal .card-icon-zone { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
-        .pink .card-icon-zone { color: #ec4899; background: rgba(236, 72, 153, 0.1); }
-        .gray .card-icon-zone { color: #64748b; background: rgba(100, 116, 139, 0.1); }
-        .indigo .card-icon-zone { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
-        .red .card-icon-zone { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-
         .section-head { 
-            display: flex; align-items: center; gap: 10px; margin: 24px 0 12px 0; 
-            color: var(--text-muted); font-size: 11px; font-weight: 800; 
-            letter-spacing: 1.5px; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 14px; font-weight: 800; color: var(--text-secondary); 
+            text-transform: uppercase; letter-spacing: 1px; 
+            margin-bottom: -8px;
         }
-        .section-head hr { flex: 1; border: 0; border-top: 1px solid var(--border-color); }
+        .section-head-line { flex: 1; height: 1px; background: var(--border-light); margin-left: 16px; }
 
-        .rm-summary-box { 
-            background: var(--card-bg); border-radius: var(--radius-premium); 
-            border: 1px solid var(--border-color); margin-bottom: 20px; overflow: hidden;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+        /* ==========================================================
+           🌟 CORPORATE KPI CARDS
+        ========================================================== */
+        .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); } }
+        @media(min-width: 1200px) { .cards { grid-template-columns: repeat(8, 1fr); } }
+
+        .kpi-card {
+            background: var(--surface-panel); border: 1px solid var(--border-light); border-radius: var(--radius-panel);
+            padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden;
+            box-shadow: var(--shadow-soft); transition: transform 0.3s, border-color 0.3s; cursor: pointer;
+        }
+        .kpi-card:hover { transform: translateY(-4px); border-color: var(--kpi-color); }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--kpi-color, var(--text-tertiary)); }
+        
+        .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .kpi-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: var(--kpi-color); font-size: 14px;}
+        [data-theme="light"] .kpi-icon { background: rgba(0,0,0,0.05); }
+        
+        .kpi-value { font-size: 22px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.1; }
+        .kpi-value small { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-left: 2px; text-transform: uppercase; }
+
+        /* ==========================================================
+           🌟 CORPORATE TABLES
+        ========================================================== */
+        .corp-panel { 
+            background: var(--surface-panel); border-radius: var(--radius-panel); 
+            border: 1px solid var(--border-light); overflow: hidden;
+            box-shadow: var(--shadow-soft);
         }
         
-        .rm-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .rm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .rm-table th { 
-            padding: 12px 14px; background: var(--slate-bg); 
-            color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 10px; 
-            font-weight: 800; letter-spacing: 0.8px; text-align: left; text-transform: uppercase;
+            padding: 16px 20px; background: rgba(0,0,0,0.2); 
+            color: var(--text-secondary); border-bottom: 1px solid var(--border-light); font-size: 10px; 
+            font-weight: 800; letter-spacing: 1px; text-align: left; text-transform: uppercase;
         }
-        .rm-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); font-weight: 700; color: var(--text-main); }
+        [data-theme="light"] .rm-table th { background: rgba(0,0,0,0.03); }
+        .rm-table td { padding: 14px 20px; border-bottom: 1px solid var(--border-light); font-weight: 600; color: var(--text-primary); }
         .rm-table tr:last-child td { border-bottom: none; }
-        .rm-table tbody tr:hover { background: var(--slate-bg); }
+        .rm-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+        [data-theme="light"] .rm-table tbody tr:hover { background: rgba(0,0,0,0.02); }
 
-        .charts-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; width: 100%; }
-        @media(min-width: 992px) { .charts-row { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+        .highlight-val { color: var(--corp-primary); font-weight: 800; }
+
+        /* ==========================================================
+           🌟 CHARTS ROW
+        ========================================================== */
+        .charts-row { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
+        @media(min-width: 992px) { .charts-row { grid-template-columns: repeat(3, 1fr); } }
         
         .chart-box { 
-            background: var(--card-bg); padding: 16px 12px; border-radius: var(--radius-premium); 
-            border: 1px solid var(--border-color); width: 100%; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+            background: var(--surface-panel); padding: 20px; border-radius: var(--radius-panel); 
+            border: 1px solid var(--border-light); width: 100%; box-shadow: var(--shadow-soft);
         }
-        .chart-title { font-size: 10px; font-weight: 800; color: var(--text-muted); margin-bottom: 14px; text-align: center; letter-spacing: 0.8px; text-transform: uppercase; }
-        .chart-container { position: relative; height: 140px; width: 100%; }
+        .chart-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+        .chart-container { position: relative; height: 160px; width: 100%; }
 
-        /* 🟢 ATTENDANCE HORIZONTAL SCROLL LIST */
-        .attendance-viewport { overflow-x: auto; scrollbar-width: none; margin-bottom: 20px; padding: 6px 0; width: 100%; }
+        /* ==========================================================
+           🌟 ATTENDANCE HORIZONTAL SCROLL
+        ========================================================== */
+        .attendance-viewport { overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; width: 100%; }
         .attendance-viewport::-webkit-scrollbar { display: none; }
-        .attendance-stats { display: flex; gap: 12px; width: max-content; }
-        @media(min-width: 1200px) { .attendance-stats { width: 100%; display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; } }
+        .attendance-stats { display: flex; gap: 16px; width: max-content; }
+        @media(min-width: 1200px) { .attendance-stats { width: 100%; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; } }
         
-        .att-scroll-card { width: 165px; flex-shrink: 0; cursor: default; }
+        .att-scroll-card { width: 180px; flex-shrink: 0; cursor: default; }
         @media(min-width: 1200px) { .att-scroll-card { width: auto; } }
 
-        .summary-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
-        @media(min-width: 768px) { .summary-grid { grid-template-columns: 1fr 1fr; gap: 16px; } }
+        /* ==========================================================
+           🌟 SUMMARY GRID & IFRAME
+        ========================================================== */
+        .summary-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media(min-width: 768px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
         
-        .summary-card { 
-            background: var(--card-bg); border-radius: var(--radius-premium); 
-            border: 1px solid var(--border-color); padding: 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
-        }
+        .summary-card { padding: 20px; }
+        .summary-card h4 { margin:0 0 16px 0; font-size:11px; font-weight:800; color:var(--text-secondary); text-transform: uppercase; letter-spacing:1px; }
 
-        .floor-box { 
-            background: var(--card-bg); border-radius: var(--radius-premium); 
-            border: 1px solid var(--border-color); overflow: hidden; 
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
-            flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 10px;
-        }
-        .floor-frame { 
-            width: 100%; height: 500px; border: none; display: block; opacity: 1; flex-grow: 1; 
-        }
+        .floor-box { flex-grow: 1; display: flex; flex-direction: column; min-height: 500px; }
+        .floor-frame { width: 100%; height: 100%; border: none; display: block; flex-grow: 1; background: transparent; }
 
+        /* ==========================================================
+           🌟 PREMIUM MODAL
+        ========================================================== */
         .modal-overlay {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; 
-            background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); animation: fadeIn 0.15s ease-out;
+            display: none; position: fixed; z-index: 2000; inset: 0; 
+            background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            animation: fadeIn 0.2s ease-out; align-items: center; justify-content: center;
         }
         .modal-content {
-            background-color: var(--slate-bg); margin: 0; width: 100%; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            background-color: var(--bg-app); margin: 0; width: 100%; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden;
+            border: 1px solid var(--border-light);
         }
         @media(min-width: 768px) {
             .modal-content { 
-                margin: 4vh auto; width: 85%; height: 88vh; border-radius: var(--radius-premium); 
-                border: 1px solid var(--border-color); box-shadow: 0 25px 55px rgba(15, 23, 42, 0.2);
+                width: 90%; height: 90vh; border-radius: var(--radius-panel); 
+                box-shadow: var(--shadow-float);
             }
         }
         .modal-header {
-            padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border-color);
+            padding: 20px 24px; background: var(--surface-panel); border-bottom: 1px solid var(--border-light);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-header h3 { margin: 0; font-size: 13px; font-weight: 800; color: #3b82f6; letter-spacing: 0.8px; text-transform: uppercase; }
+        .modal-header h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--corp-primary); letter-spacing: 0.5px; text-transform: uppercase; }
         .close-btn { 
-            width: 30px; height: 30px; border-radius: 50%; background: var(--slate-bg); border: 1px solid var(--border-color);
-            color: var(--text-muted); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; transition: all 0.15s;
+            width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid var(--border-light);
+            color: var(--text-secondary); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
         }
-        .close-btn:hover { color: #fff; background: #e11d48; border-color: #e11d48; }
+        .close-btn:hover { color: #fff; background: var(--corp-danger); border-color: var(--corp-danger); }
         #entryFrame { width: 100%; flex-grow: 1; border: none; background: transparent; }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .rm-summary-box, .summary-card {
-            overflow-x: auto !important; 
-            overflow-y: hidden !important;
-            -webkit-overflow-scrolling: touch; 
-        }
-        .rm-table { min-width: 600px !important; }
-        .rm-table th, .rm-table td { white-space: nowrap !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        .overflow-auto-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .min-w-table { min-width: 600px; }
     </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -204,67 +230,70 @@
 <div class="dashboard">
 
     <div class="cards">
-        <div class="card blue" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
-            <div class="card-meta">
-                <div class="label">Gate Today</div>
-                <div class="value">{{ gate_today }}</div>
+        <div class="kpi-card" style="--kpi-color: var(--corp-warning);" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
+            <div class="kpi-header">
+                <span class="kpi-title">Gate Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-door-open"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-door-open"></i></div>
+            <div class="kpi-value">{{ gate_today }}</div>
         </div>
-        <div class="card green" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing Platform')">
-            <div class="card-meta">
-                <div class="label">RM Today</div>
-                <div class="value">{{ rmp_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing Platform')">
+            <div class="kpi-header">
+                <span class="kpi-title">RM Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-truck-ramp-box"></i></div>
+            <div class="kpi-value">{{ rmp_today }}<small>kg</small></div>
         </div>
-        <div class="card orange" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
-            <div class="card-meta">
-                <div class="label">DH Today</div>
-                <div class="value">{{ dh_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: #f97316;" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
+            <div class="kpi-header">
+                <span class="kpi-title">DH Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-scissors"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-scissors"></i></div>
+            <div class="kpi-value">{{ dh_today }}<small>kg</small></div>
         </div>
-        <div class="card purple" onclick="openEntryModal('/processing/grading', 'Grading Allocation Module')">
-            <div class="card-meta">
-                <div class="label">Grading Today</div>
-                <div class="value">{{ grading_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: var(--corp-info);" onclick="openEntryModal('/processing/grading', 'Grading Allocation Module')">
+            <div class="kpi-header">
+                <span class="kpi-title">Grading Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-filter"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-filter"></i></div>
+            <div class="kpi-value">{{ grading_today }}<small>kg</small></div>
         </div>
-        <div class="card teal" onclick="openEntryModal('/processing/peeling', 'Peeling Process Terminal')">
-            <div class="card-meta">
-                <div class="label">Peeling Today</div>
-                <div class="value">{{ peeling_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/peeling', 'Peeling Process Terminal')">
+            <div class="kpi-header">
+                <span class="kpi-title">Peeling Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-hand-dots"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-hand-dots"></i></div>
+            <div class="kpi-value">{{ peeling_today }}<small>kg</small></div>
         </div>
-        <div class="card pink" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
-            <div class="card-meta">
-                <div class="label">Soaking Today</div>
-                <div class="value">{{ soaking_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: #ec4899;" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
+            <div class="kpi-header">
+                <span class="kpi-title">Soaking Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-droplet"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-droplet"></i></div>
+            <div class="kpi-value">{{ soaking_today }}<small>kg</small></div>
         </div>
-        <div class="card indigo" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
-            <div class="card-meta">
-                <div class="label">Prod Today</div>
-                <div class="value">{{ production_today }}<small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: #6366f1;" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
+            <div class="kpi-header">
+                <span class="kpi-title">Prod Today</span>
+                <div class="kpi-icon"><i class="fa-solid fa-industry"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-industry"></i></div>
+            <div class="kpi-value">{{ production_today }}<small>kg</small></div>
         </div>
-        <div class="card gray">
-            <div class="card-meta">
-                <div class="label">Live Floor</div>
-                <div class="value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
+        <div class="kpi-card" style="--kpi-color: var(--text-secondary);">
+            <div class="kpi-header">
+                <span class="kpi-title">Live Floor</span>
+                <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
             </div>
-            <div class="card-icon-zone"><i class="fa-solid fa-snowflake"></i></div>
+            <div class="kpi-value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
         </div>
     </div>
 
-    <div class="section-head">RM Purchasing Summary <hr></div>
-    <div class="rm-summary-box">
-        <table class="rm-table">
+    <div class="section-head">
+        <span>RM Purchasing Summary</span>
+        <div class="section-head-line"></div>
+    </div>
+    <div class="corp-panel overflow-auto-x">
+        <table class="rm-table min-w-table">
             <thead>
                 <tr>
                     <th>Species Name</th>
@@ -276,15 +305,18 @@
                 {% for item in rm_summary %}
                 <tr>
                     <td>{{ item.species }}</td>
-                    <td><span style="color: var(--text-muted); font-weight: 700;">{{ item.count }}</span></td>
-                    <td style="text-align: right; color: #3b82f6; font-weight: 800;">{{ item.qty }}</td>
+                    <td><span style="color: var(--text-secondary);">{{ item.count }}</span></td>
+                    <td style="text-align: right;" class="highlight-val">{{ item.qty }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <div class="section-head">Hourly Analytics <hr></div>
+    <div class="section-head">
+        <span>Hourly Analytics</span>
+        <div class="section-head-line"></div>
+    </div>
     <div class="charts-row">
         <div class="chart-box">
             <div class="chart-title">De-Heading (Hourly)</div>
@@ -306,61 +338,63 @@
         </div>
     </div>
 
-    <div class="section-head">Live Attendance Status (Swipe) <hr></div>
+    <div class="section-head">
+        <span>Live Attendance Status</span>
+        <div class="section-head-line"></div>
+    </div>
     <div class="attendance-viewport">
         <div class="attendance-stats">
-            <!-- 🟢 UPDATED: Attendance Cards with Premium White + Colored Icon UI -->
-            <div class="card gray att-scroll-card">
-                <div class="card-meta"><div class="label">Total Staff</div><div class="value" id="att-total-val">{{ att_stats.total }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--text-secondary);">
+                <div class="kpi-header"><span class="kpi-title">Total Staff</span><div class="kpi-icon"><i class="fa-solid fa-users"></i></div></div>
+                <div class="kpi-value" id="att-total-val">{{ att_stats.total }}</div>
             </div>
-            <div class="card green att-scroll-card">
-                <div class="card-meta"><div class="label">Inside Floor</div><div class="value" id="att-in-val">{{ att_stats.inside }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-user-check"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-success);">
+                <div class="kpi-header"><span class="kpi-title">Inside Floor</span><div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div></div>
+                <div class="kpi-value" id="att-in-val">{{ att_stats.inside }}</div>
             </div>
-            <div class="card orange att-scroll-card">
-                <div class="card-meta"><div class="label">On Break</div><div class="value" id="att-away-val">{{ att_stats.away }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-mug-hot"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-warning);">
+                <div class="kpi-header"><span class="kpi-title">On Break</span><div class="kpi-icon"><i class="fa-solid fa-mug-hot"></i></div></div>
+                <div class="kpi-value" id="att-away-val">{{ att_stats.away }}</div>
             </div>
-            <div class="card red att-scroll-card">
-                <div class="card-meta"><div class="label">Half Day</div><div class="value" id="att-half-val">{{ att_stats.half }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-user-clock"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-danger);">
+                <div class="kpi-header"><span class="kpi-title">Half Day</span><div class="kpi-icon"><i class="fa-solid fa-user-clock"></i></div></div>
+                <div class="kpi-value" id="att-half-val">{{ att_stats.half }}</div>
             </div>
-            <div class="card blue att-scroll-card">
-                <div class="card-meta"><div class="label">Single Shift</div><div class="value" id="att-single-val">{{ att_stats.single }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-user-tie"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-primary);">
+                <div class="kpi-header"><span class="kpi-title">Single Shift</span><div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div></div>
+                <div class="kpi-value" id="att-single-val">{{ att_stats.single }}</div>
             </div>
-            <div class="card purple att-scroll-card">
-                <div class="card-meta"><div class="label">Double Shift</div><div class="value" id="att-double-val">{{ att_stats.double }}</div></div>
-                <div class="card-icon-zone"><i class="fa-solid fa-user-plus"></i></div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-info);">
+                <div class="kpi-header"><span class="kpi-title">Double Shift</span><div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div></div>
+                <div class="kpi-value" id="att-double-val">{{ att_stats.double }}</div>
             </div>
         </div>
     </div>
 
     <div class="summary-grid">
-        <div class="summary-card">
-            <h4 style="margin:0 0 8px 0; font-size:10px; font-weight:800; color:var(--text-muted); text-transform: uppercase; letter-spacing:0.5px;">DEPARTMENT STRUCT</h4>
-            <table class="rm-table" style="font-size:11.5px;">
+        <div class="corp-panel summary-card overflow-auto-x">
+            <h4>Department Structure</h4>
+            <table class="rm-table min-w-table">
                 <tbody>
                     {% for dept, vals in dept_summary.items() %}
                     <tr>
-                        <td style="padding: 6px 0;">{{ dept }}</td>
-                        <td style="text-align:right; padding: 6px 0; color:#10b981;">A: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; padding: 6px 0; color:#e11d48;">C: <strong>{{ vals.closed }}</strong></td>
+                        <td>{{ dept }}</td>
+                        <td style="text-align:right; color:var(--corp-success);">Active: <strong>{{ vals.active }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Closed: <strong>{{ vals.closed }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div class="summary-card">
-            <h4 style="margin:0 0 8px 0; font-size:10px; font-weight:800; color:var(--text-muted); text-transform: uppercase; letter-spacing:0.5px;">DESIGNATION MATRIX</h4>
-            <table class="rm-table" style="font-size:11.5px;">
+        <div class="corp-panel summary-card overflow-auto-x">
+            <h4>Designation Matrix</h4>
+            <table class="rm-table min-w-table">
                 <tbody>
                     {% for desg, vals in desg_summary.items() %}
                     <tr>
-                        <td style="padding: 6px 0;">{{ desg }}</td>
-                        <td style="text-align:right; padding: 6px 0; color:#10b981;">A: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; padding: 6px 0; color:#e11d48;">C: <strong>{{ vals.closed }}</strong></td>
+                        <td>{{ desg }}</td>
+                        <td style="text-align:right; color:var(--corp-success);">Active: <strong>{{ vals.active }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Closed: <strong>{{ vals.closed }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -368,8 +402,11 @@
         </div>
     </div>
 
-    <div class="section-head">Live Floor Balance Details <hr></div>
-    <div class="floor-box">
+    <div class="section-head">
+        <span>Live Floor Balance Details</span>
+        <div class="section-head-line"></div>
+    </div>
+    <div class="corp-panel floor-box">
         <iframe src="" id="floorReportFrame" class="floor-frame"></iframe>
     </div>
 </div>
@@ -378,7 +415,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="modalTitle">Process Terminal</h3>
-            <span class="close-btn" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></span>
+            <button class="close-btn" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <iframe id="entryFrame" src="" frameborder="0"></iframe>
     </div>
@@ -387,24 +424,29 @@
 <script>
     const hours = {{ hourly_labels | tojson if hourly_labels else '[]' }};
     
-    // Check Dark Mode for Chart Colors
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const gridColor = isDark ? '#334155' : '#f1f5f9';
-    const labelColor = isDark ? '#94a3b8' : '#475569';
+    // Check Dark Mode dynamically based on data-theme for Chart Colors
+    function getChartColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        return {
+            grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+            text: isDark ? '#94a3b8' : '#475569'
+        };
+    }
+    const colors = getChartColors();
 
     const chartOptions = { 
         responsive: true, 
         maintainAspectRatio: false,
         plugins: { legend: { display: false } }, 
         scales: { 
-            y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } } },
-            x: { grid: { display: false }, ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } } }
+            y: { beginAtZero: true, grid: { color: colors.grid }, border: { dash: [4, 4] }, ticks: { color: colors.text, font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } } },
+            x: { grid: { display: false }, ticks: { color: colors.text, font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } } }
         } 
     };
 
-    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#ea580c', borderRadius: 4 }] }, options: chartOptions });
-    new Chart(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#0d9488', borderRadius: 4 }] }, options: chartOptions });
-    new Chart(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#4f46e5', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#f97316', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
 
     window.addEventListener("DOMContentLoaded", () => {
         syncIframeAndListenToParentHeader();
@@ -414,8 +456,8 @@
     function adjustFloorIframeHeightToWindowEnd() {
         const frame = document.getElementById("floorReportFrame");
         if (!frame) return;
-        const availableHeight = window.innerHeight - frame.getBoundingClientRect().top - 15; 
-        if (availableHeight > 250) { frame.style.height = availableHeight + "px"; }
+        const availableHeight = window.innerHeight - frame.getBoundingClientRect().top - 40; 
+        if (availableHeight > 350) { frame.style.height = availableHeight + "px"; }
     }
     window.addEventListener("resize", adjustFloorIframeHeightToWindowEnd);
 
@@ -467,7 +509,6 @@
     function openEntryModal(url, title) {
         document.getElementById('modalTitle').innerText = title;
         
-        // పైన URL లో ఏమేమి ఫిల్టర్స్ ఉన్నాయో వాటిని పట్టుకుంటున్నాం
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.set('view', 'dashboard'); 
         

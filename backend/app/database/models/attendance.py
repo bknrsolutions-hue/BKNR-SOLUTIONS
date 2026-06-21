@@ -155,8 +155,12 @@ class EmployeeSalaryAdvance(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
 
+from sqlalchemy import Column, Integer, String, Time, Boolean, Date, UniqueConstraint
+# మీ బేస్ ఇంపోర్ట్ ఇక్కడ ఉంచుకోండి (ఉదా: from app.database import Base)
+
 class Shift(Base):
     __tablename__ = "shifts"
+    
     id = Column(Integer, primary_key=True, index=True)
     production_at = Column(String(255), index=True, nullable=True)
     company_id = Column(String, nullable=False, index=True)
@@ -170,3 +174,8 @@ class Shift(Base):
     date = Column(Date)
     time = Column(Time)
     email = Column(String(255))
+
+    # 🟢 🔴 కొత్త UNIQUE CONSTRAINT ఇక్కడే యాడ్ చేశాను
+    __table_args__ = (
+        UniqueConstraint('company_id', 'production_at', 'shift_name', name='uq_company_plant_shift'),
+    )

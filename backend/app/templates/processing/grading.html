@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        function syncThemeFromParent() {
-            try {
-                if (window.parent && window.parent.document) {
-                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
-                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
-                }
-            } catch(e) {}
-        }
-        syncThemeFromParent();
-    </script>
 <meta charset="utf-8">
 <title>GRADING – BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -23,41 +12,41 @@
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 
-<style>:root {
-    /* Standard theme variables mapped to global standard styles */
-    --primary: var(--text);
-    --accent: var(--accent);
-    --border: var(--border);
-    --bg: var(--bg);
-    --header: var(--card-bg);
-    --text: var(--text);
-    --text-muted: var(--text-muted);
-    --muted: var(--text-muted);
-    --danger: var(--cancelled-text);
-    --success: var(--completed-text);
-    --card-bg: var(--card-bg);
-    --header-bg: var(--header-bg);
-    --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
-
-    /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
-    
-    /* Finance / Others specific mapping */
-    --card: var(--card-bg);
+<style>
+:root{
+  /* 🌟 LIGHT & DARK THEME VARIABLES SYNC */
+  --primary:#0f172a; 
+  --accent:#2563eb;  
+  --border:#e2e8f0;  
+  --bg:#f1f5f9;      
+  --header:#ffffff;
+  --text:#1e293b;
+  --text-muted:#64748b;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --card-bg: #ffffff;
+  --header-bg: #f8fafc;
+  --row-hover: #f1f7ff;
+  --processing-bg: #dbeafe;
 }
 
-
-
-
+[data-theme="dark"] {
+  --primary:#f8fafc; 
+  --accent:#3b82f6;  
+  --border:#334155;  
+  --bg:#0f172a;      
+  --header:#1e293b;
+  --text:#e2e8f0;
+  --text-muted:#94a3b8;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --card-bg: #1e293b;
+  --header-bg: #0f172a;
+  --row-hover: #1e293b;
+  --processing-bg: #1e3a8a;
+}
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: hidden; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;}
@@ -383,7 +372,7 @@ iframe{ width:100%; height:100%; border:none; }
 
 <script>
 // ============================================================
-// 🔥 GRADING CONTROL MASTER CASCADE PIPELINE ENGINE - STABLE 2026
+// 🔥 GRADING CONTROL MASTER CASCADE PIPELINE ENGINE - FIXED
 // ============================================================
 
 const drillDownData = {{ drill_down_json | safe if drill_down_json else '{}' }};
@@ -403,6 +392,87 @@ const DEHEADING_POOL_DATA = [
 
 const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
 const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
+
+function fillStaticSelect(id, arrayData, defaultText, addNewOption) {
+    const el = document.getElementById(id); 
+    if(!el) return;
+    const currentVal = el.value;
+    el.innerHTML = `<option value="">${defaultText}</option>`;
+    
+    // Deduplicate and filter empty strings before adding options
+    const uniqueData = [...new Set(arrayData)].filter(i => i && i.trim() !== "").sort();
+    
+    uniqueData.forEach(item => {
+        let opt = document.createElement('option'); 
+        opt.value = item; 
+        opt.innerText = item; 
+        el.appendChild(opt);
+    });
+    
+    if(addNewOption) {
+        let opt = document.createElement('option'); 
+        opt.value = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
+        opt.innerText = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
+        el.appendChild(opt);
+    }
+    
+    // Retain previous selection if valid
+    if(currentVal && Array.from(el.options).some(o => o.value === currentVal)) {
+        el.value = currentVal;
+    }
+}
+
+function resetCascadedFields() {
+    document.getElementById('batch').innerHTML = '<option value="">Select Batch</option>';
+    document.getElementById('hoso').innerHTML = '<option value="">Select Count</option>';
+    
+    // Fix: Instead of wiping them empty, pre-fill them with defaults so lookup is always available
+    fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
+    fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
+}
+
+function loadMatchingInputSpecs() {
+    const batchVal = document.getElementById("batch").value.trim();
+    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
+    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
+    const hosoVal = document.getElementById("hoso").value.trim();
+
+    const specSelect = document.getElementById("species");
+    
+    // Always keep variety populated regardless of pool matching
+    fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
+
+    if(!hosoVal) { 
+        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
+        return; 
+    }
+
+    const matches = DEHEADING_POOL_DATA.filter(item => 
+        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal && item.hoso === hosoVal
+    );
+
+    if(matches.length > 0) {
+        specSelect.innerHTML = '<option value="">Select Species</option>';
+        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].filter(s => s && s.trim() !== "").sort();
+        
+        uniqueSpecs.forEach(s => { 
+            let opt = document.createElement('option'); 
+            opt.value = s; 
+            opt.innerText = s; 
+            specSelect.appendChild(opt); 
+        });
+        
+        // Ensure "Add New" trigger is appended even for filtered matches
+        let addNewOpt = document.createElement('option'); 
+        addNewOpt.value = "➕ Add New Species";
+        addNewOpt.innerText = "➕ Add New Species";
+        specSelect.appendChild(addNewOpt);
+
+        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
+    } else {
+        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
+    }
+}
 
 function changeLiveStatus(selectElement) {
     const nextVal = selectElement.value;
@@ -553,64 +623,6 @@ function handleBatchChange() {
         let opt = document.createElement('option'); opt.value = c; opt.innerText = c;
         hosoSelect.appendChild(opt);
     });
-}
-
-function loadMatchingInputSpecs() {
-    const batchVal = document.getElementById("batch").value.trim();
-    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
-    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
-    const hosoVal = document.getElementById("hoso").value.trim();
-
-    const specSelect = document.getElementById("species");
-    const varSelect = document.getElementById("variety");
-
-    specSelect.innerHTML = '<option value="">Select Species</option>';
-    varSelect.innerHTML = '<option value="">Select Variety</option>';
-
-    if(!hosoVal) { setupStaticDropdowns(); return; }
-
-    const matches = DEHEADING_POOL_DATA.filter(item => 
-        item.batch === batchVal && item.comp.toUpperCase() === companyVal && item.loc.toUpperCase() === locVal && item.hoso === hosoVal
-    );
-
-    if(matches.length > 0) {
-        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].sort();
-        uniqueSpecs.forEach(s => { let opt = document.createElement('option'); opt.value = s; opt.innerText = s; specSelect.appendChild(opt); });
-        
-        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
-    }
-    setupStaticDropdowns();
-}
-
-function setupStaticDropdowns() {
-    fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
-    
-    const specSelect = document.getElementById("species");
-    if(specSelect.options.length <= 1) {
-        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
-    }
-}
-
-function fillStaticSelect(id, arrayData, defaultText, addNewOption) {
-    const el = document.getElementById(id); if(!el) return;
-    const currentVal = el.value;
-    el.innerHTML = `<option value="">${defaultText}</option>`;
-    arrayData.sort().forEach(item => {
-        let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt);
-    });
-    if(addNewOption) {
-        let opt = document.createElement('option'); opt.value = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
-        opt.innerText = "➕ Add New " + id.charAt(0).toUpperCase() + id.slice(1);
-        el.appendChild(opt);
-    }
-    if(currentVal) el.value = currentVal;
-}
-
-function resetCascadedFields() {
-    document.getElementById('batch').innerHTML = '<option value="">Select Batch</option>';
-    document.getElementById('hoso').innerHTML = '<option value="">Select Count</option>';
-    document.getElementById('species').innerHTML = '<option value="">Select Species</option>';
-    document.getElementById('variety').innerHTML = '<option value="">Select Variety</option>';
 }
 
 function toggleForm() {

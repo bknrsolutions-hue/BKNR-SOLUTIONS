@@ -14,7 +14,7 @@ from app.database.models.users import Company
 from app.database.models.criteria import production_at as ProductionAtModel
 
 from app.utils.timezone import ist_now
-from app.utils.global_filters import get_global_filters  # 🌐 Global Filters Helper
+from app.utils.global_filters import get_global_filters
 
 router = APIRouter(tags=["SHIFT MASTER"])
 templates = Jinja2Templates(directory="app/templates")
@@ -46,21 +46,17 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
 
     comp = ctx["comp_code"]
     
-    # 🟢 🔴 GRAB GLOBAL FILTERS & PERMISSIONS
     global_production_for, global_location = get_global_filters(request)
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",")] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    # ఫారమ్ లో డ్రాప్‌డౌన్ కోసం ప్లాంట్స్ (Production At) లిస్ట్
     site_list = db.query(ProductionAtModel).filter(ProductionAtModel.company_id == comp).all()
 
-    # యాక్టివ్ షిఫ్ట్స్ క్వెరీ 
     query = db.query(Shift).filter(
         Shift.company_id == comp,
         Shift.is_active == True
     )
 
-    # 🟢 🔴 APPLY GLOBAL FILTERS (ప్లాంట్ వైజ్ ఫిల్టరింగ్)
     if global_location and global_location != "ALL":
         query = query.filter(func.upper(func.trim(Shift.production_at)) == global_location.strip().upper())
     elif user_allowed_locations:
@@ -68,7 +64,6 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
 
     all_shifts = query.order_by(Shift.id.desc()).all()
 
-    # 🟢 🔴 UPDATED: Template Response with Global Filters
     return templates.TemplateResponse(
         request=request,
         name="admin/shifts.html",
@@ -78,24 +73,24 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
             "shifts": all_shifts,
             "email": ctx["email"],
             "message": request.session.pop("message", None),
-            # ఫ్రంట్-ఎండ్ సింక్ కోసం గ్లోబల్ ఫిల్టర్స్ పంపిస్తున్నాం
             "global_location": global_location or "",
             "global_production_for": global_production_for or ""
         }
     )
+
 # =========================================================
-# 2. SAVE & UPDATE SHIFT (POST)
+# 2. SAVE & UPDATE SHIFT (POST) - 100% SAFE PARSING
 # =========================================================
 @router.post("/shifts/add")
 async def save_or_update_shift(
     request: Request,
-    shift_id: Optional[int] = Form(None),          # 👈 ID వస్తే Edit, లేకపోతే New
-    shift_name: str = Form(...),
-    production_at: str = Form(None),     
-    start_time: str = Form(...),
-    end_time: str = Form(...),
-    break_minutes: int = Form(0),
-    is_night_shift: bool = Form(False),
+    shift_id: str = Form(default=""),          
+    shift_name: str = Form(default=""),
+    production_at: str = Form(default=""),     
+    start_time: str = Form(default=""),
+    end_time: str = Form(default=""),
+    break_minutes: str = Form(default="0"),
+    is_night_shift: str = Form(default="False"),
     db: Session = Depends(get_db)
 ):
     ctx = get_session_context(request, db)
@@ -105,37 +100,74 @@ async def save_or_update_shift(
     comp = ctx["comp_code"]
     comp_name = ctx["company_info"].company_name if ctx["company_info"] else "BKNR Enterprise"
 
+    # 🟢 🔴 TERMINAL DEBUG: ఫారమ్ నుండి డేటా వస్తుందో లేదో ఇక్కడ ప్రింట్ అవుతుంది
+    print(f"--- SHIFT FORM DATA ---")
+    print(f"ID: '{shift_id}', Name: '{shift_name}', Plant: '{production_at}', Start: '{start_time}', End: '{end_time}', Break: '{break_minutes}', Night: '{is_night_shift}'")
+
     try:
-        # HTML time string (HH:MM) ని Python time object లోకి మారుస్తున్నాము
-        start_t = datetime.strptime(start_time, "%H:%M").time()
-        end_t = datetime.strptime(end_time, "%H:%M").time()
+        # 1. Safe ID Parsing
+        parsed_id = None
+        if shift_id and shift_id.strip().isdigit():
+            parsed_id = int(shift_id.strip())
+
+        # 2. Safe Break Minutes Parsing
+        try:
+            b_mins = int(break_minutes.strip())
+        except ValueError:
+            b_mins = 0
+
+        # 3. Safe Boolean Parsing
+        night_shift = is_night_shift.strip().lower() == "true"
+
+        # 4. Safe Time Parsing (Only taking HH:MM to avoid HH:MM:SS errors)
+        start_t = datetime.strptime(start_time[:5], "%H:%M").time()
+        end_t = datetime.strptime(end_time[:5], "%H:%M").time()
+        
         now = ist_now()
 
-        if shift_id:
-            # 🟢 🔴 EDIT MODE: ఎగ్జిస్టింగ్ రికార్డ్‌ను అప్‌డేట్ చేస్తున్నాము
-            existing_shift = db.query(Shift).filter(Shift.id == shift_id, Shift.company_id == comp).first()
+        safe_production_at = production_at.strip()
+        safe_shift_name = shift_name.strip()
+
+        # 🟢 🔴 UNIQUE CHECK
+        duplicate_check = db.query(Shift).filter(
+            Shift.company_id == comp,
+            func.upper(func.trim(Shift.production_at)) == safe_production_at.upper(),
+            func.upper(func.trim(Shift.shift_name)) == safe_shift_name.upper(),
+            Shift.is_active == True
+        ).first()
+
+        if parsed_id:
+            # 🟢 EDIT MODE
+            if duplicate_check and duplicate_check.id != parsed_id:
+                request.session["message"] = f"❌ Error: Shift '{safe_shift_name}' already exists at '{safe_production_at}'!"
+                return RedirectResponse("/attendance/shifts", status_code=303)
+
+            existing_shift = db.query(Shift).filter(Shift.id == parsed_id, Shift.company_id == comp).first()
             if existing_shift:
-                existing_shift.production_at = production_at
-                existing_shift.shift_name = shift_name.strip()
+                existing_shift.production_at = safe_production_at
+                existing_shift.shift_name = safe_shift_name
                 existing_shift.start_time = start_t
                 existing_shift.end_time = end_t
-                existing_shift.break_minutes = break_minutes
-                existing_shift.is_night_shift = is_night_shift
-                existing_shift.last_updated = now  # ట్రాకింగ్ కోసం ఉంటే మంచిది
+                existing_shift.break_minutes = b_mins
+                existing_shift.is_night_shift = night_shift
                 request.session["message"] = "✅ Shift Updated Successfully!"
             else:
                 request.session["message"] = "❌ Error: Shift Record Not Found!"
         else:
-            # 🟢 🔴 NEW MODE: కొత్త రికార్డ్‌ క్రియేట్ చేస్తున్నాము
+            # 🟢 NEW MODE
+            if duplicate_check:
+                request.session["message"] = f"❌ Error: Shift '{safe_shift_name}' already exists at '{safe_production_at}'!"
+                return RedirectResponse("/attendance/shifts", status_code=303)
+
             new_shift = Shift(
                 company_id=comp,
                 company_name=comp_name,
-                production_at=production_at, 
-                shift_name=shift_name.strip(),
+                production_at=safe_production_at, 
+                shift_name=safe_shift_name,
                 start_time=start_t,
-                end_time=end_time,
-                break_minutes=break_minutes,
-                is_night_shift=is_night_shift,
+                end_time=end_t,
+                break_minutes=b_mins,
+                is_night_shift=night_shift,
                 is_active=True,
                 date=now.date(),
                 time=now.time(),
@@ -148,6 +180,7 @@ async def save_or_update_shift(
 
     except Exception as e:
         db.rollback()
+        print(f"--- DB ERROR ---: {str(e)}") # టెర్మినల్ లో ఎర్రర్ చూపిస్తుంది
         request.session["message"] = f"❌ Error: {str(e)}"
 
     return RedirectResponse("/attendance/shifts", status_code=303)
@@ -168,7 +201,6 @@ def delete_shift(shift_id: int, request: Request, db: Session = Depends(get_db))
     
     if row:
         try:
-            # హార్డ్ డిలీట్ బదులు Soft Delete (is_active=False) చేయడం సేఫ్
             row.is_active = False 
             db.commit()
             request.session["message"] = "✅ Shift Deleted Successfully!"
