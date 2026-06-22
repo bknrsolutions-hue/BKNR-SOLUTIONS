@@ -32,8 +32,8 @@
     --completed-bg: #14532d;
     --completed-text: #bbf7d0;
 
-    --cancelled-bg: #7f1d1d;
-    --cancelled-text: #fecaca;
+    --cancelled-bg: #334155;
+    --cancelled-text: #94a3b8;
 }
 
 [data-theme="light"] {
@@ -62,8 +62,8 @@
     --completed-bg: #dcfce7;
     --completed-text: #166534;
 
-    --cancelled-bg: #fee2e2;
-    --cancelled-text: #991b1b;
+    --cancelled-bg: #e2e8f0;
+    --cancelled-text: #475569;
 }
 
 /* ==========================================================
@@ -72,7 +72,7 @@
 
 * {
     box-sizing: border-box;
-    font-family: Inter, Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', Inter, Arial, sans-serif;
 }
 
 html, body, main, section, article, aside, nav, header, footer, div {
@@ -80,7 +80,7 @@ html, body, main, section, article, aside, nav, header, footer, div {
 }
 
 body {
-    background: var(--bg);
+    background: var(--bg) !important;
     margin: 0;
     padding: 0;
     transition: background 0.3s ease, color 0.3s ease;
@@ -762,4 +762,186 @@ html[data-theme="dark"] hr {
     font-family: monospace !important;
     font-weight: 700 !important;
     letter-spacing: 0.5px;
+}
+
+/* ==========================================================
+   11. 🟢 BKNR CORPORATE & SAP-STYLE KPI OVERRIDES 🟢
+   ========================================================== */
+
+/* Universal Table Wrapper and Tables (Matches Accounts Column UI) */
+.table-wrap, .corp-panel {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    overflow-x: auto !important;
+    margin: 15px auto !important;
+    width: 100% !important;
+}
+
+table, .main-table, .rm-table, #dataTable, .summary-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+    table-layout: auto !important;
+}
+
+table th, .main-table th, .rm-table th, #dataTable th, .summary-table th {
+    background: var(--header-bg) !important;
+    padding: 10px 8px !important;
+    border-bottom: 2px solid var(--border) !important;
+    color: var(--text-muted) !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    font-size: 9px !important;
+    letter-spacing: 0.5px !important;
+    text-align: center !important;
+}
+
+table td, .main-table td, .rm-table td, #dataTable td, .summary-table td {
+    padding: 10px 8px !important;
+    border-bottom: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    text-align: center !important;
+}
+
+/* Specific alignments like Accounts */
+table th:first-child, table td:first-child {
+    text-align: center !important;
+}
+
+/* Align text descriptions left, and numeric metrics right */
+.text-left, .cell-text, td[style*="text-align:left"], td[style*="text-align: left"] {
+    text-align: left !important;
+}
+.text-right, .cell-number, td[style*="text-align:right"], td[style*="text-align: right"] {
+    text-align: right !important;
+}
+
+/* Row Hover & Selection */
+table tbody tr:hover, .main-table tbody tr:hover, .rm-table tbody tr:hover, #dataTable tbody tr:hover {
+    background: var(--row-hover) !important;
+}
+
+table tbody tr.selected, table tbody tr.selected-row, #dataTable tbody tr.selected, #dataTable tbody tr.selected-row {
+    background: var(--processing-bg) !important;
+    border-left: 4px solid var(--accent) !important;
+}
+
+/* Universal Form UI (Matches Accounts Form Column UI) */
+.form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 12px !important;
+    margin-bottom: 15px !important;
+    width: 100% !important;
+}
+
+.field {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+
+.field label {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 2px !important;
+}
+
+.field input, .field select, .field textarea,
+input, select, textarea {
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--border) !important;
+    font-size: 11px !important;
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+    height: 34px !important;
+    outline: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.field textarea, textarea {
+    height: auto !important;
+    min-height: 60px !important;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Corporate KPI Cards Style */
+.kpi-card, .card, .ref-kpi-card, .att-scroll-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important; /* Sharp corporate look */
+    padding: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.kpi-card:hover, .card:hover, .ref-kpi-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border-color: var(--accent) !important;
+}
+
+.kpi-title, .kpi-card h4, .card-meta .label, .ref-kpi-meta, .strip-label {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0.8px !important;
+    margin-bottom: 8px !important;
+    text-align: left !important;
+}
+
+.kpi-value, .kpi-card .value, .card-meta .value, .ref-kpi-value, .strip-value {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: var(--text) !important;
+    margin: 0 !important;
+    font-family: 'Plus Jakarta Sans', Inter, sans-serif !important;
+    text-align: left !important;
+}
+
+.kpi-value small, .ref-kpi-value small {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    margin-left: 4px !important;
+}
+
+/* Adjust standard headers across layout */
+.section-head, .table-header-tool h3, .table-title, .section-header {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: var(--accent) !important;
+    border-bottom: 1px dashed var(--border) !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Hide all criteria setup "next" step buttons universally */
+button[onclick*="criteria/setup/next"],
+button[onclick*="goToNextStep"],
+button.btn-next,
+.btn-next,
+a[href*="criteria/setup/next"],
+.setup-nav {
+    display: none !important;
 }

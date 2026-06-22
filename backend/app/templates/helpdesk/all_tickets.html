@@ -10,7 +10,7 @@
 
 <style>
     :root {
-        --bg-color: #f3f4f6;
+        --bg-color: #f1f5f9;
         --panel-bg: #ffffff;
         --border-color: #e5e7eb;
         --primary-text: #111827;
@@ -26,7 +26,7 @@
     }
     
     [data-theme="dark"] {
-        --bg-color: #020617;
+        --bg-color: #0f172a;
         --panel-bg: #0f172a;
         --border-color: #1e293b;
         --primary-text: #f8fafc;
@@ -97,10 +97,13 @@
     .quick-reply-chip { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--primary-text); padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .quick-reply-chip:hover { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 
-    .chat-input-area { padding: 16px 20px; background: var(--panel-bg); display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--border-color);}
-    .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 13px; font-weight: 500; transition: border 0.2s;}
-    .chat-input-area input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
-    .btn-send { background: var(--accent-blue); color: white; border: none; width: 42px; height: 42px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; }
+    .chat-input-area { padding: 16px 20px; background: var(--panel-bg); display: flex; gap: 12px; align-items: flex-end; border-top: 1px solid var(--border-color);}
+    .input-wrapper { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; min-height: 40px; display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+    .input-wrapper-inner { display: flex; align-items: center; gap: 8px; width: 100%; }
+    .input-wrapper input { flex: 1; border: none; background: transparent; color: var(--primary-text); outline: none; font-size: 13px; font-weight: 500; }
+    .btn-attach { background: none; border: none; color: var(--secondary-text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s; }
+    .btn-attach:hover { color: var(--accent-blue); }
+    .btn-send { background: var(--accent-blue); color: white; border: none; width: 42px; height: 42px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; flex-shrink: 0; }
     .btn-send:hover { background: #1d4ed8; }
 
     .closed-ticket-banner {
@@ -115,7 +118,7 @@
     .empty-state i { font-size: 40px; margin-bottom: 16px; opacity: 0.2; color: var(--primary-text); }
     .hidden { display: none !important; }
 
-    @media (max-width: 850px) {
+    @media (max-width: 768px) {
         .main-container { margin: 0; border-radius: 0; border-left: none; border-right: none; border-bottom: none; flex-direction: column; height: calc(100vh - 55px); }
         .ticket-list-panel { width: 100%; border-right: none; }
         .chat-panel { display: none; width: 100%; height: 100%; }
@@ -140,6 +143,16 @@
 
 <div class="main-container">
     <div class="ticket-list-panel" id="listPanel">
+        <!-- Broadcast Composer Panel (Admin Only View) -->
+        <div class="search-box" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                <i class="fa-solid fa-bullhorn"></i> Broadcast Event Notification
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="broadcastMessage" placeholder="Type broadcast message..." style="flex: 1; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--primary-text); font-size: 12px; outline: none;">
+                <button onclick="sendBroadcast()" style="background: var(--accent-blue); color: white; border: none; padding: 0 16px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; transition: 0.2s; white-space: nowrap;">Send Alert</button>
+            </div>
+        </div>
         <div class="search-box">
             <input type="text" id="searchTickets" placeholder="🔍 Search tickets, subjects..." onkeyup="filterTickets()">
             <select id="filterStatus" onchange="filterTickets()">
@@ -194,7 +207,17 @@
                 </div>
                 <div class="chat-input-area">
                     <input type="hidden" id="activeTicketId">
-                    <input type="text" id="replyInput" placeholder="Type an official response..." onkeypress="handleEnter(event)">
+                    <div class="input-wrapper">
+                        <div id="filePreviewContainer" class="hidden" style="display: flex; align-items: center; justify-content: space-between; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--accent-blue); width: 100%;">
+                            <span id="filePreviewName" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"></span>
+                            <button type="button" onclick="clearFileSelection()" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-circle-xmark"></i></button>
+                        </div>
+                        <div class="input-wrapper-inner">
+                            <button class="btn-attach" type="button" onclick="document.getElementById('chatFileInput').click()"><i class="fa-solid fa-paperclip"></i></button>
+                            <input type="file" id="chatFileInput" style="display: none;" onchange="handleFileSelect()">
+                            <input type="text" id="replyInput" placeholder="Type an official response..." onkeypress="handleEnter(event)">
+                        </div>
+                    </div>
                     <button class="btn-send" onclick="sendAdminReply()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -256,45 +279,49 @@ function filterTickets() {
     renderTicketList(filtered);
 }
 
-function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
-    document.getElementById("emptyState").classList.add("hidden");
-    const chatView = document.getElementById("chatView");
-    chatView.classList.remove("hidden");
-    
-    if(window.innerWidth <= 850) {
-        document.getElementById("listPanel").classList.add("hidden-mobile");
-        document.getElementById("chatPanel").classList.add("active-mobile");
-    }
-    
-    document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
-    document.getElementById(`ticket-card-${ticketId}`).classList.add('active');
-
-    document.getElementById("chatSubject").innerText = subject;
-    document.getElementById("chatTicketId").innerText = ticketNum;
-    document.querySelector(".email-holder").innerHTML = `<i class="fa-regular fa-envelope"></i> ${email}`;
-    document.getElementById("chatUserEmail").dataset.val = email; // Store for fetching
-    document.getElementById("chatCompany").innerHTML = `<i class="fa-regular fa-building"></i> ${company}`;
-    
-    document.getElementById("activeTicketId").value = ticketId;
-    document.getElementById("updateStatusSelect").value = status;
-    
-    toggleChatLock(status);
-    fetchMessages(ticketId, email);
-}
-
-function closeChatMobile() {
-    document.getElementById("listPanel").classList.remove("hidden-mobile");
-    document.getElementById("chatPanel").classList.remove("active-mobile");
-}
-
-function toggleChatLock(status) {
-    if (status === "RESOLVED") {
-        document.getElementById("chatControls").classList.add("hidden");
-        document.getElementById("closedBanner").classList.remove("hidden");
+function renderMedia(mediaPath) {
+    if (!mediaPath) return "";
+    const ext = mediaPath.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+    if (isImage) {
+        return `
+            <div style="margin-top: 8px; border-radius: 8px; overflow: hidden; max-width: 250px; max-height: 200px; border: 1px solid var(--border-color);">
+                <img src="${mediaPath}" style="width: 100%; height: auto; display: block; object-fit: cover; cursor: pointer;" onclick="window.open('${mediaPath}', '_blank')">
+            </div>
+        `;
     } else {
-        document.getElementById("chatControls").classList.remove("hidden");
-        document.getElementById("closedBanner").classList.add("hidden");
+        const filename = mediaPath.split('/').pop().replace(/^\d+_/, '');
+        return `
+            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px; font-size: 13px;">
+                <i class="fa-solid fa-file-arrow-down" style="font-size: 16px; color: var(--accent-blue);"></i>
+                <a href="${mediaPath}" target="_blank" download style="color: var(--accent-blue); text-decoration: none; font-weight: 600; word-break: break-all;">${filename}</a>
+            </div>
+        `;
     }
+}
+
+function handleFileSelect() {
+    const fileInput = document.getElementById("chatFileInput");
+    const previewContainer = document.getElementById("filePreviewContainer");
+    const previewName = document.getElementById("filePreviewName");
+    
+    if (fileInput && fileInput.files.length > 0) {
+        previewName.innerText = fileInput.files[0].name;
+        previewContainer.classList.remove("hidden");
+    } else {
+        clearFileSelection();
+    }
+}
+
+function clearFileSelection() {
+    const fileInput = document.getElementById("chatFileInput");
+    if (fileInput) fileInput.value = "";
+    
+    const previewContainer = document.getElementById("filePreviewContainer");
+    if (previewContainer) previewContainer.classList.add("hidden");
+    
+    const previewName = document.getElementById("filePreviewName");
+    if (previewName) previewName.innerText = "";
 }
 
 async function fetchMessages(ticketId, userEmail) {
@@ -316,7 +343,8 @@ async function fetchMessages(ticketId, userEmail) {
                 chatBox.innerHTML += `
                     <div class="msg ${msgClass}">
                         <span class="msg-sender">${icon} ${senderName}</span>
-                        ${m.message}
+                        <div style="word-break: break-word;">${m.message || ""}</div>
+                        ${renderMedia(m.media_path)}
                         <span class="msg-time">${m.time}</span>
                     </div>
                 `;
@@ -330,6 +358,51 @@ async function fetchMessages(ticketId, userEmail) {
     }
 }
 
+function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
+    document.getElementById("emptyState").classList.add("hidden");
+    const chatView = document.getElementById("chatView");
+    chatView.classList.remove("hidden");
+    
+    if(window.innerWidth <= 768) {
+        document.getElementById("listPanel").classList.add("hidden-mobile");
+        document.getElementById("chatPanel").classList.add("active-mobile");
+    }
+    
+    document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`ticket-card-${ticketId}`).classList.add('active');
+
+    document.getElementById("chatSubject").innerText = subject;
+    document.getElementById("chatTicketId").innerText = ticketNum;
+    document.querySelector(".email-holder").innerHTML = `<i class="fa-regular fa-envelope"></i> ${email}`;
+    document.getElementById("chatUserEmail").dataset.val = email; // Store for fetching
+    document.getElementById("chatCompany").innerHTML = `<i class="fa-regular fa-building"></i> ${company}`;
+    
+    document.getElementById("activeTicketId").value = ticketId;
+    document.getElementById("updateStatusSelect").value = status;
+    
+    // Reset inputs and attachments on chat change
+    document.getElementById("replyInput").value = "";
+    clearFileSelection();
+    
+    toggleChatLock(status);
+    fetchMessages(ticketId, email);
+}
+
+function closeChatMobile() {
+    document.getElementById("listPanel").classList.remove("hidden-mobile");
+    document.getElementById("chatPanel").classList.remove("active-mobile");
+}
+
+function toggleChatLock(status) {
+    if (status === "RESOLVED") {
+        document.getElementById("chatControls").classList.add("hidden");
+        document.getElementById("closedBanner").classList.remove("hidden");
+    } else {
+        document.getElementById("chatControls").classList.remove("hidden");
+        document.getElementById("closedBanner").classList.add("hidden");
+    }
+}
+
 function useQuickReply(text) {
     const input = document.getElementById('replyInput');
     input.value = text;
@@ -340,32 +413,48 @@ async function sendAdminReply() {
     const ticketId = document.getElementById("activeTicketId").value;
     const inputEl = document.getElementById("replyInput");
     const message = inputEl.value.trim();
+    const fileInput = document.getElementById("chatFileInput");
+    const hasFile = fileInput && fileInput.files.length > 0;
     
-    if(!message || !ticketId) return;
+    if((!message && !hasFile) || !ticketId) return;
+    
+    const formData = new FormData();
+    formData.append("ticket_id", ticketId);
+    if(message) formData.append("message", message);
+    if(hasFile) formData.append("file", fileInput.files[0]);
+    
     inputEl.value = ""; 
+    clearFileSelection();
+    inputEl.focus();
     
     const chatBox = document.getElementById("chatBox");
     const nowTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
+    const tempId = 'temp-' + Date.now();
     chatBox.innerHTML += `
-        <div class="msg msg-admin" style="opacity: 0.7;">
+        <div class="msg msg-admin" id="${tempId}" style="opacity: 0.7;">
             <span class="msg-sender"><i class="fa-solid fa-headset"></i> BKNR Support</span>
-            ${message}
-            <span class="msg-time">${nowTime}</span>
+            <div style="word-break: break-word;">${message || "Sending file..."}</div>
+            <span class="msg-time">${nowTime} <i class="fa-solid fa-spinner fa-spin" style="margin-left:2px; font-size:9px;"></i></span>
         </div>
     `;
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    const formData = new FormData();
-    formData.append("ticket_id", ticketId);
-    formData.append("message", message);
-
     try {
-        await fetch("/admin/send_message", { method: "POST", body: formData });
-        const email = document.getElementById("chatUserEmail").dataset.val;
-        fetchMessages(ticketId, email); // Reload silently to ensure sync
+        const response = await fetch("/admin/send_message", { method: "POST", body: formData });
+        if (response.ok) {
+            const email = document.getElementById("chatUserEmail").dataset.val;
+            await fetchMessages(ticketId, email); // Reload silently to ensure sync
+        } else {
+            throw new Error("Failed to send");
+        }
     } catch(e) {
-        alert("Transmission failed. Please check network.");
+        const tempMsg = document.getElementById(tempId);
+        if(tempMsg) {
+            tempMsg.style.border = '1px solid #dc2626';
+            const timeSpan = tempMsg.querySelector('.msg-time');
+            if(timeSpan) timeSpan.innerHTML = `Failed to send <i class="fa-solid fa-circle-exclamation" style="color:#dc2626;"></i>`;
+        }
     }
 }
 
@@ -407,6 +496,31 @@ async function updateTicketStatus() {
     }
 }
 
+async function sendBroadcast() {
+    const input = document.getElementById("broadcastMessage");
+    const msg = input.value.trim();
+    if (!msg) return;
+    
+    const formData = new FormData();
+    formData.append("message", msg);
+    
+    try {
+        const res = await fetch("/admin/create_event", {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            input.value = "";
+            alert("Broadcast alert sent successfully!");
+        } else {
+            alert(data.message || "Failed to send broadcast alert.");
+        }
+    } catch(e) {
+        alert("Network error. Please try again.");
+    }
+}
+
 window.onload = () => {
     try {
         const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
@@ -416,7 +530,7 @@ window.onload = () => {
 };
 
 window.addEventListener('resize', () => {
-    if(window.innerWidth > 850) {
+    if(window.innerWidth > 768) {
         document.getElementById("listPanel").classList.remove("hidden-mobile");
         if(document.getElementById("chatView").classList.contains("hidden") === false) {
             document.getElementById("chatPanel").classList.add("active-mobile");

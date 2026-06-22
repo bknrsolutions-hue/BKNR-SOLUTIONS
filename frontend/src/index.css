@@ -1,0 +1,5 @@
+/* Reset styles to use App.css values */
+body {
+  margin: 0;
+  padding: 0;
+}

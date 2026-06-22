@@ -1,6 +1,6 @@
 # app/routers/attendance/salary_reports.py
 
-from fastapi import APIRouter, Request, Depends, Body
+from fastapi import APIRouter, Request, Depends, Body, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -118,7 +118,6 @@ def get_salary_report(
         per_day_rate = base_gross / 26.0
 
         for rec in attendance_records:
-            # 🟢 BUG FIX: Use max() to prevent loop overwrite
             if rec.salary_adjustment:
                 adjustment = max(adjustment, float(rec.salary_adjustment))
             
@@ -126,8 +125,23 @@ def get_salary_report(
             req_hours = shift_map.get(shift_name, 8.0)
             wh = float(rec.working_hours or 0)
             
-            # 🟢 SIMPLIFIED DUTY CREDIT FORMULA
-            duty_credit = round(wh / req_hours, 1) if req_hours > 0 else 0
+            # 🟢 CORPORATE FIXED SLAB DUTY CREDIT
+            raw_credit = wh / req_hours if req_hours > 0 else 0
+            
+            if raw_credit < 0.5:
+                duty_credit = 0.0
+            elif raw_credit < 1.0:
+                duty_credit = 0.5
+            elif raw_credit < 1.5:
+                duty_credit = 1.0
+            elif raw_credit < 2.0:
+                duty_credit = 1.5
+            elif raw_credit < 2.5:
+                duty_credit = 2.0
+            elif raw_credit < 3.0:
+                duty_credit = 2.5
+            else:
+                duty_credit = 3.0
             
             if duty_credit < 0.5:
                 val = 0.0
@@ -152,7 +166,6 @@ def get_salary_report(
                 ot_earnings += (approved_ot_hrs * hourly_rate)
 
         att_map = {}
-        # 🟢 ADDED 2.5P COUNT
         duty_counts = {"HP": 0, "1P": 0, "1.5P": 0, "2P": 0, "2.5P": 0, "3P": 0}
         actual_present_count = 0.0
         worked_days_count = 0 
@@ -179,7 +192,7 @@ def get_salary_report(
             elif val >= 3.0: 
                 label = "3P"
                 duty_counts["3P"] += 1
-            else: label = f"{val}P"
+            else: label = f"{val}P" # Fallback, but shouldn't hit with fixed slabs
             
             att_map[d] = label
             actual_present_count += val
@@ -206,28 +219,27 @@ def get_salary_report(
         ).first()
 
         pf = esi = pt = lwf = 0.0
-        employer_pf = employer_esi = 0.0 # 🟢 8. EMPLOYER CONTRIBUTION VARS
+        employer_pf = employer_esi = 0.0 
         
         if stat:
             if stat.pf_applicable:
                 pf_wage = min(stat.pf_wage_limit, float(emp.basic_salary or 0))
                 pf = pf_wage * (stat.pf_employee_percent / 100)
-                employer_pf = pf_wage * (getattr(stat, 'pf_employer_percent', 13.0) / 100) # Defaults to 13% (12% EPF + 1% Admin)
+                employer_pf = pf_wage * (getattr(stat, 'pf_employer_percent', 13.0) / 100) 
                 
             if stat.esi_applicable and earned_gross <= stat.esi_wage_limit:
                 esi = earned_gross * (stat.esi_employee_percent / 100)
-                employer_esi = earned_gross * (getattr(stat, 'esi_employer_percent', 3.25) / 100) # Standard 3.25%
+                employer_esi = earned_gross * (getattr(stat, 'esi_employer_percent', 3.25) / 100) 
                 
             pt, lwf = (stat.pt_amount or 0), (stat.lwf_employee_amount or 0)
 
-        # 🟢 3. ADVANCE DEDUCT RANGE FIX
         adv_rec = db.query(EmployeeSalaryAdvance).filter(
             EmployeeSalaryAdvance.employee_id == emp.employee_id, 
             EmployeeSalaryAdvance.company_id == company_id, 
             EmployeeSalaryAdvance.status == "APPROVED",
             EmployeeSalaryAdvance.remaining_balance > 0,
             EmployeeSalaryAdvance.deduct_from <= month,
-            getattr(EmployeeSalaryAdvance, 'deduct_to', month) >= month # Safe check if 'deduct_to' doesn't exist yet
+            getattr(EmployeeSalaryAdvance, 'deduct_to', month) >= month 
         ).first()
         
         salary_advance = min(adv_rec.monthly_deduction, adv_rec.remaining_balance) if adv_rec else 0
@@ -283,13 +295,22 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         req_hours = shift_map.get(shift_name, 8.0)
         wh = float(r.working_hours or 0)
         
-        duty_credit = round(wh / req_hours, 1) if req_hours > 0 else 0
-        if duty_credit >= 3.0: status = "3P"
-        elif duty_credit >= 2.5: status = "2.5P"
-        elif duty_credit >= 2.0: status = "2P"
-        elif duty_credit >= 1.5: status = "1.5P"
-        elif duty_credit >= 1.0: status = "P"
-        elif duty_credit >= 0.5: status = "HP"
+        # 🟢 SYNCHRONIZED FIXED SLAB DUTY CREDIT FOR POPUP
+        raw_credit = wh / req_hours if req_hours > 0 else 0
+        if raw_credit < 0.5: duty_credit = 0.0
+        elif raw_credit < 1.0: duty_credit = 0.5
+        elif raw_credit < 1.5: duty_credit = 1.0
+        elif raw_credit < 2.0: duty_credit = 1.5
+        elif raw_credit < 2.5: duty_credit = 2.0
+        elif raw_credit < 3.0: duty_credit = 2.5
+        else: duty_credit = 3.0
+
+        if duty_credit == 3.0: status = "3P"
+        elif duty_credit == 2.5: status = "2.5P"
+        elif duty_credit == 2.0: status = "2P"
+        elif duty_credit == 1.5: status = "1.5P"
+        elif duty_credit == 1.0: status = "P"
+        elif duty_credit == 0.5: status = "HP"
         else: status = "A"
 
         data.append({
@@ -317,3 +338,77 @@ def save_adjustment(request: Request, payload: dict = Body(...), db: Session = D
     
     db.commit()
     return {"status": "success"}
+
+# ==================================================
+# 5️⃣ 24-HOUR AUTO-EXIT PUNCH LOGIC
+# ==================================================
+@router.post("/api/attendance/punch")
+def register_punch(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    company_id = request.session.get("company_code")
+    if not company_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    emp_id = payload.get("employee_id")
+    punch_type = payload.get("punch_type")  # "IN" or "OUT"
+    
+    raw_time = payload.get("punch_time")
+    if raw_time:
+        punch_time = datetime.fromisoformat(raw_time)
+    else:
+        punch_time = datetime.now()
+
+    # Find the active open shift (where out_time is None)
+    last_record = db.query(DailyAttendance).filter(
+        DailyAttendance.employee_id == emp_id,
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.out_time == None
+    ).order_by(DailyAttendance.in_time.desc()).first()
+
+    if punch_type == "IN":
+        if last_record:
+            time_diff_hours = (punch_time - last_record.in_time).total_seconds() / 3600.0
+            
+            if time_diff_hours > 24.0:
+                # 🟢 RULE 1: If > 24 hours, Force Auto-Exit for previous duty
+                last_record.out_time = last_record.in_time + timedelta(hours=24)
+                last_record.working_hours = 24.0
+                last_record.remarks = "System Auto-Exit (24hr Max Limit Crossed)"
+                db.commit()
+                # Proceeds to create a NEW IN punch below
+            else:
+                # Shift is still within 24 hours. Reject double IN punch.
+                raise HTTPException(status_code=400, detail="Already Punched IN. Please punch OUT first.")
+        
+        # Create fresh IN punch for the next duty
+        new_in_record = DailyAttendance(
+            employee_id=emp_id,
+            company_id=company_id,
+            duty_date=punch_time.date(),
+            in_time=punch_time,
+            shift_name=payload.get("shift_name", "GENERAL")
+        )
+        db.add(new_in_record)
+        db.commit()
+        return {"message": "Punched IN Successfully."}
+
+    elif punch_type == "OUT":
+        if not last_record:
+            raise HTTPException(status_code=400, detail="No active IN punch found.")
+
+        time_diff_hours = (punch_time - last_record.in_time).total_seconds() / 3600.0
+        
+        if time_diff_hours > 24.0:
+            # 🟢 RULE 2: If OUT punch is pressed after 24 hours, cap the limit.
+            last_record.out_time = last_record.in_time + timedelta(hours=24)
+            last_record.working_hours = 24.0
+            last_record.remarks = "Forced Exit (Capped at 24 hours)"
+            db.commit()
+            return {"message": "Shift capped at 24 hours. Please punch IN again for the new duty."}
+        else:
+            # Normal OUT punch (< 24 hours)
+            last_record.out_time = punch_time
+            last_record.working_hours = round(time_diff_hours, 2)
+            db.commit()
+            return {"message": "Punched OUT Successfully."}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid punch type. Must be IN or OUT.")

@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "BKNR ERP",
+    "slug": "bknr-erp",
+    "version": "3.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#060913",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#060913"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bknr.erp",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "BKNR ERP needs camera access to scan barcodes and QR codes for inventory and gate entry operations."
+      }
+    },
+    "android": {
+      "package": "com.bknr.erp",
+      "permissions": ["android.permission.CAMERA"],
+      "adaptiveIcon": {
+        "backgroundColor": "#060913",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-camera"
+    ]
+  }
+}

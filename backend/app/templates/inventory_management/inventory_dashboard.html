@@ -19,6 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
 
     <script>
         function syncTheme() {
@@ -119,6 +120,7 @@
         .kpi-cyan .kpi-icon { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
         .kpi-red .kpi-icon { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
         .kpi-teal .kpi-icon { color: #14b8a6; background: rgba(20, 184, 166, 0.1); }
+        .kpi-gray .kpi-icon { color: #64748b; background: rgba(100, 116, 139, 0.1); }
 
         /* ==========================================================
            🌟 CHARTS SECTION (2 COLUMNS)
@@ -218,15 +220,15 @@
         <div class="kpi-header"><h4>Closing</h4><div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
     </div>
-    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-pink" style="text-decoration:none;">
+    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
         <div class="kpi-header"><h4>Sales</h4><div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
     </a>
-    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-orange" style="text-decoration:none;">
+    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
         <div class="kpi-header"><h4>Reprocess</h4><div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div></div>
         <div><div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
     </a>
-    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-purple" style="text-decoration:none;">
+    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
         <div class="kpi-header"><h4>Fresh Stock</h4><div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
     </a>
@@ -234,7 +236,7 @@
         <div class="kpi-header"><h4>Reglaze Prod.</h4><div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div></div>
         <div><div class="value">{{ reglaze_qty|default(0) }} Kg</div><div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div></div>
     </div>
-    <div class="kpi-card kpi-red">
+    <div class="kpi-card kpi-gray">
         <div class="kpi-header"><h4>Dead Stock</h4><div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(dead_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(dead_stock_value|default(0)) }}</div></div>
     </div>

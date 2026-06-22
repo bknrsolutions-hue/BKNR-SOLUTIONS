@@ -27,7 +27,7 @@
     <style>
         /* 🌟 CORPORATE VARIABLES (DARK MODE FIRST) 🌟 */
         :root {
-            --bg-app: #060913; 
+            --bg-app: #0f172a; 
             --surface-panel: #111827; 
             --glass-bg: rgba(17, 24, 39, 0.85); 
             
@@ -49,7 +49,7 @@
             --corp-success: #10B981; 
             --corp-warning: #F59E0B; 
             --corp-danger:  #EF4444; 
-            --corp-info:    #8B5CF6; 
+            --corp-info:    #3b82f6; 
         }
 
         /* 🌟 LIGHT MODE OVERRIDE 🌟 */
@@ -114,8 +114,8 @@
             padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden;
             box-shadow: var(--shadow-soft); transition: transform 0.3s, border-color 0.3s; cursor: pointer;
         }
-        .kpi-card:hover { transform: translateY(-4px); border-color: var(--kpi-color); }
-        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--kpi-color, var(--text-tertiary)); }
+        .kpi-card:hover { transform: translateY(-4px); border-color: var(--border-highlight); }
+        .kpi-card::before { display: none; }
         
         .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .kpi-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -232,56 +232,56 @@
     <div class="cards">
         <div class="kpi-card" style="--kpi-color: var(--corp-warning);" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
             <div class="kpi-header">
-                <span class="kpi-title">Gate Today</span>
+                <span class="kpi-title">Today's Gate Entries</span>
                 <div class="kpi-icon"><i class="fa-solid fa-door-open"></i></div>
             </div>
             <div class="kpi-value">{{ gate_today }}</div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing Platform')">
             <div class="kpi-header">
-                <span class="kpi-title">RM Today</span>
+                <span class="kpi-title">Today's Raw Material</span>
                 <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             </div>
             <div class="kpi-value">{{ rmp_today }}<small>kg</small></div>
         </div>
-        <div class="kpi-card" style="--kpi-color: #f97316;" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
+        <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
             <div class="kpi-header">
-                <span class="kpi-title">DH Today</span>
+                <span class="kpi-title">Today's De-heading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-scissors"></i></div>
             </div>
             <div class="kpi-value">{{ dh_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-info);" onclick="openEntryModal('/processing/grading', 'Grading Allocation Module')">
             <div class="kpi-header">
-                <span class="kpi-title">Grading Today</span>
+                <span class="kpi-title">Today's Grading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-filter"></i></div>
             </div>
             <div class="kpi-value">{{ grading_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/peeling', 'Peeling Process Terminal')">
             <div class="kpi-header">
-                <span class="kpi-title">Peeling Today</span>
+                <span class="kpi-title">Today's Peeling</span>
                 <div class="kpi-icon"><i class="fa-solid fa-hand-dots"></i></div>
             </div>
             <div class="kpi-value">{{ peeling_today }}<small>kg</small></div>
         </div>
-        <div class="kpi-card" style="--kpi-color: #ec4899;" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
+        <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
             <div class="kpi-header">
-                <span class="kpi-title">Soaking Today</span>
+                <span class="kpi-title">Today's Soaking</span>
                 <div class="kpi-icon"><i class="fa-solid fa-droplet"></i></div>
             </div>
             <div class="kpi-value">{{ soaking_today }}<small>kg</small></div>
         </div>
-        <div class="kpi-card" style="--kpi-color: #6366f1;" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
+        <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
             <div class="kpi-header">
-                <span class="kpi-title">Prod Today</span>
+                <span class="kpi-title">Today's Production</span>
                 <div class="kpi-icon"><i class="fa-solid fa-industry"></i></div>
             </div>
             <div class="kpi-value">{{ production_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--text-secondary);">
             <div class="kpi-header">
-                <span class="kpi-title">Live Floor</span>
+                <span class="kpi-title">Current Floor Stock</span>
                 <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
             </div>
             <div class="kpi-value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
@@ -289,16 +289,16 @@
     </div>
 
     <div class="section-head">
-        <span>RM Purchasing Summary</span>
+        <span>Raw Material Purchase Summary</span>
         <div class="section-head-line"></div>
     </div>
     <div class="corp-panel overflow-auto-x">
         <table class="rm-table min-w-table">
             <thead>
                 <tr>
-                    <th>Species Name</th>
-                    <th>Count / Size</th>
-                    <th style="text-align: right;">Quantity (KG)</th>
+                    <th>Fish Species</th>
+                    <th>Size Count</th>
+                    <th style="text-align: right;">Total Weight (KG)</th>
                 </tr>
             </thead>
             <tbody>
@@ -314,24 +314,24 @@
     </div>
 
     <div class="section-head">
-        <span>Hourly Analytics</span>
+        <span>Hourly Production Output</span>
         <div class="section-head-line"></div>
     </div>
     <div class="charts-row">
         <div class="chart-box">
-            <div class="chart-title">De-Heading (Hourly)</div>
+            <div class="chart-title">De-Heading (KG/Hour)</div>
             <div class="chart-container">
                 <canvas id="dhChart"></canvas>
             </div>
         </div>
         <div class="chart-box">
-            <div class="chart-title">Peeling (Hourly)</div>
+            <div class="chart-title">Peeling (KG/Hour)</div>
             <div class="chart-container">
                 <canvas id="peelingChart"></canvas>
             </div>
         </div>
         <div class="chart-box">
-            <div class="chart-title">Production (Hourly)</div>
+            <div class="chart-title">Production (KG/Hour)</div>
             <div class="chart-container">
                 <canvas id="prodChart"></canvas>
             </div>
@@ -339,7 +339,7 @@
     </div>
 
     <div class="section-head">
-        <span>Live Attendance Status</span>
+        <span>Staff Attendance Today</span>
         <div class="section-head-line"></div>
     </div>
     <div class="attendance-viewport">
@@ -349,23 +349,23 @@
                 <div class="kpi-value" id="att-total-val">{{ att_stats.total }}</div>
             </div>
             <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-success);">
-                <div class="kpi-header"><span class="kpi-title">Inside Floor</span><div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div></div>
+                <div class="kpi-header"><span class="kpi-title">On Duty</span><div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div></div>
                 <div class="kpi-value" id="att-in-val">{{ att_stats.inside }}</div>
             </div>
             <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-warning);">
                 <div class="kpi-header"><span class="kpi-title">On Break</span><div class="kpi-icon"><i class="fa-solid fa-mug-hot"></i></div></div>
                 <div class="kpi-value" id="att-away-val">{{ att_stats.away }}</div>
             </div>
-            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-danger);">
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--text-secondary);">
                 <div class="kpi-header"><span class="kpi-title">Half Day</span><div class="kpi-icon"><i class="fa-solid fa-user-clock"></i></div></div>
                 <div class="kpi-value" id="att-half-val">{{ att_stats.half }}</div>
             </div>
             <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-primary);">
-                <div class="kpi-header"><span class="kpi-title">Single Shift</span><div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div></div>
+                <div class="kpi-header"><span class="kpi-title">Single Shift Workers</span><div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div></div>
                 <div class="kpi-value" id="att-single-val">{{ att_stats.single }}</div>
             </div>
             <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-info);">
-                <div class="kpi-header"><span class="kpi-title">Double Shift</span><div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div></div>
+                <div class="kpi-header"><span class="kpi-title">Double Shift Workers</span><div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div></div>
                 <div class="kpi-value" id="att-double-val">{{ att_stats.double }}</div>
             </div>
         </div>
@@ -373,28 +373,28 @@
 
     <div class="summary-grid">
         <div class="corp-panel summary-card overflow-auto-x">
-            <h4>Department Structure</h4>
+            <h4>Department Staff Summary</h4>
             <table class="rm-table min-w-table">
                 <tbody>
                     {% for dept, vals in dept_summary.items() %}
                     <tr>
                         <td>{{ dept }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Active: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Closed: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         <div class="corp-panel summary-card overflow-auto-x">
-            <h4>Designation Matrix</h4>
+            <h4>Job Role Summary</h4>
             <table class="rm-table min-w-table">
                 <tbody>
                     {% for desg, vals in desg_summary.items() %}
                     <tr>
                         <td>{{ desg }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Active: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Closed: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -403,7 +403,7 @@
     </div>
 
     <div class="section-head">
-        <span>Live Floor Balance Details</span>
+        <span>Current Floor Balance Report</span>
         <div class="section-head-line"></div>
     </div>
     <div class="corp-panel floor-box">
@@ -444,7 +444,7 @@
         } 
     };
 
-    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#f97316', borderRadius: 4 }] }, options: chartOptions });
+    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
     new Chart(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
     new Chart(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
 

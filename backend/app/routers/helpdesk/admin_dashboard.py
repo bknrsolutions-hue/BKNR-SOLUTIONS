@@ -19,8 +19,7 @@ ALLOWED_ADMINS = ["bknr.solutions@gmail.com"]
 
 def is_admin(request: Request):
     email = request.session.get("email")
-    role = request.session.get("role")
-    return email in ALLOWED_ADMINS or role == "Super Admin"
+    return email in ALLOWED_ADMINS
 
 
 # =====================================================

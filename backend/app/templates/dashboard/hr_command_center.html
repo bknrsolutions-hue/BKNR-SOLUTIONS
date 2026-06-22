@@ -484,7 +484,7 @@ tr:hover { background: var(--hover-bg); }
     </div>
 
     <!-- 3. Present % Today -->
-    <div class="card teal" onclick="openKpiModal('PRESENT')">
+    <div class="card blue" onclick="openKpiModal('PRESENT')">
       <div class="card-meta">
         <div class="label">Present Today</div>
         <div class="value">{{ present_pct }}%</div>
@@ -494,9 +494,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-clipboard-user"></i></div>
     </div>
-
+ 
     <!-- 4. Absent Today -->
-    <div class="card orange" onclick="openKpiModal('ABSENT')">
+    <div class="card amber" onclick="openKpiModal('ABSENT')">
       <div class="card-meta">
         <div class="label">Absent Today</div>
         <div class="value">{{ absent_today }}</div>
@@ -504,9 +504,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-user-xmark"></i></div>
     </div>
-
+ 
     <!-- 5. Labour Cost / KG -->
-    <div class="card pink">
+    <div class="card blue">
       <div class="card-meta">
         <div class="label">Labour Cost/KG</div>
         <div class="value">₹{{ cost_per_kg }}</div>
@@ -514,9 +514,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-scale-unbalanced"></i></div>
     </div>
-
+ 
     <!-- 6. Est. Labour Cost Today -->
-    <div class="card indigo">
+    <div class="card blue">
       <div class="card-meta">
         <div class="label">Est. Labour Cost</div>
         <div class="value">₹{{ "{:.0f}".format(labor_cost_today) }}</div>
@@ -524,9 +524,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-indian-rupee-sign"></i></div>
     </div>
-
+ 
     <!-- 7. OT Hours Today -->
-    <div class="card purple" onclick="openKpiModal('OT_TODAY')">
+    <div class="card amber" onclick="openKpiModal('OT_TODAY')">
       <div class="card-meta">
         <div class="label">OT Hours Logged</div>
         <div class="value">{{ ot_hours_today }}<small>Hrs</small></div>
@@ -534,7 +534,7 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-clock"></i></div>
     </div>
-
+ 
     <!-- 8. Productivity -->
     <div class="card green">
       <div class="card-meta">
@@ -546,7 +546,7 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
     </div>
-
+ 
     <!-- 9. Permanent Labour % -->
     <div class="card blue" onclick="openKpiModal('PERMANENT')">
       <div class="card-meta">
@@ -556,9 +556,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-building-user"></i></div>
     </div>
-
+ 
     <!-- 10. Contract Labour % -->
-    <div class="card orange" onclick="openKpiModal('CONTRACT')">
+    <div class="card gray" onclick="openKpiModal('CONTRACT')">
       <div class="card-meta">
         <div class="label">Contract Labor</div>
         <div class="value">{{ contract_pct }}%</div>
@@ -566,7 +566,7 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-helmet-safety"></i></div>
     </div>
-
+ 
     <!-- 11. Avg Net Salary -->
     <div class="card gray">
       <div class="card-meta">
@@ -576,9 +576,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-money-check-dollar"></i></div>
     </div>
-
+ 
     <!-- 12. Attrition YTD -->
-    <div class="card red">
+    <div class="card amber">
       <div class="card-meta">
         <div class="label">Attrition (YTD)</div>
         <div class="value">{{ attrition_rate }}%</div>
@@ -588,7 +588,7 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
     </div>
-
+ 
     <!-- 13. Pending OT Approvals -->
     <div class="card amber" onclick="switchTab('tab-approvals', document.getElementById('btnTabApprovals'))">
       <div class="card-meta">
@@ -598,9 +598,9 @@ tr:hover { background: var(--hover-bg); }
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-stopwatch"></i></div>
     </div>
-
+ 
     <!-- 14. Pending Duty Approvals -->
-    <div class="card red" onclick="switchTab('tab-approvals', document.getElementById('btnTabApprovals'))">
+    <div class="card amber" onclick="switchTab('tab-approvals', document.getElementById('btnTabApprovals'))">
       <div class="card-meta">
         <div class="label">Pending Duty</div>
         <div class="value">{{ pending_duty_count|default(0) }}</div>
@@ -1490,7 +1490,7 @@ new Chart(document.getElementById("prodChart"), {
     labels: ["<4h Undertime", "4-8h Normal", "8-12h OT", "12h+ Extended"],
     datasets: [{
       data: {{ productivity_data|tojson }},
-      backgroundColor: ["#fca5a5","#93c5fd","#6ee7b7","#fcd34d"],
+      backgroundColor: ["#cbd5e1","#93c5fd","#6ee7b7","#fcd34d"],
       borderRadius: 5,
       borderSkipped: false
     }]
@@ -1512,7 +1512,7 @@ new Chart(document.getElementById("salaryChart"), {
     labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
     datasets: [{
       data: {{ salary_tiers|tojson }},
-      backgroundColor: ["#94a3b8","#60a5fa","#818cf8","#34d399"],
+      backgroundColor: ["#94a3b8","#60a5fa","#3b82f6","#34d399"],
       borderRadius: 5,
       borderSkipped: false
     }]
@@ -1577,8 +1577,8 @@ new Chart(document.getElementById("deptHeadcountChart"), {
     datasets: [{
       data: {{ dept_cost_center|map(attribute='emps')|list|tojson }},
       backgroundColor: [
-        "#3b82f6","#10b981","#f59e0b","#ef4444",
-        "#8b5cf6","#14b8a6","#ec4899","#6366f1","#64748b"
+        "#2563eb","#3b82f6","#10b981","#0ea5e9",
+        "#64748b","#475569","#94a3b8","#0284c7","#38bdf8"
       ],
       borderRadius: 4, borderSkipped: false
     }]

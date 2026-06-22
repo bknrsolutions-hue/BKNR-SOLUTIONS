@@ -4,86 +4,173 @@
 <meta charset="UTF-8">
 <title>BKNR ERP | Corporate Payroll Ledger</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+    // Sync theme with master layout
+    function syncTheme() {
+        try {
+            const parentTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
+            document.documentElement.setAttribute("data-theme", parentTheme);
+        } catch(e) {
+            const savedTheme = localStorage.getItem("theme") || "dark";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+        }
+    }
+    syncTheme();
+</script>
+
 <style>
-:root{
- --primary:#143465;--accent:#2563eb;--success:#059669;
- --warning:#d97706;--danger:#dc2626;--border:#d6dde7;
- --bg:#f4f6f9;--text:#1f2937;--muted:#64748b;
+/* 🌟 UNIFIED CORPORATE ERP VARIABLES 🌟 */
+:root {
+    --bg-app: #060913; 
+    --surface-panel: rgba(15, 23, 42, 0.98);
+    --header-bg: rgba(255, 255, 255, 0.03);
+    
+    --text-primary: #ffffff;       
+    --text-secondary: #94a3b8;     
+    --text-tertiary: #64748b;      
+    
+    --border-light: rgba(255, 255, 255, 0.08); 
+    --border-highlight: rgba(255, 255, 255, 0.15);
+    
+    --corp-dash: #3b82f6; 
+    --corp-ops: #ea580c;  
+    --corp-fin: #10b981;  
+    --corp-hr: #ec4899;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+
+    --radius-panel: 14px;
+    --radius-element: 8px;
 }
-*{box-sizing:border-box;font-family:Inter,sans-serif}
-body{margin:0;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-.header-container{background:var(--card-bg);padding:12px 15px;border-bottom:1px solid var(--border)}
-.header-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
-.header-main h2{margin:0;font-size:15px;font-weight:800;color:var(--primary)}
-.header-main p{font-size:10px;margin:2px 0 0 0;}
+[data-theme="light"] {
+    --bg-app: #f1f5f9;             
+    --surface-panel: #ffffff;      
+    --header-bg: #f8fafc;
+    
+    --text-primary: #0f172a;       
+    --text-secondary: #475569;     
+    --text-tertiary: #94a3b8;      
+    
+    --border-light: rgba(0, 0, 0, 0.08);
+    --border-highlight: rgba(0, 0, 0, 0.15);
+}
 
-.btn-group-layout { display:flex; gap:6px; flex-wrap:wrap; }
-.btn-action-size { padding:6px 10px; font-size:11px; font-weight:700; border-radius:6px; border:none; color:white; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+body { margin: 0; background: transparent; color: var(--text-primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s ease; }
 
-.filters{display:flex;gap:8px;background:var(--header-bg);padding:8px;border-radius:8px;border:1px solid var(--border);align-items:center}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 10px; }
+
+/* 🌟 HEADER & FILTERS 🌟 */
+.header-container { background: var(--surface-panel); padding: 12px 16px; border-bottom: 1px solid var(--border-light); }
+.header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+.header-main h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.header-main h2 i { color: var(--corp-hr); }
+.header-main p { font-size: 10px; font-weight: 700; color: var(--text-tertiary); margin: 2px 0 0 24px; text-transform: uppercase; letter-spacing: 1px; }
+
+.btn-group-layout { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-action-size { 
+    background: var(--header-bg); padding: 8px 12px; font-size: 11px; font-weight: 700; 
+    border-radius: var(--radius-element); border: 1px solid var(--border-light); 
+    color: var(--text-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; 
+}
+.btn-action-size:hover { background: rgba(255,255,255,0.05); border-color: var(--corp-hr); color: var(--corp-hr); }
+[data-theme="light"] .btn-action-size:hover { background: rgba(0,0,0,0.03); }
+
+.filters { display: flex; gap: 12px; align-items: center; }
 @media(max-width: 768px) {
-    .filters { display:grid; grid-template-columns:1fr; gap:8px; width:100%; }
-    .header-main { flex-direction:column; align-items:flex-start; }
-    .btn-group-layout { width:100%; justify-content:space-between; }
+    .filters { display: grid; grid-template-columns: 1fr; gap: 8px; width: 100%; }
+    .header-main { flex-direction: column; align-items: flex-start; }
+    .btn-group-layout { width: 100%; justify-content: space-between; }
 }
-.filters label{font-size:8px;font-weight:800;color:var(--muted);display:block;margin-bottom:2px;text-transform:uppercase}
-.filters input,.filters select{padding:6px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);font-weight:600;width:100%}
+.filters label { font-size: 9px; font-weight: 800; color: var(--text-secondary); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.filters input, .filters select { 
+    padding: 8px 10px; font-size: 11px; border-radius: var(--radius-element); 
+    border: 1px solid var(--border-light); font-weight: 600; width: 100%;
+    background: var(--header-bg); color: var(--text-primary); outline: none; transition: 0.2s;
+}
+.filters input:focus, .filters select:focus { border-color: var(--corp-hr); }
 
-.section{margin:8px 10px;background:var(--card-bg);border-radius:8px;border:1px solid var(--border);overflow:hidden;flex:1;display:flex;flex-direction:column}
-.table-wrap{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}
-th{background:var(--header-bg);font-size:8.5px;font-weight:800;text-transform:uppercase;padding:8px 6px;border:1px solid var(--border);position:sticky;top:0;z-index:20; text-align:center;}
-td{padding:6px;border:1px solid #edf2f7;text-align:center}
+/* 🌟 TABLE 🌟 */
+.section { margin: 12px; background: var(--surface-panel); border-radius: var(--radius-panel); border: 1px solid var(--border-light); overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+.table-wrap { overflow: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10px; white-space: nowrap; }
+th { 
+    background: var(--header-bg); color: var(--text-secondary); font-size: 9px; font-weight: 800; 
+    text-transform: uppercase; padding: 10px 6px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); 
+    position: sticky; top: 0; z-index: 20; text-align: center; letter-spacing: 0.5px;
+}
+.group-th { color: var(--text-primary); background: rgba(0,0,0,0.2); border-bottom: 2px solid var(--border-light); }
+[data-theme="light"] .group-th { background: rgba(0,0,0,0.02); }
 
-.name-sticky{position:sticky;left:0;background:var(--card-bg);font-weight:700;text-align:left;border-right:2px solid var(--primary);min-width:180px;z-index:10}
-@media(max-width: 480px) { .name-sticky { min-width:140px; font-size:9.5px; } }
+td { padding: 8px 6px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); text-align: center; font-weight: 600; }
 
-.clickable{cursor:pointer; transition: 0.15s;}
-.clickable:hover{background: #f0f7ff !important; outline: 1px solid var(--accent);}
+.name-sticky { position: sticky; left: 0; background: var(--surface-panel); text-align: left; border-right: 2px solid var(--border-light); min-width: 180px; z-index: 10; transition: background 0.2s;}
+@media(max-width: 480px) { .name-sticky { min-width: 140px; font-size: 9.5px; } }
 
-.payout-col{background:#ecfdf5;color:#065f46;font-weight:900;font-size:11.5px;text-align:right;padding-right:10px}
-.adjust-input{width:44px;padding:3px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:800; background:#fff7ed; color:#c2410c; font-size:10px}
-.adjust-input:disabled { background:#f1f5f9; color:#94a3b8; cursor:not-allowed; border-color:#e2e8f0; }
+.clickable { cursor: pointer; transition: 0.15s; }
+.clickable:hover { background: var(--header-bg); }
 
-tbody tr.selected { background-color: #f0f7ff !important; }
-tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
+.payout-col { color: var(--corp-fin); font-weight: 800; font-size: 11.5px; text-align: right; padding-right: 12px; }
+.adjust-input { 
+    width: 44px; padding: 4px; border: 1px solid var(--border-light); border-radius: 4px; 
+    text-align: center; font-weight: 800; background: transparent; color: var(--text-primary); font-size: 10px; outline: none;
+}
+.adjust-input:focus { border-color: var(--corp-hr); }
+.adjust-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* 🟢 UPDATED ATTENDANCE SHADES */
-.att-a { color:var(--danger); font-weight:400; opacity:0.5; }
-.att-hp { background:#fffbeb !important; color:var(--warning) !important; font-weight:700; }
-.att-p { background:#f0fdf4 !important; color:var(--success) !important; font-weight:700; }
-.att-1-5p { background:#dbeafe !important; color:#1d4ed8 !important; font-weight:800; }
-.att-2p { background:#dcfce7 !important; color:#15803d !important; font-weight:900; }
-.att-2-5p { background:#fef08a !important; color:#b45309 !important; font-weight:900; }
-.att-3p { background:#fecaca !important; color:#b91c1c !important; font-weight:900; }
+tbody tr { transition: background 0.2s; }
+tbody tr:hover { background: var(--header-bg); }
+tbody tr.selected { background: rgba(236, 72, 153, 0.05); }
+tbody tr.selected td.name-sticky { background: rgba(236, 72, 153, 0.05); border-right-color: var(--corp-hr); }
+[data-theme="light"] tbody tr.selected { background: rgba(236, 72, 153, 0.03); }
+[data-theme="light"] tbody tr.selected td.name-sticky { background: rgba(236, 72, 153, 0.03); }
 
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;backdrop-filter:blur(2px)}
-.modal-box{background:var(--card-bg);width:95%;max-width:800px;margin:5% auto;border-radius:12px;padding:15px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
-.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:8px}
-.close{cursor:pointer;font-size:22px;color:var(--danger)}
+/* 🌟 MINIMAL ATTENDANCE TEXT SHADES (No Heavy BGs) 🌟 */
+.att-a { color: var(--danger); font-weight: 400; opacity: 0.5; }
+.att-hp { color: var(--warning); font-weight: 700; }
+.att-p { color: var(--corp-fin); font-weight: 700; }
+.att-1-5p { color: var(--corp-dash); font-weight: 800; }
+.att-2p { color: var(--corp-dash); font-weight: 800; }
+.att-2-5p { color: var(--corp-ops); font-weight: 800; }
+.att-3p { color: var(--corp-ops); font-weight: 900; }
 
-.chip { font-size: 8.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid transparent; margin: 1px; }
-.c-in { color: var(--success); background: #ecfdf5; border-color: #a7f3d0; }
-.c-out { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
-.c-exit { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
-.badge-blue{background:#eff6ff; color:#1d4ed8; padding:2px 5px; border-radius:4px; font-size:9.5px; font-weight:700}
+.val-danger { color: var(--danger); }
+.val-success { color: var(--corp-fin); }
+.val-warn { color: var(--warning); }
+.val-primary { color: var(--corp-dash); }
+
+/* 🌟 MODAL 🌟 */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; backdrop-filter: blur(4px); }
+.modal-box { 
+    background: var(--surface-panel); width: 95%; max-width: 800px; margin: 5% auto; 
+    border-radius: var(--radius-panel); padding: 20px; box-shadow: var(--shadow-float); border: 1px solid var(--border-light);
+    max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+.close { cursor: pointer; font-size: 22px; color: var(--text-secondary); transition: 0.2s; }
+.close:hover { color: var(--danger); }
+
+.chip { font-size: 8.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-light); margin: 2px; background: var(--header-bg); color: var(--text-primary); }
 
 #printSection { display: none; }
 
 @media print {
   @page { size: landscape; margin: 10mm; }
-  body { background: var(--card-bg); color: #000; overflow: visible; height: auto; }
+  body { background: #fff !important; color: #000 !important; overflow: visible; height: auto; }
   .header-container, .filters, button, .modal, .adjust-input { display: none !important; }
-  .section { margin: 0; padding: 0; border: none; overflow: visible; display: block; }
-  .table-wrap{ background: var(--card-bg) !important; overflow: visible; display: block; }
-  table { width: 100%; border: 1px solid #000; font-size: 9px; }
-  th, td { border: 1px solid #000 !important; padding: 5px 3px !important; }
-  .name-sticky { position: static !important; background: transparent !important; border-right: 1px solid #000 !important; }
+  .section { margin: 0; padding: 0; border: none; overflow: visible; display: block; background: #fff !important; }
+  .table-wrap{ background: #fff !important; overflow: visible; display: block; }
+  table { width: 100%; border: 1px solid #000; font-size: 9px; color: #000 !important; }
+  th { background: #f1f5f9 !important; color: #000 !important; border: 1px solid #000 !important; }
+  td { border: 1px solid #000 !important; padding: 5px 3px !important; color: #000 !important; }
+  .name-sticky { position: static !important; background: transparent !important; border-right: 1px solid #000 !important; color: #000 !important; }
   body.print-single-mode #payrollTable { display: none !important; }
   body.print-single-mode #printSection { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; }
   body.print-single-mode #printSection * { visibility: visible !important; }
@@ -97,13 +184,13 @@ tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
 <div class="header-container">
   <div class="header-main">
     <div>
-      <h2><i class="fa-solid fa-building-columns"></i> Payroll & Statutory Ledger</h2>
-      <p id="monthDisplay" style="font-size:10px;color:var(--muted);font-weight:700;margin:2px 0 0 0"></p>
+      <h2><i class="fa-solid fa-users-gear"></i> Payroll & Statutory Ledger</h2>
+      <p id="monthDisplay"></p>
     </div>
     <div class="btn-group-layout">
-        <button id="btnPrintSelected" class="btn-action-size" onclick="printSelectedRow()" style="background:var(--accent); display:none;"><i class="fa-solid fa-print"></i> Print Payslip</button>
-        <button class="btn-action-size" onclick="generateSheet()" style="background:var(--primary);"><i class="fa-solid fa-sync"></i> Recalculate</button>
-        <button class="btn-action-size" onclick="printFullLedger()" style="background:var(--success);"><i class="fa-solid fa-print"></i> Export Ledger</button>
+        <button id="btnPrintSelected" class="btn-action-size" onclick="printSelectedRow()" style="display:none;"><i class="fa-solid fa-print"></i> Print Payslip</button>
+        <button class="btn-action-size" onclick="generateSheet()"><i class="fa-solid fa-sync"></i> Recalculate</button>
+        <button class="btn-action-size" onclick="printFullLedger()"><i class="fa-solid fa-file-pdf"></i> Export Ledger</button>
     </div>
   </div>
 
@@ -138,20 +225,20 @@ tbody tr.selected td.name-sticky { background-color: #f0f7ff !important; }
   <div class="modal-box">
     <div class="modal-header">
       <div>
-        <h3 id="modalTitle" style="margin:0; color:var(--primary); font-size:14px;">Duty Logs</h3>
-        <p id="modalSubTitle" style="margin:0; font-size:10px; color:var(--muted)"></p>
+        <h3 id="modalTitle" style="margin:0; font-size:14px; font-weight:800; color:var(--text-primary);">Duty Logs</h3>
+        <p id="modalSubTitle" style="margin:2px 0 0 0; font-size:10px; color:var(--text-tertiary);"></p>
       </div>
       <span class="close" onclick="closeModal()">&times;</span>
     </div>
     <div style="margin-top:12px; overflow-y:auto; flex:1;">
-        <table style="width:100%">
+        <table style="width:100%; text-align:left;">
           <thead>
-            <tr style="background:#f8fafc">
-                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Date</th>
-                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Shift</th>
-                <th style="text-align:left; padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Timeline (Gate Entry/Exit)</th>
-                <th style="padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Work Hrs</th>
-                <th style="padding:8px 4px; border:none; border-bottom:1px solid var(--border)">Status</th>
+            <tr>
+                <th style="text-align:left; border:none; border-bottom:1px solid var(--border-light)">Date</th>
+                <th style="text-align:left; border:none; border-bottom:1px solid var(--border-light)">Shift</th>
+                <th style="text-align:left; border:none; border-bottom:1px solid var(--border-light)">Timeline (Gate Entry/Exit)</th>
+                <th style="border:none; border-bottom:1px solid var(--border-light)">Work Hrs</th>
+                <th style="border:none; border-bottom:1px solid var(--border-light)">Status</th>
             </tr>
           </thead>
           <tbody id="modalBody"></tbody>
@@ -196,25 +283,24 @@ async function generateSheet(){
  const res=await fetch(`/api/salary/get-report?month=${month}&dept=${dept}&location=${loc}`);
  const data=await res.json();
 
- document.getElementById("monthDisplay").innerText=data.month_name.toUpperCase() + " " + month.split('-')[0] + " - PAYROLL SUMMARY";
+ document.getElementById("monthDisplay").innerText = data.month_name.toUpperCase() + " " + month.split('-')[0] + " - PAYROLL SUMMARY";
 
- // 🟢 ORGANIZED HEADER GROUPS
+ // 🟢 UNIFIED ERP HEADER
  let head=`<tr>
- <th rowspan="2" class="name-sticky">Employee & ID</th>
+ <th rowspan="2" class="name-sticky" style="z-index: 30;">Employee & ID</th>
  <th colspan="${data.days_in_month}">Daily Attendance</th>
- <th colspan="6" style="background:#1e293b;color:#fff">Duty Summary</th>
- <th colspan="2" style="background:#ea580c;color:#fff">Overtime</th>
- <th colspan="4" style="background:#143465;color:#fff">Financials (₹)</th>
- <th colspan="6" style="background:#dc2626;color:#fff">Deductions (₹)</th>
- <th rowspan="2" class="payout-col" style="background:#059669; color:#fff">Net Payout</th>
+ <th colspan="8" class="group-th">Duty Summary</th>
+ <th colspan="2" class="group-th">Overtime</th>
+ <th colspan="4" class="group-th">Financials (₹)</th>
+ <th colspan="6" class="group-th">Deductions (₹)</th>
+ <th rowspan="2" class="payout-col" style="border-bottom:1px solid var(--border-light)">Net Payout</th>
  </tr><tr>`;
 
  for(let i=1;i<=data.days_in_month;i++) head+=`<th>${i}</th>`;
 
- // 🟢 SUB-HEADER
  head+=`
- <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>3P</th><th>Total</th>
- <th style="color:#fcd34d">OT Hrs</th><th>OT Pay</th>
+ <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>2.5P</th><th>3P</th><th>Duty Credit</th><th>Worked Days</th>
+ <th>OT Hrs</th><th>OT Pay</th>
  <th>Gross</th><th>Bonus</th><th>Adj</th><th>Earned</th>
  <th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th></tr>`;
  document.getElementById("thead").innerHTML=head;
@@ -226,8 +312,8 @@ async function generateSheet(){
 
   body+=`<tr class="emp-row" onclick="handleRowSelect(this, ${JSON.stringify(emp).replace(/"/g, '&quot;')})">
   <td class="name-sticky">
-    <div style="font-weight:800; color:var(--primary)">${emp.name}</div>
-    <div style="font-size:9px; color:var(--muted); font-weight:700">${emp.id} | ${emp.dept}</div>
+    <div style="font-weight:800;">${emp.name}</div>
+    <div style="font-size:9px; color:var(--text-tertiary); font-weight:700">${emp.id} | ${emp.dept}</div>
   </td>`;
 
   for(let i=1;i<=data.days_in_month;i++){
@@ -244,36 +330,35 @@ async function generateSheet(){
   }
 
   body+=`
-  <!-- 🟢 DUTY SUMMARY -->
-  <td style="color:var(--warning)">${emp.duty_counts['HP']}</td>
-  <td style="color:var(--success)">${emp.duty_counts['1P']}</td>
-  <td style="color:#1d4ed8">${emp.duty_counts['1.5P']}</td>
-  <td style="color:#15803d; font-weight:800">${emp.duty_counts['2P']}</td>
-  <td style="color:#b91c1c; font-weight:800">${emp.duty_counts['3P']}</td>
+  <td class="val-warn">${emp.duty_counts['HP']}</td>
+  <td class="val-success">${emp.duty_counts['1P']}</td>
+  <td class="val-primary">${emp.duty_counts['1.5P']}</td>
+  <td class="val-primary">${emp.duty_counts['2P']}</td>
+  <td class="val-primary">${emp.duty_counts['2.5P']}</td>
+  <td class="val-primary">${emp.duty_counts['3P']}</td>
   
-  <td class="clickable" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:900; color:var(--accent); text-decoration:underline; background:#f8fafc;">
-    ${emp.actual_duties}
+  <td class="clickable val-primary" onclick="event.stopPropagation(); showAttendance('${emp.id}','${emp.name}', null)" style="font-weight:800; text-decoration:underline;">
+    ${Number(emp.actual_duties).toFixed(1)}
+  </td>
+  <td style="font-weight:800;">
+    ${emp.worked_days}
   </td>
 
-  <!-- 🟢 OVERTIME -->
-  <td style="font-weight:800; color:#ea580c; background:#fff7ed">${emp.ot_hours}</td>
-  <td style="font-weight:800; color:#c2410c; background:#ffedd5">₹${fmt.format(emp.ot_earnings)}</td>
+  <td class="val-warn">${emp.ot_hours}</td>
+  <td class="val-warn">₹${fmt.format(emp.ot_earnings)}</td>
 
-  <!-- 🟢 FINANCIALS -->
-  <td style="font-weight:600">₹${fmt.format(emp.base_sal)}</td>
-  <td style="font-weight:800; color:var(--success)">+${emp.extra_holidays}</td>
+  <td>₹${fmt.format(emp.base_sal)}</td>
+  <td class="val-success">+${emp.extra_holidays}</td>
   <td><input class="adjust-input" type="number" step="0.5" value="${emp.saved_adjustment}" ${isLocked} onchange="saveAdjustment('${emp.id}',this.value)"></td>
-  <td style="font-weight:800; background:#f0f9ff">₹${fmt.format(emp.earned_gross)}</td>
+  <td style="font-weight:800;">₹${fmt.format(emp.earned_gross)}</td>
   
-  <!-- 🟢 DEDUCTIONS -->
-  <td style="color:var(--danger); font-weight:700">₹${fmt.format(emp.salary_advance)}</td>
+  <td class="val-danger">₹${fmt.format(emp.salary_advance)}</td>
   <td>₹${fmt.format(emp.pf)}</td>
   <td>₹${fmt.format(emp.esi)}</td>
   <td>₹${emp.pt}</td>
   <td>₹${emp.lwf}</td>
   <td>₹${emp.tds}</td>
   
-  <!-- 🟢 NET PAY -->
   <td class="payout-col">₹${fmt.format(emp.net_pay)}</td>
   </tr>`;
  });
@@ -286,7 +371,7 @@ function handleRowSelect(rowElement, employeeData) {
     document.querySelectorAll(".emp-row").forEach(r => r.classList.remove("selected"));
     rowElement.classList.add("selected");
     selectedRowData = employeeData;
-    document.getElementById("btnPrintSelected").style.display = "inline-block";
+    document.getElementById("btnPrintSelected").style.display = "inline-flex";
 }
 
 function printFullLedger() {
@@ -305,18 +390,19 @@ function printSelectedRow() {
     }
 
     printContainer.innerHTML = `
-        <div style="padding:20px; font-family:Inter,sans-serif;">
-            <h2 style="color:#143465; border-bottom:2px solid #143465; padding-bottom:8px; text-align:center;">BKNR SOLUTIONS - PAYROLL PAYSPLIT MASTER</h2>
+        <div style="padding:20px; font-family:'Plus Jakarta Sans',sans-serif; background:#fff; color:#000;">
+            <h2 style="color:#0f172a; border-bottom:2px solid #0f172a; padding-bottom:8px; text-align:center; font-weight:800;">PAYROLL PAYSLIP MASTER</h2>
             <br>
-            <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-                <tr><td style="text-align:left; font-weight:800; width:150px;">Employee Name:</td><td style="text-align:left;">${selectedRowData.name}</td></tr>
-                <tr><td style="text-align:left; font-weight:800;">Employee ID:</td><td style="text-align:left;">${selectedRowData.id}</td></tr>
-                <tr><td style="text-align:left; font-weight:800;">Department:</td><td style="text-align:left;">${selectedRowData.dept}</td></tr>
-                <tr><td style="text-align:left; font-weight:800;">Total Active Duties:</td><td style="text-align:left; color:#2563eb; font-weight:800;">${selectedRowData.actual_duties} Days</td></tr>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12px;">
+                <tr><td style="text-align:left; font-weight:800; width:150px; padding:4px 0;">Employee Name:</td><td style="text-align:left; padding:4px 0;">${selectedRowData.name}</td></tr>
+                <tr><td style="text-align:left; font-weight:800; padding:4px 0;">Employee ID:</td><td style="text-align:left; padding:4px 0;">${selectedRowData.id}</td></tr>
+                <tr><td style="text-align:left; font-weight:800; padding:4px 0;">Department:</td><td style="text-align:left; padding:4px 0;">${selectedRowData.dept}</td></tr>
+                <tr><td style="text-align:left; font-weight:800; padding:4px 0;">Duty Credit:</td><td style="text-align:left; font-weight:800; padding:4px 0;">${Number(selectedRowData.actual_duties).toFixed(1)} Days</td></tr>
+                <tr><td style="text-align:left; font-weight:800; padding:4px 0;">Worked Days:</td><td style="text-align:left; font-weight:800; padding:4px 0;">${selectedRowData.worked_days} Days</td></tr>
             </table>
             <table style="width:100%; border:1px solid #d6dde7; border-collapse:collapse; font-size:12px;">
                 <thead>
-                    <tr style="background:var(--header-bg);">
+                    <tr style="background:#f1f5f9;">
                         <th style="padding:10px; border:1px solid #d6dde7; text-align:left;">Component Description</th>
                         <th style="padding:10px; border:1px solid #d6dde7; text-align:right;">Amount (₹)</th>
                     </tr>
@@ -328,7 +414,7 @@ function printSelectedRow() {
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#dc2626;">Salary Advance</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#dc2626;">-₹${fmt.format(selectedRowData.salary_advance)}</td></tr>
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Provident Fund (PF)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.pf)}</td></tr>
                     <tr><td style="padding:10px; border:1px solid #d6dde7; text-align:left;">Employee State Insurance (ESI)</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right;">-₹${fmt.format(selectedRowData.esi)}</td></tr>
-                    <tr style="background:#ecfdf5; font-size:14px; font-weight:800;"><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#065f46;">Net Disbursed Payout</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#065f46;">₹${fmt.format(selectedRowData.net_pay)}</td></tr>
+                    <tr style="background:#f0fdf4; font-size:14px; font-weight:800;"><td style="padding:10px; border:1px solid #d6dde7; text-align:left; color:#16a34a;">Net Disbursed Payout</td><td style="padding:10px; border:1px solid #d6dde7; text-align:right; color:#16a34a;">₹${fmt.format(selectedRowData.net_pay)}</td></tr>
                 </tbody>
             </table>
         </div>`;
@@ -352,21 +438,21 @@ async function showAttendance(empId, name, day = null){
  data.forEach(d => {
    let timeline = "";
    if(d.movements && d.movements.length > 0) {
-      timeline = d.movements.map(m => `<span class="chip c-${m.type.toLowerCase()}">${m.type} ${m.time}</span>`).join('<i class="fa fa-chevron-right" style="font-size:7px;color:#ccc"></i>');
+      timeline = d.movements.map(m => `<span class="chip">${m.type} ${m.time}</span>`).join('<i class="fa-solid fa-chevron-right" style="font-size:7px; margin:0 4px; color:var(--text-tertiary)"></i>');
    } else {
-      timeline = `<span style="color:#94a3b8; font-style:italic">Manual Entry</span>`;
+      timeline = `<span style="color:var(--text-secondary); font-style:italic">Manual Entry</span>`;
    }
 
    html += `<tr>
-     <td style="font-weight:600; padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${d.date}</td>
-     <td style="font-weight:800; color:var(--primary); padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${d.shift}</td>
-     <td style="padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:left">${timeline}</td>
-     <td style="font-weight:800; color:var(--accent); padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:center">${d.hours} hrs</td>
-     <td style="padding:8px; border:none; border-bottom:1px solid #f1f5f9; text-align:center"><span class="badge-blue">${d.status}</span></td>
+     <td style="font-weight:600; padding:10px 8px; border:none; border-bottom:1px solid var(--border-light); text-align:left">${d.date}</td>
+     <td style="font-weight:800; color:var(--text-primary); padding:10px 8px; border:none; border-bottom:1px solid var(--border-light); text-align:left">${d.shift}</td>
+     <td style="padding:10px 8px; border:none; border-bottom:1px solid var(--border-light); text-align:left">${timeline}</td>
+     <td style="font-weight:800; padding:10px 8px; border:none; border-bottom:1px solid var(--border-light); text-align:center">${d.hours} hrs</td>
+     <td style="font-weight:800; color:var(--corp-dash); padding:10px 8px; border:none; border-bottom:1px solid var(--border-light); text-align:center">${d.status}</td>
    </tr>`;
  });
 
- document.getElementById("modalBody").innerHTML = html || "<tr><td colspan='5' style='padding:20px; text-align:center;'>No attendance records found for this selection.</td></tr>";
+ document.getElementById("modalBody").innerHTML = html || "<tr><td colspan='5' style='padding:20px; text-align:center; color:var(--text-secondary)'>No attendance records found for this selection.</td></tr>";
  document.getElementById("attModal").style.display = "block";
 }
 
@@ -380,7 +466,7 @@ async function saveAdjustment(empId, val){
     });
     generateSheet(); 
  } catch(e) { 
-    Swal.fire({ title: 'Error', text: 'Adjustment Save Failed!', icon: 'error', confirmButtonColor: '#143465' });
+    Swal.fire({ title: 'Error', text: 'Adjustment Save Failed!', icon: 'error', confirmButtonColor: '#ec4899' });
  }
 }
 

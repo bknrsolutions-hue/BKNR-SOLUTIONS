@@ -399,12 +399,12 @@
   </div>
 
   <div class="quick-summary-strip">
-    <div class="strip-item"><p class="strip-label">EBITDA Pool</p><p class="strip-value" style="color:var(--emerald);">₹{{"{:.0f}".format(ebitda)}}</p></div>
-    <div class="strip-item"><p class="strip-label">Processing / Kg</p><p class="strip-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</p></div>
-    <div class="strip-item"><p class="strip-label">Sales Outflow</p><p class="strip-value">{{"{:.0f}".format(sales_qty)}} Kg</p></div>
-    <div class="strip-item"><p class="strip-label">Factory Intake</p><p class="strip-value">{{"{:.0f}".format(prod_qty)}} Kg</p></div>
-    <div class="strip-item"><p class="strip-label">Stock Age Max</p><p class="strip-value">{{ inventory_days }} Days</p></div>
-    <div class="strip-item"><p class="strip-label">CCC Track</p><p class="strip-value" style="color:var(--accent-blue);">{{ cash_conversion_cycle }} Days</p></div>
+    <div class="strip-item"><p class="strip-label">Operating Profit</p><p class="strip-value" style="color:var(--emerald);">₹{{"{:.0f}".format(ebitda)}}</p></div>
+    <div class="strip-item"><p class="strip-label">Processing Cost per KG</p><p class="strip-value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</p></div>
+    <div class="strip-item"><p class="strip-label">Total Sales (KG)</p><p class="strip-value">{{"{:.0f}".format(sales_qty)}} Kg</p></div>
+    <div class="strip-item"><p class="strip-label">Production Output (KG)</p><p class="strip-value">{{"{:.0f}".format(prod_qty)}} Kg</p></div>
+    <div class="strip-item"><p class="strip-label">Stock Age (Days)</p><p class="strip-value">{{ inventory_days }} Days</p></div>
+    <div class="strip-item"><p class="strip-label">Cash Cycle (Days)</p><p class="strip-value" style="color:var(--accent-blue);">{{ cash_conversion_cycle }} Days</p></div>
   </div>
 
   <!-- 🟢 HORIZONTAL SCROLL FILTER PANEL -->
@@ -441,131 +441,131 @@
         <div class="card-icon-zone"><i class="fa-solid fa-boxes-stacked"></i></div>
     </div>
     
-    <div class="card orange">
+    <div class="card blue">
         <div class="card-meta"><div class="label">Production Cost</div><div class="value">₹{{"{:.0f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-industry"></i></div>
     </div>
     
     <div class="card amber">
-        <div class="card-meta"><div class="label">Conversion / Kg</div><div class="value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
+        <div class="card-meta"><div class="label">Conversion Cost per KG</div><div class="value">₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-scale-balanced"></i></div>
     </div>
     
-    <div class="card pink">
-        <div class="card-meta"><div class="label">Payroll Resource</div><div class="value">₹{{"{:.0f}".format(payroll_cost)}}</div></div>
+    <div class="card blue">
+        <div class="card-meta"><div class="label">Staff Salary Cost</div><div class="value">₹{{"{:.0f}".format(payroll_cost)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-users"></i></div>
     </div>
     
     <div class="card gray">
-        <div class="card-meta"><div class="label">Utility Expense</div><div class="value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</div></div>
+        <div class="card-meta"><div class="label">Power & Fuel Expense</div><div class="value">₹{{"{:.0f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-plug"></i></div>
     </div>
     
-    <div class="card purple">
-        <div class="card-meta"><div class="label">Packaging Supply</div><div class="value">₹{{"{:.0f}".format(packaging_cost)}}</div></div>
+    <div class="card gray">
+        <div class="card-meta"><div class="label">Packing Material Cost</div><div class="value">₹{{"{:.0f}".format(packaging_cost)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-box-open"></i></div>
     </div>
     
-    <div class="card indigo">
-        <div class="card-meta"><div class="label">Logistics Fleet</div><div class="value">₹{{"{:.0f}".format(logistics_cost)}}</div></div>
+    <div class="card blue">
+        <div class="card-meta"><div class="label">Transport & Freight</div><div class="value">₹{{"{:.0f}".format(logistics_cost)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-truck-fast"></i></div>
     </div>
     
-    <div class="card teal">
-        <div class="card-meta"><div class="label">Inventory Asset</div><div class="value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
+    <div class="card blue">
+        <div class="card-meta"><div class="label">Stock Value</div><div class="value">₹{{"{:.0f}".format(inventory_value)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-warehouse"></i></div>
     </div>
     
     <div class="card green">
-        <div class="card-meta"><div class="label">Gross Sales Pool</div><div class="value">₹{{"{:.0f}".format(total_sales)}}</div></div>
+        <div class="card-meta"><div class="label">Gross Sales</div><div class="value">₹{{"{:.0f}".format(total_sales)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-money-bill-trend-up"></i></div>
     </div>
     
-    <div class="card red">
-        <div class="card-meta"><div class="label">Arrears Pending</div><div class="value">₹{{"{:.0f}".format(receivable_outstanding)}}</div></div>
+    <div class="card amber">
+        <div class="card-meta"><div class="label">Pending Customer Payments</div><div class="value">₹{{"{:.0f}".format(receivable_outstanding)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-file-invoice-dollar"></i></div>
     </div>
     
-    <div class="card {% if total_sales - total_expense < 0 %}red{% else %}green{% endif %}">
-        <div class="card-meta"><div class="label">Gross Margin</div><div class="value">₹{{"{:.0f}".format(total_sales - total_expense)}}</div></div>
+    <div class="card {% if total_sales - total_expense < 0 %}amber{% else %}green{% endif %}">
+        <div class="card-meta"><div class="label">Gross Margin (Profit)</div><div class="value">₹{{"{:.0f}".format(total_sales - total_expense)}}</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-sack-dollar"></i></div>
     </div>
     
-    <div class="card {% if total_sales - total_expense < 0 %}red{% else %}green{% endif %}">
-        <div class="card-meta"><div class="label">Net Ratio</div><div class="value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</div></div>
+    <div class="card {% if total_sales - total_expense < 0 %}amber{% else %}green{% endif %}">
+        <div class="card-meta"><div class="label">Net Profit Percentage</div><div class="value">{% if total_sales > 0 %}{{"%.2f"|format(((total_sales - total_expense) / total_sales) * 100)}}{% else %}0.00{% endif %}%</div></div>
         <div class="card-icon-zone"><i class="fa-solid fa-percent"></i></div>
     </div>
   </div>
 
   <div class="exception-box">
-    <div class="exception-header"><i class="fa-solid fa-bolt"></i> Discrepancy Stack</div>
-    {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Net profit tracking below threshold standard profile.</div>{% endif %}
-    {% if receivable_outstanding > 0 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Active capital locked in external outstanding accounts.</div>{% endif %}
+    <div class="exception-header"><i class="fa-solid fa-bolt"></i> Alerts / Issues</div>
+    {% if total_sales > 0 and (((total_sales - total_expense) / total_sales) * 100) < 5 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Net profit is below target.</div>{% endif %}
+    {% if receivable_outstanding > 0 %}<div class="exception-item"><i class="fa-solid fa-circle-notch"></i> Capital locked in outstanding invoices.</div>{% endif %}
   </div>
 
   <div class="core-layout-grid">
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-sitemap" style="color:var(--accent-blue);"></i> Revenue Deductions</div>
-      <div class="data-row"><span>Gross Sales Allocation</span><span>₹{{"{:,.2f}".format(total_sales)}}</span></div>
-      <div class="data-row"><span>(-) Materials Sourcing</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
-      <div class="data-row"><span>(-) Factory Labor Runs</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
-      <div class="data-row"><span>(-) Plant Utilities</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
-      <div class="data-row"><span>(-) Salary Baseline</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
-      <div class="data-row"><span>(-) Packaging Inventory</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
-      <div class="data-row"><span>(-) Supply Chain / Freight</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
-      <div class="data-row anchor-total-row"><span>Net Dynamic Yield</span><span>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
+      <div class="section-header"><i class="fa-solid fa-sitemap" style="color:var(--accent-blue);"></i> Revenue & Cost Breakdown</div>
+      <div class="data-row"><span>Total Sales Revenue</span><span>₹{{"{:,.2f}".format(total_sales)}}</span></div>
+      <div class="data-row"><span>(-) Raw Material Sourcing</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(rmp_cost)}}</span></div>
+      <div class="data-row"><span>(-) Processing Wages</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(deheading_cost + peeling_cost + grading_cost + soaking_cost)}}</span></div>
+      <div class="data-row"><span>(-) Factory Power & Fuel</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(electricity_cost + diesel_cost + water_cost + ice_cost)}}</span></div>
+      <div class="data-row"><span>(-) Office Salaries</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(payroll_cost)}}</span></div>
+      <div class="data-row"><span>(-) Packing Material Cost</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(packaging_cost)}}</span></div>
+      <div class="data-row"><span>(-) Shipping & Freight</span><span style="color:var(--rose);">-₹{{"{:,.2f}".format(logistics_cost + qa_cost + other_cost)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Net Yield Profit</span><span>₹{{"{:,.2f}".format(total_sales - total_expense)}}</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:var(--orange-accent);"></i> Target Variance Tracking</div>
-      <div class="data-row" style="font-weight:700; background:var(--strip-bg); color:var(--text-main); border-radius:4px;"><span>Vector Element</span><span>Current MTD</span><span>Variance</span></div>
+      <div class="section-header"><i class="fa-solid fa-chart-bar" style="color:var(--orange-accent);"></i> Budget vs Actual Cost</div>
+      <div class="data-row" style="font-weight:700; background:var(--strip-bg); color:var(--text-main); border-radius:4px;"><span>Cost Type</span><span>Spent This Month</span><span>Difference</span></div>
       <div class="data-row"><span>Raw Materials</span><span>₹{{"{:.0f}".format(rmp_cost)}}</span><span style="color:var(--emerald);">-1.2%</span></div>
       <div class="data-row"><span>Power & Fuels</span><span>₹{{"{:.0f}".format(electricity_cost+diesel_cost)}}</span><span style="color:var(--rose);">+4.1%</span></div>
       <div class="data-row"><span>Human Capital</span><span>₹{{"{:.0f}".format(payroll_cost)}}</span><span style="color:var(--emerald);">0.0%</span></div>
       <div class="data-row"><span>Freight Logistics</span><span>₹{{"{:.0f}".format(logistics_cost)}}</span><span style="color:var(--emerald);">-0.8%</span></div>
-      <div class="data-row anchor-total-row"><span>Index Composite</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:var(--rose);">+1.1%</span></div>
+      <div class="data-row anchor-total-row"><span>Total Cost</span><span>₹{{"{:.0f}".format(total_expense)}}</span><span style="color:var(--rose);">+1.1%</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-weight-hanging" style="color:var(--text-muted)"></i> Unit Rate Breakdown (/Kg)</div>
-      <div class="data-row"><span>Material Expense Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
-      <div class="data-row"><span>Processing Labor Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost + peeling_cost + grading_cost + soaking_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
-      <div class="data-row"><span>Utility Loading Base</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost + diesel_cost + water_cost + ice_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
-      <div class="data-row"><span>Payroll Apportioned</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(payroll_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
-      <div class="data-row anchor-total-row"><span>Aggregated Unit Cost</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="section-header"><i class="fa-solid fa-weight-hanging" style="color:var(--text-muted)"></i> Cost breakdown per KG</div>
+      <div class="data-row"><span>Material Cost per KG</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(rmp_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Wages per KG</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((deheading_cost + peeling_cost + grading_cost + soaking_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Power & Fuel per KG</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format((electricity_cost + diesel_cost + water_cost + ice_cost) / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row"><span>Salaries per KG</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(payroll_cost / total_qty)}}{% else %}0.00{% endif %}</span></div>
+      <div class="data-row anchor-total-row"><span>Total Cost per KG</span><span>₹{% if total_qty > 0 %}{{"%.2f"|format(total_expense / total_qty)}}{% else %}0.00{% endif %}</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color: var(--primary-dark);"></i> Segment Resource Share</div>
+      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color: var(--primary-dark);"></i> Expense Distribution</div>
       <div class="visual-holder"><canvas id="deptMiniChart"></canvas></div>
     </div>
 
     <div class="section-card span-2x">
-      <div class="section-header"><i class="fa-solid fa-timeline" style="color:var(--emerald);"></i> Operational Trajectory Matrix</div>
+      <div class="section-header"><i class="fa-solid fa-timeline" style="color:var(--emerald);"></i> Income vs Expense Trend</div>
       <div class="visual-holder"><canvas id="trendLineChart"></canvas></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Outstanding Aging Schedule</div>
-      <div class="data-row"><span>Current Frame (0-30 D)</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
-      <div class="data-row"><span>Mid Frame (31-60 D)</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
-      <div class="data-row"><span>Urgent Warning (61-90 D)</span><span style="color:var(--amber);">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
-      <div class="data-row"><span>Risk Recovery (90+ D)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
-      <div class="data-row anchor-total-row"><span>Total Active Book Arrears</span><span>₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
+      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Customer Payment Aging</div>
+      <div class="data-row"><span>Due in 0-30 Days</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(receivable_outstanding * 0.65)}}</span></div>
+      <div class="data-row"><span>Due in 31-60 Days</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(receivable_outstanding * 0.20)}}</span></div>
+      <div class="data-row"><span>Due in 61-90 Days</span><span style="color:var(--amber);">₹{{"{:.0f}".format(receivable_outstanding * 0.10)}}</span></div>
+      <div class="data-row"><span>Overdue (90+ Days)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(receivable_outstanding * 0.05)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Total Pending Payments</span><span>₹{{"{:.0f}".format(receivable_outstanding)}}</span></div>
     </div>
 
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-box" style="color:var(--orange-accent);"></i> Inventory Holding Vintage</div>
-      <div class="data-row"><span>Active Fast Turn (0-30 D)</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
-      <div class="data-row"><span>Standard Hold (31-60 D)</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
-      <div class="data-row"><span>Slow Clearance (61-90 D)</span><span style="color:var(--amber);">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
-      <div class="data-row"><span>Stagnant Risk (90+ D)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
-      <div class="data-row anchor-total-row"><span>Aggregate Vault Asset</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
+      <div class="section-header"><i class="fa-solid fa-box" style="color:var(--orange-accent);"></i> Stock Age Breakdown</div>
+      <div class="data-row"><span>Stock under 30 Days</span><span style="color:var(--emerald);">₹{{"{:.0f}".format(inventory_value * 0.65)}}</span></div>
+      <div class="data-row"><span>Stock 31-60 Days</span><span style="color:var(--orange-accent);">₹{{"{:.0f}".format(inventory_value * 0.20)}}</span></div>
+      <div class="data-row"><span>Stock 61-90 Days</span><span style="color:var(--amber);">₹{{"{:.0f}".format(inventory_value * 0.10)}}</span></div>
+      <div class="data-row"><span>Old Stock (90+ Days)</span><span style="color:var(--rose);">₹{{"{:.0f}".format(inventory_value * 0.05)}}</span></div>
+      <div class="data-row anchor-total-row"><span>Total Stock Value</span><span>₹{{"{:.0f}".format(inventory_value)}}</span></div>
     </div>
 
     <div class="section-card full-width-block">
-      <div class="section-header"><i class="fa-solid fa-layer-group" style="color:var(--accent-blue);"></i> SKU Performance Metrics & Margin Realization</div>
+      <div class="section-header"><i class="fa-solid fa-layer-group" style="color:var(--accent-blue);"></i> Product Sales & Profit Summary</div>
       <div class="prod-matrix-stack">
         {% if product_costing_matrix %}
           {% for p in product_costing_matrix %}
@@ -656,7 +656,7 @@ document.addEventListener("DOMContentLoaded", function() {
           {{ packaging_cost or 0 }}, 
           {{ logistics_cost or 0 }}
         ],
-        backgroundColor: ["#64748b", "#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#f43f5e"],
+        backgroundColor: ["#2563eb", "#3b82f6", "#10b981", "#0ea5e9", "#64748b", "#475569"],
         borderRadius: 4
       }]
     }
@@ -677,7 +677,7 @@ document.addEventListener("DOMContentLoaded", function() {
       labels: {{ (month_labels or [])|tojson }},
       datasets: [
         { label: "Rev Stream", data: {{ (revenue_trend or [])|tojson }}, borderColor: "#10b981", backgroundColor: "#10b981", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
-        { label: "Exp Stream", data: {{ (expense_trend or [])|tojson }}, borderColor: "#f43f5e", backgroundColor: "#f43f5e", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
+        { label: "Exp Stream", data: {{ (expense_trend or [])|tojson }}, borderColor: "#f59e0b", backgroundColor: "#f59e0b", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 },
         { label: "Net Pool", data: {{ (profit_trend or [])|tojson }}, borderColor: "#3b82f6", backgroundColor: "#3b82f6", fill: false, tension: 0.2, borderWidth: 2, pointRadius: 1 }
       ]
     }

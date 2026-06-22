@@ -16,7 +16,7 @@ from sqlalchemy import distinct # 🟢 Necessary query helper inclusion
 
 os.environ["TZ"] = "Asia/Kolkata"
 # =====================================================
-# 🚀 1. APP INIT
+# 🚀 1. APP INIT - HOT RELOAD TRIGGER 12
 # =====================================================
 application = FastAPI(title="BKNR ERP", version="1.0.0")
 
@@ -43,6 +43,11 @@ import app.database.models.attendance
 import app.database.models.requirements
 import app.database.models.payments
 import app.database.models.invoices
+import app.database.models.enterprise_finance
+import app.database.models.advanced_seafood_erp
+
+# Create all tables on startup if they don't exist
+Base.metadata.create_all(bind=engine)
 # =====================================================
 # =====================================================
 # 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
@@ -182,6 +187,8 @@ from app.routers.summary.floor_balance_value import router as summary_floor_bala
 from app.routers import data_management
 from app.routers import production_requirements
 from app.routers.finance_accounts import router as finance_accounts_router
+from app.routers.enterprise_finance_router import router as enterprise_finance_router
+from app.routers.advanced_seafood_router import router as advanced_seafood_router
 from app.routers.export_documents import router as export_documents_router
 
 # రూటర్లను ఇంక్లూడ్ చేయడం
@@ -208,6 +215,8 @@ application.include_router(data_management.router)
 application.include_router(production_requirements.router)
 application.include_router(bills_router, prefix="/api")
 application.include_router(finance_accounts_router, prefix="/finance_accounts")
+application.include_router(enterprise_finance_router, prefix="/finance_accounts")
+application.include_router(advanced_seafood_router, prefix="/api")
 application.include_router(export_documents_router, prefix="/export_documents")
 
 
@@ -308,4 +317,4 @@ async def home_page(request: Request):
 
 @application.get("/health")
 def health():
-    return {"status": "ok", "service": "BKNR ERP"}
+    return {"status": "ok", "service": "BKNR_ERP"} # Reload Trigger 8

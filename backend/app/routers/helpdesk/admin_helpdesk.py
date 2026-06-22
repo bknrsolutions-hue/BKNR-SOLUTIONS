@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi import APIRouter, Request, Depends, Form, HTTPException, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, Date
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import os
+import shutil
 
 from app.database import get_db
-from app.database.models.helpdesk import SupportTicket, TicketMessage
+from app.database.models.helpdesk import SupportTicket, TicketMessage, EventNotification
 from app.database.models.users import User, Company
 
 router = APIRouter(prefix="/admin", tags=["SUPER ADMIN HELPDESK"])
@@ -15,8 +17,7 @@ ALLOWED_ADMINS = ["bknr.solutions@gmail.com"]
 
 def is_admin(request: Request):
     email = request.session.get("email")
-    role = request.session.get("role")
-    return email in ALLOWED_ADMINS or role == "Super Admin"
+    return email in ALLOWED_ADMINS
 
 # =====================================================
 # 1. ALL TICKETS (HTML)
@@ -71,7 +72,7 @@ async def admin_get_messages(ticket_id: int, request: Request, db: Session = Dep
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     messages = db.query(TicketMessage).filter(TicketMessage.ticket_id == ticket_id).order_by(TicketMessage.sent_at.asc()).all()
-    msg_data = [{"sender_type": m.sender_type, "message": m.message, "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""} for m in messages]
+    msg_data = [{"sender_type": m.sender_type, "message": m.message, "media_path": m.media_path, "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""} for m in messages]
     
     return JSONResponse(content={"status": ticket.status, "subject": ticket.subject, "messages": msg_data})
 
@@ -105,7 +106,13 @@ async def update_ticket_status(request: Request, ticket_id: int = Form(...), sta
 # 5. SEND MESSAGE VIA CHAT PANEL
 # =====================================================
 @router.post("/send_message")
-async def admin_send_message(request: Request, ticket_id: int = Form(...), message: str = Form(...), db: Session = Depends(get_db)):
+async def admin_send_message(
+    request: Request, 
+    ticket_id: int = Form(...), 
+    message: str = Form(None),
+    file: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
     if not is_admin(request):
         raise HTTPException(status_code=403, detail="Unauthorized")
 
@@ -117,14 +124,52 @@ async def admin_send_message(request: Request, ticket_id: int = Form(...), messa
     if ticket.status == "RESOLVED":
         return JSONResponse(status_code=400, content={"detail": "Ticket is permanently closed."})
 
+    media_path = None
+    if file and file.filename:
+        upload_dir = "app/static/uploads/support"
+        os.makedirs(upload_dir, exist_ok=True)
+        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
+        dest_path = os.path.join(upload_dir, filename)
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        media_path = f"/static/uploads/support/{filename}"
+
     new_msg = TicketMessage(
         ticket_id=ticket_id,
         sender_email="support@bknr.solutions",
         sender_type="ADMIN",
-        message=message
+        message=message or "",
+        media_path=media_path
     )
     db.add(new_msg)
     # Note: NO code here to change status back to IN_PROGRESS. Status stays as is!
     db.commit()
     
     return JSONResponse(content={"success": True})
+
+# =====================================================
+# 6. BROADCAST EVENT NOTIFICATION (ADMIN ONLY)
+# =====================================================
+@router.post("/create_event")
+async def create_event(
+    request: Request,
+    message: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not is_admin(request):
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        raise HTTPException(status_code=400, detail="No active company context")
+
+    new_event = EventNotification(
+        title="Admin Broadcast",
+        message=message,
+        created_by=email,
+        company_id=comp_code
+    )
+    db.add(new_event)
+    db.commit()
+    return JSONResponse(content={"success": True, "message": "Event broadcasted successfully"})

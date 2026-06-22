@@ -233,8 +233,8 @@
   <!-- Header -->
   <div class="header-panel">
     <div class="header-title">
-      <h1><i class="fa-solid fa-wallet" style="color:var(--accent-blue); margin-right:8px;"></i> FINANCE COMMAND CENTER</h1>
-      <p>System Trace Operator Session: {{ email or 'Admin Operational Mode' }}</p>
+      <h1><i class="fa-solid fa-wallet" style="color:var(--accent-blue); margin-right:8px;"></i> FINANCE DASHBOARD</h1>
+      <p>System Session: {{ email or 'Admin Operational Mode' }}</p>
     </div>
     <div class="control-bar">
       <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</button>
@@ -245,9 +245,9 @@
   <div class="filter-panel">
     <form class="filter-form" method="GET" action="/dashboard/finance_dashboard">
       <div class="input-field">
-        <label><i class="fa-solid fa-building"></i> Select Entity</label>
+        <label><i class="fa-solid fa-building"></i> Company</label>
         <select name="company_id">
-          <option value="">All Corporate Mappings</option>
+          <option value="">All Companies</option>
           {% for comp in available_companies %}
             <option value="{{ comp.code }}" {% if comp_code == comp.code or company_id == comp.code %}selected{% endif %}>
               {{ comp.name }} ({{ comp.code }})
@@ -263,7 +263,7 @@
         <label>To Date</label>
         <input type="date" name="to_date" value="{{ to_date }}">
       </div>
-      <button type="submit" class="btn-sync"><i class="fa-solid fa-rotate"></i> Sync Records</button>
+      <button type="submit" class="btn-sync"><i class="fa-solid fa-rotate"></i> Refresh Data</button>
     </form>
   </div>
 
@@ -271,35 +271,35 @@
   <div class="cards">
     <div class="card blue">
       <div class="card-meta">
-        <div class="label">Total Receivables</div>
+        <div class="label">Outstanding Customer Bills</div>
         <div class="value">₹{{"{:,}".format(receivables_outstanding)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-file-invoice-dollar"></i></div>
     </div>
-    <div class="card red">
+    <div class="card gray">
       <div class="card-meta">
-        <div class="label">Total Payables</div>
+        <div class="label">Outstanding Vendor Bills</div>
         <div class="value">₹{{"{:,}".format(payables_outstanding)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-file-invoice"></i></div>
     </div>
     <div class="card green">
       <div class="card-meta">
-        <div class="label">Bank & Liquid Cash</div>
+        <div class="label">Bank & Cash Balance</div>
         <div class="value">₹{{"{:,}".format(bank_balance)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-building-columns"></i></div>
     </div>
-    <div class="card purple">
+    <div class="card blue">
       <div class="card-meta">
-        <div class="label">Total Expenses</div>
+        <div class="label">Expenses This Month</div>
         <div class="value">₹{{"{:,}".format(total_expenses)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-receipt"></i></div>
     </div>
-    <div class="card amber">
+    <div class="card {% if net_profit < 0 %}amber{% else %}green{% endif %}">
       <div class="card-meta">
-        <div class="label">Net MTD Income</div>
+        <div class="label">Net Monthly Profit</div>
         <div class="value">₹{{"{:,}".format(net_profit)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
@@ -311,51 +311,51 @@
     
     <!-- Cash Flow Trend Chart -->
     <div class="section-card span-2">
-      <div class="section-header"><i class="fa-solid fa-chart-area" style="color:var(--emerald);"></i> Cash Flow Trajectory Trend</div>
+      <div class="section-header"><i class="fa-solid fa-chart-area" style="color:var(--emerald);"></i> Cash Inflow vs Outflow Trend</div>
       <div class="visual-holder"><canvas id="cashFlowChart"></canvas></div>
     </div>
 
     <!-- Expense Structure Breakdown -->
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color:var(--accent-blue)"></i> Expense Distribution Share</div>
+      <div class="section-header"><i class="fa-solid fa-chart-pie" style="color:var(--accent-blue)"></i> Expenses Breakdown</div>
       <div class="visual-holder"><canvas id="expenseChart"></canvas></div>
     </div>
 
     <!-- Receivables Aging Analysis -->
     <div class="section-card span-2">
-      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Receivables Aging Profile</div>
+      <div class="section-header"><i class="fa-solid fa-hourglass-half" style="color:var(--rose);"></i> Customer Payments Aging</div>
       <div class="visual-holder"><canvas id="agingChart"></canvas></div>
     </div>
 
     <!-- Liquid Working Capital Ratio Summary -->
     <div class="section-card">
-      <div class="section-header"><i class="fa-solid fa-scale-balanced" style="color:var(--amber);"></i> Working Capital Asset Ratios</div>
+      <div class="section-header"><i class="fa-solid fa-scale-balanced" style="color:var(--amber);"></i> Working Capital Summary</div>
       <table class="data-table">
         <thead>
           <tr>
-            <th>Asset Stream</th>
-            <th style="text-align: right;">Amount Value (₹)</th>
+            <th>Account Type</th>
+            <th style="text-align: right;">Balance (₹)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Outstanding Book Receivables</td>
+            <td>Pending Customer Payments</td>
             <td style="text-align: right; color:var(--emerald);">+₹{{"{:,}".format(receivables_outstanding)}}</td>
           </tr>
           <tr>
-            <td>Vendor Accounts Payable</td>
+            <td>Pending Vendor Payments</td>
             <td style="text-align: right; color:var(--rose);">-₹{{"{:,}".format(payables_outstanding)}}</td>
           </tr>
           <tr>
-            <td>Bank Reserves & Liquid Balances</td>
+            <td>Total Bank Reserves</td>
             <td style="text-align: right; color:var(--accent-blue);">+₹{{"{:,}".format(bank_balance)}}</td>
           </tr>
           <tr>
-            <td>Operational Cash Outflows MTD</td>
+            <td>Monthly Cash Expenses</td>
             <td style="text-align: right; color:var(--rose);">-₹{{"{:,}".format(total_expenses)}}</td>
           </tr>
           <tr style="font-weight: 800; background: var(--strip-bg);">
-            <td>Net Liquid Assets Ratio</td>
+            <td>Net Available Capital</td>
             <td style="text-align: right; color:var(--primary-dark);">₹{{"{:,}".format(receivables_outstanding - payables_outstanding + bank_balance)}}</td>
           </tr>
         </tbody>
@@ -398,7 +398,7 @@ document.addEventListener("DOMContentLoaded", function() {
       labels: {{ month_labels|tojson }},
       datasets: [
         { label: "Cash Inflows", data: {{ inflows|tojson }}, borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.1)", fill: true, tension: 0.3 },
-        { label: "Cash Outflows", data: {{ outflows|tojson }}, borderColor: "#f43f5e", backgroundColor: "rgba(244, 63, 94, 0.1)", fill: true, tension: 0.3 }
+        { label: "Cash Outflows", data: {{ outflows|tojson }}, borderColor: "#f59e0b", backgroundColor: "rgba(245, 158, 11, 0.1)", fill: true, tension: 0.3 }
       ]
     }
   });
@@ -417,7 +417,7 @@ document.addEventListener("DOMContentLoaded", function() {
       labels: {{ expense_categories|tojson }},
       datasets: [{
         data: {{ expense_amounts|tojson }},
-        backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6"]
+        backgroundColor: ["#2563eb", "#3b82f6", "#10b981", "#0ea5e9", "#64748b", "#475569", "#94a3b8"]
       }]
     }
   });
@@ -444,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function() {
           {{ aging_summary.bucket_61_90 }},
           {{ aging_summary.bucket_above_90 }}
         ],
-        backgroundColor: ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#f43f5e"],
+        backgroundColor: ["#10b981", "#3b82f6", "#64748b", "#f59e0b", "#ea580c"],
         borderRadius: 6
       }]
     }

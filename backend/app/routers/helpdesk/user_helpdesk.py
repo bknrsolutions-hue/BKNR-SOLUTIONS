@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
+import os
+import shutil
 from datetime import datetime
 from app.utils.timezone import ist_now
 
@@ -125,6 +127,7 @@ async def get_ticket_messages(ticket_id: int, request: Request, db: Session = De
         msg_data.append({
             "sender_type": m.sender_type,
             "message": m.message,
+            "media_path": m.media_path,
             "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""
         })
 
@@ -135,18 +138,34 @@ async def get_ticket_messages(ticket_id: int, request: Request, db: Session = De
 async def send_reply(
     request: Request, 
     ticket_id: int = Form(...), 
-    message: str = Form(...),
+    message: str = Form(None),
+    file: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
     if not email:
         raise HTTPException(status_code=401)
 
+    media_path = None
+    if file and file.filename:
+        # Guarantee static folder exists
+        upload_dir = "app/static/uploads/support"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file with secure timestamp prefix
+        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
+        dest_path = os.path.join(upload_dir, filename)
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        media_path = f"/static/uploads/support/{filename}"
+
     new_msg = TicketMessage(
         ticket_id=ticket_id,
         sender_email=email,
         sender_type="USER",
-        message=message
+        message=message or "",
+        media_path=media_path
     )
     db.add(new_msg)
     

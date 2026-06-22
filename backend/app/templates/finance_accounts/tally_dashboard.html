@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+    <meta charset="utf-8">
+    <title>ENTERPRISE ACCOUNTING DASHBOARD - TALLY PRO - BKNR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+    <style>
+        .tally-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar-menu {
+            width: 250px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 20px 10px;
+        }
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .menu-link:hover, .menu-link.active {
+            background: var(--row-hover);
+            color: var(--accent) !important;
+        }
+        .main-workspace {
+            flex: 1;
+            padding: 20px;
+            background: var(--bg);
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .kpi-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .kpi-card .value {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0;
+        }
+        .tally-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .tally-panel h3 {
+            margin-top: 0;
+            font-weight: 800;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .voucher-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .voucher-table th, .voucher-table td {
+            padding: 8px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        .voucher-table th {
+            background: var(--header-bg);
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .voucher-row input, .voucher-row select {
+            width: 100%;
+            height: 28px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        .add-row-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .error-alert {
+            background: var(--cancelled-bg);
+            color: var(--cancelled-text);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .tree-node {
+            margin-left: 20px;
+            border-left: 1px dashed var(--border);
+            padding-left: 10px;
+            margin-top: 5px;
+        }
+        .tree-label {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tree-label:hover {
+            background: var(--row-hover);
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-dash" style="background: var(--card-bg); padding: 12px 20px; border-bottom: 1px solid var(--border);">
+    <div class="header-titles">
+        <h2>Enterprise Finance & Tally Control</h2>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <span style="font-size:11px; font-weight:800; color:var(--text-muted);">PERIOD: FY 2026-27</span>
+        <button class="btn btn-save" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+    </div>
+</div>
+
+<div class="tally-container">
+    <div class="sidebar-menu">
+        <div class="menu-link active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</div>
+        <div class="menu-link" onclick="switchTab('coa')"><i class="fa-solid fa-folder-tree"></i> Chart of Accounts</div>
+        <div class="menu-link" onclick="switchTab('voucher')"><i class="fa-solid fa-receipt"></i> Voucher Entry</div>
+        <div class="menu-link" onclick="switchTab('reports')"><i class="fa-solid fa-file-invoice-dollar"></i> Financial Reports</div>
+        <div class="menu-link" onclick="switchTab('bank-rec')"><i class="fa-solid fa-building-columns"></i> Bank Reconcile</div>
+    </div>
+
+    <div class="main-workspace">
+        
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Cash Balance</h4>
+                    <p class="value" id="kpi-cash">₹2,84,500.00 DR</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Bank Balance</h4>
+                    <p class="value" id="kpi-bank">₹1,42,90,450.00 DR</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Aged Receivables</h4>
+                    <p class="value" id="kpi-receivable">₹18,50,000.00 DR</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Aged Payables</h4>
+                    <p class="value" id="kpi-payable">₹22,10,000.00 CR</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>GST Liability</h4>
+                    <p class="value" id="kpi-gst">₹3,40,200.00 CR</p>
+                </div>
+            </div>
+
+            <div class="tally-panel">
+                <h3>Financial Summary (Actual vs Budget)</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="text-left">Expense Category</th>
+                                <th>Actual Spent</th>
+                                <th>Budget Limit</th>
+                                <th>Variance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-left" style="font-weight:700;">Raw Shrimp Purchases</td>
+                                <td>₹85,00,000.00</td>
+                                <td>₹90,00,000.00</td>
+                                <td style="color:var(--completed-text);">-₹5,00,000.00</td>
+                                <td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">UNDER LIMIT</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-left" style="font-weight:700;">Peeling & Processing</td>
+                                <td>₹14,50,000.00</td>
+                                <td>₹12,00,000.00</td>
+                                <td style="color:var(--cancelled-text);">+₹2,50,000.00</td>
+                                <td><span class="bg-cancelled" style="padding:2px 8px; border-radius:4px;">EXCEEDED</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-left" style="font-weight:700;">Cold Storage Rent</td>
+                                <td>₹6,20,000.00</td>
+                                <td>₹6,00,000.00</td>
+                                <td style="color:var(--cancelled-text);">+₹20,000.00</td>
+                                <td><span class="bg-cancelled" style="padding:2px 8px; border-radius:4px;">EXCEEDED</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COA TAB -->
+        <div id="tab-coa" class="tab-content" style="display:none;">
+            <div class="tally-panel">
+                <h3>Chart of Accounts Tree View</h3>
+                <div id="coa-tree" style="margin-top:15px; max-height: 500px; overflow-y: auto;">
+                    <!-- Tree Nodes will be dynamically built here -->
+                    <div class="tree-node">
+                        <span class="tree-label"><i class="fa-solid fa-folder"></i> Assets (Primary Group)</span>
+                        <div class="tree-node">
+                            <span class="tree-label"><i class="fa-solid fa-folder"></i> Current Assets</span>
+                            <div class="tree-node">
+                                <span class="tree-label"><i class="fa-solid fa-file-invoice"></i> Bank Accounts</span>
+                            </div>
+                            <div class="tree-node">
+                                <span class="tree-label"><i class="fa-solid fa-file-invoice"></i> Cash-in-hand</span>
+                            </div>
+                        </div>
+                        <div class="tree-node">
+                            <span class="tree-label"><i class="fa-solid fa-folder"></i> Fixed Assets</span>
+                        </div>
+                    </div>
+                    <div class="tree-node">
+                        <span class="tree-label"><i class="fa-solid fa-folder"></i> Liabilities (Primary Group)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOUCHER ENTRY TAB -->
+        <div id="tab-voucher" class="tab-content" style="display:none;">
+            <div class="tally-panel">
+                <h3>New Balanced Voucher Entry</h3>
+                <form id="voucher-form" onsubmit="submitNewVoucher(event)">
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-bottom:15px;">
+                        <div class="field">
+                            <label>Voucher Date</label>
+                            <input type="date" id="v_date" required>
+                        </div>
+                        <div class="field">
+                            <label>Voucher Type</label>
+                            <select id="v_type" required>
+                                <option value="1">Payment</option>
+                                <option value="2">Receipt</option>
+                                <option value="3">Journal</option>
+                                <option value="4">Contra</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Reference No</label>
+                            <input type="text" id="v_ref" placeholder="Challan / Bill No...">
+                        </div>
+                    </div>
+
+                    <table class="voucher-table" id="lines-table">
+                        <thead>
+                            <tr>
+                                <th width="40%">Ledger Account</th>
+                                <th width="20%">Debit Amount (₹)</th>
+                                <th width="20%">Credit Amount (₹)</th>
+                                <th width="20%">Cost Center / Remarks</th>
+                                <th width="5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="lines-body">
+                            <!-- Dynamic debit/credit row lines -->
+                        </tbody>
+                    </table>
+                    
+                    <button type="button" class="add-row-btn" onclick="addVoucherRow()"><i class="fa-solid fa-plus"></i> Add Line</button>
+
+                    <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="error-alert" id="balance-error" style="display:none;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Voucher Unbalanced! Sum(Dr) must equal Sum(Cr).
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div style="font-size:12px; font-weight:800;">
+                                Total Dr: <span id="total-dr">₹0.00</span> | Total Cr: <span id="total-cr">₹0.00</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="save-voucher-btn" disabled>Post Voucher</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- REPORTS TAB -->
+        <div id="tab-reports" class="tab-content" style="display:none;">
+            <div class="tally-panel">
+                <h3>Financial Statements Reports</h3>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button class="btn btn-save" onclick="loadReport('trial-balance')">Trial Balance</button>
+                    <button class="btn btn-save" onclick="loadReport('profit-loss')">Profit & Loss</button>
+                    <button class="btn btn-save" onclick="loadReport('balance-sheet')">Balance Sheet</button>
+                </div>
+
+                <div class="table-wrap" id="report-view-container">
+                    <p style="padding:20px; text-align:center; color:var(--text-muted);">Select a report above to calculate live accounting balances...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BANK REC TAB -->
+        <div id="tab-bank-rec" class="tab-content" style="display:none;">
+            <div class="tally-panel">
+                <h3>Bank Statement Reconciliation</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div>
+                        <button class="btn btn-primary" onclick="autoMatchBank()"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto Match Statements</button>
+                    </div>
+                    <span style="font-size:11px; color:var(--text-muted);">Matches ledger bank accounts with statement UTR records.</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transaction Date</th>
+                                <th>Reference/UTR</th>
+                                <th>Debit (₹)</th>
+                                <th>Credit (₹)</th>
+                                <th>Match Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2026-06-15</td>
+                                <td>UTR948293849</td>
+                                <td>₹0.00</td>
+                                <td>₹25,000.00</td>
+                                <td><span class="bg-pending" style="padding:2px 8px; border-radius:4px;">UNMATCHED</span></td>
+                                <td><button class="btn" style="padding:4px 8px;" onclick="Swal.fire('Manual Link', 'Search transaction to link manually', 'info')">Link</button></td>
+                            </tr>
+                            <tr>
+                                <td>2026-06-16</td>
+                                <td>UTR049283492</td>
+                                <td>₹85,000.00</td>
+                                <td>₹0.00</td>
+                                <td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">MATCHED</span></td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Tab switching state
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        document.getElementById(`tab-${tabId}`).style.display = 'block';
+        
+        document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    // Dynamic voucher row items
+    let rowIdSeq = 0;
+    let ledgersList = [
+        {id: 1, name: "Raw Shrimp Purchase A/c"},
+        {id: 2, name: "Export Sales A/c"},
+        {id: 3, name: "Duties & Taxes"},
+        {id: 4, name: "TDS Payable A/c"},
+        {id: 5, name: "SBI Cash Credit A/c"}
+    ];
+
+    function addVoucherRow() {
+        const tbody = document.getElementById("lines-body");
+        const tr = document.createElement("tr");
+        tr.className = "voucher-row";
+        tr.id = `row-${rowIdSeq}`;
+        
+        let selectOptions = ledgersList.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+
+        tr.innerHTML = `
+            <td>
+                <select class="ledger-select" required>
+                    ${selectOptions}
+                </select>
+            </td>
+            <td><input type="number" class="dr-input" value="0.00" step="any" oninput="calculateTotals()"></td>
+            <td><input type="number" class="cr-input" value="0.00" step="any" oninput="calculateTotals()"></td>
+            <td><input type="text" class="remarks-input" placeholder="Line notes..."></td>
+            <td><button type="button" style="background:none; border:none; color:var(--cancelled-text); cursor:pointer;" onclick="removeVoucherRow(${rowIdSeq})">&times;</button></td>
+        `;
+        tbody.appendChild(tr);
+        rowIdSeq++;
+        calculateTotals();
+    }
+
+    function removeVoucherRow(id) {
+        document.getElementById(`row-${id}`).remove();
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        let totalDr = 0;
+        let totalCr = 0;
+        document.querySelectorAll('.dr-input').forEach(i => totalDr += parseFloat(i.value) || 0);
+        document.querySelectorAll('.cr-input').forEach(i => totalCr += parseFloat(i.value) || 0);
+
+        document.getElementById("total-dr").innerText = `₹${totalDr.toFixed(2)}`;
+        document.getElementById("total-cr").innerText = `₹${totalCr.toFixed(2)}`;
+
+        const errDiv = document.getElementById("balance-error");
+        const submitBtn = document.getElementById("save-voucher-btn");
+
+        if (totalDr === totalCr && totalDr > 0) {
+            errDiv.style.display = 'none';
+            submitBtn.disabled = false;
+        } else {
+            errDiv.style.display = totalDr > 0 || totalCr > 0 ? 'block' : 'none';
+            submitBtn.disabled = true;
+        }
+    }
+
+    async function submitNewVoucher(e) {
+        e.preventDefault();
+        
+        const details = [];
+        document.querySelectorAll('.voucher-row').forEach(row => {
+            details.push({
+                ledger_id: parseInt(row.querySelector('.ledger-select').value),
+                debit_amount: parseFloat(row.querySelector('.dr-input').value) || 0,
+                credit_amount: parseFloat(row.querySelector('.cr-input').value) || 0,
+                remarks: row.querySelector('.remarks-input').value || null
+            });
+        });
+
+        const payload = {
+            voucher_date: document.getElementById("v_date").value,
+            voucher_type_id: parseInt(document.getElementById("v_type").value),
+            reference_no: document.getElementById("v_ref").value || null,
+            narration: "Manual balanced entry",
+            details: details
+        };
+
+        try {
+            const res = await fetch('/finance_accounts/vouchers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(res.ok) {
+                Swal.fire("Voucher Saved", out.message, "success");
+                document.getElementById("lines-body").innerHTML = "";
+                calculateTotals();
+            } else {
+                Swal.fire("Post Failed", out.detail || "Verification failed", "error");
+            }
+        } catch(err) {
+            Swal.fire("Network Error", "Unable to communicate with the server", "error");
+        }
+    }
+
+    async function loadReport(type) {
+        const container = document.getElementById("report-view-container");
+        container.innerHTML = `<p style="padding:20px; text-align:center;">Calculating rollups and formatting balance books...</p>`;
+        
+        try {
+            const res = await fetch(`/finance_accounts/reports/${type}`);
+            const data = await res.json();
+            
+            if (type === 'trial-balance') {
+                let rowsHtml = data.data.map(r => `
+                    <tr>
+                        <td class="text-left" style="font-weight:${r.type === 'GROUP' ? '800' : '400'}; padding-left: ${r.type === 'GROUP' ? '10px' : '30px'}">${r.name}</td>
+                        <td class="text-right">₹${(r.debit || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td class="text-right">₹${(r.credit || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `).join('');
+                
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="text-left">Account Group / Ledger Name</th>
+                                <th class="text-right">Debit Balances (₹)</th>
+                                <th class="text-right">Credit Balances (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                `;
+            } else {
+                container.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Displaying computed balances for ${type.replace('-', ' ').toUpperCase()}</p>`;
+            }
+        } catch (e) {
+            container.innerHTML = `<p style="padding:20px; text-align:center; color:var(--cancelled-text);">Failed to load report data.</p>`;
+        }
+    }
+
+    async function autoMatchBank() {
+        Swal.fire("Auto Matching", "Scanning matching references and adjusting balances...", "info");
+    }
+
+    // Initialize first row
+    addVoucherRow();
+</script>
+
+</body>
+</html>

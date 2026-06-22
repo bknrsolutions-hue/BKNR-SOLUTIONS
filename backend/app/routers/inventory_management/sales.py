@@ -24,7 +24,7 @@ def clean_po(val):
     return re.sub(r'[^a-zA-Z0-9]', '', str(val)).lower().strip()
 
 # -------------------------------------------------------------------------
-# 1️⃣ SALES REPORT PAGE (WITH UNIVERSAL FILTERS INJECTION SETUP)
+# 1️⃣ SALES REPORT PAGE (WITH PO WISE GROUPING & PRORATED COSTS)
 # -------------------------------------------------------------------------
 @router.get("/sales_report", response_class=HTMLResponse)
 def sales_report(request: Request, db: Session = Depends(get_db)):
@@ -43,14 +43,23 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     prod_names = db.query(production_for).filter(production_for.company_id == company_code).all()
     unique_companies = [c.production_for for c in prod_names if c.production_for]
 
+    # 🟢 FIX: Order by PO Number first, then Invoice Date
     sales_q = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
     if production_for_filter:
         sales_q = sales_q.filter(func.trim(sales_dispatch.company_name) == func.trim(production_for_filter))
-    sales_data = sales_q.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
+    sales_data = sales_q.order_by(sales_dispatch.po_number, sales_dispatch.invoice_date.desc()).all()
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
 
+    # Calculate Total KG per PO (to prorate costs if a PO is split across multiple invoices)
+    po_total_kg = {}
+    for s in sales_data:
+        sale_po = clean_po(s.po_number)
+        qty = float(s.no_of_mc or 0) * weight_map.get(str(s.packing_style).strip(), 1.0)
+        po_total_kg[sale_po] = po_total_kg.get(sale_po, 0) + qty
+
+    # Stock Map
     stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
     if location:
         stock_q = stock_q.filter(func.trim(stock_entry.production_at) == func.trim(location))
@@ -67,25 +76,33 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
                 val = float(row.quantity or 0) * float(row.product_kg_value or 0)
             stock_map[po] = stock_map.get(po, 0) + val
 
+    # Freight & Packing Maps
     freight_map = {clean_po(c.po_number): float(c.lended_total or 0) for c in db.query(ContainerLog).filter(ContainerLog.company_id == company_code).all() if clean_po(c.po_number)}
     packing_map = {clean_po(p.po_number): float(p.grand_total or 0) for p in db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == company_code).all() if clean_po(p.po_number)}
 
     processed = []
-    current_invoice, sl_no = None, 0
+    current_po, sl_no = None, 0
 
     for s in sales_data:
-        if s.invoice_no != current_invoice:
+        # 🟢 FIX: Group SL_NO by PO Number instead of Invoice Number
+        if s.po_number != current_po:
             sl_no += 1
-            current_invoice = s.invoice_no
+            current_po = s.po_number
 
         qty = float(s.no_of_mc or 0) * weight_map.get(str(s.packing_style).strip(), 1.0)
         usd = qty * float(s.price or 0)
         inr = usd * float(s.exchange_rate or 83.5)
         
         sale_po = clean_po(s.po_number)
-        stock_val = stock_map.get(sale_po, 0)
-        f_cost = freight_map.get(sale_po, 0)
-        p_cost = packing_map.get(sale_po, 0)
+        
+        # 🟢 FIX: Cost Proration (పలు ఇన్వాయిస్లు ఉంటే ఖర్చులను KGల ఆధారంగా విభజించడం)
+        total_qty_for_po = po_total_kg.get(sale_po, 1) or 1
+        qty_ratio = qty / total_qty_for_po
+
+        stock_val = stock_map.get(sale_po, 0) * qty_ratio
+        f_cost = freight_map.get(sale_po, 0) * qty_ratio
+        p_cost = packing_map.get(sale_po, 0) * qty_ratio
+        
         pl = inr - (stock_val + f_cost + p_cost)
 
         s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl

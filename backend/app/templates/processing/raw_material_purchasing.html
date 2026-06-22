@@ -361,12 +361,12 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 
   <div class="section-title" style="margin-top: 25px;"><i class="fa-solid fa-weight-scale"></i> Qty & Pricing</div>
   <div class="form-grid">
-    <div class="field"><label>G1 Qty</label><input type="number" step="0.01" name="g1_qty" id="g1" value="{{edit_data.g1_qty if edit_data else 0}}" autocomplete="off"></div>
-    <div class="field"><label>G2 Qty</label><input type="number" step="0.01" name="g2_qty" id="g2" value="{{edit_data.g2_qty if edit_data else 0}}" autocomplete="off"></div>
-    <div class="field"><label>DC Qty</label><input type="number" step="0.01" name="dc_qty" id="dc" value="{{edit_data.dc_qty if edit_data else 0}}" autocomplete="off"></div>
-    <div class="field"><label>Total Received</label><input type="number" step="0.01" id="received_qty" name="received_qty" value="{{edit_data.received_qty if edit_data else 0}}" readonly autocomplete="off"></div>
-    <div class="field"><label>Rate / KG</label><input type="number" step="0.01" name="rate_per_kg" id="rate" value="{{edit_data.rate_per_kg if edit_data else 0}}" autocomplete="off"></div>
-    <div class="field"><label>Total Amount</label><input type="number" step="0.01" id="amount" name="amount" value="{{edit_data.amount if edit_data else 0}}" readonly autocomplete="off"></div>
+    <div class="field"><label>Grade 1 Weight (KG)</label><input type="number" step="0.01" name="g1_qty" id="g1" value="{{edit_data.g1_qty if edit_data else 0}}" autocomplete="off"></div>
+    <div class="field"><label>Grade 2 Weight (KG)</label><input type="number" step="0.01" name="g2_qty" id="g2" value="{{edit_data.g2_qty if edit_data else 0}}" autocomplete="off"></div>
+    <div class="field"><label>Drained Weight (KG)</label><input type="number" step="0.01" name="dc_qty" id="dc" value="{{edit_data.dc_qty if edit_data else 0}}" autocomplete="off"></div>
+    <div class="field"><label>Total Weight (KG)</label><input type="number" step="0.01" id="received_qty" name="received_qty" value="{{edit_data.received_qty if edit_data else 0}}" readonly autocomplete="off"></div>
+    <div class="field"><label>Rate per KG</label><input type="number" step="0.01" name="rate_per_kg" id="rate" value="{{edit_data.rate_per_kg if edit_data else 0}}" autocomplete="off"></div>
+    <div class="field"><label>Total Amount (₹)</label><input type="number" step="0.01" id="amount" name="amount" value="{{edit_data.amount if edit_data else 0}}" readonly autocomplete="off"></div>
   </div>
 
   <div class="field" style="margin-top: 15px;">
@@ -393,23 +393,23 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
                 <th class="w-id">ID</th>
                 <th class="w-dt">Date</th>
                 <th class="w-tm">Time</th>
-                <th class="w-bt">Batch</th>
+                <th class="w-bt">Batch Number</th>
                 <th class="w-comp">Company</th>
-                <th class="w-loc">Receiving At</th>
+                <th class="w-loc">Location</th>
                 <th class="w-hsn">HSN Code</th>
                 <th class="w-sp">Supplier Name</th>
                 <th class="w-vr">Variety</th>
                 <th class="w-sp">Species</th>
                 <th class="w-ct">Count</th>
-                <th class="w-bx">Boxes</th>
-                <th class="w-qt">G1 Qty</th>
-                <th class="w-qt">G2 Qty</th>
-                <th class="w-qt">DC Qty</th>
-                <th class="w-qt">Total Qty</th>
-                <th class="w-rt">Rate</th>
-                <th class="w-amt">Amount</th>
+                <th class="w-bx">Material Boxes</th>
+                <th class="w-qt">Grade 1 Qty (KG)</th>
+                <th class="w-qt">Grade 2 Qty (KG)</th>
+                <th class="w-qt">Drained Qty (KG)</th>
+                <th class="w-qt">Total Weight (KG)</th>
+                <th class="w-rt">Rate per KG</th>
+                <th class="w-amt">Total Amount (₹)</th>
                 <th class="w-rem">Remarks</th>
-                <th class="w-usr">User</th>
+                <th class="w-usr">Registered By</th>
             </tr>
         </thead>
         <tbody id="logTableBody">

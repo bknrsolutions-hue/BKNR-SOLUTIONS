@@ -97,7 +97,7 @@
         .action-btn:hover { opacity: 0.9; }
 
         /* ==========================================================
-           🌟 KPI CARDS (SYNCED)
+           🌟 KPI CARDS
         ========================================================== */
         .kpi-grid { padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
@@ -128,32 +128,60 @@
         /* ==========================================================
            🌟 CHARTS SECTION 
         ========================================================== */
-        .chart-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 16px 16px; }
+        .chart-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 16px; 
+            padding: 0 16px 16px; 
+            align-items: start; 
+        }
+        @media(max-width: 1200px) { .chart-grid { grid-template-columns: repeat(2, 1fr); } }
         @media(max-width: 992px) { .chart-grid { grid-template-columns: 1fr; } }
         
-        .chart-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; height: 260px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
-        .chart-box h3 { font-size: 11px; font-weight: 800; margin-bottom: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;}
-        .chart-container-inner { flex-grow: 1; position: relative; width: 100%; }
+        .chart-box { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 16px; 
+            height: 300px; 
+            box-shadow: var(--shadow-sm); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+        .chart-box h3 { 
+            font-size: 11px; font-weight: 800; margin-bottom: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-shrink: 0;
+        }
+        .chart-container-inner { 
+            flex-grow: 1; position: relative; width: 100%; min-height: 0; height: 100%; 
+        }
 
         /* ==========================================================
            🌟 FILTERS BAR (CUSTOM SEARCHABLE DROPDOWNS)
         ========================================================== */
         .filter-panel-wrapper { padding: 0 16px 16px; }
-        .filters { display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; transition: 0.3s; }
-        .filters::-webkit-scrollbar { height: 4px; }
-        .filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .filters { 
+            display: flex; 
+            flex-wrap: wrap !important; 
+            gap: 12px; 
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border); 
+            transition: 0.3s; 
+        }
         
-        .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; flex-shrink: 0 !important; min-width: 130px; }
+        .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; min-width: 130px; flex: 1 1 auto;}
         .fbox label { font-size: 8px; text-transform: uppercase; font-weight: 700; padding-left: 2px; color: var(--primary); }
 
         .searchable-dropdown-container { position: relative; width: 100%; }
-        .dropdown-display-box { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--card-bg); cursor: pointer; font-weight: 600; color: var(--text); display: flex; justify-content: space-between; align-items: center; height: 26px !important; }
+        .dropdown-display-box { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--bg); cursor: pointer; font-weight: 600; color: var(--text); display: flex; justify-content: space-between; align-items: center; height: 26px !important; }
         .dropdown-search-wrapper { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; margin-top: 4px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); z-index: 1000; max-height: 250px; overflow-y: auto; }
         .dropdown-search-wrapper input { border: none; border-bottom: 1px solid var(--border); padding: 6px 8px; font-size: 10px; width: 100%; outline: none; position: sticky; top: 0; background: var(--card-bg); z-index: 10; color: var(--text); }
         .dropdown-options-list { list-style: none; padding: 0; margin: 0; }
         .dropdown-options-list li { padding: 6px 8px; cursor: pointer; font-weight: 600; font-size: 10px; color: var(--text); }
         .dropdown-options-list li:hover, .dropdown-options-list li.selected-option { background: var(--accent-light); color: var(--accent); }
-        .fbox input.main-search-field { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--card-bg); outline: none; width: 100%; color: var(--text); font-weight: 600; height: 26px !important; border-left: 3px solid var(--accent) !important; }
+        .fbox input.main-search-field { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--bg); outline: none; width: 100%; color: var(--text); font-weight: 600; height: 26px !important; border-left: 3px solid var(--accent) !important; }
 
         /* ==========================================================
            🌟 TABLES SECTION 
@@ -257,33 +285,21 @@
             <label style="color:var(--accent)">Financial Year *</label>
             <div class="searchable-dropdown-container">
                 <div class="dropdown-display-box" onclick="toggleSearchDropdown('dropdown_fy')">
-                    <span id="label_fy">
-                        {% set initial_fy = "" %}
-                        {% set start_yr = 2024 %}
-                        {% set end_yr = 2027 %}
-                        {% for y in range(start_yr, end_yr) %}
-                            {% if selected_fy == y|string %}
-                                FY {{ y }}-{{ (y|int) + 1 }}
-                                {% set initial_fy = y|string %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ "FY " ~ initial_fy ~ "-" ~ (initial_fy|int + 1) if initial_fy != "" else "ALL FY" }}
-                    </span>
+                    <span id="label_fy">Loading...</span>
                     <i class="fas fa-chevron-down text-muted small"></i>
                 </div>
                 <div class="dropdown-search-wrapper" id="dropdown_fy">
                     <input type="text" placeholder="Search FY..." onkeyup="filterDropdownList('dropdown_fy', this.value)">
                     <ul class="dropdown-options-list">
-                        <li onclick="selectFY('ALL', 'ALL FY')">ALL FY</li>
+                        <li onclick="selectFY('ALL')">ALL FY</li>
+                        {% set start_yr = 2024 %}
+                        {% set end_yr = 2027 %}
                         {% for y in range(start_yr, end_yr) %}
-                        <li class="{% if selected_fy == y|string %}selected-option{% endif %}"
-                            onclick="selectFY('{{ y }}','FY {{ y }}-{{ (y|int)+1 }}')">
-                            FY {{ y }}-{{ (y|int)+1 }}
-                        </li>
+                        <li onclick="selectFY('{{ y }}')">FY {{ y }}-{{ (y|int)+1 }}</li>
                         {% endfor %}
                     </ul>
                 </div>
-                <input type="hidden" id="f_fy" value="{{ selected_fy }}">
+                <input type="hidden" id="f_fy" value="">
             </div>
         </div>
 
@@ -403,7 +419,7 @@
         <table class="rm-table">
             <thead>
                 <tr>
-                    <th>#</th><th>Invoice No</th><th>Date</th><th style="text-align:left;">Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>PO No</th><th>Container</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing</th><th>MC</th><th>KG</th><th style="background:var(--accent-light); color:var(--accent);">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:var(--danger-light); color:var(--danger);">Profit/Loss</th><th>Status</th><th>Company</th>
+                    <th>#</th><th>PO No</th><th>Invoice No</th><th>Date</th><th style="text-align:left;">Buyer</th><th>Country</th><th>Brand</th><th>Variety</th><th>Grade</th><th>Container</th><th>S.Bill</th><th>Glaze (C/W)</th><th>Packing</th><th>MC</th><th>KG</th><th style="background:var(--accent-light); color:var(--accent);">Ex. Rate</th><th>USD Value</th><th>INR Value</th><th>Stock Cost</th><th>Freight</th><th>Packing Cost</th><th style="background:var(--danger-light); color:var(--danger);">Profit/Loss</th><th>Status</th><th>Company</th>
                 </tr>
             </thead>
             <tbody id="tbody">
@@ -418,6 +434,7 @@
                         data-variety="{{ s.variety }}" data-inv="{{ s.invoice_no }}" data-po="{{ s.po_number }}">
                         
                         <td class="m-sl"></td>
+                        <td class="m-po" style="color:var(--accent); font-weight:800;">{{ s.po_number }}</td>
                         <td class="m-inv">{{ s.invoice_no }}</td>
                         <td class="m-date">{{ s.invoice_date }}</td>
                         <td style="text-align:left;"><strong>{{ s.buyer_name }}</strong></td>
@@ -425,7 +442,6 @@
                         <td>{{ s.brand }}</td>
                         <td>{{ s.variety }}</td>
                         <td>{{ s.grade }}</td>
-                        <td class="m-po">{{ s.po_number }}</td>
                         <td class="m-cont">{{ s.container_no if s.container_no else '' }}</td>
                         <td class="m-sbill">{{ s.shipping_bill if s.shipping_bill else '' }}</td>
                         <td>{{ s.count_glaze }} / {{ s.weight_glaze }}</td>
@@ -497,21 +513,36 @@ document.addEventListener('click', function(event) {
     }
 });
 
-function selectFY(year, label) {
+function selectFY(year) {
     const url = new URL(window.location);
-    if (!year || year === 'ALL') { url.searchParams.delete('fy'); } 
-    else { url.searchParams.set('fy', year); }
+    url.searchParams.set('fy', year); 
     window.location.href = url.href;
 }
 
 function setDefaultFY() {
     const urlParams = new URLSearchParams(window.location.search);
+    const fyInput = document.getElementById('f_fy');
+    const fyLabel = document.getElementById('label_fy');
+
     if (!urlParams.has('fy')) {
         const today = new Date();
         const currentMonth = today.getMonth(); 
         const currentYear = today.getFullYear();
         const dynamicFY = currentMonth >= 3 ? currentYear : currentYear - 1;
-        document.getElementById('f_fy').value = dynamicFY;
+        
+        fyInput.value = dynamicFY;
+        fyLabel.innerText = "FY " + dynamicFY + "-" + (dynamicFY + 1);
+        
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('fy', dynamicFY);
+        window.history.replaceState({}, '', newUrl);
+    } else if (urlParams.get('fy') === 'ALL') {
+        fyInput.value = 'ALL';
+        fyLabel.innerText = 'ALL FY';
+    } else {
+        const y = parseInt(urlParams.get('fy'));
+        fyInput.value = y;
+        fyLabel.innerText = "FY " + y + "-" + (y + 1);
     }
 }
 
@@ -552,10 +583,11 @@ function resetMergedCell(tr, className) {
     if (!cell) {
         cell = document.createElement('td');
         cell.className = className;
+        // Updated Insert positions according to new table structure
         if(className === 'm-sl') tr.insertBefore(cell, tr.firstChild);
-        else if(className === 'm-inv') tr.insertBefore(cell, tr.children[1]);
-        else if(className === 'm-date') tr.insertBefore(cell, tr.children[2]);
-        else if(className === 'm-po') tr.insertBefore(cell, tr.children[8]);
+        else if(className === 'm-po') tr.insertBefore(cell, tr.children[1]);
+        else if(className === 'm-inv') tr.insertBefore(cell, tr.children[2]);
+        else if(className === 'm-date') tr.insertBefore(cell, tr.children[3]);
         else if(className === 'm-cont') tr.insertBefore(cell, tr.children[9]);
         else if(className === 'm-sbill') tr.insertBefore(cell, tr.children[10]);
     }
@@ -590,13 +622,28 @@ function runAnalytics() {
     let fyRange = (fyF && fyF !== 'ALL') ? getFYDates(fyF) : null;
 
     document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
-    const mergeClasses = ['m-sl', 'm-inv', 'm-date', 'm-po', 'm-cont', 'm-sbill'];
-    document.querySelectorAll('.data-row').forEach(tr => { mergeClasses.forEach(cls => resetMergedCell(tr, cls)); });
+    // 🌟 FIX: Array order matches columns 🌟
+    const mergeClasses = ['m-sl', 'm-po', 'm-inv', 'm-date', 'm-cont', 'm-sbill'];
+    
+    // Sort rows by PO Number first so grouping works perfectly
+    let tbody = document.getElementById('tbody');
+    let rowsArray = Array.from(tbody.querySelectorAll('.data-row'));
+    rowsArray.sort((a, b) => {
+        let poA = a.dataset.po.toUpperCase();
+        let poB = b.dataset.po.toUpperCase();
+        if (poA < poB) return -1;
+        if (poA > poB) return 1;
+        return 0;
+    });
+    rowsArray.forEach(tr => tbody.appendChild(tr));
+
+    // Reset cells
+    rowsArray.forEach(tr => { mergeClasses.forEach(cls => resetMergedCell(tr, cls)); });
 
     let visibleRows = [];
-    let uniqueInvs = [];
+    let uniquePOs = [];
 
-    document.querySelectorAll('.data-row').forEach(tr => {
+    rowsArray.forEach(tr => {
         let match = true;
         const rowDate = new Date(tr.dataset.dt);
 
@@ -612,7 +659,7 @@ function runAnalytics() {
         if(match) {
             tr.style.display = "";
             visibleRows.push(tr);
-            if (!uniqueInvs.includes(tr.dataset.inv)) uniqueInvs.push(tr.dataset.inv);
+            if (!uniquePOs.includes(tr.dataset.po)) uniquePOs.push(tr.dataset.po); // 🌟 FIX: Tracking Unique POs instead of Inv 🌟
 
             const rev = parse(tr.querySelector('.v-inr').innerText), usd = parse(tr.querySelector('.v-usd').innerText);
             const pl = parse(tr.querySelector('.v-pl').innerText), log = parse(tr.querySelector('.v-fr').innerText);
@@ -634,36 +681,34 @@ function runAnalytics() {
         } else { tr.style.display = "none"; }
     });
 
+    // 🌟 FIX: Group by PO Number 🌟
     let groupCounts = {};
-    visibleRows.forEach(tr => { groupCounts[tr.dataset.inv] = (groupCounts[tr.dataset.inv] || 0) + 1; });
+    visibleRows.forEach(tr => { groupCounts[tr.dataset.po] = (groupCounts[tr.dataset.po] || 0) + 1; });
 
     let trackedGroups = [];
     visibleRows.forEach((tr) => {
-        let inv = tr.dataset.inv;
-        if (!trackedGroups.includes(inv)) {
-            trackedGroups.push(inv);
-            let spanCount = groupCounts[inv];
+        let poNo = tr.dataset.po;
+        if (!trackedGroups.includes(poNo)) {
+            trackedGroups.push(poNo);
+            let spanCount = groupCounts[poNo];
             
-            let slCell = tr.querySelector('.m-sl'); slCell.innerText = uniqueInvs.length - uniqueInvs.indexOf(inv); slCell.setAttribute('rowspan', spanCount); slCell.className = "m-sl merged-cell sl-no-merged";
-            let invCell = tr.querySelector('.m-inv'); invCell.setAttribute('rowspan', spanCount); invCell.className = "m-inv merged-cell";
-            let dateCell = tr.querySelector('.m-date'); dateCell.setAttribute('rowspan', spanCount); dateCell.className = "m-date merged-cell";
+            let slCell = tr.querySelector('.m-sl'); slCell.innerText = uniquePOs.indexOf(poNo) + 1; slCell.setAttribute('rowspan', spanCount); slCell.className = "m-sl merged-cell sl-no-merged";
             let poCell = tr.querySelector('.m-po'); poCell.setAttribute('rowspan', spanCount); poCell.className = "m-po merged-cell";
-            let contCell = tr.querySelector('.m-cont'); contCell.setAttribute('rowspan', spanCount); contCell.className = "m-cont merged-cell";
-            let sbillCell = tr.querySelector('.m-sbill'); sbillCell.setAttribute('rowspan', spanCount); sbillCell.className = "m-sbill merged-cell";
+            // Removed other merges to let Invoice Date etc flow naturally. If you want them merged too, you can add them back.
         } else {
-            tr.querySelector('.m-sl').remove(); tr.querySelector('.m-inv').remove(); tr.querySelector('.m-date').remove();
-            tr.querySelector('.m-po').remove(); tr.querySelector('.m-cont').remove(); tr.querySelector('.m-sbill').remove();
+            tr.querySelector('.m-sl').remove(); 
+            tr.querySelector('.m-po').remove(); 
         }
     });
 
-    let currentInv = null;
+    let currentPO = null;
     let subMc = 0, subKg = 0, subUsd = 0, subInr = 0, subSt = 0, subFr = 0, subPk = 0, subPl = 0;
 
-    const insertSubtotal = (afterRow, invNo) => {
+    const insertSubtotal = (afterRow, poNoDisplay) => {
         const subTr = document.createElement('tr'); subTr.className = 'subtotal-row';
         subTr.innerHTML = `
-            <td style="text-align:left;" colspan="2">SUBTOTAL (${invNo})</td>
-            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td style="text-align:left;" colspan="12">PO SUBTOTAL (${poNoDisplay})</td>
+            <td></td>
             <td>${subMc.toLocaleString()}</td>
             <td>${subKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             <td></td>
@@ -678,12 +723,30 @@ function runAnalytics() {
         afterRow.parentNode.insertBefore(subTr, afterRow.nextSibling);
     };
 
+    // 🌟 FIX: Calculate Subtotals by PO 🌟
     for (let i = 0; i < visibleRows.length; i++) {
-        const tr = visibleRows[i]; const inv = tr.dataset.inv;
-        if (currentInv !== null && currentInv !== inv) { insertSubtotal(visibleRows[i-1], currentInv); subMc = 0; subKg = 0; subUsd = 0; subInr = 0; subSt = 0; subFr = 0; subPk = 0; subPl = 0; }
-        currentInv = inv;
-        subMc += parseInt(tr.querySelector('.v-mc').innerText) || 0; subKg += parse(tr.querySelector('.v-kg').innerText); subUsd += parse(tr.querySelector('.v-usd').innerText); subInr += parse(tr.querySelector('.v-inr').innerText); subSt += parse(tr.querySelector('.v-st').innerText); subFr += parse(tr.querySelector('.v-fr').innerText); subPk += parse(tr.querySelector('.v-pk').innerText); subPl += parse(tr.querySelector('.v-pl').innerText);
-        if (i === visibleRows.length - 1) { insertSubtotal(tr, currentInv); }
+        const tr = visibleRows[i]; 
+        const poNo = tr.dataset.po;
+        
+        if (currentPO !== null && currentPO !== poNo) { 
+            insertSubtotal(visibleRows[i-1], currentPO); 
+            subMc = 0; subKg = 0; subUsd = 0; subInr = 0; subSt = 0; subFr = 0; subPk = 0; subPl = 0; 
+        }
+        
+        currentPO = poNo;
+        
+        subMc += parseInt(tr.querySelector('.v-mc').innerText) || 0; 
+        subKg += parse(tr.querySelector('.v-kg').innerText); 
+        subUsd += parse(tr.querySelector('.v-usd').innerText); 
+        subInr += parse(tr.querySelector('.v-inr').innerText); 
+        subSt += parse(tr.querySelector('.v-st').innerText); 
+        subFr += parse(tr.querySelector('.v-fr').innerText); 
+        subPk += parse(tr.querySelector('.v-pk').innerText); 
+        subPl += parse(tr.querySelector('.v-pl').innerText);
+        
+        if (i === visibleRows.length - 1) { 
+            insertSubtotal(tr, currentPO); 
+        }
     }
 
     updateKPIs(d); renderCharts(d);
