@@ -1,8 +1,7 @@
 from datetime import date, datetime
 from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship, declarative_base
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from app.database import Base  # Fixed: use central Base (was declarative_base())
 
 class CustomerReceivable(Base):
     __tablename__ = 'customer_receivables'
@@ -81,7 +80,11 @@ class VendorPayment(Base):
     status = Column(String, default="Unpaid")          # Unpaid / Partially Paid / Paid
     document_path = Column(String, nullable=True)        # Vendor Invoice Scan Attachment
     remarks = Column(Text, nullable=True)
-    
+
+    # --- Accounting Integration (Added) ---
+    bank_master_id = Column(Integer, nullable=True)     # FK → bank_masters.id (which bank account)
+    journal_id = Column(Integer, nullable=True)          # FK → voucher_headers.id (Supplier Dr / Bank Cr)
+
     created_by = Column(String, nullable=False)
     updated_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -172,20 +175,25 @@ class JournalEntryLine(Base):
 
 # ─── MASTER ACCOUNTING AND REMITTANCE LEDGERS ───
 
-class LedgerMaster(Base):
+# ─── LEGACY LEDGER MASTER (Simple version — kept for backward compatibility) ───
+# NOTE: The full-featured LedgerMaster is in enterprise_finance.py (table: ledger_masters)
+# This table (ledger_master) is the older simple version used by PaymentReceipt.
+# New code should reference enterprise_finance.LedgerMaster instead.
+class LedgerMasterLegacy(Base):
     __tablename__ = "ledger_master"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
     ledger_name = Column(String, unique=True, index=True, nullable=False)
     ledger_group = Column(String, index=True, nullable=False)            # e.g., Sundry Debtors
     ledger_type = Column(String, nullable=True)                          # ASSET / LIABILITY / INCOME / EXPENSE
-    
+
     # Statutory Compliance Registrations
     gst_no = Column(String, nullable=True)
     pan_no = Column(String, nullable=True)
     state = Column(String, nullable=True)
-    
+
     opening_balance = Column(Float, default=0.0)
     balance_type = Column(String, default="DR")                          # DR / CR
     address = Column(Text, nullable=True)

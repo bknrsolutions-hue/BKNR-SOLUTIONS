@@ -416,6 +416,72 @@ tr:hover { background: var(--hover-bg); }
   .hide-mobile { display: none !important; }
   .header-title h2 { font-size: 13px; }
 }
+
+.module-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 14px;
+}
+.module-main { min-width: 0; }
+.module-rail {
+  position: sticky;
+  top: 14px;
+  height: calc(100vh - 28px);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-premium);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.rail-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rail-section { margin-top: 14px; }
+.rail-section:first-of-type { margin-top: 0; }
+.rail-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 0 0 8px;
+}
+.rail-link {
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: 0.2s;
+}
+.rail-link i { width: 16px; color: var(--accent-blue); text-align: center; }
+.rail-link:hover { color: var(--accent-blue); border-color: var(--accent-blue); background: var(--sub-bg); }
+
+@media(max-width: 992px) {
+  .module-shell { grid-template-columns: 1fr; }
+  .module-rail { display: none; }
+  .module-main { width: 100%; }
+}
+@media(max-width: 560px) {
+  .module-shell { padding: 8px; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 
@@ -437,6 +503,28 @@ tr:hover { background: var(--hover-bg); }
 <body>
 
 <div class="dashboard-container">
+<div class="module-shell">
+  <aside class="module-rail">
+    <div class="rail-title"><i class="fa-solid fa-users-gear"></i> HRMS</div>
+    <div class="rail-section">
+      <div class="rail-label">Forms</div>
+      <a class="rail-link" href="/attendance/employee/register"><i class="fa-solid fa-id-card-clip"></i><span>Staff Registration</span></a>
+      <a class="rail-link" href="/attendance/employee-increment"><i class="fa-solid fa-arrow-trend-up"></i><span>Increment Details</span></a>
+      <a class="rail-link" href="/attendance/daily"><i class="fa-solid fa-fingerprint"></i><span>Daily Attendance</span></a>
+      <a class="rail-link" href="/attendance/tax-master"><i class="fa-solid fa-file-shield"></i><span>Payroll Master</span></a>
+      <a class="rail-link" href="/attendance/salary-advance"><i class="fa-solid fa-hand-holding-dollar"></i><span>Salary Advance</span></a>
+      <a class="rail-link" href="/finance_accounts/salary_processing/entry"><i class="fa-solid fa-calculator"></i><span>Salary Processing</span></a>
+      <a class="rail-link" href="/attendance/shifts"><i class="fa-solid fa-clock"></i><span>Shift Master</span></a>
+    </div>
+    <div class="rail-section">
+      <div class="rail-label">Reports</div>
+      <a class="rail-link" href="/attendance/salary/monthly-sheet"><i class="fa-solid fa-money-check-dollar"></i><span>Monthly Salary Sheet</span></a>
+      <a class="rail-link" href="/attendance/today_all"><i class="fa-solid fa-clipboard-user"></i><span>Today Attendance</span></a>
+      <a class="rail-link" href="/attendance/audit_all"><i class="fa-solid fa-clock-rotate-left"></i><span>Attendance Audit</span></a>
+      <a class="rail-link" href="/dashboard/hr_command_center"><i class="fa-solid fa-chart-pie"></i><span>HR Dashboard</span></a>
+    </div>
+  </aside>
+  <main class="module-main">
 
   <!-- ================================================
        📌 HEADER
@@ -1418,6 +1506,8 @@ tr:hover { background: var(--hover-bg); }
     </div>
   </div>
 
+  </main>
+</div>
 </div><!-- /.dashboard-container -->
 
 

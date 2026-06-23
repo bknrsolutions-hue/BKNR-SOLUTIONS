@@ -280,6 +280,7 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                   <label class="item-label"><input type="checkbox" name="access" value="processing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-chart-line"></i> Processing Dashboard <span class="badge-tag">LIVE</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="inventory_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Inventory Dashboard <span class="badge-tag">LIVE</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="hr_command_center" onchange="updateSelectedCount()"><i class="fa-solid fa-user-tie"></i> HR Command Center <span class="badge-tag">LIVE</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="export_documents_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-export"></i> Export Documents Dashboard <span class="badge-tag">LIVE</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="costing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard <span class="badge-tag">LIVE</span></label>
                 </div>
               </div>
@@ -328,16 +329,25 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                 </div>
                 <div class="category-title"><i class="fa-solid fa-money-bill-transfer"></i> Receivables & Payables</div>
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="customer_receivables" onchange="updateSelectedCount()"><i class="fa-solid fa-money-bill-transfer"></i> Customer Receivables <span class="badge-tag">AR</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="vendor_payments" onchange="updateSelectedCount()"><i class="fa-solid fa-money-check-dollar"></i> Vendor Payments <span class="badge-tag">AP</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="expense_vouchers" onchange="updateSelectedCount()"><i class="fa-solid fa-file-circle-dollar"></i> Expense Vouchers <span class="badge-tag">VCHR</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="customer_receivable" onchange="updateSelectedCount()"><i class="fa-solid fa-money-bill-transfer"></i> Customer Receivables <span class="badge-tag">AR</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="vendor_payment" onchange="updateSelectedCount()"><i class="fa-solid fa-money-check-dollar"></i> Vendor Payments <span class="badge-tag">AP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="expense_voucher" onchange="updateSelectedCount()"><i class="fa-solid fa-file-circle-dollar"></i> Expense Vouchers <span class="badge-tag">VCHR</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="export_incentive_register" onchange="updateSelectedCount()"><i class="fa-solid fa-award"></i> Export Incentives <span class="badge-tag">EXP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="lc_tracking" onchange="updateSelectedCount()"><i class="fa-solid fa-file-shield"></i> LC Tracking <span class="badge-tag">LC</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="salary_processing" onchange="updateSelectedCount()"><i class="fa-solid fa-calculator"></i> Salary Processing <span class="badge-tag">PAY</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="production_cost_allocation" onchange="updateSelectedCount()"><i class="fa-solid fa-coins"></i> Production Cost Allocation <span class="badge-tag">COST</span></label>
                 </div>
                 <div class="category-title"><i class="fa-solid fa-building-columns"></i> Banking & Ledger</div>
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="bank_transactions" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Transactions <span class="badge-tag">BANK</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="payment_receipts" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Payment Receipts <span class="badge-tag">PAY</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="journal_entries" onchange="updateSelectedCount()"><i class="fa-solid fa-book"></i> Journal Entries <span class="badge-tag">JV</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="bank_transaction" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Transactions <span class="badge-tag">BANK</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="payment_receipt" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Payment Receipts <span class="badge-tag">PAY</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="journal_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-book"></i> Journal Entries <span class="badge-tag">JV</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="ledger_master" onchange="updateSelectedCount()"><i class="fa-solid fa-book-open"></i> Ledger Master <span class="badge-tag">LEDGER</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="bank_master" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Master <span class="badge-tag">BANK</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="item_accounting_link" onchange="updateSelectedCount()"><i class="fa-solid fa-link"></i> Item Accounting Link <span class="badge-tag">GL</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="fixed_assets" onchange="updateSelectedCount()"><i class="fa-solid fa-building"></i> Fixed Assets <span class="badge-tag">FA</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="gst_register" onchange="updateSelectedCount()"><i class="fa-solid fa-percent"></i> GST Register <span class="badge-tag">GST</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="tally_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-chart-pie"></i> Tally Dashboard <span class="badge-tag">Acc</span></label>
                 </div>
               </div>
             </div>
@@ -361,6 +371,7 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                   <label class="item-label"><input type="checkbox" name="access" value="shipping_bill" onchange="updateSelectedCount()"><i class="fa-solid fa-file-contract"></i> Shipping Bill <span class="badge-tag">DOC</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="bill_of_lading" onchange="updateSelectedCount()"><i class="fa-solid fa-anchor"></i> Bill Of Lading <span class="badge-tag">DOC</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="health_certificate" onchange="updateSelectedCount()"><i class="fa-solid fa-certificate"></i> Health Certificate <span class="badge-tag">CERT</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="export_supporting_documents" onchange="updateSelectedCount()"><i class="fa-solid fa-folder-open"></i> Supporting Documents <span class="badge-tag">DOC</span></label>
                 </div>
               </div>
             </div>
@@ -461,6 +472,10 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                 <div class="category-title"><i class="fa-solid fa-coins"></i> Finance Masters</div>
                 <div class="items-grid">
                   <label class="item-label"><input type="checkbox" name="access" value="hsn_codes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> HSN Codes <span class="badge-tag">FinM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="bank_master" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Master <span class="badge-tag">FinM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="item_accounting_link" onchange="updateSelectedCount()"><i class="fa-solid fa-link"></i> Item Accounting Link <span class="badge-tag">FinM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="fixed_assets" onchange="updateSelectedCount()"><i class="fa-solid fa-building"></i> Fixed Assets <span class="badge-tag">FinM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="gst_register" onchange="updateSelectedCount()"><i class="fa-solid fa-percent"></i> GST Register <span class="badge-tag">FinM</span></label>
                 </div>
               </div>
             </div>

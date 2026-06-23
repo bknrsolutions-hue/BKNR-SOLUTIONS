@@ -44,6 +44,8 @@ import app.database.models.requirements
 import app.database.models.payments
 import app.database.models.invoices
 import app.database.models.enterprise_finance
+import app.database.models.gst_models
+import app.database.models.assets
 import app.database.models.advanced_seafood_erp
 
 # Create all tables on startup if they don't exist
@@ -223,6 +225,11 @@ application.include_router(export_documents_router, prefix="/export_documents")
 # =====================================================
 # 📄 6. BASIC ROUTES
 # =====================================================
+@application.get("/tally_dashboard", response_class=HTMLResponse)
+async def legacy_tally_dashboard_redirect():
+    return RedirectResponse("/finance_accounts/tally_dashboard", status_code=303)
+
+
 @application.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     if request.session.get("email"):

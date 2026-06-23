@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Export Documents Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f1f5f9;
+    --panel: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --green: #059669;
+    --amber: #d97706;
+    --rose: #e11d48;
+    --shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+[data-theme="dark"] {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: "Plus Jakarta Sans", sans-serif; }
+body { background: var(--bg); color: var(--text); font-size: 12px; }
+.module-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; padding: 16px; min-height: 100vh; }
+.module-rail {
+    position: sticky;
+    top: 16px;
+    height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+}
+.rail-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.rail-section { margin-top: 14px; }
+.rail-section:first-of-type { margin-top: 0; }
+.rail-label { font-size: 9px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.rail-link {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    margin-bottom: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.rail-link i { width: 16px; color: var(--accent); text-align: center; }
+.rail-link:hover { color: var(--text); border-color: var(--accent); background: rgba(37, 99, 235, 0.08); }
+.module-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.header {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: var(--shadow);
+}
+.header h1 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.badge { padding: 6px 10px; border-radius: 7px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; }
+.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media(min-width: 900px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+.kpi {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: 0.2s;
+}
+.kpi:hover { transform: translateY(-2px); border-color: var(--accent); }
+.kpi-top { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; }
+.kpi-top i { color: var(--accent); font-size: 15px; }
+.kpi-val { margin-top: 12px; font-size: 26px; line-height: 1; font-weight: 800; }
+.content-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media(min-width: 1100px) { .content-grid { grid-template-columns: 1fr 1fr; } }
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+.panel-head { padding: 13px 15px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+th { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; }
+td { font-size: 11px; font-weight: 700; }
+tr:last-child td { border-bottom: none; }
+.empty { padding: 26px; text-align: center; color: var(--muted); font-weight: 700; }
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+.modal.open { display: flex; }
+.modal-box { width: min(1180px, 96vw); height: 90vh; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.modal-head { padding: 13px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-head h3 { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+.close-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+.close-btn:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+#moduleFrame { flex: 1; width: 100%; border: 0; background: var(--bg); }
+@media(max-width: 900px) {
+    .module-shell { grid-template-columns: 1fr; padding: 12px; }
+    .module-rail { display: none; }
+    .module-main { width: 100%; }
+}
+@media(max-width: 560px) {
+    .module-shell { padding: 8px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .header { align-items: flex-start; flex-direction: column; }
+}
+</style>
+<script>
+function syncThemeFromParent() {
+    try {
+        if (window.parent && window.parent.document) {
+            const theme = window.parent.document.documentElement.getAttribute("data-theme");
+            if (theme) document.documentElement.setAttribute("data-theme", theme);
+        }
+    } catch(e) {}
+}
+syncThemeFromParent();
+</script>
+</head>
+<body>
+<div class="module-shell">
+    <aside class="module-rail">
+        <div class="rail-title"><i class="fa-solid fa-ship"></i> Export Docs</div>
+        <div class="rail-section">
+            <div class="rail-label">Documents</div>
+            <button class="rail-link" onclick="openModule('/export_documents/export_shipment/entry', 'Export Shipment')"><i class="fa-solid fa-ship"></i><span>Export Shipment</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/commercial_invoice/entry', 'Commercial Invoice')"><i class="fa-solid fa-file-invoice"></i><span>Commercial Invoice</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/packing_list/entry', 'Packing List')"><i class="fa-solid fa-file-lines"></i><span>Packing List</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/container_stuffing/entry', 'Container Stuffing')"><i class="fa-solid fa-truck-ramp-box"></i><span>Container Stuffing</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/shipping_bill/entry', 'Shipping Bill')"><i class="fa-solid fa-clipboard-check"></i><span>Shipping Bill</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/bill_of_lading/entry', 'Bill of Lading')"><i class="fa-solid fa-file-contract"></i><span>Bill of Lading</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/health_certificate/entry', 'Health Certificate')"><i class="fa-solid fa-file-medical"></i><span>Health Certificate</span></button>
+            <button class="rail-link" onclick="openModule('/export_documents/supporting_documents/entry', 'Supporting Documents')"><i class="fa-solid fa-folder-open"></i><span>Supporting Documents</span></button>
+        </div>
+        <div class="rail-section">
+            <div class="rail-label">Finance Links</div>
+            <button class="rail-link" onclick="openModule('/finance_accounts/export_incentive_register/entry', 'Export Incentives')"><i class="fa-solid fa-award"></i><span>Export Incentives</span></button>
+            <button class="rail-link" onclick="openModule('/finance_accounts/lc_tracking/entry', 'LC Tracking')"><i class="fa-solid fa-file-shield"></i><span>LC Tracking</span></button>
+            <button class="rail-link" onclick="openModule('/finance_accounts/gst_register/entry', 'GST Register')"><i class="fa-solid fa-percent"></i><span>GST Register</span></button>
+        </div>
+    </aside>
+
+    <main class="module-main">
+        <div class="header">
+            <h1><i class="fa-solid fa-file-export" style="color:var(--accent);"></i> Export Documents Dashboard</h1>
+            <div class="badge">{{ company_id }}</div>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi" onclick="openModule('/export_documents/export_shipment/entry', 'Export Shipments')"><div class="kpi-top"><span>Shipments</span><i class="fa-solid fa-ship"></i></div><div class="kpi-val">{{ stats.shipments }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/commercial_invoice/entry', 'Commercial Invoices')"><div class="kpi-top"><span>Invoices</span><i class="fa-solid fa-file-invoice"></i></div><div class="kpi-val">{{ stats.invoices }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/packing_list/entry', 'Packing Lists')"><div class="kpi-top"><span>Packing Lists</span><i class="fa-solid fa-file-lines"></i></div><div class="kpi-val">{{ stats.packing_lists }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/container_stuffing/entry', 'Container Stuffing')"><div class="kpi-top"><span>Stuffing</span><i class="fa-solid fa-truck-ramp-box"></i></div><div class="kpi-val">{{ stats.stuffing }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/shipping_bill/entry', 'Shipping Bills')"><div class="kpi-top"><span>Shipping Bills</span><i class="fa-solid fa-clipboard-check"></i></div><div class="kpi-val">{{ stats.shipping_bills }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/bill_of_lading/entry', 'Bills of Lading')"><div class="kpi-top"><span>BL</span><i class="fa-solid fa-file-contract"></i></div><div class="kpi-val">{{ stats.bill_of_lading }}</div></div>
+            <div class="kpi" onclick="openModule('/export_documents/health_certificate/entry', 'Health Certificates')"><div class="kpi-top"><span>Health Cert.</span><i class="fa-solid fa-file-medical"></i></div><div class="kpi-val">{{ stats.health_certificates }}</div></div>
+            <div class="kpi"><div class="kpi-top"><span>Compliance</span><i class="fa-solid fa-shield-halved"></i></div><div class="kpi-val">{{ stats.compliance }}</div></div>
+        </div>
+
+        <div class="content-grid">
+            <section class="panel">
+                <div class="panel-head"><i class="fa-solid fa-clock-rotate-left"></i> Recent Shipments</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Shipment</th><th>Invoice</th><th>Buyer</th><th>ETD</th><th>ETA</th></tr></thead>
+                        <tbody>
+                        {% for row in recent_shipments %}
+                            <tr><td>{{ row.shipment_no }}</td><td>{{ row.invoice_no or '-' }}</td><td>{{ row.buyer_name }}</td><td>{{ row.etd or '-' }}</td><td>{{ row.eta or '-' }}</td></tr>
+                        {% else %}
+                            <tr><td colspan="5"><div class="empty">No shipments found</div></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="panel">
+                <div class="panel-head"><i class="fa-solid fa-file-invoice-dollar"></i> Recent Invoices</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Invoice</th><th>Shipment</th><th>Buyer</th><th>Currency</th><th>Amount</th></tr></thead>
+                        <tbody>
+                        {% for row in recent_invoices %}
+                            <tr><td>{{ row.invoice_no }}</td><td>{{ row.shipment_no }}</td><td>{{ row.buyer_name }}</td><td>{{ row.currency }}</td><td>{{ "{:,.2f}".format(row.total_amount or 0) }}</td></tr>
+                        {% else %}
+                            <tr><td colspan="5"><div class="empty">No invoices found</div></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<div class="modal" id="moduleModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="moduleTitle">Module</h3>
+            <button class="close-btn" onclick="closeModule()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <iframe id="moduleFrame"></iframe>
+    </div>
+</div>
+
+<script>
+function openModule(url, title) {
+    document.getElementById("moduleTitle").innerText = title;
+    document.getElementById("moduleFrame").src = url;
+    document.getElementById("moduleModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+}
+function closeModule() {
+    document.getElementById("moduleModal").classList.remove("open");
+    document.getElementById("moduleFrame").src = "";
+    document.body.style.overflow = "auto";
+    window.location.reload();
+}
+document.getElementById("moduleModal").addEventListener("click", function(e) {
+    if (e.target === this) closeModule();
+});
+</script>
+</body>
+</html>

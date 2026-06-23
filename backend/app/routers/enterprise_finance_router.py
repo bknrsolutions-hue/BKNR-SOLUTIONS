@@ -19,6 +19,97 @@ from app.services.accounting_reports import AccountingReportsService
 
 router = APIRouter()
 
+DEFAULT_ACCOUNT_GROUPS = [
+    ("Capital Account", "EQUITY", None),
+    ("Current Assets", "ASSET", None),
+    ("Bank Accounts", "ASSET", "Current Assets"),
+    ("Cash-in-hand", "ASSET", "Current Assets"),
+    ("Sundry Debtors", "ASSET", "Current Assets"),
+    ("Loans & Advances", "ASSET", "Current Assets"),
+    ("Stock-in-hand", "ASSET", "Current Assets"),
+    ("Fixed Assets", "ASSET", None),
+    ("Current Liabilities", "LIABILITY", None),
+    ("Sundry Creditors", "LIABILITY", "Current Liabilities"),
+    ("Duties & Taxes", "LIABILITY", "Current Liabilities"),
+    ("Provisions", "LIABILITY", "Current Liabilities"),
+    ("Loans", "LIABILITY", None),
+    ("Sales Accounts", "INCOME", None),
+    ("Direct Incomes", "INCOME", None),
+    ("Indirect Incomes", "INCOME", None),
+    ("Purchase Accounts", "EXPENSE", None),
+    ("Direct Expenses", "EXPENSE", None),
+    ("Indirect Expenses", "EXPENSE", None),
+]
+
+DEFAULT_VOUCHER_TYPES = [
+    ("Contra", "CON"),
+    ("Payment", "PAY"),
+    ("Receipt", "RCT"),
+    ("Journal", "JV"),
+    ("Purchase", "PUR"),
+    ("Sales", "SAL"),
+    ("Debit Note", "DN"),
+    ("Credit Note", "CN"),
+]
+
+DEFAULT_LEDGERS = [
+    ("Cash Account", "Cash-in-hand", "ASSET"),
+    ("SBI Cash Credit A/c", "Bank Accounts", "ASSET"),
+    ("Raw Shrimp Purchase A/c", "Purchase Accounts", "EXPENSE"),
+    ("Export Sales A/c", "Sales Accounts", "INCOME"),
+    ("Input GST A/c", "Duties & Taxes", "LIABILITY"),
+    ("Output GST A/c", "Duties & Taxes", "LIABILITY"),
+    ("TDS Payable A/c", "Duties & Taxes", "LIABILITY"),
+    ("Salaries & Wages Expense A/c", "Indirect Expenses", "EXPENSE"),
+    ("Salaries Payable A/c", "Current Liabilities", "LIABILITY"),
+    ("Cold Storage Rent & Handling A/c", "Indirect Expenses", "EXPENSE"),
+    ("Freight & Logistics Expense A/c", "Direct Expenses", "EXPENSE"),
+    ("Packing Material Purchase A/c", "Purchase Accounts", "EXPENSE"),
+    ("Finished Goods Inventory A/c", "Stock-in-hand", "ASSET"),
+    ("Work In Progress A/c", "Stock-in-hand", "ASSET"),
+    ("Cost of Goods Sold A/c", "Direct Expenses", "EXPENSE"),
+    ("Export Incentive Receivable A/c", "Loans & Advances", "ASSET"),
+    ("Export Incentive Income A/c", "Indirect Incomes", "INCOME"),
+    ("Fixed Assets A/c", "Fixed Assets", "ASSET"),
+    ("Accumulated Depreciation A/c", "Provisions", "LIABILITY"),
+    ("Depreciation Expense A/c", "Indirect Expenses", "EXPENSE"),
+    ("Fixed Asset Payable A/c", "Sundry Creditors", "LIABILITY"),
+]
+
+
+def ensure_default_accounting_setup(db: Session, company_id: str, email: str = "SYSTEM") -> dict:
+    created = {"groups": 0, "voucher_types": 0, "ledgers": 0}
+
+    for group_name, group_type, parent_name in DEFAULT_ACCOUNT_GROUPS:
+        before = db.query(AccountGroup).filter(
+            AccountGroup.company_id == company_id,
+            AccountGroup.group_name == group_name
+        ).first()
+        PostingEngineService.get_or_create_group(db, company_id, group_name, group_type, parent_name)
+        if not before:
+            created["groups"] += 1
+
+    for type_name, prefix in DEFAULT_VOUCHER_TYPES:
+        before = db.query(VoucherType).filter(
+            VoucherType.company_id == company_id,
+            VoucherType.name == type_name
+        ).first()
+        PostingEngineService.get_or_create_voucher_type(db, company_id, type_name, prefix)
+        if not before:
+            created["voucher_types"] += 1
+
+    for ledger_name, group_name, group_type in DEFAULT_LEDGERS:
+        ledger = db.query(LedgerMaster).filter(
+            LedgerMaster.company_id == company_id,
+            LedgerMaster.ledger_name == ledger_name
+        ).first()
+        if not ledger:
+            PostingEngineService.get_or_create_ledger(db, company_id, ledger_name, group_name, group_type)
+            created["ledgers"] += 1
+
+    db.commit()
+    return created
+
 # =========================================================================
 # SCHEMAS FOR VALIDATIONS
 # =========================================================================
@@ -133,6 +224,19 @@ def get_ledgers(request: Request, db: Session = Depends(get_db)):
         ]
     }
 
+@router.get("/voucher-types")
+def get_voucher_types(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
+    rows = db.query(VoucherType).filter(VoucherType.company_id == comp_code).order_by(VoucherType.name).all()
+    return {
+        "success": True,
+        "data": [
+            {"id": row.id, "name": row.name, "prefix": row.prefix, "next_number": row.next_number}
+            for row in rows
+        ]
+    }
+
 @router.post("/ledgers")
 def create_ledger(request: Request, payload: LedgerCreate, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code", "VNBK2162")
@@ -224,7 +328,10 @@ def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session =
     comp_code = request.session.get("company_code", "VNBK2162")
     email = request.session.get("email", "system@bknr.com")
     
-    v_type = db.query(VoucherType).filter(VoucherType.id == payload.voucher_type_id).first()
+    v_type = db.query(VoucherType).filter(
+        VoucherType.id == payload.voucher_type_id,
+        VoucherType.company_id == comp_code
+    ).first()
     if not v_type:
         raise HTTPException(status_code=404, detail="Voucher type configuration not found")
 
@@ -254,10 +361,10 @@ def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session =
             details=details_mapped,
             reference_no=payload.reference_no,
             created_by=email,
-            status='DRAFT' # Created as draft first
+            status='POSTED'
         )
         db.commit()
-        return {"success": True, "message": f"Voucher created in DRAFT status: {voucher.voucher_no}", "voucher_id": voucher.id}
+        return {"success": True, "message": f"Voucher posted successfully: {voucher.voucher_no}", "voucher_id": voucher.id}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -343,6 +450,69 @@ def report_ledger_statement(request: Request, ledger_id: int, start_date: date, 
     statement = AccountingReportsService.get_ledger_statement(db, ledger_id, start_date, end_date)
     return {"success": True, "data": statement}
 
+@router.get("/reports/day-book")
+def report_day_book(request: Request, target_date: Optional[date] = None, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    return {"success": True, "data": AccountingReportsService.get_day_book(db, comp_code, target_date or date.today())}
+
+@router.get("/reports/gst-summary")
+def report_gst_summary(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    return {"success": True, "data": AccountingReportsService.get_gst_summary(db, comp_code, start_date, end_date)}
+
+@router.get("/dashboard/summary")
+def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
+    as_of_date = date.today()
+    tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date)
+    fy_start = date(as_of_date.year if as_of_date.month >= 4 else as_of_date.year - 1, 4, 1)
+    pl = AccountingReportsService.get_profit_and_loss(db, comp_code, fy_start, as_of_date)
+    bs = AccountingReportsService.get_balance_sheet(db, comp_code, as_of_date)
+    day_book = AccountingReportsService.get_day_book(db, comp_code, as_of_date)
+
+    cash_bank = sum(
+        row["balance"] for row in tb
+        if row["type"] == "LEDGER" and row["group_type"] == "ASSET"
+        and any(token in row["name"].lower() for token in ["cash", "bank", "sbi", "hdfc", "icici"])
+    )
+    receivables = sum(
+        row["balance"] for row in tb
+        if row["type"] == "LEDGER" and row["group_type"] == "ASSET"
+        and any(token in row["name"].lower() for token in ["customer", "debtor", "receivable"])
+    )
+    payables = abs(sum(
+        row["balance"] for row in tb
+        if row["type"] == "LEDGER" and row["group_type"] == "LIABILITY"
+        and any(token in row["name"].lower() for token in ["supplier", "creditor", "payable", "tds", "gst"])
+    ))
+
+    return {
+        "success": True,
+        "as_of_date": as_of_date.isoformat(),
+        "kpis": {
+            "cash_bank": cash_bank,
+            "receivables": receivables,
+            "payables": payables,
+            "income": pl["total_income"],
+            "expense": pl["total_expense"],
+            "net_profit": pl["net_profit"],
+            "assets": bs["total_assets"],
+            "liabilities": bs["total_liabilities"],
+            "equity": bs["total_equity"],
+            "day_vouchers": len(day_book),
+        },
+        "balance_sheet_balanced": bs["is_balanced"],
+        "balance_sheet_difference": bs["difference"],
+    }
+
+@router.post("/setup/defaults")
+def setup_default_accounting(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    email = request.session.get("email", "SYSTEM")
+    created = ensure_default_accounting_setup(db, comp_code, email)
+    return {"success": True, "message": "Default Tally-style accounting masters are ready.", "created": created}
+
 # =========================================================================
 # 5. BANK RECONCILIATION API
 # =========================================================================
@@ -383,11 +553,12 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
 # 6. HTML PAGE LOADERS
 # =========================================================================
 @router.get("/tally_dashboard")
-def get_tally_dashboard(request: Request):
+def get_tally_dashboard(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code", "VNBK2162")
+    ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
     templates = request.app.state.templates
     return templates.TemplateResponse(
         request=request,
         name="finance_accounts/tally_dashboard.html",
         context={"request": request}
     )
-

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                if (parentTheme) document.documentElement.setAttribute("data-theme", parentTheme);
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+    <meta charset="utf-8">
+    <title>GST Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+    <style>
+        *{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+        body{margin:0;background:var(--bg);color:var(--text);padding-bottom:40px}
+        .header-dash,.filter-bar,.section-header{background:var(--card-bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:10px 20px}
+        .header-titles h2{margin:0;font-size:15px;font-weight:800}
+        .filter-bar{justify-content:flex-start;gap:8px;flex-wrap:wrap}
+        .filter-item{display:flex;flex-direction:column;gap:2px;flex:0 0 180px}
+        label{font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase}
+        input,select,textarea{padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);font-size:12px}
+        .filter-item input{height:30px;padding:4px 8px}
+        .btn-add,.btn-clear{border:0;border-radius:6px;height:30px;padding:0 12px;font-size:11px;font-weight:800;cursor:pointer}
+        .btn-add{background:var(--accent);color:#fff}.btn-clear{background:var(--text-muted);color:#fff}
+        .table-wrap{margin:0 20px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;overflow:auto}
+        table{width:100%;border-collapse:collapse;font-size:11px;min-width:1050px}
+        th{background:var(--header-bg);padding:8px;color:var(--text-muted);text-transform:uppercase}
+        td{padding:8px;border-bottom:1px solid var(--border);text-align:center;font-weight:600}
+        .text-left{text-align:left}.text-right{text-align:right}
+        tr.selected-row{background:var(--row-hover)!important;border-left:4px solid var(--accent)}
+        .modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
+        .modal-content{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;width:95%;max-width:880px;max-height:90vh;overflow:auto;padding:20px}
+        .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .field{display:flex;flex-direction:column;gap:4px}.checkbox-field{flex-direction:row;align-items:center;padding-top:18px}
+        .tabs{display:flex;gap:8px;margin:10px 20px}.tab-btn{background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-weight:800;font-size:11px;cursor:pointer}.tab-btn.active{background:var(--accent);color:#fff}
+    </style>
+</head>
+<body>
+<div class="header-dash"><div class="header-titles"><h2>GST Register & Returns</h2></div></div>
+<div class="filter-bar">
+    <div class="filter-item"><label>Search GST</label><input id="searchBox" onkeyup="applyFilters()" placeholder="Invoice / Party / GSTIN"></div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+</div>
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('gst', this)">GST Register</button>
+    <button class="tab-btn" onclick="showTab('filing', this)">Return Filing</button>
+    <button class="tab-btn" onclick="showTab('itc', this)">ITC Ledger</button>
+</div>
+
+<div id="tab-gst">
+    <div class="section-header"><div id="rowCount">0 ENTRIES FOUND</div><button class="btn-add" onclick="openModal('gstModal')"><i class="fa-solid fa-plus"></i> GST ENTRY</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Sl</th><th>Type</th><th>Invoice</th><th>Date</th><th class="text-left">Party</th><th>GSTIN</th><th>HSN</th><th class="text-right">Taxable</th><th class="text-right">Tax</th><th class="text-right">Total</th><th>Period</th><th>Action</th></tr></thead><tbody id="tableBody">
+    {% if not history %}<tr><td colspan="12" style="padding:40px;color:var(--text-muted)">No GST entries yet.</td></tr>{% endif %}
+    {% for row in history %}
+    <tr class="data-row"><td>{{ loop.index }}</td><td>{{ row.transaction_type }}</td><td>{{ row.invoice_no }}</td><td>{{ row.invoice_date }}</td><td class="text-left">{{ row.party_name or '-' }}</td><td>{{ row.gstin or '-' }}</td><td>{{ row.hsn_code or '-' }}</td><td class="text-right">{{ "{:,.2f}".format(row.taxable_value or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.total_tax or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.invoice_total or 0) }}</td><td>{{ row.period_month }}</td><td><button class="btn-clear" onclick="deleteGst('{{ row.id }}')">Delete</button></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+
+<div id="tab-filing" style="display:none">
+    <div class="section-header"><div>GSTR Filing Status</div><button class="btn-add" onclick="openModal('filingModal')"><i class="fa-solid fa-plus"></i> FILING</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Return</th><th>Period</th><th class="text-right">Output Tax</th><th class="text-right">ITC</th><th class="text-right">Net Payable</th><th class="text-right">Paid</th><th>Status</th><th>ARN</th></tr></thead><tbody>
+    {% for row in filings %}<tr><td>{{ row.return_type }}</td><td>{{ row.period_month }}</td><td class="text-right">{{ "{:,.2f}".format(row.total_output_tax or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.total_input_credit or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.net_gst_payable or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.gst_paid_amount or 0) }}</td><td>{{ row.status }}</td><td>{{ row.arn_number or '-' }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div id="tab-itc" style="display:none">
+    <div class="section-header"><div>Input Tax Credit Utilization</div><button class="btn-add" onclick="openModal('itcModal')"><i class="fa-solid fa-plus"></i> ITC</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Period</th><th>Type</th><th class="text-right">Opening</th><th class="text-right">Earned</th><th class="text-right">Reversed</th><th class="text-right">Utilized</th><th class="text-right">Closing</th></tr></thead><tbody>
+    {% for row in itc_rows %}<tr><td>{{ row.period_month }}</td><td>{{ row.gst_type }}</td><td class="text-right">{{ "{:,.2f}".format(row.opening_itc or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.itc_earned or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.itc_reversed or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.itc_utilized or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.closing_itc or 0) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="modal" id="gstModal"><div class="modal-content"><h3>GST Register Entry</h3><form onsubmit="saveGst(event)"><div class="form-grid">
+    <div class="field"><label>Type</label><select id="transaction_type"><option>PURCHASE</option><option>SALES</option><option>EXPORT</option><option>RCM</option><option>CREDIT_NOTE</option><option>DEBIT_NOTE</option></select></div>
+    <div class="field"><label>Invoice No</label><input id="invoice_no" required></div><div class="field"><label>Invoice Date</label><input type="date" id="invoice_date" required></div>
+    <div class="field"><label>Party</label><input id="party_name"></div><div class="field"><label>GSTIN</label><input id="gstin"></div><div class="field"><label>State Code</label><input id="state_code"></div>
+    <div class="field"><label>HSN/SAC</label><input id="hsn_code"></div><div class="field"><label>Description</label><input id="description"></div><div class="field"><label>Period</label><input id="period_month" placeholder="YYYY-MM" required></div>
+    <div class="field"><label>Taxable Value</label><input type="number" step="any" id="taxable_value" value="0"></div><div class="field"><label>IGST %</label><input type="number" step="any" id="igst_rate" value="0"></div><div class="field"><label>CGST %</label><input type="number" step="any" id="cgst_rate" value="0"></div>
+    <div class="field"><label>SGST %</label><input type="number" step="any" id="sgst_rate" value="0"></div><div class="field"><label>LUT No</label><input id="lut_number"></div><div class="field checkbox-field"><input type="checkbox" id="is_export"><label>Export</label><input type="checkbox" id="is_rcm"><label>RCM</label></div>
+    </div><div style="margin-top:16px;text-align:right"><button type="button" class="btn-clear" onclick="closeModal('gstModal')">Cancel</button> <button class="btn-add">Save</button></div></form></div></div>
+
+<div class="modal" id="filingModal"><div class="modal-content"><h3>GSTR Filing Status</h3><form onsubmit="saveFiling(event)"><div class="form-grid">
+    <div class="field"><label>Return Type</label><select id="return_type"><option>GSTR-1</option><option>GSTR-3B</option><option>GSTR-9</option><option>GSTR-9C</option></select></div><div class="field"><label>Period</label><input id="filing_period" placeholder="YYYY-MM" required></div><div class="field"><label>Status</label><select id="filing_status"><option>PENDING</option><option>PREPARED</option><option>FILED</option><option>LATE_FILED</option></select></div>
+    <div class="field"><label>Output Tax</label><input type="number" step="any" id="total_output_tax" value="0"></div><div class="field"><label>Input Credit</label><input type="number" step="any" id="total_input_credit" value="0"></div><div class="field"><label>Paid Amount</label><input type="number" step="any" id="gst_paid_amount" value="0"></div>
+    <div class="field"><label>Filing Date</label><input type="date" id="filing_date"></div><div class="field"><label>ARN</label><input id="arn_number"></div><div class="field"><label>Remarks</label><input id="filing_remarks"></div>
+    </div><div style="margin-top:16px;text-align:right"><button type="button" class="btn-clear" onclick="closeModal('filingModal')">Cancel</button> <button class="btn-add">Save</button></div></form></div></div>
+
+<div class="modal" id="itcModal"><div class="modal-content"><h3>ITC Utilization</h3><form onsubmit="saveItc(event)"><div class="form-grid">
+    <div class="field"><label>Period</label><input id="itc_period" placeholder="YYYY-MM" required></div><div class="field"><label>GST Type</label><select id="gst_type"><option>IGST</option><option>CGST</option><option>SGST</option></select></div><div class="field"><label>Opening ITC</label><input type="number" step="any" id="opening_itc" value="0"></div>
+    <div class="field"><label>ITC Earned</label><input type="number" step="any" id="itc_earned" value="0"></div><div class="field"><label>ITC Reversed</label><input type="number" step="any" id="itc_reversed" value="0"></div><div class="field"><label>ITC Utilized</label><input type="number" step="any" id="itc_utilized" value="0"></div>
+    </div><div style="margin-top:16px;text-align:right"><button type="button" class="btn-clear" onclick="closeModal('itcModal')">Cancel</button> <button class="btn-add">Save</button></div></form></div></div>
+
+<script>
+function showTab(id, btn){document.querySelectorAll('[id^="tab-"]').forEach(x=>x.style.display='none');document.getElementById('tab-'+id).style.display='block';document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function openModal(id){document.getElementById(id).style.display='flex'} function closeModal(id){document.getElementById(id).style.display='none'}
+function num(id){return parseFloat(document.getElementById(id).value)||0} function val(id){return document.getElementById(id).value||null}
+function applyFilters(){const q=val('searchBox').toLowerCase();let c=0;document.querySelectorAll('.data-row').forEach(r=>{const m=r.textContent.toLowerCase().includes(q);r.style.display=m?'':'none';if(m)c++});document.getElementById('rowCount').innerText=`${c} ENTRIES FOUND`} function resetFilters(){document.getElementById('searchBox').value='';applyFilters()}
+async function postJson(url,payload){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const o=await r.json();if(o.success)Swal.fire('Saved',o.message,'success').then(()=>location.reload());else Swal.fire('Error',o.message||o.detail||'Failed','error')}
+function saveGst(e){e.preventDefault();postJson('/finance_accounts/gst_register/save',{transaction_type:val('transaction_type'),invoice_no:val('invoice_no'),invoice_date:val('invoice_date'),party_name:val('party_name'),gstin:val('gstin'),state_code:val('state_code'),hsn_code:val('hsn_code'),description:val('description'),taxable_value:num('taxable_value'),igst_rate:num('igst_rate'),cgst_rate:num('cgst_rate'),sgst_rate:num('sgst_rate'),is_export:document.getElementById('is_export').checked,is_rcm:document.getElementById('is_rcm').checked,lut_number:val('lut_number'),period_month:val('period_month')})}
+function saveFiling(e){e.preventDefault();postJson('/finance_accounts/gstr_filing/save',{return_type:val('return_type'),period_month:val('filing_period'),total_output_tax:num('total_output_tax'),total_input_credit:num('total_input_credit'),gst_paid_amount:num('gst_paid_amount'),status:val('filing_status'),filing_date:val('filing_date'),arn_number:val('arn_number'),remarks:val('filing_remarks')})}
+function saveItc(e){e.preventDefault();postJson('/finance_accounts/itc_utilization/save',{period_month:val('itc_period'),gst_type:val('gst_type'),opening_itc:num('opening_itc'),itc_earned:num('itc_earned'),itc_reversed:num('itc_reversed'),itc_utilized:num('itc_utilized')})}
+async function deleteGst(id){if((await Swal.fire({title:'Delete GST entry?',showCancelButton:true,icon:'warning'})).isConfirmed){await fetch(`/finance_accounts/gst_register/delete/${id}`,{method:'POST'});location.reload()}}
+applyFilters();
+</script>
+</body>
+</html>

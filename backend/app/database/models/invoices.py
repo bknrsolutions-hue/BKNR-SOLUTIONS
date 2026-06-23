@@ -1,8 +1,7 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship, declarative_base
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, LargeBinary
+from sqlalchemy.orm import relationship
+from app.database import Base  # Fixed: use central Base (was declarative_base())
 
 class ExportShipment(Base):
     """
@@ -68,6 +67,31 @@ class ExportComplianceTracker(Base):
     shipment_rel = relationship("ExportShipment", back_populates="compliance_rel")
 
 
+class ExportDocumentFile(Base):
+    """
+    Stores generated and uploaded export-document PDFs in DB, with a filesystem
+    path for fast browser access.
+    """
+    __tablename__ = 'export_document_files'
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True, nullable=False)
+    module_name = Column(String, index=True, nullable=False)
+    record_id = Column(Integer, index=True, nullable=False)
+    document_no = Column(String, index=True, nullable=True)
+    document_kind = Column(String, default="GENERATED_PDF", index=True)
+    file_name = Column(String, nullable=False)
+    file_path = Column(String, nullable=True)
+    content_type = Column(String, default="application/pdf")
+    file_bytes = Column(LargeBinary, nullable=False)
+    file_size = Column(Integer, default=0)
+    version_no = Column(Integer, default=1)
+    is_current = Column(Boolean, default=True, index=True)
+    uploaded_by = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    remarks = Column(Text, nullable=True)
+
+
 class CommercialInvoice(Base):
     __tablename__ = 'commercial_invoices'
 
@@ -111,7 +135,15 @@ class CommercialInvoice(Base):
     # Attachments & Audit Controls
     document_path = Column(String, nullable=True)    # Path to Invoice Signed PDF Scan
     remarks = Column(Text, nullable=True)
-    
+
+    # --- Accounting Integration (Added) ---
+    # Journal created when invoice is POSTED
+    journal_id = Column(Integer, nullable=True)              # FK → voucher_headers.id (Sales Dr / Revenue Cr)
+    cogs_journal_id = Column(Integer, nullable=True)         # FK → voucher_headers.id (COGS Dr / FG Inventory Cr)
+    gstr1_updated = Column(Boolean, default=False)           # Set True after GSTR-1 auto-population
+    customer_ledger_id = Column(Integer, nullable=True)      # FK → ledger_masters.id
+    sales_ledger_id = Column(Integer, nullable=True)         # FK → ledger_masters.id
+
     created_by = Column(String, nullable=False)
     updated_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

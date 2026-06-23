@@ -54,10 +54,6 @@
     --card: var(--card-bg);
 }
 
-
-
-
-
 * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: 20px; transition: background 0.3s ease, color 0.3s ease; }
 
@@ -534,22 +530,51 @@ async function loadCounts() {
     });
 }
 
+// 🟢 MODIFIED TO INCLUDE PRODUCTION_FOR FILTER
 async function checkFloor() {
+    const production_for = document.getElementById('form_production_for').value;
     const loc = document.getElementById('form_loc').value;
     const b = document.getElementById('form_batch').value;
     const c = document.getElementById('form_count').value;
     const s = document.getElementById('form_species').value;
-    if(!loc || !b || !c || !s) { document.getElementById('floor_display').innerText = "0.00"; return; }
+    
+    if(!production_for || !loc || !b || !c || !s) { 
+        document.getElementById('floor_display').innerText = "0.00"; 
+        return; 
+    }
     
     try {
-        const params = new URLSearchParams({ location: loc, batch: b, count: c, species_name: s });
+        const params = new URLSearchParams({ 
+            production_for: production_for,
+            location: loc, 
+            batch: b, 
+            count: c, 
+            species_name: s 
+        });
+        
+        console.log("🟡 SENDING API PARAMS:", params.toString());
+        
         const response = await fetch(`/processing/get_available_qty?${params.toString()}`);
+        
+        if (!response.ok) {
+            console.error("🔴 API HTTP ERROR:", response.status, await response.text());
+            throw new Error("API Error");
+        }
+
         const data = await response.json();
+        console.log("🟢 API RESPONSE DATA:", data);
+        
         const avl = data.available_qty || 0;
         const display = document.getElementById('floor_display');
         display.innerText = avl.toFixed(2);
         display.style.color = avl > 0 ? "var(--accent)" : "var(--danger)";
-    } catch(e) { document.getElementById('floor_display').innerText = "0.00"; }
+        
+    } catch(e) { 
+        console.error("🔴 JS CATCH BLOCK ERROR:", e);
+        // Error vaste 0.00 badulu ERROR ani chupistham, appudu manaki exact ga artham avuthundi
+        document.getElementById('floor_display').innerText = "ERROR"; 
+        document.getElementById('floor_display').style.color = "var(--danger)";
+    }
 }
 
 function getRate() {

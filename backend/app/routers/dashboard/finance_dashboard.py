@@ -13,10 +13,10 @@ from app.database.models.payments import (
     BankTransaction,
     ExpenseVoucher,
     JournalEntry,
-    LedgerMaster,
     PaymentReceipt,
     BuyerAgingSummary
 )
+from app.database.models.enterprise_finance import LedgerMaster
 from app.database.models.criteria import production_for
 
 router = APIRouter(tags=["CORPORATE FINANCE DASHBOARD"])

@@ -1134,6 +1134,7 @@ const sidebarMenuData = [
             ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', 'LIVE'],
             ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', 'LIVE'],
             ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', 'LIVE'],
+            ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Docs', 'LIVE'],
             ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', 'LIVE'],
             ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', 'LIVE']
         ]
@@ -1150,7 +1151,8 @@ const sidebarMenuData = [
                     ['grading', '/processing/grading', 'fa-filter', 'Grading', 'WIP'],
                     ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling', 'WIP'],
                     ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking', 'WIP'],
-                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP']
+                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP'],
+                    ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'WIP']
                 ]
             },
             {
@@ -1165,13 +1167,17 @@ const sidebarMenuData = [
             {
                 name: "Export Documents",
                 items: [
+                    ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Dashboard', 'ExpOp'],
                     ['export_shipment', '/export_documents/export_shipment/entry', 'fa-ship', 'Export Shipments', 'ExpOp'],
                     ['commercial_invoice', '/export_documents/commercial_invoice/entry', 'fa-file-invoice', 'Commercial Invoices', 'ExpOp'],
                     ['packing_list', '/export_documents/packing_list/entry', 'fa-file-lines', 'Packing Lists', 'ExpOp'],
                     ['container_stuffing', '/export_documents/container_stuffing/entry', 'fa-truck-ramp-box', 'Container Stuffing', 'ExpOp'],
                     ['shipping_bill', '/export_documents/shipping_bill/entry', 'fa-clipboard-check', 'Shipping Bills', 'ExpOp'],
                     ['bill_of_lading', '/export_documents/bill_of_lading/entry', 'fa-file-contract', 'Bills of Lading', 'ExpOp'],
-                    ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp']
+                    ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp'],
+                    ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp'],
+                    ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'ExpOp'],
+                    ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'ExpOp']
                 ]
             }
         ]
@@ -1193,8 +1199,13 @@ const sidebarMenuData = [
             {
                 name: "Accounts & Ledgers",
                 items: [
+                    ['tally_dashboard', '/finance_accounts/tally_dashboard', 'fa-chart-pie', 'Tally Dashboard', 'Acc'],
                     ['ledger_master', '/finance_accounts/ledger_master/entry', 'fa-folder-open', 'Ledger Master', 'Acc'],
-                    ['journal_entry', '/finance_accounts/journal_entry/entry', 'fa-book', 'Journal Entries', 'Acc']
+                    ['journal_entry', '/finance_accounts/journal_entry/entry', 'fa-book', 'Journal Entries', 'Acc'],
+                    ['bank_master', '/finance_accounts/bank_master/entry', 'fa-building-columns', 'Bank Master', 'Acc'],
+                    ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Acc'],
+                    ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Acc'],
+                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Acc']
                 ]
             },
             {
@@ -1209,7 +1220,11 @@ const sidebarMenuData = [
                 items: [
                     ['customer_receivable', '/finance_accounts/customer_receivable/entry', 'fa-hand-holding-dollar', 'Customer Receivables', 'Fin'],
                     ['vendor_payment', '/finance_accounts/vendor_payment/entry', 'fa-money-bill-transfer', 'Vendor Payments', 'Fin'],
-                    ['expense_voucher', '/finance_accounts/expense_voucher/entry', 'fa-receipt', 'Expense Vouchers', 'Fin']
+                    ['expense_voucher', '/finance_accounts/expense_voucher/entry', 'fa-receipt', 'Expense Vouchers', 'Fin'],
+                    ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'Fin'],
+                    ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'Fin'],
+                    ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'Fin'],
+                    ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'Fin']
                 ]
             }
         ]
@@ -1261,7 +1276,67 @@ const sidebarMenuData = [
             ['daily_attendance', '/attendance/daily', 'fa-fingerprint', 'Daily Attendance', 'HR'],
             ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet', 'HR'],
             ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
-            ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR']
+            ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR'],
+            ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'HR']
+        ]
+    },
+    {
+        title: "MASTERS",
+        subgroups: [
+            {
+                name: "Business Masters",
+                items: [
+                    ['buyers', '/criteria/buyers', 'fa-users', 'Buyers', 'Mstr'],
+                    ['buyer_agents', '/criteria/buyer_agents', 'fa-user-tie', 'Buyer Agents', 'Mstr'],
+                    ['suppliers', '/criteria/suppliers', 'fa-truck-field', 'Suppliers', 'Mstr'],
+                    ['vendors', '/criteria/vendors', 'fa-store', 'Vendors', 'Mstr'],
+                    ['countries', '/criteria/countries', 'fa-globe', 'Countries', 'Mstr'],
+                    ['brands', '/criteria/brands', 'fa-building', 'Brands', 'Mstr']
+                ]
+            },
+            {
+                name: "Production Masters",
+                items: [
+                    ['species', '/criteria/species', 'fa-fish', 'Species', 'Mstr'],
+                    ['varieties', '/criteria/varieties', 'fa-seedling', 'Varieties', 'Mstr'],
+                    ['grades', '/criteria/grades', 'fa-medal', 'Grades', 'Mstr'],
+                    ['freezers', '/criteria/freezers', 'fa-snowflake', 'Freezers', 'Mstr'],
+                    ['glazes', '/criteria/glazes', 'fa-igloo', 'Glazes', 'Mstr'],
+                    ['packing_styles', '/criteria/packing_styles', 'fa-box', 'Packing Styles', 'Mstr'],
+                    ['contractors', '/criteria/contractors', 'fa-hard-hat', 'Contractors', 'Mstr'],
+                    ['peeling_at', '/criteria/peeling_at', 'fa-map-pin', 'Peeling At', 'Mstr'],
+                    ['peeling_rates', '/criteria/peeling_rates', 'fa-money-bill', 'Peeling Rates', 'Mstr'],
+                    ['production_at', '/criteria/production_at', 'fa-industry', 'Production At', 'Mstr'],
+                    ['production_for', '/criteria/production_for', 'fa-building-flag', 'Production For', 'Mstr'],
+                    ['production_types', '/criteria/production_types', 'fa-tags', 'Production Types', 'Mstr'],
+                    ['chemicals', '/criteria/chemicals', 'fa-flask', 'Chemicals', 'Mstr'],
+                    ['purposes', '/criteria/purposes', 'fa-bullseye', 'Purposes', 'Mstr'],
+                    ['grade_to_hoso', '/criteria/grade_to_hoso', 'fa-exchange-alt', 'Grade to HOSO', 'Mstr'],
+                    ['hoso_hlso', '/criteria/hoso_hlso', 'fa-ruler-combined', 'HOSO & HLSO', 'Mstr']
+                ]
+            },
+            {
+                name: "Inv & Fin Masters",
+                items: [
+                    ['cold_storage', '/inventory/cold_storage', 'fa-igloo', 'Cold Storage Master', 'Mstr'],
+                    ['coldstore_locations', '/criteria/coldstore_locations', 'fa-map-location-dot', 'Coldstore Locations', 'Mstr'],
+                    ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-truck', 'Vehicle Numbers', 'Mstr'],
+                    ['hsn_codes', '/criteria/hsn_codes', 'fa-barcode', 'HSN Codes', 'Mstr'],
+                    ['bank_master', '/finance_accounts/bank_master/entry', 'fa-university', 'Bank Master', 'Mstr'],
+                    ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Mstr'],
+                    ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Mstr'],
+                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Mstr'],
+                    ['general_store_items', '/general_stock/items', 'fa-cubes', 'General Store Items', 'Mstr']
+                ]
+            },
+            {
+                name: "Admin",
+                items: [
+                     ['add_user', '/admin/add_user', 'fa-user-gear', 'User Configuration', 'Admin'], 
+                     ['shifts', '/attendance/shifts', 'fa-business-time', 'Shifts', 'Admin'],
+                     ['data_management','/data-management','fa-database','Data Management', 'Admin']
+                ]
+            }
         ]
     }
 ];
@@ -1292,7 +1367,11 @@ const dropdownConsoleMenuData = [
         title: "Inv & Fin Masters",
         items: [
             ['cold_storage', '/inventory/cold_storage', 'Cold Storage Master'], ['coldstore_locations', '/criteria/coldstore_locations', 'Coldstore Locations'],
-            ['vehicle_numbers', '/criteria/vehicle_numbers', 'Vehicle Numbers'], ['hsn_codes', '/criteria/hsn_codes', 'HSN Codes']
+            ['vehicle_numbers', '/criteria/vehicle_numbers', 'Vehicle Numbers'], ['hsn_codes', '/criteria/hsn_codes', 'HSN Codes'],
+            ['bank_master', '/finance_accounts/bank_master/entry', 'Bank Master'],
+            ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'Item Accounting Link'],
+            ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'Fixed Assets'],
+            ['gst_register', '/finance_accounts/gst_register/entry', 'GST Register']
         ]
     },
     {

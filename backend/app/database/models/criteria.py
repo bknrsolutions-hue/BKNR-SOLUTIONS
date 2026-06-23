@@ -90,11 +90,26 @@ class buyers(Base, metacolumns):
     __tablename__ = "buyers"
     id = Column(Integer, primary_key=True)
     buyer_name = Column(String(255), nullable=False, index=True)
-    
-    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+
+    # --- Extended Accounting & Export Fields (Added) ---
+    # EXPORT / DOMESTIC / BOTH
+    buyer_type = Column(String(20), nullable=True, default='EXPORT')
+    country = Column(String(100), nullable=True)                     # Country name
+    currency_code = Column(String(5), nullable=True, default='USD')  # Default billing currency
+    iec_code = Column(String(20), nullable=True)                     # Import Export Code
+    credit_limit = Column(Float, default=0.0)                        # Warning threshold
+    credit_insurance = Column(Integer, default=0)                    # 0=No, 1=ECGC covered
+    payment_terms_days = Column(Integer, default=30)                 # Payment due days
+    gst_number = Column(String(15), nullable=True)                   # For domestic buyers
+    contact_person = Column(String(100), nullable=True)
+    buyer_email = Column(String(100), nullable=True)                 # Auto invoice email
+
+    # CRITICAL: Links buyer to Chart of Accounts for auto journal
+    account_ledger_id = Column(Integer, nullable=True)               # FK → ledger_masters.id
+
     address = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     __table_args__ = (UniqueConstraint("company_id", "buyer_name", name="uix_company_buyer"),)
 
 class buyer_agents(Base, metacolumns):
@@ -153,16 +168,27 @@ class suppliers(Base, metacolumns):
     __tablename__ = "suppliers"
     id = Column(Integer, primary_key=True, index=True)
     supplier_name = Column(String(255), nullable=False, index=True)
-    supplier_email = Column(String(255)); phone = Column(String(50)); address = Column(String(255))
-    
-    # ఒరిజినల్ కాలమ్స్ ఇక్కడ యాడ్ చేసాను
+    supplier_email = Column(String(255))
+    phone = Column(String(50))
+    address = Column(String(255))
+
+    # --- Extended Accounting & Compliance Fields (Added) ---
+    # RAW_MATERIAL / PACKING_MATERIAL / TRANSPORT / CHA / COLD_STORAGE / UTILITIES / OTHER
+    supplier_category = Column(String(30), nullable=True, default='RAW_MATERIAL')
+    pan_number = Column(String(10), nullable=True)                   # TDS deduction
+    msme_registration = Column(String(50), nullable=True)            # Priority payment tracking
+
+    # CRITICAL: Links supplier to Chart of Accounts for auto journal
+    account_ledger_id = Column(Integer, nullable=True)               # FK → ledger_masters.id
+
+    # Existing columns
     gst_number = Column(String(50))
     bank_name = Column(String(150))
     account_no = Column(String(100))
     ifsc = Column(String(20))
     payment_cycle = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     __table_args__ = (UniqueConstraint("company_id", "supplier_name", name="uix_company_supplier"),)
 
 class peeling_rates(Base, metacolumns):

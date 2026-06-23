@@ -8,6 +8,8 @@ from app.utils.timezone import ist_now
 import json
 import re
 from app.services.floor_balance_sync import refresh_floor_balance
+from app.services.posting_engine import PostingEngineService
+from app.database.models.enterprise_finance import VoucherHeader, VoucherDetail
 
 from app.database import get_db
 # Models import
@@ -307,7 +309,7 @@ def save_rmp(
     )
     db.add(entry)
     db.commit()
-    refresh_floor_balance(db, comp_code)
+    refresh_floor_balance(db, comp_code, batch_number=batch_number)
     request.session["message"] = "✔ Saved Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -324,6 +326,7 @@ def update_rmp(
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
     if not entry: return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
+    old_batch_number = entry.batch_number
     total_billable_qty = g1_qty + (g2_qty / 2)
     
     entry.batch_number, entry.supplier_name = batch_number, supplier_name
@@ -337,7 +340,9 @@ def update_rmp(
     entry.material_boxes, entry.remarks = material_boxes, remarks
     
     db.commit()
-    refresh_floor_balance(db, comp_code)
+    refresh_floor_balance(db, comp_code, batch_number=batch_number)
+    if old_batch_number != batch_number:
+        refresh_floor_balance(db, comp_code, batch_number=old_batch_number)
     request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
@@ -346,8 +351,9 @@ def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
     if entry:
+        batch_to_refresh = entry.batch_number
         db.delete(entry)
         db.commit()
-        refresh_floor_balance(db, comp_code)
+        refresh_floor_balance(db, comp_code, batch_number=batch_to_refresh)
     request.session["message"] = "🗑 Deleted Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)

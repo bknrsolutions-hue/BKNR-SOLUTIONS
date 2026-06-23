@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+<meta charset="utf-8">
+<title>SALARY PROCESSING LEDGER - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --card: var(--card-bg);
+}
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+.header-dash { background: var(--card); padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.filter-bar { background: var(--card); padding: 8px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 0 0 180px; }
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; height: 30px; }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 30px; }
+.table-wrap { margin: 0 20px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1100px; }
+.main-table th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 800px; overflow-y: auto; max-height: 90vh; }
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select, .field textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+.status-pill { padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; display: inline-block; text-transform: uppercase; }
+.status-draft { background: #f3f4f6; color: #374151; }
+.status-approved { background: #eff6ff; color: #1d4ed8; }
+.status-paid { background: #ecfdf5; color: #047857; }
+</style>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+</head>
+<body>
+
+<div class="header-dash">
+    <div class="header-titles"><h2>Monthly Salary Processing Register</h2></div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-item">
+        <label>Search Employee</label>
+        <input type="text" id="searchBox" placeholder="Name / ID..." onkeyup="applyFilters()">
+    </div>
+    <div class="filter-item">
+        <label>Filter Month</label>
+        <input type="month" id="monthFilter" onchange="applyFilters()">
+    </div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+</div>
+
+<div class="section-header">
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Pay Slip</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> COMPUTE SALARY</button>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Month</th>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>Designation</th>
+                <th>Attd (Days)</th>
+                <th style="text-align: right;">Gross (₹)</th>
+                <th style="text-align: right;">Deductions (₹)</th>
+                <th style="text-align: right;">Net Payable (₹)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not history %}
+            <tr><td colspan="10" style="padding:40px; color:var(--muted);">No Salary processing logs registered.</td></tr>
+            {% else %}
+                {% for row in history %}
+                <tr class="data-row" data-id="{{ row.id }}" data-month="{{ row.month_year }}" onclick="selectRow(this, '{{ row.id }}')">
+                    <td>{{ loop.index }}</td>
+                    <td style="font-weight:700;">{{ row.month_year }}</td>
+                    <td style="color:var(--accent);">{{ row.employee_id }}</td>
+                    <td style="text-align: left;">{{ row.employee_name }}</td>
+                    <td>{{ row.designation or '-' }}</td>
+                    <td>{{ row.present_days }} / {{ row.present_days + row.absent_days }}</td>
+                    <td style="text-align: right;">{{ "{:,.2f}".format(row.gross_salary or 0.0) }}</td>
+                    <td style="text-align: right; color:var(--danger);">{{ "{:,.2f}".format(row.total_deductions or 0.0) }}</td>
+                    <td style="text-align: right; font-weight:700; color:var(--success);">{{ "{:,.2f}".format(row.net_payable or 0.0) }}</td>
+                    <td>
+                        <span class="status-pill status-{{ row.status.lower() }}">{{ row.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Process Employee Salary Slip</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="salaryForm" onsubmit="saveSalary(event)">
+            <div class="form-grid">
+                <div class="field"><label>Month-Year</label><input type="month" id="month_year" required onchange="triggerAutoFill()"></div>
+                <div class="field" style="position:relative;">
+                    <label>Employee ID</label>
+                    <input type="text" id="employee_id" required list="empList" placeholder="Type ID or name..." oninput="onEmpInput()" onchange="triggerAutoFill()" autocomplete="off">
+                    <datalist id="empList"></datalist>
+                    <span id="autoFillBadge" style="display:none; position:absolute; right:8px; top:28px; font-size:8px; font-weight:800; padding:2px 6px; border-radius:4px; background:#eff6ff; color:#1d4ed8;">AUTO-FILLED</span>
+                </div>
+                <div class="field"><label>Employee Name</label><input type="text" id="employee_name" required></div>
+                <div class="field"><label>Designation</label><input type="text" id="designation"></div>
+                <div class="field"><label>Department</label><input type="text" id="department"></div>
+                <div class="field"><label>Plant / Cost Location</label><input type="text" id="production_at" placeholder="e.g. Factory floor A"></div>
+
+                <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
+
+                <div class="field"><label>Present Days</label><input type="number" step="any" id="present_days" value="0" required></div>
+                <div class="field"><label>Absent Days</label><input type="number" step="any" id="absent_days" value="0" required></div>
+                <div class="field"><label>OT Hours Worked</label><input type="number" step="any" id="ot_hours" value="0"></div>
+
+                <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;">
+                    <h4 style="margin:0; color:var(--accent); font-weight: 800; font-size: 10px; text-transform: uppercase;">A. Earnings Structure</h4>
+                </div>
+
+                <div class="field"><label>Basic Salary (₹)</label><input type="number" step="any" id="basic_salary" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>HRA (₹)</label><input type="number" step="any" id="hra" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Conveyance (₹)</label><input type="number" step="any" id="conveyance_allowance" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Special Allowance (₹)</label><input type="number" step="any" id="special_allowance" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>OT Earnings (₹)</label><input type="number" step="any" id="ot_amount" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Other Earnings (₹)</label><input type="number" step="any" id="other_earnings" oninput="recalcSalary()" value="0"></div>
+                <div class="field" style="grid-column: span 3;"><label>Gross Monthly Salary (₹)</label><input type="number" step="any" id="gross_salary" readonly value="0"></div>
+
+                <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;">
+                    <h4 style="margin:0; color:var(--danger); font-weight: 800; font-size: 10px; text-transform: uppercase;">B. Deductions &amp; Contributions</h4>
+                </div>
+
+                <div class="field"><label>Employee PF (12% ₹)</label><input type="number" step="any" id="pf_employee" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Employee ESI (0.75% ₹)</label><input type="number" step="any" id="esi_employee" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Professional Tax (₹)</label><input type="number" step="any" id="professional_tax" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>TDS (Tax Deduct ₹)</label><input type="number" step="any" id="tds_salary" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Salary Advance Set-off</label><input type="number" step="any" id="advance_deduction" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>LWF Contribution (₹)</label><input type="number" step="any" id="lwf_employee" oninput="recalcSalary()" value="0"></div>
+                <div class="field" style="grid-column: span 3;"><label>Total Deductions (₹)</label><input type="number" step="any" id="total_deductions" readonly value="0"></div>
+
+                <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;">
+                    <h4 style="margin:0; color:var(--success); font-weight: 800; font-size: 10px; text-transform: uppercase;">C. Net Payroll Outlay &amp; Bank Settings</h4>
+                </div>
+
+                <div class="field"><label>Net Payable to Staff (₹)</label><input type="number" step="any" id="net_payable" readonly value="0" style="font-weight: 800; color: var(--success);"></div>
+                <div class="field">
+                    <label>Payment Mode</label>
+                    <select id="payment_mode">
+                        <option value="BANK">BANK (NEFT/RTGS)</option>
+                        <option value="CASH">CASH</option>
+                        <option value="CHEQUE">CHEQUE</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Processing Status</label>
+                    <select id="status">
+                        <option value="DRAFT">DRAFT (Review Pending)</option>
+                        <option value="APPROVED">APPROVED (Post Ledger)</option>
+                        <option value="PAID">PAID (Disbursed)</option>
+                    </select>
+                </div>
+                
+                <!-- Employer side columns -->
+                <input type="hidden" id="pf_employer" value="0">
+                <input type="hidden" id="esi_employer" value="0">
+                <input type="hidden" id="lwf_employer" value="0">
+                <input type="hidden" id="payment_status" value="UNPAID">
+            </div>
+            <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add">Save Pay Slip</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let globalSelectedId = null;
+    let employeeMap = {}; // employee_id → employee data
+
+    document.getElementById("dotsBtn").onclick = (e) => {
+        e.stopPropagation();
+        const m = document.getElementById("dropdownMenu");
+        m.style.display = (m.style.display === "block") ? "none" : "block";
+    };
+    document.addEventListener('click', () => { document.getElementById("dropdownMenu").style.display = 'none'; });
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    async function loadEmployees() {
+        try {
+            const res = await fetch('/finance_accounts/salary_processing/employees');
+            const data = await res.json();
+            if (!data.success) return;
+            const datalist = document.getElementById('empList');
+            datalist.innerHTML = '';
+            employeeMap = {};
+            data.employees.forEach(emp => {
+                employeeMap[emp.employee_id] = emp;
+                const opt = document.createElement('option');
+                opt.value = emp.employee_id;
+                opt.label = `${emp.employee_id} – ${emp.employee_name}`;
+                datalist.appendChild(opt);
+            });
+        } catch(e) { console.warn('Could not load employees', e); }
+    }
+
+    function openModal() {
+        // Reset form to clean state
+        document.getElementById('salaryForm').reset();
+        setFieldsToZero();
+        document.getElementById('autoFillBadge').style.display = 'none';
+        document.getElementById('entryModal').style.display = 'flex';
+        loadEmployees();
+    }
+
+    function setFieldsToZero() {
+        ['present_days','absent_days','ot_hours','ot_amount','basic_salary','hra',
+         'conveyance_allowance','special_allowance','other_earnings','gross_salary',
+         'pf_employee','esi_employee','professional_tax','tds_salary','advance_deduction',
+         'lwf_employee','total_deductions','net_payable','pf_employer','esi_employer','lwf_employer'
+        ].forEach(id => { const el = document.getElementById(id); if(el) el.value = 0; });
+    }
+
+    function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+
+    function onEmpInput() {
+        // When typing clears the badge if they change the ID
+        document.getElementById('autoFillBadge').style.display = 'none';
+    }
+
+    async function triggerAutoFill() {
+        const empId = document.getElementById('employee_id').value.trim();
+        const monthYear = document.getElementById('month_year').value;
+        if (!empId) return;
+
+        try {
+            const url = `/finance_accounts/salary_processing/employee_data/${encodeURIComponent(empId)}` +
+                        (monthYear ? `?month_year=${monthYear}` : '');
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const d = await res.json();
+            if (!d.success) return;
+
+            // Fill basic info
+            document.getElementById('employee_name').value       = d.employee_name   || '';
+            document.getElementById('designation').value         = d.designation     || '';
+            document.getElementById('department').value          = d.department      || '';
+            document.getElementById('production_at').value       = d.production_at   || '';
+
+            // Fill attendance
+            document.getElementById('present_days').value        = d.present_days    ?? 0;
+            document.getElementById('absent_days').value         = d.absent_days     ?? 0;
+            document.getElementById('ot_hours').value            = d.ot_hours        ?? 0;
+            document.getElementById('ot_amount').value           = d.ot_amount       ?? 0;
+
+            // Fill earnings
+            document.getElementById('basic_salary').value        = d.basic_salary    ?? 0;
+            document.getElementById('hra').value                 = d.hra             ?? 0;
+            document.getElementById('conveyance_allowance').value= d.conveyance_allowance ?? 0;
+            document.getElementById('special_allowance').value   = d.special_allowance   ?? 0;
+            document.getElementById('other_earnings').value      = d.other_earnings  ?? 0;
+
+            // Fill deductions
+            document.getElementById('pf_employee').value         = d.pf_employee     ?? 0;
+            document.getElementById('esi_employee').value        = d.esi_employee    ?? 0;
+            document.getElementById('professional_tax').value    = d.professional_tax ?? 0;
+            document.getElementById('tds_salary').value          = d.tds_salary      ?? 0;
+            document.getElementById('advance_deduction').value   = d.advance_deduction ?? 0;
+            document.getElementById('lwf_employee').value        = d.lwf_employee    ?? 0;
+
+            // Payment settings
+            document.getElementById('payment_mode').value        = d.payment_mode    || 'BANK';
+            document.getElementById('status').value              = d.status          || 'DRAFT';
+
+            // Recalc totals
+            recalcSalary();
+
+            // Show badge based on source
+            const badge = document.getElementById('autoFillBadge');
+            if (d.source === 'existing') {
+                badge.textContent = `✔ EXISTING RECORD (${d.source_month})`;
+                badge.style.background = '#ecfdf5';
+                badge.style.color = '#047857';
+            } else if (d.source === 'salary_table') {
+                badge.textContent = `✔ FILLED FROM ${d.source_month} SALARY`;
+                badge.style.background = '#eff6ff';
+                badge.style.color = '#1d4ed8';
+            } else {
+                badge.textContent = '✔ FILLED FROM EMPLOYEE MASTER';
+                badge.style.background = '#fff7ed';
+                badge.style.color = '#c2410c';
+            }
+            badge.style.display = 'inline-block';
+
+        } catch(e) { console.warn('Auto-fill failed', e); }
+    }
+
+    function recalcSalary() {
+        const basic = parseFloat(document.getElementById("basic_salary").value) || 0;
+        const hra = parseFloat(document.getElementById("hra").value) || 0;
+        const conveyance = parseFloat(document.getElementById("conveyance_allowance").value) || 0;
+        const special = parseFloat(document.getElementById("special_allowance").value) || 0;
+        const ot = parseFloat(document.getElementById("ot_amount").value) || 0;
+        const other_earn = parseFloat(document.getElementById("other_earnings").value) || 0;
+        
+        const gross = basic + hra + conveyance + special + ot + other_earn;
+        document.getElementById("gross_salary").value = gross.toFixed(2);
+        
+        const pf = parseFloat(document.getElementById("pf_employee").value) || 0;
+        const esi = parseFloat(document.getElementById("esi_employee").value) || 0;
+        const pt = parseFloat(document.getElementById("professional_tax").value) || 0;
+        const tds = parseFloat(document.getElementById("tds_salary").value) || 0;
+        const advance = parseFloat(document.getElementById("advance_deduction").value) || 0;
+        const lwf = parseFloat(document.getElementById("lwf_employee").value) || 0;
+        
+        const deductions = pf + esi + pt + tds + advance + lwf;
+        document.getElementById("total_deductions").value = deductions.toFixed(2);
+        
+        const net = gross - deductions;
+        document.getElementById("net_payable").value = net.toFixed(2);
+
+        // Auto-fill employer PF/ESI (12% of basic, 3.25% of gross)
+        document.getElementById("pf_employer").value = (basic * 0.12).toFixed(2);
+        document.getElementById("esi_employer").value = (gross * 0.0325).toFixed(2);
+    }
+
+    function applyFilters() {
+        const query = document.getElementById("searchBox").value.toLowerCase().trim();
+        const monthFilter = document.getElementById("monthFilter").value;
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        
+        let count = 0;
+        rows.forEach(r => {
+            const textMatch = r.textContent.toLowerCase().includes(query);
+            const rowMonth = r.getAttribute("data-month");
+            const monthMatch = !monthFilter || rowMonth === monthFilter;
+
+            const match = textMatch && monthMatch;
+            r.style.display = match ? "" : "none";
+            if (match) count++;
+        });
+        document.getElementById("rowCount").innerText = `${count} ENTRIES FOUND`;
+    }
+
+    function resetFilters() {
+        document.getElementById("searchBox").value = "";
+        document.getElementById("monthFilter").value = "";
+        applyFilters();
+    }
+
+    async function saveSalary(e) {
+        e.preventDefault();
+        
+        const currentStatus = document.getElementById("status").value;
+        const payStatus = currentStatus === "PAID" ? "PAID" : "UNPAID";
+        document.getElementById("payment_status").value = payStatus;
+
+        const payload = {
+            month_year: document.getElementById("month_year").value,
+            employee_id: document.getElementById("employee_id").value,
+            employee_name: document.getElementById("employee_name").value,
+            designation: document.getElementById("designation").value || null,
+            department: document.getElementById("department").value || null,
+            production_at: document.getElementById("production_at").value || null,
+            present_days: parseFloat(document.getElementById("present_days").value) || 0.0,
+            absent_days: parseFloat(document.getElementById("absent_days").value) || 0.0,
+            ot_hours: parseFloat(document.getElementById("ot_hours").value) || 0.0,
+            ot_amount: parseFloat(document.getElementById("ot_amount").value) || 0.0,
+            basic_salary: parseFloat(document.getElementById("basic_salary").value) || 0.0,
+            hra: parseFloat(document.getElementById("hra").value) || 0.0,
+            conveyance_allowance: parseFloat(document.getElementById("conveyance_allowance").value) || 0.0,
+            special_allowance: parseFloat(document.getElementById("special_allowance").value) || 0.0,
+            other_earnings: parseFloat(document.getElementById("other_earnings").value) || 0.0,
+            gross_salary: parseFloat(document.getElementById("gross_salary").value) || 0.0,
+            pf_employee: parseFloat(document.getElementById("pf_employee").value) || 0.0,
+            esi_employee: parseFloat(document.getElementById("esi_employee").value) || 0.0,
+            professional_tax: parseFloat(document.getElementById("professional_tax").value) || 0.0,
+            tds_salary: parseFloat(document.getElementById("tds_salary").value) || 0.0,
+            advance_deduction: parseFloat(document.getElementById("advance_deduction").value) || 0.0,
+            lwf_employee: parseFloat(document.getElementById("lwf_employee").value) || 0.0,
+            other_deductions: 0.0,
+            total_deductions: parseFloat(document.getElementById("total_deductions").value) || 0.0,
+            pf_employer: parseFloat(document.getElementById("pf_employer").value) || 0.0,
+            esi_employer: parseFloat(document.getElementById("esi_employer").value) || 0.0,
+            lwf_employer: parseFloat(document.getElementById("lwf_employer").value) || 0.0,
+            net_payable: parseFloat(document.getElementById("net_payable").value) || 0.0,
+            payment_mode: document.getElementById("payment_mode").value,
+            payment_status: payStatus,
+            status: currentStatus
+        };
+        try {
+            const res = await fetch(`/finance_accounts/salary_processing/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire("Saved", "Salary slip processed successfully", "success").then(() => location.reload());
+            } else { Swal.fire("Error", out.message, "error"); }
+        } catch(err) { Swal.fire("Error", "Network error", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const confirmDelete = await Swal.fire({ title: "Delete Salary Entry?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        if(confirmDelete.isConfirmed) {
+            try {
+                const res = await fetch(`/finance_accounts/salary_processing/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Salary record deleted", "success").then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Server error", "error"); }
+        }
+    }
+    
+    applyFilters();
+</script>
+</body>
+</html>

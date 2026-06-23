@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Export Supporting Documents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root { --bg:#f1f5f9; --card:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; --accent:#2563eb; }
+[data-theme="dark"] { --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --muted:#94a3b8; --border:#334155; }
+* { box-sizing:border-box; font-family:Inter, sans-serif; }
+body { margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; }
+.header { background:var(--card); border-bottom:1px solid var(--border); padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
+h2 { margin:0; font-size:15px; font-weight:800; }
+.wrap { padding:16px 20px; display:grid; grid-template-columns: 360px minmax(0, 1fr); gap:16px; }
+.panel { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; }
+.field { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+label { font-size:10px; text-transform:uppercase; font-weight:800; color:var(--muted); }
+input, select, textarea { border:1px solid var(--border); border-radius:7px; padding:9px 10px; background:var(--card); color:var(--text); font-size:12px; }
+.btn { border:0; background:var(--accent); color:#fff; border-radius:7px; padding:9px 12px; font-weight:800; cursor:pointer; width:100%; }
+.table-wrap { overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; white-space:nowrap; }
+th, td { padding:9px 10px; border-bottom:1px solid var(--border); text-align:left; }
+th { color:var(--muted); text-transform:uppercase; font-size:9px; }
+@media(max-width:900px){ .wrap { grid-template-columns:1fr; padding:12px; } }
+</style>
+<script>
+try {
+  const theme = window.parent.document.documentElement.getAttribute("data-theme");
+  if (theme) document.documentElement.setAttribute("data-theme", theme);
+} catch(e) {}
+</script>
+</head>
+<body>
+<div class="header">
+  <h2><i class="fa-solid fa-folder-open" style="color:var(--accent);"></i> Export Supporting Documents</h2>
+  <strong>{{ company_id }}</strong>
+</div>
+
+<div class="wrap">
+  <section class="panel">
+    <form id="docForm" onsubmit="uploadDoc(event)">
+      <div class="field">
+        <label>Shipment</label>
+        <select id="shipment_id" required>
+          <option value="" disabled selected>-- SELECT SHIPMENT --</option>
+          {% for s in shipments %}
+          <option value="{{ s.id }}">{{ s.shipment_no }} - {{ s.buyer_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Document Type</label>
+        <select id="document_kind" required>
+          <option value="BUYER_PO">Buyer PO / Contract</option>
+          <option value="LC_COPY">LC Copy / Amendment</option>
+          <option value="COO">Certificate of Origin</option>
+          <option value="PHYTO_CERTIFICATE">Phytosanitary Certificate</option>
+          <option value="HEALTH_CERTIFICATE_COPY">Health Certificate Copy</option>
+          <option value="BL_COPY">Bill of Lading Copy</option>
+          <option value="INSURANCE_CERTIFICATE">Insurance Certificate</option>
+          <option value="FUMIGATION_CERTIFICATE">Fumigation Certificate</option>
+          <option value="VGM_DECLARATION">VGM Declaration</option>
+          <option value="MSDS">MSDS / Product Specification</option>
+          <option value="CUSTOMS_LEO_COPY">Customs LEO Copy</option>
+          <option value="FIRC_BRC">FIRC / BRC / Bank Realisation</option>
+          <option value="BUYER_APPROVAL">Buyer Approval / Email Copy</option>
+          <option value="OTHER_EXPORT_DOC">Other Export Document</option>
+        </select>
+      </div>
+      <div class="field"><label>Document No / Reference</label><input id="document_no"></div>
+      <div class="field"><label>PDF File</label><input type="file" id="pdf_file" accept="application/pdf" required></div>
+      <div class="field"><label>Remarks</label><textarea id="remarks" rows="3"></textarea></div>
+      <button class="btn"><i class="fa-solid fa-upload"></i> Save PDF in DB</button>
+    </form>
+  </section>
+
+  <section class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Document No</th><th>File</th><th>Version</th><th>Current</th><th>Uploaded At</th><th>Remarks</th></tr></thead>
+      <tbody>
+      {% for row in history %}
+        <tr>
+          <td>{{ row.document_kind }}</td>
+          <td>{{ row.document_no or '-' }}</td>
+          <td>{% if row.file_path %}<a href="{{ row.file_path }}" target="_blank">{{ row.file_name }}</a>{% else %}{{ row.file_name }}{% endif %}</td>
+          <td>v{{ row.version_no }}</td>
+          <td>{{ 'YES' if row.is_current else 'NO' }}</td>
+          <td>{{ row.uploaded_at }}</td>
+          <td>{{ row.remarks or '-' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" style="text-align:center; padding:28px; color:var(--muted);">No supporting documents uploaded yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+async function uploadDoc(e) {
+  e.preventDefault();
+  const file = document.getElementById("pdf_file").files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append("shipment_id", document.getElementById("shipment_id").value);
+  formData.append("document_kind", document.getElementById("document_kind").value);
+  formData.append("document_no", document.getElementById("document_no").value || "");
+  formData.append("remarks", document.getElementById("remarks").value || "");
+  formData.append("file", file);
+  const res = await fetch("/export_documents/supporting_documents/upload", { method: "POST", body: formData });
+  const out = await res.json();
+  if (out.success) Swal.fire("Saved", "Export PDF saved in DB", "success").then(() => location.reload());
+  else Swal.fire("Error", out.message || "Upload failed", "error");
+}
+</script>
+</body>
+</html>

@@ -348,3 +348,167 @@ class PostingEngineService:
         return PostingEngineService.create_voucher(
             db, company_id, "Journal", transaction_date, narration, details, reference_no=storage_name
         )
+
+    @staticmethod
+    def post_salary_approval(db: Session, company_id: str, entry) -> VoucherHeader:
+        """
+        Auto-posts salary approval journal.
+        Double entry:
+          Debit: Salaries & Wages Expense A/c (Gross Salary + Employer PF + Employer ESI)
+          Credit: Salaries Payable A/c (Net Payable)
+          Credit: PF Payable A/c (Employer + Employee PF)
+          Credit: ESI Payable A/c (Employer + Employee ESI)
+          Credit: PT Payable A/c (Professional Tax)
+          Credit: TDS Payable A/c (TDS on Salary)
+          Credit: Salary Advance A/c (Advance Deduction)
+          Credit: LWF Payable A/c (Employee + Employer LWF)
+        """
+        salaries_wages_expense = round(entry.gross_salary + entry.pf_employer + entry.esi_employer + entry.lwf_employer, 2)
+        total_pf_payable = round(entry.pf_employee + entry.pf_employer, 2)
+        total_esi_payable = round(entry.esi_employee + entry.esi_employer, 2)
+        total_lwf_payable = round(entry.lwf_employee + entry.lwf_employer, 2)
+        
+        details = [
+            # Debit salaries & wages expense
+            {
+                "ledger_name": "Salaries & Wages Expense A/c",
+                "group_name": "Indirect Expenses",
+                "group_type": "EXPENSE",
+                "debit_amount": salaries_wages_expense,
+                "credit_amount": 0.0,
+                "remarks": f"Salary Expense for {entry.employee_name} ({entry.month_year})"
+            },
+            # Credit Salaries Payable
+            {
+                "ledger_name": "Salaries Payable A/c",
+                "group_name": "Current Liabilities",
+                "group_type": "LIABILITY",
+                "debit_amount": 0.0,
+                "credit_amount": entry.net_payable,
+                "remarks": f"Net payable to {entry.employee_name}"
+            }
+        ]
+        
+        # Credit PF Payable
+        if total_pf_payable > 0:
+            details.append({
+                "ledger_name": "Provident Fund (PF) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": total_pf_payable,
+                "remarks": f"PF contribution (Emp + Empr)"
+            })
+            
+        # Credit ESI Payable
+        if total_esi_payable > 0:
+            details.append({
+                "ledger_name": "Employee State Insurance (ESI) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": total_esi_payable,
+                "remarks": f"ESI contribution (Emp + Empr)"
+            })
+            
+        # Credit PT Payable
+        if entry.professional_tax > 0:
+            details.append({
+                "ledger_name": "Professional Tax (PT) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": entry.professional_tax,
+                "remarks": "Professional Tax deduction"
+            })
+            
+        # Credit TDS Payable
+        if entry.tds_salary > 0:
+            details.append({
+                "ledger_name": "TDS Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": entry.tds_salary,
+                "remarks": "TDS deduction on Salary"
+            })
+            
+        # Credit Salary Advance
+        if entry.advance_deduction > 0:
+            details.append({
+                "ledger_name": "Employee Salary Advances A/c",
+                "group_name": "Loans & Advances (Asset)",
+                "group_type": "ASSET",
+                "parent_group_name": "Current Assets",
+                "debit_amount": 0.0,
+                "credit_amount": entry.advance_deduction,
+                "remarks": "Salary Advance recovery"
+            })
+            
+        # Credit LWF Payable
+        if total_lwf_payable > 0:
+            details.append({
+                "ledger_name": "Labour Welfare Fund (LWF) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": total_lwf_payable,
+                "remarks": "LWF contribution (Emp + Empr)"
+            })
+            
+        # Credit Other Deductions
+        if entry.other_deductions > 0:
+            details.append({
+                "ledger_name": "Other Deductions A/c",
+                "group_name": "Current Liabilities",
+                "group_type": "LIABILITY",
+                "debit_amount": 0.0,
+                "credit_amount": entry.other_deductions,
+                "remarks": "Other salary deductions"
+            })
+
+        narration = f"Auto-posted Salary Approval for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}."
+        
+        return PostingEngineService.create_voucher(
+            db, company_id, "Journal", date.today(), narration, details, reference_no=f"SAL-{entry.employee_id}-{entry.month_year}"
+        )
+
+    @staticmethod
+    def post_salary_payment(db: Session, company_id: str, entry) -> VoucherHeader:
+        """
+        Auto-posts salary payment journal.
+        Double entry:
+          Debit: Salaries Payable A/c (Net Payable)
+          Credit: Bank Account
+        """
+        details = [
+            {
+                "ledger_name": "Salaries Payable A/c",
+                "group_name": "Current Liabilities",
+                "group_type": "LIABILITY",
+                "debit_amount": entry.net_payable,
+                "credit_amount": 0.0,
+                "remarks": f"Salary Payment for {entry.employee_name} ({entry.month_year})"
+            },
+            {
+                "ledger_name": "Bank Account",
+                "group_name": "Bank Accounts",
+                "group_type": "ASSET",
+                "parent_group_name": "Current Assets",
+                "debit_amount": 0.0,
+                "credit_amount": entry.net_payable,
+                "remarks": f"Salary Paid - Mode: {entry.payment_mode}"
+            }
+        ]
+        
+        narration = f"Auto-posted Salary Payment for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}. Payment Mode: {entry.payment_mode}."
+        
+        return PostingEngineService.create_voucher(
+            db, company_id, "Payment", date.today(), narration, details, reference_no=f"PAY-{entry.employee_id}-{entry.month_year}"
+        )
+

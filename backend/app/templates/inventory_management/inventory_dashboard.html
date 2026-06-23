@@ -195,11 +195,110 @@
             body { background: var(--card-bg); padding: 0; }
             .table-wrap { background: var(--card-bg) !important; overflow: visible; max-height: none;}
         }
+
+        .module-shell {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr);
+            gap: 16px;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .module-main { min-width: 0; }
+        .module-rail {
+            position: sticky;
+            top: 14px;
+            height: calc(100vh - 28px);
+            overflow-y: auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+        .rail-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rail-section { margin-top: 14px; }
+        .rail-section:first-of-type { margin-top: 0; }
+        .rail-label {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--sub);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0 0 8px;
+        }
+        .rail-link {
+            min-height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--sub);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            margin-bottom: 7px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .rail-link i { width: 16px; color: var(--accent); text-align: center; }
+        .rail-link:hover { color: var(--primary); border-color: var(--accent); background: var(--accent-light); }
+        .module-shell .header,
+        .module-shell .kpi-grid,
+        .module-shell .chart-grid,
+        .module-shell .age-wrapper,
+        .module-shell .filter-panel-wrapper { padding-left: 0; padding-right: 0; }
+        .module-shell .rm-summary-box { margin-left: 0; margin-right: 0; }
+
+        @media(max-width: 992px) {
+            .module-shell { grid-template-columns: 1fr; padding: 12px; }
+            .module-rail { display: none; }
+            .module-main { width: 100%; }
+        }
+        @media(max-width: 560px) {
+            .module-shell { padding: 8px; }
+        }
     </style>
 </head>
 
 <body>
 
+<div class="module-shell">
+<aside class="module-rail">
+    <div class="rail-title"><i class="fa-solid fa-warehouse"></i> Inventory</div>
+    <div class="rail-section">
+        <div class="rail-label">Forms</div>
+        <a class="rail-link" href="/inventory/stock_entry"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></a>
+        <a class="rail-link" href="/inventory/pending_orders"><i class="fa-solid fa-clock-rotate-left"></i><span>Pending Orders</span></a>
+        <a class="rail-link" href="/inventory/cold_storage_holding"><i class="fa-solid fa-snowflake"></i><span>Cold Storage Holding</span></a>
+        <a class="rail-link" href="/general_stock/entry"><i class="fa-solid fa-shop"></i><span>General Store Entry</span></a>
+        <a class="rail-link" href="/general_stock/items"><i class="fa-solid fa-tags"></i><span>Store Items</span></a>
+    </div>
+    <div class="rail-section">
+        <div class="rail-label">Reports</div>
+        <a class="rail-link" href="/inventory/stock_report"><i class="fa-solid fa-boxes-packing"></i><span>Stock Status Report</span></a>
+        <a class="rail-link" href="/reports/floor_balance_report"><i class="fa-solid fa-scale-balanced"></i><span>Floor Balance Report</span></a>
+        <a class="rail-link" href="/reports/pending_orders_report"><i class="fa-solid fa-clock"></i><span>Pending Orders Report</span></a>
+        <a class="rail-link" href="/inventory/sales_report"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></a>
+        <a class="rail-link" href="/general_stock/report"><i class="fa-solid fa-file-zipper"></i><span>General Store Report</span></a>
+        <a class="rail-link" href="/inventory/cold_storage_holding_report"><i class="fa-solid fa-warehouse"></i><span>Cold Storage Report</span></a>
+        <a class="rail-link" href="/reports/storage_cost_report"><i class="fa-solid fa-coins"></i><span>Storage & Cost Report</span></a>
+        <a class="rail-link" href="/summary/floor_balance_value"><i class="fa-solid fa-indian-rupee-sign"></i><span>Floor Balance Value</span></a>
+        <a class="rail-link" href="/summary/inventory_costing"><i class="fa-solid fa-calculator"></i><span>Inventory Costing</span></a>
+    </div>
+</aside>
+<main class="module-main">
 <div class="header">
     <div class="header-top">
         <div class="header-title">
@@ -514,6 +613,8 @@
             </tbody>
         </table>
     </div>
+</div>
+</main>
 </div>
 
 <script>

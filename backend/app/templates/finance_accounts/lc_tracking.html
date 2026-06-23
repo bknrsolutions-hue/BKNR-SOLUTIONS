@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+<meta charset="utf-8">
+<title>LC TRACKING REGISTER - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --card: var(--card-bg);
+}
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+.header-dash { background: var(--card); padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.filter-bar { background: var(--card); padding: 8px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 0 0 180px; }
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; height: 30px; }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 30px; }
+.table-wrap { margin: 0 20px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1050px; }
+.main-table th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; overflow-y: auto; max-height: 90vh; }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select, .field textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+.status-pill { padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; display: inline-block; text-transform: uppercase; }
+.status-open { background: #eff6ff; color: #1d4ed8; }
+.status-partial { background: #fffbeb; color: #b45309; }
+.status-utilized { background: #ecfdf5; color: #047857; }
+.status-closed { background: #f3f4f6; color: #374151; }
+.status-expired { background: #fef2f2; color: #b91c1c; }
+</style>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+</head>
+<body>
+
+<div class="header-dash">
+    <div class="header-titles"><h2>Letter of Credit (LC) Tracking Register</h2></div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-item">
+        <label>Search LC</label>
+        <input type="text" id="searchBox" placeholder="LC Number..." onkeyup="applyFilters()">
+    </div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+</div>
+
+<div class="section-header">
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item" onclick="uploadPdfSelected()"><i class="fa-solid fa-upload"></i> Upload LC PDF Copy</div>
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete LC Record</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> REGISTER NEW LC</button>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>LC Number</th>
+                <th>Buyer Name</th>
+                <th>Issuing Bank</th>
+                <th>Advising Bank</th>
+                <th style="text-align: right;">LC Amount</th>
+                <th>Type</th>
+                <th>Expiry Date</th>
+                <th>Shipment Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not history %}
+            <tr><td colspan="10" style="padding:40px; color:var(--muted);">No Letter of Credit records found.</td></tr>
+            {% else %}
+                {% for row in history %}
+                <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
+                    <td>{{ loop.index }}</td>
+                    <td style="font-weight:700; color:var(--accent);">{{ row.lc_number }}</td>
+                    <td>{{ row.buyer_name or '-' }}</td>
+                    <td>{{ row.issuing_bank }}</td>
+                    <td>{{ row.advising_bank }}</td>
+                    <td style="text-align: right; font-weight:700;">{{ "{:,.2f}".format(row.lc_amount) }} {{ row.currency_code }}</td>
+                    <td>{{ row.lc_type }}</td>
+                    <td>{{ row.expiry_date }}</td>
+                    <td>{{ row.latest_shipment_date }}</td>
+                    <td>
+                        <span class="status-pill status-{{ row.status.lower() }}">{{ row.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<input type="file" id="pdfUploadInput" accept="application/pdf" style="display:none;" onchange="sendPdfUpload(this.files[0])">
+
+<!-- Modal -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Letter of Credit Registration</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="lcForm" onsubmit="saveLC(event)">
+            <div class="form-grid">
+                <div class="field"><label>LC Number</label><input type="text" id="lc_number" placeholder="e.g. LC-98382-772" required></div>
+                <div class="field"><label>Internal LC Reference</label><input type="text" id="lc_reference"></div>
+                <div class="field"><label>Issuing Bank (Foreign Bank)</label><input type="text" id="issuing_bank" required></div>
+                <div class="field"><label>Advising Bank (Local Bank)</label><input type="text" id="advising_bank" required></div>
+                <div class="field"><label>Negotiating Bank</label><input type="text" id="negotiating_bank"></div>
+                <div class="field"><label>LC Amount</label><input type="number" step="any" id="lc_amount" required></div>
+                <div class="field">
+                    <label>Currency</label>
+                    <select id="currency_code">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="INR">INR</option>
+                    </select>
+                </div>
+                <div class="field"><label>Utilized Amount</label><input type="number" step="any" id="utilized_amount" value="0.00"></div>
+                <div class="field"><label>Balance Amount</label><input type="number" step="any" id="balance_amount" value="0.00"></div>
+                
+                <div style="grid-column: span 2; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
+
+                <div class="field"><label>LC Issue Date</label><input type="date" id="lc_issue_date"></div>
+                <div class="field"><label>Expiry Date</label><input type="date" id="expiry_date" required></div>
+                <div class="field"><label>Latest Shipment Date</label><input type="date" id="latest_shipment_date" required></div>
+                <div class="field"><label>Presentation Period (Days)</label><input type="number" id="presentation_period_days" value="21"></div>
+
+                <div class="field">
+                    <label>LC Type</label>
+                    <select id="lc_type">
+                        <option value="SIGHT">SIGHT (At Sight)</option>
+                        <option value="USANCE_30">USANCE 30 Days</option>
+                        <option value="USANCE_60">USANCE 60 Days</option>
+                        <option value="USANCE_90">USANCE 90 Days</option>
+                        <option value="USANCE_120">USANCE 120 Days</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select id="status">
+                        <option value="OPEN">OPEN (Active)</option>
+                        <option value="PARTIAL">PARTIALLY DRAWN</option>
+                        <option value="UTILIZED">UTILIZED (Fully Drawn)</option>
+                        <option value="CLOSED">CLOSED (Completed)</option>
+                        <option value="EXPIRED">EXPIRED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                </div>
+
+                <div style="grid-column: span 2; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
+
+                <div class="field"><label>Buyer / Customer Name</label><input type="text" id="buyer_name" placeholder="e.g. Apex Seafood Imports Inc"></div>
+                <div class="field">
+                    <label>Customer Ledger Link</label>
+                    <select id="customer_ledger_id">
+                        <option value="">-- Link Receivable Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field" style="grid-column: span 2;"><label>Linked Export Invoice Numbers (JSON/Text List)</label><input type="text" id="linked_invoice_nos" placeholder="['INV-001', 'INV-002']"></div>
+                <div class="field" style="grid-column: span 2;">
+                    <label>Required Documents / Clauses</label>
+                    <textarea id="docs_required" rows="2" placeholder="e.g. Clean Shipped on Board Bill of Lading, Health Certificate..."></textarea>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                    <label>Remarks</label>
+                    <textarea id="remarks" rows="2"></textarea>
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add">Save LC</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let globalSelectedId = null;
+    document.getElementById("dotsBtn").onclick = (e) => {
+        e.stopPropagation();
+        const m = document.getElementById("dropdownMenu");
+        m.style.display = (m.style.display === "block") ? "none" : "block";
+    };
+    document.addEventListener('click', () => { document.getElementById("dropdownMenu").style.display = 'none'; });
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+
+    function ensureSelection() {
+        if (!globalSelectedId) {
+            Swal.fire("Select LC", "Please select one LC row first.", "info");
+            return false;
+        }
+        return true;
+    }
+
+    function uploadPdfSelected() {
+        if (!ensureSelection()) return;
+        document.getElementById("pdfUploadInput").click();
+    }
+
+    async function sendPdfUpload(file) {
+        if (!file || !ensureSelection()) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("document_kind", "LC_COPY");
+        formData.append("remarks", "Uploaded/updated LC copy");
+        const res = await fetch(`/finance_accounts/lc_tracking/upload_pdf/${globalSelectedId}`, { method: "POST", body: formData });
+        const out = await res.json();
+        if (out.success) Swal.fire("Saved", "LC PDF copy saved in DB", "success").then(() => location.reload());
+        else Swal.fire("Error", out.message || "Upload failed", "error");
+    }
+    
+    async function saveLC(e) {
+        e.preventDefault();
+        const payload = {
+            lc_number: document.getElementById("lc_number").value,
+            lc_reference: document.getElementById("lc_reference").value || null,
+            issuing_bank: document.getElementById("issuing_bank").value,
+            advising_bank: document.getElementById("advising_bank").value,
+            negotiating_bank: document.getElementById("negotiating_bank").value || null,
+            lc_amount: parseFloat(document.getElementById("lc_amount").value) || 0.0,
+            currency_code: document.getElementById("currency_code").value,
+            utilized_amount: parseFloat(document.getElementById("utilized_amount").value) || 0.0,
+            balance_amount: parseFloat(document.getElementById("balance_amount").value) || 0.0,
+            lc_issue_date: document.getElementById("lc_issue_date").value || null,
+            expiry_date: document.getElementById("expiry_date").value,
+            latest_shipment_date: document.getElementById("latest_shipment_date").value,
+            presentation_period_days: parseInt(document.getElementById("presentation_period_days").value) || 21,
+            lc_type: document.getElementById("lc_type").value,
+            docs_required: document.getElementById("docs_required").value || null,
+            buyer_name: document.getElementById("buyer_name").value || null,
+            customer_ledger_id: parseInt(document.getElementById("customer_ledger_id").value) || null,
+            linked_invoice_nos: document.getElementById("linked_invoice_nos").value || null,
+            status: document.getElementById("status").value,
+            remarks: document.getElementById("remarks").value || null
+        };
+        try {
+            const res = await fetch(`/finance_accounts/lc_tracking/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire("Saved", "LC successfully registered", "success").then(() => location.reload());
+            } else { Swal.fire("Error", out.message, "error"); }
+        } catch(err) { Swal.fire("Error", "Network error", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const confirmDelete = await Swal.fire({ title: "Delete LC Record?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        if(confirmDelete.isConfirmed) {
+            try {
+                const res = await fetch(`/finance_accounts/lc_tracking/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Record removed successfully", "success").then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Server error", "error"); }
+        }
+    }
+    
+    applyFilters();
+</script>
+</body>
+</html>

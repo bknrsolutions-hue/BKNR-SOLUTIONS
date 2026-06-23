@@ -13,13 +13,13 @@
         syncThemeFromParent();
     </script>
 <meta charset="utf-8">
-<title>LEDGER MASTER CONFIGURATION - BKNR SOLUTIONS</title>
+<title>BANK MASTER DIRECTORY - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<style>:root {
-    /* Standard theme variables mapped to global standard styles */
+<style>
+:root {
     --primary: var(--text);
     --accent: var(--accent);
     --border: var(--border);
@@ -33,23 +33,8 @@
     --card-bg: var(--card-bg);
     --header-bg: var(--header-bg);
     --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
-
-    /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
-    
-    /* Finance / Others specific mapping */
     --card: var(--card-bg);
 }
-
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
 body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
@@ -68,11 +53,12 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 .main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; overflow-y: auto; max-height: 90vh; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
+.field.checkbox-field { flex-direction: row; align-items: center; gap: 8px; padding-top: 15px; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+.field input, .field select, .field textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
 #threeDotsMenu { position: relative; display: none; margin-right: 8px; }
 .menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
 #dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -80,18 +66,18 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 </style>
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 
 <div class="header-dash">
-    <div class="header-titles"><h2>Ledger Master Directory</h2></div>
+    <div class="header-titles"><h2>Bank Accounts Directory</h2></div>
 </div>
 
 <div class="filter-bar">
     <div class="filter-item">
-        <label>Search Ledger</label>
-        <input type="text" id="searchBox" placeholder="Ledger Name..." onkeyup="applyFilters()">
+        <label>Search Bank</label>
+        <input type="text" id="searchBox" placeholder="Bank Name / A/C..." onkeyup="applyFilters()">
     </div>
     <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
@@ -105,7 +91,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
             </div>
         </div>
-        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW LEDGER</button>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> ADD BANK ACCOUNT</button>
     </div>
 </div>
 
@@ -114,29 +100,31 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <thead>
             <tr>
                 <th width="40">Sl</th>
-                <th style="text-align: left;">Ledger Name</th>
-                <th style="text-align: left;">Group</th>
+                <th style="text-align: left;">Bank Name</th>
+                <th>Account Number</th>
+                <th>Branch</th>
+                <th>IFSC Code</th>
+                <th>SWIFT Code</th>
                 <th>Type</th>
-                <th>GST No</th>
-                <th>PAN No</th>
-                <th>State</th>
-                <th style="text-align: right;">Opening Bal (₹)</th>
+                <th>Currency</th>
+                <th style="text-align: right;">Opening Balance</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not history %}
-            <tr><td colspan="8" style="padding:40px; color:var(--muted);">No Ledger Masters registered yet.</td></tr>
+            <tr><td colspan="9" style="padding:40px; color:var(--muted);">No Bank Accounts registered yet.</td></tr>
             {% else %}
                 {% for row in history %}
                 <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
                     <td>{{ loop.index }}</td>
-                    <td style="text-align: left; font-weight:700;">{{ row.ledger_name }}</td>
-                    <td style="text-align: left;">{{ row.group.group_name if row.group else '-' }}</td>
-                    <td>{{ row.group.group_type if row.group else '-' }}</td>
-                    <td>{{ row.gstin or '-' }}</td>
-                    <td>{{ row.pan or '-' }}</td>
-                    <td>{{ row.currency_code or 'INR' }}</td>
-                    <td style="text-align: right;">{{ "{:,.2f}".format(row.opening_balance or 0) }} {{ row.opening_balance_type }}</td>
+                    <td style="text-align: left; font-weight:700;">{{ row.bank_name }}</td>
+                    <td>{{ row.account_number }}</td>
+                    <td>{{ row.branch or '-' }}</td>
+                    <td>{{ row.ifsc_code or '-' }}</td>
+                    <td>{{ row.swift_code or '-' }}</td>
+                    <td>{{ row.account_type }}</td>
+                    <td>{{ row.currency_code }}</td>
+                    <td style="text-align: right; font-weight:700;">{{ "{:,.2f}".format(row.opening_balance or 0.0) }}</td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -148,47 +136,66 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <div class="modal" id="entryModal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <h3 style="margin:0; color:var(--primary); font-weight:800;">New Ledger Master</h3>
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Register Bank Account</h3>
             <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
-        <form id="ledgerForm" onsubmit="saveLedger(event)">
+        <form id="bankForm" onsubmit="saveBank(event)">
             <div class="form-grid">
-                <div class="field"><label>Ledger Name</label><input type="text" id="ledger_name" required></div>
+                <div class="field"><label>Bank Name</label><input type="text" id="bank_name" required></div>
+                <div class="field"><label>Account Number</label><input type="text" id="account_number" required></div>
+                <div class="field"><label>Branch</label><input type="text" id="branch"></div>
+                <div class="field"><label>IFSC Code</label><input type="text" id="ifsc_code"></div>
+                <div class="field"><label>SWIFT Code</label><input type="text" id="swift_code"></div>
                 <div class="field">
-                    <label>Ledger Group</label>
-                    <select id="ledger_group" required>
-                        {% for group in groups %}
-                        <option value="{{ group.group_name }}" data-type="{{ group.group_type }}">{{ group.group_name }}</option>
+                    <label>Account Type</label>
+                    <select id="account_type">
+                        <option value="CURRENT">CURRENT</option>
+                        <option value="EEFC">EEFC (Forex)</option>
+                        <option value="EXPORT_CC">EXPORT PACKING CREDIT (CC)</option>
+                        <option value="SAVINGS">SAVINGS</option>
+                        <option value="OVERDRAFT">OVERDRAFT</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Currency</label>
+                    <select id="currency_code">
+                        <option value="INR">INR</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="JPY">JPY</option>
+                    </select>
+                </div>
+                <div class="field"><label>Opening Balance</label><input type="number" step="any" id="opening_balance" value="0.00"></div>
+                <div class="field">
+                    <label>Linked Ledger Account</label>
+                    <select id="account_ledger_id">
+                        <option value="">-- Select Ledger Head --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="field">
-                    <label>Ledger Type</label>
-                    <select id="ledger_type">
-                        <option value="ASSET">ASSET</option>
-                        <option value="LIABILITY">LIABILITY</option>
-                        <option value="INCOME">INCOME</option>
-                        <option value="EXPENSE">EXPENSE</option>
-                        <option value="EQUITY">EQUITY</option>
-                    </select>
+                <div class="field checkbox-field">
+                    <input type="checkbox" id="is_export_account">
+                    <label for="is_export_account">Is Export Account</label>
                 </div>
-                <div class="field"><label>GST No</label><input type="text" id="gst_no"></div>
-                <div class="field"><label>PAN No</label><input type="text" id="pan_no"></div>
-                <div class="field"><label>Currency</label><input type="text" id="state" value="INR"></div>
-                <div class="field"><label>Opening Balance</label><input type="number" step="any" id="opening_balance" value="0.00"></div>
-                <div class="field">
-                    <label>Balance Type</label>
-                    <select id="balance_type">
-                        <option value="DR">DR (Debit)</option>
-                        <option value="CR">CR (Credit)</option>
-                    </select>
+                <div class="field checkbox-field">
+                    <input type="checkbox" id="is_eefc_account">
+                    <label for="is_eefc_account">Is EEFC Account</label>
                 </div>
-                <div class="field"><label>Phone</label><input type="text" id="phone"></div>
-                <div class="field"><label>Address</label><input type="text" id="address"></div>
+                <div class="field checkbox-field">
+                    <input type="checkbox" id="is_default">
+                    <label for="is_default">Set as Default Payment Account</label>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                    <label>Remarks</label>
+                    <textarea id="remarks" rows="2"></textarea>
+                </div>
             </div>
             <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
                 <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add">Save Ledger</button>
+                <button type="submit" class="btn-add">Save Account</button>
             </div>
         </form>
     </div>
@@ -212,12 +219,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
-
-    document.getElementById("ledger_group").addEventListener("change", (e) => {
-        const selected = e.target.options[e.target.selectedIndex];
-        const type = selected.getAttribute("data-type");
-        if (type) document.getElementById("ledger_type").value = type;
-    });
     
     function applyFilters() {
         const query = document.getElementById("searchBox").value.toLowerCase().trim();
@@ -236,40 +237,43 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         applyFilters();
     }
 
-    async function saveLedger(e) {
+    async function saveBank(e) {
         e.preventDefault();
         const payload = {
-            ledger_name: document.getElementById("ledger_name").value,
-            ledger_group: document.getElementById("ledger_group").value,
-            ledger_type: document.getElementById("ledger_type").value,
-            gst_no: document.getElementById("gst_no").value || null,
-            pan_no: document.getElementById("pan_no").value || null,
-            state: document.getElementById("state").value || null,
+            bank_name: document.getElementById("bank_name").value,
+            account_number: document.getElementById("account_number").value,
+            branch: document.getElementById("branch").value || null,
+            ifsc_code: document.getElementById("ifsc_code").value || null,
+            swift_code: document.getElementById("swift_code").value || null,
+            account_type: document.getElementById("account_type").value,
+            currency_code: document.getElementById("currency_code").value,
             opening_balance: parseFloat(document.getElementById("opening_balance").value) || 0.0,
-            balance_type: document.getElementById("balance_type").value,
-            phone: document.getElementById("phone").value || null,
-            address: document.getElementById("address").value || null
+            account_ledger_id: parseInt(document.getElementById("account_ledger_id").value) || null,
+            is_export_account: document.getElementById("is_export_account").checked,
+            is_eefc_account: document.getElementById("is_eefc_account").checked,
+            is_default: document.getElementById("is_default").checked,
+            remarks: document.getElementById("remarks").value || null
         };
         try {
-            const res = await fetch(`/finance_accounts/ledger_master/save`, {
+            const res = await fetch(`/finance_accounts/bank_master/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire("Saved", "Ledger successfully registered", "success").then(() => location.reload());
+                Swal.fire("Saved", "Bank account successfully registered", "success").then(() => location.reload());
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }
 
     async function deleteSelected() {
         if (!globalSelectedId) return;
-        const confirmDelete = await Swal.fire({ title: "Delete Ledger?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        const confirmDelete = await Swal.fire({ title: "Delete Bank Account?", text: "Are you sure?", icon: "warning", showCancelButton: true });
         if(confirmDelete.isConfirmed) {
             try {
-                const res = await fetch(`/finance_accounts/ledger_master/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire("Deleted", "Ledger removed", "success").then(() => location.reload());
+                const res = await fetch(`/finance_accounts/bank_master/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Bank account removed", "success").then(() => location.reload());
             } catch(e) { Swal.fire("Error", "Server error", "error"); }
         }
     }

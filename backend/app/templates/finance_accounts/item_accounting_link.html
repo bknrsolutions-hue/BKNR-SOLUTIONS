@@ -13,13 +13,13 @@
         syncThemeFromParent();
     </script>
 <meta charset="utf-8">
-<title>LEDGER MASTER CONFIGURATION - BKNR SOLUTIONS</title>
+<title>ITEM ACCOUNTING LINKS - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<style>:root {
-    /* Standard theme variables mapped to global standard styles */
+<style>
+:root {
     --primary: var(--text);
     --accent: var(--accent);
     --border: var(--border);
@@ -33,23 +33,8 @@
     --card-bg: var(--card-bg);
     --header-bg: var(--header-bg);
     --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
-
-    /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
-    
-    /* Finance / Others specific mapping */
     --card: var(--card-bg);
 }
-
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
 body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
@@ -63,16 +48,16 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
 .section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
 .btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 30px; }
 .table-wrap { margin: 0 20px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 900px; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1000px; }
 .main-table th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
 .main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; overflow-y: auto; max-height: 90vh; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-.field input, .field select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+.field input, .field select, .field textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
 #threeDotsMenu { position: relative; display: none; margin-right: 8px; }
 .menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
 #dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -80,18 +65,18 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
 </style>
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 
 <div class="header-dash">
-    <div class="header-titles"><h2>Ledger Master Directory</h2></div>
+    <div class="header-titles"><h2>Item Accounting Ledger Links</h2></div>
 </div>
 
 <div class="filter-bar">
     <div class="filter-item">
-        <label>Search Ledger</label>
-        <input type="text" id="searchBox" placeholder="Ledger Name..." onkeyup="applyFilters()">
+        <label>Search Item</label>
+        <input type="text" id="searchBox" placeholder="Item Name..." onkeyup="applyFilters()">
     </div>
     <button class="btn-clear" onclick="resetFilters()">Clear</button>
 </div>
@@ -102,10 +87,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="dropdownMenu">
-                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Mapping</div>
             </div>
         </div>
-        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW LEDGER</button>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-link"></i> ADD NEW MAPPING</button>
     </div>
 </div>
 
@@ -114,29 +99,33 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <thead>
             <tr>
                 <th width="40">Sl</th>
-                <th style="text-align: left;">Ledger Name</th>
-                <th style="text-align: left;">Group</th>
+                <th style="text-align: left;">Item Name</th>
+                <th>Species</th>
                 <th>Type</th>
-                <th>GST No</th>
-                <th>PAN No</th>
-                <th>State</th>
-                <th style="text-align: right;">Opening Bal (₹)</th>
+                <th>HSN Code</th>
+                <th>Purchase A/C</th>
+                <th>Sales A/C</th>
+                <th>Inventory A/C</th>
+                <th>COGS A/C</th>
+                <th>WIP A/C</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not history %}
-            <tr><td colspan="8" style="padding:40px; color:var(--muted);">No Ledger Masters registered yet.</td></tr>
+            <tr><td colspan="10" style="padding:40px; color:var(--muted);">No Item Accounting Links configured yet.</td></tr>
             {% else %}
                 {% for row in history %}
                 <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
                     <td>{{ loop.index }}</td>
-                    <td style="text-align: left; font-weight:700;">{{ row.ledger_name }}</td>
-                    <td style="text-align: left;">{{ row.group.group_name if row.group else '-' }}</td>
-                    <td>{{ row.group.group_type if row.group else '-' }}</td>
-                    <td>{{ row.gstin or '-' }}</td>
-                    <td>{{ row.pan or '-' }}</td>
-                    <td>{{ row.currency_code or 'INR' }}</td>
-                    <td style="text-align: right;">{{ "{:,.2f}".format(row.opening_balance or 0) }} {{ row.opening_balance_type }}</td>
+                    <td style="text-align: left; font-weight:700;">{{ row.item_name }}</td>
+                    <td>{{ row.species or '-' }}</td>
+                    <td>{{ row.item_type }}</td>
+                    <td>{{ row.hsn_code or '-' }}</td>
+                    <td>{{ row.purchase_account.ledger_name if row.purchase_account else '-' }}</td>
+                    <td>{{ row.sales_account.ledger_name if row.sales_account else '-' }}</td>
+                    <td>{{ row.inventory_account.ledger_name if row.inventory_account else '-' }}</td>
+                    <td>{{ row.cogs_account.ledger_name if row.cogs_account else '-' }}</td>
+                    <td>{{ row.wip_account.ledger_name if row.wip_account else '-' }}</td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -148,47 +137,79 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <div class="modal" id="entryModal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <h3 style="margin:0; color:var(--primary); font-weight:800;">New Ledger Master</h3>
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Configure Item Accounting Links</h3>
             <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
         </div>
-        <form id="ledgerForm" onsubmit="saveLedger(event)">
+        <form id="mappingForm" onsubmit="saveMapping(event)">
             <div class="form-grid">
-                <div class="field"><label>Ledger Name</label><input type="text" id="ledger_name" required></div>
+                <div class="field"><label>Item/Product Name</label><input type="text" id="item_name" placeholder="e.g. Vannamei 31/40 HLSO" required></div>
+                <div class="field"><label>Species</label><input type="text" id="species" placeholder="e.g. Black Tiger / Vannamei"></div>
                 <div class="field">
-                    <label>Ledger Group</label>
-                    <select id="ledger_group" required>
-                        {% for group in groups %}
-                        <option value="{{ group.group_name }}" data-type="{{ group.group_type }}">{{ group.group_name }}</option>
+                    <label>Item Type</label>
+                    <select id="item_type">
+                        <option value="FINISHED_GOOD">FINISHED GOOD</option>
+                        <option value="RAW_MATERIAL">RAW MATERIAL</option>
+                        <option value="PACKING">PACKING MATERIAL</option>
+                        <option value="CHEMICAL">CHEMICAL</option>
+                        <option value="OTHER">OTHER</option>
+                    </select>
+                </div>
+                <div class="field"><label>HSN Code</label><input type="text" id="hsn_code"></div>
+                <div class="field"><label>Default GST %</label><input type="number" step="any" id="default_gst_percent" value="0.0"></div>
+                
+                <div style="grid-column: span 2; border-bottom: 1px solid var(--border); margin: 10px 0; padding-bottom: 5px;">
+                    <h4 style="margin:0; color:var(--accent); font-weight: 800; font-size: 11px; text-transform: uppercase;">Ledger Mapping Options</h4>
+                </div>
+
+                <div class="field">
+                    <label>Purchase Account Head</label>
+                    <select id="purchase_account_id">
+                        <option value="">-- Select Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="field">
-                    <label>Ledger Type</label>
-                    <select id="ledger_type">
-                        <option value="ASSET">ASSET</option>
-                        <option value="LIABILITY">LIABILITY</option>
-                        <option value="INCOME">INCOME</option>
-                        <option value="EXPENSE">EXPENSE</option>
-                        <option value="EQUITY">EQUITY</option>
+                    <label>Sales Account Head</label>
+                    <select id="sales_account_id">
+                        <option value="">-- Select Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <div class="field"><label>GST No</label><input type="text" id="gst_no"></div>
-                <div class="field"><label>PAN No</label><input type="text" id="pan_no"></div>
-                <div class="field"><label>Currency</label><input type="text" id="state" value="INR"></div>
-                <div class="field"><label>Opening Balance</label><input type="number" step="any" id="opening_balance" value="0.00"></div>
                 <div class="field">
-                    <label>Balance Type</label>
-                    <select id="balance_type">
-                        <option value="DR">DR (Debit)</option>
-                        <option value="CR">CR (Credit)</option>
+                    <label>Inventory Account Head</label>
+                    <select id="inventory_account_id">
+                        <option value="">-- Select Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <div class="field"><label>Phone</label><input type="text" id="phone"></div>
-                <div class="field"><label>Address</label><input type="text" id="address"></div>
+                <div class="field">
+                    <label>COGS Account Head</label>
+                    <select id="cogs_account_id">
+                        <option value="">-- Select Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                    <label>WIP Account Head</label>
+                    <select id="wip_account_id">
+                        <option value="">-- Select Ledger --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
                 <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add">Save Ledger</button>
+                <button type="submit" class="btn-add">Save Mapping</button>
             </div>
         </form>
     </div>
@@ -212,12 +233,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
-
-    document.getElementById("ledger_group").addEventListener("change", (e) => {
-        const selected = e.target.options[e.target.selectedIndex];
-        const type = selected.getAttribute("data-type");
-        if (type) document.getElementById("ledger_type").value = type;
-    });
     
     function applyFilters() {
         const query = document.getElementById("searchBox").value.toLowerCase().trim();
@@ -236,40 +251,40 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         applyFilters();
     }
 
-    async function saveLedger(e) {
+    async function saveMapping(e) {
         e.preventDefault();
         const payload = {
-            ledger_name: document.getElementById("ledger_name").value,
-            ledger_group: document.getElementById("ledger_group").value,
-            ledger_type: document.getElementById("ledger_type").value,
-            gst_no: document.getElementById("gst_no").value || null,
-            pan_no: document.getElementById("pan_no").value || null,
-            state: document.getElementById("state").value || null,
-            opening_balance: parseFloat(document.getElementById("opening_balance").value) || 0.0,
-            balance_type: document.getElementById("balance_type").value,
-            phone: document.getElementById("phone").value || null,
-            address: document.getElementById("address").value || null
+            item_name: document.getElementById("item_name").value,
+            species: document.getElementById("species").value || null,
+            item_type: document.getElementById("item_type").value,
+            hsn_code: document.getElementById("hsn_code").value || null,
+            default_gst_percent: parseFloat(document.getElementById("default_gst_percent").value) || 0.0,
+            purchase_account_id: parseInt(document.getElementById("purchase_account_id").value) || null,
+            sales_account_id: parseInt(document.getElementById("sales_account_id").value) || null,
+            inventory_account_id: parseInt(document.getElementById("inventory_account_id").value) || null,
+            cogs_account_id: parseInt(document.getElementById("cogs_account_id").value) || null,
+            wip_account_id: parseInt(document.getElementById("wip_account_id").value) || null
         };
         try {
-            const res = await fetch(`/finance_accounts/ledger_master/save`, {
+            const res = await fetch(`/finance_accounts/item_accounting_link/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire("Saved", "Ledger successfully registered", "success").then(() => location.reload());
+                Swal.fire("Saved", "Item accounting links successfully mapped", "success").then(() => location.reload());
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }
 
     async function deleteSelected() {
         if (!globalSelectedId) return;
-        const confirmDelete = await Swal.fire({ title: "Delete Ledger?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        const confirmDelete = await Swal.fire({ title: "Delete Mapping?", text: "Are you sure?", icon: "warning", showCancelButton: true });
         if(confirmDelete.isConfirmed) {
             try {
-                const res = await fetch(`/finance_accounts/ledger_master/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire("Deleted", "Ledger removed", "success").then(() => location.reload());
+                const res = await fetch(`/finance_accounts/item_accounting_link/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Item accounting mapping removed", "success").then(() => location.reload());
             } catch(e) { Swal.fire("Error", "Server error", "error"); }
         }
     }

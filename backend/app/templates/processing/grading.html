@@ -382,14 +382,6 @@ const RAW_VARIETIES = [{% for v in variety_list %}"{{v}}",{% endfor %}];
 const RAW_LOCATIONS = [{% for loc in peeling_locations %}"{{loc}}",{% endfor %}];
 const RAW_COMPANIES = [{% for p in prod_for_list %}"{{p}}",{% endfor %}];
 
-const DEHEADING_POOL_DATA = [
-    {% if deheading_pending %}
-        {% for item in deheading_pending %}
-        { batch: "{{item.batch_number}}", comp: "{{item.production_for}}", loc: "{{item.peeling_at}}", sps: "{{item.species}}", hoso: "{{item.hoso_count}}" },
-        {% endfor %}
-    {% endif %}
-];
-
 const BACKEND_GLOBAL_COMPANY = "{{ global_production_for if global_production_for else '' }}";
 const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }}";
 
@@ -431,48 +423,7 @@ function resetCascadedFields() {
     fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
 }
 
-function loadMatchingInputSpecs() {
-    const batchVal = document.getElementById("batch").value.trim();
-    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
-    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
-    const hosoVal = document.getElementById("hoso").value.trim();
 
-    const specSelect = document.getElementById("species");
-    
-    // Always keep variety populated regardless of pool matching
-    fillStaticSelect('variety', RAW_VARIETIES, 'Select Variety', true);
-
-    if(!hosoVal) { 
-        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
-        return; 
-    }
-
-    const matches = DEHEADING_POOL_DATA.filter(item => 
-        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal && item.hoso === hosoVal
-    );
-
-    if(matches.length > 0) {
-        specSelect.innerHTML = '<option value="">Select Species</option>';
-        const uniqueSpecs = [...new Set(matches.map(m => m.sps))].filter(s => s && s.trim() !== "").sort();
-        
-        uniqueSpecs.forEach(s => { 
-            let opt = document.createElement('option'); 
-            opt.value = s; 
-            opt.innerText = s; 
-            specSelect.appendChild(opt); 
-        });
-        
-        // Ensure "Add New" trigger is appended even for filtered matches
-        let addNewOpt = document.createElement('option'); 
-        addNewOpt.value = "➕ Add New Species";
-        addNewOpt.innerText = "➕ Add New Species";
-        specSelect.appendChild(addNewOpt);
-
-        if(uniqueSpecs.length === 1) specSelect.value = uniqueSpecs[0];
-    } else {
-        fillStaticSelect('species', RAW_SPECIES, 'Select Species', true);
-    }
-}
 
 function changeLiveStatus(selectElement) {
     const nextVal = selectElement.value;
@@ -588,40 +539,44 @@ function populateLocationsBasedOnCompany() {
 
 function handleLocationChange() {
     resetCascadedFields();
-    const compVal = document.getElementById('production_for').value.trim().toUpperCase();
-    const locVal = document.getElementById('peeling_at').value.trim().toUpperCase();
+    const compVal = document.getElementById('production_for').value;
+    const locVal = document.getElementById('peeling_at').value;
     const batchSelect = document.getElementById('batch');
 
     if(!compVal || !locVal) return;
 
-    const relevantBatches = [...new Set(DEHEADING_POOL_DATA.filter(item => 
-        item.comp.trim().toUpperCase() === compVal && 
-        item.loc.trim().toUpperCase() === locVal
-    ).map(item => item.batch))].sort();
-
-    relevantBatches.forEach(batch => {
-        let opt = document.createElement('option'); opt.value = batch; opt.innerText = batch;
-        batchSelect.appendChild(opt);
+    fetch(`/processing/grading/get_batches/${encodeURIComponent(compVal)}/${encodeURIComponent(locVal)}`)
+    .then(r => r.json())
+    .then(data => {
+        batchSelect.innerHTML = '<option value="">Select Batch</option>';
+        if(data.batches) data.batches.forEach(b => {
+            let opt = document.createElement('option');
+            opt.value = b;
+            opt.innerText = b;
+            batchSelect.appendChild(opt);
+        });
     });
 }
 
 function handleBatchChange() {
-    const batchVal = document.getElementById("batch").value.trim();
-    const compVal = document.getElementById("production_for").value.trim().toUpperCase();
-    const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
+    const batchVal = document.getElementById("batch").value;
+    const compVal = document.getElementById("production_for").value;
+    const locVal = document.getElementById("peeling_at").value;
     const hosoSelect = document.getElementById("hoso");
 
     hosoSelect.innerHTML = '<option value="">Select Count</option>';
 
     if(!batchVal || !compVal || !locVal) return;
 
-    const relevantCounts = [...new Set(DEHEADING_POOL_DATA.filter(item => 
-        item.batch === batchVal && item.comp.toUpperCase() === compVal && item.loc.toUpperCase() === locVal
-    ).map(item => item.hoso))].sort();
-
-    relevantCounts.forEach(c => {
-        let opt = document.createElement('option'); opt.value = c; opt.innerText = c;
-        hosoSelect.appendChild(opt);
+    fetch(`/processing/grading/get_hoso/${encodeURIComponent(compVal)}/${encodeURIComponent(locVal)}/${encodeURIComponent(batchVal)}`)
+    .then(r => r.json())
+    .then(data => {
+        if(data.counts) data.counts.forEach(c => {
+            let opt = document.createElement('option');
+            opt.value = c;
+            opt.innerText = c;
+            hosoSelect.appendChild(opt);
+        });
     });
 }
 

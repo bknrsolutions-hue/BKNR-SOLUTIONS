@@ -33,7 +33,19 @@ from app.database.models.bills import ElectricityLog, DieselLog, PurchaseInvoice
 # General Stock
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 # Payments
-from app.database.models.payments import CustomerReceivable, VendorPayment, BankTransaction, ExpenseVoucher, JournalEntry, JournalEntryLine, LedgerMaster, PaymentReceipt, BuyerAgingSummary, ERPAlertEngine
+from app.database.models.payments import (
+    CustomerReceivable,
+    VendorPayment,
+    BankTransaction,
+    ExpenseVoucher,
+    JournalEntry,
+    JournalEntryLine,
+    PaymentReceipt,
+    BuyerAgingSummary,
+    ERPAlertEngine,
+)
+
+from app.database.models.enterprise_finance import LedgerMaster
 # Masters
 from app.database.models.criteria import brands, purposes, production_at, production_for, glazes, grades, varieties, countries, buyers, buyer_agents, packing_styles, production_types, chemicals, contractors, suppliers, peeling_rates, species, purchasing_locations, vehicle_numbers, coldstore_locations, freezers, grade_to_hoso, HOSO_HLSO_Yields, peeling_at, shipping_vendors, vendors, hsn_codes
 # HRMS

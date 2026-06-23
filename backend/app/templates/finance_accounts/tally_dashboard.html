@@ -51,6 +51,12 @@
             flex: 1;
             padding: 20px;
             background: var(--bg);
+            min-width: 0;
+        }
+        @media(max-width: 768px) {
+            .tally-container { display: block; }
+            .sidebar-menu { display: none; }
+            .main-workspace { width: 100%; padding: 12px; }
         }
         .kpi-grid {
             display: grid;
@@ -149,6 +155,38 @@
         .tree-label:hover {
             background: var(--row-hover);
         }
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+        }
+        .module-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .module-card:hover {
+            background: var(--row-hover);
+            color: var(--accent);
+        }
+        .module-card i {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: var(--header-bg);
+        }
+        .module-card span {
+            font-size: 12px;
+            font-weight: 800;
+        }
     </style>
 </head>
 <body>
@@ -159,17 +197,19 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
         <span style="font-size:11px; font-weight:800; color:var(--text-muted);">PERIOD: FY 2026-27</span>
+        <button class="btn btn-primary" onclick="setupAccountingDefaults()"><i class="fa-solid fa-screwdriver-wrench"></i> Setup Masters</button>
         <button class="btn btn-save" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
     </div>
 </div>
 
 <div class="tally-container">
     <div class="sidebar-menu">
-        <div class="menu-link active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</div>
-        <div class="menu-link" onclick="switchTab('coa')"><i class="fa-solid fa-folder-tree"></i> Chart of Accounts</div>
-        <div class="menu-link" onclick="switchTab('voucher')"><i class="fa-solid fa-receipt"></i> Voucher Entry</div>
-        <div class="menu-link" onclick="switchTab('reports')"><i class="fa-solid fa-file-invoice-dollar"></i> Financial Reports</div>
-        <div class="menu-link" onclick="switchTab('bank-rec')"><i class="fa-solid fa-building-columns"></i> Bank Reconcile</div>
+        <div class="menu-link active" onclick="switchTab('dashboard', event)"><i class="fa-solid fa-chart-line"></i> Dashboard</div>
+        <div class="menu-link" onclick="switchTab('coa', event)"><i class="fa-solid fa-folder-tree"></i> Chart of Accounts</div>
+        <div class="menu-link" onclick="switchTab('modules', event)"><i class="fa-solid fa-grid-2"></i> Finance Modules</div>
+        <div class="menu-link" onclick="switchTab('voucher', event)"><i class="fa-solid fa-receipt"></i> Voucher Entry</div>
+        <div class="menu-link" onclick="switchTab('reports', event)"><i class="fa-solid fa-file-invoice-dollar"></i> Financial Reports</div>
+        <div class="menu-link" onclick="switchTab('bank-rec', event)"><i class="fa-solid fa-building-columns"></i> Bank Reconcile</div>
     </div>
 
     <div class="main-workspace">
@@ -178,62 +218,41 @@
         <div id="tab-dashboard" class="tab-content">
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <h4>Cash Balance</h4>
-                    <p class="value" id="kpi-cash">₹2,84,500.00 DR</p>
+                    <h4>Cash & Bank</h4>
+                    <p class="value" id="kpi-cash">₹0.00 DR</p>
                 </div>
                 <div class="kpi-card">
-                    <h4>Bank Balance</h4>
-                    <p class="value" id="kpi-bank">₹1,42,90,450.00 DR</p>
+                    <h4>Net Profit</h4>
+                    <p class="value" id="kpi-profit">₹0.00</p>
                 </div>
                 <div class="kpi-card">
                     <h4>Aged Receivables</h4>
-                    <p class="value" id="kpi-receivable">₹18,50,000.00 DR</p>
+                    <p class="value" id="kpi-receivable">₹0.00 DR</p>
                 </div>
                 <div class="kpi-card">
                     <h4>Aged Payables</h4>
-                    <p class="value" id="kpi-payable">₹22,10,000.00 CR</p>
+                    <p class="value" id="kpi-payable">₹0.00 CR</p>
                 </div>
                 <div class="kpi-card">
-                    <h4>GST Liability</h4>
-                    <p class="value" id="kpi-gst">₹3,40,200.00 CR</p>
+                    <h4>Today Vouchers</h4>
+                    <p class="value" id="kpi-daybook">0</p>
                 </div>
             </div>
 
             <div class="tally-panel">
-                <h3>Financial Summary (Actual vs Budget)</h3>
+                <h3>Financial Summary</h3>
                 <div class="table-wrap">
                     <table>
                         <thead>
                             <tr>
-                                <th class="text-left">Expense Category</th>
-                                <th>Actual Spent</th>
-                                <th>Budget Limit</th>
-                                <th>Variance</th>
+                                <th class="text-left">Metric</th>
+                                <th>Amount</th>
+                                <th>Book Side</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td class="text-left" style="font-weight:700;">Raw Shrimp Purchases</td>
-                                <td>₹85,00,000.00</td>
-                                <td>₹90,00,000.00</td>
-                                <td style="color:var(--completed-text);">-₹5,00,000.00</td>
-                                <td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">UNDER LIMIT</span></td>
-                            </tr>
-                            <tr>
-                                <td class="text-left" style="font-weight:700;">Peeling & Processing</td>
-                                <td>₹14,50,000.00</td>
-                                <td>₹12,00,000.00</td>
-                                <td style="color:var(--cancelled-text);">+₹2,50,000.00</td>
-                                <td><span class="bg-cancelled" style="padding:2px 8px; border-radius:4px;">EXCEEDED</span></td>
-                            </tr>
-                            <tr>
-                                <td class="text-left" style="font-weight:700;">Cold Storage Rent</td>
-                                <td>₹6,20,000.00</td>
-                                <td>₹6,00,000.00</td>
-                                <td style="color:var(--cancelled-text);">+₹20,000.00</td>
-                                <td><span class="bg-cancelled" style="padding:2px 8px; border-radius:4px;">EXCEEDED</span></td>
-                            </tr>
+                        <tbody id="summary-body">
+                            <tr><td colspan="4" style="padding:20px;">Loading live accounting summary...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -268,6 +287,43 @@
             </div>
         </div>
 
+        <!-- MODULES TAB -->
+        <div id="tab-modules" class="tab-content" style="display:none;">
+            <div class="tally-panel">
+                <h3>Masters</h3>
+                <div class="module-grid">
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/ledger_master/entry')"><i class="fa-solid fa-folder-open"></i><span>Ledger Master</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/bank_master/entry')"><i class="fa-solid fa-building-columns"></i><span>Bank Master</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/item_accounting_link/entry')"><i class="fa-solid fa-link"></i><span>Item Accounting Link</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/fixed_assets/entry')"><i class="fa-solid fa-building"></i><span>Fixed Assets</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/gst_register/entry')"><i class="fa-solid fa-percent"></i><span>GST Register</span></div>
+                </div>
+            </div>
+            <div class="tally-panel">
+                <h3>Transactions</h3>
+                <div class="module-grid">
+                    <div class="module-card" onclick="switchTab('voucher')"><i class="fa-solid fa-receipt"></i><span>Voucher Entry</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/journal_entry/entry')"><i class="fa-solid fa-book"></i><span>Journal Entries</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/payment_receipt/entry')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Payment Receipts</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/bank_transaction/entry')"><i class="fa-solid fa-money-check-dollar"></i><span>Bank Transactions</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/customer_receivable/entry')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Customer Receivables</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/vendor_payment/entry')"><i class="fa-solid fa-money-bill-transfer"></i><span>Vendor Payments</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/expense_voucher/entry')"><i class="fa-solid fa-receipt"></i><span>Expense Vouchers</span></div>
+                </div>
+            </div>
+            <div class="tally-panel">
+                <h3>Integrated Finance</h3>
+                <div class="module-grid">
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/export_incentive_register/entry')"><i class="fa-solid fa-award"></i><span>Export Incentives</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/lc_tracking/entry')"><i class="fa-solid fa-file-shield"></i><span>LC Tracking</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/salary_processing/entry')"><i class="fa-solid fa-calculator"></i><span>Salary Processing</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/production_cost_allocation/entry')"><i class="fa-solid fa-coins"></i><span>Production Cost Allocation</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/dashboard/finance_dashboard')"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></div>
+                    <div class="module-card" onclick="openFinanceModule('/dashboard/costing_dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></div>
+                </div>
+            </div>
+        </div>
+
         <!-- VOUCHER ENTRY TAB -->
         <div id="tab-voucher" class="tab-content" style="display:none;">
             <div class="tally-panel">
@@ -281,10 +337,7 @@
                         <div class="field">
                             <label>Voucher Type</label>
                             <select id="v_type" required>
-                                <option value="1">Payment</option>
-                                <option value="2">Receipt</option>
-                                <option value="3">Journal</option>
-                                <option value="4">Contra</option>
+                                <option value="">Loading voucher types...</option>
                             </select>
                         </div>
                         <div class="field">
@@ -393,23 +446,97 @@
 
 <script>
     // Tab switching state
-    function switchTab(tabId) {
+    function switchTab(tabId, evt) {
         document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
         document.getElementById(`tab-${tabId}`).style.display = 'block';
         
         document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+    }
+
+    function openFinanceModule(route) {
+        if (window.parent && typeof window.parent.loadPage === 'function') {
+            window.parent.loadPage(route, null, 'Finance & Accounts');
+        } else {
+            window.location.href = route;
+        }
     }
 
     // Dynamic voucher row items
     let rowIdSeq = 0;
-    let ledgersList = [
-        {id: 1, name: "Raw Shrimp Purchase A/c"},
-        {id: 2, name: "Export Sales A/c"},
-        {id: 3, name: "Duties & Taxes"},
-        {id: 4, name: "TDS Payable A/c"},
-        {id: 5, name: "SBI Cash Credit A/c"}
-    ];
+    let ledgersList = [];
+    let voucherTypesList = [];
+
+    function money(value, side = "") {
+        const amount = Math.abs(parseFloat(value) || 0);
+        return `₹${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${side ? " " + side : ""}`;
+    }
+
+    async function setupAccountingDefaults() {
+        try {
+            const res = await fetch('/finance_accounts/setup/defaults', { method: 'POST' });
+            const out = await res.json();
+            if (res.ok && out.success) {
+                Swal.fire("Ready", out.message, "success").then(() => location.reload());
+            } else {
+                Swal.fire("Setup Failed", out.detail || out.message || "Unable to setup masters", "error");
+            }
+        } catch (err) {
+            Swal.fire("Network Error", "Unable to setup accounting masters", "error");
+        }
+    }
+
+    async function loadDashboardSummary() {
+        try {
+            const res = await fetch('/finance_accounts/dashboard/summary');
+            const out = await res.json();
+            if (!res.ok || !out.success) return;
+            const k = out.kpis || {};
+            document.getElementById("kpi-cash").innerText = money(k.cash_bank, k.cash_bank >= 0 ? "DR" : "CR");
+            document.getElementById("kpi-profit").innerText = money(k.net_profit, k.net_profit >= 0 ? "CR" : "DR");
+            document.getElementById("kpi-receivable").innerText = money(k.receivables, "DR");
+            document.getElementById("kpi-payable").innerText = money(k.payables, "CR");
+            document.getElementById("kpi-daybook").innerText = k.day_vouchers || 0;
+
+            document.getElementById("summary-body").innerHTML = `
+                <tr><td class="text-left" style="font-weight:700;">Total Income</td><td>${money(k.income)}</td><td>Credit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Total Expense</td><td>${money(k.expense)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Assets</td><td>${money(k.assets)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Liabilities + Equity</td><td>${money((k.liabilities || 0) + (k.equity || 0))}</td><td>Credit</td><td><span class="${out.balance_sheet_balanced ? 'bg-completed' : 'bg-pending'}" style="padding:2px 8px; border-radius:4px;">${out.balance_sheet_balanced ? 'BALANCED' : 'CHECK'}</span></td></tr>
+            `;
+        } catch (err) {
+            document.getElementById("summary-body").innerHTML = `<tr><td colspan="4" style="padding:20px; color:var(--cancelled-text);">Unable to load accounting summary.</td></tr>`;
+        }
+    }
+
+    async function loadLedgers() {
+        try {
+            const res = await fetch('/finance_accounts/ledgers');
+            const out = await res.json();
+            if (res.ok && Array.isArray(out.data)) {
+                ledgersList = out.data.map(l => ({ id: l.id, name: l.name || l.ledger_name || l.ledger_code }));
+            }
+        } catch (err) {
+            ledgersList = [];
+        }
+    }
+
+    async function loadVoucherTypes() {
+        const select = document.getElementById("v_type");
+        try {
+            const res = await fetch('/finance_accounts/voucher-types');
+            const out = await res.json();
+            if (res.ok && Array.isArray(out.data)) {
+                voucherTypesList = out.data;
+                select.innerHTML = voucherTypesList.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            }
+        } catch (err) {
+            voucherTypesList = [];
+        }
+        if (!voucherTypesList.length) {
+            select.innerHTML = '<option value="">No voucher types found</option>';
+        }
+    }
 
     function addVoucherRow() {
         const tbody = document.getElementById("lines-body");
@@ -417,11 +544,13 @@
         tr.className = "voucher-row";
         tr.id = `row-${rowIdSeq}`;
         
-        let selectOptions = ledgersList.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+        let selectOptions = ledgersList.length
+            ? ledgersList.map(l => `<option value="${l.id}">${l.name}</option>`).join('')
+            : '<option value="">No ledgers found</option>';
 
         tr.innerHTML = `
             <td>
-                <select class="ledger-select" required>
+                <select class="ledger-select" required ${ledgersList.length ? '' : 'disabled'}>
                     ${selectOptions}
                 </select>
             </td>
@@ -452,7 +581,7 @@
         const errDiv = document.getElementById("balance-error");
         const submitBtn = document.getElementById("save-voucher-btn");
 
-        if (totalDr === totalCr && totalDr > 0) {
+        if (totalDr === totalCr && totalDr > 0 && ledgersList.length > 0) {
             errDiv.style.display = 'none';
             submitBtn.disabled = false;
         } else {
@@ -463,6 +592,11 @@
 
     async function submitNewVoucher(e) {
         e.preventDefault();
+
+        if (!ledgersList.length) {
+            Swal.fire("Ledger Missing", "Please create ledger masters before posting vouchers.", "warning");
+            return;
+        }
         
         const details = [];
         document.querySelectorAll('.voucher-row').forEach(row => {
@@ -492,7 +626,9 @@
             if(res.ok) {
                 Swal.fire("Voucher Saved", out.message, "success");
                 document.getElementById("lines-body").innerHTML = "";
+                addVoucherRow();
                 calculateTotals();
+                loadDashboardSummary();
             } else {
                 Swal.fire("Post Failed", out.detail || "Verification failed", "error");
             }
@@ -506,7 +642,16 @@
         container.innerHTML = `<p style="padding:20px; text-align:center;">Calculating rollups and formatting balance books...</p>`;
         
         try {
-            const res = await fetch(`/finance_accounts/reports/${type}`);
+            let reportUrl = `/finance_accounts/reports/${type}`;
+            if (type === 'profit-loss') {
+                const today = new Date();
+                const fyStartYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+                const startDate = `${fyStartYear}-04-01`;
+                const endDate = today.toISOString().slice(0, 10);
+                reportUrl += `?start_date=${startDate}&end_date=${endDate}`;
+            }
+
+            const res = await fetch(reportUrl);
             const data = await res.json();
             
             if (type === 'trial-balance') {
@@ -530,6 +675,41 @@
                         <tbody>${rowsHtml}</tbody>
                     </table>
                 `;
+            } else if (type === 'profit-loss') {
+                const d = data.data || {};
+                const incomeRows = ((d.details || {}).income_ledgers || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                const expenseRows = ((d.details || {}).expense_ledgers || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                container.innerHTML = `
+                    <table>
+                        <thead><tr><th class="text-left">Profit & Loss Ledger</th><th class="text-right">Amount</th></tr></thead>
+                        <tbody>
+                            <tr><td class="text-left" style="font-weight:800;">Income</td><td class="text-right">${money(d.total_income || 0)}</td></tr>
+                            ${incomeRows}
+                            <tr><td class="text-left" style="font-weight:800;">Expense</td><td class="text-right">${money(d.total_expense || 0)}</td></tr>
+                            ${expenseRows}
+                            <tr><td class="text-left" style="font-weight:800;">Net Profit / Loss</td><td class="text-right" style="font-weight:800;">${money(d.net_profit || 0)}</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            } else if (type === 'balance-sheet') {
+                const d = data.data || {};
+                const assets = (d.details?.assets || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                const liabilities = (d.details?.liabilities || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                const equity = (d.details?.equity || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                container.innerHTML = `
+                    <table>
+                        <thead><tr><th class="text-left">Balance Sheet Head</th><th class="text-right">Amount</th></tr></thead>
+                        <tbody>
+                            <tr><td class="text-left" style="font-weight:800;">Assets</td><td class="text-right">${money(d.total_assets || 0)}</td></tr>
+                            ${assets}
+                            <tr><td class="text-left" style="font-weight:800;">Liabilities</td><td class="text-right">${money(d.total_liabilities || 0)}</td></tr>
+                            ${liabilities}
+                            <tr><td class="text-left" style="font-weight:800;">Equity</td><td class="text-right">${money(d.total_equity || 0)}</td></tr>
+                            ${equity}
+                            <tr><td class="text-left" style="font-weight:800;">Difference</td><td class="text-right" style="font-weight:800;">${money(d.difference || 0)}</td></tr>
+                        </tbody>
+                    </table>
+                `;
             } else {
                 container.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Displaying computed balances for ${type.replace('-', ' ').toUpperCase()}</p>`;
             }
@@ -543,7 +723,9 @@
     }
 
     // Initialize first row
-    addVoucherRow();
+    loadDashboardSummary();
+    loadVoucherTypes();
+    loadLedgers().finally(addVoucherRow);
 </script>
 
 </body>

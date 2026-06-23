@@ -78,6 +78,13 @@ class RawMaterialPurchasing(Base):
     hsn_code = Column(String(20))
     peeling_at = Column(String(255))
     production_for = Column(String(255))
+
+    # --- Accounting Integration (Added) ---
+    # Auto-posted when RM purchase is confirmed
+    journal_id = Column(Integer, nullable=True)              # FK → voucher_headers.id
+    inventory_ledger_id = Column(Integer, nullable=True)     # FK → ledger_masters.id (RM Inventory Dr)
+    supplier_ledger_id = Column(Integer, nullable=True)      # FK → ledger_masters.id (Supplier Cr)
+    cost_center_id = Column(Integer, nullable=True)          # FK → cost_centers.id (e.g. Production)
 # ---------------------------------------------------------
 # DE-HEADING
 # ---------------------------------------------------------

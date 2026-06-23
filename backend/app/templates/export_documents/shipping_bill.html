@@ -103,6 +103,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="dropdownMenu">
+                <div class="menu-item" onclick="printSelected()"><i class="fa-solid fa-print"></i> Print Format</div>
+                <div class="menu-item" onclick="pdfSelected()"><i class="fa-solid fa-file-pdf"></i> Generate PDF</div>
+                <div class="menu-item" onclick="uploadPdfSelected()"><i class="fa-solid fa-upload"></i> Upload PDF Copy</div>
                 <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
             </div>
         </div>
@@ -150,6 +153,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </tbody>
     </table>
 </div>
+
+<input type="file" id="pdfUploadInput" accept="application/pdf" style="display:none;" onchange="sendPdfUpload(this.files[0])">
 
 <!-- Modal -->
 <div class="modal" id="entryModal">
@@ -202,6 +207,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 </div>
 
 <script>
+    const exportDocType = "shipping_bill";
     let globalSelectedId = null;
     document.getElementById("dotsBtn").onclick = (e) => {
         e.stopPropagation();
@@ -229,6 +235,41 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+
+    function ensureSelection() {
+        if (!globalSelectedId) {
+            Swal.fire("Select Entry", "Please select one row first.", "info");
+            return false;
+        }
+        return true;
+    }
+
+    function printSelected() {
+        if (!ensureSelection()) return;
+        window.open(`/export_documents/${exportDocType}/print/${globalSelectedId}`, "_blank");
+    }
+
+    function pdfSelected() {
+        if (!ensureSelection()) return;
+        window.open(`/export_documents/${exportDocType}/pdf/${globalSelectedId}`, "_blank");
+    }
+
+    function uploadPdfSelected() {
+        if (!ensureSelection()) return;
+        document.getElementById("pdfUploadInput").click();
+    }
+
+    async function sendPdfUpload(file) {
+        if (!file || !ensureSelection()) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("document_kind", "SIGNED_COPY");
+        formData.append("remarks", "Uploaded/updated export document copy");
+        const res = await fetch(`/export_documents/${exportDocType}/upload_pdf/${globalSelectedId}`, { method: "POST", body: formData });
+        const out = await res.json();
+        if (out.success) Swal.fire("Saved", "PDF copy saved in DB", "success").then(() => location.reload());
+        else Swal.fire("Error", out.message || "Upload failed", "error");
+    }
     
     function applyFilters() {
         const query = document.getElementById("searchBox").value.toLowerCase().trim();

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        function syncThemeFromParent() {
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                    if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+                }
+            } catch(e) {}
+        }
+        syncThemeFromParent();
+    </script>
+<meta charset="utf-8">
+<title>EXPORT INCENTIVES DIRECTORY - BKNR SOLUTIONS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --card: var(--card-bg);
+}
+
+*{box-sizing:border-box; font-family: 'Inter', sans-serif;}
+body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px;}
+.header-dash { background: var(--card); padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.header-titles h2{margin:0; font-size:15px; color:var(--primary); font-weight: 800;}
+.filter-bar { background: var(--card); padding: 8px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.filter-item { display: flex; flex-direction: column; gap: 2px; flex: 0 0 180px; }
+.filter-item label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+.filter-item input, .filter-item select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; height: 30px; }
+.btn-clear { background: var(--muted); color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: 700; cursor: pointer; height: 30px; font-size: 11px; }
+.section-header { padding: 10px 20px 4px; display: flex; justify-content: space-between; align-items: center; }
+.btn-add { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 30px; }
+.table-wrap { margin: 0 20px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1050px; }
+.main-table th { background: #f8fafc; padding: 8px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.main-table td { padding: 8px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 95%; max-width: 750px; overflow-y: auto; max-height: 90vh; }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.field input, .field select, .field textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; }
+#threeDotsMenu { position: relative; display: none; margin-right: 8px; }
+.menu-trigger { background: var(--card); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+#dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
+.menu-item:hover { background: #f8fafc; color: var(--accent); }
+.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+.status-pill { padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; display: inline-block; text-transform: uppercase; }
+.status-pending { background: #fffbeb; color: #b45309; }
+.status-sanctioned { background: #eff6ff; color: #1d4ed8; }
+.status-utilized { background: #ecfdf5; color: #047857; }
+.status-expired { background: #fef2f2; color: #b91c1c; }
+</style>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
+</head>
+<body>
+
+<div class="header-dash">
+    <div class="header-titles"><h2>Export Incentives Directory</h2></div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-item">
+        <label>Search Invoice / SB</label>
+        <input type="text" id="searchBox" placeholder="Invoice No..." onkeyup="applyFilters()">
+    </div>
+    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+</div>
+
+<div class="section-header">
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div style="display:flex; align-items:center;">
+        <div id="threeDotsMenu">
+            <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div id="dropdownMenu">
+                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Record</div>
+            </div>
+        </div>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> RECORD INCENTIVE</button>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table class="main-table" id="mainTable">
+        <thead>
+            <tr>
+                <th width="40">Sl</th>
+                <th>Type</th>
+                <th>Invoice No</th>
+                <th>Shipping Bill</th>
+                <th>SB Date</th>
+                <th style="text-align: right;">FOB Value (₹)</th>
+                <th>Rate %</th>
+                <th style="text-align: right;">Incentive Amt (₹)</th>
+                <th>Status</th>
+                <th>Expiry Date</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% if not history %}
+            <tr><td colspan="10" style="padding:40px; color:var(--muted);">No Export Incentive Claims registered yet.</td></tr>
+            {% else %}
+                {% for row in history %}
+                <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
+                    <td>{{ loop.index }}</td>
+                    <td style="font-weight:700;">{{ row.incentive_type }}</td>
+                    <td style="color:var(--accent);">{{ row.invoice_no }}</td>
+                    <td>{{ row.shipping_bill_no or '-' }}</td>
+                    <td>{{ row.shipping_bill_date or '-' }}</td>
+                    <td style="text-align: right;">{{ "{:,.2f}".format(row.fob_value_inr or 0.0) }}</td>
+                    <td>{{ row.rate_percent or 0 }}%</td>
+                    <td style="text-align: right; font-weight:700;">{{ "{:,.2f}".format(row.incentive_amount or 0.0) }}</td>
+                    <td>
+                        <span class="status-pill status-{{ row.status.lower() }}">{{ row.status }}</span>
+                    </td>
+                    <td>{{ row.expiry_date or '-' }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="entryModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary); font-weight:800;">Log Export Incentive Claim</h3>
+            <button onclick="closeModal()" style="border:none; background:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <form id="incentiveForm" onsubmit="saveIncentive(event)">
+            <div class="form-grid">
+                <div class="field">
+                    <label>Incentive Scheme</label>
+                    <select id="incentive_type" required>
+                        <option value="RODTEP">RoDTEP (FOB %)</option>
+                        <option value="DRAWBACK">Duty Drawback</option>
+                        <option value="ROSCTL">RoSCTL</option>
+                        <option value="MEIS">MEIS Scrip (Legacy)</option>
+                    </select>
+                </div>
+                <div class="field"><label>Invoice No</label><input type="text" id="invoice_no" placeholder="e.g. EXP-2026-0001" required></div>
+                <div class="field"><label>Shipping Bill No</label><input type="text" id="shipping_bill_no"></div>
+                <div class="field"><label>Shipping Bill Date</label><input type="date" id="shipping_bill_date"></div>
+                <div class="field"><label>Port of Export</label><input type="text" id="port" placeholder="e.g. Visakhapatnam / Chennai"></div>
+                <div class="field"><label>FOB Value in INR</label><input type="number" step="any" id="fob_value_inr" oninput="recalcIncentive()" required></div>
+                <div class="field"><label>Rate Percent (%)</label><input type="number" step="any" id="rate_percent" oninput="recalcIncentive()" required></div>
+                <div class="field"><label>Incentive Amount (₹)</label><input type="number" step="any" id="incentive_amount" readonly required></div>
+                
+                <div style="grid-column: span 2; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
+
+                <div class="field"><label>Scrip Number (If Sanctioned)</label><input type="text" id="scrip_no"></div>
+                <div class="field"><label>Scrip Value (₹)</label><input type="number" step="any" id="scrip_value" value="0.00"></div>
+                <div class="field">
+                    <label>Claim Status</label>
+                    <select id="status">
+                        <option value="PENDING">PENDING (Draft / Filed)</option>
+                        <option value="SANCTIONED">SANCTIONED (Scrip Issued / Approved)</option>
+                        <option value="UTILIZED">UTILIZED (Set-off Customs)</option>
+                        <option value="EXPIRED">EXPIRED / LAPSED</option>
+                    </select>
+                </div>
+                <div class="field"><label>Sanction Date</label><input type="date" id="sanction_date"></div>
+                <div class="field"><label>Utilization Date</label><input type="date" id="utilization_date"></div>
+                <div class="field"><label>Expiry Date</label><input type="date" id="expiry_date"></div>
+
+                <div style="grid-column: span 2; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
+
+                <div class="field">
+                    <label>Receivable Ledger A/C</label>
+                    <select id="receivable_ledger_id">
+                        <option value="">-- Select Ledger Head --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Incentive Income Ledger A/C</label>
+                    <select id="income_ledger_id">
+                        <option value="">-- Select Ledger Head --</option>
+                        {% for l in ledgers %}
+                        <option value="{{ l.id }}">{{ l.ledger_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                    <label>Remarks</label>
+                    <textarea id="remarks" rows="2"></textarea>
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-clear" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-add">Save Claim</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let globalSelectedId = null;
+    document.getElementById("dotsBtn").onclick = (e) => {
+        e.stopPropagation();
+        const m = document.getElementById("dropdownMenu");
+        m.style.display = (m.style.display === "block") ? "none" : "block";
+    };
+    document.addEventListener('click', () => { document.getElementById("dropdownMenu").style.display = 'none'; });
+
+    function selectRow(tr, id) {
+        globalSelectedId = id;
+        document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
+        tr.classList.add('selected-row');
+        document.getElementById('threeDotsMenu').style.display = 'block';
+    }
+
+    function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+    
+    function recalcIncentive() {
+        const fob = parseFloat(document.getElementById("fob_value_inr").value) || 0;
+        const rate = parseFloat(document.getElementById("rate_percent").value) || 0;
+        document.getElementById("incentive_amount").value = ((fob * rate) / 100).toFixed(2);
+    }
+
+    function applyFilters() {
+        const query = document.getElementById("searchBox").value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#tableBody .data-row");
+        let count = 0;
+        rows.forEach(r => {
+            const match = r.textContent.toLowerCase().includes(query);
+            r.style.display = match ? "" : "none";
+            if (match) count++;
+        });
+        document.getElementById("rowCount").innerText = `${count} ENTRIES FOUND`;
+    }
+
+    function resetFilters() {
+        document.getElementById("searchBox").value = "";
+        applyFilters();
+    }
+
+    async function saveIncentive(e) {
+        e.preventDefault();
+        const payload = {
+            incentive_type: document.getElementById("incentive_type").value,
+            invoice_no: document.getElementById("invoice_no").value,
+            shipping_bill_no: document.getElementById("shipping_bill_no").value || null,
+            shipping_bill_date: document.getElementById("shipping_bill_date").value || null,
+            port: document.getElementById("port").value || null,
+            fob_value_inr: parseFloat(document.getElementById("fob_value_inr").value) || 0.0,
+            rate_percent: parseFloat(document.getElementById("rate_percent").value) || 0.0,
+            incentive_amount: parseFloat(document.getElementById("incentive_amount").value) || 0.0,
+            scrip_no: document.getElementById("scrip_no").value || null,
+            scrip_value: parseFloat(document.getElementById("scrip_value").value) || 0.0,
+            status: document.getElementById("status").value,
+            sanction_date: document.getElementById("sanction_date").value || null,
+            utilization_date: document.getElementById("utilization_date").value || null,
+            expiry_date: document.getElementById("expiry_date").value || null,
+            receivable_ledger_id: parseInt(document.getElementById("receivable_ledger_id").value) || null,
+            income_ledger_id: parseInt(document.getElementById("income_ledger_id").value) || null,
+            remarks: document.getElementById("remarks").value || null
+        };
+        try {
+            const res = await fetch(`/finance_accounts/export_incentive_register/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await res.json();
+            if(out.success) {
+                Swal.fire("Saved", "Incentive claims registered", "success").then(() => location.reload());
+            } else { Swal.fire("Error", out.message, "error"); }
+        } catch(err) { Swal.fire("Error", "Network error", "error"); }
+    }
+
+    async function deleteSelected() {
+        if (!globalSelectedId) return;
+        const confirmDelete = await Swal.fire({ title: "Delete Record?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        if(confirmDelete.isConfirmed) {
+            try {
+                const res = await fetch(`/finance_accounts/export_incentive_register/delete/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Deleted", "Record removed successfully", "success").then(() => location.reload());
+            } catch(e) { Swal.fire("Error", "Server error", "error"); }
+        }
+    }
+    
+    applyFilters();
+</script>
+</body>
+</html>

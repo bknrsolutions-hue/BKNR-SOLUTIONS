@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>try{const t=window.parent.document.documentElement.getAttribute("data-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+    <meta charset="utf-8">
+    <title>Fixed Assets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+    <style>
+        *{box-sizing:border-box;font-family:Inter,Arial,sans-serif}body{margin:0;background:var(--bg);color:var(--text);padding-bottom:40px}
+        .header-dash,.filter-bar,.section-header{background:var(--card-bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:10px 20px}
+        .header-titles h2{margin:0;font-size:15px;font-weight:800}.filter-bar{justify-content:flex-start;gap:8px}.filter-item{display:flex;flex-direction:column;gap:2px;flex:0 0 180px}
+        label{font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase}input,select,textarea{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text);font-size:12px}
+        .btn-add,.btn-clear{border:0;border-radius:6px;height:30px;padding:0 12px;font-size:11px;font-weight:800;cursor:pointer}.btn-add{background:var(--accent);color:#fff}.btn-clear{background:var(--text-muted);color:#fff}
+        .table-wrap{margin:0 20px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:11px;min-width:1050px}
+        th{background:var(--header-bg);padding:8px;color:var(--text-muted);text-transform:uppercase}td{padding:8px;border-bottom:1px solid var(--border);text-align:center;font-weight:600}.text-left{text-align:left}.text-right{text-align:right}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}.modal-content{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;width:95%;max-width:900px;max-height:90vh;overflow:auto;padding:20px}
+        .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.field{display:flex;flex-direction:column;gap:4px}.tabs{display:flex;gap:8px;margin:10px 20px}.tab-btn{background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-weight:800;font-size:11px;cursor:pointer}.tab-btn.active{background:var(--accent);color:#fff}
+    </style>
+</head>
+<body>
+<div class="header-dash"><div class="header-titles"><h2>Fixed Assets & Depreciation</h2></div></div>
+<div class="filter-bar"><div class="filter-item"><label>Search Asset</label><input id="searchBox" onkeyup="applyFilters()" placeholder="Code / Name / Location"></div><button class="btn-clear" onclick="resetFilters()">Clear</button></div>
+<div class="tabs"><button class="tab-btn active" onclick="showTab('assets',this)">Asset Master</button><button class="tab-btn" onclick="showTab('dep',this)">Depreciation</button></div>
+<div id="tab-assets">
+    <div class="section-header"><div id="rowCount">0 ASSETS FOUND</div><button class="btn-add" onclick="openModal('assetModal')"><i class="fa-solid fa-plus"></i> ASSET</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Sl</th><th>Code</th><th class="text-left">Asset Name</th><th>Category</th><th>Purchase Date</th><th class="text-right">Cost</th><th class="text-right">Acc Dep</th><th class="text-right">WDV</th><th>Method</th><th>Rate</th><th>Status</th><th>Action</th></tr></thead><tbody id="tableBody">
+    {% if not history %}<tr><td colspan="12" style="padding:40px;color:var(--text-muted)">No fixed assets registered yet.</td></tr>{% endif %}
+    {% for row in history %}
+    <tr class="data-row"><td>{{ loop.index }}</td><td>{{ row.asset_code }}</td><td class="text-left">{{ row.asset_name }}</td><td>{{ row.asset_category }}</td><td>{{ row.purchase_date }}</td><td class="text-right">{{ "{:,.2f}".format(row.purchase_cost or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.accumulated_depreciation or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.current_wdv or 0) }}</td><td>{{ row.depreciation_method }}</td><td>{{ row.dep_rate_percent }}%</td><td>{{ row.status }}</td><td><button class="btn-clear" onclick="deleteAsset('{{ row.id }}')">Delete</button></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+<div id="tab-dep" style="display:none">
+    <div class="section-header"><div>Depreciation Runs</div><button class="btn-add" onclick="openModal('depModal')"><i class="fa-solid fa-play"></i> RUN</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Asset</th><th>Period</th><th class="text-right">Opening WDV</th><th>Rate</th><th class="text-right">Dep Amount</th><th class="text-right">Closing WDV</th><th>Run Date</th><th>Run By</th></tr></thead><tbody>
+    {% for row in depreciation_rows %}<tr><td>{{ row.asset.asset_code if row.asset else row.asset_id }}</td><td>{{ row.period_month }}</td><td class="text-right">{{ "{:,.2f}".format(row.opening_wdv or 0) }}</td><td>{{ row.dep_rate_percent }}%</td><td class="text-right">{{ "{:,.2f}".format(row.dep_amount or 0) }}</td><td class="text-right">{{ "{:,.2f}".format(row.closing_wdv or 0) }}</td><td>{{ row.run_date }}</td><td>{{ row.run_by }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="modal" id="assetModal"><div class="modal-content"><h3>Register Fixed Asset</h3><form onsubmit="saveAsset(event)"><div class="form-grid">
+    <div class="field"><label>Asset Code</label><input id="asset_code" required></div><div class="field"><label>Asset Name</label><input id="asset_name" required></div><div class="field"><label>Category</label><select id="asset_category"><option>BUILDING</option><option>PLANT_MACHINERY</option><option>IQF_FREEZER</option><option>VEHICLE</option><option>COMPUTER</option><option>FURNITURE</option><option>OTHER</option></select></div>
+    <div class="field"><label>Purchase Date</label><input type="date" id="purchase_date" required></div><div class="field"><label>Purchase Cost</label><input type="number" step="any" id="purchase_cost" required></div><div class="field"><label>Invoice No</label><input id="purchase_invoice_no"></div>
+    <div class="field"><label>Location</label><input id="location"></div><div class="field"><label>Department</label><input id="department"></div><div class="field"><label>Status</label><select id="status"><option>ACTIVE</option><option>DISPOSED</option><option>SOLD</option><option>FULLY_DEPRECIATED</option></select></div>
+    <div class="field"><label>Method</label><select id="depreciation_method"><option>WDV</option><option>SLM</option></select></div><div class="field"><label>Dep Rate %</label><input type="number" step="any" id="dep_rate_percent" required></div><div class="field"><label>Useful Life Years</label><input type="number" id="useful_life_years"></div>
+    <div class="field"><label>Salvage Value</label><input type="number" step="any" id="salvage_value" value="0"></div>
+    <div class="field"><label>Asset Ledger</label><select id="asset_ledger_id"><option value="">-- Select --</option>{% for l in ledgers %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Accumulated Dep Ledger</label><select id="acc_dep_ledger_id"><option value="">-- Select --</option>{% for l in ledgers %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Dep Expense Ledger</label><select id="dep_expense_ledger_id"><option value="">-- Select --</option>{% for l in ledgers %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endfor %}</select></div>
+    <div class="field" style="grid-column:span 3"><label>Remarks</label><textarea id="remarks"></textarea></div>
+    </div><div style="margin-top:16px;text-align:right"><button type="button" class="btn-clear" onclick="closeModal('assetModal')">Cancel</button> <button class="btn-add">Save</button></div></form></div></div>
+<div class="modal" id="depModal"><div class="modal-content"><h3>Run Monthly Depreciation</h3><form onsubmit="runDep(event)"><div class="form-grid"><div class="field"><label>Period</label><input id="period_month" placeholder="YYYY-MM" required></div><div class="field"><label>Run Date</label><input type="date" id="run_date"></div></div><div style="margin-top:16px;text-align:right"><button type="button" class="btn-clear" onclick="closeModal('depModal')">Cancel</button> <button class="btn-add">Run</button></div></form></div></div>
+<script>
+function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(x=>x.style.display='none');document.getElementById('tab-'+id).style.display='block';document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function openModal(id){document.getElementById(id).style.display='flex'}function closeModal(id){document.getElementById(id).style.display='none'}function val(id){return document.getElementById(id).value||null}function num(id){return parseFloat(document.getElementById(id).value)||0}
+function applyFilters(){const q=(val('searchBox')||'').toLowerCase();let c=0;document.querySelectorAll('.data-row').forEach(r=>{const m=r.textContent.toLowerCase().includes(q);r.style.display=m?'':'none';if(m)c++});document.getElementById('rowCount').innerText=`${c} ASSETS FOUND`}function resetFilters(){document.getElementById('searchBox').value='';applyFilters()}
+async function postJson(url,payload){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const o=await r.json();if(o.success)Swal.fire('Saved',o.message,'success').then(()=>location.reload());else Swal.fire('Error',o.message||o.detail||'Failed','error')}
+function saveAsset(e){e.preventDefault();postJson('/finance_accounts/fixed_assets/save',{asset_code:val('asset_code'),asset_name:val('asset_name'),asset_category:val('asset_category'),purchase_date:val('purchase_date'),purchase_cost:num('purchase_cost'),purchase_invoice_no:val('purchase_invoice_no'),location:val('location'),department:val('department'),depreciation_method:val('depreciation_method'),dep_rate_percent:num('dep_rate_percent'),useful_life_years:parseInt(val('useful_life_years'))||null,salvage_value:num('salvage_value'),asset_ledger_id:parseInt(val('asset_ledger_id'))||null,acc_dep_ledger_id:parseInt(val('acc_dep_ledger_id'))||null,dep_expense_ledger_id:parseInt(val('dep_expense_ledger_id'))||null,status:val('status'),remarks:val('remarks')})}
+function runDep(e){e.preventDefault();postJson('/finance_accounts/fixed_assets/run_depreciation',{period_month:val('period_month'),run_date:val('run_date')})}
+async function deleteAsset(id){if((await Swal.fire({title:'Delete asset?',showCancelButton:true,icon:'warning'})).isConfirmed){await fetch(`/finance_accounts/fixed_assets/delete/${id}`,{method:'POST'});location.reload()}}
+applyFilters();
+</script>
+</body>
+</html>

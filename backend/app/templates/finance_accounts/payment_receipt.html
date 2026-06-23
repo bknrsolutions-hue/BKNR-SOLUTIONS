@@ -182,7 +182,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <select id="bank_cash_ledger" required>
                         <option value="" disabled selected>-- SELECT CONTRA ACCOUNT --</option>
                         {% for l in ledgers %}
-                            {% if l.ledger_group == "Bank Accounts" or l.ledger_name == "Cash Account" %}
+                            {% if (l.group and l.group.group_name == "Bank Accounts") or l.ledger_name == "Cash Account" %}
                                 <option value="{{ l.ledger_name }}">{{ l.ledger_name }}</option>
                             {% endif %}
                         {% endfor %}

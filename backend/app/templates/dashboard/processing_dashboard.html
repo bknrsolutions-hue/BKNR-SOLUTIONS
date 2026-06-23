@@ -220,6 +220,77 @@
         
         .overflow-auto-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .min-w-table { min-width: 600px; }
+
+        .module-shell {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr);
+            gap: 18px;
+            padding: 20px 16px;
+            min-height: 100vh;
+        }
+        .module-rail {
+            position: sticky;
+            top: 18px;
+            height: calc(100vh - 36px);
+            overflow-y: auto;
+            background: var(--surface-panel);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: var(--shadow-soft);
+        }
+        .rail-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rail-section { margin-top: 14px; }
+        .rail-section:first-of-type { margin-top: 0; }
+        .rail-label {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0 0 8px;
+        }
+        .rail-link {
+            width: 100%;
+            min-height: 38px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            margin-bottom: 7px;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .rail-link i { width: 16px; color: var(--corp-primary); text-align: center; }
+        .rail-link:hover { color: var(--text-primary); border-color: var(--corp-primary); background: rgba(37, 99, 235, 0.08); }
+        .module-main { min-width: 0; }
+        .module-shell .dashboard { padding: 0; min-height: auto; }
+
+        @media(max-width: 992px) {
+            .module-shell { grid-template-columns: 1fr; padding: 12px; }
+            .module-rail { display: none; }
+            .module-main { width: 100%; }
+        }
+        @media(max-width: 560px) {
+            .module-shell { padding: 8px; }
+        }
     </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -227,6 +298,34 @@
 </head>
 <body>
 
+<div class="module-shell">
+    <aside class="module-rail">
+        <div class="rail-title"><i class="fa-solid fa-industry"></i> Production</div>
+        <div class="rail-section">
+            <div class="rail-label">Forms</div>
+            <button class="rail-link" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry')"><i class="fa-solid fa-door-open"></i><span>Gate Entry</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing')"><i class="fa-solid fa-truck-ramp-box"></i><span>RM Purchasing</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/de_heading', 'De-Heading')"><i class="fa-solid fa-scissors"></i><span>De-Heading</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/grading', 'Grading')"><i class="fa-solid fa-filter"></i><span>Grading</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/peeling', 'Peeling')"><i class="fa-solid fa-hand-dots"></i><span>Peeling</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/soaking', 'Soaking')"><i class="fa-solid fa-droplet"></i><span>Soaking</span></button>
+            <button class="rail-link" onclick="openEntryModal('/processing/production', 'Production Entry')"><i class="fa-solid fa-industry"></i><span>Production Entry</span></button>
+            <button class="rail-link" onclick="openEntryModal('/finance_accounts/production_cost_allocation/entry', 'Production Cost Allocation')"><i class="fa-solid fa-coins"></i><span>Cost Allocation</span></button>
+        </div>
+        <div class="rail-section">
+            <div class="rail-label">Reports</div>
+            <button class="rail-link" onclick="openEntryModal('/reports/gate_entry', 'Gate Entry Report')"><i class="fa-solid fa-file-lines"></i><span>Gate Entry Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/raw_material_purchasing', 'RM Purchase Report')"><i class="fa-solid fa-file-invoice"></i><span>RM Purchase Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/de_heading', 'De-Heading Report')"><i class="fa-solid fa-file-medical"></i><span>De-Heading Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/grading_report', 'Grading Report')"><i class="fa-solid fa-file-shield"></i><span>Grading Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/peeling_report', 'Peeling Report')"><i class="fa-solid fa-file-import"></i><span>Peeling Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/soaking_report', 'Soaking Report')"><i class="fa-solid fa-file-word"></i><span>Soaking Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/production_report', 'Production Report')"><i class="fa-solid fa-file-export"></i><span>Production Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/re-process', 'Re-Process Report')"><i class="fa-solid fa-arrows-rotate"></i><span>Re-Process Report</span></button>
+            <button class="rail-link" onclick="openEntryModal('/reports/floor_balance_report', 'Floor Balance Report')"><i class="fa-solid fa-scale-balanced"></i><span>Floor Balance</span></button>
+        </div>
+    </aside>
+    <main class="module-main">
 <div class="dashboard">
 
     <div class="cards">
@@ -409,6 +508,8 @@
     <div class="corp-panel floor-box">
         <iframe src="" id="floorReportFrame" class="floor-frame"></iframe>
     </div>
+</div>
+</main>
 </div>
 
 <div id="entryModal" class="modal-overlay">

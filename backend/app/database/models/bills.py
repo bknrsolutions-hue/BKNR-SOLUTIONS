@@ -76,10 +76,20 @@ class PurchaseInvoice(Base):
     invoice_date = Column(Date)
     company_id = Column(String(50), index=True)
     email = Column(String(150))
-    
+
     # Schema lo unna additional columns
     date = Column(String(50)) # character varying(50)
     time = Column(String(50)) # character varying(50)
+
+    # --- Accounting Integration (Added) ---
+    # DRAFT / POSTED / CANCELLED
+    status = Column(String(20), default='DRAFT', index=True)
+    cost_center_id = Column(Integer, nullable=True)          # FK → cost_centers.id
+    journal_id = Column(Integer, nullable=True)               # FK → voucher_headers.id (auto journal)
+    purchase_ledger_id = Column(Integer, nullable=True)       # FK → ledger_masters.id (Purchase A/c)
+    supplier_ledger_id = Column(Integer, nullable=True)       # FK → ledger_masters.id (Supplier A/c)
+    input_gst_ledger_id = Column(Integer, nullable=True)      # FK → ledger_masters.id (Input GST A/c)
+    gst_register_id = Column(Integer, nullable=True)          # FK → gst_register.id (auto-populated)
 
 
 # =========================================================================

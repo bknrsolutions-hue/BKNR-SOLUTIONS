@@ -76,43 +76,29 @@ def load_dropdowns(db: Session, comp: str, user_allowed_locations: list = None, 
     prod_for_data = prod_q.distinct().all()
     prod_for_list = [p[0] for p in prod_for_data]
 
-    # --- AUTO-INCREMENT MATRIX ENGINE (Strict Company + Factory Combinations) ---
+    # --- AUTO-INCREMENT MATRIX ENGINE (Optimized to Single DB Query) ---
     last_batch_map = {}
     last_challan_map = {}
     last_gp_combo_map = {}  
     
+    # Fetch all gate entries for the company ordered by id desc (latest first)
+    all_gate_entries = db.query(GateEntry).filter(GateEntry.company_id == comp).order_by(GateEntry.id.desc()).all()
+    
     for p_name in prod_for_list:
-        last_entry = (
-            db.query(GateEntry)
-            .filter(GateEntry.company_id == comp, GateEntry.production_for == p_name)
-            .order_by(GateEntry.id.desc())
-            .first()
-        )
+        last_entry = next((g for g in all_gate_entries if g.production_for == p_name), None)
         last_batch_map[p_name] = last_entry.batch_number if last_entry else ""
         last_challan_map[p_name] = last_entry.challan_number if last_entry else ""
         
         last_gp_combo_map[p_name] = {}
         for f_name in peeling_list:
             f_clean = f_name.strip().upper()
-            last_gp_entry = (
-                db.query(GateEntry)
-                .filter(
-                    GateEntry.company_id == comp, 
-                    GateEntry.production_for == p_name,
-                    func.upper(func.trim(GateEntry.receiving_center)) == f_clean
-                )
-                .order_by(GateEntry.id.desc())
-                .first()
-            )
+            last_gp_entry = next((g for g in all_gate_entries if g.production_for == p_name and str(g.receiving_center or "").strip().upper() == f_clean), None)
             if last_gp_entry:
                 last_gp_combo_map[p_name][f_clean] = last_gp_entry.gate_pass_number
             else:
                 last_gp_combo_map[p_name][f_clean] = ""
 
-    last_gp_backup = ""
-    backup_row = db.query(GateEntry).filter(GateEntry.company_id == comp).order_by(GateEntry.id.desc()).first()
-    if backup_row:
-        last_gp_backup = backup_row.gate_pass_number
+    last_gp_backup = all_gate_entries[0].gate_pass_number if all_gate_entries else ""
 
     return (
         supplier_list, 

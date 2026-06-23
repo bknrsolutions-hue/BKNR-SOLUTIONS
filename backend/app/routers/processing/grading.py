@@ -211,6 +211,16 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     elif user_allowed_locations:
         pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)).in_(user_allowed_locations))
 
+    pending_pool_q = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code)
+    
+    if g_prod_clean and g_prod_clean != "ALL":
+        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.production_for)) == g_prod_clean)
+        
+    if g_loc_clean and g_loc_clean != "ALL":
+        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)) == g_loc_clean)
+    elif user_allowed_locations:
+        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)).in_(user_allowed_locations))
+
     deheading_pending = pending_pool_q.order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
 
     return templates.TemplateResponse(
@@ -223,44 +233,34 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
             "global_production_for": global_production_for or "", 
             "global_location": global_location or "",              
             "drill_down_json": json.dumps(drill_down_data), "edit_data": None,
-            "message": request.session.pop("message", None)
+            "message": request.session.pop("message", None),
         }
     )
 
 # -----------------------------------------------------
 # API: GET BATCHES (RMP + REPROCESS) WITH PERMISSION HOOK
 # -----------------------------------------------------
-@router.get("/grading/get_batches/{company}")
-def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
+@router.get("/grading/get_batches/{company}/{location}")
+def get_batches(company: str, location: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"batches": []}
 
-    global_p_for, global_loc = get_global_filters(request)
-    
-    g_prod_clean = global_p_for.strip().upper() if global_p_for else None
-    if g_prod_clean and g_prod_clean != "ALL":
-        company = g_prod_clean
-        
-    g_loc_clean = global_loc.strip().upper() if global_loc else None
-
-    session_locations = request.session.get("allowed_locations", [])
-    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    thirty_days_ago = ist_now().date() - timedelta(days=30)
 
     r1_q = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
         RawMaterialPurchasing.company_id == company_code,
-        func.upper(func.trim(RawMaterialPurchasing.production_for)) == func.upper(func.trim(company))
+        func.upper(func.trim(RawMaterialPurchasing.production_for)) == func.upper(func.trim(company)),
+        RawMaterialPurchasing.date >= thirty_days_ago
     )
     r2_q = db.query(distinct(Reprocess.new_batch_id)).filter(
         Reprocess.company_id == company_code,
-        func.upper(func.trim(Reprocess.production_for)) == func.upper(func.trim(company))
+        func.upper(func.trim(Reprocess.production_for)) == func.upper(func.trim(company)),
+        Reprocess.date >= thirty_days_ago
     )
 
-    if g_loc_clean and g_loc_clean != "ALL":
-        r1_q = r1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == g_loc_clean)
-        r2_q = r2_q.filter(func.upper(func.trim(Reprocess.production_at)) == g_loc_clean)
-    elif user_allowed_locations:
-        r1_q = r1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
-        r2_q = r2_q.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
+    if location != "ALL":
+        r1_q = r1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == func.upper(func.trim(location)))
+        r2_q = r2_q.filter(func.upper(func.trim(Reprocess.production_at)) == func.upper(func.trim(location)))
 
     r1 = r1_q.all()
     r2 = r2_q.all()
@@ -271,21 +271,10 @@ def get_batches(company: str, request: Request, db: Session = Depends(get_db)):
 # -----------------------------------------------------
 # API: GET HOSO COUNTS (RMP + REPROCESS)
 # -----------------------------------------------------
-@router.get("/grading/get_hoso/{company}/{batch}")
-def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(get_db)):
+@router.get("/grading/get_hoso/{company}/{location}/{batch}")
+def get_hoso(company: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"counts": []}
-
-    global_p_for, global_loc = get_global_filters(request)
-    g_prod_clean = global_p_for.strip().upper() if global_p_for else None
-    
-    if g_prod_clean and g_prod_clean != "ALL":
-        company = g_prod_clean
-        
-    g_loc_clean = global_loc.strip().upper() if global_loc else None
-
-    session_locations = request.session.get("allowed_locations", [])
-    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     c1_q = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
@@ -298,12 +287,9 @@ def get_hoso(company: str, batch: str, request: Request, db: Session = Depends(g
         func.upper(func.trim(Reprocess.production_for)) == func.upper(func.trim(company))
     )
 
-    if g_loc_clean and g_loc_clean != "ALL":
-        c1_q = c1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == g_loc_clean)
-        c2_q = c2_q.filter(func.upper(func.trim(Reprocess.production_at)) == g_loc_clean)
-    elif user_allowed_locations:
-        c1_q = c1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)).in_(user_allowed_locations))
-        c2_q = c2_q.filter(func.upper(func.trim(Reprocess.production_at)).in_(user_allowed_locations))
+    if location != "ALL":
+        c1_q = c1_q.filter(func.upper(func.trim(RawMaterialPurchasing.peeling_at)) == func.upper(func.trim(location)))
+        c2_q = c2_q.filter(func.upper(func.trim(Reprocess.production_at)) == func.upper(func.trim(location)))
 
     c1 = c1_q.all()
     c2 = c2_q.all()
@@ -341,7 +327,7 @@ def save_grading(
 
     db.commit()
     db.refresh(grading)
-    refresh_floor_balance(db, company_code)
+    refresh_floor_balance(db, company_code, batch_number=batch_number)
     request.session["message"] = "✔ Grading Saved Successfully!"
     return RedirectResponse("/processing/grading", status_code=303)
 
@@ -358,6 +344,7 @@ def update_grading(
     company_code = request.session.get("company_code")
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
+        old_batch_number = entry.batch_number
         entry.batch_number = batch_number
         entry.hoso_count = hoso_count
         entry.variety_name = variety_name
@@ -367,6 +354,9 @@ def update_grading(
         entry.peeling_at = peeling_at
         entry.production_for = production_for
         db.commit()
+        refresh_floor_balance(db, company_code, batch_number=batch_number)
+        if old_batch_number != batch_number:
+            refresh_floor_balance(db, company_code, batch_number=old_batch_number)
         request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/grading", status_code=303)
 
@@ -456,8 +446,9 @@ def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
     
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
+        batch_to_refresh = entry.batch_number
         rollback_grading_consumption(db, entry)
         db.delete(entry)
         db.commit()
-        refresh_floor_balance(db, company_code)
+        refresh_floor_balance(db, company_code, batch_number=batch_to_refresh)
     return JSONResponse({"status": "ok"})

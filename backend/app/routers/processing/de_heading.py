@@ -56,11 +56,11 @@ def update_floor_balance_row(
     row = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
-        FloorBalance.batch_number == batch.strip(),
-        FloorBalance.count == count.strip(),
-        FloorBalance.species == species_val,
+        func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
+        func.upper(func.trim(FloorBalance.count)) == count.strip().upper(),
+        func.upper(func.trim(FloorBalance.species)) == species_val.strip().upper(),
         FloorBalance.variety == variety,
-        func.trim(FloorBalance.production_for) == func.trim(production_for)
+        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper()
     ).with_for_update().first()
 
     if row:
@@ -166,23 +166,6 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# =====================================================
-# API LOOKUPS (⚡ SAFE NO LOCK GETS)
-# =====================================================
-@router.get("/get_available_qty")
-def get_available_qty(
-    location: str = Query(...), batch: str = Query(...), count: str = Query(...), 
-    species_name: str = Query(...), request: Request = None, db: Session = Depends(get_db)
-):
-    company_code = request.session.get("company_code")
-    if not company_code: return {"available_qty": 0}
-    
-    record = db.query(FloorBalance.available_qty).filter(
-        FloorBalance.company_id == company_code, FloorBalance.location == location,
-        FloorBalance.batch_number == batch.strip(), FloorBalance.count == count.strip(),
-        FloorBalance.species == species_name, FloorBalance.variety == "HOSO"
-    ).first()
-    return {"available_qty": round(record[0], 2) if record else 0.0}
 
 @router.get("/get_valid_batches/{production_for}/{location}")
 def get_valid_batches(production_for: str, location: str, request: Request, db: Session = Depends(get_db)):
@@ -245,32 +228,60 @@ def get_contractor_rate(contractor: str, request: Request, db: Session = Depends
 # =====================================================
 # ACTION: SAVE DE-HEADING (⚡ ATOMIC DUAL MUTATION LOCK)
 # =====================================================
+@router.get("/get_available_qty")
+def get_available_qty(
+    location: str = Query(...), 
+    production_for: str = Query(...), 
+    batch: str = Query(...), 
+    count: str = Query(...), 
+    species_name: str = Query(...), 
+    request: Request = None, 
+    db: Session = Depends(get_db)
+):
+    company_code = request.session.get("company_code")
+    if not company_code: return {"available_qty": 0}
+    
+    # Prathi field ki TRIMMING mariyu UPPERCASE applying chestunnamu (Bulletproof matching)
+    record = db.query(FloorBalance.available_qty).filter(
+        FloorBalance.company_id == company_code,
+        func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
+        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
+        func.upper(func.trim(FloorBalance.count)) == count.strip().upper(),
+        func.upper(func.trim(FloorBalance.species)) == species_name.strip().upper(),
+        FloorBalance.variety == "HOSO"
+    ).first()
+    
+    return {"available_qty": round(record[0], 2) if record else 0.0}
+
 @router.post("/de_heading")
 def save_de_heading(
-    request: Request, db: Session = Depends(get_db), 
-    production_for: str = Form(...), deheading_at: str = Form(...), 
-    batch_number: str = Form(...), hoso_count: str = Form(...), 
-    species: str = Form(...), hoso_qty: float = Form(...), 
-    hlso_qty: float = Form(...), yield_percent: str = Form(...), 
-    contractor: str = Form(...), rate_per_kg: float = Form(...), 
+    request: Request, db: Session = Depends(get_db),
+    production_for: str = Form(...), deheading_at: str = Form(...),
+    species: str = Form(...), batch_number: str = Form(...),
+    hoso_count: str = Form(...), hoso_qty: float = Form(...),
+    hlso_qty: float = Form(...), yield_percent: str = Form(...),
+    contractor: str = Form(...), rate_per_kg: float = Form(...),
     amount: float = Form(...)
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    clean_batch = str(batch_number).strip()
-    clean_count = str(hoso_count).strip()
-
-    # Lock HOSO row for accurate availability validation bounds
-    live_record = db.query(FloorBalance.available_qty).filter(
-        FloorBalance.company_id == company_code, FloorBalance.location == deheading_at,
-        FloorBalance.batch_number == clean_batch, FloorBalance.count == clean_count,
-        FloorBalance.species == species, FloorBalance.variety == "HOSO",
-        FloorBalance.production_for == production_for
-    ).with_for_update().first()
     
-    avail = live_record[0] if live_record else 0.0
+    clean_batch = batch_number.strip()
+    clean_count = hoso_count.strip()
+
+    avail_rec = db.query(FloorBalance.available_qty).filter(
+        FloorBalance.company_id == company_code,
+        func.upper(func.trim(FloorBalance.location)) == deheading_at.strip().upper(),
+        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == clean_batch.upper(),
+        func.upper(func.trim(FloorBalance.count)) == clean_count.upper(),
+        func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
+        FloorBalance.variety == "HOSO"
+    ).first()
+    avail = avail_rec[0] if avail_rec else 0.0
+    
     if hoso_qty > (avail + 0.1):
         return JSONResponse({"error": f"Insufficient HOSO live balance. Available: {round(avail, 2)}"}, status_code=400)
 
@@ -303,7 +314,7 @@ def save_de_heading(
     add_deheading_to_grading_pool(db, new_entry)
 
     db.commit()
-    return RedirectResponse("/processing/de_heading", status_code=303)
+    return JSONResponse({"status": "ok"})
 
 
 # =====================================================
