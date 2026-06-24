@@ -1,100 +1,99 @@
 // ======================================================
 // BKNR ERP GLOBAL LOADER
+// Shows for page navigation and meaningful mutations only.
 // ======================================================
 
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+    let activeRequests = 0;
+    let showTimer = null;
 
-    let loader = document.getElementById("globalLoader");
-
-    if (!loader) {
-
-        loader = document.createElement("div");
-
-        loader.id = "globalLoader";
-
-        loader.innerHTML = `
-            <div class="loader-spinner"></div>
-            <div class="loader-text">Loading...</div>
-        `;
-
-        document.body.appendChild(loader);
+    function ensureLoader() {
+        let loader = document.getElementById("globalLoader");
+        if (!loader && document.body) {
+            loader = document.createElement("div");
+            loader.id = "globalLoader";
+            loader.classList.add("hide");
+            loader.innerHTML = `
+                <div class="loader-container">
+                    <div class="loader-spinner"></div>
+                    <div class="loader-text">Loading...</div>
+                </div>
+            `;
+            document.body.appendChild(loader);
+        }
+        return loader;
     }
 
-    // Hide loader after page fully rendered
-    loader.style.display = "none";
+    function showLoader(delay = 250) {
+        const loader = ensureLoader();
+        if (!loader) return;
 
-});
-
-
-// ======================================================
-// PAGE NAVIGATION LOADER
-// ======================================================
-
-window.addEventListener("beforeunload", function () {
-
-    const loader = document.getElementById("globalLoader");
-
-    if (loader) {
-        loader.style.display = "flex";
+        clearTimeout(showTimer);
+        showTimer = setTimeout(() => {
+            loader.style.display = "flex";
+            loader.classList.remove("hide");
+        }, delay);
     }
 
-});
+    function hideLoader() {
+        clearTimeout(showTimer);
+        const loader = document.getElementById("globalLoader");
+        if (!loader) return;
 
-
-// ======================================================
-// AJAX / FETCH LOADER
-// ======================================================
-
-const originalFetch = window.fetch;
-
-window.fetch = async (...args) => {
-
-    const loader = document.getElementById("globalLoader");
-
-    if (loader) {
-        loader.style.display = "flex";
+        loader.classList.add("hide");
+        setTimeout(() => {
+            if (activeRequests === 0) loader.style.display = "none";
+        }, 250);
     }
 
-    try {
+    function shouldShowForFetch(args) {
+        const input = args[0];
+        const init = args[1] || {};
+        const method = String(init.method || (input && input.method) || "GET").toUpperCase();
 
-        const response = await originalFetch(...args);
+        if (init.loader === false || init.silent === true) return false;
+        if (method === "GET" || method === "HEAD" || method === "OPTIONS") return false;
 
-        return response;
+        return true;
+    }
 
-    } catch (error) {
-
-        throw error;
-
-    } finally {
-
+    document.addEventListener("DOMContentLoaded", function () {
+        const loader = ensureLoader();
         if (loader) {
+            loader.classList.add("hide");
             loader.style.display = "none";
         }
+    });
 
-    }
-};
+    window.addEventListener("beforeunload", function () {
+        showLoader(0);
+    });
 
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+        const useLoader = shouldShowForFetch(args);
+        if (useLoader) {
+            activeRequests += 1;
+            showLoader();
+        }
 
-// ======================================================
-// OPTIONAL: MANUAL CONTROL
-// ======================================================
+        try {
+            return await originalFetch(...args);
+        } finally {
+            if (useLoader) {
+                activeRequests = Math.max(0, activeRequests - 1);
+                if (activeRequests === 0) hideLoader();
+            }
+        }
+    };
 
-window.showLoader = function () {
+    window.showLoader = function () {
+        activeRequests += 1;
+        showLoader(0);
+    };
 
-    const loader = document.getElementById("globalLoader");
-
-    if (loader) {
-        loader.style.display = "flex";
-    }
-
-};
-
-window.hideLoader = function () {
-
-    const loader = document.getElementById("globalLoader");
-
-    if (loader) {
-        loader.style.display = "none";
-    }
-
-};
+    window.hideLoader = function () {
+        activeRequests = Math.max(0, activeRequests - 1);
+        if (activeRequests === 0) hideLoader();
+    };
+})();

@@ -40,7 +40,7 @@ body[data-theme="dark"],
     inset: 0;
     z-index: 999999;
 
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
