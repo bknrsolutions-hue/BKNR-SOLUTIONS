@@ -20,6 +20,7 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -160,6 +161,65 @@ def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations
         } for v in summary_agg.values()
     ], drill_down_dict
 
+
+def get_cached_hoso_summary_data(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
+    return get_hoso_summary_data(db, company_code, user_allowed_locations, global_p_for, global_loc)
+
+
+def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
+    def build():
+        gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code)
+        if user_allowed_locations:
+            allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+            if allowed_clean:
+                gate_q = gate_q.filter(func.upper(func.trim(GateEntry.receiving_center)).in_(allowed_clean))
+        if global_loc:
+            gate_q = gate_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_loc))
+        if global_p_for:
+            gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(global_p_for))
+
+        gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
+        prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
+        prod_batch_map = {}
+        batch_supplier_map = {}
+        batch_list = []
+        for g in gate_entries:
+            if g.batch_number:
+                batch_list.append(g.batch_number)
+                batch_supplier_map[g.batch_number] = {
+                    "supplier": g.supplier_name if g.supplier_name else "",
+                    "prod_for": g.production_for if g.production_for else "",
+                    "receiving_center": g.receiving_center if g.receiving_center else ""
+                }
+            if g.production_for:
+                prod_batch_map.setdefault(g.production_for, [])
+                if g.batch_number and g.batch_number not in prod_batch_map[g.production_for]:
+                    prod_batch_map[g.production_for].append(g.batch_number)
+
+        peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+        if user_allowed_locations:
+            allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+            if allowed_clean:
+                peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+        if global_loc:
+            peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
+
+        hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
+        return {
+            "batch_list": batch_list,
+            "supplier_list": [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()],
+            "variety_list": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
+            "species_list": [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()],
+            "peeling_locations": [p.peeling_at for p in peeling_q.order_by(peeling_at.peeling_at).all()],
+            "prod_for_list": prod_for_list,
+            "hsn_list": [h.description for h in hsn_records],
+            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
+            "prod_batch_map_json": json.dumps(prod_batch_map),
+            "batch_supplier_map_json": json.dumps(batch_supplier_map),
+        }
+
+    return build()
+
 # -----------------------------------------------------
 # REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
@@ -175,52 +235,20 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         user_allowed_locations = session_locations
 
     # 🟢 🔴 REFACTOR: ఇప్పుడు సమ్మరీ క్యాలిక్యులేషన్ కూడా యూజర్ పర్మిషన్స్ మరియు గ్లోబల్ ఫిల్టర్స్ కి మ్యాచ్ అయి మారుతుంది!
-    hoso_summary, drill_down = get_hoso_summary_data(
+    hoso_summary, drill_down = get_cached_hoso_summary_data(
         db=db, 
         company_code=company_code, 
         user_allowed_locations=user_allowed_locations,
         global_p_for=global_production_for,
         global_loc=global_location
     )
-    
-    # Gate Entry query strict filtering
-    gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code)
-    if user_allowed_locations:
-        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
-        if allowed_clean:
-            gate_q = gate_q.filter(func.upper(func.trim(GateEntry.receiving_center)).in_(allowed_clean))
-            
-    if global_location:
-        gate_q = gate_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_location))
-    if global_production_for:
-        gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(global_production_for))
-        
-    gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
-    prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
-    
-    prod_batch_map = {}
-    for g in gate_entries:
-        if g.production_for:
-            if g.production_for not in prod_batch_map:
-                prod_batch_map[g.production_for] = []
-            if g.batch_number not in prod_batch_map[g.production_for]:
-                prod_batch_map[g.production_for].append(g.batch_number)
-
-    # Master data sets
-    supplier_list = [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()]
-    variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
-    species_list = [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()]
-    hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
-    
-    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
-    if user_allowed_locations:
-        allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
-        if allowed_clean:
-            peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
-    if global_location:
-        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_location))
-        
-    peeling_locs = [p.peeling_at for p in peeling_q.order_by(peeling_at.peeling_at).all()]
+    master_context = get_cached_rmp_page_masters(
+        db=db,
+        company_code=company_code,
+        user_allowed_locations=user_allowed_locations,
+        global_p_for=global_production_for,
+        global_loc=global_location,
+    )
 
     start, end = get_today_range()
     today_q = db.query(RawMaterialPurchasing).filter(
@@ -238,30 +266,17 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         
     today_data = today_q.order_by(RawMaterialPurchasing.id.desc()).all()
 
-    batch_supplier_map = {}
-    for g in gate_entries:
-        if g.batch_number:
-            batch_supplier_map[g.batch_number] = {
-                "supplier": g.supplier_name if g.supplier_name else "",
-                "prod_for": g.production_for if g.production_for else "",
-                "receiving_center": g.receiving_center if g.receiving_center else ""
-            }
+    context = {
+        **master_context,
+        "today_data": today_data, "edit_data": edit_data,
+        "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
+        "message": request.session.pop("message", None)
+    }
 
     return templates.TemplateResponse(
         request=request,
         name="processing/raw_material_purchasing.html",
-        context={
-            "today_data": today_data, "edit_data": edit_data,
-            "batch_list": [g.batch_number for g in gate_entries if g.batch_number],
-            "supplier_list": supplier_list, "variety_list": variety_list, "species_list": species_list,
-            "peeling_locations": peeling_locs, "prod_for_list": prod_for_list,
-            "hsn_list": [h.description for h in hsn_records],
-            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
-            "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
-            "prod_batch_map_json": json.dumps(prod_batch_map), 
-            "batch_supplier_map_json": json.dumps(batch_supplier_map), 
-            "message": request.session.pop("message", None)
-        }
+        context=context
     )
 
 # -----------------------------------------------------
@@ -280,6 +295,9 @@ def edit_rmp(id: int, request: Request, db: Session = Depends(get_db)):
     
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == company_code).first()
     if not entry: return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+    if is_edit_locked(request, entry.date):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
     
     return render_rmp_page(request, db, company_code, edit_data=entry)
 
@@ -325,6 +343,9 @@ def update_rmp(
     comp_code = request.session.get("company_code")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
     if not entry: return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+    if is_edit_locked(request, entry.date):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
     old_batch_number = entry.batch_number
     total_billable_qty = g1_qty + (g2_qty / 2)
@@ -351,6 +372,9 @@ def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
     if entry:
+        if is_edit_locked(request, entry.date):
+            request.session["message"] = f"❌ {edit_lock_message()}"
+            return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
         batch_to_refresh = entry.batch_number
         db.delete(entry)
         db.commit()

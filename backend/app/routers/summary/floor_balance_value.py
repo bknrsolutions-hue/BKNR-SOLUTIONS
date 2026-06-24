@@ -8,7 +8,7 @@ from datetime import datetime
 from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
-from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
+from app.database.models.processing import RawMaterialPurchasing, DeHeading, Grading, Peeling
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields
 from app.services.floor_balance import get_floor_balance
@@ -195,6 +195,11 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
     for r in rmp_q:
         if r.batch_number: 
             combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+    deh_q = db.query(DeHeading).filter(DeHeading.company_id == company_id).all()
+    for r in deh_q:
+        if r.batch_number:
+            combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP", None))
 
     grad_q = db.query(Grading).filter(Grading.company_id == company_id).all()
     for r in grad_q:

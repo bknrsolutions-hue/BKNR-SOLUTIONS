@@ -7,6 +7,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.services.setup_service import SetupService
 from app.database import SessionLocal
+from app.services.cache import invalidate_live_company_caches
 import logging
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -124,7 +125,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             finally:
                 db.close()
 
-        return await call_next(request)
+        response = await call_next(request)
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400:
+            invalidate_live_company_caches(company_code)
+        return response
 
 
 # ✅ MIDDLEWARE REGISTRATION (LIFO Order - Last added runs FIRST on incoming requests)

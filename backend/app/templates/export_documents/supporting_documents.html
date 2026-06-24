@@ -80,7 +80,7 @@ try {
   <section class="table-wrap">
     <table>
       <thead><tr><th>Type</th><th>Document No</th><th>File</th><th>Version</th><th>Current</th><th>Uploaded At</th><th>Remarks</th></tr></thead>
-      <tbody>
+      <tbody id="historyBody">
       {% for row in history %}
         <tr>
           <td>{{ row.document_kind }}</td>
@@ -102,18 +102,58 @@ try {
 <script>
 async function uploadDoc(e) {
   e.preventDefault();
+  const btn = e.target.querySelector("button");
+  if (btn) btn.disabled = true;
   const file = document.getElementById("pdf_file").files[0];
-  if (!file) return;
+  if (!file) {
+    if (btn) btn.disabled = false;
+    return;
+  }
   const formData = new FormData();
   formData.append("shipment_id", document.getElementById("shipment_id").value);
   formData.append("document_kind", document.getElementById("document_kind").value);
   formData.append("document_no", document.getElementById("document_no").value || "");
   formData.append("remarks", document.getElementById("remarks").value || "");
   formData.append("file", file);
-  const res = await fetch("/export_documents/supporting_documents/upload", { method: "POST", body: formData });
-  const out = await res.json();
-  if (out.success) Swal.fire("Saved", "Export PDF saved in DB", "success").then(() => location.reload());
-  else Swal.fire("Error", out.message || "Upload failed", "error");
+  try {
+    const res = await fetch("/export_documents/supporting_documents/upload", { method: "POST", body: formData });
+    const out = await res.json();
+    if (out.success) {
+      appendHistoryRow(out.row);
+      e.target.reset();
+      Swal.fire({ icon: "success", title: "Saved", text: "Export PDF saved in DB", timer: 1100, showConfirmButton: false });
+    } else {
+      Swal.fire("Error", out.message || "Upload failed", "error");
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function safeText(value) {
+  return String(value || "-").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
+function appendHistoryRow(row) {
+  if (!row) return;
+  const tbody = document.getElementById("historyBody");
+  tbody.querySelector("td[colspan='7']")?.closest("tr")?.remove();
+  const tr = document.createElement("tr");
+  const fileHtml = row.file_path
+    ? `<a href="${safeText(row.file_path)}" target="_blank">${safeText(row.file_name)}</a>`
+    : safeText(row.file_name);
+  tr.innerHTML = `
+    <td>${safeText(row.document_kind)}</td>
+    <td>${safeText(row.document_no)}</td>
+    <td>${fileHtml}</td>
+    <td>v${safeText(row.version_no)}</td>
+    <td>${row.is_current ? "YES" : "NO"}</td>
+    <td>${safeText(row.uploaded_at)}</td>
+    <td>${safeText(row.remarks)}</td>
+  `;
+  tbody.prepend(tr);
 }
 </script>
 </body>

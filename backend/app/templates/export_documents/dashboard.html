@@ -246,7 +246,7 @@ function closeModule() {
     document.getElementById("moduleModal").classList.remove("open");
     document.getElementById("moduleFrame").src = "";
     document.body.style.overflow = "auto";
-    window.location.reload();
+    fetch(window.location.href, { cache: "no-store" }).catch(() => {});
 }
 document.getElementById("moduleModal").addEventListener("click", function(e) {
     if (e.target === this) closeModule();

@@ -671,11 +671,13 @@ function resetCascadedFields() {
 
 async function loadCounts() {
     const b = document.getElementById("f_batch").value.trim();
+    const comp = document.getElementById("f_comp").value.trim();
+    const loc = document.getElementById("f_loc").value.trim();
     const cSelect = document.getElementById("f_count");
     cSelect.innerHTML = '<option value="">Select Count</option>'; 
     if(!b) return;
     try {
-        let r = await fetch(`/processing/soaking/get_count/${encodeURIComponent(b)}`);
+        let r = await fetch(`/processing/soaking/get_count/${encodeURIComponent(b)}?production_for=${encodeURIComponent(comp)}&location=${encodeURIComponent(loc)}`);
         let d = await r.json();
         const uniqueCounts = [...new Set(d.counts)].sort();
         uniqueCounts.forEach(c => { let opt = document.createElement('option'); opt.value = c; opt.innerText = c; cSelect.appendChild(opt); });
@@ -689,6 +691,7 @@ async function loadAvailableQty() {
     const c = document.getElementById("f_count").value.trim();
     const s = document.getElementById("f_species").value.trim();
     const v = document.getElementById("f_variety").value.trim();
+    const comp = document.getElementById("f_comp").value.trim();
     
     if(!loc || !b || !c || !v) {
         document.getElementById("avl_display").innerText = "Avl: 0.00 KG";
@@ -702,7 +705,8 @@ async function loadAvailableQty() {
                   `batch=${encodeURIComponent(b)}&` +
                   `count=${encodeURIComponent(c)}&` +
                   `species=${encodeURIComponent(s)}&` +
-                  `variety=${encodeURIComponent(v)}`;
+                  `variety=${encodeURIComponent(v)}&` +
+                  `production_for=${encodeURIComponent(comp)}`;
                   
         let r = await fetch(url);
         let d = await r.json();

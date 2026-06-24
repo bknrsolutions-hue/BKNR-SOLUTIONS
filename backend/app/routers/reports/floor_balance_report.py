@@ -6,7 +6,7 @@ from sqlalchemy import func
 from datetime import datetime
 from app.utils.timezone import ist_now
 from app.database import get_db
-from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
+from app.database.models.processing import RawMaterialPurchasing, DeHeading, Grading, Peeling
 from app.database.models.reprocess import Reprocess
 from app.services.floor_balance import get_floor_balance
 from app.utils.global_filters import get_global_filters
@@ -37,6 +37,16 @@ def floor_balance_report(request: Request, db: Session = Depends(get_db)):
     for r in rmp_q.all():
         if r.batch_number:
             all_combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
+
+    deh_q = db.query(DeHeading).filter(DeHeading.company_id == company_id)
+    if production_for:
+        deh_q = deh_q.filter(func.trim(DeHeading.production_for) == func.trim(production_for))
+    if location:
+        deh_q = deh_q.filter(func.trim(DeHeading.peeling_at) == func.trim(location))
+
+    for d in deh_q.all():
+        if d.batch_number:
+            all_combos.add((d.batch_number, d.hoso_count, d.species, "HLSO", d.production_for, d.peeling_at or "Floor", "RMP"))
 
     grad_q = db.query(Grading).filter(Grading.company_id == company_id)
     if production_for:

@@ -23,6 +23,7 @@ from app.database.models.criteria import (
     production_types, HOSO_HLSO_Yields, grade_to_hoso
 )
 from app.utils.global_filters import get_global_filters
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["PRODUCTION"]) 
 templates = Jinja2Templates(directory="app/templates")
@@ -79,12 +80,28 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
         "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code).all()],
         "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == company_code).all()],
-        "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
+        "packing_styles": [
+            {
+                "packing_style": p.packing_style,
+                "mc_weight": p.mc_weight,
+                "slab_weight": p.slab_weight,
+            }
+            for p in db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+        ],
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
         "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
         "prod_for_list": [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if pf[0]],
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
+    }
+
+
+def get_production_calc_masters(db: Session, company_code: str):
+    return {
+        "yields": db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all(),
+        "packing": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
+        "varieties": db.query(varieties).filter(varieties.company_id == company_code).all(),
+        "grade_map": db.query(grade_to_hoso).filter(grade_to_hoso.company_id == company_code).all(),
     }
 
 
@@ -120,10 +137,11 @@ def production_page(
 
     # ========== 1. LOAD MASTER DATA ==========
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
-    yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
-    p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
-    grade_map_list = db.query(grade_to_hoso).filter(grade_to_hoso.company_id == company_code).all()
+    calc_masters = get_production_calc_masters(db, company_code)
+    yield_records = calc_masters["yields"]
+    p_styles = calc_masters["packing"]
+    v_records = calc_masters["varieties"]
+    grade_map_list = calc_masters["grade_map"]
 
     # ========== 2. BUILD STOCK POOL (User Allowed Locations & Global Lockdown) ==========
     stock_pool = {}
@@ -497,6 +515,10 @@ def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
+    entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
+    if entry and is_edit_locked(request, entry.date):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/processing/production", status_code=303)
     return RedirectResponse(f"/processing/production?edit_id={id}", status_code=303)
 
 
@@ -518,6 +540,9 @@ def update_production(
         
         entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
         if entry:
+            if is_edit_locked(request, entry.date):
+                request.session["message"] = f"❌ {edit_lock_message()}"
+                return RedirectResponse("/processing/production", status_code=303)
             final_production_qty = float(production_qty or 0)
             glaze_text = str(glaze or "").strip().upper()
 
@@ -563,6 +588,9 @@ def delete_production(id: int, request: Request, db: Session = Depends(get_db)):
         
         entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
         if entry:
+            if is_edit_locked(request, entry.date):
+                request.session["message"] = f"❌ {edit_lock_message()}"
+                return RedirectResponse("/processing/production", status_code=303)
             db.delete(entry)
             db.commit()
             request.session["message"] = "🗑 Production Deleted Successfully!"

@@ -10,6 +10,7 @@ from sqlalchemy import func, case, and_
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
+from app.services.cache import cache_get_or_set, invalidate_company_cache
 
 import openpyxl 
 from io import BytesIO
@@ -75,18 +76,48 @@ async def stock_report_page(
     if not email or not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
-    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
-    fy_set = set()
-    for d_tuple in all_dates:
-        d = d_tuple[0]
-        current_year = d.year
-        if d.month >= 4:
-            fy_str = f"{current_year}"
-        else:
-            fy_str = f"{current_year - 1}"
-        fy_set.add(fy_str)
-    financial_years = sorted(list(fy_set), reverse=True)
+    def build_stock_report_masters():
+        all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+        fy_set = set()
+        for d_tuple in all_dates:
+            d = d_tuple[0]
+            current_year = d.year
+            fy_set.add(f"{current_year}" if d.month >= 4 else f"{current_year - 1}")
+
+        def get_list(model, attr):
+            return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
+
+        try:
+            p_types_data = db.query(production_types).filter(production_types.company_id == comp_code).all()
+        except Exception:
+            p_types_data = db.query(production_types).all()
+
+        prod_types_list = []
+        for x in p_types_data:
+            val = getattr(x, "type_name", None) or getattr(x, "production_type", None) or getattr(x, "type_of_production", None)
+            if val:
+                prod_types_list.append(val)
+        prod_types_list = sorted(list(set(prod_types_list))) or ["PROCESSED", "SEMIPROCESSED", "RAW"]
+
+        company_name, company_address = get_company_info(db, comp_code)
+        return {
+            "financial_years": sorted(list(fy_set), reverse=True),
+            "species_list": get_list(species_model, "species_name"),
+            "brands_list": get_list(brands, "brand_name"),
+            "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
+            "type_of_production_list": prod_types_list,
+            "production_at_list": get_list(production_at, "production_at"),
+            "freezers_list": get_list(freezers, "freezer_name"),
+            "packing_styles_list": get_list(packing_styles, "packing_style"),
+            "glazes_list": get_list(glazes, "glaze_name"),
+            "varieties_list": get_list(varieties, "variety_name"),
+            "grades_list": get_list(grades, "grade_name"),
+            "company_name": company_name,
+            "company_address": company_address,
+        }
+
+    master_context = cache_get_or_set(f"bknr:inventory_report:{comp_code}:stock_report_masters", build_stock_report_masters, ttl=300)
+    financial_years = master_context["financial_years"]
 
     # --- Financial Year Logic ---
     selected_fy = fy
@@ -126,24 +157,6 @@ async def stock_report_page(
     else:
         rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
-    def get_list(model, attr):
-        return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
-
-    # production_types టేబుల్ సేఫ్ ఫెట్చింగ్ లాజిక్
-    try:
-        p_types_data = db.query(production_types).filter(production_types.company_id == comp_code).all()
-    except Exception:
-        p_types_data = db.query(production_types).all()
-
-    prod_types_list = []
-    for x in p_types_data:
-        val = getattr(x, "type_name", None) or getattr(x, "production_type", None) or getattr(x, "type_of_production", None)
-        if val: prod_types_list.append(val)
-    prod_types_list = sorted(list(set(prod_types_list)))
-
-    if not prod_types_list:
-        prod_types_list = ["PROCESSED", "SEMIPROCESSED", "RAW"]
-
     context = {
         "request": request, 
         "rows": rows, 
@@ -153,21 +166,9 @@ async def stock_report_page(
         "selected_fy": selected_fy,
         "selected_production_for": global_production_for, # 🟢 For Dropdown State Memory Lock
         "selected_location": global_location,             # 🟢 For Dropdown State Memory Lock
-        "species_list": get_list(species_model, "species_name"),
-        "brands_list": get_list(brands, "brand_name"),
-        "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
-        "type_of_production_list": prod_types_list,
-        "production_at_list": get_list(production_at, "production_at"),
-        "freezers_list": get_list(freezers, "freezer_name"),
-        "packing_styles_list": get_list(packing_styles, "packing_style"),
-        "glazes_list": get_list(glazes, "glaze_name"),
-        "varieties_list": get_list(varieties, "variety_name"),
-        "grades_list": get_list(grades, "grade_name"),
         "is_admin": role == "admin"
     }
-    
-    company_name, company_address = get_company_info(db, comp_code)
-    context.update({"company_name": company_name, "company_address": company_address})
+    context.update(master_context)
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -217,6 +218,9 @@ async def update_stock(request: Request, payload: dict = Body(...), db: Session 
         row.inventory_value = round(row.quantity * float(row.product_kg_value or 0), 2)
 
     db.commit()
+    invalidate_company_cache(comp_code, "inventory_report")
+    invalidate_company_cache(comp_code, "inventory_dashboard")
+    invalidate_company_cache(comp_code, "costing_dashboard")
     return {"status": "success"}
 
 # ------------------------------------------------------------
@@ -351,4 +355,7 @@ async def delete_stock(request: Request, payload: dict = Body(...), db: Session 
         db.add(AuditLog(table_name="stock_entry", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Exist", new_value="Deleted", edited_by=request.session.get("email"), edited_at=datetime.utcnow()))
         db.delete(row)
         db.commit()
+        invalidate_company_cache(comp_code, "inventory_report")
+        invalidate_company_cache(comp_code, "inventory_dashboard")
+        invalidate_company_cache(comp_code, "costing_dashboard")
     return {"status": "success"}

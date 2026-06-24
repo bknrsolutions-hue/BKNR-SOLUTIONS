@@ -28,6 +28,8 @@ from app.database.models.criteria import (
 )
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
+from app.services.cache import cache_get_or_set
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 # Standardizing Prefix and Tags from Code 2
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
@@ -61,6 +63,56 @@ def calculate_pieces(grade_str, manual_pcs):
         pass
     return 0
 
+
+def get_pending_order_masters(db: Session, company_code: str, user_allowed_locations: list, production_for_filter: str | None, location: str | None):
+    allowed_key = ",".join(sorted(user_allowed_locations or []))
+    cache_key = f"bknr:inventory_report:{company_code}:pending_order_masters:{allowed_key}:{production_for_filter or 'ALL'}:{location or 'ALL'}"
+
+    def get_lookup(model, field_name):
+        return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
+
+    def build():
+        if production_for_filter:
+            unique_companies = [production_for_filter.strip()]
+        else:
+            prod_names = db.query(production_for.production_for).filter(
+                production_for.company_id == company_code,
+                production_for.production_for != None
+            ).distinct().all()
+            unique_companies = [c[0] for c in prod_names if c[0]]
+
+        if location:
+            production_locations = [location.strip()]
+        else:
+            pa_q = db.query(ProductionAtMaster.production_at).filter(ProductionAtMaster.company_id == company_code)
+            if user_allowed_locations:
+                pa_q = pa_q.filter(func.upper(func.trim(ProductionAtMaster.production_at)).in_(user_allowed_locations))
+            production_locations = [p.production_at for p in pa_q.order_by(ProductionAtMaster.production_at).all()]
+
+        return {
+            "unique_companies": unique_companies,
+            "production_locations": production_locations,
+            "buyers": get_lookup(buyers, "buyer_name"),
+            "agents": get_lookup(buyer_agents, "agent_name"),
+            "brands": get_lookup(brands, "brand_name"),
+            "countries": get_lookup(countries, "country_name"),
+            "species": get_lookup(species, "species_name"),
+            "varieties": get_lookup(varieties, "variety_name"),
+            "grades": get_lookup(grades, "grade_name"),
+            "glazes": get_lookup(glazes, "glaze_name"),
+            "freezers": get_lookup(freezers, "freezer_name"),
+            "packing": [
+                {
+                    "packing_style": p.packing_style,
+                    "mc_weight": p.mc_weight,
+                    "slab_weight": p.slab_weight,
+                }
+                for p in db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+            ],
+        }
+
+    return cache_get_or_set(cache_key, build, ttl=300)
+
 # -------------------------------------------------------------------------
 # 1️⃣ PENDING ORDERS PAGE (GET) - WITH STRICT FORM DROPDOWN FILTERING
 # -------------------------------------------------------------------------
@@ -81,17 +133,6 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
     else:
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
-
-    # 🟢 🔴 FIXED LOGIC: Form Dropdown Company Filter Sync
-    # గ్లోబల్ హెడర్ లో కంపెనీ సెలెక్ట్ అయి ఉంటే, ఫారమ్ లో కూడా అదే రావాలి చిన్నా!
-    if production_for_filter:
-        unique_companies = [production_for_filter.strip()]
-    else:
-        prod_names = db.query(production_for.production_for).filter(
-            production_for.company_id == company_code,
-            production_for.production_for != None
-        ).distinct().all()
-        unique_companies = [c[0] for c in prod_names if c[0]]
 
     # Fetch pending orders rows
     query = db.query(pending_orders).filter(pending_orders.company_id == company_code)
@@ -121,19 +162,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if edit_rows:
         next_sl = edit_rows[0].sl_no
 
-    # Helper to fetch dropdown lists
-    def get_lookup(model, field_name):
-        return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
-
-    # 🟢 🔴 FIXED LOGIC: Form Dropdown Factory Location Filter Sync
-    # గ్లోబల్ హెడర్ లో లొకేషన్ సెలెక్ట్ అయి ఉంటే, ఫారమ్ లో కూడా కేవలం ఆ ఒక్క ఆప్షన్ మాత్రమే రావాలి బ్రదర్
-    if location:
-        production_locations = [location.strip()]
-    else:
-        pa_q = db.query(ProductionAtMaster.production_at).filter(ProductionAtMaster.company_id == company_code)
-        if user_allowed_locations:
-            pa_q = pa_q.filter(func.upper(func.trim(ProductionAtMaster.production_at)).in_(user_allowed_locations))
-        production_locations = [p.production_at for p in pa_q.order_by(ProductionAtMaster.production_at).all()]
+    master_context = get_pending_order_masters(db, company_code, user_allowed_locations, production_for_filter, location)
 
     return templates.TemplateResponse(
         request=request,
@@ -142,20 +171,9 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             "po_groups": dict(po_groups),  
             "edit_rows": edit_rows,
             "next_sl": next_sl,
-            "unique_companies": unique_companies,
-            "production_locations": production_locations,
             "global_production_for": production_for_filter or "", 
             "global_location": location or "",                     
-            "buyers": get_lookup(buyers, "buyer_name"),
-            "agents": get_lookup(buyer_agents, "agent_name"),
-            "brands": get_lookup(brands, "brand_name"),
-            "countries": get_lookup(countries, "country_name"),
-            "species": get_lookup(species, "species_name"),
-            "varieties": get_lookup(varieties, "variety_name"),
-            "grades": get_lookup(grades, "grade_name"),
-            "glazes": get_lookup(glazes, "glaze_name"),
-            "freezers": get_lookup(freezers, "freezer_name"),
-            "packing": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
+            **master_context,
             "message": request.session.pop("message", None)
         }
     )
@@ -193,6 +211,14 @@ def save_pending_orders(
 
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
+
+    existing_rows = db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        pending_orders.po_number == po_number
+    ).all()
+    if existing_rows and any(is_edit_locked(request, row.date) for row in existing_rows):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/inventory/pending_orders", status_code=303)
 
     db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
@@ -267,6 +293,9 @@ def move_to_sales(
 
     if not items:
         raise HTTPException(status_code=404, detail="PO Number not found")
+    if any(is_edit_locked(request, item.date) for item in items):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/inventory/pending_orders", status_code=303)
 
     for item in items:
         db.add(
@@ -320,6 +349,8 @@ async def update_po_status(data: StatusUpdate, request: Request, db: Session = D
     
     if not orders:
         raise HTTPException(status_code=404, detail="PO Not Found")
+    if any(is_edit_locked(request, order.date) for order in orders):
+        raise HTTPException(status_code=403, detail=edit_lock_message())
     for order in orders:
         order.progress_steps = data.status
     db.commit()
@@ -333,10 +364,17 @@ def delete_po(
 ):
     company_code = request.session.get("company_code")
 
-    db.query(pending_orders).filter(
+    rows = db.query(pending_orders).filter(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
-    ).delete()
+    ).all()
+
+    if rows and any(is_edit_locked(request, row.date) for row in rows):
+        request.session["message"] = f"❌ {edit_lock_message()}"
+        return RedirectResponse("/inventory/pending_orders", status_code=303)
+
+    for row in rows:
+        db.delete(row)
 
     db.commit()
 

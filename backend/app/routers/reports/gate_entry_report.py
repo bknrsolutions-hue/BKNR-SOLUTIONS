@@ -20,6 +20,7 @@ from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.processing import GateEntry, AuditLog
+from app.services.cache import cache_get_or_set
 
 router = APIRouter(
     prefix="/gate_entry",
@@ -32,6 +33,10 @@ templates = Jinja2Templates(directory="app/templates")
 def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
+
+
+def row_to_dict(row):
+    return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
 
 # ============================================================================
 # 1. MAIN REPORT (GET) - WITH FY LOCK & AUTO META-DATA
@@ -52,79 +57,67 @@ async def gate_entry_report(
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    # 🟢 META DROPDOWNS SYNC WITH func.trim()
-    meta_q = db.query(GateEntry).filter(GateEntry.company_id == company_id)
-    
-    if production_for:
-        meta_q = meta_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
-    if location:
-        meta_q = meta_q.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
+    def build_report_context():
+        # 🟢 META DROPDOWNS SYNC WITH func.trim()
+        meta_q = db.query(GateEntry).filter(GateEntry.company_id == company_id)
         
-    meta_base = meta_q.all()
-    
-    def extract_global_unique(field_attr):
-        return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
+        if production_for:
+            meta_q = meta_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+        if location:
+            meta_q = meta_q.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
+            
+        meta_base = meta_q.all()
+        
+        def extract_global_unique(field_attr):
+            return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
 
-    global_suppliers = extract_global_unique("supplier_name")
-    global_factories = extract_global_unique("receiving_center")
-    global_locations = extract_global_unique("purchasing_location")
-    global_vehicles = extract_global_unique("vehicle_number")
-    global_production_for = extract_global_unique("production_for")
+        base_context = {
+            "suppliers_list": extract_global_unique("supplier_name"),
+            "factories_list": extract_global_unique("receiving_center"),
+            "locations_list": extract_global_unique("purchasing_location"),
+            "vehicles_list": extract_global_unique("vehicle_number"),
+            "production_for_list": extract_global_unique("production_for"),
+            "selected_production_for": production_for,
+            "selected_location": location,
+        }
+
+        if not fy:
+            return {**base_context, "rows": [], "selected_fy": None}
+
+        selected_fy = int(fy)
+        start_date = dt.date(selected_fy, 4, 1)
+        end_date = dt.date(selected_fy + 1, 3, 31)
+
+        query = db.query(GateEntry).filter(
+            GateEntry.company_id == company_id,
+            GateEntry.date >= start_date,
+            GateEntry.date <= end_date
+        )
+
+        if production_for:
+            query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
+        if location:
+            query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
+
+        rows = [row_to_dict(row) for row in query.order_by(GateEntry.date.desc(), GateEntry.time.desc()).all()]
+        return {**base_context, "rows": rows, "selected_fy": str(selected_fy)}
+
+    cache_key = f"bknr:processing_reports:{company_id}:gate_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
+    context = cache_get_or_set(cache_key, build_report_context, ttl=75)
+    context = dict(context)
+    context.update({"is_admin": role == "admin", "today_date": ist_now()})
 
     if not fy:
         return templates.TemplateResponse(
             request=request,
             name="reports/gate_entry_report.html",
-            context={
-                "rows": [],
-                "suppliers_list": global_suppliers,
-                "factories_list": global_factories,
-                "locations_list": global_locations,
-                "vehicles_list": global_vehicles,
-                "production_for_list": global_production_for,
-                "is_admin": role == "admin",
-                "selected_fy": None,
-                "selected_production_for": production_for,
-                "selected_location": location,
-                "today_date": ist_now()
-            }
+            context=context
         )
-
-    # Determine Target Financial Year Range
-    selected_fy = int(fy)
-    start_date = dt.date(selected_fy, 4, 1)
-    end_date = dt.date(selected_fy + 1, 3, 31)
-
-    # 🟢 MAIN REPORT QUERY WITH func.trim() STRICtest LOCK
-    query = db.query(GateEntry).filter(
-        GateEntry.company_id == company_id,
-        GateEntry.date >= start_date,
-        GateEntry.date <= end_date
-    )
-
-    if production_for:
-        query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
-    if location:
-        query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
-
-    rows = query.order_by(GateEntry.date.desc(), GateEntry.time.desc()).all()
 
     return templates.TemplateResponse(
         request=request,
         name="reports/gate_entry_report.html",
-        context={
-            "rows": rows,
-            "suppliers_list": global_suppliers,
-            "factories_list": global_factories,
-            "locations_list": global_locations,
-            "vehicles_list": global_vehicles,
-            "production_for_list": global_production_for,
-            "is_admin": role == "admin",
-            "selected_fy": str(selected_fy),
-            "selected_production_for": production_for, 
-            "selected_location": location,             
-            "today_date": ist_now()
-        }
+        context=context
     )
 
 # ============================================================================

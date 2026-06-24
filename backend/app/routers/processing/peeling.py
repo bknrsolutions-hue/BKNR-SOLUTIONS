@@ -22,25 +22,18 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import stock_entry, pending_orders
 from app.utils.global_filters import get_global_filters
+from app.services.floor_balance import get_floor_balance
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["PEELING"])
 templates = Jinja2Templates(directory="app/templates")
 
-# Masters Memory Caching Framework Context Lock
-MASTERS_CACHE = {}
-
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
-    global MASTERS_CACHE
-    if company_id not in MASTERS_CACHE or force_refresh:
-        v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
-        c_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
-        s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
-        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
-        
-        MASTERS_CACHE[company_id] = {
-            "varieties": v_list, "contractors": c_list, "species": s_list, "prod_for_list": pf_list
-        }
-    return MASTERS_CACHE[company_id]
+    v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
+    c_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
+    s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
+    pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    return {"varieties": v_list, "contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
 # =====================================================
@@ -113,8 +106,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     # 1st TABLE: DIRECT FAST INVENTORY READ
     live_q = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
-        FloorBalance.variety.ilike("%HLSO%"),
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety.ilike("%HLSO%")
     )
 
     if g_prod_clean and g_prod_clean != "ALL":
@@ -134,7 +126,23 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         live_q = live_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
 
     live_records = live_q.order_by(FloorBalance.production_for, FloorBalance.location, FloorBalance.batch_number).all()
-    hlso_floor_balance = [{"batch": r.batch_number or "N/A", "variety": r.variety or "N/A", "count": r.count or "N/A", "species": r.species or "N/A", "production_for": r.production_for or "General Stock", "location": r.location or "Floor", "available_qty": round(r.available_qty, 2)} for r in live_records]
+    hlso_floor_balance = []
+    for r in live_records:
+        available_qty = get_floor_balance(
+            db, company_id, r.location, r.batch_number, r.count, r.species,
+            r.variety, r.production_for, r.source_type or "RMP"
+        )
+        if available_qty <= 0.01:
+            continue
+        hlso_floor_balance.append({
+            "batch": r.batch_number or "N/A",
+            "variety": r.variety or "N/A",
+            "count": r.count or "N/A",
+            "species": r.species or "N/A",
+            "production_for": r.production_for or "General Stock",
+            "location": r.location or "Floor",
+            "available_qty": round(available_qty, 2)
+        })
     
     # =====================================================
     # 🟢 2nd TABLE: REQUIRED HLSO REQUIREMENTS SYNC LAYER (FIXED LOCATION FILTERS)
@@ -335,20 +343,28 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
+    global_p_for, global_loc = get_global_filters(request)
+    prod_for = global_p_for or prod_for
     
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    batch_q = db.query(distinct(FloorBalance.batch_number)).filter(
+    batch_q = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
         func.upper(func.trim(FloorBalance.production_for)) == prod_for.strip().upper(),
-        FloorBalance.variety.ilike("%HLSO%"),
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety.ilike("%HLSO%")
     )
+    if global_loc:
+        batch_q = batch_q.filter(func.upper(func.trim(FloorBalance.location)) == global_loc.strip().upper())
     if user_allowed_locations:
         batch_q = batch_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
 
-    return {"batches": [b[0] for b in batch_q.order_by(FloorBalance.batch_number).all() if b[0]]}
+    rows = batch_q.order_by(FloorBalance.batch_number).all()
+    batches = {
+        r.batch_number for r in rows
+        if r.batch_number and get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+    }
+    return {"batches": sorted(batches)}
 
 
 @router.get("/peeling/get_hlso/{batch}")
@@ -357,14 +373,16 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
     if not company_id: return {"counts": [], "species_map": {}, "variety_map": {}}
     
     global_p_for, global_loc = get_global_filters(request)
+    g_prod_clean = global_p_for.strip().upper() if global_p_for else None
     g_loc_clean = global_loc.strip().upper() if global_loc else None
 
-    records_q = db.query(FloorBalance.count, FloorBalance.species, FloorBalance.variety).filter(
+    records_q = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
         FloorBalance.batch_number == batch.strip(),
-        FloorBalance.variety.ilike("%HLSO%"),
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety.ilike("%HLSO%")
     )
+    if g_prod_clean:
+        records_q = records_q.filter(func.upper(func.trim(FloorBalance.production_for)) == g_prod_clean)
     
     if g_loc_clean and g_loc_clean != "ALL":
         records_q = records_q.filter(func.upper(func.trim(FloorBalance.location)) == g_loc_clean)
@@ -372,7 +390,10 @@ def get_hlso_counts_by_batch(batch: str, request: Request, db: Session = Depends
     records = records_q.all()
     
     valid_counts, species_map, variety_map = set(), {}, {}
-    for count, spc, var in records:
+    for r in records:
+        if get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") <= 0.01:
+            continue
+        count, spc, var = r.count, r.species, r.variety
         if not count or str(count).upper() == "N/A": continue
         count_str = str(count).strip()
         valid_counts.add(count_str)
@@ -393,10 +414,20 @@ def get_available_qty(
 ):
     company_code = request.session.get("company_code")
     if not company_code: return {"available_qty": 0}
+
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for:
+        production_for = global_p_for
+    if global_loc:
+        location = global_loc
     
     clean_loc = "FLOOR" if not location or location.strip() == "" else location.strip().upper()
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    if user_allowed_locations and clean_loc not in user_allowed_locations:
+        return {"available_qty": 0}
 
-    record = db.query(FloorBalance.available_qty).filter(
+    source_row = db.query(FloorBalance.source_type, FloorBalance.location).filter(
         FloorBalance.company_id == company_code, 
         or_(
             func.upper(func.trim(FloorBalance.location)) == clean_loc,
@@ -408,7 +439,12 @@ def get_available_qty(
         FloorBalance.variety == variety_name,
         func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper()
     ).first()
-    return {"available_qty": round(record[0], 2) if record else 0.0}
+    service_location = source_row[1] if source_row and source_row[1] else clean_loc
+    available_qty = get_floor_balance(
+        db, company_code, service_location, batch, count, species_name, variety_name,
+        production_for, source_row[0] if source_row else "RMP"
+    )
+    return {"available_qty": round(available_qty, 2)}
 
 
 @router.get("/peeling/get_rate")
@@ -451,7 +487,12 @@ def save_peeling(
         func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper()
     ).with_for_update().first()
     
-    avail = live_record.available_qty if live_record else 0.0
+    input_variety = live_record.variety if live_record else "HLSO"
+    service_location = live_record.location if live_record and live_record.location else clean_loc
+    avail = get_floor_balance(
+        db, company_code, service_location, clean_batch, clean_count, species,
+        input_variety, production_for, live_record.source_type if live_record else "RMP"
+    )
     if hlso_qty > (avail + 0.05):
         return JSONResponse({"error": f"Insufficient live balance. Available: {round(avail, 2)} KG"}, status_code=400)
 
@@ -459,7 +500,6 @@ def save_peeling(
     except: clean_yield = 0.0
 
     current_ist = ist_now()
-    input_variety = live_record.variety if live_record else "HLSO"
 
     new_entry = Peeling(
         production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
@@ -496,6 +536,8 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
     row = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.id == id).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
 
     clean_loc = "FLOOR" if not row.peeling_at or row.peeling_at.strip() == "" else row.peeling_at.strip().upper()
 

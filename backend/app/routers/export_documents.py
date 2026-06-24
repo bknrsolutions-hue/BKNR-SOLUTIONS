@@ -23,12 +23,24 @@ from app.database.models.invoices import (
     ExportDocumentFile
 )
 from app.database.models.processing import AuditLog  # Audit trails
+from app.services.cache import cache_get_or_set, invalidate_company_cache
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 EXPORT_PDF_DIR = Path("app/static/uploads/export_documents")
+
+
+def invalidate_export_cache(company_id: str | None):
+    if company_id:
+        invalidate_company_cache(company_id, "export_documents")
+
+
+def _dt(value):
+    if value is None:
+        return None
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
 
 
 def safe_filename(value: str) -> str:
@@ -257,44 +269,62 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
     if not comp_code:
         return RedirectResponse("/auth/login")
 
-    stats = {
-        "shipments": db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).count(),
-        "invoices": db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).count(),
-        "packing_lists": db.query(PackingList).filter(PackingList.company_id == comp_code).count(),
-        "stuffing": db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code).count(),
-        "shipping_bills": db.query(ShippingBill).filter(ShippingBill.company_id == comp_code).count(),
-        "bill_of_lading": db.query(BillOfLading).filter(BillOfLading.company_id == comp_code).count(),
-        "health_certificates": db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code).count(),
-        "compliance": (
-            db.query(ExportComplianceTracker)
-            .join(ExportShipment, ExportComplianceTracker.shipment_no == ExportShipment.shipment_no)
+    def build_dashboard_context():
+        stats = {
+            "shipments": db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).count(),
+            "invoices": db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).count(),
+            "packing_lists": db.query(PackingList).filter(PackingList.company_id == comp_code).count(),
+            "stuffing": db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code).count(),
+            "shipping_bills": db.query(ShippingBill).filter(ShippingBill.company_id == comp_code).count(),
+            "bill_of_lading": db.query(BillOfLading).filter(BillOfLading.company_id == comp_code).count(),
+            "health_certificates": db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code).count(),
+            "compliance": (
+                db.query(ExportComplianceTracker)
+                .join(ExportShipment, ExportComplianceTracker.shipment_no == ExportShipment.shipment_no)
+                .filter(ExportShipment.company_id == comp_code)
+                .count()
+            ),
+        }
+        recent_shipments = [
+            {
+                "shipment_no": row.shipment_no,
+                "invoice_no": row.invoice_no,
+                "buyer_name": row.buyer_name,
+                "etd": _dt(row.etd),
+                "eta": _dt(row.eta),
+            }
+            for row in db.query(ExportShipment)
             .filter(ExportShipment.company_id == comp_code)
-            .count()
-        ),
-    }
-    recent_shipments = (
-        db.query(ExportShipment)
-        .filter(ExportShipment.company_id == comp_code)
-        .order_by(desc(ExportShipment.id))
-        .limit(8)
-        .all()
-    )
-    recent_invoices = (
-        db.query(CommercialInvoice)
-        .filter(CommercialInvoice.company_id == comp_code)
-        .order_by(desc(CommercialInvoice.id))
-        .limit(8)
-        .all()
-    )
-    return templates.TemplateResponse(
-        request=request,
-        name="export_documents/dashboard.html",
-        context={
+            .order_by(desc(ExportShipment.id))
+            .limit(8)
+            .all()
+        ]
+        recent_invoices = [
+            {
+                "invoice_no": row.invoice_no,
+                "shipment_no": row.shipment_no,
+                "buyer_name": row.buyer_name,
+                "currency": row.currency,
+                "total_amount": float(row.total_amount or 0),
+            }
+            for row in db.query(CommercialInvoice)
+            .filter(CommercialInvoice.company_id == comp_code)
+            .order_by(desc(CommercialInvoice.id))
+            .limit(8)
+            .all()
+        ]
+        return {
             "stats": stats,
             "recent_shipments": recent_shipments,
             "recent_invoices": recent_invoices,
             "company_id": comp_code,
-        },
+        }
+
+    context = cache_get_or_set(f"bknr:export_documents:{comp_code}:dashboard", build_dashboard_context, ttl=45)
+    return templates.TemplateResponse(
+        request=request,
+        name="export_documents/dashboard.html",
+        context=context,
     )
 
 
@@ -303,17 +333,37 @@ def export_supporting_documents_entry(request: Request, db: Session = Depends(ge
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login")
-    shipments = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).order_by(desc(ExportShipment.id)).all()
-    history = (
-        db.query(ExportDocumentFile)
-        .filter(ExportDocumentFile.company_id == comp_code, ExportDocumentFile.module_name == "export_supporting")
-        .order_by(desc(ExportDocumentFile.uploaded_at))
-        .all()
-    )
+    def build_supporting_context():
+        shipments = [
+            {"id": row.id, "shipment_no": row.shipment_no, "buyer_name": row.buyer_name}
+            for row in db.query(ExportShipment)
+            .filter(ExportShipment.company_id == comp_code)
+            .order_by(desc(ExportShipment.id))
+            .all()
+        ]
+        history = [
+            {
+                "document_kind": row.document_kind,
+                "document_no": row.document_no,
+                "file_path": row.file_path,
+                "file_name": row.file_name,
+                "version_no": row.version_no,
+                "is_current": row.is_current,
+                "uploaded_at": _dt(row.uploaded_at),
+                "remarks": row.remarks,
+            }
+            for row in db.query(ExportDocumentFile)
+            .filter(ExportDocumentFile.company_id == comp_code, ExportDocumentFile.module_name == "export_supporting")
+            .order_by(desc(ExportDocumentFile.uploaded_at))
+            .all()
+        ]
+        return {"shipments": shipments, "history": history, "company_id": comp_code}
+
+    context = cache_get_or_set(f"bknr:export_documents:{comp_code}:supporting_documents", build_supporting_context, ttl=45)
     return templates.TemplateResponse(
         request=request,
         name="export_documents/supporting_documents.html",
-        context={"shipments": shipments, "history": history, "company_id": comp_code},
+        context=context,
     )
 
 
@@ -353,7 +403,23 @@ async def export_supporting_documents_upload(
     )
     write_audit(db, "export_supporting", shipment.id, comp_code, "PDF_UPLOAD", "NONE", file_row.file_path, email)
     db.commit()
-    return {"success": True, "message": "Supporting export PDF saved in DB", "file_id": file_row.id, "file_path": file_row.file_path}
+    invalidate_export_cache(comp_code)
+    return {
+        "success": True,
+        "message": "Supporting export PDF saved in DB",
+        "file_id": file_row.id,
+        "file_path": file_row.file_path,
+        "row": {
+            "document_kind": file_row.document_kind,
+            "document_no": file_row.document_no,
+            "file_name": file_row.file_name,
+            "file_path": file_row.file_path,
+            "version_no": file_row.version_no,
+            "is_current": file_row.is_current,
+            "uploaded_at": _dt(file_row.uploaded_at),
+            "remarks": file_row.remarks,
+        },
+    }
 
 # Pydantic schemas for data validation
 class ExportShipmentSchema(BaseModel):
@@ -476,6 +542,7 @@ def write_audit(db: Session, table: str, rec_id: int, company_id: str, action: s
         edited_at=datetime.utcnow()
     )
     db.add(audit)
+    invalidate_export_cache(company_id)
 
 # ============================================================
 # 1. EXPORT SHIPMENTS

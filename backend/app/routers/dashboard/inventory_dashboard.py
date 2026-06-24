@@ -24,6 +24,7 @@ from app.database.models.criteria import (
     glazes as db_glazes
 )
 from app.utils.global_filters import get_global_filters
+from app.services.cache import cache_get, cache_set
 
 router = APIRouter(
     prefix="/inventory_dashboard",
@@ -80,6 +81,18 @@ async def get_inventory_dashboard(
 
     g_loc_clean = global_location.strip().upper() if global_location else None
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    cache_key = (
+        "bknr:inventory_dashboard:"
+        f"{comp_code}:{sel_species}:{sel_variety}:{sel_grade}:{sel_glaze}:"
+        f"{sel_prod_at}:{sel_prod_for}:{sel_fy}:{g_loc_clean}:{g_prod_clean}:"
+        f"{','.join(user_allowed_locations)}"
+    )
+    cached_context = cache_get(cache_key)
+    if cached_context is not None:
+        cached_context["request"] = request
+        return request.app.state.templates.TemplateResponse(
+            request=request, name="inventory_management/inventory_dashboard.html", context=cached_context
+        )
 
     # FRESH PRODUCTION LOGIC
     gate_q = db.query(GateEntry.batch_number).filter(
@@ -554,6 +567,10 @@ async def get_inventory_dashboard(
         "selected_fy": str(start_year),
         "current_fy_name": current_fy_string
     }
+
+    cache_context = dict(context)
+    cache_context.pop("request", None)
+    cache_set(cache_key, cache_context, ttl=45)
 
     return request.app.state.templates.TemplateResponse(
         request=request, name="inventory_management/inventory_dashboard.html", context=context

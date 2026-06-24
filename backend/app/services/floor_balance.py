@@ -73,10 +73,10 @@ def get_floor_balance(
     available = 0.0
 
     if variety_upper == "HOSO":
+        g_p = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, String)) == clean_count).scalar() or 0
+        g_m = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.hoso_count, String)) == clean_count).scalar() or 0
         dh_u = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hoso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, String)) == clean_count).scalar() or 0
-        # For HOSO, available quantity is total received HOSO minus HOSO sent to deheading.
-        # Soaking movements are typically for HLSO or other processed forms, not raw HOSO.
-        available = float(main_inward_qty) - float(dh_u)
+        available = base_stock + float(g_p) - float(g_m) - float(dh_u)
 
     elif variety_upper == "HLSO":
         g_h = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, String)) == clean_count).scalar() or 0

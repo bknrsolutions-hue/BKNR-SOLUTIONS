@@ -23,6 +23,7 @@ from app.database.models.criteria import (
 from app.services.inventory_summary_service import InventorySummaryService
 from app.services.production_requirements_service import ProductionRequirementService
 from app.utils.global_filters import get_global_filters
+from app.services.cache import invalidate_company_cache
 
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
@@ -67,9 +68,9 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     if global_production_for:
         table_q = table_q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
     if global_location:
-        table_q = table_q.filter(func.upper(func.trim(stock_entry.location)) == global_location.strip().upper())
+        table_q = table_q.filter(func.upper(func.trim(stock_entry.production_at)) == global_location.strip().upper())
     elif user_allowed_locations:
-        table_q = table_q.filter(func.upper(func.trim(stock_entry.location)).in_(user_allowed_locations))
+        table_q = table_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
         
     table_data = table_q.order_by(stock_entry.id.desc()).all()
 
@@ -121,12 +122,10 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
     production_places_list = [p.production_at for p in pa_q.order_by(production_at.production_at).all()]
 
-    # Initial Coldstore Locations dropdown loading (Will be filtered dynamically on UI via AJAX)
+    # Initial Coldstore Locations dropdown loading by selected/global Production At.
     cl_q = db.query(coldstore_locations.coldstore_location).filter(coldstore_locations.company_id == company_code)
-    if user_allowed_locations:
-        cl_q = cl_q.filter(func.upper(func.trim(coldstore_locations.coldstore_location)).in_(user_allowed_locations))
     if global_location:
-        cl_q = cl_q.filter(func.upper(func.trim(coldstore_locations.coldstore_location)) == global_location.strip().upper())
+        cl_q = cl_q.filter(func.upper(func.trim(coldstore_locations.production_at)) == global_location.strip().upper())
         
     coldstore_list = [l.coldstore_location for l in cl_q.order_by(coldstore_locations.coldstore_location).all()]
 
@@ -171,21 +170,21 @@ def get_matched_coldstores(
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    # Multi-permission location restriction fallback sync
+    # Multi-permission applies to plant/production_at, not coldstore location names.
     session_locations = request.session.get("allowed_locations", [])
     if isinstance(session_locations, str):
         user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
     else:
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    # 🔥 FIXED: Querying coldstores strictly based on 'production_at' (Plant) ONLY
+    if user_allowed_locations and production_at.strip().upper() not in user_allowed_locations:
+        return JSONResponse({"locations": []})
+
+    # Coldstore names are looked up only by the selected plant / production_at.
     query = db.query(coldstore_locations.coldstore_location).filter(
         coldstore_locations.company_id == company_code,
-        coldstore_locations.production_at == production_at
+        func.upper(func.trim(coldstore_locations.production_at)) == production_at.strip().upper()
     )
-
-    if user_allowed_locations:
-        query = query.filter(func.upper(func.trim(coldstore_locations.coldstore_location)).in_(user_allowed_locations))
 
     matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
     loc_list = [r.coldstore_location for r in matched_rows]
@@ -209,6 +208,15 @@ def save_stock_in(
     if not email or not company_code:
         return RedirectResponse("/auth/login", status_code=302)
 
+    coldstore_exists = db.query(coldstore_locations.id).filter(
+        coldstore_locations.company_id == company_code,
+        func.upper(func.trim(coldstore_locations.coldstore_location)) == location.strip().upper(),
+        func.upper(func.trim(coldstore_locations.production_at)) == production_at.strip().upper(),
+    ).first()
+    if not coldstore_exists:
+        request.session["success_msg"] = "Invalid coldstore location for selected Production At."
+        return RedirectResponse("/inventory/stock_entry", status_code=303)
+
     pack = db.query(packing_styles).filter(
         packing_styles.company_id == company_code,
         packing_styles.packing_style == packing_style
@@ -231,6 +239,9 @@ def save_stock_in(
     
     InventorySummaryService.refresh_inventory_summary(db=db, company_id=company_code)
     ProductionRequirementService.refresh_requirements(db=db, company_id=company_code)
+    invalidate_company_cache(company_code, "inventory_report")
+    invalidate_company_cache(company_code, "inventory_dashboard")
+    invalidate_company_cache(company_code, "costing_dashboard")
 
     request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
@@ -257,7 +268,7 @@ def stock_out_report(
     ).filter(stock_entry.company_id == company_code)
 
     if user_allowed_locations:
-        query = query.filter(func.upper(func.trim(stock_entry.location)).in_(user_allowed_locations))
+        query = query.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
 
     if production_for: query = query.filter(stock_entry.production_for == production_for)
     if brand: query = query.filter(stock_entry.brand == brand)
@@ -330,6 +341,9 @@ def stock_out_save(
     
     InventorySummaryService.refresh_inventory_summary(db=db, company_id=company_code)
     ProductionRequirementService.refresh_requirements(db=db, company_id=company_code)
+    invalidate_company_cache(company_code, "inventory_report")
+    invalidate_company_cache(company_code, "inventory_dashboard")
+    invalidate_company_cache(company_code, "costing_dashboard")
     
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)

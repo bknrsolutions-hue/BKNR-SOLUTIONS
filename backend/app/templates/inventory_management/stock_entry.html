@@ -499,7 +499,8 @@ async function loadDynamicLookups() {
     // 🔥 FIXED: LOCATIONS FETCHED ONLY BASED ON 'PRODUCTION AT' (PLANT)
     if(pAt) {
         try {
-            const response = await fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(pAt)}`);
+            const params = new URLSearchParams({ production_at: pAt });
+            const response = await fetch(`/inventory/get_matched_coldstores?${params.toString()}`);
             if(response.ok) {
                 const data = await response.json();
                 renderAutocompleteList(data.locations, "in_loc_list", "in_loc_search", "in_loc_hidden");

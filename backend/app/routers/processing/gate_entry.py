@@ -20,6 +20,7 @@ from app.database.models.criteria import (
     peeling_at
 )
 from app.utils.global_filters import get_global_filters
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["GATE ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
@@ -290,6 +291,8 @@ async def update_entry(
     row = db.query(GateEntry).filter(GateEntry.company_id == comp, GateEntry.id == id).first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
 
     dup = db.query(GateEntry).filter(
         GateEntry.company_id == comp,
@@ -327,6 +330,8 @@ def delete_entry(id: int, request: Request, db: Session = Depends(get_db)):
 
     row = db.query(GateEntry).filter(GateEntry.company_id == comp, GateEntry.id == id).first()
     if row:
+        if is_edit_locked(request, row.date):
+            return JSONResponse({"error": edit_lock_message()}, status_code=403)
         db.delete(row)
         db.commit()
         return JSONResponse({"status": "success", "message": "Entry Deleted Successfully"})

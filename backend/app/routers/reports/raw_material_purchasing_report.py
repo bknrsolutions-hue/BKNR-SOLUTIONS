@@ -22,6 +22,7 @@ from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry, AuditLog
 from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields, suppliers as SupplierTable
 from app.database.models.users import Company
+from app.services.cache import cache_get_or_set
 
 router = APIRouter(
     prefix="/raw_material_purchasing",
@@ -54,6 +55,10 @@ def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
         "id": s.id, "name": s.supplier_name, "email": s.supplier_email, "phone": s.phone, "address": s.address
     }
 
+
+def row_to_dict(row):
+    return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
+
 # -----------------------------------------------------------
 # MAIN REPORT PAGE (WITH JOIN-BASED FY LOCK LOGIC)
 # -----------------------------------------------------------
@@ -69,65 +74,55 @@ def report_page(
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
-    all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
-    fy_set = set()
-    for d_tuple in all_dates:
-        d = d_tuple[0]
-        current_year = d.year
-        if d.month >= 4:
-            fy_str = f"{current_year}"
-        else:
-            fy_str = f"{current_year - 1}"
-        fy_set.add(fy_str)
-    financial_years = sorted(list(fy_set), reverse=True)
+    def build_report_context():
+        # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
+        all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+        fy_set = set()
+        for d_tuple in all_dates:
+            d = d_tuple[0]
+            current_year = d.year
+            fy_str = f"{current_year}" if d.month >= 4 else f"{current_year - 1}"
+            fy_set.add(fy_str)
+        financial_years = sorted(list(fy_set), reverse=True)
 
-    if not fy:
-        return templates.TemplateResponse(
-            request=request,
-            name="reports/raw_material_purchasing_report.html",
-            context={
+        if not fy:
+            return {
                 "rows": [], "batches": [], "suppliers": [], "varieties": [],
                 "species": [], "production_for_list": [], "peeling_locations": [],
                 "hsn_list": [], "company_name": "", "company_address": "",
                 "financial_years": financial_years,
-                "selected_fy": None, "is_admin": role == "admin"
+                "selected_fy": None
             }
+
+        selected_fy = int(fy)
+        start_date = dt.date(selected_fy, 4, 1)
+        end_date = dt.date(selected_fy + 1, 3, 31)
+
+        # 🟢 UPDATED: Core query selection layered dynamically via global options
+        query = (
+            db.query(RawMaterialPurchasing)
+            .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
+            .filter(
+                RawMaterialPurchasing.company_id == comp_code,
+                GateEntry.company_id == comp_code,
+                GateEntry.date >= start_date,
+                GateEntry.date <= end_date
+            )
         )
 
-    selected_fy = int(fy)
-    start_date = dt.date(selected_fy, 4, 1)
-    end_date = dt.date(selected_fy + 1, 3, 31)
+        if production_for:
+            query = query.filter(RawMaterialPurchasing.production_for == production_for)
 
-    # 🟢 UPDATED: Core query selection layered dynamically via global options
-    query = (
-        db.query(RawMaterialPurchasing)
-        .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
-        .filter(
-            RawMaterialPurchasing.company_id == comp_code,
-            GateEntry.company_id == comp_code,
-            GateEntry.date >= start_date,
-            GateEntry.date <= end_date
-        )
-    )
+        if location:
+            query = query.filter(RawMaterialPurchasing.peeling_at == location)
 
-    if production_for:
-        query = query.filter(RawMaterialPurchasing.production_for == production_for)
+        rows = [row_to_dict(row) for row in query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()]
 
-    if location:
-        query = query.filter(RawMaterialPurchasing.peeling_at == location)
+        def get_dist(attr):
+            return sorted({r.get(attr) for r in rows if r.get(attr)})
 
-    rows = query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()
-
-    def get_dist(attr):
-        return sorted({getattr(r, attr) for r in rows if getattr(r, attr)})
-
-    comp = get_company_info(db, comp_code)
-
-    return templates.TemplateResponse(
-        request=request,
-        name="reports/raw_material_purchasing_report.html",
-        context={
+        comp = get_company_info(db, comp_code)
+        return {
             "rows": rows,
             "batches": get_dist("batch_number"),
             "suppliers": get_dist("supplier_name"),
@@ -139,10 +134,19 @@ def report_page(
             "company_name": comp["name"],
             "company_address": comp["address"],
             "financial_years": financial_years,
-            "selected_fy": str(selected_fy),
-            "is_admin": role == "admin",
-            "datetime": datetime
+            "selected_fy": str(selected_fy)
         }
+
+    cache_key = f"bknr:processing_reports:{comp_code}:rmp_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
+    context = cache_get_or_set(cache_key, build_report_context, ttl=75)
+    context = dict(context)
+    context["is_admin"] = role == "admin"
+    context["datetime"] = datetime
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/raw_material_purchasing_report.html",
+        context=context
     )
 
 # -----------------------------------------------------------

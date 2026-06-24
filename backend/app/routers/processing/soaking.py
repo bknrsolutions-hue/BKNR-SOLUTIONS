@@ -17,25 +17,18 @@ from app.database.models.criteria import (
 
 from app.utils.timezone import ist_now 
 from app.utils.global_filters import get_global_filters
+from app.services.floor_balance import get_floor_balance
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["SOAKING"]) 
 templates = Jinja2Templates(directory="app/templates")
 
-# Masters Memory Caching Framework
-MASTERS_CACHE = {}
-
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
-    global MASTERS_CACHE
-    if company_id not in MASTERS_CACHE or force_refresh:
-        v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
-        s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).all() if s[0]]
-        c_list = [c[0] for c in db.query(chemicals.chemical_name).filter(chemicals.company_id == company_id).all() if c[0]]
-        pf_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
-        
-        MASTERS_CACHE[company_id] = {
-            "varieties": v_list, "species": s_list, "chemicals": c_list, "prod_for_list": pf_list
-        }
-    return MASTERS_CACHE[company_id]
+    v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
+    s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).all() if s[0]]
+    c_list = [c[0] for c in db.query(chemicals.chemical_name).filter(chemicals.company_id == company_id).all() if c[0]]
+    pf_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
+    return {"varieties": v_list, "species": s_list, "chemicals": c_list, "prod_for_list": pf_list}
 
 
 # =====================================================
@@ -126,7 +119,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     today_data = today_q.order_by(Soaking.id.desc()).limit(100).all()
 
     # ⚡ PURE INDEX DRIVE: No Full Table Scans of Soaking Table
-    live_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id, FloorBalance.available_qty > 0.01)
+    live_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id)
 
     if global_production_for:
         live_q = live_q.filter(func.trim(FloorBalance.production_for) == func.trim(global_production_for))
@@ -142,6 +135,12 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     rows_batch = []
     for r in live_records:
         rej_qty = getattr(r, 'rejection_qty_total', 0.0) or 0.0
+        available_qty = get_floor_balance(
+            db, company_id, r.location, r.batch_number, r.count, r.species,
+            r.variety, r.production_for, r.source_type or "RMP"
+        )
+        if available_qty <= 0.01:
+            continue
 
         rows_batch.append({
             "batch": r.batch_number or "N/A",
@@ -151,7 +150,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
             "production_for": r.production_for or "General Stock",
             "location": r.location or "Floor",
             "rejection_qty": round(rej_qty, 2),
-            "available_qty": round(r.available_qty, 2),
+            "available_qty": round(available_qty, 2),
         })
 
     return templates.TemplateResponse(
@@ -168,28 +167,75 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 # API LOOKUPS
 # =====================================================
 @router.get("/soaking/get_count/{batch}")
-def get_count(batch: str, request: Request, db: Session = Depends(get_db)):
+def get_count(batch: str, production_for: str = Query(None), location: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id: return {"counts": []}
-    counts = db.query(distinct(FloorBalance.count)).filter(FloorBalance.company_id == company_id, FloorBalance.batch_number == batch, FloorBalance.available_qty > 0.01, FloorBalance.count.isnot(None), cast(FloorBalance.count, String) != "N/A").order_by(FloorBalance.count).all()
-    return {"counts": [c[0] for c in counts]}
+    global_production_for, global_location = get_global_filters(request)
+    production_for = global_production_for or production_for
+    location = global_location or location
+
+    counts_q = db.query(FloorBalance).filter(
+        FloorBalance.company_id == company_id,
+        func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
+        FloorBalance.count.isnot(None),
+        cast(FloorBalance.count, String) != "N/A"
+    )
+    if production_for:
+        counts_q = counts_q.filter(func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper())
+    if location:
+        counts_q = counts_q.filter(func.upper(func.trim(FloorBalance.location)) == location.strip().upper())
+
+    rows = counts_q.order_by(FloorBalance.count).all()
+    counts = {
+        r.count for r in rows
+        if r.count and get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+    }
+    return {"counts": sorted(counts)}
 
 @router.get("/soaking/get_available_qty")
-def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, request: Request, db: Session = Depends(get_db)):
+def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, production_for: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    record = db.query(FloorBalance.available_qty).filter(FloorBalance.company_id == company_id, FloorBalance.location == location, FloorBalance.batch_number == batch, FloorBalance.count == count, FloorBalance.species == species, FloorBalance.variety == variety).first()
-    return {"available_qty": round(record[0], 2) if record else 0.0}
+    global_production_for, global_location = get_global_filters(request)
+    production_for = global_production_for or production_for
+    location = global_location or location
+
+    query = db.query(FloorBalance.source_type).filter(
+        FloorBalance.company_id == company_id,
+        func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
+        func.upper(func.trim(FloorBalance.count)) == count.strip().upper(),
+        func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
+        func.upper(func.trim(FloorBalance.variety)) == variety.strip().upper()
+    )
+    if production_for:
+        query = query.filter(func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper())
+    source_row = query.first()
+    available_qty = get_floor_balance(
+        db, company_id, location, batch, count, species, variety,
+        production_for, source_row[0] if source_row else "RMP"
+    )
+    return {"available_qty": round(available_qty, 2)}
 
 @router.get("/soaking/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
+    global_production_for, global_location = get_global_filters(request)
+    prod_for = global_production_for or prod_for
+
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
-    batch_q = db.query(distinct(FloorBalance.batch_number)).filter(FloorBalance.company_id == company_id, FloorBalance.production_for == prod_for, FloorBalance.available_qty > 0.01)
+    batch_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id, FloorBalance.production_for == prod_for)
+    if global_location:
+        batch_q = batch_q.filter(func.upper(func.trim(FloorBalance.location)) == global_location.strip().upper())
     if user_allowed_locations:
         batch_q = batch_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
-    return {"batches": [b[0] for b in batch_q.order_by(FloorBalance.batch_number).all() if b[0]]}
+    rows = batch_q.order_by(FloorBalance.batch_number).all()
+    batches = {
+        r.batch_number for r in rows
+        if r.batch_number and get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+    }
+    return {"batches": sorted(batches)}
 
 
 # =====================================================
@@ -213,14 +259,17 @@ def save_soaking(
     clean_batch = batch_number.strip()
 
     # Row Lock Row on Validation Base
-    live_record = db.query(FloorBalance.available_qty).filter(
+    live_record = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_id, FloorBalance.location == production_at,
         FloorBalance.batch_number == clean_batch, FloorBalance.count == clean_count,
         FloorBalance.species == species_name, FloorBalance.variety == variety_name,
         FloorBalance.production_for == production_for
     ).with_for_update().first()
     
-    avail = live_record[0] if live_record else 0.0
+    avail = get_floor_balance(
+        db, company_id, production_at, clean_batch, clean_count, species_name,
+        variety_name, production_for, live_record[0] if live_record else "RMP"
+    )
 
     if in_qty > (avail + 0.05):
         return JSONResponse({"error": f"Insufficient live balance. Available: {avail}"}, status_code=400)
@@ -272,6 +321,8 @@ def update_soaking(
     row = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Log record data stream not found"}, status_code=404)
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
 
     # ⚡ Issue 1 Fix: species & variety పక్కాగా యాడ్ చేసి Row Mismatch బగ్‌ను పూర్తిగా క్లియర్ చేశాం అన్నా!
     is_same_row = (
@@ -284,14 +335,17 @@ def update_soaking(
     )
 
     # Target Validation lookup safely
-    target_record = db.query(FloorBalance.available_qty).filter(
+    target_record = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_id, FloorBalance.location == production_at,
         FloorBalance.batch_number == batch_number.strip(), FloorBalance.count == in_count.strip(),
         FloorBalance.species == species_name, FloorBalance.variety == variety_name,
         FloorBalance.production_for == production_for
     ).with_for_update().first()
     
-    current_bal = target_record[0] if target_record else 0.0
+    current_bal = get_floor_balance(
+        db, company_id, production_at, batch_number.strip(), in_count.strip(), species_name,
+        variety_name, production_for, target_record[0] if target_record else "RMP"
+    )
     virtual_avail = (current_bal + row.in_qty) if is_same_row else current_bal
 
     if in_qty > (virtual_avail + 0.05):
@@ -337,6 +391,8 @@ def delete_soaking(id: int, request: Request, db: Session = Depends(get_db)):
     
     row = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).with_for_update().first()
     if row:
+        if is_edit_locked(request, row.date):
+            return JSONResponse({"error": edit_lock_message()}, status_code=403)
         # Full stack reverse automation refund processing
         update_floor_balance_row(
             db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,

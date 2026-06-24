@@ -13,7 +13,7 @@ def refresh_floor_balance(
     Refresh floor balance table for a specific batch or the entire company.
     """
     from app.database.models.reprocess import Reprocess
-    from app.database.models.processing import RawMaterialPurchasing, Grading, Peeling
+    from app.database.models.processing import RawMaterialPurchasing, DeHeading, Grading, Peeling
     from app.routers.summary.floor_balance_value import calculate_balance_value
     from app.utils.timezone import ist_now
 
@@ -34,6 +34,15 @@ def refresh_floor_balance(
         ).all()
         for r in rmps:
             combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+        # De-heading creates HLSO stock from HOSO. Include this output combo so
+        # a batch refresh does not drop generated HLSO rows.
+        deheads = db.query(DeHeading).filter(
+            DeHeading.company_id == company_id,
+            DeHeading.batch_number == batch_number
+        ).all()
+        for r in deheads:
+            combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP", None))
             
         # Grading
         grads = db.query(Grading).filter(

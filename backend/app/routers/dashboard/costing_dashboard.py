@@ -8,6 +8,7 @@ from app.utils.timezone import ist_now
 import logging
 
 from app.database import get_db
+from app.services.cache import cache_get, cache_set
 
 # =========================================================================
 # 🗄️ EXACT MODEL ARCHITECTURE INTEGRATION (Zero Column Mismatch Setup)
@@ -85,6 +86,15 @@ def costing_dashboard(
             logger.warning(f"Invalid to_date format: {to_date}. {e}")
 
     last_updated_timestamp = ist_now().strftime("%Y-%m-%d %H:%M:%S IST")
+    cache_key = f"bknr:costing_dashboard:{comp_code}:{from_date or 'ALL'}:{to_date or 'ALL'}"
+    cached_context = cache_get(cache_key)
+    if cached_context is not None:
+        cached_context["request"] = request
+        return templates.TemplateResponse(
+            request=request,
+            name="dashboard/costing_dashboard.html",
+            context=cached_context
+        )
 
     try:
         # ---------------------------------------------------------
@@ -331,10 +341,7 @@ def costing_dashboard(
     # ---------------------------------------------------------
     # 🎯 DATA RECONCILIATION LAYER OUTPUT
     # ---------------------------------------------------------
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard/costing_dashboard.html",
-        context={
+    context = {
             "comp_code": comp_code,
             "email": email,
             "available_companies": available_companies,
@@ -382,4 +389,11 @@ def costing_dashboard(
             "from_date": from_date,
             "to_date": to_date
         }
+    cache_context = dict(context)
+    cache_set(cache_key, cache_context, ttl=60)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/costing_dashboard.html",
+        context=context
     )

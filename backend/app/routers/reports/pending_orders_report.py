@@ -20,6 +20,7 @@ from app.database.models.criteria import (
     packing_styles,
     grade_to_hoso 
 )
+from app.services.cache import cache_get, cache_set
 
 router = APIRouter(
     prefix="/pending_orders_report",
@@ -27,6 +28,10 @@ router = APIRouter(
 )
 
 templates = Jinja2Templates(directory="app/templates")
+
+
+def row_to_dict(row):
+    return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
 
 @router.get("", response_class=HTMLResponse)
 def pending_orders_report_page(
@@ -42,6 +47,18 @@ def pending_orders_report_page(
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+
+    cache_key = (
+        f"bknr:processing_reports:{comp_code}:pending_orders_report:"
+        f"{from_date or 'NONE'}:{to_date or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
+    )
+    cached_context = cache_get(cache_key)
+    if cached_context is not None:
+        return templates.TemplateResponse(
+            request=request,
+            name="reports/pending_orders_report.html",
+            context=cached_context,
+        )
 
     # 2. Pending Orders Base Query
     q = db.query(pending_orders).filter(
@@ -221,10 +238,7 @@ def pending_orders_report_page(
                     r.req_hoso_qty = round(r.req_hlso_qty / h_yield_pct, 2) if h_yield_pct > 0 else 0
 
     # Template Response
-    return templates.TemplateResponse(
-        request=request,
-        name="reports/pending_orders_report.html",
-        context={
+    context = {
             "rows": rows, 
             "from_date": from_date or "", 
             "to_date": to_date or "",
@@ -235,4 +249,12 @@ def pending_orders_report_page(
             "f_glazes": sorted({r.count_glaze for r in rows if r.count_glaze}),
             "f_species": sorted({r.species for r in rows if r.species})
         }
+    cache_context = dict(context)
+    cache_context["rows"] = [row_to_dict(r) for r in rows]
+    cache_set(cache_key, cache_context, ttl=75)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/pending_orders_report.html",
+        context=context
     )

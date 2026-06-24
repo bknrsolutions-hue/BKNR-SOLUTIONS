@@ -23,6 +23,7 @@ from app.database.models.inventory_management import (
 )
 from app.database.models.processing import (
     RawMaterialPurchasing,
+    DeHeading,
     Grading,
     Peeling,
     GateEntry
@@ -264,6 +265,8 @@ def inventory_costing_page(
         floor_combos = set()
         for r in db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.company_id == comp_code).all():
             floor_combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
+        for r in db.query(DeHeading).filter(DeHeading.batch_number == batch, DeHeading.company_id == comp_code).all():
+            floor_combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP"))
         for r in db.query(Grading).filter(Grading.batch_number == batch, Grading.company_id == comp_code).all():
             floor_combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
         for r in db.query(Peeling).filter(Peeling.batch_number == batch, Peeling.company_id == comp_code).all():

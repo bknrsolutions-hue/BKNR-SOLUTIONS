@@ -20,24 +20,17 @@ from app.services.hlso_grading_sync import add_deheading_to_grading_pool, remove
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
 from app.utils.timezone import ist_now
+from app.services.floor_balance import get_floor_balance
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
 
-# Masters Memory Caching Framework Context Lock
-MASTERS_CACHE = {}
-
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
-    global MASTERS_CACHE
-    if company_id not in MASTERS_CACHE or force_refresh:
-        c_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all()]
-        s_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_id).order_by(SpeciesMaster.species_name).all()]
-        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
-        
-        MASTERS_CACHE[company_id] = {
-            "contractors": c_list, "species": s_list, "prod_for_list": pf_list
-        }
-    return MASTERS_CACHE[company_id]
+    c_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all()]
+    s_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_id).order_by(SpeciesMaster.species_name).all()]
+    pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    return {"contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
 # =====================================================
@@ -127,8 +120,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     # Direct indexed fetch from Live FloorBalance
     live_q = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_code,
-        FloorBalance.variety == "HOSO",
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety == "HOSO"
     )
 
     if global_production_for:
@@ -142,13 +134,19 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     hoso_floor_balance_list = []
     for r in live_records:
+        available_qty = get_floor_balance(
+            db, company_code, r.location, r.batch_number, r.count, r.species,
+            r.variety, r.production_for, r.source_type or "RMP"
+        )
+        if available_qty <= 0.01:
+            continue
         hoso_floor_balance_list.append({
             "production_for": r.production_for or "General Stock",
             "peeling_at": r.location,
             "batch": r.batch_number,
             "count": r.count or "N/A",
             "species": r.species or "N/A",
-            "available_qty": round(r.available_qty, 2)
+            "available_qty": round(available_qty, 2)
         })
 
     return templates.TemplateResponse(
@@ -182,14 +180,17 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
     if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
         return {"batches": []}
 
-    batches = db.query(distinct(FloorBalance.batch_number)).filter(
+    rows = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_code,
         func.trim(FloorBalance.production_for) == func.trim(production_for),
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
-        FloorBalance.variety == "HOSO",
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety == "HOSO"
     ).order_by(FloorBalance.batch_number).all()
-    return {"batches": [b[0] for b in batches if b[0]]}
+    batches = {
+        r.batch_number for r in rows
+        if r.batch_number and get_floor_balance(db, company_code, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+    }
+    return {"batches": sorted(batches)}
 
 @router.get("/get_hoso/{production_for}/{location}/{batch}")
 def get_hoso_counts(production_for: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
@@ -206,15 +207,18 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
     if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
         return {"counts": []}
 
-    counts = db.query(distinct(FloorBalance.count)).filter(
+    rows = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_code,
         FloorBalance.batch_number == batch,
         func.trim(FloorBalance.production_for) == func.trim(production_for),
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
-        FloorBalance.variety == "HOSO",
-        FloorBalance.available_qty > 0.01
+        FloorBalance.variety == "HOSO"
     ).order_by(FloorBalance.count).all()
-    return {"counts": [c[0] for c in counts if c[0]]}
+    counts = {
+        r.count for r in rows
+        if r.count and get_floor_balance(db, company_code, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+    }
+    return {"counts": sorted(counts)}
 
 @router.get("/get_rate/{contractor}")
 def get_contractor_rate(contractor: str, request: Request, db: Session = Depends(get_db)):
@@ -240,9 +244,19 @@ def get_available_qty(
 ):
     company_code = request.session.get("company_code")
     if not company_code: return {"available_qty": 0}
+
+    global_p_for, global_loc = get_global_filters(request)
+    if global_p_for:
+        production_for = global_p_for
+    if global_loc:
+        location = global_loc
+
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
+        return {"available_qty": 0}
     
-    # Prathi field ki TRIMMING mariyu UPPERCASE applying chestunnamu (Bulletproof matching)
-    record = db.query(FloorBalance.available_qty).filter(
+    source_row = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_code,
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
         func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
@@ -251,8 +265,12 @@ def get_available_qty(
         func.upper(func.trim(FloorBalance.species)) == species_name.strip().upper(),
         FloorBalance.variety == "HOSO"
     ).first()
+    available_qty = get_floor_balance(
+        db, company_code, location, batch, count, species_name, "HOSO",
+        production_for, source_row[0] if source_row else "RMP"
+    )
     
-    return {"available_qty": round(record[0], 2) if record else 0.0}
+    return {"available_qty": round(available_qty, 2)}
 
 @router.post("/de_heading")
 def save_de_heading(
@@ -271,7 +289,7 @@ def save_de_heading(
     clean_batch = batch_number.strip()
     clean_count = hoso_count.strip()
 
-    avail_rec = db.query(FloorBalance.available_qty).filter(
+    source_row = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_code,
         func.upper(func.trim(FloorBalance.location)) == deheading_at.strip().upper(),
         func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
@@ -280,7 +298,10 @@ def save_de_heading(
         func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
         FloorBalance.variety == "HOSO"
     ).first()
-    avail = avail_rec[0] if avail_rec else 0.0
+    avail = get_floor_balance(
+        db, company_code, deheading_at, clean_batch, clean_count, species, "HOSO",
+        production_for, source_row[0] if source_row else "RMP"
+    )
     
     if hoso_qty > (avail + 0.1):
         return JSONResponse({"error": f"Insufficient HOSO live balance. Available: {round(avail, 2)}"}, status_code=400)
@@ -329,6 +350,8 @@ def delete_de_heading(id: int, request: Request, db: Session = Depends(get_db)):
     row = db.query(DeHeading).filter(DeHeading.id == id, DeHeading.company_id == company_code).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
         
     remove_deheading_from_grading_pool(db, row)
     

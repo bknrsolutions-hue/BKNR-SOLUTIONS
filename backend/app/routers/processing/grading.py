@@ -8,6 +8,7 @@ from sqlalchemy import func, distinct
 from datetime import datetime, timedelta, date
 from app.utils.timezone import ist_now
 from app.services.floor_balance_sync import refresh_floor_balance
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 from app.database import get_db
 from app.database.models.processing import Grading, RawMaterialPurchasing, DeHeading, HlsoForGrading
@@ -245,6 +246,17 @@ def get_batches(company: str, location: str, request: Request, db: Session = Dep
     company_code = request.session.get("company_code")
     if not company_code: return {"batches": []}
 
+    global_company, global_location = get_global_filters(request)
+    if global_company:
+        company = global_company
+    if global_location:
+        location = global_location
+
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    if user_allowed_locations and location != "ALL" and location.strip().upper() not in user_allowed_locations:
+        return {"batches": []}
+
     thirty_days_ago = ist_now().date() - timedelta(days=30)
 
     r1_q = db.query(distinct(RawMaterialPurchasing.batch_number)).filter(
@@ -275,6 +287,17 @@ def get_batches(company: str, location: str, request: Request, db: Session = Dep
 def get_hoso(company: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code: return {"counts": []}
+
+    global_company, global_location = get_global_filters(request)
+    if global_company:
+        company = global_company
+    if global_location:
+        location = global_location
+
+    session_locations = request.session.get("allowed_locations", [])
+    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    if user_allowed_locations and location != "ALL" and location.strip().upper() not in user_allowed_locations:
+        return {"counts": []}
 
     c1_q = db.query(distinct(RawMaterialPurchasing.count)).filter(
         RawMaterialPurchasing.company_id == company_code,
@@ -344,6 +367,9 @@ def update_grading(
     company_code = request.session.get("company_code")
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
+        if is_edit_locked(request, entry.date):
+            request.session["message"] = f"❌ {edit_lock_message()}"
+            return RedirectResponse("/processing/grading", status_code=303)
         old_batch_number = entry.batch_number
         entry.batch_number = batch_number
         entry.hoso_count = hoso_count
@@ -446,6 +472,8 @@ def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
     
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
     if entry:
+        if is_edit_locked(request, entry.date):
+            return JSONResponse({"status": "error", "message": edit_lock_message()}, status_code=403)
         batch_to_refresh = entry.batch_number
         rollback_grading_consumption(db, entry)
         db.delete(entry)

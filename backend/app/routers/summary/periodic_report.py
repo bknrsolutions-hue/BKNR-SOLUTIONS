@@ -128,11 +128,17 @@ def calculate_time_bound_floor_balance(
         available = base_stock + float(g_p) - float(g_m) - float(dh_u)
     elif variety_upper == "HLSO":
         g_h = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
+        dh_o = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hlso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, sa_String)) == clean_count).scalar() or 0
+
         p_q = db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)).filter(
             Peeling.company_id == company_id, Peeling.batch_number == batch, Peeling.peeling_at == location, Peeling.species == species,
             func.trim(cast(Peeling.hlso_count, sa_String)) == clean_count
         )
         p_q = p_q.filter(or_(Peeling.date < cutoff_date_str, and_(Peeling.date == cutoff_date_str, Peeling.time <= cutoff_time_str)))
+        if production_for and production_for != "N/A":
+            p_q = p_q.filter(Peeling.production_for == production_for)
+        elif production_for == "N/A":
+            p_q = p_q.filter((Peeling.production_for == None) | (func.trim(Peeling.production_for) == ""))
         p_u = p_q.scalar() or 0
         available = base_stock + float(g_h) - float(p_u)
     else:

@@ -326,17 +326,22 @@ async def get_processing_summary(
             if r.batch_number:
                 combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
 
-        # 2. Grading Record Items Lookups (Using exact reference layouts map)
+        # 2. De-heading output HLSO rows.
+        for r in rows["deheading"]:
+            if r.batch_number:
+                combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP", None))
+
+        # 3. Grading Record Items Lookups (Using exact reference layouts map)
         for r in grading_records:
             if r.batch_number:
                 combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
 
-        # 3. Peeling Items Lookups
+        # 4. Peeling Items Lookups
         for r in rows["peeling"]:
             if r.batch_number:
                 combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
 
-        # 4. Reprocess Items Lookups
+        # 5. Reprocess Items Lookups
         for r in rows["reprocess"]:
             if r.new_batch_id:
                 glaze_val = getattr(r, 'glaze', None)

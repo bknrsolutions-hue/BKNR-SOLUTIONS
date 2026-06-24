@@ -24,6 +24,7 @@ from app.database.models.criteria import (
     freezers, packing_styles, production_for, production_at, 
     production_types, grades
 )
+from app.services.cache import cache_get, cache_set
 
 router = APIRouter(prefix="/production_report", tags=["PRODUCTION REPORT"])
 
@@ -36,6 +37,10 @@ templates = Jinja2Templates(directory="app/templates")
 def get_company_info(db: Session, comp_code: str):
     c = db.query(Company).filter(Company.company_code == comp_code).first()
     return (c.company_name or "", c.address or "") if c else ("", "")
+
+
+def row_to_dict(row):
+    return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
 
 # ------------------------------------------------------------
 # MAIN REPORT PAGE (WITH DUAL GROUPING SUB-TOTALS)
@@ -57,6 +62,18 @@ def production_report_page(
         return RedirectResponse("/auth/login", status_code=302)
 
     comp_code = str(comp_code)
+    cache_key = (
+        f"bknr:processing_reports:{comp_code}:production_report:"
+        f"{fy or 'NONE'}:{from_date or 'NONE'}:{to_date or 'NONE'}:"
+        f"{selected_production_for or 'ALL'}:{selected_location or 'ALL'}"
+    )
+    cached_context = cache_get(cache_key)
+    if cached_context is not None:
+        return templates.TemplateResponse(
+            request=request,
+            name="reports/production_report.html",
+            context=cached_context,
+        )
     
     # Base Query
     q = db.query(Production).filter(Production.company_id == comp_code)
@@ -152,10 +169,7 @@ def production_report_page(
 
     company_name, company_address = get_company_info(db, comp_code)
 
-    return templates.TemplateResponse(
-        request=request,
-        name="reports/production_report.html",
-        context={
+    context = {
             "summary_rows": summary_rows,         
             "summary_subtotals": summary_subtotals, 
             "detail_rows": detail_rows,           
@@ -178,6 +192,15 @@ def production_report_page(
             "prod_types_list": get_list(production_types, "production_type"),
             "today_date": ist_now().strftime("%d %b, %Y")
         }
+    cache_context = dict(context)
+    cache_context["summary_rows"] = [row_to_dict(r) for r in summary_rows]
+    cache_context["detail_rows"] = [row_to_dict(r) for r in detail_rows]
+    cache_set(cache_key, cache_context, ttl=75)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/production_report.html",
+        context=context
     )
 
 # ------------------------------------------------------------
