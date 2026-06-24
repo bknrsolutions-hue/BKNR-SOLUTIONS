@@ -50,7 +50,11 @@ import app.database.models.assets
 import app.database.models.advanced_seafood_erp
 
 # Create all tables on startup if they don't exist
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+    print("Database tables verified")
+except Exception as e:
+    print(f"Database startup warning: {e}")
 # =====================================================
 # =====================================================
 # 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
