@@ -163,7 +163,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Invoice No</label><input type="text" id="invoice_no" required></div>
                 <div class="field"><label>PO Number</label><input type="text" id="po_number"></div>
                 <div class="field"><label>Container No</label><input type="text" id="container_no"></div>
-                <div class="field"><label>Buyer Name</label><input type="text" id="buyer_name" required></div>
+                <div class="field"><label>Customer Ledger</label><select id="buyer_ledger_id" required><option value="">-- Select Customer Account --</option>{% for l in ledgers %}<option value="{{ l.id }}">{{ l.ledger_name }}{% if l.group %} ({{ l.group.group_name }}){% endif %}</option>{% endfor %}</select></div>
                 <div class="field">
                     <label>Buyer Type</label>
                     <select id="buyer_type">
@@ -229,7 +229,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             invoice_no: document.getElementById("invoice_no").value,
             po_number: document.getElementById("po_number").value || null,
             container_no: document.getElementById("container_no").value || null,
-            buyer_name: document.getElementById("buyer_name").value,
+            buyer_ledger_id: parseInt(document.getElementById("buyer_ledger_id").value),
             buyer_type: document.getElementById("buyer_type").value,
             country: document.getElementById("country").value,
             invoice_date: document.getElementById("invoice_date").value,

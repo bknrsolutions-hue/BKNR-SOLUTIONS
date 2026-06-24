@@ -153,13 +153,21 @@ def processing_dashboard(
     # =====================================================
     rm_summary_q = db.query(
         RawMaterialPurchasing.species,
+        RawMaterialPurchasing.variety_name,
         RawMaterialPurchasing.count,
-        func.sum(RawMaterialPurchasing.received_qty).label("total_qty"),
+        func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0).label("total_qty"),
     )
     rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
-    rm_summary_query = rm_summary_q.group_by(RawMaterialPurchasing.species, RawMaterialPurchasing.count).all()
+    rm_summary_query = rm_summary_q.group_by(
+        RawMaterialPurchasing.species,
+        RawMaterialPurchasing.variety_name,
+        RawMaterialPurchasing.count,
+    ).all()
 
-    rm_summary = [{"species": r[0], "count": r[1], "qty": round(r[2], 2)} for r in rm_summary_query]
+    rm_summary = [
+        {"species": r[0], "variety": r[1], "count": r[2], "qty": round(r[3], 2)}
+        for r in rm_summary_query
+    ]
 
     # =====================================================
     # 4. HOURLY DATA FOR 3 CHARTS (Hour Date Wise)

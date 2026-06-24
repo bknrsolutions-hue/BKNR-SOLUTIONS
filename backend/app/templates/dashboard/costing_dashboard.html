@@ -380,10 +380,41 @@
   .prod-total-weight { font-weight: 800; font-size: 13px; color: var(--value-text); }
   .prod-net-margin { font-size: 11px; font-weight: 700; margin-top: 2px; }
 </style>
+<link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/dashboard-ui.css">
 </head>
 <body>
 
+<div class="module-shell">
+<aside class="module-rail">
+  <div class="rail-title"><i class="fa-solid fa-file-invoice-dollar"></i> Costing</div>
+  <div class="rail-section">
+    <div class="rail-label">Dashboards</div>
+    <button class="rail-link active" type="button" aria-current="page"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></button>
+    <button class="rail-link" onclick="openEntryModal('/dashboard/finance_dashboard', 'Finance Dashboard')"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></button>
+    <button class="rail-link" onclick="openEntryModal('/dashboard/processing_dashboard', 'Processing Dashboard')"><i class="fa-solid fa-chart-simple"></i><span>Processing</span></button>
+    <button class="rail-link" onclick="openEntryModal('/inventory/sales_report', 'Sales Report')"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
+  </div>
+  <div class="rail-section">
+    <div class="rail-label">Cost Inputs</div>
+    <button class="rail-link" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing')"><i class="fa-solid fa-truck-ramp-box"></i><span>RM Purchasing</span></button>
+    <button class="rail-link" onclick="openEntryModal('/processing/production', 'Production Entry')"><i class="fa-solid fa-industry"></i><span>Production Entry</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/production_cost_allocation/entry', 'Production Cost Allocation')"><i class="fa-solid fa-coins"></i><span>Cost Allocation</span></button>
+    <button class="rail-link" onclick="openEntryModal('/inventory/stock_entry', 'Stock Entry')"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/purchase/entry', 'Purchase & Packaging')"><i class="fa-solid fa-file-invoice"></i><span>Packaging Bills</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/container/entry', 'Logistics & Freight')"><i class="fa-solid fa-truck-fast"></i><span>Freight Bills</span></button>
+  </div>
+  <div class="rail-section">
+    <div class="rail-label">Reports</div>
+    <button class="rail-link" onclick="openEntryModal('/summary/inventory_costing', 'Inventory Costing')"><i class="fa-solid fa-calculator"></i><span>Inventory Costing</span></button>
+    <button class="rail-link" onclick="openEntryModal('/summary/floor_balance_value', 'Floor Balance Value')"><i class="fa-solid fa-scale-balanced"></i><span>Floor Balance Value</span></button>
+    <button class="rail-link" onclick="openEntryModal('/reports/storage_cost_report', 'Storage & Cost Report')"><i class="fa-solid fa-coins"></i><span>Storage Cost</span></button>
+    <button class="rail-link" onclick="openEntryModal('/summary/periodic-report', 'Periodic Summary')"><i class="fa-solid fa-calendar-days"></i><span>Periodic Summary</span></button>
+    <button class="rail-link" onclick="openEntryModal('/summary/processing', 'Batch Summary')"><i class="fa-solid fa-rectangle-list"></i><span>Batch Summary</span></button>
+  </div>
+</aside>
+<main class="module-main">
 <div class="dashboard-container">
 
   <div class="header-panel">
@@ -597,17 +628,47 @@
 
   </div>
 </div>
+</main>
+</div>
+
+<div id="entryModal" class="entry-modal-overlay">
+  <div class="entry-modal-content">
+    <div class="entry-modal-header">
+      <h3 id="modalTitle">Costing Workspace</h3>
+      <button class="entry-modal-close" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <iframe id="entryFrame" src=""></iframe>
+  </div>
+</div>
 
 <script>
 // Keep references to global chart instances
 window.charts = {};
+
+function openEntryModal(url, title) {
+  document.getElementById('modalTitle').innerText = title;
+  document.getElementById('entryFrame').src = url;
+  document.getElementById('entryModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEntryModal() {
+  document.getElementById('entryModal').style.display = 'none';
+  document.getElementById('entryFrame').src = '';
+  document.body.style.overflow = 'auto';
+  location.reload();
+}
+
+window.addEventListener('click', function(event) {
+  if (event.target === document.getElementById('entryModal')) closeEntryModal();
+});
 
 function applyChartTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     
     Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
     Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
-    Chart.defaults.font.size = 9;
+    Chart.defaults.font.size = 11;
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
     Chart.defaults.font.weight = '600';
     Chart.defaults.plugins.legend.labels.boxWidth = 8;
@@ -642,7 +703,7 @@ document.addEventListener("DOMContentLoaded", function() {
       plugins: { legend: { display: false } },
       scales: { 
         y: { display: false }, 
-        x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } 
+        x: { grid: { display: false }, ticks: { font: { size: 11, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } }
       }
     },
     data: {
@@ -667,10 +728,10 @@ document.addEventListener("DOMContentLoaded", function() {
     type: "line",
     options: { 
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { boxWidth: 8, font: { size: 10, family: "'Plus Jakarta Sans', sans-serif", weight: 700 } } } },
+      plugins: { legend: { labels: { boxWidth: 8, font: { size: 11, family: "'Plus Jakarta Sans', sans-serif", weight: 700 } } } },
       scales: { 
-        y: { ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } }, 
-        x: { grid: { display: false }, ticks: { font: { size: 9, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } } 
+        y: { ticks: { font: { size: 11, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 11, family: "'Plus Jakarta Sans', sans-serif", weight: 600 } } }
       }
     },
     data: {

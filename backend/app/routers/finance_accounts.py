@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query, Upl
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func, and_
 from datetime import date, datetime, timedelta
 import io
@@ -110,7 +110,7 @@ class CustomerReceivableSchema(BaseModel):
     invoice_no: str
     po_number: str = None
     container_no: str = None
-    buyer_name: str
+    buyer_ledger_id: int
     buyer_type: str = "Direct"
     country: str
     invoice_date: date
@@ -120,7 +120,7 @@ class CustomerReceivableSchema(BaseModel):
     credit_days: int = 30
 
 class VendorPaymentSchema(BaseModel):
-    vendor_name: str
+    vendor_ledger_id: int
     vendor_type: str
     gst_no: str = None
     vendor_invoice_no: str = None
@@ -134,12 +134,12 @@ class VendorPaymentSchema(BaseModel):
     transaction_no: str = None
 
 class BankTransactionSchema(BaseModel):
-    bank_name: str
+    bank_ledger_id: int
     transaction_date: date
     voucher_type: str
     reference_no: str
     linked_invoice_no: str = None
-    linked_vendor: str = None
+    linked_vendor_ledger_id: int = None
     debit: float = 0.0
     credit: float = 0.0
     closing_balance: float
@@ -147,9 +147,9 @@ class BankTransactionSchema(BaseModel):
 class ExpenseVoucherSchema(BaseModel):
     voucher_no: str
     voucher_date: date
-    expense_type: str
+    expense_ledger_id: int
     department: str
-    vendor_name: str = None
+    vendor_ledger_id: int = None
     gst_percentage: float = 0.0
     gst_amount: float = 0.0
     amount: float
@@ -159,7 +159,7 @@ class ExpenseVoucherSchema(BaseModel):
     remarks: str = None
 
 class JournalEntryLineSchema(BaseModel):
-    ledger_name: str
+    ledger_id: int
     debit: float = 0.0
     credit: float = 0.0
 
@@ -175,8 +175,8 @@ class PaymentReceiptSchema(BaseModel):
     receipt_no: str
     entry_date: date
     transaction_type: str
-    party_ledger: str
-    bank_cash_ledger: str
+    party_ledger_id: int
+    bank_cash_ledger_id: int
     invoice_no: str = None
     vendor_bill_no: str = None
     amount: float
@@ -411,6 +411,28 @@ def amount_line(db: Session, company_id: str, debit: float, credit: float, remar
     detail.update({"debit_amount": round(debit or 0.0, 2), "credit_amount": round(credit or 0.0, 2), "remarks": remarks})
     return detail
 
+def account_lookup(
+    db: Session,
+    company_id: str,
+    ledger_id: int | None,
+    group_types: set[str] | None = None,
+    group_names: set[str] | None = None,
+) -> LedgerMaster | None:
+    if not ledger_id:
+        return None
+    ledger = db.query(LedgerMaster).filter(
+        LedgerMaster.id == ledger_id,
+        LedgerMaster.company_id == company_id,
+        LedgerMaster.status == "ACTIVE",
+    ).first()
+    if not ledger or not ledger.group:
+        return None
+    if group_types and ledger.group.group_type not in group_types:
+        return None
+    if group_names and ledger.group.group_name not in group_names:
+        return None
+    return ledger
+
 # ============================================================
 # 1. LEDGER MASTER
 # ============================================================
@@ -433,7 +455,7 @@ def ledger_master_entry(request: Request, db: Session = Depends(get_db)):
     ]:
         PostingEngineService.get_or_create_group(db, comp_code, group_name, group_type)
     db.commit()
-    history = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).order_by(LedgerMaster.ledger_name).all()
+    history = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code).order_by(LedgerMaster.ledger_name).all()
     groups = db.query(AccountGroup).filter(AccountGroup.company_id == comp_code).order_by(AccountGroup.group_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/ledger_master.html", context={"history": history, "groups": groups, "company_id": comp_code})
 
@@ -487,7 +509,8 @@ def customer_receivable_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code).order_by(desc(CustomerReceivable.invoice_date)).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/customer_receivable.html", context={"history": history, "company_id": comp_code})
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE", AccountGroup.group_type == "ASSET").order_by(LedgerMaster.ledger_name).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/customer_receivable.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/customer_receivable/save")
 def customer_receivable_save(request: Request, payload: CustomerReceivableSchema, db: Session = Depends(get_db)):
@@ -495,6 +518,9 @@ def customer_receivable_save(request: Request, payload: CustomerReceivableSchema
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
+    buyer_ledger = account_lookup(db, comp_code, payload.buyer_ledger_id, group_types={"ASSET"})
+    if not buyer_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid customer ledger"}, status_code=400)
     exists = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code, CustomerReceivable.invoice_no == payload.invoice_no).first()
     if exists: return JSONResponse({"success": False, "message": "Invoice already registered"}, status_code=400)
     
@@ -506,7 +532,7 @@ def customer_receivable_save(request: Request, payload: CustomerReceivableSchema
         invoice_no=payload.invoice_no,
         po_number=payload.po_number,
         container_no=payload.container_no,
-        buyer_name=payload.buyer_name,
+        buyer_name=buyer_ledger.ledger_name,
         buyer_type=payload.buyer_type,
         country=payload.country,
         invoice_date=payload.invoice_date,
@@ -546,7 +572,8 @@ def vendor_payment_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code).order_by(desc(VendorPayment.bill_date)).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/vendor_payment.html", context={"history": history, "company_id": comp_code})
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE", AccountGroup.group_type == "LIABILITY").order_by(LedgerMaster.ledger_name).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/vendor_payment.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/vendor_payment/save")
 def vendor_payment_save(request: Request, payload: VendorPaymentSchema, db: Session = Depends(get_db)):
@@ -554,13 +581,16 @@ def vendor_payment_save(request: Request, payload: VendorPaymentSchema, db: Sess
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
+    vendor_ledger = account_lookup(db, comp_code, payload.vendor_ledger_id, group_types={"LIABILITY"})
+    if not vendor_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid vendor ledger"}, status_code=400)
     exists = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code, VendorPayment.bill_no == payload.bill_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher bill number already exists"}, status_code=400)
     
     balance = payload.total_amount
     entry = VendorPayment(
         company_id=comp_code,
-        vendor_name=payload.vendor_name,
+        vendor_name=vendor_ledger.ledger_name,
         vendor_type=payload.vendor_type,
         gst_no=payload.gst_no,
         vendor_invoice_no=payload.vendor_invoice_no,
@@ -602,7 +632,8 @@ def bank_transaction_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(BankTransaction).filter(BankTransaction.company_id == comp_code).order_by(desc(BankTransaction.transaction_date)).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/bank_transaction.html", context={"history": history, "company_id": comp_code})
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/bank_transaction.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/bank_transaction/save")
 def bank_transaction_save(request: Request, payload: BankTransactionSchema, db: Session = Depends(get_db)):
@@ -610,17 +641,23 @@ def bank_transaction_save(request: Request, payload: BankTransactionSchema, db: 
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
+    bank_ledger = account_lookup(db, comp_code, payload.bank_ledger_id, group_names={"Bank Accounts", "Cash-in-hand"})
+    vendor_ledger = account_lookup(db, comp_code, payload.linked_vendor_ledger_id, group_types={"LIABILITY"})
+    if not bank_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid bank/cash ledger"}, status_code=400)
+    if payload.linked_vendor_ledger_id and not vendor_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid linked vendor ledger"}, status_code=400)
     exists = db.query(BankTransaction).filter(BankTransaction.company_id == comp_code, BankTransaction.reference_no == payload.reference_no).first()
     if exists: return JSONResponse({"success": False, "message": "Reference Transaction number already mapped"}, status_code=400)
     
     entry = BankTransaction(
         company_id=comp_code,
-        bank_name=payload.bank_name,
+        bank_name=bank_ledger.ledger_name,
         transaction_date=payload.transaction_date,
         voucher_type=payload.voucher_type,
         reference_no=payload.reference_no,
         linked_invoice_no=payload.linked_invoice_no,
-        linked_vendor=payload.linked_vendor,
+        linked_vendor=vendor_ledger.ledger_name if vendor_ledger else None,
         debit=payload.debit,
         credit=payload.credit,
         closing_balance=payload.closing_balance,
@@ -653,7 +690,8 @@ def expense_voucher_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(ExpenseVoucher).filter(ExpenseVoucher.company_id == comp_code).order_by(desc(ExpenseVoucher.voucher_date)).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/expense_voucher.html", context={"history": history, "company_id": comp_code})
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/expense_voucher.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/expense_voucher/save")
 def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Session = Depends(get_db)):
@@ -661,6 +699,12 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
+    expense_ledger = account_lookup(db, comp_code, payload.expense_ledger_id, group_types={"EXPENSE"})
+    vendor_ledger = account_lookup(db, comp_code, payload.vendor_ledger_id, group_types={"LIABILITY"})
+    if not expense_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid expense ledger"}, status_code=400)
+    if payload.vendor_ledger_id and not vendor_ledger:
+        return JSONResponse({"success": False, "message": "Select a valid vendor ledger"}, status_code=400)
     exists = db.query(ExpenseVoucher).filter(ExpenseVoucher.company_id == comp_code, ExpenseVoucher.voucher_no == payload.voucher_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher number already allocated"}, status_code=400)
     
@@ -668,9 +712,9 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
         company_id=comp_code,
         voucher_no=payload.voucher_no,
         voucher_date=payload.voucher_date,
-        expense_type=payload.expense_type,
+        expense_type=expense_ledger.ledger_name,
         department=payload.department,
-        vendor_name=payload.vendor_name,
+        vendor_name=vendor_ledger.ledger_name if vendor_ledger else None,
         gst_percentage=payload.gst_percentage,
         gst_amount=payload.gst_amount,
         amount=payload.amount,
@@ -706,7 +750,7 @@ def journal_entry_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(JournalEntry).filter(JournalEntry.company_id == comp_code).order_by(desc(JournalEntry.entry_date)).all()
-    ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/journal_entry.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/journal_entry/save")
@@ -717,6 +761,17 @@ def journal_entry_save(request: Request, payload: JournalEntrySchema, db: Sessio
     
     if payload.total_debit != payload.total_credit:
          return JSONResponse({"success": False, "message": "Debit and Credit totals must match"}, status_code=400)
+
+    ledger_ids = {line.ledger_id for line in payload.lines}
+    ledger_map = {
+        ledger.id: ledger for ledger in db.query(LedgerMaster).filter(
+            LedgerMaster.company_id == comp_code,
+            LedgerMaster.status == "ACTIVE",
+            LedgerMaster.id.in_(ledger_ids),
+        ).all()
+    }
+    if len(ledger_map) != len(ledger_ids):
+        return JSONResponse({"success": False, "message": "One or more selected ledgers are invalid"}, status_code=400)
          
     exists = db.query(JournalEntry).filter(JournalEntry.company_id == comp_code, JournalEntry.entry_no == payload.entry_no).first()
     if exists: return JSONResponse({"success": False, "message": "Journal Entry Number already exists"}, status_code=400)
@@ -737,7 +792,7 @@ def journal_entry_save(request: Request, payload: JournalEntrySchema, db: Sessio
     for line in payload.lines:
         db_line = JournalEntryLine(
             entry_no=entry.entry_no,
-            ledger_name=line.ledger_name,
+            ledger_name=ledger_map[line.ledger_id].ledger_name,
             debit=line.debit,
             credit=line.credit
         )
@@ -768,7 +823,7 @@ def payment_receipt_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code).order_by(desc(PaymentReceipt.entry_date)).all()
-    ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
+    ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/payment_receipt.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
 @router.post("/payment_receipt/save")
@@ -777,6 +832,10 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
+    party_ledger = account_lookup(db, comp_code, payload.party_ledger_id)
+    bank_cash_ledger = account_lookup(db, comp_code, payload.bank_cash_ledger_id, group_names={"Bank Accounts", "Cash-in-hand"})
+    if not party_ledger or not bank_cash_ledger:
+        return JSONResponse({"success": False, "message": "Select valid party and bank/cash ledgers"}, status_code=400)
     exists = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code, PaymentReceipt.receipt_no == payload.receipt_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher Receipt Number already registered"}, status_code=400)
     
@@ -785,8 +844,8 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         receipt_no=payload.receipt_no,
         entry_date=payload.entry_date,
         transaction_type=payload.transaction_type,
-        party_ledger=payload.party_ledger,
-        bank_cash_ledger=payload.bank_cash_ledger,
+        party_ledger=party_ledger.ledger_name,
+        bank_cash_ledger=bank_cash_ledger.ledger_name,
         invoice_no=payload.invoice_no,
         vendor_bill_no=payload.vendor_bill_no,
         amount=payload.amount,
@@ -866,7 +925,13 @@ def bank_master_delete(log_id: int, request: Request, db: Session = Depends(get_
 def item_accounting_link_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ItemAccountingLink).filter(ItemAccountingLink.company_id == comp_code).all()
+    history = db.query(ItemAccountingLink).options(
+        joinedload(ItemAccountingLink.purchase_account),
+        joinedload(ItemAccountingLink.sales_account),
+        joinedload(ItemAccountingLink.inventory_account),
+        joinedload(ItemAccountingLink.cogs_account),
+        joinedload(ItemAccountingLink.wip_account),
+    ).filter(ItemAccountingLink.company_id == comp_code).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/item_accounting_link.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -1545,7 +1610,7 @@ def fixed_assets_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(FixedAssetMaster).filter(FixedAssetMaster.company_id == comp_code).order_by(FixedAssetMaster.asset_code).all()
-    depreciation_rows = db.query(DepreciationSchedule).filter(DepreciationSchedule.company_id == comp_code).order_by(desc(DepreciationSchedule.period_month)).all()
+    depreciation_rows = db.query(DepreciationSchedule).options(joinedload(DepreciationSchedule.asset)).filter(DepreciationSchedule.company_id == comp_code).order_by(desc(DepreciationSchedule.period_month)).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(
         request=request,

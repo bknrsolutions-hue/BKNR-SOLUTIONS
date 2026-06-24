@@ -158,7 +158,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </div>
         <form id="bankForm" onsubmit="saveTransaction(event)">
             <div class="form-grid">
-                <div class="field"><label>Bank Name</label><input type="text" id="bank_name" required></div>
+                <div class="field"><label>Bank / Cash Ledger</label><select id="bank_ledger_id" required><option value="">-- Select Bank Account --</option>{% for l in ledgers %}{% if (l.group and l.group.group_name in ["Bank Accounts", "Cash-in-hand"]) or "cash" in l.ledger_name|lower %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endif %}{% endfor %}</select></div>
                 <div class="field"><label>Transaction Date</label><input type="date" id="transaction_date" required></div>
                 <div class="field">
                     <label>Voucher Type</label>
@@ -170,7 +170,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </div>
                 <div class="field"><label>Reference No (UTR / Cheque)</label><input type="text" id="reference_no" required></div>
                 <div class="field"><label>Linked Invoice No</label><input type="text" id="linked_invoice_no"></div>
-                <div class="field"><label>Linked Vendor</label><input type="text" id="linked_vendor"></div>
+                <div class="field"><label>Linked Vendor Ledger</label><select id="linked_vendor_ledger_id"><option value="">-- Optional Vendor Account --</option>{% for l in ledgers %}{% if l.group and l.group.group_type == "LIABILITY" %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endif %}{% endfor %}</select></div>
                 <div class="field"><label>Debit Amount</label><input type="number" step="any" id="debit" value="0.00"></div>
                 <div class="field"><label>Credit Amount</label><input type="number" step="any" id="credit" value="0.00"></div>
                 <div class="field"><label>Closing Balance</label><input type="number" step="any" id="closing_balance" required></div>
@@ -222,12 +222,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     async function saveTransaction(e) {
         e.preventDefault();
         const payload = {
-            bank_name: document.getElementById("bank_name").value,
+            bank_ledger_id: parseInt(document.getElementById("bank_ledger_id").value),
             transaction_date: document.getElementById("transaction_date").value,
             voucher_type: document.getElementById("voucher_type").value,
             reference_no: document.getElementById("reference_no").value,
             linked_invoice_no: document.getElementById("linked_invoice_no").value || null,
-            linked_vendor: document.getElementById("linked_vendor").value || null,
+            linked_vendor_ledger_id: parseInt(document.getElementById("linked_vendor_ledger_id").value) || null,
             debit: parseFloat(document.getElementById("debit").value) || 0.0,
             credit: parseFloat(document.getElementById("credit").value) || 0.0,
             closing_balance: parseFloat(document.getElementById("closing_balance").value) || 0.0

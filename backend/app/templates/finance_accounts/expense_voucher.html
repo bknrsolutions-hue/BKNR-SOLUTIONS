@@ -162,9 +162,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             <div class="form-grid">
                 <div class="field"><label>Voucher No</label><input type="text" id="voucher_no" required></div>
                 <div class="field"><label>Voucher Date</label><input type="date" id="voucher_date" required></div>
-                <div class="field"><label>Expense Type</label><input type="text" id="expense_type" placeholder="e.g. Fuel, Welfare, Printing" required></div>
-                <div class="field"><label>Department</label><input type="text" id="department" placeholder="e.g. Admin, Processing, QA" required></div>
-                <div class="field"><label>Vendor Name</label><input type="text" id="vendor_name"></div>
+                <div class="field"><label>Expense Ledger</label><select id="expense_ledger_id" required><option value="">-- Select Expense Account --</option>{% for l in ledgers %}{% if l.group and l.group.group_type == "EXPENSE" %}<option value="{{ l.id }}">{{ l.ledger_name }} ({{ l.group.group_name }})</option>{% endif %}{% endfor %}</select></div>
+                <div class="field"><label>Department</label><select id="department" required><option>Admin</option><option>Production</option><option>Processing</option><option>Packing</option><option>QA</option><option>Cold Storage</option><option>Export</option><option>Maintenance</option></select></div>
+                <div class="field"><label>Vendor Ledger</label><select id="vendor_ledger_id"><option value="">-- Optional Vendor Account --</option>{% for l in ledgers %}{% if l.group and l.group.group_type == "LIABILITY" %}<option value="{{ l.id }}">{{ l.ledger_name }}</option>{% endif %}{% endfor %}</select></div>
                 <div class="field"><label>Base Amount (Excl. GST)</label><input type="number" step="any" id="amount" oninput="recalcVoucher()" required></div>
                 <div class="field"><label>GST %</label><input type="number" step="any" id="gst_percentage" value="0.00" oninput="recalcVoucher()"></div>
                 <div class="field"><label>GST Amount</label><input type="number" step="any" id="gst_amount" value="0.00" readonly></div>
@@ -238,9 +238,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const payload = {
             voucher_no: document.getElementById("voucher_no").value,
             voucher_date: document.getElementById("voucher_date").value,
-            expense_type: document.getElementById("expense_type").value,
+            expense_ledger_id: parseInt(document.getElementById("expense_ledger_id").value),
             department: document.getElementById("department").value,
-            vendor_name: document.getElementById("vendor_name").value || null,
+            vendor_ledger_id: parseInt(document.getElementById("vendor_ledger_id").value) || null,
             amount: parseFloat(document.getElementById("amount").value) || 0.0,
             gst_percentage: parseFloat(document.getElementById("gst_percentage").value) || 0.0,
             gst_amount: parseFloat(document.getElementById("gst_amount").value) || 0.0,

@@ -160,8 +160,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </div>
         <form id="paymentForm" onsubmit="savePayment(event)">
             <div class="form-grid">
-                <div class="field"><label>Vendor Name</label><input type="text" id="vendor_name" required></div>
-                <div class="field"><label>Vendor Type</label><input type="text" id="vendor_type" required></div>
+                <div class="field"><label>Vendor Ledger</label><select id="vendor_ledger_id" required><option value="">-- Select Vendor Account --</option>{% for l in ledgers %}<option value="{{ l.id }}">{{ l.ledger_name }}{% if l.group %} ({{ l.group.group_name }}){% endif %}</option>{% endfor %}</select></div>
+                <div class="field"><label>Vendor Type</label><select id="vendor_type" required><option>Supplier</option><option>Contractor</option><option>Logistics</option><option>Service Provider</option><option>Other</option></select></div>
                 <div class="field"><label>GST No</label><input type="text" id="gst_no"></div>
                 <div class="field"><label>Vendor Invoice No</label><input type="text" id="vendor_invoice_no"></div>
                 <div class="field"><label>Internal Voucher ID (Bill No)</label><input type="text" id="bill_no" required></div>
@@ -228,7 +228,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     async function savePayment(e) {
         e.preventDefault();
         const payload = {
-            vendor_name: document.getElementById("vendor_name").value,
+            vendor_ledger_id: parseInt(document.getElementById("vendor_ledger_id").value),
             vendor_type: document.getElementById("vendor_type").value,
             gst_no: document.getElementById("gst_no").value || null,
             vendor_invoice_no: document.getElementById("vendor_invoice_no").value || null,

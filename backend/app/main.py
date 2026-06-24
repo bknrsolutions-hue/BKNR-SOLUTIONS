@@ -7,13 +7,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.services.setup_service import SetupService
 from app.database import SessionLocal
-from app.services.cache import invalidate_live_company_caches
+from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
-from sqlalchemy import distinct # 🟢 Necessary query helper inclusion
+from sqlalchemy import func
 
 os.environ["TZ"] = "Asia/Kolkata"
 # =====================================================
@@ -110,7 +110,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         company_code = request.session.get("company_code")
 
         # SETUP CHECK
-        if company_code:
+        if company_code and not request.session.get("setup_completed", False):
             db = SessionLocal()
             try:
                 completed = SetupService.is_completed(db, company_code)
@@ -263,55 +263,43 @@ async def home_page(request: Request):
         finally:
             db.close()
 
-    # 🟢 🚀 MASTER UNIVERSAL FILTER PIPING DROPDOWN DATA EXTRACTION 🚀 🟢
+    # Universal filters come from indexed masters, not repeated transaction-table scans.
     db = SessionLocal()
-    companies_list = []
-    locations_list = []
-    
     try:
-        from app.database.models.processing import GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production
-        from app.database.models.inventory_management import cold_storage # 🟢 కోల్డ్ స్టోరేజ్ మాస్టర్ మోడల్ ఇంపోర్ట్
-        
-        # 1. Fetch Universal Companies Unique List (production_for)
-        companies_set = set()
-        tables_with_prod_for = [GateEntry, RawMaterialPurchasing, DeHeading, Grading, Peeling, Soaking, Production]
-        for model in tables_with_prod_for:
-            res = db.query(distinct(model.production_for)).filter(model.company_id == company_code).all()
-            for row in res:
-                if row[0]: companies_set.add(row[0].strip())
-        companies_list = sorted(list(companies_set))
+        from app.database.models.criteria import coldstore_locations, peeling_at, production_at, production_for
 
-        # 2. Fetch Strict Plant Locations Unique List (peeling_at & production_at ONLY)
-        locations_set = set()
-        
-        # peeling_at criteria scanning targets
-        peeling_models = [RawMaterialPurchasing, DeHeading, Grading, Peeling]
-        for model in peeling_models:
-            res = db.query(distinct(model.peeling_at)).filter(model.company_id == company_code).all()
-            for row in res:
-                if row[0]: locations_set.add(row[0].strip())
-                
-        # production_at criteria scanning targets
-        production_models = [Soaking, Production]
-        for model in production_models:
-            res = db.query(distinct(model.production_at)).filter(model.company_id == company_code).all()
-            for row in res:
-                if row[0]: locations_set.add(row[0].strip())
-                
-        # 🟢 3. COLD STORAGE MASTER నుండి యాక్టివ్ గా ఉన్న స్టోరేజ్ నేమ్స్ స్క్యాన్ చేస్తున్నాం
-        try:
-            cs_res = db.query(distinct(cold_storage.storage_name)).filter(
-                cold_storage.company_id == company_code,
-                cold_storage.is_active == "ACTIVE"
-            ).all()
-            for row in cs_res:
-                if row[0]: locations_set.add(row[0].strip())
-        except Exception as cs_err:
-            print("⚠️ COLD STORAGE MASTER SCAN PASS BYPASSED:", cs_err)
+        def build_menu_filters():
+            companies = {
+                str(value).strip()
+                for (value,) in db.query(production_for.production_for).filter(
+                    production_for.company_id == company_code,
+                    func.lower(production_for.status) == "active",
+                ).distinct().all()
+                if value and str(value).strip()
+            }
+            locations = {
+                str(value).strip()
+                for model, column in (
+                    (production_at, production_at.production_at),
+                    (peeling_at, peeling_at.peeling_at),
+                    (coldstore_locations, coldstore_locations.coldstore_location),
+                )
+                for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
+                if value and str(value).strip()
+            }
+            return {"companies": sorted(companies), "locations": sorted(locations)}
 
-        locations_list = sorted(list(locations_set))
+        menu_filters = cache_get_or_set(
+            f"bknr:menu:{company_code}:universal_filters",
+            build_menu_filters,
+            ttl=300,
+        )
+        companies_list = menu_filters["companies"]
+        locations_list = menu_filters["locations"]
     except Exception as e:
-        print("🔴 ERROR LOADING UNIVERSAL FILTER ARRAYS:", e)
+        logger.exception("Error loading universal menu filters: %s", e)
+        companies_list = []
+        locations_list = []
     finally:
         db.close()
 

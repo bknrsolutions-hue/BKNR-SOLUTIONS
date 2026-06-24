@@ -197,7 +197,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     let ledgerOptionsHtml = ``;
     
     {% for ledger in ledgers %}
-        ledgerOptionsHtml += `<option value="{{ ledger.ledger_name }}">{{ ledger.ledger_name }} ({{ ledger.group.group_name if ledger.group else '-' }})</option>`;
+        ledgerOptionsHtml += `<option value="{{ ledger.id }}">{{ ledger.ledger_name }} ({{ ledger.group.group_name if ledger.group else '-' }})</option>`;
     {% endfor %}
 
     document.getElementById("dotsBtn").onclick = (e) => {
@@ -297,7 +297,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             
             debTotal += deb;
             credTotal += cred;
-            lines.push({ ledger_name: led, debit: deb, credit: cred });
+            lines.push({ ledger_id: parseInt(led), debit: deb, credit: cred });
         });
 
         if(!valid) {

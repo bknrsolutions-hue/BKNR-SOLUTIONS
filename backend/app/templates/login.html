@@ -5,6 +5,7 @@
 <title>BKNR ERP – Enterprise Resource Planning Platform</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 :root {
@@ -246,6 +247,35 @@ input, textarea {
 }
 input:focus, textarea:focus { outline: none; background: #ffffff; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
 
+.password-field { position: relative; }
+.password-field input { padding-right: 42px; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: #e2e8f0;
+  color: var(--primary-color);
+  box-shadow: none;
+  transform: translateY(-50%);
+  outline: none;
+}
+
 button {
   background: var(--btn-bg); color: #fff; width: 100%; margin-top: 0.5rem; padding: 11px;
   border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
@@ -389,10 +419,20 @@ button:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box
       <div id="loginBox" class="card">
         <h2>Gateway Authentication</h2>
         <p class="subtitle">Provide secure credentials to hook into BKNR architecture pools.</p>
-        <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" required></div>
-        <div class="form-group"><label>Email</label><input id="login_email" type="email" required></div>
-        <div class="form-group"><label>Password</label><input id="login_pwd" type="password" maxlength="20" required></div>
-        <button id="btn-login" onclick="doLogin()">Login</button>
+        <form id="loginForm" onsubmit="doLogin(event)">
+          <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" required></div>
+          <div class="form-group"><label>Email</label><input id="login_email" type="email" required></div>
+          <div class="form-group">
+            <label for="login_pwd">Password</label>
+            <div class="password-field">
+              <input id="login_pwd" type="password" maxlength="20" autocomplete="current-password" required>
+              <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password" title="Show password">
+                <i class="fa-regular fa-eye" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <button id="btn-login" type="submit">Login</button>
+        </form>
         <div id="loginErr" class="msg error"></div>
         <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
       </div>
@@ -419,6 +459,18 @@ button:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box
 <script>
 const BASE="/auth";
 let regEmail="";
+
+function togglePasswordVisibility(){
+  const input = document.getElementById("login_pwd");
+  const button = input.parentElement.querySelector(".password-toggle");
+  const icon = button.querySelector("i");
+  const showPassword = input.type === "password";
+
+  input.type = showPassword ? "text" : "password";
+  icon.className = showPassword ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+  button.setAttribute("aria-label", showPassword ? "Hide password" : "Show password");
+  button.title = showPassword ? "Hide password" : "Show password";
+}
 
 /* ================= SWITCH UI ================= */
 function showBox(id){
@@ -610,7 +662,8 @@ async function savePassword(){
 }
 
 /* ================= DO LOGIN ================= */
-async function doLogin(){
+async function doLogin(event){
+  if(event) event.preventDefault();
   const loginErr = document.getElementById("loginErr");
   const btn = document.getElementById("btn-login");
   loginErr.style.display="none";

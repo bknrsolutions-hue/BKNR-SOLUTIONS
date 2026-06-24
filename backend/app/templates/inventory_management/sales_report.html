@@ -87,6 +87,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--text); font-size: 11px; -webkit-font-smoothing: antialiased; transition: background 0.3s ease, color 0.3s ease; }
+        .module-main { min-width: 0; }
 
         .header { background: var(--header-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 16px; position: sticky; top: 0; z-index: 999; box-shadow: var(--shadow-sm); }
         .header-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -218,10 +219,39 @@
             .table-wrap { overflow: visible; max-height: none;}
         }
     </style>
+    <link rel="stylesheet" href="/static/css/module-rail.css">
 </head>
 <body>
 
 <div id="msg">Changes Saved Successfully!</div>
+
+<div class="module-shell">
+<aside class="module-rail">
+    <div class="rail-title"><i class="fa-solid fa-receipt"></i> Sales</div>
+    <div class="rail-section">
+        <div class="rail-label">Dashboards</div>
+        <button class="rail-link active" type="button" aria-current="page"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
+        <button class="rail-link" onclick="openEntryModal('/dashboard/finance_dashboard', 'Finance Dashboard')"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></button>
+        <button class="rail-link" onclick="openEntryModal('/dashboard/costing_dashboard', 'Costing Dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></button>
+        <button class="rail-link" onclick="openEntryModal('/dashboard/inventory_dashboard', 'Inventory Dashboard')"><i class="fa-solid fa-warehouse"></i><span>Inventory Dashboard</span></button>
+    </div>
+    <div class="rail-section">
+        <div class="rail-label">Sales Flow</div>
+        <button class="rail-link" onclick="openEntryModal('/inventory/pending_orders', 'Pending Orders')"><i class="fa-solid fa-clock-rotate-left"></i><span>Pending Orders</span></button>
+        <button class="rail-link" onclick="openEntryModal('/inventory/stock_entry', 'Stock Entry')"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></button>
+        <button class="rail-link" onclick="openEntryModal('/inventory/stock_report', 'Stock Status Report')"><i class="fa-solid fa-boxes-packing"></i><span>Stock Report</span></button>
+        <button class="rail-link" onclick="openEntryModal('/inventory/cold_storage_holding', 'Cold Storage Holding')"><i class="fa-solid fa-snowflake"></i><span>Cold Storage</span></button>
+    </div>
+    <div class="rail-section">
+        <div class="rail-label">Export Docs</div>
+        <button class="rail-link" onclick="openEntryModal('/export_documents/dashboard', 'Export Dashboard')"><i class="fa-solid fa-file-export"></i><span>Export Dashboard</span></button>
+        <button class="rail-link" onclick="openEntryModal('/export_documents/commercial_invoice/entry', 'Commercial Invoice')"><i class="fa-solid fa-file-invoice"></i><span>Commercial Invoice</span></button>
+        <button class="rail-link" onclick="openEntryModal('/export_documents/packing_list/entry', 'Packing List')"><i class="fa-solid fa-file-lines"></i><span>Packing List</span></button>
+        <button class="rail-link" onclick="openEntryModal('/export_documents/export_shipment/entry', 'Export Shipment')"><i class="fa-solid fa-ship"></i><span>Export Shipment</span></button>
+        <button class="rail-link" onclick="openEntryModal('/export_documents/supporting_documents/entry', 'Supporting Documents')"><i class="fa-solid fa-folder-open"></i><span>Supporting Docs</span></button>
+    </div>
+</aside>
+<main class="module-main">
 
 <div class="header">
     <div class="header-top">
@@ -469,6 +499,18 @@
         </table>
     </div>
 </div>
+</main>
+</div>
+
+<div id="entryModal" class="entry-modal-overlay">
+    <div class="entry-modal-content">
+        <div class="entry-modal-header">
+            <h3 id="modalTitle">Sales Workspace</h3>
+            <button class="entry-modal-close" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <iframe id="entryFrame" src=""></iframe>
+    </div>
+</div>
 
 <script>
 // Watch for dynamic theme changes
@@ -574,6 +616,24 @@ function populateFilters() {
 // --- ANALYTICS ENGINE ---
 let charts = {};
 Chart.register(ChartDataLabels);
+
+function openEntryModal(url, title) {
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('entryFrame').src = url;
+    document.getElementById('entryModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEntryModal() {
+    document.getElementById('entryModal').style.display = 'none';
+    document.getElementById('entryFrame').src = '';
+    document.body.style.overflow = 'auto';
+    location.reload();
+}
+
+window.addEventListener('click', function(event) {
+    if (event.target === document.getElementById('entryModal')) closeEntryModal();
+});
 
 function parse(txt) { if(!txt) return 0; return parseFloat(txt.replace(/[^\d.-]/g, '')) || 0; }
 function getFYDates(fyStartYear) { return { start: new Date(fyStartYear, 3, 1), end: new Date(parseInt(fyStartYear) + 1, 2, 31) }; }

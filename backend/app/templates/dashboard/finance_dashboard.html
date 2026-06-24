@@ -224,10 +224,41 @@
   .data-table td { color: var(--primary-dark); }
   .data-table tr:hover { background: var(--strip-bg); }
 </style>
+<link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/dashboard-ui.css">
 </head>
 <body>
 
+<div class="module-shell">
+<aside class="module-rail">
+  <div class="rail-title"><i class="fa-solid fa-wallet"></i> Finance</div>
+  <div class="rail-section">
+    <div class="rail-label">Dashboards</div>
+    <button class="rail-link active" type="button" aria-current="page"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></button>
+    <button class="rail-link" onclick="openEntryModal('/dashboard/costing_dashboard', 'Costing Dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></button>
+    <button class="rail-link" onclick="openEntryModal('/inventory/sales_report', 'Sales Report')"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
+  </div>
+  <div class="rail-section">
+    <div class="rail-label">Accounts</div>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/tally_dashboard', 'Tally Dashboard')"><i class="fa-solid fa-chart-pie"></i><span>Tally Dashboard</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/ledger_master/entry', 'Ledger Master')"><i class="fa-solid fa-folder-open"></i><span>Ledger Master</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/journal_entry/entry', 'Journal Entries')"><i class="fa-solid fa-book"></i><span>Journal Entries</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/bank_transaction/entry', 'Bank Transactions')"><i class="fa-solid fa-building-columns"></i><span>Bank Transactions</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/payment_receipt/entry', 'Payment Receipts')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Payment Receipts</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/customer_receivable/entry', 'Customer Receivables')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Customer Receivables</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/vendor_payment/entry', 'Vendor Payments')"><i class="fa-solid fa-money-bill-transfer"></i><span>Vendor Payments</span></button>
+  </div>
+  <div class="rail-section">
+    <div class="rail-label">Bills</div>
+    <button class="rail-link" onclick="openEntryModal('/api/electricity/entry', 'Electricity Bills')"><i class="fa-solid fa-bolt"></i><span>Electricity Bills</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/diesel/entry', 'Diesel Consumption')"><i class="fa-solid fa-gas-pump"></i><span>Diesel</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/purchase/entry', 'Purchase & Packaging')"><i class="fa-solid fa-file-invoice"></i><span>Purchase Bills</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/container/entry', 'Logistics & Freight')"><i class="fa-solid fa-truck-fast"></i><span>Logistics</span></button>
+    <button class="rail-link" onclick="openEntryModal('/api/expenses/entry', 'Other Expenses')"><i class="fa-solid fa-receipt"></i><span>Other Expenses</span></button>
+  </div>
+</aside>
+<main class="module-main">
 <div class="dashboard-container">
 
   <!-- Header -->
@@ -365,15 +396,45 @@
   </div>
 
 </div>
+</main>
+</div>
+
+<div id="entryModal" class="entry-modal-overlay">
+  <div class="entry-modal-content">
+    <div class="entry-modal-header">
+      <h3 id="modalTitle">Finance Workspace</h3>
+      <button class="entry-modal-close" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <iframe id="entryFrame" src=""></iframe>
+  </div>
+</div>
 
 <script>
 window.charts = {};
+
+function openEntryModal(url, title) {
+  document.getElementById('modalTitle').innerText = title;
+  document.getElementById('entryFrame').src = url;
+  document.getElementById('entryModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEntryModal() {
+  document.getElementById('entryModal').style.display = 'none';
+  document.getElementById('entryFrame').src = '';
+  document.body.style.overflow = 'auto';
+  location.reload();
+}
+
+window.addEventListener('click', function(event) {
+  if (event.target === document.getElementById('entryModal')) closeEntryModal();
+});
 
 function applyChartTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
     Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
-    Chart.defaults.font.size = 10;
+    Chart.defaults.font.size = 11;
     Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
     Chart.defaults.font.weight = '600';
     

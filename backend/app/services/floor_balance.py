@@ -4,6 +4,73 @@ from app.database.models.processing import (
     RawMaterialPurchasing, Grading, DeHeading, Peeling, Soaking
 )
 from app.database.models.reprocess import Reprocess 
+from app.database.models.floor_balance import FloorBalance
+
+
+def get_live_floor_balance_rows(
+    db: Session,
+    company_id: str,
+    production_for: str | None = None,
+    location: str | None = None,
+    allowed_locations: list[str] | None = None,
+) -> list[dict]:
+    """Return the canonical grouped floor stock for the active session scope."""
+    query = db.query(
+        FloorBalance.location.label("location"),
+        FloorBalance.production_for.label("production_for"),
+        FloorBalance.batch_number.label("batch_number"),
+        FloorBalance.source_type.label("source_type"),
+        FloorBalance.species.label("species"),
+        FloorBalance.variety.label("variety"),
+        FloorBalance.count.label("count"),
+        func.coalesce(func.sum(FloorBalance.available_qty), 0).label("available_qty"),
+    ).filter(FloorBalance.company_id == company_id)
+
+    if production_for:
+        query = query.filter(
+            func.upper(func.trim(FloorBalance.production_for))
+            == str(production_for).strip().upper()
+        )
+    if location:
+        query = query.filter(
+            func.upper(func.trim(FloorBalance.location))
+            == str(location).strip().upper()
+        )
+    elif allowed_locations:
+        clean_locations = [str(value).strip().upper() for value in allowed_locations if str(value).strip()]
+        if clean_locations:
+            query = query.filter(func.upper(func.trim(FloorBalance.location)).in_(clean_locations))
+
+    rows = query.group_by(
+        FloorBalance.location,
+        FloorBalance.production_for,
+        FloorBalance.batch_number,
+        FloorBalance.source_type,
+        FloorBalance.species,
+        FloorBalance.variety,
+        FloorBalance.count,
+    ).having(func.sum(FloorBalance.available_qty) > 0.01).order_by(
+        FloorBalance.location,
+        FloorBalance.production_for,
+        FloorBalance.batch_number,
+        FloorBalance.species,
+        FloorBalance.variety,
+        FloorBalance.count,
+    ).all()
+
+    return [
+        {
+            "location": row.location or "Floor",
+            "production_for": row.production_for or "General Stock",
+            "batch": row.batch_number or "N/A",
+            "source": row.source_type or "RMP",
+            "species": row.species or "N/A",
+            "variety": row.variety or "N/A",
+            "count": row.count or "N/A",
+            "available_qty": round(float(row.available_qty or 0), 2),
+        }
+        for row in rows
+    ]
 
 # ============================================================================
 # 1. EXISTING ORIGINAL FUNCTION (TOUCH CHEYYADAM LEDU - NO CHANGES)

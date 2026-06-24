@@ -270,9 +270,11 @@
             .module-shell { padding: 8px; }
         }
     </style>
+    <link rel="stylesheet" href="/static/css/module-rail.css">
+    <link rel="stylesheet" href="/static/css/dashboard-ui.css">
 </head>
 
-<body>
+<body class="inventory-dashboard">
 
 <div class="module-shell">
 <aside class="module-rail">
@@ -954,8 +956,8 @@ function updateDynamicCharts() {
 
 function renderCharts() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const chartTextColor = isDark ? '#94a3b8' : '#475569';
-    const chartGridColor = isDark ? '#334155' : '#f1f5f9';
+    const chartTextColor = isDark ? '#cbd5e1' : '#475569';
+    const chartGridColor = isDark ? '#475569' : '#cbd5e1';
     
     if(opClChartInst) opClChartInst.destroy();
     if(flowChartInst) flowChartInst.destroy();
@@ -973,7 +975,7 @@ function renderCharts() {
             indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
             layout: { padding: { right: 35 } },
             plugins: { 
-                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } 
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } }
             }, 
             scales: { 
                 x: { stacked: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, 
@@ -990,7 +992,7 @@ function renderCharts() {
             responsive: true, maintainAspectRatio: false, 
             layout: { padding: { top: 20 } },
             plugins: { 
-                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: {size: 10} } } 
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } }
             }, 
             scales: { 
                 x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } }, 

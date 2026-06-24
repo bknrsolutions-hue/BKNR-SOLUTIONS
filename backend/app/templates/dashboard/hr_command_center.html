@@ -484,6 +484,7 @@ tr:hover { background: var(--hover-bg); }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/dashboard-ui.css">
 
 <script>
   function syncThemeFromParent() {
@@ -1560,8 +1561,10 @@ function searchDirectory() {
 const getCssVar = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-Chart.defaults.color         = '#64748b';
-Chart.defaults.font.size     = 9;
+const chartGridColor = getCssVar('--chart-grid') || '#cbd5e1';
+Chart.defaults.color         = getCssVar('--text-muted') || '#475569';
+Chart.defaults.borderColor   = chartGridColor;
+Chart.defaults.font.size     = 11;
 Chart.defaults.font.family   = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.plugins.legend.display = false;
 
@@ -1573,7 +1576,7 @@ new Chart(document.getElementById("prodChart"), {
     plugins: { legend: { display: false } },
     scales: {
       x: { grid: { display: false } },
-      y: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } }
+      y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
     }
   },
   data: {
@@ -1595,7 +1598,7 @@ new Chart(document.getElementById("salaryChart"), {
     plugins: { legend: { display: false } },
     scales: {
       x: { grid: { display: false } },
-      y: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } }
+      y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
     }
   },
   data: {
@@ -1614,7 +1617,7 @@ new Chart(document.getElementById("compositionChart"), {
   type: "doughnut",
   options: {
     responsive: true, maintainAspectRatio: false, cutout: "68%",
-    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9 }, padding: 8 } } }
+    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }
   },
   data: {
     labels: ["Permanent", "Contract"],
@@ -1634,7 +1637,7 @@ new Chart(document.getElementById("attendanceTrendChart"), {
     plugins: { legend: { display: false } },
     scales: {
       x: { grid: { display: false } },
-      y: { min: 0, max: 100, grid: { color: '#e2e8f0' }, ticks: { callback: v => v + '%', font: { size: 9 } } }
+      y: { min: 0, max: 100, grid: { color: chartGridColor }, ticks: { callback: v => v + '%', font: { size: 11 } } }
     },
     elements: { line: { tension: 0.4 }, point: { radius: 2 } }
   },
@@ -1658,8 +1661,8 @@ new Chart(document.getElementById("deptHeadcountChart"), {
     indexAxis: 'y',
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 9 } } },
-      y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+      x: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
     }
   },
   data: {

@@ -295,8 +295,10 @@
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<link rel="stylesheet" href="/static/css/module-rail.css">
+<link rel="stylesheet" href="/static/css/dashboard-ui.css">
 </head>
-<body>
+<body class="processing-dashboard">
 
 <div class="module-shell">
     <aside class="module-rail">
@@ -396,6 +398,7 @@
             <thead>
                 <tr>
                     <th>Fish Species</th>
+                    <th>Variety</th>
                     <th>Size Count</th>
                     <th style="text-align: right;">Total Weight (KG)</th>
                 </tr>
@@ -404,6 +407,7 @@
                 {% for item in rm_summary %}
                 <tr>
                     <td>{{ item.species }}</td>
+                    <td>{{ item.variety or '-' }}</td>
                     <td><span style="color: var(--text-secondary);">{{ item.count }}</span></td>
                     <td style="text-align: right;" class="highlight-val">{{ item.qty }}</td>
                 </tr>
@@ -530,7 +534,7 @@
         const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
         return {
             grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-            text: isDark ? '#94a3b8' : '#475569'
+            text: isDark ? '#cbd5e1' : '#475569'
         };
     }
     const colors = getChartColors();

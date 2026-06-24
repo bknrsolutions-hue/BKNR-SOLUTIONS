@@ -17,11 +17,28 @@ from app.database.models.criteria import (
 
 from app.utils.timezone import ist_now 
 from app.utils.global_filters import get_global_filters
-from app.services.floor_balance import get_floor_balance
+from app.services.floor_balance import get_live_floor_balance_rows
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
 
 router = APIRouter(tags=["SOAKING"]) 
 templates = Jinja2Templates(directory="app/templates")
+
+
+def resolve_session_scope(request: Request, production_for: str | None = None, location: str | None = None):
+    session_production_for, session_location = get_global_filters(request)
+    effective_production_for = session_production_for or production_for
+    effective_location = session_location or location
+
+    raw_locations = request.session.get("allowed_locations", [])
+    if isinstance(raw_locations, str):
+        allowed_locations = [value.strip().upper() for value in raw_locations.split(",") if value.strip()]
+    else:
+        allowed_locations = [str(value).strip().upper() for value in raw_locations if str(value).strip()]
+
+    if effective_location and allowed_locations and effective_location.strip().upper() not in allowed_locations:
+        raise HTTPException(status_code=403, detail="Selected location is outside your session access")
+
+    return effective_production_for, effective_location, allowed_locations
 
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
     v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
@@ -36,30 +53,24 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
 # =====================================================
 def update_floor_balance_row(
     db: Session, company_id: str, batch: str, count: str, species_val: str, 
-    variety: str, location: str, production_for: str, qty_delta: float, 
-    rejection_delta: float = 0.0, email: str = None
+    variety: str, location: str, production_for: str, qty_delta: float,
+    email: str = None
 ):
-    """
-    1. with_for_update() Row Lock applied natively.
-    2. ⚡ Issue 2 Fix: Available Qty తో పాటు Rejection Qty ని కూడా ఇక్కడే అటామిక్ గా ట్రాక్ చేస్తున్నాం.
-    """
+    """Apply one locked movement to the canonical floor-balance row."""
     now_ist = ist_now()
     
     row = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
-        func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
-        FloorBalance.batch_number == batch.strip(),
-        FloorBalance.count == count.strip(),
-        FloorBalance.species == species_val,
-        FloorBalance.variety == variety,
-        func.trim(FloorBalance.production_for) == func.trim(production_for)
+        func.upper(func.trim(FloorBalance.location)) == str(location or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == str(batch or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.count)) == str(count or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.species)) == str(species_val or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.variety)) == str(variety or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.production_for)) == str(production_for or "").strip().upper(),
     ).with_for_update().first()
 
     if row:
-        row.available_qty += qty_delta
-        # టేబుల్ లో నువ్వు యాడ్ చేయమన్న rejection_qty_total ని ఇక్కడే అప్‌డేట్ చేస్తున్నాం అన్నా
-        if hasattr(row, 'rejection_qty_total'):
-            row.rejection_qty_total += rejection_delta
+        row.available_qty = round(float(row.available_qty or 0) + qty_delta, 2)
         row.last_updated = now_ist
         if email:
             row.email = email
@@ -71,8 +82,7 @@ def update_floor_balance_row(
             company_id=company_id, location=location.strip().upper(),
             production_for=production_for, batch_number=batch.strip(),
             source_type="RMP", species=species_val, variety=variety, count=count.strip(),
-            available_qty=qty_delta, 
-            rejection_qty_total=rejection_delta,  # Initialize Rejection Qty Column
+            available_qty=round(qty_delta, 2),
             last_transaction="SOAKING_MUTATION",
             last_updated=now_ist, date=str(now_ist.date()), time=str(now_ist.time()), email=email
         )
@@ -84,7 +94,6 @@ def update_floor_balance_row(
 # =====================================================
 @router.get("/soaking", response_class=HTMLResponse)
 def show_soaking(request: Request, db: Session = Depends(get_db)):
-    global_production_for, global_location = get_global_filters(request)
     company_id = request.session.get("company_code")
     email = request.session.get("email")
 
@@ -94,11 +103,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     now_ist = ist_now()
     current_date = now_ist.date()
 
-    session_locations = request.session.get("allowed_locations", [])
-    if isinstance(session_locations, str):
-        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
-    else:
-        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    global_production_for, global_location, user_allowed_locations = resolve_session_scope(request)
 
     masters = get_cached_masters(db, company_id)
     
@@ -118,40 +123,13 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         
     today_data = today_q.order_by(Soaking.id.desc()).limit(100).all()
 
-    # ⚡ PURE INDEX DRIVE: No Full Table Scans of Soaking Table
-    live_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id)
-
-    if global_production_for:
-        live_q = live_q.filter(func.trim(FloorBalance.production_for) == func.trim(global_production_for))
-    if global_location:
-        live_q = live_q.filter(func.upper(func.trim(FloorBalance.location)) == global_location.strip().upper())
-    elif user_allowed_locations:
-        live_q = live_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
-
-    live_records = live_q.order_by(FloorBalance.production_for, FloorBalance.location, FloorBalance.batch_number).all()
-
-    # 🟢 ⚡ 100% REMOVED THE HEAVY GROUP_BY SOAKING QUERY. 
-    # ఇప్పుడు ఇన్ఫర్మేషన్ మొత్తం డైరెక్ట్ గా FloorBalance లోని కాలమ్ నుంచే వస్తుంది!
-    rows_batch = []
-    for r in live_records:
-        rej_qty = getattr(r, 'rejection_qty_total', 0.0) or 0.0
-        available_qty = get_floor_balance(
-            db, company_id, r.location, r.batch_number, r.count, r.species,
-            r.variety, r.production_for, r.source_type or "RMP"
-        )
-        if available_qty <= 0.01:
-            continue
-
-        rows_batch.append({
-            "batch": r.batch_number or "N/A",
-            "variety": r.variety or "N/A",
-            "count": r.count or "N/A",
-            "species": r.species or "N/A",
-            "production_for": r.production_for or "General Stock",
-            "location": r.location or "Floor",
-            "rejection_qty": round(rej_qty, 2),
-            "available_qty": round(available_qty, 2),
-        })
+    rows_batch = get_live_floor_balance_rows(
+        db,
+        company_id,
+        production_for=global_production_for,
+        location=global_location,
+        allowed_locations=user_allowed_locations,
+    )
 
     return templates.TemplateResponse(
         request=request, name="processing/soaking.html",
@@ -170,9 +148,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 def get_count(batch: str, production_for: str = Query(None), location: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id: return {"counts": []}
-    global_production_for, global_location = get_global_filters(request)
-    production_for = global_production_for or production_for
-    location = global_location or location
+    production_for, location, _ = resolve_session_scope(request, production_for, location)
 
     counts_q = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_id,
@@ -188,18 +164,18 @@ def get_count(batch: str, production_for: str = Query(None), location: str = Que
     rows = counts_q.order_by(FloorBalance.count).all()
     counts = {
         r.count for r in rows
-        if r.count and get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+        if r.count and float(r.available_qty or 0) > 0.01
     }
     return {"counts": sorted(counts)}
 
 @router.get("/soaking/get_available_qty")
 def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, production_for: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    global_production_for, global_location = get_global_filters(request)
-    production_for = global_production_for or production_for
-    location = global_location or location
+    if not company_id:
+        raise HTTPException(status_code=401, detail="Session expired")
+    production_for, location, _ = resolve_session_scope(request, production_for, location)
 
-    query = db.query(FloorBalance.source_type).filter(
+    query = db.query(func.coalesce(func.sum(FloorBalance.available_qty), 0)).filter(
         FloorBalance.company_id == company_id,
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
         func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
@@ -209,22 +185,14 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
     )
     if production_for:
         query = query.filter(func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper())
-    source_row = query.first()
-    available_qty = get_floor_balance(
-        db, company_id, location, batch, count, species, variety,
-        production_for, source_row[0] if source_row else "RMP"
-    )
+    available_qty = float(query.scalar() or 0)
     return {"available_qty": round(available_qty, 2)}
 
 @router.get("/soaking/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
     if not company_id or not prod_for: return {"batches": []}
-    global_production_for, global_location = get_global_filters(request)
-    prod_for = global_production_for or prod_for
-
-    session_locations = request.session.get("allowed_locations", [])
-    user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    prod_for, global_location, user_allowed_locations = resolve_session_scope(request, prod_for)
     batch_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id, FloorBalance.production_for == prod_for)
     if global_location:
         batch_q = batch_q.filter(func.upper(func.trim(FloorBalance.location)) == global_location.strip().upper())
@@ -233,7 +201,7 @@ def get_batches_by_company(prod_for: str, request: Request, db: Session = Depend
     rows = batch_q.order_by(FloorBalance.batch_number).all()
     batches = {
         r.batch_number for r in rows
-        if r.batch_number and get_floor_balance(db, company_id, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
+        if r.batch_number and float(r.available_qty or 0) > 0.01
     }
     return {"batches": sorted(batches)}
 
@@ -254,22 +222,25 @@ def save_soaking(
 ):
     email = request.session.get("email")
     company_id = request.session.get("company_code")
-    
+    if not email or not company_id:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+
+    production_for, production_at, _ = resolve_session_scope(request, production_for, production_at)
     clean_count = in_count.strip()
     clean_batch = batch_number.strip()
 
     # Row Lock Row on Validation Base
-    live_record = db.query(FloorBalance.source_type).filter(
-        FloorBalance.company_id == company_id, FloorBalance.location == production_at,
-        FloorBalance.batch_number == clean_batch, FloorBalance.count == clean_count,
-        FloorBalance.species == species_name, FloorBalance.variety == variety_name,
-        FloorBalance.production_for == production_for
+    live_record = db.query(FloorBalance).filter(
+        FloorBalance.company_id == company_id,
+        func.upper(func.trim(FloorBalance.location)) == str(production_at).strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == clean_batch.upper(),
+        func.upper(func.trim(FloorBalance.count)) == clean_count.upper(),
+        func.upper(func.trim(FloorBalance.species)) == str(species_name or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.variety)) == str(variety_name).strip().upper(),
+        func.upper(func.trim(FloorBalance.production_for)) == str(production_for).strip().upper(),
     ).with_for_update().first()
-    
-    avail = get_floor_balance(
-        db, company_id, production_at, clean_batch, clean_count, species_name,
-        variety_name, production_for, live_record[0] if live_record else "RMP"
-    )
+
+    avail = float(live_record.available_qty or 0) if live_record else 0.0
 
     if in_qty > (avail + 0.05):
         return JSONResponse({"error": f"Insufficient live balance. Available: {avail}"}, status_code=400)
@@ -297,7 +268,7 @@ def save_soaking(
     # ⚡ Atomic Update Engine Trigger (Deduct Stock & Accumulate Rejection)
     update_floor_balance_row(
         db, company_id, clean_batch, clean_count, species_name, variety_name, 
-        production_at, production_for, qty_delta=-in_qty, rejection_delta=rejection_qty, email=email
+        production_at, production_for, qty_delta=rejection_qty - in_qty, email=email
     )
 
     db.commit()
@@ -317,7 +288,10 @@ def update_soaking(
 ):
     email = request.session.get("email")
     company_id = request.session.get("company_code")
-    
+    if not email or not company_id:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+
+    production_for, production_at, _ = resolve_session_scope(request, production_for, production_at)
     row = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Log record data stream not found"}, status_code=404)
@@ -335,18 +309,19 @@ def update_soaking(
     )
 
     # Target Validation lookup safely
-    target_record = db.query(FloorBalance.source_type).filter(
-        FloorBalance.company_id == company_id, FloorBalance.location == production_at,
-        FloorBalance.batch_number == batch_number.strip(), FloorBalance.count == in_count.strip(),
-        FloorBalance.species == species_name, FloorBalance.variety == variety_name,
-        FloorBalance.production_for == production_for
+    target_record = db.query(FloorBalance).filter(
+        FloorBalance.company_id == company_id,
+        func.upper(func.trim(FloorBalance.location)) == str(production_at).strip().upper(),
+        func.upper(func.trim(FloorBalance.batch_number)) == batch_number.strip().upper(),
+        func.upper(func.trim(FloorBalance.count)) == in_count.strip().upper(),
+        func.upper(func.trim(FloorBalance.species)) == str(species_name or "").strip().upper(),
+        func.upper(func.trim(FloorBalance.variety)) == str(variety_name).strip().upper(),
+        func.upper(func.trim(FloorBalance.production_for)) == str(production_for).strip().upper(),
     ).with_for_update().first()
-    
-    current_bal = get_floor_balance(
-        db, company_id, production_at, batch_number.strip(), in_count.strip(), species_name,
-        variety_name, production_for, target_record[0] if target_record else "RMP"
-    )
-    virtual_avail = (current_bal + row.in_qty) if is_same_row else current_bal
+
+    current_bal = float(target_record.available_qty or 0) if target_record else 0.0
+    old_net_movement = float(row.in_qty or 0) - float(row.rejection_qty or 0)
+    virtual_avail = current_bal + old_net_movement if is_same_row else current_bal
 
     if in_qty > (virtual_avail + 0.05):
         return JSONResponse({"error": f"Insufficient live balance for updated values. Available: {virtual_avail}"}, status_code=400)
@@ -354,7 +329,8 @@ def update_soaking(
     # Step 1: Refund Old State safely (Reverse stock & Rejection)
     update_floor_balance_row(
         db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,
-        row.production_at, row.production_for, qty_delta=row.in_qty, rejection_delta=-row.rejection_qty, email=email
+        row.production_at, row.production_for,
+        qty_delta=float(row.in_qty or 0) - float(row.rejection_qty or 0), email=email
     )
 
     # Step 2: Apply changes to transaction row log
@@ -377,7 +353,7 @@ def update_soaking(
     # Step 3: Deduct New State
     update_floor_balance_row(
         db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,
-        row.production_at, row.production_for, qty_delta=-in_qty, rejection_delta=rejection_qty, email=email
+        row.production_at, row.production_for, qty_delta=rejection_qty - in_qty, email=email
     )
 
     db.commit()
@@ -388,15 +364,29 @@ def update_soaking(
 def delete_soaking(id: int, request: Request, db: Session = Depends(get_db)):
     email = request.session.get("email")
     company_id = request.session.get("company_code")
-    
+    if not email or not company_id:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+
     row = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).with_for_update().first()
     if row:
+        scoped_production_for, scoped_location, _ = resolve_session_scope(
+            request, row.production_for, row.production_at
+        )
+        if (
+            scoped_production_for
+            and str(scoped_production_for).strip().upper() != str(row.production_for or "").strip().upper()
+        ) or (
+            scoped_location
+            and str(scoped_location).strip().upper() != str(row.production_at or "").strip().upper()
+        ):
+            return JSONResponse({"error": "Record is outside the active session scope"}, status_code=403)
         if is_edit_locked(request, row.date):
             return JSONResponse({"error": edit_lock_message()}, status_code=403)
         # Full stack reverse automation refund processing
         update_floor_balance_row(
             db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,
-            row.production_at, row.production_for, qty_delta=row.in_qty, rejection_delta=-row.rejection_qty, email=email
+            row.production_at, row.production_for,
+            qty_delta=float(row.in_qty or 0) - float(row.rejection_qty or 0), email=email
         )
         db.delete(row)
         db.commit()

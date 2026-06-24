@@ -170,20 +170,20 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </div>
                 <div class="field">
                     <label>Party Ledger Name</label>
-                    <select id="party_ledger" required>
+                    <select id="party_ledger_id" required>
                         <option value="" disabled selected>-- SELECT PARTY --</option>
                         {% for l in ledgers %}
-                            <option value="{{ l.ledger_name }}">{{ l.ledger_name }}</option>
+                            <option value="{{ l.id }}">{{ l.ledger_name }}{% if l.group %} ({{ l.group.group_name }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="field">
                     <label>Bank / Cash Ledger</label>
-                    <select id="bank_cash_ledger" required>
+                    <select id="bank_cash_ledger_id" required>
                         <option value="" disabled selected>-- SELECT CONTRA ACCOUNT --</option>
                         {% for l in ledgers %}
-                            {% if (l.group and l.group.group_name == "Bank Accounts") or l.ledger_name == "Cash Account" %}
-                                <option value="{{ l.ledger_name }}">{{ l.ledger_name }}</option>
+                            {% if (l.group and l.group.group_name in ["Bank Accounts", "Cash-in-hand"]) or "cash" in l.ledger_name|lower %}
+                                <option value="{{ l.id }}">{{ l.ledger_name }}</option>
                             {% endif %}
                         {% endfor %}
                     </select>
@@ -266,8 +266,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             receipt_no: document.getElementById("receipt_no").value,
             entry_date: document.getElementById("entry_date").value,
             transaction_type: document.getElementById("transaction_type").value,
-            party_ledger: document.getElementById("party_ledger").value,
-            bank_cash_ledger: document.getElementById("bank_cash_ledger").value,
+            party_ledger_id: parseInt(document.getElementById("party_ledger_id").value),
+            bank_cash_ledger_id: parseInt(document.getElementById("bank_cash_ledger_id").value),
             invoice_no: document.getElementById("invoice_no").value || null,
             vendor_bill_no: document.getElementById("vendor_bill_no").value || null,
             amount: parseFloat(document.getElementById("amount").value) || 0.0,
