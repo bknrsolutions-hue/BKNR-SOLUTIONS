@@ -7,8 +7,12 @@ from sqlalchemy import desc, func, and_
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 import re
 import logging
+import openpyxl
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 from app.database import get_db
 from app.database.models.invoices import (
@@ -29,7 +33,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
-EXPORT_PDF_DIR = Path("app/static/uploads/export_documents")
+EXPORT_PDF_DIR = Path("uploads/export_documents_private")
 
 
 def invalidate_export_cache(company_id: str | None):
@@ -55,7 +59,8 @@ def export_doc_config():
             "fields": [
                 ("Shipment No", "shipment_no"), ("PO Number", "po_number"), ("Invoice No", "invoice_no"),
                 ("Container No", "container_no"), ("Buyer", "buyer_name"), ("Country", "country"),
-                ("ETD", "etd"), ("ETA", "eta"), ("Status", "status"),
+                ("ETD", "etd"), ("ETA", "eta"), ("Completion Date", "completion_date"),
+                ("Status", "status"), ("Approval Status", "approval_status"),
             ],
         },
         "commercial_invoice": {
@@ -69,6 +74,9 @@ def export_doc_config():
                 ("Invoice Value INR", "invoice_value_inr"), ("Payment Terms", "payment_terms"),
                 ("Shipment Terms", "shipment_terms"), ("Port of Loading", "port_of_loading"),
                 ("Port of Discharge", "port_of_discharge"), ("Final Destination", "final_destination"),
+                ("Shipment Type", "shipment_type"), ("Total Master Cartons", "total_mc"),
+                ("Total Net Weight", "total_net_weight"), ("Total Gross Weight", "total_gross_weight"),
+                ("Payment Status", "payment_status"), ("Approval Status", "approval_status"),
             ],
         },
         "packing_list": {
@@ -80,7 +88,8 @@ def export_doc_config():
                 ("Grade", "grade"), ("Batch No", "batch_no"), ("Lot No", "lot_no"), ("Glaze", "glaze"),
                 ("Freezing Type", "freezing_type"), ("HS Code", "hs_code"), ("Packing Style", "packing_style"),
                 ("Inner Pack", "inner_pack"), ("Outer Pack", "outer_pack"), ("Master Cartons", "master_cartons"),
-                ("Net Weight", "net_weight"), ("Gross Weight", "gross_weight"),
+                ("Net Weight", "net_weight"), ("Gross Weight", "gross_weight"), ("Pallet Count", "pallet_count"),
+                ("Manufacturing Date", "manufacturing_date"), ("Expiry Date", "expiry_date"),
             ],
         },
         "container_stuffing": {
@@ -92,7 +101,9 @@ def export_doc_config():
                 ("Stuffing Date", "stuffing_date"), ("Stuffing Location", "stuffing_location"),
                 ("Container Type", "container_type"), ("Container Size", "container_size"),
                 ("Set Temperature", "temperature"), ("Vehicle No", "vehicle_no"),
-                ("Loading Supervisor", "loading_supervisor"), ("Remarks", "remarks"),
+                ("Container Condition", "container_condition"), ("Temperature Before Loading", "temperature_before_loading"),
+                ("Temperature After Loading", "temperature_after_loading"), ("Driver", "driver_name"),
+                ("Loading Supervisor", "loading_supervisor"), ("Approval Status", "approval_status"), ("Remarks", "remarks"),
             ],
         },
         "shipping_bill": {
@@ -103,8 +114,9 @@ def export_doc_config():
                 ("Invoice No", "invoice_no"), ("Container No", "container_no"), ("PO Number", "po_number"),
                 ("Buyer", "buyer_name"), ("FOB Value INR", "shipping_bill_value"),
                 ("Drawback Amount", "drawback_amount"), ("Scheme", "scheme"), ("Customs Status", "customs_status"),
-                ("Port", "port"), ("CHA Name", "cha_name"), ("Vessel", "vessel_name"),
+                ("Port", "port"), ("CHA Name", "cha_name"), ("CHA Bill No", "cha_bill_no"), ("Vessel", "vessel_name"),
                 ("Voyage No", "voyage_no"), ("ETD", "etd"), ("ETA", "eta"),
+                ("Approval Status", "approval_status"), ("Remarks", "remarks"),
             ],
         },
         "bill_of_lading": {
@@ -118,6 +130,7 @@ def export_doc_config():
                 ("Marks & Numbers", "marks_and_numbers"), ("Packages Description", "packages_description"),
                 ("Place of Receipt", "place_of_receipt"), ("Place of Delivery", "place_of_delivery"),
                 ("Gross Weight", "gross_weight"), ("Net Weight", "net_weight"),
+                ("Approval Status", "approval_status"),
             ],
         },
         "health_certificate": {
@@ -189,7 +202,7 @@ def store_export_pdf(
         document_no=document_no,
         document_kind=document_kind,
         file_name=final_name,
-        file_path=f"/static/uploads/export_documents/{final_name}",
+        file_path=None,
         content_type="application/pdf",
         file_bytes=content,
         file_size=len(content),
@@ -198,6 +211,8 @@ def store_export_pdf(
         remarks=remarks,
     )
     db.add(file_row)
+    db.flush()
+    file_row.file_path = f"/export_documents/files/{file_row.id}/download"
     return file_row
 
 
@@ -213,6 +228,71 @@ def build_document_payload(cfg, row):
         "document_date": getattr(row, cfg["date"], None),
         "fields": [(label, getattr(row, attr, None)) for label, attr in cfg["fields"]],
     }
+
+
+def render_document_pdf(cfg, row, company_id: str, doc_type: str) -> bytes:
+    payload = build_document_payload(cfg, row)
+    html = templates.env.get_template("export_documents/print_document_pdf.html").render(
+        **payload,
+        company_id=company_id,
+        record=row,
+        doc_type=doc_type,
+        generated_at=datetime.utcnow(),
+    )
+    try:
+        from xhtml2pdf import pisa
+
+        output = BytesIO()
+        result = pisa.CreatePDF(BytesIO(html.encode("utf-8")), dest=output, encoding="utf-8")
+        if not result.err:
+            return output.getvalue()
+    except Exception as exc:
+        logger.warning("HTML PDF rendering failed for %s: %s", doc_type, exc)
+
+    lines = [f"{label}: {value}" for label, value in payload["fields"] if value not in (None, "")]
+    return make_simple_pdf(payload["title"], payload["document_no"], lines)
+
+
+def style_register_sheet(sheet, title: str, company_id: str, fields: list[tuple[str, str]], rows: list) -> None:
+    sheet.freeze_panes = "A5"
+    sheet.sheet_view.showGridLines = False
+    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max(1, len(fields)))
+    sheet.cell(1, 1, title).font = Font(size=16, bold=True, color="FFFFFF")
+    sheet.cell(1, 1).fill = PatternFill("solid", fgColor="123B5D")
+    sheet.cell(1, 1).alignment = Alignment(horizontal="center")
+    sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=max(1, len(fields)))
+    sheet.cell(2, 1, f"Company: {company_id} | Generated: {datetime.utcnow():%d-%b-%Y %H:%M UTC}")
+    sheet.cell(2, 1).alignment = Alignment(horizontal="center")
+    for column, (label, _) in enumerate(fields, start=1):
+        cell = sheet.cell(4, column, label)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="176B87")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    for row_number, row in enumerate(rows, start=5):
+        for column, (_, attr) in enumerate(fields, start=1):
+            value = getattr(row, attr, None)
+            sheet.cell(row_number, column, _dt(value) if hasattr(value, "isoformat") else value)
+    for column, (label, attr) in enumerate(fields, start=1):
+        max_len = max([len(str(label))] + [len(str(getattr(row, attr, "") or "")) for row in rows[:500]])
+        sheet.column_dimensions[get_column_letter(column)].width = min(max(max_len + 2, 12), 42)
+    sheet.auto_filter.ref = f"A4:{get_column_letter(max(1, len(fields)))}{max(4, len(rows) + 4)}"
+
+
+def document_register_workbook(db: Session, company_id: str, doc_type: str | None = None) -> bytes:
+    configs = export_doc_config()
+    selected = {doc_type: configs[doc_type]} if doc_type in configs else configs
+    workbook = openpyxl.Workbook()
+    workbook.remove(workbook.active)
+    for key, cfg in selected.items():
+        rows = db.query(cfg["model"]).filter(
+            cfg["model"].company_id == company_id
+        ).order_by(desc(cfg["model"].id)).all()
+        sheet = workbook.create_sheet(title=cfg["title"][:31])
+        style_register_sheet(sheet, cfg["title"], company_id, cfg["fields"], rows)
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return output.getvalue()
 
 
 def pdf_escape(value) -> str:
@@ -287,6 +367,7 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
         }
         recent_shipments = [
             {
+                "id": row.id,
                 "shipment_no": row.shipment_no,
                 "invoice_no": row.invoice_no,
                 "buyer_name": row.buyer_name,
@@ -343,6 +424,7 @@ def export_supporting_documents_entry(request: Request, db: Session = Depends(ge
         ]
         history = [
             {
+                "id": row.id,
                 "document_kind": row.document_kind,
                 "document_no": row.document_no,
                 "file_path": row.file_path,
@@ -389,6 +471,10 @@ async def export_supporting_documents_upload(
     content = await file.read()
     if not content:
         return JSONResponse({"success": False, "message": "Empty PDF file"}, status_code=400)
+    if len(content) > 25 * 1024 * 1024:
+        return JSONResponse({"success": False, "message": "PDF size cannot exceed 25 MB"}, status_code=400)
+    if not content.startswith(b"%PDF-"):
+        return JSONResponse({"success": False, "message": "Invalid PDF file"}, status_code=400)
     file_row = store_export_pdf(
         db=db,
         company_id=comp_code,
@@ -410,10 +496,12 @@ async def export_supporting_documents_upload(
         "file_id": file_row.id,
         "file_path": file_row.file_path,
         "row": {
+            "id": file_row.id,
             "document_kind": file_row.document_kind,
             "document_no": file_row.document_no,
             "file_name": file_row.file_name,
             "file_path": file_row.file_path,
+            "download_url": f"/export_documents/files/{file_row.id}/download",
             "version_no": file_row.version_no,
             "is_current": file_row.is_current,
             "uploaded_at": _dt(file_row.uploaded_at),
@@ -896,6 +984,131 @@ def health_certificate_delete(log_id: int, request: Request, db: Session = Depen
 # ============================================================
 # PRINT / PDF / UPLOADED COPY STORAGE
 # ============================================================
+@router.get("/registers.xlsx")
+def export_all_document_registers(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    content = document_register_workbook(db, comp_code)
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="Export_Document_Registers_{safe_filename(comp_code)}.xlsx"'},
+    )
+
+
+@router.get("/{doc_type}/register.xlsx")
+def export_document_register(doc_type: str, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if doc_type not in export_doc_config():
+        raise HTTPException(status_code=404, detail="Unsupported document type")
+    content = document_register_workbook(db, comp_code, doc_type)
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename(doc_type)}_Register.xlsx"'},
+    )
+
+
+@router.get("/shipment/{shipment_id}/dossier.zip")
+def export_shipment_dossier(shipment_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    shipment = db.query(ExportShipment).filter(
+        ExportShipment.id == shipment_id,
+        ExportShipment.company_id == comp_code,
+    ).first()
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+
+    records = [("export_shipment", shipment)]
+    invoice = None
+    if shipment.invoice_no:
+        invoice = db.query(CommercialInvoice).filter(
+            CommercialInvoice.company_id == comp_code,
+            CommercialInvoice.invoice_no == shipment.invoice_no,
+        ).first()
+    if invoice:
+        records.append(("commercial_invoice", invoice))
+        linked_models = (
+            ("packing_list", PackingList),
+            ("container_stuffing", ContainerStuffing),
+            ("shipping_bill", ShippingBill),
+            ("bill_of_lading", BillOfLading),
+            ("health_certificate", HealthCertificate),
+        )
+        for doc_type, model in linked_models:
+            linked_rows = db.query(model).filter(
+                model.company_id == comp_code,
+                model.invoice_no == invoice.invoice_no,
+            ).order_by(model.id).all()
+            records.extend((doc_type, row) for row in linked_rows)
+
+    output = BytesIO()
+    manifest_rows = []
+    with ZipFile(output, "w", ZIP_DEFLATED) as archive:
+        for index, (doc_type, row) in enumerate(records, start=1):
+            cfg = export_doc_config()[doc_type]
+            document_no = str(getattr(row, cfg["no"], row.id))
+            file_name = f"{index:02d}_{safe_filename(cfg['title'])}_{safe_filename(document_no)}.pdf"
+            archive.writestr(file_name, render_document_pdf(cfg, row, comp_code, doc_type))
+            manifest_rows.append((cfg["title"], document_no, "SYSTEM GENERATED", file_name))
+
+        supporting = db.query(ExportDocumentFile).filter(
+            ExportDocumentFile.company_id == comp_code,
+            ExportDocumentFile.module_name == "export_supporting",
+            ExportDocumentFile.record_id == shipment.id,
+            ExportDocumentFile.is_current == True,
+        ).order_by(ExportDocumentFile.document_kind).all()
+        for file_row in supporting:
+            file_name = f"Supporting/{safe_filename(file_row.document_kind)}_{safe_filename(file_row.file_name)}"
+            archive.writestr(file_name, file_row.file_bytes)
+            manifest_rows.append((file_row.document_kind, file_row.document_no or "", "UPLOADED COPY", file_name))
+
+        present_types = {doc_type for doc_type, _ in records}
+        for required_type in (
+            "export_shipment", "commercial_invoice", "packing_list", "container_stuffing",
+            "shipping_bill", "bill_of_lading", "health_certificate",
+        ):
+            if required_type not in present_types:
+                manifest_rows.append((export_doc_config()[required_type]["title"], "", "MISSING", ""))
+
+        manifest = openpyxl.Workbook()
+        sheet = manifest.active
+        sheet.title = "Shipment Dossier"
+        sheet.append(["BKNR EXPORT SHIPMENT DOSSIER"])
+        sheet.append(["Shipment No", shipment.shipment_no])
+        sheet.append(["Company", comp_code])
+        sheet.append(["Generated UTC", datetime.utcnow().strftime("%d-%b-%Y %H:%M")])
+        sheet.append([])
+        sheet.append(["Document Type", "Document No", "Source", "File"])
+        for row in manifest_rows:
+            sheet.append(row)
+        for cell in sheet[6]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="176B87")
+        for column, width in zip("ABCD", (28, 24, 20, 64)):
+            sheet.column_dimensions[column].width = width
+        manifest_output = BytesIO()
+        manifest.save(manifest_output)
+        archive.writestr("00_Dossier_Manifest.xlsx", manifest_output.getvalue())
+
+    write_audit(
+        db, "export_shipments", shipment.id, comp_code, "DOSSIER_EXPORT", "NONE",
+        f"Exported {len(manifest_rows)} documents", request.session.get("email"),
+    )
+    db.commit()
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="Shipment_{safe_filename(shipment.shipment_no)}_Dossier.zip"'},
+    )
+
+
 @router.get("/{doc_type}/print/{record_id}", response_class=HTMLResponse)
 def export_document_print(doc_type: str, record_id: int, request: Request, db: Session = Depends(get_db)):
     cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
@@ -916,16 +1129,7 @@ def export_document_print(doc_type: str, record_id: int, request: Request, db: S
 @router.get("/{doc_type}/pdf/{record_id}")
 def export_document_pdf(doc_type: str, record_id: int, request: Request, db: Session = Depends(get_db)):
     cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
-    payload = build_document_payload(cfg, row)
-    lines = [f"{label}: {value}" for label, value in payload["fields"] if value is not None and value != ""]
-    lines.extend([
-        "",
-        "Declaration: Particulars shown in this document are generated from BKNR ERP records.",
-        "Prepared By: Export Documentation",
-        "Checked By: Compliance / Logistics",
-        "Authorised Signatory: Company Seal",
-    ])
-    pdf_bytes = make_simple_pdf(payload["title"], payload["document_no"], lines)
+    pdf_bytes = render_document_pdf(cfg, row, comp_code, doc_type)
     document_no = str(getattr(row, cfg["no"], record_id))
     file_row = store_export_pdf(
         db=db,
@@ -965,6 +1169,10 @@ async def export_document_upload_pdf(
     content = await file.read()
     if not content:
         return JSONResponse({"success": False, "message": "Empty PDF file"}, status_code=400)
+    if len(content) > 25 * 1024 * 1024:
+        return JSONResponse({"success": False, "message": "PDF size cannot exceed 25 MB"}, status_code=400)
+    if not content.startswith(b"%PDF-"):
+        return JSONResponse({"success": False, "message": "Invalid PDF file"}, status_code=400)
     document_no = str(getattr(row, cfg["no"], record_id))
     file_row = store_export_pdf(
         db=db,

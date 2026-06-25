@@ -102,7 +102,7 @@
         ========================================================== */
         .kpi-grid { padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         @media(min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
-        @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(8, 1fr); gap: 12px; } }
+        @media(min-width: 1200px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
 
         .kpi-card { border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); position: relative; overflow: hidden; transition: 0.3s; cursor: pointer; text-decoration: none; }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
@@ -174,6 +174,9 @@
         
         .fbox { display: flex; flex-direction: column; gap: 4px; position: relative; min-width: 130px; flex: 1 1 auto;}
         .fbox label { font-size: 8px; text-transform: uppercase; font-weight: 700; padding-left: 2px; color: var(--primary); }
+        .module-rail .fbox { min-width: 0; width: 100%; margin-bottom: 10px; flex: none; }
+        .module-rail .dropdown-search-wrapper { z-index: 2000; }
+        .module-rail .main-search-field { width: 100%; }
 
         .searchable-dropdown-container { position: relative; width: 100%; }
         .dropdown-display-box { border: 1px solid var(--border); border-radius: 4px; padding: 3px 5px; font-size: 10px; background: var(--bg); cursor: pointer; font-weight: 600; color: var(--text); display: flex; justify-content: space-between; align-items: center; height: 26px !important; }
@@ -214,12 +217,13 @@
         #msg { position: fixed; bottom: 20px; right: 20px; background: var(--success); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 800; display: none; z-index: 2000; box-shadow: var(--shadow-md); }
 
         @media print {
-            .filters, .action-btn { display: none !important; }
+            .filters, .action-btn, .module-rail { display: none !important; }
             body { background: var(--card-bg); padding: 0; }
             .table-wrap { overflow: visible; max-height: none;}
         }
     </style>
     <link rel="stylesheet" href="/static/css/module-rail.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 
@@ -229,88 +233,7 @@
 <aside class="module-rail">
     <div class="rail-title"><i class="fa-solid fa-receipt"></i> Sales</div>
     <div class="rail-section">
-        <div class="rail-label">Dashboards</div>
-        <button class="rail-link active" type="button" aria-current="page"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
-        <button class="rail-link" onclick="openEntryModal('/dashboard/finance_dashboard', 'Finance Dashboard')"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></button>
-        <button class="rail-link" onclick="openEntryModal('/dashboard/costing_dashboard', 'Costing Dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></button>
-        <button class="rail-link" onclick="openEntryModal('/dashboard/inventory_dashboard', 'Inventory Dashboard')"><i class="fa-solid fa-warehouse"></i><span>Inventory Dashboard</span></button>
-    </div>
-    <div class="rail-section">
-        <div class="rail-label">Sales Flow</div>
-        <button class="rail-link" onclick="openEntryModal('/inventory/pending_orders', 'Pending Orders')"><i class="fa-solid fa-clock-rotate-left"></i><span>Pending Orders</span></button>
-        <button class="rail-link" onclick="openEntryModal('/inventory/stock_entry', 'Stock Entry')"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></button>
-        <button class="rail-link" onclick="openEntryModal('/inventory/stock_report', 'Stock Status Report')"><i class="fa-solid fa-boxes-packing"></i><span>Stock Report</span></button>
-        <button class="rail-link" onclick="openEntryModal('/inventory/cold_storage_holding', 'Cold Storage Holding')"><i class="fa-solid fa-snowflake"></i><span>Cold Storage</span></button>
-    </div>
-    <div class="rail-section">
-        <div class="rail-label">Export Docs</div>
-        <button class="rail-link" onclick="openEntryModal('/export_documents/dashboard', 'Export Dashboard')"><i class="fa-solid fa-file-export"></i><span>Export Dashboard</span></button>
-        <button class="rail-link" onclick="openEntryModal('/export_documents/commercial_invoice/entry', 'Commercial Invoice')"><i class="fa-solid fa-file-invoice"></i><span>Commercial Invoice</span></button>
-        <button class="rail-link" onclick="openEntryModal('/export_documents/packing_list/entry', 'Packing List')"><i class="fa-solid fa-file-lines"></i><span>Packing List</span></button>
-        <button class="rail-link" onclick="openEntryModal('/export_documents/export_shipment/entry', 'Export Shipment')"><i class="fa-solid fa-ship"></i><span>Export Shipment</span></button>
-        <button class="rail-link" onclick="openEntryModal('/export_documents/supporting_documents/entry', 'Supporting Documents')"><i class="fa-solid fa-folder-open"></i><span>Supporting Docs</span></button>
-    </div>
-</aside>
-<main class="module-main">
-
-<div class="header">
-    <div class="header-top">
-        <div class="header-title">
-            <h1><i class="fas fa-chart-line"></i> Sales Intelligence Dashboard</h1>
-        </div>
-        <div class="company-box">
-            <button class="action-btn" onclick="location.reload()" style="background:var(--bg); border: 1px solid var(--border); color:var(--text);"><i class="fas fa-sync"></i> Refresh</button>
-            <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i> Export / Print</button>
-        </div>
-    </div>
-</div>
-
-<div class="kpi-grid">
-    <div class="kpi-card kpi-blue">
-        <div class="kpi-header"><h4>Gross Revenue</h4><div class="kpi-icon"><i class="fas fa-wallet"></i></div></div>
-        <div><div class="value" id="k_rev">₹ 0</div><div class="amt-sub badge-neutral" id="k_usd_total">$ 0</div></div>
-    </div>
-    <div class="kpi-card kpi-green">
-        <div class="kpi-header"><h4>Net Profit</h4><div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div></div>
-        <div><div class="value" id="k_pl">₹ 0</div><div class="amt-sub badge-success" id="k_margin">0% Margin</div></div>
-    </div>
-    <div class="kpi-card kpi-red">
-        <div class="kpi-header"><h4>Pending Due</h4><div class="kpi-icon"><i class="fas fa-clock"></i></div></div>
-        <div><div class="value" id="k_debt">₹ 0</div><div class="amt-sub badge-danger" id="k_cei">0% Collected</div></div>
-    </div>
-    <div class="kpi-card kpi-orange">
-        <div class="kpi-header"><h4>Profit / KG</h4><div class="kpi-icon"><i class="fas fa-calculator"></i></div></div>
-        <div><div class="value" id="k_yield">₹ 0.00</div><div class="amt-sub badge-info">Realization</div></div>
-    </div>
-    <div class="kpi-card kpi-purple">
-        <div class="kpi-header"><h4>Landed Freight</h4><div class="kpi-icon"><i class="fas fa-ship"></i></div></div>
-        <div><div class="value" id="k_cost">₹ 0</div><div class="amt-sub badge-neutral" id="k_cost_ratio">0% Ratio</div></div>
-    </div>
-    <div class="kpi-card kpi-cyan">
-        <div class="kpi-header"><h4>Packing Cost</h4><div class="kpi-icon"><i class="fas fa-box"></i></div></div>
-        <div><div class="value" id="k_pk_total">₹ 0</div><div class="amt-sub badge-neutral" id="k_pk_ratio">0% Rev</div></div>
-    </div>
-    <div class="kpi-card kpi-teal">
-        <div class="kpi-header"><h4>Volume (KG)</h4><div class="kpi-icon"><i class="fas fa-cubes"></i></div></div>
-        <div><div class="value" id="k_qty">0</div><div class="amt-sub badge-info" id="k_mc">0 MC</div></div>
-    </div>
-    <div class="kpi-card kpi-pink">
-        <div class="kpi-header"><h4>Invoices</h4><div class="kpi-icon"><i class="fas fa-file-invoice"></i></div></div>
-        <div><div class="value" id="k_inv_count">0</div><div class="amt-sub badge-neutral">Transacted</div></div>
-    </div>
-</div>
-
-<div class="chart-grid">
-    <div class="chart-box"><h3>Revenue Trend</h3><div class="chart-container-inner"><canvas id="c_day_trend"></canvas></div></div>
-    <div class="chart-box"><h3>Market Share (Country)</h3><div class="chart-container-inner"><canvas id="c_country"></canvas></div></div>
-    <div class="chart-box"><h3>Variety Performance</h3><div class="chart-container-inner"><canvas id="c_variety"></canvas></div></div>
-    <div class="chart-box"><h3>Top Grades (MT)</h3><div class="chart-container-inner"><canvas id="c_bar_grade"></canvas></div></div>
-    <div class="chart-box"><h3>Top 5 Buyers</h3><div class="chart-container-inner"><canvas id="c_buyer"></canvas></div></div>
-    <div class="chart-box"><h3>Revenue vs Profit</h3><div class="chart-container-inner"><canvas id="c_line"></canvas></div></div>
-</div>
-
-<div class="filter-panel-wrapper no-print">
-    <div class="filters">
+        <div class="rail-label">Report Inputs</div>
         <div class="fbox">
             <label style="color:var(--accent)">Financial Year *</label>
             <div class="searchable-dropdown-container">
@@ -439,6 +362,63 @@
             <input type="text" id="buyer_search" class="main-search-field" placeholder="Search Text..." onkeyup="runAnalytics()">
         </div>
     </div>
+</aside>
+<main class="module-main">
+
+<div class="header">
+    <div class="header-top">
+        <div class="header-title">
+            <h1><i class="fas fa-chart-line"></i> Sales Intelligence Dashboard</h1>
+        </div>
+        <div class="company-box">
+            <button class="action-btn" onclick="location.reload()" style="background:var(--bg); border: 1px solid var(--border); color:var(--text);"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="action-btn" onclick="window.print()"><i class="fas fa-print"></i> Export / Print</button>
+        </div>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card kpi-blue">
+        <div class="kpi-header"><h4>Gross Revenue</h4><div class="kpi-icon"><i class="fas fa-wallet"></i></div></div>
+        <div><div class="value" id="k_rev">₹ 0</div><div class="amt-sub badge-neutral" id="k_usd_total">$ 0</div></div>
+    </div>
+    <div class="kpi-card kpi-green">
+        <div class="kpi-header"><h4>Net Profit</h4><div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div></div>
+        <div><div class="value" id="k_pl">₹ 0</div><div class="amt-sub badge-success" id="k_margin">0% Margin</div></div>
+    </div>
+    <div class="kpi-card kpi-red">
+        <div class="kpi-header"><h4>Pending Due</h4><div class="kpi-icon"><i class="fas fa-clock"></i></div></div>
+        <div><div class="value" id="k_debt">₹ 0</div><div class="amt-sub badge-danger" id="k_cei">0% Collected</div></div>
+    </div>
+    <div class="kpi-card kpi-orange">
+        <div class="kpi-header"><h4>Profit / KG</h4><div class="kpi-icon"><i class="fas fa-calculator"></i></div></div>
+        <div><div class="value" id="k_yield">₹ 0.00</div><div class="amt-sub badge-info">Realization</div></div>
+    </div>
+    <div class="kpi-card kpi-purple">
+        <div class="kpi-header"><h4>Landed Freight</h4><div class="kpi-icon"><i class="fas fa-ship"></i></div></div>
+        <div><div class="value" id="k_cost">₹ 0</div><div class="amt-sub badge-neutral" id="k_cost_ratio">0% Ratio</div></div>
+    </div>
+    <div class="kpi-card kpi-cyan">
+        <div class="kpi-header"><h4>Packing Cost</h4><div class="kpi-icon"><i class="fas fa-box"></i></div></div>
+        <div><div class="value" id="k_pk_total">₹ 0</div><div class="amt-sub badge-neutral" id="k_pk_ratio">0% Rev</div></div>
+    </div>
+    <div class="kpi-card kpi-teal">
+        <div class="kpi-header"><h4>Volume (KG)</h4><div class="kpi-icon"><i class="fas fa-cubes"></i></div></div>
+        <div><div class="value" id="k_qty">0</div><div class="amt-sub badge-info" id="k_mc">0 MC</div></div>
+    </div>
+    <div class="kpi-card kpi-pink">
+        <div class="kpi-header"><h4>Invoices</h4><div class="kpi-icon"><i class="fas fa-file-invoice"></i></div></div>
+        <div><div class="value" id="k_inv_count">0</div><div class="amt-sub badge-neutral">Transacted</div></div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-box"><h3>Revenue Trend</h3><div class="chart-container-inner"><canvas id="c_day_trend"></canvas></div></div>
+    <div class="chart-box"><h3>Market Share (Country)</h3><div class="chart-container-inner"><canvas id="c_country"></canvas></div></div>
+    <div class="chart-box"><h3>Variety Performance</h3><div class="chart-container-inner"><canvas id="c_variety"></canvas></div></div>
+    <div class="chart-box"><h3>Top Grades (MT)</h3><div class="chart-container-inner"><canvas id="c_bar_grade"></canvas></div></div>
+    <div class="chart-box"><h3>Top 5 Buyers</h3><div class="chart-container-inner"><canvas id="c_buyer"></canvas></div></div>
+    <div class="chart-box"><h3>Revenue vs Profit</h3><div class="chart-container-inner"><canvas id="c_line"></canvas></div></div>
 </div>
 
 <div class="rm-summary-box">

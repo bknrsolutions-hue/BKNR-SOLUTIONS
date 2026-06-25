@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
 from app.database.models.enterprise_finance import (
     AccountGroup, LedgerMaster, VoucherHeader, VoucherDetail, VoucherType
@@ -8,9 +8,12 @@ from app.database.models.enterprise_finance import (
 class AccountingReportsService:
 
     @staticmethod
-    def get_ledger_balance(db: Session, ledger_id: int, as_of_date: date = None) -> dict:
+    def get_ledger_balance(db: Session, ledger_id: int, as_of_date: date = None, company_id: str = None) -> dict:
         """Calculates opening, net period change, and closing balances for a ledger."""
-        ledger = db.query(LedgerMaster).filter(LedgerMaster.id == ledger_id).first()
+        ledger_query = db.query(LedgerMaster).filter(LedgerMaster.id == ledger_id)
+        if company_id:
+            ledger_query = ledger_query.filter(LedgerMaster.company_id == company_id)
+        ledger = ledger_query.first()
         if not ledger:
             return {"opening": 0.0, "debit": 0.0, "credit": 0.0, "closing": 0.0}
 
@@ -23,6 +26,7 @@ class AccountingReportsService:
             func.sum(VoucherDetail.credit_amount).label('credits')
         ).join(VoucherHeader).filter(
             VoucherDetail.ledger_id == ledger_id,
+            VoucherHeader.company_id == ledger.company_id,
             VoucherHeader.status == 'POSTED'
         )
 
@@ -62,11 +66,25 @@ class AccountingReportsService:
         for l in ledgers:
             ledger_by_group.setdefault(l.group_id, []).append(l)
 
-        # 1. Fetch balances of all ledgers
-        ledger_balances = {}
-        for l in ledgers:
-            bal = AccountingReportsService.get_ledger_balance(db, l.id, as_of_date)
-            ledger_balances[l.id] = bal['closing']
+        # Fetch all posted movements in one query; opening balances come from the master.
+        movements = db.query(
+            VoucherDetail.ledger_id,
+            func.coalesce(func.sum(VoucherDetail.debit_amount), 0.0).label("debits"),
+            func.coalesce(func.sum(VoucherDetail.credit_amount), 0.0).label("credits"),
+        ).join(VoucherHeader).filter(
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.status == "POSTED",
+            VoucherHeader.voucher_date <= as_of_date,
+        ).group_by(VoucherDetail.ledger_id).all()
+        movement_map = {row.ledger_id: float(row.debits) - float(row.credits) for row in movements}
+        ledger_balances = {
+            ledger.id: (
+                float(ledger.opening_balance or 0.0)
+                if ledger.opening_balance_type == "DR"
+                else -float(ledger.opening_balance or 0.0)
+            ) + movement_map.get(ledger.id, 0.0)
+            for ledger in ledgers
+        }
 
         # 2. Helper to compute group balances recursively
         group_balances = {}
@@ -112,6 +130,7 @@ class AccountingReportsService:
                         "id": l.id,
                         "name": l.ledger_name,
                         "parent_id": g_id,
+                        "group_name": g.group_name,
                         "group_type": g.group_type,
                         "balance": l_bal,
                         "debit": l_bal if l_bal >= 0 else 0.0,
@@ -127,23 +146,38 @@ class AccountingReportsService:
         Gross Profit = Revenue (Direct Income) - Cost of Goods Sold / Purchase (Direct Expense)
         Net Profit = Gross Profit + Indirect Income - Indirect Expense
         """
-        tb = AccountingReportsService.get_trial_balance(db, company_id, end_date)
-        
+        if start_date > end_date:
+            raise ValueError("start_date must be on or before end_date")
+
+        rows = db.query(
+            LedgerMaster.ledger_name,
+            AccountGroup.group_type,
+            func.coalesce(func.sum(VoucherDetail.debit_amount), 0.0).label("debits"),
+            func.coalesce(func.sum(VoucherDetail.credit_amount), 0.0).label("credits"),
+        ).join(AccountGroup, AccountGroup.id == LedgerMaster.group_id).join(
+            VoucherDetail, VoucherDetail.ledger_id == LedgerMaster.id
+        ).join(VoucherHeader, VoucherHeader.id == VoucherDetail.voucher_id).filter(
+            LedgerMaster.company_id == company_id,
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.status == "POSTED",
+            VoucherHeader.voucher_date.between(start_date, end_date),
+            AccountGroup.group_type.in_(["INCOME", "EXPENSE"]),
+        ).group_by(LedgerMaster.id, LedgerMaster.ledger_name, AccountGroup.group_type).all()
+
         income = 0.0
         expense = 0.0
         details = {"income_ledgers": [], "expense_ledgers": []}
 
-        for row in tb:
-            if row["type"] == "LEDGER":
-                if row["group_type"] == "INCOME":
-                    # Income balance is usually Credit (-ve in our math)
-                    val = -row["balance"]
-                    income += val
-                    details["income_ledgers"].append({"name": row["name"], "amount": val})
-                elif row["group_type"] == "EXPENSE":
-                    val = row["balance"]
-                    expense += val
-                    details["expense_ledgers"].append({"name": row["name"], "amount": val})
+        for row in rows:
+            net = float(row.debits) - float(row.credits)
+            if row.group_type == "INCOME":
+                val = -net
+                income += val
+                details["income_ledgers"].append({"name": row.ledger_name, "amount": val})
+            else:
+                val = net
+                expense += val
+                details["expense_ledgers"].append({"name": row.ledger_name, "amount": val})
 
         net_profit = income - expense
         return {
@@ -205,14 +239,19 @@ class AccountingReportsService:
         }
 
     @staticmethod
-    def get_ledger_statement(db: Session, ledger_id: int, start_date: date, end_date: date) -> dict:
+    def get_ledger_statement(db: Session, ledger_id: int, start_date: date, end_date: date, company_id: str = None) -> dict:
         """Generates detailed transaction statement for a ledger over a date range."""
-        ledger = db.query(LedgerMaster).filter(LedgerMaster.id == ledger_id).first()
+        ledger_query = db.query(LedgerMaster).filter(LedgerMaster.id == ledger_id)
+        if company_id:
+            ledger_query = ledger_query.filter(LedgerMaster.company_id == company_id)
+        ledger = ledger_query.first()
         if not ledger:
             return {}
 
         # Opening balance before start date
-        ob_res = AccountingReportsService.get_ledger_balance(db, ledger_id, start_date - timedelta(days=1))
+        ob_res = AccountingReportsService.get_ledger_balance(
+            db, ledger_id, start_date - timedelta(days=1), ledger.company_id
+        )
         opening_bal = ob_res['closing']
 
         # Vouchers in date range
@@ -225,6 +264,7 @@ class AccountingReportsService:
             VoucherDetail.remarks
         ).join(VoucherHeader).filter(
             VoucherDetail.ledger_id == ledger_id,
+            VoucherHeader.company_id == ledger.company_id,
             VoucherHeader.status == 'POSTED',
             VoucherHeader.voucher_date.between(start_date, end_date)
         ).order_by(VoucherHeader.voucher_date, VoucherHeader.id).all()
@@ -255,19 +295,21 @@ class AccountingReportsService:
     @staticmethod
     def get_day_book(db: Session, company_id: str, target_date: date) -> list:
         """Lists all vouchers posted on a specific day."""
-        vouchers = db.query(VoucherHeader).filter(
+        vouchers = db.query(VoucherHeader).options(
+            joinedload(VoucherHeader.details),
+            joinedload(VoucherHeader.voucher_type),
+        ).filter(
             VoucherHeader.company_id == company_id,
             VoucherHeader.voucher_date == target_date
         ).order_by(VoucherHeader.voucher_no).all()
 
         results = []
         for v in vouchers:
-            v_type = db.query(VoucherType).filter(VoucherType.id == v.voucher_type_id).first()
             total_debit = sum(d.debit_amount for d in v.details)
             results.append({
                 "voucher_id": v.id,
                 "voucher_no": v.voucher_no,
-                "voucher_type": v_type.name if v_type else "Journal",
+                "voucher_type": v.voucher_type.name if v.voucher_type else "Journal",
                 "narration": v.narration,
                 "status": v.status,
                 "total_amount": total_debit

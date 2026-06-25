@@ -78,6 +78,9 @@ body { background: var(--bg); color: var(--text); font-size: 12px; }
 }
 .header h1 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 .badge { padding: 6px 10px; border-radius: 7px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; }
+.header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.header-action { min-height: 32px; border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; background: var(--panel); color: var(--text); font-size: 10px; font-weight: 800; cursor: pointer; }
+.header-action:hover { border-color: var(--accent); color: var(--accent); }
 .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 @media(min-width: 900px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
 .kpi {
@@ -150,6 +153,7 @@ function syncThemeFromParent() {
 }
 syncThemeFromParent();
 </script>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 <div class="module-shell">
@@ -177,7 +181,11 @@ syncThemeFromParent();
     <main class="module-main">
         <div class="header">
             <h1><i class="fa-solid fa-file-export" style="color:var(--accent);"></i> Export Documents Dashboard</h1>
-            <div class="badge">{{ company_id }}</div>
+            <div class="header-actions">
+                <button class="header-action" onclick="window.location.href='/export_documents/registers.xlsx'" title="Download all export document registers"><i class="fa-solid fa-file-excel"></i> Registers</button>
+                <button class="header-action" onclick="window.print()" title="Print dashboard"><i class="fa-solid fa-print"></i></button>
+                <div class="badge">{{ company_id }}</div>
+            </div>
         </div>
 
         <div class="kpi-grid">
@@ -196,12 +204,12 @@ syncThemeFromParent();
                 <div class="panel-head"><i class="fa-solid fa-clock-rotate-left"></i> Recent Shipments</div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Shipment</th><th>Invoice</th><th>Buyer</th><th>ETD</th><th>ETA</th></tr></thead>
+                        <thead><tr><th>Shipment</th><th>Invoice</th><th>Buyer</th><th>ETD</th><th>ETA</th><th></th></tr></thead>
                         <tbody>
                         {% for row in recent_shipments %}
-                            <tr><td>{{ row.shipment_no }}</td><td>{{ row.invoice_no or '-' }}</td><td>{{ row.buyer_name }}</td><td>{{ row.etd or '-' }}</td><td>{{ row.eta or '-' }}</td></tr>
+                            <tr><td>{{ row.shipment_no }}</td><td>{{ row.invoice_no or '-' }}</td><td>{{ row.buyer_name }}</td><td>{{ row.etd or '-' }}</td><td>{{ row.eta or '-' }}</td><td><button class="header-action" onclick="window.location.href='/export_documents/shipment/{{ row.id }}/dossier.zip'" title="Download complete shipment dossier"><i class="fa-solid fa-file-zipper"></i></button></td></tr>
                         {% else %}
-                            <tr><td colspan="5"><div class="empty">No shipments found</div></td></tr>
+                            <tr><td colspan="6"><div class="empty">No shipments found</div></td></tr>
                         {% endfor %}
                         </tbody>
                     </table>

@@ -494,6 +494,7 @@ class SalaryProcessing(Base):
     absent_days = Column(Float, default=0.0)
     ot_hours = Column(Float, default=0.0)
     ot_amount = Column(Float, default=0.0)
+    salary_adjustment = Column(Float, default=0.0)                # Approved +/- payroll adjustment
 
     # Earnings
     basic_salary = Column(Float, default=0.0)

@@ -319,7 +319,29 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     return response
 
+@router.get("/session-info")
+def session_info(request: Request):
+    email = request.session.get("email")
 
+    if not email:
+        return JSONResponse(
+            {"authenticated": False},
+            status_code=401
+        )
+
+    return {
+        "authenticated": True,
+        "email": request.session.get("email"),
+        "company_id": request.session.get("company_id"),
+        "company_code": request.session.get("company_code"),
+        "company_name": request.session.get("company_name"),
+        "name": request.session.get("name"),
+        "role": request.session.get("role"),
+        "permissions": request.session.get("permissions"),
+        "setup_completed": request.session.get("setup_completed"),
+        "companies": request.session.get("companies_list", []),
+        "locations": request.session.get("locations_list", [])
+    }
 # =====================================================
 # 5. FORGOT PASSWORD
 # =====================================================

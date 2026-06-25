@@ -176,24 +176,29 @@
   .btn-sync:hover { filter: brightness(1.1); }
 
   /* KPI GRID */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media(min-width: 768px) { .cards { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+  @media(min-width: 1200px) { .cards { grid-template-columns: repeat(6, 1fr); gap: 12px; } }
   .card { 
-      padding: 18px; border-radius: var(--radius-premium); 
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px; border-radius: var(--radius-premium); 
+      display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
+      position: relative; min-height: 92px; padding-right: 48px;
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
       background: var(--card-bg); border: 1px solid var(--border-color);
   }
   .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: var(--accent-blue); }
-  .card-meta { text-align: left; }
-  .card-meta .label { font-size: 9px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; }
-  .card-meta .value { font-size: 22px; font-weight: 800; color: var(--value-text); margin-top: 6px; letter-spacing: -0.5px; }
+  .card-meta { text-align: left; min-width: 0; }
+  .card-meta .label { max-width: 100%; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .card-meta .value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 14px; letter-spacing: -0.3px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .card-icon-zone {
-      width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+      position: absolute; top: 14px; right: 14px;
+      width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0;
   }
 
   .blue .card-icon-zone { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
   .green .card-icon-zone { color: #10b981; background: rgba(16, 185, 129, 0.1); }
   .red .card-icon-zone { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .gray .card-icon-zone { color: #64748b; background: rgba(100, 116, 139, 0.1); }
   .purple .card-icon-zone { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
   .amber .card-icon-zone { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
 
@@ -223,39 +228,47 @@
   .data-table th { text-transform: uppercase; font-size: 10px; color: var(--text-muted); background: var(--strip-bg); }
   .data-table td { color: var(--primary-dark); }
   .data-table tr:hover { background: var(--strip-bg); }
+
+  .finance-dashboard .module-rail .rail-title,
+  .finance-dashboard .module-rail .rail-label,
+  .finance-dashboard .module-rail .rail-link {
+    text-transform: none !important;
+  }
 </style>
 <link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/dashboard-ui.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
-<body>
+<body class="finance-dashboard">
 
 <div class="module-shell">
 <aside class="module-rail">
   <div class="rail-title"><i class="fa-solid fa-wallet"></i> Finance</div>
   <div class="rail-section">
-    <div class="rail-label">Dashboards</div>
-    <button class="rail-link active" type="button" aria-current="page"><i class="fa-solid fa-wallet"></i><span>Finance Dashboard</span></button>
-    <button class="rail-link" onclick="openEntryModal('/dashboard/costing_dashboard', 'Costing Dashboard')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Costing Dashboard</span></button>
-    <button class="rail-link" onclick="openEntryModal('/inventory/sales_report', 'Sales Report')"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
-  </div>
-  <div class="rail-section">
     <div class="rail-label">Accounts</div>
-    <button class="rail-link" onclick="openEntryModal('/finance_accounts/tally_dashboard', 'Tally Dashboard')"><i class="fa-solid fa-chart-pie"></i><span>Tally Dashboard</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/ledger_master/entry', 'Ledger Master')"><i class="fa-solid fa-folder-open"></i><span>Ledger Master</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/journal_entry/entry', 'Journal Entries')"><i class="fa-solid fa-book"></i><span>Journal Entries</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/bank_transaction/entry', 'Bank Transactions')"><i class="fa-solid fa-building-columns"></i><span>Bank Transactions</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/payment_receipt/entry', 'Payment Receipts')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Payment Receipts</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/customer_receivable/entry', 'Customer Receivables')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Customer Receivables</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/vendor_payment/entry', 'Vendor Payments')"><i class="fa-solid fa-money-bill-transfer"></i><span>Vendor Payments</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/expense_voucher/entry', 'Expense Vouchers')"><i class="fa-solid fa-receipt"></i><span>Expense Vouchers</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/bank_master/entry', 'Bank Master')"><i class="fa-solid fa-landmark"></i><span>Bank Master</span></button>
   </div>
   <div class="rail-section">
-    <div class="rail-label">Bills</div>
+    <div class="rail-label">Finance Bills</div>
     <button class="rail-link" onclick="openEntryModal('/api/electricity/entry', 'Electricity Bills')"><i class="fa-solid fa-bolt"></i><span>Electricity Bills</span></button>
     <button class="rail-link" onclick="openEntryModal('/api/diesel/entry', 'Diesel Consumption')"><i class="fa-solid fa-gas-pump"></i><span>Diesel</span></button>
     <button class="rail-link" onclick="openEntryModal('/api/purchase/entry', 'Purchase & Packaging')"><i class="fa-solid fa-file-invoice"></i><span>Purchase Bills</span></button>
     <button class="rail-link" onclick="openEntryModal('/api/container/entry', 'Logistics & Freight')"><i class="fa-solid fa-truck-fast"></i><span>Logistics</span></button>
     <button class="rail-link" onclick="openEntryModal('/api/expenses/entry', 'Other Expenses')"><i class="fa-solid fa-receipt"></i><span>Other Expenses</span></button>
+  </div>
+  <div class="rail-section">
+    <div class="rail-label">Registers</div>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/gst_register/entry', 'GST Register')"><i class="fa-solid fa-file-shield"></i><span>GST Register</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/fixed_assets/entry', 'Fixed Assets')"><i class="fa-solid fa-building"></i><span>Fixed Assets</span></button>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/lc_tracking/entry', 'LC Tracking')"><i class="fa-solid fa-file-contract"></i><span>LC Tracking</span></button>
   </div>
 </aside>
 <main class="module-main">
@@ -287,12 +300,21 @@
         </select>
       </div>
       <div class="input-field">
+        <label><i class="fa-solid fa-calendar-days"></i> FY</label>
+        <select name="fy" id="fySelect">
+          {% for fy_item in fy_options %}
+            {% set fy_start = fy_item.split('-')[0]|int %}
+            <option value="{{ fy_item }}" data-start="{{ fy_start }}-04-01" data-end="{{ fy_start + 1 }}-03-31" {% if selected_fy == fy_item %}selected{% endif %}>{{ fy_item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="input-field">
         <label>From Date</label>
-        <input type="date" name="from_date" value="{{ from_date }}">
+        <input type="date" id="fromDateInput" name="from_date" value="{{ from_date }}">
       </div>
       <div class="input-field">
         <label>To Date</label>
-        <input type="date" name="to_date" value="{{ to_date }}">
+        <input type="date" id="toDateInput" name="to_date" value="{{ to_date }}">
       </div>
       <button type="submit" class="btn-sync"><i class="fa-solid fa-rotate"></i> Refresh Data</button>
     </form>
@@ -302,28 +324,35 @@
   <div class="cards">
     <div class="card blue">
       <div class="card-meta">
-        <div class="label">Outstanding Customer Bills</div>
+        <div class="label">Receivables</div>
         <div class="value">₹{{"{:,}".format(receivables_outstanding)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-file-invoice-dollar"></i></div>
     </div>
     <div class="card gray">
       <div class="card-meta">
-        <div class="label">Outstanding Vendor Bills</div>
+        <div class="label">Payables</div>
         <div class="value">₹{{"{:,}".format(payables_outstanding)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-file-invoice"></i></div>
     </div>
     <div class="card green">
       <div class="card-meta">
-        <div class="label">Bank & Cash Balance</div>
+        <div class="label">Bank & Cash</div>
         <div class="value">₹{{"{:,}".format(bank_balance)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-building-columns"></i></div>
     </div>
     <div class="card blue">
       <div class="card-meta">
-        <div class="label">Expenses This Month</div>
+        <div class="label">Income</div>
+        <div class="value">₹{{"{:,}".format(total_income)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-arrow-trend-up"></i></div>
+    </div>
+    <div class="card amber">
+      <div class="card-meta">
+        <div class="label">Expenses</div>
         <div class="value">₹{{"{:,}".format(total_expenses)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-receipt"></i></div>
@@ -334,6 +363,48 @@
         <div class="value">₹{{"{:,}".format(net_profit)}}</div>
       </div>
       <div class="card-icon-zone"><i class="fa-solid fa-chart-line"></i></div>
+    </div>
+    <div class="card purple">
+      <div class="card-meta">
+        <div class="label">Net Cash Flow</div>
+        <div class="value">₹{{"{:,}".format(net_cash_flow)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-money-bill-transfer"></i></div>
+    </div>
+    <div class="card blue">
+      <div class="card-meta">
+        <div class="label">Current Ratio</div>
+        <div class="value">{{ current_ratio }}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-scale-balanced"></i></div>
+    </div>
+    <div class="card gray">
+      <div class="card-meta">
+        <div class="label">Posted Vouchers</div>
+        <div class="value">{{ voucher_stats.posted }}/{{ voucher_stats.total }}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-book"></i></div>
+    </div>
+    <div class="card green">
+      <div class="card-meta">
+        <div class="label">Receipts</div>
+        <div class="value">₹{{"{:,}".format(receipts_total)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-circle-down"></i></div>
+    </div>
+    <div class="card red">
+      <div class="card-meta">
+        <div class="label">Vendor Paid</div>
+        <div class="value">₹{{"{:,}".format(vendor_paid_total)}}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-circle-up"></i></div>
+    </div>
+    <div class="card gray">
+      <div class="card-meta">
+        <div class="label">Active Ledgers</div>
+        <div class="value">{{ ledger_count }}</div>
+      </div>
+      <div class="card-icon-zone"><i class="fa-solid fa-folder-tree"></i></div>
     </div>
   </div>
 
@@ -382,12 +453,22 @@
             <td style="text-align: right; color:var(--accent-blue);">+₹{{"{:,}".format(bank_balance)}}</td>
           </tr>
           <tr>
-            <td>Monthly Cash Expenses</td>
-            <td style="text-align: right; color:var(--rose);">-₹{{"{:,}".format(total_expenses)}}</td>
+            <td>Current Assets</td>
+            <td style="text-align: right; color:var(--emerald);">₹{{"{:,}".format(current_assets)}}</td>
+          </tr>
+          <tr>
+            <td>Current Liabilities</td>
+            <td style="text-align: right; color:var(--rose);">₹{{"{:,}".format(current_liabilities)}}</td>
           </tr>
           <tr style="font-weight: 800; background: var(--strip-bg);">
-            <td>Net Available Capital</td>
-            <td style="text-align: right; color:var(--primary-dark);">₹{{"{:,}".format(receivables_outstanding - payables_outstanding + bank_balance)}}</td>
+            <td>Net Working Capital</td>
+            <td style="text-align: right; color:var(--primary-dark);">₹{{"{:,}".format(net_working_capital)}}</td>
+          </tr>
+          <tr>
+            <td>Balance Sheet Status</td>
+            <td style="text-align: right; color:{% if is_balance_sheet_balanced %}var(--emerald){% else %}var(--rose){% endif %};">
+              {% if is_balance_sheet_balanced %}Balanced{% else %}Diff ₹{{"{:,}".format(balance_sheet_difference)}}{% endif %}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -443,6 +524,17 @@ function applyChartTheme() {
 
 document.addEventListener("DOMContentLoaded", function() {
   applyChartTheme();
+
+  const fySelect = document.getElementById('fySelect');
+  const fromDateInput = document.getElementById('fromDateInput');
+  const toDateInput = document.getElementById('toDateInput');
+  if (fySelect && fromDateInput && toDateInput) {
+    fySelect.addEventListener('change', function() {
+      const opt = this.options[this.selectedIndex];
+      fromDateInput.value = opt.dataset.start || '';
+      toDateInput.value = opt.dataset.end || '';
+    });
+  }
 
   // 1. Cash Flow Inflow vs Outflow Trend Chart
   window.charts.cashFlow = new Chart(document.getElementById("cashFlowChart"), {

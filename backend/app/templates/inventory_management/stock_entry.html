@@ -489,6 +489,8 @@ function handleOutFilterChange() { checkUnlockState("out"); }
 async function loadDynamicLookups() {
     const pFor = document.getElementById("in_prod_for").value;
     const pAt = document.getElementById("in_prod_at").value;
+    const locInput = document.getElementById("in_loc_search");
+    const locHidden = document.getElementById("in_loc_hidden");
 
     if(pFor && pAt) {
         const matchedBatches = batchMap.filter(i => (i.company || "").trim().toUpperCase() === pFor.toUpperCase() && (i.location || "").trim().toUpperCase() === pAt.toUpperCase());
@@ -496,16 +498,23 @@ async function loadDynamicLookups() {
         renderAutocompleteList(batchArr, "in_batch_list", "in_batch_search", "in_batch_hidden");
     }
 
-    // 🔥 FIXED: LOCATIONS FETCHED ONLY BASED ON 'PRODUCTION AT' (PLANT)
+    locInput.value = "";
+    locHidden.value = "";
+    renderAutocompleteList([], "in_loc_list", "in_loc_search", "in_loc_hidden");
+
+    // Location (Store) is fetched only from Coldstore Locations matching selected Production At.
     if(pAt) {
         try {
             const params = new URLSearchParams({ production_at: pAt });
             const response = await fetch(`/inventory/get_matched_coldstores?${params.toString()}`);
             if(response.ok) {
                 const data = await response.json();
-                renderAutocompleteList(data.locations, "in_loc_list", "in_loc_search", "in_loc_hidden");
+                renderAutocompleteList(data.locations || [], "in_loc_list", "in_loc_search", "in_loc_hidden");
             }
-        } catch(err) { console.error("Location lookup failed"); }
+        } catch(err) {
+            renderAutocompleteList([], "in_loc_list", "in_loc_search", "in_loc_hidden");
+            console.error("Location lookup failed");
+        }
     }
 }
 

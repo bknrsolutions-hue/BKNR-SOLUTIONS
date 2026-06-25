@@ -9,25 +9,83 @@ import logging
 
 from app.database import get_db
 from app.services.cache import cache_get, cache_set
+from app.services.accounting_reports import AccountingReportsService
 
 # =========================================================================
 # 🗄️ EXACT MODEL ARCHITECTURE INTEGRATION (Zero Column Mismatch Setup)
 # =========================================================================
-from app.database.models.inventory_management import stock_entry, pending_orders, sales_dispatch
-from app.database.models.processing import RawMaterialPurchasing, DeHeading, Peeling, Grading, Soaking, Production
+from app.database.models.inventory_management import stock_entry, sales_dispatch
+from app.database.models.processing import RawMaterialPurchasing, DeHeading, Peeling, Production
 from app.database.models.bills import ElectricityLog, DieselLog, PurchaseInvoice, ContainerLog, QATestingLog, OtherExpense
 from app.database.models.attendance import EmployeeRegistration
-from app.database.models.criteria import production_at, production_for
+from app.database.models.criteria import packing_styles, production_at
 
 router = APIRouter(tags=["CORPORATE COSTING DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
+
+
+def _current_fy_start(today: date) -> int:
+    return today.year if today.month >= 4 else today.year - 1
+
+
+def _parse_fy_start(fy_value: str, fallback_year: int) -> int:
+    if not fy_value:
+        return fallback_year
+    try:
+        return int(str(fy_value).split("-")[0])
+    except (TypeError, ValueError):
+        return fallback_year
+
+
+def _parse_iso_date(value: str) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except Exception as exc:
+        logger.warning("Invalid date format %s. %s", value, exc)
+        return None
+
+
+def _apply_date_range(query, column, start_date: date | None, end_date: date | None):
+    if start_date:
+        query = query.filter(column >= start_date)
+    if end_date:
+        query = query.filter(column <= end_date)
+    return query
+
+
+def _apply_string_date_range(query, column, start_date: date | None, end_date: date | None):
+    if start_date:
+        query = query.filter(column >= start_date.isoformat())
+    if end_date:
+        query = query.filter(column <= end_date.isoformat())
+    return query
+
+
+def _apply_text_location(query, column, location: str):
+    if location:
+        query = query.filter(func.trim(column) == func.trim(location))
+    return query
+
+
+def _sale_amounts(row, weight_map):
+    pack_key = str(row.packing_style or "").strip()
+    mc_weight = weight_map.get(pack_key, 1.0)
+    qty = float(row.no_of_mc or 0) * mc_weight
+    usd = qty * float(row.price or 0)
+    inr = usd * float(row.exchange_rate or 83.5)
+    return qty, usd, inr
+
 
 @router.get("/costing_dashboard", response_class=HTMLResponse)
 def costing_dashboard(
     request: Request,
     db: Session = Depends(get_db),
     company_id: str = Query("", description="Selected Company ID for filtering data"),
+    fy: str = Query("", description="Financial year start, example: 2025 or 2025-26"),
+    location: str = Query("", description="Production location"),
     from_date: str = Query("", description="YYYY-MM-DD"),
     to_date: str = Query("", description="YYYY-MM-DD")
 ):
@@ -40,53 +98,41 @@ def costing_dashboard(
     if not email or not session_comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    # Prioritize dropdown parameter selection over session fallback for strict company filtering
-    comp_code = company_id if company_id else session_comp_code
+    comp_code = session_comp_code
 
     # ---------------------------------------------------------
     # 🏢 SEARCHABLE COMPANY DROPDOWN DATA
     # ---------------------------------------------------------
-    available_companies = []
-    try:
-        # Pulling dropdown mappings as searchable structural elements matching past ledger preferences
-        unique_company_records = db.query(
-            production_for.id, 
-            production_for.production_for
-        ).group_by(production_for.production_for, production_for.id).all()
+    available_companies = [{"name": session_comp_code, "code": session_comp_code}]
 
-        seen_names = set()
-        for row in unique_company_records:
-            if row.production_for and row.id:
-                clean_name = str(row.production_for).strip()
-                if clean_name not in seen_names:
-                    seen_names.add(clean_name)
-                    available_companies.append({
-                        "name": clean_name,
-                        "code": str(row.id).strip()
-                    })
-    except Exception as e:
-        logger.warning(f"Error building unique company dropdown: {e}")
-        db.rollback()
-        available_companies = [{"name": "Default Processing Corp", "code": session_comp_code}]
+    locations = [
+        row[0] for row in db.query(production_at.production_at)
+        .filter(production_at.company_id == comp_code)
+        .order_by(production_at.production_at)
+        .all()
+        if row[0]
+    ]
 
     # ---------------------------------------------------------
-    # 📅 DATE RANGE CONFIGURATION MATRIX
+    # 📅 FINANCIAL YEAR / DATE RANGE CONFIGURATION MATRIX
     # ---------------------------------------------------------
-    parsed_from = None
-    parsed_to = None
-    if from_date:
-        try: 
-            parsed_from = date.fromisoformat(from_date)
-        except Exception as e: 
-            logger.warning(f"Invalid from_date format: {from_date}. {e}")
-    if to_date:
-        try: 
-            parsed_to = date.fromisoformat(to_date)
-        except Exception as e: 
-            logger.warning(f"Invalid to_date format: {to_date}. {e}")
+    today = ist_now().date()
+    current_fy_year = _current_fy_start(today)
+    selected_fy_year = _parse_fy_start(fy, current_fy_year)
+    selected_fy = f"{selected_fy_year}-{str(selected_fy_year + 1)[2:]}"
+    fy_options = [f"{year}-{str(year + 1)[2:]}" for year in range(current_fy_year, current_fy_year - 6, -1)]
+
+    parsed_from = _parse_iso_date(from_date)
+    parsed_to = _parse_iso_date(to_date)
+    if not parsed_from:
+        parsed_from = date(selected_fy_year, 4, 1)
+        from_date = parsed_from.isoformat()
+    if not parsed_to:
+        parsed_to = date(selected_fy_year + 1, 3, 31)
+        to_date = parsed_to.isoformat()
 
     last_updated_timestamp = ist_now().strftime("%Y-%m-%d %H:%M:%S IST")
-    cache_key = f"bknr:costing_dashboard:{comp_code}:{from_date or 'ALL'}:{to_date or 'ALL'}"
+    cache_key = f"bknr:costing_dashboard:{comp_code}:{selected_fy}:{location or 'ALL'}:{from_date}:{to_date}"
     cached_context = cache_get(cache_key)
     if cached_context is not None:
         cached_context["request"] = request
@@ -102,65 +148,70 @@ def costing_dashboard(
         # ---------------------------------------------------------
         rmp_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0.0)).filter(RawMaterialPurchasing.company_id == comp_code)
         qty_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0.0)).filter(RawMaterialPurchasing.company_id == comp_code)
-        
-        if parsed_from:
-            rmp_q = rmp_q.filter(RawMaterialPurchasing.date >= parsed_from)
-            qty_q = qty_q.filter(RawMaterialPurchasing.date >= parsed_from)
-        if parsed_to:
-            rmp_q = rmp_q.filter(RawMaterialPurchasing.date <= parsed_to)
-            qty_q = qty_q.filter(RawMaterialPurchasing.date <= parsed_to)
+
+        rmp_q = _apply_date_range(rmp_q, RawMaterialPurchasing.date, parsed_from, parsed_to)
+        qty_q = _apply_date_range(qty_q, RawMaterialPurchasing.date, parsed_from, parsed_to)
+        rmp_q = _apply_text_location(rmp_q, RawMaterialPurchasing.peeling_at, location)
+        qty_q = _apply_text_location(qty_q, RawMaterialPurchasing.peeling_at, location)
             
         rmp_cost = float(rmp_q.scalar() or 0.0)
         total_qty = float(qty_q.scalar() or 0.0)
 
         # ---------------------------------------------------------
-        # 📈 SALES DISPATCH (Fixed AttributeError Mismatch)
+        # 📈 SALES DISPATCH
         # ---------------------------------------------------------
-        sales_qty_q = db.query(func.coalesce(func.sum(sales_dispatch.no_of_mc * 10), 0.0)).filter(sales_dispatch.company_id == comp_code)
-        sales_q = db.query(func.coalesce(func.sum(sales_dispatch.no_of_mc * sales_dispatch.price * sales_dispatch.exchange_rate), 0.0)).filter(sales_dispatch.company_id == comp_code)
-        recv_q = db.query(func.coalesce(func.sum(sales_dispatch.no_of_mc * sales_dispatch.price * sales_dispatch.exchange_rate), 0.0)).filter(
-            and_(sales_dispatch.company_id == comp_code, sales_dispatch.status == "Unpaid")
-        )
+        packing_rows = db.query(
+            packing_styles.packing_style,
+            packing_styles.mc_weight,
+        ).filter(packing_styles.company_id == comp_code).all()
+        weight_map = {str(name or "").strip(): float(weight or 1.0) for name, weight in packing_rows}
 
-        if parsed_from: 
-            sales_qty_q = sales_qty_q.filter(sales_dispatch.created_at >= parsed_from)
-            sales_q = sales_q.filter(sales_dispatch.created_at >= parsed_from)
-            recv_q = recv_q.filter(sales_dispatch.created_at >= parsed_from)
-        if parsed_to: 
-            sales_qty_q = sales_qty_q.filter(sales_dispatch.created_at <= parsed_to)
-            sales_q = sales_q.filter(sales_dispatch.created_at <= parsed_to)
-            recv_q = recv_q.filter(sales_dispatch.created_at <= parsed_to)
+        sales_rows_q = db.query(
+            sales_dispatch.variety,
+            sales_dispatch.no_of_mc,
+            sales_dispatch.packing_style,
+            sales_dispatch.price,
+            sales_dispatch.exchange_rate,
+            sales_dispatch.status,
+        ).filter(sales_dispatch.company_id == comp_code)
+        sales_rows_q = _apply_string_date_range(sales_rows_q, sales_dispatch.invoice_date, parsed_from, parsed_to)
+        sales_rows_q = _apply_text_location(sales_rows_q, sales_dispatch.production_at, location)
+        sales_rows = sales_rows_q.all()
 
-        sales_qty = float(sales_qty_q.scalar() or 0.0)
-        total_sales = float(sales_q.scalar() or 0.0)
-        receivable_outstanding = float(recv_q.scalar() or 0.0)
+        sales_qty = 0.0
+        total_sales = 0.0
+        receivable_outstanding = 0.0
+        sales_by_variety = {}
+        for row in sales_rows:
+            qty_kg, _, amount_inr = _sale_amounts(row, weight_map)
+            sales_qty += qty_kg
+            total_sales += amount_inr
+            if str(row.status or "").strip().lower() == "unpaid":
+                receivable_outstanding += amount_inr
+            if row.variety:
+                sales_by_variety[row.variety] = sales_by_variety.get(row.variety, 0.0) + amount_inr
 
         # ---------------------------------------------------------
         # 🏭 FACTORY PROCESSING SEGMENTS
         # ---------------------------------------------------------
         deh_q = db.query(func.coalesce(func.sum(DeHeading.amount), 0.0)).filter(DeHeading.company_id == comp_code)
-        if parsed_from: deh_q = deh_q.filter(DeHeading.date >= parsed_from)
-        if parsed_to: deh_q = deh_q.filter(DeHeading.date <= parsed_to)
+        deh_q = _apply_date_range(deh_q, DeHeading.date, parsed_from, parsed_to)
+        deh_q = _apply_text_location(deh_q, DeHeading.peeling_at, location)
         deheading_cost = float(deh_q.scalar() or 0.0)
 
         pee_q = db.query(func.coalesce(func.sum(Peeling.amount), 0.0)).filter(Peeling.company_id == comp_code)
-        if parsed_from: pee_q = pee_q.filter(Peeling.date >= parsed_from)
-        if parsed_to: pee_q = pee_q.filter(Peeling.date <= parsed_to)
+        pee_q = _apply_date_range(pee_q, Peeling.date, parsed_from, parsed_to)
+        pee_q = _apply_text_location(pee_q, Peeling.peeling_at, location)
         peeling_cost = float(pee_q.scalar() or 0.0)
 
-        gra_q = db.query(func.coalesce(func.sum(Grading.quantity), 0.0)).filter(Grading.company_id == comp_code)
-        if parsed_from: gra_q = gra_q.filter(Grading.date >= parsed_from)
-        if parsed_to: gra_q = gra_q.filter(Grading.date <= parsed_to)
-        grading_cost = float(gra_q.scalar() or 0.0) * 4.50 
+        # No monetary grading/soaking source is stored in these tables.
+        grading_cost = 0.0
 
-        soak_q = db.query(func.coalesce(func.sum(Soaking.in_qty), 0.0)).filter(Soaking.company_id == comp_code)
-        if parsed_from: soak_q = soak_q.filter(Soaking.date >= parsed_from)
-        if parsed_to: soak_q = soak_q.filter(Soaking.date <= parsed_to)
-        soaking_cost = float(soak_q.scalar() or 0.0) * 2.10
+        soaking_cost = 0.0
 
         prod_qty_q = db.query(func.coalesce(func.sum(Production.production_qty), 0.0)).filter(Production.company_id == comp_code)
-        if parsed_from: prod_qty_q = prod_qty_q.filter(Production.date >= parsed_from)
-        if parsed_to: prod_qty_q = prod_qty_q.filter(Production.date <= parsed_to)
+        prod_qty_q = _apply_date_range(prod_qty_q, Production.date, parsed_from, parsed_to)
+        prod_qty_q = _apply_text_location(prod_qty_q, Production.production_at, location)
         prod_qty = float(prod_qty_q.scalar() or 0.0)
 
         # ---------------------------------------------------------
@@ -169,45 +220,47 @@ def costing_dashboard(
         elec_q = db.query(func.coalesce(func.sum(ElectricityLog.total_cost), 0.0)).join(
             production_at, ElectricityLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
-        if parsed_from: elec_q = elec_q.filter(ElectricityLog.reading_date >= parsed_from)
-        if parsed_to: elec_q = elec_q.filter(ElectricityLog.reading_date <= parsed_to)
+        elec_q = _apply_date_range(elec_q, ElectricityLog.reading_date, parsed_from, parsed_to)
+        elec_q = _apply_text_location(elec_q, production_at.production_at, location)
         electricity_cost = float(elec_q.scalar() or 0.0)
 
         dies_q = db.query(func.coalesce(func.sum(DieselLog.net_val), 0.0)).join(
             production_at, DieselLog.unit_id == production_at.id
         ).filter(and_(production_at.company_id == comp_code, DieselLog.type == "OUT"))
-        if parsed_from: dies_q = dies_q.filter(DieselLog.log_date >= parsed_from)
-        if parsed_to: dies_q = dies_q.filter(DieselLog.log_date <= parsed_to)
+        dies_q = _apply_date_range(dies_q, DieselLog.log_date, parsed_from, parsed_to)
+        dies_q = _apply_text_location(dies_q, production_at.production_at, location)
         diesel_cost = float(dies_q.scalar() or 0.0)
 
-        water_cost = electricity_cost * 0.12
-        ice_cost = diesel_cost * 0.22
+        water_cost = 0.0
+        ice_cost = 0.0
 
         # ---------------------------------------------------------
         # 📦 OVERHEADS & EXPENDITURES
         # ---------------------------------------------------------
         pack_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(PurchaseInvoice.company_id == comp_code)
-        if parsed_from: pack_q = pack_q.filter(PurchaseInvoice.invoice_date >= parsed_from)
-        if parsed_to: pack_q = pack_q.filter(PurchaseInvoice.invoice_date <= parsed_to)
+        if location:
+            pack_q = pack_q.join(production_at, PurchaseInvoice.production_at_id == production_at.id)
+            pack_q = _apply_text_location(pack_q, production_at.production_at, location)
+        pack_q = _apply_date_range(pack_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
         packaging_cost = float(pack_q.scalar() or 0.0)
 
         log_q = db.query(func.coalesce(func.sum(ContainerLog.lended_total), 0.0)).filter(ContainerLog.company_id == comp_code)
-        if parsed_from: log_q = log_q.filter(ContainerLog.date >= parsed_from)
-        if parsed_to: log_q = log_q.filter(ContainerLog.date <= parsed_to)
+        log_q = _apply_date_range(log_q, ContainerLog.date, parsed_from, parsed_to)
+        log_q = _apply_text_location(log_q, ContainerLog.production_at, location)
         logistics_cost = float(log_q.scalar() or 0.0)
 
         qa_q = db.query(func.coalesce(func.sum(QATestingLog.test_cost), 0.0)).join(
             production_at, QATestingLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
-        if parsed_from: qa_q = qa_q.filter(QATestingLog.test_date >= parsed_from)
-        if parsed_to: qa_q = qa_q.filter(QATestingLog.test_date <= parsed_to)
+        qa_q = _apply_date_range(qa_q, QATestingLog.test_date, parsed_from, parsed_to)
+        qa_q = _apply_text_location(qa_q, production_at.production_at, location)
         qa_cost = float(qa_q.scalar() or 0.0)
 
         oth_q = db.query(func.coalesce(func.sum(OtherExpense.amount), 0.0)).join(
             production_at, OtherExpense.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
-        if parsed_from: oth_q = oth_q.filter(OtherExpense.date >= parsed_from)
-        if parsed_to: oth_q = oth_q.filter(OtherExpense.date <= parsed_to)
+        oth_q = _apply_date_range(oth_q, OtherExpense.date, parsed_from, parsed_to)
+        oth_q = _apply_text_location(oth_q, production_at.production_at, location)
         other_cost = float(oth_q.scalar() or 0.0)
 
         payroll_cost = float(db.query(func.coalesce(func.sum(EmployeeRegistration.current_salary), 0.0)).filter(
@@ -217,23 +270,46 @@ def costing_dashboard(
         # ---------------------------------------------------------
         # 💼 STOCK MANAGEMENT & WORKING CAPITAL MATRIX
         # ---------------------------------------------------------
-        inventory_value = float(db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
+        inventory_q = db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
             stock_entry.company_id == comp_code
-        ).scalar() or 0.0)
+        )
+        inventory_q = _apply_string_date_range(inventory_q, stock_entry.date, parsed_from, parsed_to)
+        inventory_q = _apply_text_location(inventory_q, stock_entry.production_at, location)
+        inventory_value = float(inventory_q.scalar() or 0.0)
 
+        # Sales dispatch has no due-date field, so do not invent ageing buckets.
         receivable_ageing = {
-            "current_frame": receivable_outstanding * 0.60,
-            "mid_frame": receivable_outstanding * 0.25,
-            "warning_frame": receivable_outstanding * 0.10,
-            "risk_frame": receivable_outstanding * 0.05
+            "current_frame": receivable_outstanding,
+            "mid_frame": 0.0,
+            "warning_frame": 0.0,
+            "risk_frame": 0.0,
         }
 
-        payable_outstanding = float(db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(
+        payable_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(
             PurchaseInvoice.company_id == comp_code
-        ).scalar() or 0.0)
-        
-        payable_outstanding_unpaid = payable_outstanding * 0.45 
-        cash_balance = (total_sales * 0.14) + 450000.00 
+        )
+        payable_unpaid_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(
+            PurchaseInvoice.company_id == comp_code,
+            PurchaseInvoice.status == "POSTED",
+        )
+        if location:
+            payable_q = payable_q.join(production_at, PurchaseInvoice.production_at_id == production_at.id)
+            payable_q = _apply_text_location(payable_q, production_at.production_at, location)
+            payable_unpaid_q = payable_unpaid_q.join(production_at, PurchaseInvoice.production_at_id == production_at.id)
+            payable_unpaid_q = _apply_text_location(payable_unpaid_q, production_at.production_at, location)
+        payable_q = _apply_date_range(payable_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
+        payable_unpaid_q = _apply_date_range(payable_unpaid_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
+        payable_outstanding = float(payable_q.scalar() or 0.0)
+        payable_outstanding_unpaid = float(payable_unpaid_q.scalar() or 0.0)
+
+        report_end = parsed_to or today
+        trial_balance = AccountingReportsService.get_trial_balance(db, comp_code, report_end)
+        cash_balance = sum(
+            row["balance"] for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") in {"Cash-in-hand", "Bank Accounts"}
+        )
 
         working_capital = {
             "inventory_value": inventory_value,
@@ -246,80 +322,117 @@ def costing_dashboard(
                          electricity_cost + diesel_cost + water_cost + ice_cost +
                          packaging_cost + logistics_cost + qa_cost + payroll_cost + other_cost)
 
-        ebitda = total_sales - (total_expense - (other_cost * 0.15))
+        ebitda = total_sales - total_expense
         
         inventory_days = round((inventory_value / (total_expense or 1.0)) * 30)
         receivable_days = round((receivable_outstanding / (total_sales or 1.0)) * 30)
         payable_days = round((payable_outstanding_unpaid / (rmp_cost + packaging_cost or 1.0)) * 30) or 15
         cash_conversion_cycle = (inventory_days + receivable_days) - payable_days
 
-        current_month_profit = total_sales - total_expense
-        prev_month_profit = current_month_profit * 0.88 if current_month_profit > 0 else 125000.00
+        current_period_start = parsed_from or date(report_end.year, report_end.month, 1)
+        current_pl = AccountingReportsService.get_profit_and_loss(
+            db, comp_code, current_period_start, report_end
+        )
+        current_month_profit = current_pl["net_profit"]
+        previous_month_end = current_period_start - timedelta(days=1)
+        previous_month_start = date(previous_month_end.year, previous_month_end.month, 1)
+        previous_pl = AccountingReportsService.get_profit_and_loss(
+            db, comp_code, previous_month_start, previous_month_end
+        )
+        prev_month_profit = previous_pl["net_profit"]
         profit_delta = current_month_profit - prev_month_profit
         mom_variance_pct = (profit_delta / (prev_month_profit or 1.0)) * 100
 
         # ---------------------------------------------------------
         # 🕒 INVENTORY AGEING DYNAMIC BUCKETS (Fixed Datetime Delta Fields)
         # ---------------------------------------------------------
-        today_date = date.today()
+        today_date = today
         d30 = today_date - timedelta(days=30)
         d60 = today_date - timedelta(days=60)
         d90 = today_date - timedelta(days=90)
 
         try:
+            age_base_filters = [stock_entry.company_id == comp_code]
+            if location:
+                age_base_filters.append(func.trim(stock_entry.production_at) == func.trim(location))
+
             fast_turn_q = float(db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
-                and_(stock_entry.company_id == comp_code, stock_entry.created_at >= d30)
+                *age_base_filters,
+                stock_entry.date >= d30.isoformat(),
+                stock_entry.date <= report_end.isoformat(),
             ).scalar() or 0.0)
-            
+
             std_hold_q = float(db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
-                and_(stock_entry.company_id == comp_code, stock_entry.created_at < d30, stock_entry.created_at >= d60)
+                *age_base_filters,
+                stock_entry.date < d30.isoformat(),
+                stock_entry.date >= d60.isoformat(),
+                stock_entry.date <= report_end.isoformat(),
             ).scalar() or 0.0)
 
             slow_clr_q = float(db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
-                and_(stock_entry.company_id == comp_code, stock_entry.created_at < d60, stock_entry.created_at >= d90)
+                *age_base_filters,
+                stock_entry.date < d60.isoformat(),
+                stock_entry.date >= d90.isoformat(),
+                stock_entry.date <= report_end.isoformat(),
             ).scalar() or 0.0)
 
             stagnant_q = float(db.query(func.coalesce(func.sum(stock_entry.inventory_value), 0.0)).filter(
-                and_(stock_entry.company_id == comp_code, stock_entry.created_at < d90)
+                *age_base_filters,
+                stock_entry.date < d90.isoformat(),
+                stock_entry.date <= report_end.isoformat(),
             ).scalar() or 0.0)
         except Exception:
             db.rollback()
             fast_turn_q, std_hold_q, slow_clr_q, stagnant_q = 0.0, 0.0, 0.0, 0.0
 
-        if (fast_turn_q + std_hold_q + slow_clr_q + stagnant_q) == 0:
-            inventory_ageing_buckets = {
-                "fast_turn": inventory_value * 0.58,
-                "standard_hold": inventory_value * 0.24,
-                "slow_clearance": inventory_value * 0.12,
-                "stagnant_risk": inventory_value * 0.06
-            }
-        else:
-            inventory_ageing_buckets = {
-                "fast_turn": fast_turn_q,
-                "standard_hold": std_hold_q,
-                "slow_clearance": slow_clr_q,
-                "stagnant_risk": stagnant_q
-            }
+        inventory_ageing_buckets = {
+            "fast_turn": fast_turn_q,
+            "standard_hold": std_hold_q,
+            "slow_clearance": slow_clr_q,
+            "stagnant_risk": stagnant_q,
+        }
 
-        # Trend Data Matrix
-        month_labels = ["Jan Run", "Feb Run", "Mar Run", "Apr Run", "Current MTD"]
-        revenue_trend = [total_sales * 0.82, total_sales * 0.91, total_sales * 0.88, total_sales * 0.95, total_sales]
-        expense_trend = [total_expense * 0.85, total_expense * 0.89, total_expense * 0.86, total_expense * 0.93, total_expense]
-        profit_trend = [r - e for r, e in zip(revenue_trend, expense_trend)]
+        # Five-month trend from posted accounting vouchers.
+        month_starts = []
+        cursor = date(report_end.year, report_end.month, 1)
+        for offset in range(4, -1, -1):
+            year = cursor.year
+            month = cursor.month - offset
+            while month <= 0:
+                month += 12
+                year -= 1
+            month_starts.append(date(year, month, 1))
+        month_labels = [month.strftime("%b %y") for month in month_starts]
+        revenue_trend = []
+        expense_trend = []
+        profit_trend = []
+        for index, month_start in enumerate(month_starts):
+            if index + 1 < len(month_starts):
+                month_end = month_starts[index + 1] - timedelta(days=1)
+            else:
+                month_end = report_end
+            month_pl = AccountingReportsService.get_profit_and_loss(
+                db, comp_code, month_start, month_end
+            )
+            revenue_trend.append(month_pl["total_income"])
+            expense_trend.append(month_pl["total_expense"])
+            profit_trend.append(month_pl["net_profit"])
 
         # Advanced SKU Split Matrix
-        product_rows = db.query(
+        product_q = db.query(
             stock_entry.variety,
             func.sum(stock_entry.quantity).label("total_weight"),
             func.sum(stock_entry.inventory_value).label("total_val")
-        ).filter(stock_entry.company_id == comp_code).group_by(stock_entry.variety).all()
-
+        ).filter(stock_entry.company_id == comp_code)
+        product_q = _apply_string_date_range(product_q, stock_entry.date, parsed_from, parsed_to)
+        product_q = _apply_text_location(product_q, stock_entry.production_at, location)
+        product_rows = product_q.group_by(stock_entry.variety).all()
         master_product_list = []
         for r in product_rows:
             if r.variety:
                 p_cost = float(r.total_val or 0.0)
                 p_qty = float(r.total_weight or 1.0)
-                p_rev = p_cost * 1.28 if len(r.variety) % 2 == 0 else p_cost * 1.04
+                p_rev = sales_by_variety.get(r.variety, 0.0)
                 p_profit = p_rev - p_cost
                 master_product_list.append({
                     "product_name": r.variety,
@@ -343,8 +456,14 @@ def costing_dashboard(
     # ---------------------------------------------------------
     context = {
             "comp_code": comp_code,
+            "company_id": comp_code,
             "email": email,
             "available_companies": available_companies,
+            "locations": locations,
+            "location": location,
+            "fy_options": fy_options,
+            "selected_fy": selected_fy,
+            "selected_fy_year": str(selected_fy_year),
             "last_updated": last_updated_timestamp,
             "rmp_cost": round(rmp_cost, 2),
             "total_qty": round(total_qty, 2),

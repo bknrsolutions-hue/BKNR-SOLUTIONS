@@ -151,15 +151,18 @@
         /* ==========================================================
            🌟 CHARTS ROW
         ========================================================== */
-        .charts-row { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
-        @media(min-width: 992px) { .charts-row { grid-template-columns: repeat(3, 1fr); } }
+        .charts-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100%; }
+        @media(min-width: 768px) { .charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media(min-width: 1280px) { .charts-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         
         .chart-box { 
             background: var(--surface-panel); padding: 20px; border-radius: var(--radius-panel); 
-            border: 1px solid var(--border-light); width: 100%; box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-light); width: 100%; min-width: 0; box-shadow: var(--shadow-soft);
+            display: flex; flex-direction: column;
         }
-        .chart-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
-        .chart-container { position: relative; height: 160px; width: 100%; }
+        .chart-title { min-height: 18px; font-size: 11px; font-weight: 800; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; }
+        .chart-container { position: relative; height: 210px; width: 100%; min-width: 0; overflow: hidden; }
+        .chart-container canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
 
         /* ==========================================================
            🌟 ATTENDANCE HORIZONTAL SCROLL
@@ -390,58 +393,6 @@
     </div>
 
     <div class="section-head">
-        <span>Raw Material Purchase Summary</span>
-        <div class="section-head-line"></div>
-    </div>
-    <div class="corp-panel overflow-auto-x">
-        <table class="rm-table min-w-table">
-            <thead>
-                <tr>
-                    <th>Fish Species</th>
-                    <th>Variety</th>
-                    <th>Size Count</th>
-                    <th style="text-align: right;">Total Weight (KG)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in rm_summary %}
-                <tr>
-                    <td>{{ item.species }}</td>
-                    <td>{{ item.variety or '-' }}</td>
-                    <td><span style="color: var(--text-secondary);">{{ item.count }}</span></td>
-                    <td style="text-align: right;" class="highlight-val">{{ item.qty }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="section-head">
-        <span>Hourly Production Output</span>
-        <div class="section-head-line"></div>
-    </div>
-    <div class="charts-row">
-        <div class="chart-box">
-            <div class="chart-title">De-Heading (KG/Hour)</div>
-            <div class="chart-container">
-                <canvas id="dhChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-box">
-            <div class="chart-title">Peeling (KG/Hour)</div>
-            <div class="chart-container">
-                <canvas id="peelingChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-box">
-            <div class="chart-title">Production (KG/Hour)</div>
-            <div class="chart-container">
-                <canvas id="prodChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="section-head">
         <span>Staff Attendance Today</span>
         <div class="section-head-line"></div>
     </div>
@@ -506,6 +457,58 @@
     </div>
 
     <div class="section-head">
+        <span>Raw Material Purchase Summary</span>
+        <div class="section-head-line"></div>
+    </div>
+    <div class="corp-panel overflow-auto-x">
+        <table class="rm-table min-w-table">
+            <thead>
+                <tr>
+                    <th>Fish Species</th>
+                    <th>Variety</th>
+                    <th>Size Count</th>
+                    <th style="text-align: right;">Total Weight (KG)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in rm_summary %}
+                <tr>
+                    <td>{{ item.species }}</td>
+                    <td>{{ item.variety or '-' }}</td>
+                    <td><span style="color: var(--text-secondary);">{{ item.count }}</span></td>
+                    <td style="text-align: right;" class="highlight-val">{{ item.qty }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section-head">
+        <span>Hourly Production Output</span>
+        <div class="section-head-line"></div>
+    </div>
+    <div class="charts-row">
+        <div class="chart-box">
+            <div class="chart-title">De-Heading (KG/Hour)</div>
+            <div class="chart-container">
+                <canvas id="dhChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">Peeling (KG/Hour)</div>
+            <div class="chart-container">
+                <canvas id="peelingChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-box">
+            <div class="chart-title">Production (KG/Hour)</div>
+            <div class="chart-container">
+                <canvas id="prodChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-head">
         <span>Current Floor Balance Report</span>
         <div class="section-head-line"></div>
     </div>
@@ -545,7 +548,7 @@
         plugins: { legend: { display: false } }, 
         scales: { 
             y: { beginAtZero: true, grid: { color: colors.grid }, border: { dash: [4, 4] }, ticks: { color: colors.text, font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } } },
-            x: { grid: { display: false }, ticks: { color: colors.text, font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } } }
+            x: { grid: { display: false }, ticks: { color: colors.text, autoSkip: true, maxTicksLimit: 8, maxRotation: 0, font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' } } }
         } 
     };
 

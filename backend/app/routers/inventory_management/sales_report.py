@@ -67,8 +67,23 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
                 val = float(row.quantity or 0) * float(row.product_kg_value or 0)
             stock_map[po] = stock_map.get(po, 0) + val
 
-    freight_map = {clean_po(c.po_number): float(c.lended_total or 0) for c in db.query(ContainerLog).filter(ContainerLog.company_id == company_code).all() if clean_po(c.po_number)}
-    packing_map = {clean_po(p.po_number): float(p.grand_total or 0) for p in db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == company_code).all() if clean_po(p.po_number)}
+    freight_rows = db.query(ContainerLog.po_number, ContainerLog.lended_total).filter(
+        ContainerLog.company_id == company_code
+    ).all()
+    freight_map = {
+        clean_po(po_number): float(lended_total or 0)
+        for po_number, lended_total in freight_rows
+        if clean_po(po_number)
+    }
+
+    packing_rows = db.query(PurchaseInvoice.po_number, PurchaseInvoice.grand_total).filter(
+        PurchaseInvoice.company_id == company_code
+    ).all()
+    packing_map = {
+        clean_po(po_number): float(grand_total or 0)
+        for po_number, grand_total in packing_rows
+        if clean_po(po_number)
+    }
 
     processed = []
     current_invoice, sl_no = None, 0

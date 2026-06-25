@@ -1,16 +1,17 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base  # Fixed: use central Base (was declarative_base())
 
 class CustomerReceivable(Base):
     __tablename__ = 'customer_receivables'
+    __table_args__ = (UniqueConstraint("company_id", "invoice_no", name="uq_customer_receivables_company_invoice_no"),)
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
     
     # Standardized Cross-Linking Block
-    invoice_no = Column(String, unique=True, index=True, nullable=False)
+    invoice_no = Column(String, index=True, nullable=False)
     po_number = Column(String, index=True, nullable=True)
     container_no = Column(String, index=True, nullable=True)
     buyer_name = Column(String, index=True, nullable=False)
@@ -52,10 +53,12 @@ class CustomerReceivable(Base):
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
 
 
 class VendorPayment(Base):
     __tablename__ = 'vendor_payments'
+    __table_args__ = (UniqueConstraint("company_id", "bill_no", name="uq_vendor_payments_company_bill_no"),)
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
@@ -63,7 +66,7 @@ class VendorPayment(Base):
     vendor_type = Column(String, nullable=False)       # Ice, Packing, Logistics, Contractor
     gst_no = Column(String, nullable=True)             # ITC Eligibility Audit
     vendor_invoice_no = Column(String, index=True, nullable=True)
-    bill_no = Column(String, unique=True, index=True, nullable=False) # Internal Voucher ID
+    bill_no = Column(String, index=True, nullable=False) # Internal Voucher ID
     bill_date = Column(Date, nullable=False)
     due_date = Column(Date, nullable=False)
     
@@ -95,13 +98,14 @@ class VendorPayment(Base):
 
 class BankTransaction(Base):
     __tablename__ = 'bank_transactions'
+    __table_args__ = (UniqueConstraint("company_id", "reference_no", name="uq_bank_transactions_company_reference_no"),)
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
     bank_name = Column(String, index=True, nullable=False)
     transaction_date = Column(Date, nullable=False)
     voucher_type = Column(String, nullable=False)      # RECEIPT / PAYMENT / CONTRA
-    reference_no = Column(String, unique=True, index=True) # UTR / Cheque Ref Number
+    reference_no = Column(String, index=True) # UTR / Cheque Ref Number
     
     # Audit Trail Linking
     linked_invoice_no = Column(String, index=True, nullable=True)
@@ -113,14 +117,16 @@ class BankTransaction(Base):
     narration = Column(Text, nullable=True)
     created_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
 
 
 class ExpenseVoucher(Base):
     __tablename__ = 'expense_vouchers'
+    __table_args__ = (UniqueConstraint("company_id", "voucher_no", name="uq_expense_vouchers_company_voucher_no"),)
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    voucher_no = Column(String, unique=True, index=True, nullable=False) # EV-2026-0001
+    voucher_no = Column(String, index=True, nullable=False) # EV-2026-0001
     voucher_date = Column(Date, nullable=False)
     expense_type = Column(String, index=True, nullable=False)            # Fuel, Admin, Welfare
     department = Column(String, nullable=False)                          # Production, Admin, QA
@@ -138,6 +144,7 @@ class ExpenseVoucher(Base):
     status = Column(String, default="APPROVED")                          # PENDING / APPROVED / REJECTED
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
 
 
 # ─── JOURNAL ENTRY DOUBLE ENTRY HEADER-LINE ARCHITECTURE ───
@@ -147,6 +154,7 @@ class JournalEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
+    # Kept globally unique because journal_entry_lines references this natural key.
     entry_no = Column(String, unique=True, index=True, nullable=False)   # JV-2026-0001
     entry_date = Column(Date, nullable=False)
     narration = Column(Text, nullable=False)
@@ -156,6 +164,7 @@ class JournalEntry(Base):
     
     created_by = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
 
     lines = relationship("JournalEntryLine", back_populates="header", cascade="all, delete-orphan")
 
@@ -203,10 +212,11 @@ class LedgerMasterLegacy(Base):
 
 class PaymentReceipt(Base):
     __tablename__ = "payment_receipts"
+    __table_args__ = (UniqueConstraint("company_id", "receipt_no", name="uq_payment_receipts_company_receipt_no"),)
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    receipt_no = Column(String, unique=True, index=True, nullable=False) # RCT-2026-0001
+    receipt_no = Column(String, index=True, nullable=False) # RCT-2026-0001
     entry_date = Column(Date, nullable=False)
     transaction_type = Column(String, nullable=False)                    # CUSTOMER_RECEIPT / VENDOR_PAYMENT / ADVANCE
     
@@ -232,6 +242,7 @@ class PaymentReceipt(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
 
 
 class BuyerAgingSummary(Base):

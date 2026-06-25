@@ -91,13 +91,16 @@ class PostingEngineService:
         return v_type
 
     @staticmethod
-    def generate_voucher_no(db: Session, company_id: str, voucher_type_id: int) -> str:
+    def generate_voucher_no(db: Session, company_id: str, voucher_type_id: int, voucher_date: date = None) -> str:
         """Generates the next sequential voucher number (e.g. PUR-2026-000001)."""
-        v_type = db.query(VoucherType).filter(VoucherType.id == voucher_type_id).first()
+        v_type = db.query(VoucherType).filter(
+            VoucherType.id == voucher_type_id,
+            VoucherType.company_id == company_id,
+        ).with_for_update().first()
         if not v_type:
             raise ValueError("Voucher Type not found")
         
-        current_year = datetime.now().year
+        current_year = (voucher_date or date.today()).year
         num_str = str(v_type.next_number).zfill(6)
         voucher_no = f"{v_type.prefix}-{current_year}-{num_str}"
         
@@ -131,7 +134,7 @@ class PostingEngineService:
             db, company_id, voucher_type_name, voucher_type_name[:3].upper()
         )
         
-        voucher_no = PostingEngineService.generate_voucher_no(db, company_id, v_type.id)
+        voucher_no = PostingEngineService.generate_voucher_no(db, company_id, v_type.id, voucher_date)
         
         header = VoucherHeader(
             company_id=company_id,
@@ -511,4 +514,3 @@ class PostingEngineService:
         return PostingEngineService.create_voucher(
             db, company_id, "Payment", date.today(), narration, details, reference_no=f"PAY-{entry.employee_id}-{entry.month_year}"
         )
-

@@ -127,7 +127,10 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     if global_location:
         cl_q = cl_q.filter(func.upper(func.trim(coldstore_locations.production_at)) == global_location.strip().upper())
         
-    coldstore_list = [l.coldstore_location for l in cl_q.order_by(coldstore_locations.coldstore_location).all()]
+    coldstore_list = sorted({
+        l.coldstore_location for l in cl_q.order_by(coldstore_locations.coldstore_location).all()
+        if l.coldstore_location
+    })
 
     success_msg = request.session.pop("success_msg", None)
 
@@ -163,12 +166,16 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/get_matched_coldstores")
 def get_matched_coldstores(
     request: Request, 
-    production_at: str = Query(...), 
+    production_at: str = Query(...),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    selected_production_at = (production_at or "").strip()
+    if not selected_production_at:
+        return JSONResponse({"locations": []})
 
     # Multi-permission applies to plant/production_at, not coldstore location names.
     session_locations = request.session.get("allowed_locations", [])
@@ -177,17 +184,17 @@ def get_matched_coldstores(
     else:
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    if user_allowed_locations and production_at.strip().upper() not in user_allowed_locations:
+    if user_allowed_locations and selected_production_at.upper() not in user_allowed_locations:
         return JSONResponse({"locations": []})
 
     # Coldstore names are looked up only by the selected plant / production_at.
     query = db.query(coldstore_locations.coldstore_location).filter(
         coldstore_locations.company_id == company_code,
-        func.upper(func.trim(coldstore_locations.production_at)) == production_at.strip().upper()
+        func.upper(func.trim(coldstore_locations.production_at)) == selected_production_at.upper()
     )
 
     matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
-    loc_list = [r.coldstore_location for r in matched_rows]
+    loc_list = sorted({r.coldstore_location for r in matched_rows if r.coldstore_location})
 
     return JSONResponse({"locations": loc_list})
 # -----------------------------------------------------

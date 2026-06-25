@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Stre
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc, func, and_
+from sqlalchemy import desc, func, and_, text
 from datetime import date, datetime, timedelta
 import io
 from pathlib import Path
@@ -38,13 +38,25 @@ from app.database.models.assets import FixedAssetMaster, DepreciationSchedule
 from app.database.models.invoices import ExportDocumentFile
 from app.services.posting_engine import PostingEngineService
 from app.database.models.processing import AuditLog  # Audit trails
-from app.database.models.attendance import EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance
+from app.database.models.attendance import (
+    EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance, EmployeeStatutoryMaster
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
-EXPORT_PDF_DIR = Path("app/static/uploads/export_documents")
+EXPORT_PDF_DIR = Path("uploads/export_documents_private")
+
+
+def ensure_expense_voucher_schema(db: Session) -> None:
+    """Older production DBs may not yet have columns added in the ORM model."""
+    try:
+        db.execute(text("ALTER TABLE expense_vouchers ADD COLUMN IF NOT EXISTS journal_id INTEGER"))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Expense voucher schema check failed: %s", exc)
 
 
 def safe_filename(value: str) -> str:
@@ -82,7 +94,7 @@ def store_finance_pdf(db: Session, company_id: str, module_name: str, record_id:
         document_no=document_no,
         document_kind=document_kind,
         file_name=final_name,
-        file_path=f"/static/uploads/export_documents/{final_name}",
+        file_path=None,
         content_type="application/pdf",
         file_bytes=content,
         file_size=len(content),
@@ -91,6 +103,8 @@ def store_finance_pdf(db: Session, company_id: str, module_name: str, record_id:
         remarks=remarks,
     )
     db.add(file_row)
+    db.flush()
+    file_row.file_path = f"/export_documents/files/{file_row.id}/download"
     return file_row
 
 # Pydantic schemas for data validation
@@ -268,6 +282,7 @@ class SalaryProcessingSchema(BaseModel):
     absent_days: float = 0.0
     ot_hours: float = 0.0
     ot_amount: float = 0.0
+    salary_adjustment: float = 0.0
     basic_salary: float = 0.0
     hra: float = 0.0
     conveyance_allowance: float = 0.0
@@ -411,6 +426,75 @@ def amount_line(db: Session, company_id: str, debit: float, credit: float, remar
     detail.update({"debit_amount": round(debit or 0.0, 2), "credit_amount": round(credit or 0.0, 2), "remarks": remarks})
     return detail
 
+
+def cancel_linked_voucher(db: Session, company_id: str, journal_id: int | None, email: str) -> None:
+    if not journal_id:
+        return
+    voucher = db.query(VoucherHeader).filter(
+        VoucherHeader.id == journal_id,
+        VoucherHeader.company_id == company_id,
+    ).first()
+    if voucher and voucher.status != "CANCELLED":
+        old_status = voucher.status
+        voucher.status = "CANCELLED"
+        PostingEngineService.write_finance_audit(
+            db,
+            company_id,
+            "voucher_headers",
+            voucher.id,
+            "CANCEL",
+            {"status": old_status},
+            {"status": "CANCELLED"},
+            email or "SYSTEM",
+        )
+
+
+SALARY_EARNING_FIELDS = (
+    "basic_salary", "hra", "conveyance_allowance", "special_allowance", "ot_amount", "other_earnings",
+)
+SALARY_MONTHLY_EARNING_FIELDS = (
+    "basic_salary", "hra", "conveyance_allowance", "special_allowance", "other_earnings",
+)
+SALARY_DEDUCTION_FIELDS = (
+    "pf_employee", "esi_employee", "professional_tax", "tds_salary", "advance_deduction",
+    "lwf_employee", "other_deductions",
+)
+
+
+def calculate_salary_totals(values) -> dict:
+    def amount(field: str) -> float:
+        raw = values.get(field, 0.0) if isinstance(values, dict) else getattr(values, field, 0.0)
+        value = round(float(raw or 0.0), 2)
+        if value < 0:
+            raise ValueError(f"{field.replace('_', ' ').title()} cannot be negative")
+        return value
+
+    present_days = amount("present_days")
+    monthly_earnings = sum(amount(field) for field in SALARY_MONTHLY_EARNING_FIELDS)
+    earned_monthly_salary = round(monthly_earnings * present_days / 26.0, 2)
+    raw_adjustment = values.get("salary_adjustment", 0.0) if isinstance(values, dict) else getattr(values, "salary_adjustment", 0.0)
+    salary_adjustment = round(float(raw_adjustment or 0.0), 2)
+    calculated_salary = round(earned_monthly_salary + amount("ot_amount"), 2)
+    gross_salary = round(calculated_salary + salary_adjustment, 2)
+    if gross_salary < 0:
+        raise ValueError("Salary adjustment cannot make gross salary negative")
+    fixed_deductions = round(sum(
+        amount(field) for field in SALARY_DEDUCTION_FIELDS if field != "advance_deduction"
+    ), 2)
+    if fixed_deductions > gross_salary:
+        raise ValueError("Statutory and other deductions cannot exceed gross salary")
+    advance_deduction = min(amount("advance_deduction"), round(gross_salary - fixed_deductions, 2))
+    total_deductions = round(fixed_deductions + advance_deduction, 2)
+    return {
+        "gross_salary": gross_salary,
+        "calculated_salary": calculated_salary,
+        "salary_adjustment": salary_adjustment,
+        "earned_monthly_salary": earned_monthly_salary,
+        "advance_deduction": advance_deduction,
+        "total_deductions": total_deductions,
+        "net_payable": round(gross_salary - total_deductions, 2),
+    }
+
 def account_lookup(
     db: Session,
     company_id: str,
@@ -547,6 +631,20 @@ def customer_receivable_save(request: Request, payload: CustomerReceivableSchema
     )
     db.add(entry)
     db.flush()
+    voucher = PostingEngineService.create_voucher(
+        db,
+        comp_code,
+        "Sales",
+        payload.invoice_date,
+        f"Customer invoice {payload.invoice_no}",
+        [
+            amount_line(db, comp_code, inr_value, 0.0, payload.invoice_no, ledger_id=buyer_ledger.id),
+            amount_line(db, comp_code, 0.0, inr_value, payload.invoice_no, ledger_name="Export Sales A/c", group_name="Sales Accounts", group_type="INCOME"),
+        ],
+        reference_no=payload.invoice_no,
+        created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "customer_receivables", entry.id, comp_code, "CREATE", "NONE", f"Invoice Added: {payload.invoice_no} (Value: ₹{inr_value})", email)
     db.commit()
     return {"success": True, "message": "Customer receivable recorded successfully"}
@@ -557,11 +655,34 @@ def customer_receivable_delete(log_id: int, request: Request, db: Session = Depe
     email = request.session.get("email")
     entry = db.query(CustomerReceivable).filter(CustomerReceivable.id == log_id, CustomerReceivable.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "customer_receivables", entry.id, comp_code, "DELETE", f"Invoice: {entry.invoice_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
         return {"success": True, "message": "Receivable deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+
+@router.get("/customer_receivables", response_class=JSONResponse)
+def get_customer_receivables_history(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse(status_code=401, content={"success": False, "message": "Unauthorized"})
+    history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code).order_by(desc(CustomerReceivable.invoice_date)).all()
+    history_data = [
+        {
+            "id": row.id,
+            "invoice_no": row.invoice_no,
+            "po_number": row.po_number,
+            "buyer_name": row.buyer_name,
+            "country": row.country,
+            "invoice_date": row.invoice_date.isoformat() if row.invoice_date else None,
+            "invoice_value_inr": row.invoice_value_inr,
+            "balance_amount": row.balance_amount,
+            "due_date": row.due_date.isoformat() if row.due_date else None,
+            "payment_status": row.payment_status,
+        } for row in history
+    ]
+    return {"success": True, "data": history_data}
 
 
 # ============================================================
@@ -588,6 +709,10 @@ def vendor_payment_save(request: Request, payload: VendorPaymentSchema, db: Sess
     if exists: return JSONResponse({"success": False, "message": "Voucher bill number already exists"}, status_code=400)
     
     balance = payload.total_amount
+    if payload.total_amount <= 0 or payload.gst_amount < 0 or payload.tds_amount < 0:
+        return JSONResponse({"success": False, "message": "Amounts must be valid positive values"}, status_code=400)
+    if payload.gst_amount > payload.total_amount or payload.tds_amount > payload.total_amount:
+        return JSONResponse({"success": False, "message": "GST/TDS cannot exceed the bill total"}, status_code=400)
     entry = VendorPayment(
         company_id=comp_code,
         vendor_name=vendor_ledger.ledger_name,
@@ -607,6 +732,21 @@ def vendor_payment_save(request: Request, payload: VendorPaymentSchema, db: Sess
     )
     db.add(entry)
     db.flush()
+    expense_amount = payload.total_amount - payload.gst_amount
+    vendor_credit = payload.total_amount - payload.tds_amount
+    details = [
+        amount_line(db, comp_code, expense_amount, 0.0, payload.bill_no, ledger_name=f"{payload.vendor_type} Expense A/c", group_name="Direct Expenses", group_type="EXPENSE"),
+        amount_line(db, comp_code, 0.0, vendor_credit, payload.bill_no, ledger_id=vendor_ledger.id),
+    ]
+    if payload.gst_amount:
+        details.append(amount_line(db, comp_code, payload.gst_amount, 0.0, payload.bill_no, ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY"))
+    if payload.tds_amount:
+        details.append(amount_line(db, comp_code, 0.0, payload.tds_amount, payload.bill_no, ledger_name="TDS Payable A/c", group_name="Duties & Taxes", group_type="LIABILITY"))
+    voucher = PostingEngineService.create_voucher(
+        db, comp_code, "Purchase", payload.bill_date, f"Vendor bill {payload.bill_no}", details,
+        reference_no=payload.bill_no, created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "vendor_payments", entry.id, comp_code, "CREATE", "NONE", f"Bill Added: {payload.bill_no} (Total: ₹{payload.total_amount})", email)
     db.commit()
     return {"success": True, "message": "Vendor payment recorded successfully"}
@@ -617,11 +757,34 @@ def vendor_payment_delete(log_id: int, request: Request, db: Session = Depends(g
     email = request.session.get("email")
     entry = db.query(VendorPayment).filter(VendorPayment.id == log_id, VendorPayment.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "vendor_payments", entry.id, comp_code, "DELETE", f"Bill: {entry.bill_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
         return {"success": True, "message": "Vendor bill deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+
+@router.get("/vendor_payments", response_class=JSONResponse)
+def get_vendor_payments_history(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse(status_code=401, content={"success": False, "message": "Unauthorized"})
+    history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code).order_by(desc(VendorPayment.bill_date)).all()
+    history_data = [
+        {
+            "id": row.id,
+            "vendor_name": row.vendor_name,
+            "vendor_type": row.vendor_type,
+            "bill_no": row.bill_no,
+            "bill_date": row.bill_date.isoformat() if row.bill_date else None,
+            "total_amount": row.total_amount,
+            "gst_amount": row.gst_amount,
+            "tds_amount": row.tds_amount,
+            "balance": row.balance,
+            "status": row.status,
+        } for row in history
+    ]
+    return {"success": True, "data": history_data}
 
 
 # ============================================================
@@ -647,6 +810,8 @@ def bank_transaction_save(request: Request, payload: BankTransactionSchema, db: 
         return JSONResponse({"success": False, "message": "Select a valid bank/cash ledger"}, status_code=400)
     if payload.linked_vendor_ledger_id and not vendor_ledger:
         return JSONResponse({"success": False, "message": "Select a valid linked vendor ledger"}, status_code=400)
+    if payload.debit < 0 or payload.credit < 0 or (payload.debit > 0 and payload.credit > 0) or (payload.debit == 0 and payload.credit == 0):
+        return JSONResponse({"success": False, "message": "Enter either a positive debit or a positive credit"}, status_code=400)
     exists = db.query(BankTransaction).filter(BankTransaction.company_id == comp_code, BankTransaction.reference_no == payload.reference_no).first()
     if exists: return JSONResponse({"success": False, "message": "Reference Transaction number already mapped"}, status_code=400)
     
@@ -665,6 +830,35 @@ def bank_transaction_save(request: Request, payload: BankTransactionSchema, db: 
     )
     db.add(entry)
     db.flush()
+    counterpart = (
+        ledger_detail(db, comp_code, ledger_id=vendor_ledger.id)
+        if vendor_ledger
+        else ledger_detail(
+            db,
+            comp_code,
+            ledger_name="Bank Clearing / Suspense A/c",
+            group_name="Current Assets",
+            group_type="ASSET",
+        )
+    )
+    amount = float(payload.debit or payload.credit)
+    if payload.debit > 0:
+        details = [
+            amount_line(db, comp_code, amount, 0.0, payload.reference_no, ledger_id=bank_ledger.id),
+            {**counterpart, "debit_amount": 0.0, "credit_amount": amount, "remarks": payload.reference_no},
+        ]
+        voucher_type = "Receipt"
+    else:
+        details = [
+            {**counterpart, "debit_amount": amount, "credit_amount": 0.0, "remarks": payload.reference_no},
+            amount_line(db, comp_code, 0.0, amount, payload.reference_no, ledger_id=bank_ledger.id),
+        ]
+        voucher_type = "Payment"
+    voucher = PostingEngineService.create_voucher(
+        db, comp_code, voucher_type, payload.transaction_date, f"Bank transaction {payload.reference_no}", details,
+        reference_no=payload.reference_no, created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "bank_transactions", entry.id, comp_code, "CREATE", "NONE", f"Transaction Ref: {payload.reference_no}", email)
     db.commit()
     return {"success": True, "message": "Bank transaction registered successfully"}
@@ -675,6 +869,7 @@ def bank_transaction_delete(log_id: int, request: Request, db: Session = Depends
     email = request.session.get("email")
     entry = db.query(BankTransaction).filter(BankTransaction.id == log_id, BankTransaction.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "bank_transactions", entry.id, comp_code, "DELETE", f"Ref: {entry.reference_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
@@ -689,7 +884,21 @@ def bank_transaction_delete(log_id: int, request: Request, db: Session = Depends
 def expense_voucher_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ExpenseVoucher).filter(ExpenseVoucher.company_id == comp_code).order_by(desc(ExpenseVoucher.voucher_date)).all()
+    ensure_expense_voucher_schema(db)
+    history = db.query(
+        ExpenseVoucher.id,
+        ExpenseVoucher.voucher_no,
+        ExpenseVoucher.voucher_date,
+        ExpenseVoucher.expense_type,
+        ExpenseVoucher.department,
+        ExpenseVoucher.vendor_name,
+        ExpenseVoucher.gst_percentage,
+        ExpenseVoucher.gst_amount,
+        ExpenseVoucher.amount,
+        ExpenseVoucher.total_amount,
+        ExpenseVoucher.payment_mode,
+        ExpenseVoucher.status,
+    ).filter(ExpenseVoucher.company_id == comp_code).order_by(desc(ExpenseVoucher.voucher_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/expense_voucher.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -698,6 +907,7 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_expense_voucher_schema(db)
     
     expense_ledger = account_lookup(db, comp_code, payload.expense_ledger_id, group_types={"EXPENSE"})
     vendor_ledger = account_lookup(db, comp_code, payload.vendor_ledger_id, group_types={"LIABILITY"})
@@ -705,6 +915,8 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
         return JSONResponse({"success": False, "message": "Select a valid expense ledger"}, status_code=400)
     if payload.vendor_ledger_id and not vendor_ledger:
         return JSONResponse({"success": False, "message": "Select a valid vendor ledger"}, status_code=400)
+    if payload.amount <= 0 or payload.gst_amount < 0 or abs((payload.amount + payload.gst_amount) - payload.total_amount) > 0.01:
+        return JSONResponse({"success": False, "message": "Total must equal amount plus GST"}, status_code=400)
     exists = db.query(ExpenseVoucher).filter(ExpenseVoucher.company_id == comp_code, ExpenseVoucher.voucher_no == payload.voucher_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher number already allocated"}, status_code=400)
     
@@ -725,6 +937,23 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
     )
     db.add(entry)
     db.flush()
+    credit_ledger = vendor_ledger
+    details = [
+        amount_line(db, comp_code, payload.amount, 0.0, payload.voucher_no, ledger_id=expense_ledger.id),
+    ]
+    if payload.gst_amount:
+        details.append(amount_line(db, comp_code, payload.gst_amount, 0.0, payload.voucher_no, ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY"))
+    if credit_ledger:
+        details.append(amount_line(db, comp_code, 0.0, payload.total_amount, payload.voucher_no, ledger_id=credit_ledger.id))
+        voucher_type = "Journal"
+    else:
+        details.append(amount_line(db, comp_code, 0.0, payload.total_amount, payload.voucher_no, ledger_name="Cash Account", group_name="Cash-in-hand", group_type="ASSET", parent_group_name="Current Assets"))
+        voucher_type = "Payment"
+    voucher = PostingEngineService.create_voucher(
+        db, comp_code, voucher_type, payload.voucher_date, payload.remarks or f"Expense {payload.voucher_no}", details,
+        reference_no=payload.voucher_no, created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "expense_vouchers", entry.id, comp_code, "CREATE", "NONE", f"Voucher: {payload.voucher_no} (Amt: ₹{payload.total_amount})", email)
     db.commit()
     return {"success": True, "message": "Expense voucher registered successfully"}
@@ -733,8 +962,10 @@ def expense_voucher_save(request: Request, payload: ExpenseVoucherSchema, db: Se
 def expense_voucher_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
+    ensure_expense_voucher_schema(db)
     entry = db.query(ExpenseVoucher).filter(ExpenseVoucher.id == log_id, ExpenseVoucher.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "expense_vouchers", entry.id, comp_code, "DELETE", f"Voucher: {entry.voucher_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
@@ -759,8 +990,19 @@ def journal_entry_save(request: Request, payload: JournalEntrySchema, db: Sessio
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
-    if payload.total_debit != payload.total_credit:
+    if len(payload.lines) < 2 or abs(payload.total_debit - payload.total_credit) > 0.01:
          return JSONResponse({"success": False, "message": "Debit and Credit totals must match"}, status_code=400)
+    if payload.total_debit <= 0 or any(
+        line.debit < 0 or line.credit < 0
+        or (line.debit > 0 and line.credit > 0)
+        or (line.debit == 0 and line.credit == 0)
+        for line in payload.lines
+    ):
+        return JSONResponse({"success": False, "message": "Each journal line requires either a positive debit or credit"}, status_code=400)
+    calculated_debit = sum(line.debit for line in payload.lines)
+    calculated_credit = sum(line.credit for line in payload.lines)
+    if abs(calculated_debit - payload.total_debit) > 0.01 or abs(calculated_credit - payload.total_credit) > 0.01:
+        return JSONResponse({"success": False, "message": "Journal line totals do not match header totals"}, status_code=400)
 
     ledger_ids = {line.ledger_id for line in payload.lines}
     ledger_map = {
@@ -797,7 +1039,19 @@ def journal_entry_save(request: Request, payload: JournalEntrySchema, db: Sessio
             credit=line.credit
         )
         db.add(db_line)
-        
+
+    voucher_details = [
+        amount_line(
+            db, comp_code, line.debit, line.credit, payload.entry_no,
+            ledger_id=ledger_map[line.ledger_id].id,
+        )
+        for line in payload.lines
+    ]
+    voucher = PostingEngineService.create_voucher(
+        db, comp_code, "Journal", payload.entry_date, payload.narration, voucher_details,
+        reference_no=payload.entry_no, created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "journal_entries", entry.id, comp_code, "CREATE", "NONE", f"Journal Entry Saved: {payload.entry_no}", email)
     db.commit()
     return {"success": True, "message": "Journal Entry posted successfully"}
@@ -808,6 +1062,7 @@ def journal_entry_delete(log_id: int, request: Request, db: Session = Depends(ge
     email = request.session.get("email")
     entry = db.query(JournalEntry).filter(JournalEntry.id == log_id, JournalEntry.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "journal_entries", entry.id, comp_code, "DELETE", f"Journal: {entry.entry_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
@@ -836,6 +1091,8 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
     bank_cash_ledger = account_lookup(db, comp_code, payload.bank_cash_ledger_id, group_names={"Bank Accounts", "Cash-in-hand"})
     if not party_ledger or not bank_cash_ledger:
         return JSONResponse({"success": False, "message": "Select valid party and bank/cash ledgers"}, status_code=400)
+    if payload.amount_inr <= 0 or payload.bank_charges < 0 or payload.adjustment_amount < 0:
+        return JSONResponse({"success": False, "message": "Receipt/payment amounts must be valid positive values"}, status_code=400)
     exists = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code, PaymentReceipt.receipt_no == payload.receipt_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher Receipt Number already registered"}, status_code=400)
     
@@ -860,6 +1117,28 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
     )
     db.add(entry)
     db.flush()
+    settlement_total = payload.amount_inr + payload.bank_charges + payload.adjustment_amount
+    if payload.transaction_type == "VENDOR_PAYMENT":
+        details = [
+            amount_line(db, comp_code, payload.amount_inr, 0.0, payload.receipt_no, ledger_id=party_ledger.id),
+            amount_line(db, comp_code, 0.0, settlement_total, payload.receipt_no, ledger_id=bank_cash_ledger.id),
+        ]
+        voucher_type = "Payment"
+    else:
+        details = [
+            amount_line(db, comp_code, payload.amount_inr, 0.0, payload.receipt_no, ledger_id=bank_cash_ledger.id),
+            amount_line(db, comp_code, 0.0, settlement_total, payload.receipt_no, ledger_id=party_ledger.id),
+        ]
+        voucher_type = "Receipt"
+    if payload.bank_charges:
+        details.append(amount_line(db, comp_code, payload.bank_charges, 0.0, payload.receipt_no, ledger_name="Bank Charges A/c", group_name="Indirect Expenses", group_type="EXPENSE"))
+    if payload.adjustment_amount:
+        details.append(amount_line(db, comp_code, payload.adjustment_amount, 0.0, payload.receipt_no, ledger_name="Settlement Adjustments A/c", group_name="Indirect Expenses", group_type="EXPENSE"))
+    voucher = PostingEngineService.create_voucher(
+        db, comp_code, voucher_type, payload.entry_date, payload.narration or payload.receipt_no, details,
+        reference_no=payload.reference_no or payload.receipt_no, created_by=email or "SYSTEM",
+    )
+    entry.journal_id = voucher.id
     write_audit(db, "payment_receipts", entry.id, comp_code, "CREATE", "NONE", f"Receipt: {payload.receipt_no}", email)
     db.commit()
     return {"success": True, "message": "Payment receipt registered successfully"}
@@ -870,6 +1149,7 @@ def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(
     email = request.session.get("email")
     entry = db.query(PaymentReceipt).filter(PaymentReceipt.id == log_id, PaymentReceipt.company_id == comp_code).first()
     if entry:
+        cancel_linked_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "payment_receipts", entry.id, comp_code, "DELETE", f"Receipt: {entry.receipt_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
@@ -1105,9 +1385,25 @@ async def lc_tracking_upload_pdf(
 def salary_processing_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(SalaryProcessing).filter(SalaryProcessing.company_id == comp_code).all()
+    history = db.query(SalaryProcessing).filter(
+        SalaryProcessing.company_id == comp_code
+    ).order_by(desc(SalaryProcessing.month_year), SalaryProcessing.employee_name).all()
+    for row in history:
+        try:
+            totals = calculate_salary_totals(row)
+        except ValueError:
+            continue
+        db.expunge(row)
+        row.gross_salary = totals["gross_salary"]
+        row.advance_deduction = totals["advance_deduction"]
+        row.total_deductions = totals["total_deductions"]
+        row.net_payable = totals["net_payable"]
+    audit_history = db.query(AuditLog).filter(
+        AuditLog.company_id == comp_code,
+        AuditLog.table_name == "salary_processing",
+    ).order_by(desc(AuditLog.edited_at)).limit(100).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/salary_processing.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
+    return templates.TemplateResponse(request=request, name="finance_accounts/salary_processing.html", context={"history": history, "audit_history": audit_history, "ledgers": ledgers, "company_id": comp_code})
 
 
 @router.get("/salary_processing/employees")
@@ -1163,6 +1459,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     att_ot_hrs  = 0.0
     att_ot_amt  = 0.0
     advance_ded = 0.0
+    has_attendance = False
+    period_start = None
+    period_end = None
 
     if month_year:
         # month_year format: "2026-06" → filter duty_date between first and last day
@@ -1172,12 +1471,15 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             import calendar
             first_day = _date(yr, mo, 1)
             last_day  = _date(yr, mo, calendar.monthrange(yr, mo)[1])
+            period_start, period_end = first_day, last_day
 
             att_rows = db.query(DailyAttendance).filter(
                 DailyAttendance.employee_id == employee_id,
+                DailyAttendance.company_id == comp_code,
                 DailyAttendance.duty_date >= first_day,
                 DailyAttendance.duty_date <= last_day
             ).all()
+            has_attendance = bool(att_rows)
 
             for row in att_rows:
                 s = (row.duty_status or "").upper()
@@ -1192,6 +1494,7 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             # Salary advance: active advance monthly_deduction for this employee
             adv = db.query(EmployeeSalaryAdvance).filter(
                 EmployeeSalaryAdvance.employee_id == employee_id,
+                EmployeeSalaryAdvance.company_id == comp_code,
                 EmployeeSalaryAdvance.status == "APPROVED",
                 EmployeeSalaryAdvance.remaining_balance > 0,
                 EmployeeSalaryAdvance.deduct_from <= month_year,
@@ -1199,7 +1502,10 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 (EmployeeSalaryAdvance.deduct_to == None) |
                 (EmployeeSalaryAdvance.deduct_to >= month_year)
             ).all()
-            advance_ded = sum(a.monthly_deduction or 0.0 for a in adv)
+            advance_ded = round(sum(
+                min(float(a.monthly_deduction or 0.0), float(a.remaining_balance or 0.0))
+                for a in adv
+            ), 2)
 
         except Exception:
             pass  # If any parsing fails, leave at 0
@@ -1213,10 +1519,18 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         ).first()
         if exact:
             # Use saved attendance if live data has 0 rows (attendance not yet entered)
-            p_days = att_present if att_present > 0 else exact.present_days
-            a_days = att_absent  if att_present > 0 else exact.absent_days
-            ot_h   = att_ot_hrs  if att_present > 0 else exact.ot_hours
-            adv_d  = advance_ded if advance_ded > 0 else exact.advance_deduction
+            p_days = att_present if has_attendance else exact.present_days
+            a_days = att_absent if has_attendance else exact.absent_days
+            ot_h = att_ot_hrs if has_attendance else exact.ot_hours
+            adv_d = advance_ded if period_start else exact.advance_deduction
+            exact_values = {
+                field: getattr(exact, field, 0.0)
+                for field in SALARY_EARNING_FIELDS + SALARY_DEDUCTION_FIELDS
+            }
+            exact_values["present_days"] = p_days
+            exact_values["salary_adjustment"] = exact.salary_adjustment or 0.0
+            exact_values["advance_deduction"] = adv_d
+            totals = calculate_salary_totals(exact_values)
             return {
                 "success": True, "source": "existing",
                 "source_month": exact.month_year,
@@ -1228,20 +1542,26 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 "absent_days":  a_days,
                 "ot_hours":     ot_h,
                 "ot_amount":    exact.ot_amount,
+                "salary_adjustment": totals["salary_adjustment"],
+                "calculated_salary": totals["calculated_salary"],
                 "basic_salary": exact.basic_salary,
                 "hra": exact.hra,
                 "conveyance_allowance": exact.conveyance_allowance,
                 "special_allowance": exact.special_allowance,
                 "other_earnings": exact.other_earnings,
-                "gross_salary": exact.gross_salary,
+                "gross_salary": totals["gross_salary"],
                 "pf_employee": exact.pf_employee,
                 "esi_employee": exact.esi_employee,
                 "professional_tax": exact.professional_tax,
                 "tds_salary": exact.tds_salary,
-                "advance_deduction": adv_d,
+                "advance_deduction": totals["advance_deduction"],
                 "lwf_employee": exact.lwf_employee,
-                "total_deductions": exact.total_deductions,
-                "net_payable": exact.net_payable,
+                "other_deductions": exact.other_deductions,
+                "total_deductions": totals["total_deductions"],
+                "net_payable": totals["net_payable"],
+                "pf_employer": exact.pf_employer,
+                "esi_employer": exact.esi_employer,
+                "lwf_employer": exact.lwf_employer,
                 "payment_mode": exact.payment_mode,
                 "status": exact.status,
             }
@@ -1258,13 +1578,22 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         conveyance = latest.conveyance_allowance or 0.0
         special  = latest.special_allowance or 0.0
         other_earn = latest.other_earnings or 0.0
-        gross    = basic + hra + conveyance + special + other_earn
+        ot_amount = 0.0
+        gross    = basic + hra + conveyance + special + ot_amount + other_earn
         pf_emp   = latest.pf_employee or round(basic * 0.12, 2)
         esi_emp  = latest.esi_employee or (round(gross * 0.0075, 2) if gross <= 21000 else 0.0)
         pt       = latest.professional_tax or 0.0
         tds      = latest.tds_salary or 0.0
         lwf      = latest.lwf_employee or 0.0
-        total_ded = round(pf_emp + esi_emp + pt + tds + lwf + advance_ded, 2)
+        totals = calculate_salary_totals({
+            "present_days": att_present,
+            "salary_adjustment": 0.0,
+            "basic_salary": basic, "hra": hra, "conveyance_allowance": conveyance,
+            "special_allowance": special, "ot_amount": ot_amount, "other_earnings": other_earn,
+            "pf_employee": pf_emp, "esi_employee": esi_emp, "professional_tax": pt,
+            "tds_salary": tds, "advance_deduction": advance_ded, "lwf_employee": lwf,
+            "other_deductions": latest.other_deductions or 0.0,
+        })
 
         return {
             "success": True, "source": "salary_table",
@@ -1277,22 +1606,28 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             "present_days": att_present,
             "absent_days":  att_absent,
             "ot_hours":     att_ot_hrs,
-            "ot_amount":    0,              # User fills OT amount manually
+            "ot_amount":    ot_amount,
+            "salary_adjustment": 0.0,
+            "calculated_salary": totals["calculated_salary"],
             # Salary structure from latest record
             "basic_salary": basic,
             "hra": hra,
             "conveyance_allowance": conveyance,
             "special_allowance": special,
             "other_earnings": other_earn,
-            "gross_salary": round(gross, 2),
+            "gross_salary": totals["gross_salary"],
             "pf_employee": pf_emp,
             "esi_employee": esi_emp,
             "professional_tax": pt,
             "tds_salary": tds,
-            "advance_deduction": advance_ded,
+            "advance_deduction": totals["advance_deduction"],
             "lwf_employee": lwf,
-            "total_deductions": total_ded,
-            "net_payable": round(gross - total_ded, 2),
+            "other_deductions": latest.other_deductions or 0.0,
+            "total_deductions": totals["total_deductions"],
+            "net_payable": totals["net_payable"],
+            "pf_employer": latest.pf_employer or 0.0,
+            "esi_employer": latest.esi_employer or 0.0,
+            "lwf_employer": latest.lwf_employer or 0.0,
             "payment_mode": latest.payment_mode or "BANK",
             "status": "DRAFT",
         }
@@ -1302,11 +1637,40 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     hra      = emp.hra or 0.0
     conveyance = emp.conveyance_allowance or 0.0
     other_earn = emp.other_expenses or 0.0
-    gross    = basic + hra + conveyance + other_earn
-    pf_emp   = round(basic * 0.12, 2)
-    esi_emp  = round(gross * 0.0075, 2) if gross <= 21000 else 0.0
-    tds      = emp.tds or 0.0
-    total_ded = round(pf_emp + esi_emp + tds + advance_ded, 2)
+    gross = basic + hra + conveyance + other_earn
+    effective_date = period_end or date.today()
+    statutory = db.query(EmployeeStatutoryMaster).filter(
+        EmployeeStatutoryMaster.employee_id == employee_id,
+        EmployeeStatutoryMaster.company_id == comp_code,
+        EmployeeStatutoryMaster.status == "ACTIVE",
+        EmployeeStatutoryMaster.applicable_from <= effective_date,
+    ).filter(
+        (EmployeeStatutoryMaster.applicable_to == None) |
+        (EmployeeStatutoryMaster.applicable_to >= effective_date)
+    ).order_by(desc(EmployeeStatutoryMaster.applicable_from)).first()
+
+    pf_emp = esi_emp = pt = lwf = pf_employer = esi_employer = lwf_employer = 0.0
+    if statutory:
+        if statutory.pf_applicable:
+            pf_wage = min(float(statutory.pf_wage_limit or basic), float(basic))
+            pf_emp = round(pf_wage * float(statutory.pf_employee_percent or 0.0) / 100, 2)
+            pf_employer = round(pf_wage * float(statutory.pf_employer_percent or 0.0) / 100, 2)
+        if statutory.esi_applicable and gross <= float(statutory.esi_wage_limit or 0.0):
+            esi_emp = round(gross * float(statutory.esi_employee_percent or 0.0) / 100, 2)
+            esi_employer = round(gross * float(statutory.esi_employer_percent or 0.0) / 100, 2)
+        pt = float(statutory.pt_amount or 0.0) if statutory.pt_applicable else 0.0
+        lwf = float(statutory.lwf_employee_amount or 0.0) if statutory.lwf_applicable else 0.0
+        lwf_employer = float(statutory.lwf_employer_amount or 0.0) if statutory.lwf_applicable else 0.0
+    tds = round(gross * float(emp.tds or 0.0) / 100, 2)
+    totals = calculate_salary_totals({
+        "present_days": att_present,
+        "salary_adjustment": 0.0,
+        "basic_salary": basic, "hra": hra, "conveyance_allowance": conveyance,
+        "special_allowance": 0.0, "ot_amount": 0.0, "other_earnings": other_earn,
+        "pf_employee": pf_emp, "esi_employee": esi_emp, "professional_tax": pt,
+        "tds_salary": tds, "advance_deduction": advance_ded, "lwf_employee": lwf,
+        "other_deductions": 0.0,
+    })
 
     return {
         "success": True, "source": "master",
@@ -1320,20 +1684,26 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         "absent_days":  att_absent,
         "ot_hours":     att_ot_hrs,
         "ot_amount":    0,
+        "salary_adjustment": 0.0,
+        "calculated_salary": totals["calculated_salary"],
         "basic_salary": basic,
         "hra": hra,
         "conveyance_allowance": conveyance,
         "special_allowance": 0,
         "other_earnings": other_earn,
-        "gross_salary": round(gross, 2),
+        "gross_salary": totals["gross_salary"],
         "pf_employee": pf_emp,
         "esi_employee": esi_emp,
-        "professional_tax": 0,
+        "professional_tax": pt,
         "tds_salary": tds,
-        "advance_deduction": advance_ded,
-        "lwf_employee": 0,
-        "total_deductions": total_ded,
-        "net_payable": round(gross - total_ded, 2),
+        "advance_deduction": totals["advance_deduction"],
+        "lwf_employee": lwf,
+        "other_deductions": 0.0,
+        "total_deductions": totals["total_deductions"],
+        "net_payable": totals["net_payable"],
+        "pf_employer": pf_employer,
+        "esi_employer": esi_employer,
+        "lwf_employer": lwf_employer,
         "payment_mode": "BANK",
         "status": "DRAFT",
     }
@@ -1343,7 +1713,48 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
-    
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", payload.month_year):
+        return JSONResponse({"success": False, "message": "Invalid salary month"}, status_code=400)
+    employee = db.query(EmployeeRegistration).filter(
+        EmployeeRegistration.company_id == comp_code,
+        EmployeeRegistration.employee_id == payload.employee_id,
+        EmployeeRegistration.status == "ACTIVE",
+    ).first()
+    if not employee:
+        return JSONResponse({"success": False, "message": "Active employee not found"}, status_code=404)
+
+    active_advances = db.query(EmployeeSalaryAdvance).filter(
+        EmployeeSalaryAdvance.company_id == comp_code,
+        EmployeeSalaryAdvance.employee_id == payload.employee_id,
+        EmployeeSalaryAdvance.status == "APPROVED",
+        EmployeeSalaryAdvance.remaining_balance > 0,
+        EmployeeSalaryAdvance.deduct_from <= payload.month_year,
+    ).filter(
+        (EmployeeSalaryAdvance.deduct_to == None) |
+        (EmployeeSalaryAdvance.deduct_to >= payload.month_year)
+    ).all()
+    advance_deduction = round(sum(
+        min(float(row.monthly_deduction or 0.0), float(row.remaining_balance or 0.0))
+        for row in active_advances
+    ), 2)
+    values = payload.dict()
+    submitted_gross = float(payload.gross_salary or 0.0)
+    submitted_net = float(payload.net_payable or 0.0)
+    values["employee_name"] = employee.employee_name
+    values["advance_deduction"] = advance_deduction
+    try:
+        values.update(calculate_salary_totals(values))
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
+    system_values = dict(values)
+    system_values["salary_adjustment"] = 0.0
+    system_totals = calculate_salary_totals(system_values)
+    calculation_mismatch = (
+        abs(submitted_gross - values["gross_salary"]) > 0.01
+        or abs(submitted_net - values["net_payable"]) > 0.01
+    )
+    has_variance = abs(values["salary_adjustment"]) > 0.01 or calculation_mismatch
+
     exists = db.query(SalaryProcessing).filter(
         SalaryProcessing.company_id == comp_code, 
         SalaryProcessing.employee_id == payload.employee_id,
@@ -1352,18 +1763,68 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     
     if exists:
         # Update existing
-        for k, v in payload.dict().items():
+        old_present_days = float(exists.present_days or 0.0)
+        old_net_payable = float(exists.net_payable or 0.0)
+        old_adjustment = float(exists.salary_adjustment or 0.0)
+        for k, v in values.items():
             setattr(exists, k, v)
+        if abs(old_present_days - float(values["present_days"])) > 0.001:
+            write_audit(
+                db,
+                "salary_processing",
+                exists.id,
+                comp_code,
+                "PRESENT_DAYS_CHANGE",
+                f"Present Days: {old_present_days:.2f}; Net Payable: {old_net_payable:.2f}",
+                f"Present Days: {float(values['present_days']):.2f}; Net Payable: {values['net_payable']:.2f}",
+                email,
+            )
+        record = exists
+        save_mode = "UPDATED"
         write_audit(db, "salary_processing", exists.id, comp_code, "UPDATE", f"Emp: {payload.employee_name} Month: {payload.month_year}", "UPDATED", email)
     else:
         # Create new
-        entry = SalaryProcessing(company_id=comp_code, created_by=email, **payload.dict())
+        entry = SalaryProcessing(company_id=comp_code, created_by=email, **values)
         db.add(entry)
         db.flush()
+        old_adjustment = 0.0
+        record = entry
+        save_mode = "CREATED"
         write_audit(db, "salary_processing", entry.id, comp_code, "CREATE", "NONE", f"Emp: {payload.employee_name} Month: {payload.month_year}", email)
-        
+
+    if has_variance:
+        write_audit(
+            db,
+            "salary_processing",
+            record.id,
+            comp_code,
+            "PAYROLL_VARIANCE_ALERT",
+            f"System Earned: {system_totals['calculated_salary']:.2f}; Previous Adjustment: {old_adjustment:.2f}",
+            f"Submitted Gross/Net: {submitted_gross:.2f}/{submitted_net:.2f}; Adjustment: {values['salary_adjustment']:.2f}; Saved Gross/Net: {values['gross_salary']:.2f}/{values['net_payable']:.2f}",
+            email,
+        )
+    else:
+        write_audit(
+            db,
+            "salary_processing",
+            record.id,
+            comp_code,
+            "PAYROLL_CALCULATION_OK",
+            f"Present Days: {float(values['present_days']):.2f}",
+            f"System Gross: {values['gross_salary']:.2f}; Net: {values['net_payable']:.2f}",
+            email,
+        )
+
     db.commit()
-    return {"success": True, "message": "Salary record saved successfully"}
+    return {
+        "success": True,
+        "message": f"Salary record {save_mode.lower()} successfully",
+        "save_mode": save_mode,
+        "record_id": record.id,
+        "gross_salary": values["gross_salary"],
+        "total_deductions": values["total_deductions"],
+        "net_payable": values["net_payable"],
+    }
 
 @router.post("/salary_processing/delete/{log_id}")
 def salary_processing_delete(log_id: int, request: Request, db: Session = Depends(get_db)):

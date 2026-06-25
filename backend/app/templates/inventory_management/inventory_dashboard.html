@@ -237,6 +237,7 @@
             margin: 0 0 8px;
         }
         .rail-link {
+            width: 100%;
             min-height: 38px;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -250,10 +251,16 @@
             font-size: 11px;
             font-weight: 700;
             text-decoration: none;
+            cursor: pointer;
             transition: 0.2s;
         }
         .rail-link i { width: 16px; color: var(--accent); text-align: center; }
         .rail-link:hover { color: var(--primary); border-color: var(--accent); background: var(--accent-light); }
+        .inventory-dashboard .module-rail .rail-title,
+        .inventory-dashboard .module-rail .rail-label,
+        .inventory-dashboard .module-rail .rail-link {
+            text-transform: none !important;
+        }
         .module-shell .header,
         .module-shell .kpi-grid,
         .module-shell .chart-grid,
@@ -281,23 +288,19 @@
     <div class="rail-title"><i class="fa-solid fa-warehouse"></i> Inventory</div>
     <div class="rail-section">
         <div class="rail-label">Forms</div>
-        <a class="rail-link" href="/inventory/stock_entry"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></a>
-        <a class="rail-link" href="/inventory/pending_orders"><i class="fa-solid fa-clock-rotate-left"></i><span>Pending Orders</span></a>
-        <a class="rail-link" href="/inventory/cold_storage_holding"><i class="fa-solid fa-snowflake"></i><span>Cold Storage Holding</span></a>
-        <a class="rail-link" href="/general_stock/entry"><i class="fa-solid fa-shop"></i><span>General Store Entry</span></a>
-        <a class="rail-link" href="/general_stock/items"><i class="fa-solid fa-tags"></i><span>Store Items</span></a>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/stock_entry', 'Stock Entry')"><i class="fa-solid fa-boxes-stacked"></i><span>Stock Entry</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/pending_orders', 'Pending Orders')"><i class="fa-solid fa-clock-rotate-left"></i><span>Pending Orders</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/cold_storage_holding', 'Cold Storage Holding')"><i class="fa-solid fa-snowflake"></i><span>Cold Storage Holding</span></button>
     </div>
     <div class="rail-section">
         <div class="rail-label">Reports</div>
-        <a class="rail-link" href="/inventory/stock_report"><i class="fa-solid fa-boxes-packing"></i><span>Stock Status Report</span></a>
-        <a class="rail-link" href="/reports/floor_balance_report"><i class="fa-solid fa-scale-balanced"></i><span>Floor Balance Report</span></a>
-        <a class="rail-link" href="/reports/pending_orders_report"><i class="fa-solid fa-clock"></i><span>Pending Orders Report</span></a>
-        <a class="rail-link" href="/inventory/sales_report"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></a>
-        <a class="rail-link" href="/general_stock/report"><i class="fa-solid fa-file-zipper"></i><span>General Store Report</span></a>
-        <a class="rail-link" href="/inventory/cold_storage_holding_report"><i class="fa-solid fa-warehouse"></i><span>Cold Storage Report</span></a>
-        <a class="rail-link" href="/reports/storage_cost_report"><i class="fa-solid fa-coins"></i><span>Storage & Cost Report</span></a>
-        <a class="rail-link" href="/summary/floor_balance_value"><i class="fa-solid fa-indian-rupee-sign"></i><span>Floor Balance Value</span></a>
-        <a class="rail-link" href="/summary/inventory_costing"><i class="fa-solid fa-calculator"></i><span>Inventory Costing</span></a>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/stock_report', 'Stock Status Report')"><i class="fa-solid fa-boxes-packing"></i><span>Stock Status Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/reports/floor_balance_report', 'Floor Balance Report')"><i class="fa-solid fa-scale-balanced"></i><span>Floor Balance Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/reports/pending_orders_report', 'Pending Orders Report')"><i class="fa-solid fa-clock"></i><span>Pending Orders Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/sales_report', 'Sales Report')"><i class="fa-solid fa-receipt"></i><span>Sales Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/inventory/cold_storage_holding_report', 'Cold Storage Report')"><i class="fa-solid fa-warehouse"></i><span>Cold Storage Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/reports/storage_cost_report', 'Storage & Cost Report')"><i class="fa-solid fa-coins"></i><span>Storage & Cost Report</span></button>
+        <button class="rail-link" type="button" onclick="openEntryModal('/summary/inventory_costing', 'Inventory Costing')"><i class="fa-solid fa-calculator"></i><span>Inventory Costing</span></button>
     </div>
 </aside>
 <main class="module-main">
@@ -321,18 +324,18 @@
         <div class="kpi-header"><h4>Closing</h4><div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(closing_stock_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_inventory_value|default(0)) }}</div></div>
     </div>
-    <a href="/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
+    <div class="kpi-card kpi-blue" onclick="openEntryModal('/inventory/sales_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}', 'Sales Report')">
         <div class="kpi-header"><h4>Sales</h4><div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(total_out_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_out_value|default(0)) }}</div></div>
-    </a>
-    <a href="/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
+    </div>
+    <div class="kpi-card kpi-blue" onclick="openEntryModal('/reports/re-process?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}', 'Reprocess Report')">
         <div class="kpi-header"><h4>Reprocess</h4><div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div></div>
         <div><div class="value" id="reprocessKpiQty">{{ "{:,.2f}".format(reprocess_qty|default(0)) }}</div><div class="amt-sub" id="reprocessKpiVal">₹ {{ "{:,.0f}".format(reprocess_value|default(0)) }}</div></div>
-    </a>
-    <a href="/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}" class="kpi-card kpi-blue" style="text-decoration:none;">
+    </div>
+    <div class="kpi-card kpi-blue" onclick="openEntryModal('/inventory/stock_report?sel_fy={{ sel_fy }}&sel_species={{ sel_species }}&sel_variety={{ sel_variety }}&sel_grade={{ sel_grade }}&sel_prod_for={{ sel_prod_for }}', 'Stock Status Report')">
         <div class="kpi-header"><h4>Fresh Stock</h4><div class="kpi-icon"><i class="fa-solid fa-seedling"></i></div></div>
         <div><div class="value">{{ "{:,.2f}".format(total_in_qty|default(0)) }}</div><div class="amt-sub">₹ {{ "{:,.0f}".format(total_in_value|default(0)) }}</div></div>
-    </a>
+    </div>
     <div class="kpi-card kpi-cyan">
         <div class="kpi-header"><h4>Reglaze Prod.</h4><div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div></div>
         <div><div class="value">{{ reglaze_qty|default(0) }} Kg</div><div class="amt-sub">₹ {{ reglaze_value|default(0) }}</div></div>
@@ -619,7 +622,35 @@
 </main>
 </div>
 
+<div id="entryModal" class="entry-modal-overlay">
+    <div class="entry-modal-content">
+        <div class="entry-modal-header">
+            <h3 id="modalTitle">Inventory Workspace</h3>
+            <button class="entry-modal-close" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <iframe id="entryFrame" src=""></iframe>
+    </div>
+</div>
+
 <script>
+function openEntryModal(url, title) {
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('entryFrame').src = url;
+    document.getElementById('entryModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEntryModal() {
+    document.getElementById('entryModal').style.display = 'none';
+    document.getElementById('entryFrame').src = '';
+    document.body.style.overflow = 'auto';
+    location.reload();
+}
+
+window.addEventListener('click', function(event) {
+    if (event.target === document.getElementById('entryModal')) closeEntryModal();
+});
+
 // 🟢 🔴 SYNC PARENT FILTERS LOGIC
 function syncParentFiltersToForm() {
     try {

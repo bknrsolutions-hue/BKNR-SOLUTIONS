@@ -20,52 +20,52 @@ from .bills.expenses import router as expenses_router
 # CENTRAL ROUTER
 # =============================================
 router = APIRouter(
-    prefix="/bills",
     tags=["Bills & Accounts"]
 )
 
 templates = Jinja2Templates(directory="app/templates")
 
 # =============================================
-# PAGE ROUTES (UI – Menu Buttons)
+# 📄 PAGE ROUTER (UI – Menu Buttons)
 # =============================================
+page_router = APIRouter()
 
-@router.get("/electricity/entry", response_class=HTMLResponse)
+@page_router.get("/electricity/entry", response_class=HTMLResponse)
 def electricity_page(request: Request):
     return templates.TemplateResponse(
         "bills/electricity_entry.html",
         {"request": request}
     )
 
-@router.get("/diesel/entry", response_class=HTMLResponse)
+@page_router.get("/diesel/entry", response_class=HTMLResponse)
 def diesel_page(request: Request):
     return templates.TemplateResponse(
         "bills/diesel_entry.html",
         {"request": request}
     )
 
-@router.get("/purchase/entry", response_class=HTMLResponse)
+@page_router.get("/purchase/entry", response_class=HTMLResponse)
 def purchase_page(request: Request):
     return templates.TemplateResponse(
         "bills/purchase_entry.html",
         {"request": request}
     )
 
-@router.get("/container/entry", response_class=HTMLResponse)
+@page_router.get("/container/entry", response_class=HTMLResponse)
 def container_page(request: Request):
     return templates.TemplateResponse(
         "bills/container_entry.html",
         {"request": request}
     )
 
-@router.get("/qa/entry", response_class=HTMLResponse)
+@page_router.get("/qa/entry", response_class=HTMLResponse)
 def qa_page(request: Request):
     return templates.TemplateResponse(
         "bills/qa_entry.html",
         {"request": request}
     )
 
-@router.get("/expenses/entry", response_class=HTMLResponse)
+@page_router.get("/expenses/entry", response_class=HTMLResponse)
 def expenses_page(request: Request):
     return templates.TemplateResponse(
         "bills/expenses_entry.html",
@@ -73,15 +73,19 @@ def expenses_page(request: Request):
     )
 
 # =============================================
-# API ROUTES (SAVE / LOOKUP / AJAX)
+# 🔗 API & PAGE ROUTER INCLUSION
 # =============================================
 
+# API routes for data operations (prefixed with /api/bills/{module})
 router.include_router(electricity_router, prefix="/electricity")
 router.include_router(diesel_router, prefix="/diesel")
 router.include_router(purchase_router, prefix="/purchase")
 router.include_router(container_router, prefix="/container")
 router.include_router(qa_router, prefix="/qa")
 router.include_router(expenses_router, prefix="/expenses")
+
+# Page routes for UI (prefixed with /api/bills/pages)
+router.include_router(page_router, prefix="/pages")
 
 @router.get("/__test")
 def bills_test():

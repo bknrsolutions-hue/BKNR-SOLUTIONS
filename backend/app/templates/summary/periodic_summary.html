@@ -103,7 +103,7 @@ body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-.dashboard-container { width: 100%; max-width: 1600px; margin: 0 auto; }
+.dashboard-container { width: 100%; max-width: none; margin: 0 auto; padding-left: 266px; }
 
 /* HEADER PANEL */
 .header-panel {
@@ -112,7 +112,7 @@ body {
     display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
     border-left: 3px solid var(--accent);
 }
-.header-title h2 { font-size: 13px; font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; color: var(--text-main); }
+.header-title h2 { font-size: 13px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; color: var(--text-main); }
 .header-title p { font-size: 9px; color: var(--text-muted); font-weight: 600; margin-top: 1px; }
 
 .btn-action { background: var(--slate-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: var(--radius-md); font-size: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; }
@@ -173,16 +173,19 @@ body {
     }
 }
 
-.kpi-matrix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-@media(min-width:480px) { .kpi-matrix-grid { grid-template-columns: repeat(3, 1fr); } }
-@media(min-width:768px) { .kpi-matrix-grid { grid-template-columns: repeat(4, 1fr); } }
-@media(min-width:992px) { .kpi-matrix-grid { grid-template-columns: repeat(5, 1fr); } }
-@media(min-width:1400px) { .kpi-matrix-grid { grid-template-columns: repeat(10, 1fr); } }
+.kpi-matrix-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media(max-width: 1200px) { .kpi-matrix-grid { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 4px; } }
+@media(max-width: 1200px) { .kpi-matrix-grid::-webkit-scrollbar { height: 4px; } .kpi-matrix-grid::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; } }
 
-.ref-kpi-card { padding: 8px 10px; border-radius: var(--radius-premium); display: flex; flex-direction: column; justify-content: center; align-items: center !important; text-align: center !important; background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s, border-color 0.15s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.ref-kpi-card:hover { transform: translateY(-1px); border-color: var(--accent); }
-.ref-kpi-meta { font-size: 8px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.3px; text-align: center !important; }
-.ref-kpi-value { font-size: 11px; font-weight: 800; color: var(--text-value); margin-top: 2px; line-height: 1.3; text-align: center !important; }
+.ref-kpi-card { padding: 12px; border-radius: var(--radius-premium); min-height: 96px; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch !important; text-align: left !important; background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s, border-color 0.15s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
+@media(max-width: 1200px) { .ref-kpi-card { flex: 0 0 180px; } }
+.ref-kpi-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.ref-kpi-meta { font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; text-align: left !important; }
+.ref-kpi-value { display: block; margin-top: 6px; max-width: 100%; }
+.ref-kpi-value .primary-value { display: block; font-size: 19px; font-weight: 800; line-height: 1.15; letter-spacing: -0.5px; color: var(--text-value); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ref-kpi-value .amt-sub { display: block; font-size: 11px; font-weight: 700; margin-top: 4px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-icon-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; line-height: 1.1; width: 100%; }
+.kpi-icon-row i { color: var(--accent); background: rgba(37, 99, 235, 0.1); font-size: 13px; width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; text-align: center; flex-shrink: 0; }
 
 /* SECTIONS & TABLES */
 .section-card { background: var(--card-bg); border-radius: var(--radius-premium); padding: 8px; border: 1px solid var(--border-color); margin-bottom: 8px; scroll-margin-top: 85px; } /* Adjustable spacing for desktop sticky clearance */
@@ -192,11 +195,64 @@ body {
 .section-header-left { display: flex; align-items: center; gap: 6px; }
 .toggle-icon { color: var(--text-muted); font-size: 10px; transition: transform 0.2s; }
 
+.periodic-workspace { display: block; }
+.periodic-side-menu { position: fixed; top: 6px; left: 6px; width: 250px; height: calc(100vh - 12px); z-index: 1001; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-premium); padding: 14px; overflow-y: auto; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); }
+.side-menu-title { font-size: 12px; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; padding: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.side-menu-title::before { content: "\f550"; font-family: "Font Awesome 6 Free"; font-weight: 900; color: var(--accent); }
+.side-menu-btn { width: 100%; min-height: 38px; border: 1px solid transparent; background: transparent; color: var(--text-main); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: none; }
+.side-menu-btn i { width: 14px; color: var(--text-muted); text-align: center; }
+.side-menu-btn:hover { background: var(--slate-bg); border-color: var(--border-color); }
+.side-menu-btn.active { background: rgba(37, 99, 235, 0.1); border-color: var(--accent); color: var(--accent); }
+.side-menu-btn.active i { color: var(--accent); }
+.periodic-content { min-width: 0; }
+.periodic-content .section-card { display: none; margin-bottom: 0; }
+.periodic-content .section-card.active-section { display: block; }
+.periodic-content .active-section .toggle-content { display: block !important; }
+.periodic-content .active-section .toggle-icon { transform: rotate(180deg); }
+
+@media (max-width: 900px) {
+    .dashboard-container { padding-left: 0; }
+    .periodic-workspace { display: block; }
+    .periodic-side-menu { position: relative; top: auto; left: auto; width: auto; height: auto; max-height: none; display: flex; overflow-x: auto; gap: 6px; padding: 6px; }
+    .side-menu-title { display: none; }
+    .side-menu-btn { flex: 0 0 auto; width: auto; white-space: nowrap; margin-bottom: 0; }
+}
+
 .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 6px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
 table { width: 100%; border-collapse: collapse; min-width: 600px; }
 th, td { padding: 4px 6px; font-size: 9px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: center; vertical-align: middle; white-space: nowrap; color: var(--text-main);}
 th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 8.5px; white-space: nowrap; }
 tr:hover td { background-color: var(--table-hover-bg); }
+
+.periodic-flow-chart { border: 1px solid rgba(37, 99, 235, 0.18); border-radius: 8px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.09), rgba(16, 185, 129, 0.055)), var(--card-bg); padding: 10px; margin-bottom: 8px; min-width: 600px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); position: relative; overflow: hidden; }
+.periodic-flow-chart::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); opacity: 0.8; }
+.flow-chart-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 2fr); gap: 8px; align-items: stretch; }
+.flow-chart-main { min-width: 0; }
+.flow-chart-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.flow-chart-title { font-size: 10px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+.flow-chart-title i { color: var(--accent); }
+.flow-chart-subtitle { font-size: 8.5px; color: var(--text-muted); font-weight: 700; margin-left: 6px; }
+.flow-chart-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; background: var(--table-header-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px; }
+.flow-chart-btn { border: 0; background: transparent; color: var(--text-muted); font-size: 8.5px; font-weight: 800; border-radius: 4px; padding: 4px 8px; cursor: pointer; text-transform: uppercase; }
+.flow-chart-btn.active { background: var(--accent); color: #fff; }
+.flow-contractor-filter { border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 6px; height: 25px; font-size: 8.5px; font-weight: 800; padding: 0 6px; max-width: 150px; }
+.flow-chart-canvas { width: 100%; height: 185px; display: block; cursor: pointer; border-radius: 7px; background: rgba(255,255,255,0.34); }
+.flow-chart-empty { height: 60px; display: none; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; font-weight: 700; border: 1px dashed var(--border-color); border-radius: 6px; }
+.flow-summary-card { border-left: 1px solid rgba(37, 99, 235, 0.18); padding-left: 8px; min-width: 0; background: rgba(255,255,255,0.18); border-radius: 7px; padding-top: 7px; padding-bottom: 7px; }
+.flow-summary-title { font-size: 9px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; }
+.flow-summary-list { display: grid; gap: 5px; max-height: 185px; overflow-y: auto; padding-right: 3px; scrollbar-width: thin; }
+.flow-summary-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.flow-summary-split.three-part { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.flow-summary-group-title { font-size: 8px; color: var(--text-muted); font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
+.flow-summary-group-list { display: grid; gap: 5px; align-content: start; }
+.flow-summary-item { background: rgba(255,255,255,0.48); border: 1px solid rgba(37, 99, 235, 0.14); border-radius: 6px; padding: 6px; min-width: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.34); }
+.flow-summary-label { font-size: 8.5px; color: var(--text-main); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flow-summary-value { margin-top: 2px; font-size: 11px; color: var(--accent); font-weight: 900; }
+.flow-summary-extra { margin-top: 2px; font-size: 8px; color: var(--text-muted); font-weight: 700; }
+.flow-filter-note { margin-top: 5px; font-size: 8.5px; color: var(--accent); font-weight: 800; min-height: 13px; }
+.flow-chart-tooltip { position: fixed; z-index: 5000; pointer-events: none; background: var(--text-main); color: var(--card-bg); border-radius: 6px; padding: 5px 7px; font-size: 9px; font-weight: 800; box-shadow: 0 8px 18px rgba(15,23,42,0.18); display: none; }
+.section-loading { opacity: 0.55; pointer-events: none; }
+@media(max-width: 900px) { .flow-chart-grid, .flow-summary-split { grid-template-columns: 1fr; } .flow-summary-card { border-left: 0; border-top: 1px solid var(--border-color); padding-left: 0; padding-top: 8px; } }
 
 .text-left { text-align: left !important; }
 .text-right { text-align: right !important; }
@@ -235,16 +291,22 @@ tr:hover td { background-color: var(--table-hover-bg); }
 .card-breakdown-table th { background: var(--table-header); font-size: 8px !important; padding: 2px 4px !important; font-weight: 800; border: none; border-bottom: 1px solid var(--border-color); color: var(--text-muted); }
 .card-breakdown-table td { font-size: 8.5px !important; padding: 3px 4px !important; border: none; border-bottom: 1px solid var(--border-color); background: transparent !important; }
 
+@page { size: A4 landscape; margin: 8mm; }
+
 @media print { 
     .kpi-container-wrapper { position: relative !important; top: auto !important; }
-    .filter-panel, .btn-action, .btn-sync, .btn-reset, .toggle-icon { display: none !important; } 
+    .filter-panel, .btn-action, .btn-sync, .btn-reset, .toggle-icon, .periodic-side-menu, .periodic-flow-chart { display: none !important; } 
     body { background: var(--card-bg); padding: 0; } 
+    .dashboard-container { padding-left: 0 !important; }
+    .periodic-workspace { display: block !important; }
     .section-card { box-shadow: none; border: none; padding: 0; margin-bottom: 12px; scroll-margin-top: 0; }
+    .periodic-content .section-card { display: block !important; }
     .toggle-content { display: block !important; } 
     .cards-view-grid { display: grid !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 
@@ -288,54 +350,54 @@ tr:hover td { background-color: var(--table-hover-bg); }
         <div class="kpi-matrix-grid">
             
             <div class="ref-kpi-card" onclick="openSection('sec-open-floor')">
-                <span class="ref-kpi-meta">Opening Floor Bal</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG<br>₹{{ "{:,.2f}".format(card.floor_opening_val|default(0.0)) }}</span>
+                <span class="ref-kpi-meta kpi-icon-row">Opening Floor Bal <i class="fas fa-hourglass-start"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_opening_val|default(0.0)) }}</span></span>
             </div>
 
             <div class="ref-kpi-card" onclick="openSection('sec-gate')">
-                <span class="ref-kpi-meta">Gate Boxes</span>
-                <span class="ref-kpi-value">{{ card.gate_boxes }} Box</span>
+                <span class="ref-kpi-meta kpi-icon-row">Gate Boxes <i class="fas fa-door-open"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ card.gate_boxes }}</span><span class="amt-sub">Boxes Received</span></span>
             </div>
             
             {% if selected_prod_type == 'RMP' %}
             <div class="ref-kpi-card" onclick="openSection('sec-rmp')">
-                <span class="ref-kpi-meta">RM Purchasing</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.rmp_qty) }} KG<br>₹{{ "{:,.2f}".format(card.rmp_amount) }}</span>
+                <span class="ref-kpi-meta kpi-icon-row">RM Purchasing <i class="fas fa-shopping-cart"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rmp_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.rmp_amount) }}</span></span>
             </div>
             {% else %}
             <div class="ref-kpi-card" onclick="openSection('sec-rep')">
-                <span class="ref-kpi-meta">Reprocess (In/Out)</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.rep_in|default(0)) }} KG<br>{{ "%.2f"|format(card.rep_out|default(0)) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Reprocess <i class="fas fa-recycle"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rep_in|default(0)) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.rep_out|default(0)) }} KG</span></span>
             </div>
             {% endif %}
 
             <div class="ref-kpi-card" onclick="openSection('sec-deh')">
-                <span class="ref-kpi-meta">Deheading (HO/HL)</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG<br>{{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Deheading <i class="fas fa-scissors"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG</span><span class="amt-sub">HLSO: {{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-grd')">
-                <span class="ref-kpi-meta">Grading Output</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Grading Output <i class="fas fa-layer-group"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span><span class="amt-sub">Graded Qty</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-pel')">
-                <span class="ref-kpi-meta">Peeling Output</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Peeling Input <i class="fas fa-hands"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.pel_hlso|default(0)) }} KG</span><span class="amt-sub">Peeled: {{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-soak')">
-                <span class="ref-kpi-meta">Soaking Output</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(kpi_soak.total_in) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Soaking Input <i class="fas fa-water"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.soaking_qty|default(0)) }} KG</span><span class="amt-sub">Chem {{ "%.2f"|format(card.chemical_qty|default(0)) }} | Salt {{ "%.2f"|format(card.salt_qty|default(0)) }}</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-prod')">
-                <span class="ref-kpi-meta">Net Production</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.production_qty) }} KG</span>
+                <span class="ref-kpi-meta kpi-icon-row">Net Production <i class="fas fa-box-open"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.production_qty) }} KG</span><span class="amt-sub">Packed Output</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-stk')">
-                <span class="ref-kpi-meta">Stock Vault Asset</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.stock_qty) }} KG<br>₹{{ "{:,.2f}".format(card.stock_amount) }}</span>
+                <span class="ref-kpi-meta kpi-icon-row">Stock Vault Asset <i class="fas fa-warehouse"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.stock_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.stock_amount) }}</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-close-floor')">
-                <span class="ref-kpi-meta">Closing Floor Bal</span>
-                <span class="ref-kpi-value">{{ "%.2f"|format(card.floor_closing_qty) }} KG<br>₹{{ "{:,.2f}".format(card.floor_closing_val) }}</span>
+                <span class="ref-kpi-meta kpi-icon-row">Closing Floor Bal <i class="fas fa-balance-scale"></i></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_closing_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_closing_val) }}</span></span>
             </div>
         </div>
     </div>
@@ -343,6 +405,14 @@ tr:hover td { background-color: var(--table-hover-bg); }
     <!-- 🟢 FILTERS BAR PANEL -->
     <div class="filter-panel no-print">
         <form method="get" class="filter-form" id="filterForm">
+            <div class="input-field">
+                <label>Financial Year</label>
+                <select name="fy" id="f_fy" onchange="savePeriodicViewState(); this.form.submit()">
+                    {% for year in financial_years %}
+                    <option value="{{ year }}" {% if selected_fy == year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="input-field">
                 <label>Date Filter</label>
                 <select name="date_filter_type" id="dateFilterType" onchange="toggleDateInputs()">
@@ -370,21 +440,28 @@ tr:hover td { background-color: var(--table-hover-bg); }
             
             <div class="input-field">
                 <label>Production For</label>
-                <select name="production_for">
+                <select name="production_for" onchange="savePeriodicViewState(); this.form.submit()">
                     <option value="">All Entities</option>
                     {% for c in companies %}<option value="{{ c }}" {% if selected_company == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
                 </select>
             </div>
             <div class="input-field">
+                <label>Production At</label>
+                <select name="production_at" onchange="savePeriodicViewState(); this.form.submit()">
+                    <option value="">All Locations</option>
+                    {% for loc in production_ats %}<option value="{{ loc }}" {% if selected_production_at == loc %}selected{% endif %}>{{ loc }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="input-field">
                 <label>Process Type</label>
-                <select name="prod_type">
+                <select name="prod_type" onchange="savePeriodicViewState(); this.form.submit()">
                     <option value="RMP" {% if selected_prod_type == 'RMP' %}selected{% endif %}>RMP (Fresh)</option>
                     <option value="REPROCESS" {% if selected_prod_type == 'REPROCESS' %}selected{% endif %}>Re-Processing</option>
                 </select>
             </div>
             <div class="input-field">
                 <label>Batch Number</label>
-                <select name="batch">
+                <select name="batch" onchange="savePeriodicViewState(); this.form.submit()">
                     <option value="">All Batches</option>
                     {% for b in batches %}<option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
                 </select>
@@ -404,6 +481,31 @@ tr:hover td { background-color: var(--table-hover-bg); }
     <div class="actions no-print" style="margin-bottom: 8px; border-radius: var(--radius-premium); border: 1px solid var(--border-color);">
         <div id="rowCount">0 operational lines found</div>
     </div>
+
+    <div class="periodic-workspace">
+        <aside class="periodic-side-menu no-print">
+            <div class="side-menu-title">Periodic Sections</div>
+            <button type="button" class="side-menu-btn" data-section="sec-close-floor" onclick="openSection('sec-close-floor')"><i class="fas fa-balance-scale"></i> Closing Floor Balance</button>
+            <button type="button" class="side-menu-btn" data-section="sec-open-floor" onclick="openSection('sec-open-floor')"><i class="fas fa-hourglass-start"></i> Opening Floor Balance</button>
+            <button type="button" class="side-menu-btn" data-section="sec-gate" onclick="openSection('sec-gate')"><i class="fas fa-door-open"></i> Gate Entry</button>
+            {% if selected_prod_type == 'RMP' %}
+            <button type="button" class="side-menu-btn" data-section="sec-rmp" onclick="openSection('sec-rmp')"><i class="fas fa-shopping-cart"></i> Raw Material Purchasing</button>
+            {% else %}
+            <button type="button" class="side-menu-btn" data-section="sec-rep" onclick="openSection('sec-rep')"><i class="fas fa-recycle"></i> Reprocess</button>
+            {% endif %}
+            <button type="button" class="side-menu-btn" data-section="sec-rmp-sum1" onclick="openSection('sec-rmp-sum1')"><i class="fas fa-chart-line"></i> RM Variety Summary</button>
+            <button type="button" class="side-menu-btn" data-section="sec-rmp-sum2" onclick="openSection('sec-rmp-sum2')"><i class="fas fa-users"></i> Supplier Summary</button>
+            <button type="button" class="side-menu-btn" data-section="sec-recon" onclick="openSection('sec-recon')"><i class="fas fa-compress-alt"></i> Reconciliation</button>
+            <button type="button" class="side-menu-btn" data-section="sec-grading-cards-wrapper" onclick="openSection('sec-grading-cards-wrapper')"><i class="fas fa-layer-group"></i> Grading Card View</button>
+            <button type="button" class="side-menu-btn" data-section="sec-deh" onclick="openSection('sec-deh')"><i class="fas fa-scissors"></i> Deheading</button>
+            <button type="button" class="side-menu-btn" data-section="sec-grd" onclick="openSection('sec-grd')"><i class="fas fa-layer-group"></i> Grading Output</button>
+            <button type="button" class="side-menu-btn" data-section="sec-pel" onclick="openSection('sec-pel')"><i class="fas fa-hands"></i> Peeling</button>
+            <button type="button" class="side-menu-btn" data-section="sec-soak" onclick="openSection('sec-soak')"><i class="fas fa-water"></i> Soaking</button>
+            <button type="button" class="side-menu-btn" data-section="sec-prod" onclick="openSection('sec-prod')"><i class="fas fa-box-open"></i> Production Packing</button>
+            <button type="button" class="side-menu-btn" data-section="sec-stk" onclick="openSection('sec-stk')"><i class="fas fa-warehouse"></i> Stock Inventory</button>
+        </aside>
+
+        <main class="periodic-content">
 
     <!-- DATA MATRIX TABLES SECTION -->
     <div class="section-card">
@@ -989,6 +1091,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         <th>Brand</th>
                         <th>Freezer</th>
                         <th>Packing Style</th>
+                        <th>Glaze</th>
                         <th>Variety</th>
                         <th>Grade</th>
                         <th class="text-right">No of MC</th>
@@ -1009,7 +1112,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
 
                         {% if ns_stock.current_variety != '' and ns_stock.current_variety != row.variety %}
                             <tr class="subtotal-row">
-                                <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
+                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
                                 <td class="text-right">{{ ns_stock.variety_mc }}</td>
                                 <td class="text-right">{{ ns_stock.variety_loose }}</td>
                                 <td class="qty-cell">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
@@ -1030,6 +1133,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td>{{ row.brand or 'N/A' }}</td>
                             <td>{{ row.freezer or 'N/A' }}</td>
                             <td>{{ row.packing_style or 'N/A' }}</td>
+                            <td>{{ row.glaze or 'N/A' }}</td>
                             <td><span class="tag">{{ row.variety or 'N/A' }}</span></td>
                             <td>{{ row.grade or 'N/A' }}</td>
                             <td class="text-right">{{ row.no_of_mc or 0 }}</td>
@@ -1046,7 +1150,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         
                         {% if loop.last %}
                             <tr class="subtotal-row">
-                                <td colspan="13" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
+                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ ns_stock.current_variety }}):</td>
                                 <td class="text-right">{{ ns_stock.variety_mc }}</td>
                                 <td class="text-right">{{ ns_stock.variety_loose }}</td>
                                 <td class="qty-cell">{{ "%.2f"|format(ns_stock.variety_qty) }}</td>
@@ -1054,12 +1158,12 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             </tr>
                         {% endif %}
                     {% else %}
-                        <tr><td colspan="17" class="text-center text-muted py-2">No Active Stock Inventory Found.</td></tr>
+                        <tr><td colspan="18" class="text-center text-muted py-2">No Active Stock Inventory Found.</td></tr>
                     {% endfor %}
                     
                     {% if rows.stock and rows.stock|length > 0 %}
                     <tr class="subtotal-row" style="border-top:1.5px solid var(--success); font-weight: 800;">
-                        <td colspan="13" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK LOG:</td>
+                        <td colspan="14" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK LOG:</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.mc }}</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.loose }}</td>
                         <td class="qty-cell" style="color:var(--success);">{{ "%.2f"|format(grand_stock.qty) }}</td>
@@ -1069,6 +1173,9 @@ tr:hover td { background-color: var(--table-hover-bg); }
                 </tbody>
             </table>
         </div>
+    </div>
+
+        </main>
     </div>
 
 </div> 
@@ -1082,6 +1189,40 @@ tr:hover td { background-color: var(--table-hover-bg); }
 </table>
 
 <script>
+const PERIODIC_FLOW_CHARTS = {{ flow_charts|default({})|tojson }};
+const PERIODIC_PRODUCTION_FOR_OPTIONS = {{ companies|default([])|tojson }};
+const PERIODIC_PRODUCTION_AT_OPTIONS = {{ production_ats|default([])|tojson }};
+const SELECTED_PRODUCTION_FOR = {{ (selected_company or '')|tojson }};
+const SELECTED_PRODUCTION_AT = {{ (selected_production_at or '')|tojson }};
+const periodicChartModes = {};
+const periodicChartPoints = {};
+let periodicActiveFilter = null;
+const PERIODIC_STATE_KEY = 'periodicReportViewState';
+
+function getActiveSectionId() {
+    return document.querySelector('.section-card.active-section .toggle-content')?.id || 'sec-close-floor';
+}
+
+function savePeriodicViewState() {
+    sessionStorage.setItem(PERIODIC_STATE_KEY, JSON.stringify({
+        sectionId: getActiveSectionId(),
+        scrollY: window.scrollY || window.pageYOffset || 0
+    }));
+}
+
+function restorePeriodicViewState() {
+    try {
+        const state = JSON.parse(sessionStorage.getItem(PERIODIC_STATE_KEY) || '{}');
+        const sectionId = state.sectionId || 'sec-close-floor';
+        openSection(sectionId, { scroll: false });
+        if (Number.isFinite(Number(state.scrollY))) {
+            setTimeout(() => window.scrollTo({ top: Number(state.scrollY), behavior: 'auto' }), 90);
+        }
+    } catch {
+        openSection('sec-close-floor', { scroll: false });
+    }
+}
+
 function toggleDateInputs() {
     const filterType = document.getElementById("dateFilterType").value;
     const startDiv = document.getElementById("startDateDiv");
@@ -1095,25 +1236,28 @@ function toggleDateInputs() {
 }
 
 function toggleSection(id) {
-    const el = document.getElementById(id);
-    const icon = document.getElementById('icon-' + id);
-    if(el) {
-        if(el.style.display === 'none') {
-            el.style.display = 'block';
-            if(icon) { icon.style.transform = 'rotate(180deg)'; }
-        } else {
-            el.style.display = 'none';
-            if(icon) { icon.style.transform = 'rotate(0deg)'; }
-        }
-    }
+    openSection(id);
 }
 
-function openSection(id) {
-    const isGrading = id === 'sec-grd';
-    const targetTableId = isGrading ? 'sec-grading-cards-wrapper' : id;
+function openSection(id, options = {}) {
+    const targetTableId = id;
     const contentEl = document.getElementById(targetTableId);
     
     if(contentEl) {
+        document.querySelectorAll('.toggle-content').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.section-card').forEach(card => {
+            card.classList.remove('active-section', 'margin-active-card');
+        });
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.style.transform = 'rotate(0deg)';
+        });
+        document.querySelectorAll('.side-menu-btn').forEach(btn => {
+            const btnSection = btn.dataset.section;
+            btn.classList.toggle('active', btnSection === targetTableId);
+        });
+
         contentEl.style.display = 'block';
         
         const icon = document.getElementById('icon-' + targetTableId);
@@ -1121,10 +1265,11 @@ function openSection(id) {
         
         const parentCard = contentEl.closest('.section-card');
         if(parentCard) {
-            document.querySelectorAll('.section-card').forEach(c => c.classList.remove('margin-active-card'));
-            parentCard.classList.add('margin-active-card');
+            parentCard.classList.add('active-section', 'margin-active-card');
+            updateActiveRowCount(parentCard);
+            setTimeout(() => renderPeriodicFlowChart(id), 80);
 
-            setTimeout(() => {
+            if (options.scroll !== false) setTimeout(() => {
                 const stickyKpiHeight = document.querySelector('.kpi-container-wrapper') ? document.querySelector('.kpi-container-wrapper').offsetHeight : 60;
                 const elementPosition = parentCard.getBoundingClientRect().top + window.pageYOffset;
                 const offsetPosition = elementPosition - stickyKpiHeight - 6;
@@ -1138,8 +1283,717 @@ function openSection(id) {
     }
 }
 
+function chartGlobalFilterSelect(name, options, selected, allLabel) {
+    return `
+        <select class="flow-contractor-filter chart-global-filter" data-filter="${name}" title="${allLabel}">
+            <option value="">${allLabel}</option>
+            ${(options || []).map(value => `<option value="${value}" ${String(value) === String(selected || '') ? 'selected' : ''}>${value}</option>`).join('')}
+        </select>
+    `;
+}
+
+function applyChartGlobalFilter(name, value) {
+    savePeriodicViewState();
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set(name, value);
+    else url.searchParams.delete(name);
+    window.location.href = url.toString();
+}
+
+function insertPeriodicFlowCharts() {
+    Object.entries(PERIODIC_FLOW_CHARTS || {}).forEach(([sectionId, chart]) => {
+        const section = document.getElementById(sectionId);
+        if (!section || section.querySelector('.periodic-flow-chart')) return;
+
+        periodicChartModes[sectionId] = periodicChartModes[sectionId] || 'day';
+        const panel = document.createElement('div');
+        panel.className = 'periodic-flow-chart no-print';
+        panel.dataset.section = sectionId;
+        const summaryItems = Array.isArray(chart.summary) ? chart.summary : [];
+        const summaryHtml = summaryItems.length ? summaryItems.map(item => `
+            <div class="flow-summary-item" title="${item.label || ''}">
+                <div class="flow-summary-label">${item.label || 'N/A'}</div>
+                <div class="flow-summary-value">${Number(item.value || 0).toFixed(Number(item.value || 0) >= 10 ? 0 : 1)} ${item.unit || chart.unit || ''}</div>
+                ${item.extra ? `<div class="flow-summary-extra">${item.extra}</div>` : ''}
+            </div>
+        `).join('') : '<div class="flow-chart-empty" style="display:flex;">No summary data.</div>';
+        panel.innerHTML = `
+            <div class="flow-chart-head">
+                <div class="flow-chart-title"><i class="fas fa-chart-line"></i><span>${chart.title || 'Flow Chart'}</span><span class="flow-chart-subtitle">FY ${chart.fy || ''}</span></div>
+                <div class="flow-chart-actions">
+                    ${chartGlobalFilterSelect('production_for', PERIODIC_PRODUCTION_FOR_OPTIONS, SELECTED_PRODUCTION_FOR, 'All For')}
+                    ${chartGlobalFilterSelect('production_at', PERIODIC_PRODUCTION_AT_OPTIONS, SELECTED_PRODUCTION_AT, 'All At')}
+                    <button type="button" class="flow-chart-btn active" data-mode="day">Day</button>
+                    <button type="button" class="flow-chart-btn" data-mode="month">Month</button>
+                </div>
+            </div>
+            <div class="flow-chart-grid">
+                <div class="flow-chart-main">
+                    <canvas class="flow-chart-canvas" height="185"></canvas>
+                    <div class="flow-chart-empty">No flow data for selected filters.</div>
+                    <div class="flow-filter-note">Click a day/month point to filter the table below.</div>
+                </div>
+                <aside class="flow-summary-card">
+                    <div class="flow-summary-title">Summary</div>
+                    <div class="flow-summary-list">${summaryHtml}</div>
+                </aside>
+            </div>
+        `;
+
+        panel.querySelectorAll('.flow-chart-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                periodicChartModes[sectionId] = btn.dataset.mode;
+                panel.querySelectorAll('.flow-chart-btn').forEach(item => {
+                    item.classList.toggle('active', item.dataset.mode === btn.dataset.mode);
+                });
+                renderPeriodicFlowChart(sectionId);
+            });
+        });
+        panel.querySelectorAll('.chart-global-filter').forEach(select => {
+            select.addEventListener('change', () => applyChartGlobalFilter(select.dataset.filter, select.value));
+        });
+        const canvas = panel.querySelector('canvas');
+        if (canvas) {
+            canvas.addEventListener('click', event => handlePeriodicChartClick(sectionId, event));
+            canvas.addEventListener('mousemove', event => handlePeriodicChartHover(sectionId, event));
+            canvas.addEventListener('mouseleave', hidePeriodicChartTooltip);
+        }
+
+        section.insertBefore(panel, section.firstElementChild);
+        updateSummaryList(sectionId, 'Summary', summaryItems);
+        setupContractorFilter(sectionId);
+    });
+}
+
+async function applyPeriodicChartFilter(sectionId, mode, label) {
+    savePeriodicViewState();
+    const url = new URL(window.location.href);
+    url.searchParams.set('fy', document.getElementById('f_fy')?.value || '{{ selected_fy }}');
+    if (mode === 'month') {
+        url.searchParams.set('date_filter_type', 'month');
+        url.searchParams.set('selected_month', label);
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
+    } else {
+        url.searchParams.set('date_filter_type', 'between');
+        url.searchParams.set('start_date', label);
+        url.searchParams.set('end_date', label);
+        url.searchParams.delete('selected_month');
+    }
+
+    const currentSection = document.getElementById(sectionId);
+    const parentCard = currentSection ? currentSection.closest('.section-card') : null;
+    const note = document.querySelector(`.periodic-flow-chart[data-section="${sectionId}"] .flow-filter-note`);
+    try {
+        if (currentSection) currentSection.classList.add('section-loading');
+        if (note) note.textContent = `Filtering table for ${mode === 'month' ? 'month' : 'date'}: ${label}...`;
+        const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const freshSection = doc.getElementById(sectionId);
+        if (!freshSection || !currentSection) throw new Error('Section not found');
+
+        const chartPanel = currentSection.querySelector('.periodic-flow-chart');
+        currentSection.innerHTML = '';
+        if (chartPanel) currentSection.appendChild(chartPanel);
+        [...freshSection.children].forEach(child => {
+            if (!child.classList || !child.classList.contains('periodic-flow-chart')) {
+                currentSection.appendChild(document.importNode(child, true));
+            }
+        });
+
+        const freshRaw = doc.querySelector('#rawGradingSummaryTable tbody');
+        const localRaw = document.querySelector('#rawGradingSummaryTable tbody');
+        if (freshRaw && localRaw) localRaw.innerHTML = freshRaw.innerHTML;
+        if (sectionId === 'sec-grading-cards-wrapper') renderBasicGradingCardsFromRaw();
+        setupContractorFilter(sectionId);
+        updateFlowSummaryFromSection(sectionId, mode, label);
+
+        periodicActiveFilter = { sectionId, mode, label };
+        if (note) note.textContent = `Table filtered: ${mode === 'month' ? label : label}. Chart and dashboard unchanged.`;
+        if (parentCard) updateActiveRowCount(parentCard);
+        renderPeriodicFlowChart(sectionId);
+    } catch (error) {
+        if (note) note.textContent = 'Unable to filter table. Please try again.';
+        console.error('Periodic chart filter failed:', error);
+    } finally {
+        if (currentSection) currentSection.classList.remove('section-loading');
+    }
+}
+
+function handlePeriodicChartClick(sectionId, event) {
+    const points = periodicChartPoints[sectionId] || [];
+    if (!points.length) return;
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    let nearest = null;
+    points.forEach(point => {
+        const distance = Math.hypot(point.x - x, point.y - y);
+        if (!nearest || distance < nearest.distance) nearest = { ...point, distance };
+    });
+    if (nearest && nearest.distance <= 18) {
+        applyPeriodicChartFilter(sectionId, nearest.mode, nearest.label);
+    }
+}
+
+function getNearestPeriodicPoint(sectionId, event) {
+    const points = periodicChartPoints[sectionId] || [];
+    if (!points.length) return null;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    let nearest = null;
+    points.forEach(point => {
+        const distance = Math.hypot(point.x - x, point.y - y);
+        if (!nearest || distance < nearest.distance) nearest = { ...point, distance };
+    });
+    return nearest && nearest.distance <= 20 ? nearest : null;
+}
+
+function handlePeriodicChartHover(sectionId, event) {
+    const nearest = getNearestPeriodicPoint(sectionId, event);
+    const tooltip = getPeriodicChartTooltip();
+    if (!nearest) {
+        tooltip.style.display = 'none';
+        return;
+    }
+    const chart = (PERIODIC_FLOW_CHARTS || {})[sectionId] || {};
+    tooltip.innerHTML = `${nearest.label}<br>${nearest.value.toFixed(nearest.value >= 10 ? 0 : 1)} ${chart.unit || ''}`;
+    tooltip.style.left = `${event.clientX + 12}px`;
+    tooltip.style.top = `${event.clientY + 12}px`;
+    tooltip.style.display = 'block';
+}
+
+function getPeriodicChartTooltip() {
+    let tooltip = document.querySelector('.flow-chart-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.className = 'flow-chart-tooltip';
+        document.body.appendChild(tooltip);
+    }
+    return tooltip;
+}
+
+function hidePeriodicChartTooltip() {
+    const tooltip = document.querySelector('.flow-chart-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+}
+
+function normalizeHeaderText(text) {
+    return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function parseTableNumber(text) {
+    const cleaned = String(text || '').replace(/[₹,%A-Za-z]/g, '').replace(/,/g, '').trim();
+    const value = parseFloat(cleaned);
+    return Number.isFinite(value) ? value : 0;
+}
+
+function getColumnIndex(headers, matchers) {
+    return headers.findIndex(header => matchers.some(matcher => header.includes(matcher)));
+}
+
+function setupContractorFilter(sectionId) {
+    if (!['sec-deh', 'sec-pel'].includes(sectionId)) return;
+    const section = document.getElementById(sectionId);
+    const panel = document.querySelector(`.periodic-flow-chart[data-section="${sectionId}"]`);
+    const actions = panel ? panel.querySelector('.flow-chart-actions') : null;
+    const table = section ? section.querySelector('table') : null;
+    if (!actions || !table) return;
+
+    const headers = [...table.querySelectorAll('thead th')].map(th => normalizeHeaderText(th.innerText));
+    const contractorIdx = getColumnIndex(headers, ['contractor']);
+    if (contractorIdx < 0) return;
+
+    let select = actions.querySelector('.flow-contractor-filter');
+    if (!select) {
+        select = document.createElement('select');
+        select.className = 'flow-contractor-filter';
+        select.addEventListener('change', () => applyContractorFilter(sectionId, select.value));
+        actions.appendChild(select);
+    }
+
+    const tableContractors = [...table.querySelectorAll('tbody tr')].map(row => {
+        if (row.classList.contains('subtotal-row') || row.querySelector('td[colspan]')) return '';
+        return row.querySelectorAll('td')[contractorIdx]?.innerText.trim() || '';
+    }).filter(Boolean);
+    const summaryContractors = ((PERIODIC_FLOW_CHARTS[sectionId] || {}).summary || [])
+        .map(item => String(item.label || '').replace(/^Contractor:\s*/, ''))
+        .filter(label => label && !String(label).startsWith('Variety:'));
+    const contractors = [...new Set([...summaryContractors, ...tableContractors])]
+        .sort((a, b) => a.localeCompare(b));
+
+    const selected = select.value;
+    select.innerHTML = '<option value="">All Contractors</option>' + contractors.map(name => `<option value="${name}">${name}</option>`).join('');
+    if (contractors.includes(selected)) {
+        select.value = selected;
+        applyContractorFilter(sectionId, select.value);
+    }
+}
+
+function applyContractorFilter(sectionId, contractorName) {
+    const section = document.getElementById(sectionId);
+    const table = section ? section.querySelector('table') : null;
+    if (!table) return;
+
+    const headers = [...table.querySelectorAll('thead th')].map(th => normalizeHeaderText(th.innerText));
+    const contractorIdx = getColumnIndex(headers, ['contractor']);
+    if (contractorIdx < 0) return;
+
+    [...table.querySelectorAll('tbody tr')].forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (row.classList.contains('subtotal-row') || row.querySelector('td[colspan]')) {
+            row.style.display = contractorName ? 'none' : '';
+            return;
+        }
+        const rowContractor = cells[contractorIdx]?.innerText.trim() || '';
+        row.style.display = !contractorName || rowContractor === contractorName ? '' : 'none';
+    });
+
+    const active = periodicActiveFilter && periodicActiveFilter.sectionId === sectionId ? periodicActiveFilter : { mode: 'filter', label: contractorName || 'All' };
+    updateFlowSummaryFromSection(sectionId, active.mode, contractorName ? `Contractor: ${contractorName}` : active.label);
+    const parentCard = section.closest('.section-card');
+    if (parentCard) updateActiveRowCount(parentCard);
+}
+
+function updateSummaryList(sectionId, title, items) {
+    const panel = document.querySelector(`.periodic-flow-chart[data-section="${sectionId}"]`);
+    if (!panel) return;
+    const titleEl = panel.querySelector('.flow-summary-title');
+    const list = panel.querySelector('.flow-summary-list');
+    if (titleEl) titleEl.textContent = title;
+    if (!list) return;
+    if (!items.length) {
+        list.innerHTML = '<div class="flow-chart-empty" style="display:flex;">No filtered summary data.</div>';
+        return;
+    }
+    const renderItem = (item) => `
+        <div class="flow-summary-item" title="${item.label || ''}">
+            <div class="flow-summary-label">${item.label || 'N/A'}</div>
+            <div class="flow-summary-value">${Number(item.value || 0).toFixed(Number(item.value || 0) >= 10 ? 0 : 1)} ${item.unit || 'KG'}</div>
+            ${item.extra ? `<div class="flow-summary-extra">${item.extra}</div>` : ''}
+        </div>
+    `;
+    if (sectionId === 'sec-gate') {
+        const entryItems = items.filter(item => !String(item.label || '').startsWith('Production For:'));
+        const productionForItems = items
+            .filter(item => String(item.label || '').startsWith('Production For:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Production For:\s*/, '') }));
+        list.innerHTML = `
+            <div class="flow-summary-split">
+                <div>
+                    <div class="flow-summary-group-title">Entries</div>
+                    <div class="flow-summary-group-list">${entryItems.length ? entryItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No entry data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Production For</div>
+                    <div class="flow-summary-group-list">${productionForItems.length ? productionForItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No production-for data.</div>'}</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    if (['sec-deh', 'sec-pel'].includes(sectionId)) {
+        const varieties = items
+            .filter(item => String(item.label || '').startsWith('Variety:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Variety:\s*/, '') }));
+        const contractors = items
+            .filter(item => String(item.label || '').startsWith('Contractor:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Contractor:\s*/, '') }));
+        const productionForItems = items
+            .filter(item => String(item.label || '').startsWith('Production For:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Production For:\s*/, '') }));
+        list.innerHTML = `
+            <div class="flow-summary-split three-part">
+                <div>
+                    <div class="flow-summary-group-title">Variety Wise</div>
+                    <div class="flow-summary-group-list">${varieties.length ? varieties.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No variety data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Contractor Wise</div>
+                    <div class="flow-summary-group-list">${contractors.length ? contractors.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No contractor data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Production For</div>
+                    <div class="flow-summary-group-list">${productionForItems.length ? productionForItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No production-for data.</div>'}</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    const productionForItems = items
+        .filter(item => String(item.label || '').startsWith('Production For:'))
+        .map(item => ({ ...item, label: String(item.label || '').replace(/^Production For:\s*/, '') }));
+    if (productionForItems.length) {
+        const mainItems = items.filter(item => !String(item.label || '').startsWith('Production For:'));
+        list.innerHTML = `
+            <div class="flow-summary-split">
+                <div>
+                    <div class="flow-summary-group-title">Summary</div>
+                    <div class="flow-summary-group-list">${mainItems.length ? mainItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No summary data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Production For</div>
+                    <div class="flow-summary-group-list">${productionForItems.map(renderItem).join('')}</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    list.innerHTML = items.map(renderItem).join('');
+}
+
+function updateFlowSummaryFromSection(sectionId, mode, label) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const table = section.querySelector('table');
+    const scopeLabel = mode === 'month' ? `Summary - ${label}` : `Summary - ${label}`;
+    if (!table) {
+        const cardCount = section.querySelectorAll('.report-card').length;
+        updateSummaryList(sectionId, scopeLabel, cardCount ? [{ label: 'Cards', value: cardCount, unit: 'Items' }] : []);
+        return;
+    }
+
+    const headers = [...table.querySelectorAll('thead th')].map(th => normalizeHeaderText(th.innerText));
+    const rows = [...table.querySelectorAll('tbody tr')].filter(row => {
+        return !row.classList.contains('subtotal-row') &&
+               !row.classList.contains('danger-subtotal') &&
+               !row.classList.contains('amber-subtotal') &&
+               !row.querySelector('td[colspan]') &&
+               row.style.display !== 'none' &&
+               row.querySelectorAll('td').length > 1;
+    });
+
+    const groupSummary = (groupIdx, valueIdx, unit = 'KG', extraBuilder = null) => {
+        const bucket = new Map();
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const key = cells[groupIdx]?.innerText.trim() || 'N/A';
+            const value = parseTableNumber(cells[valueIdx]?.innerText);
+            if (!bucket.has(key)) bucket.set(key, { qty: 0, rows: [] });
+            bucket.get(key).qty += value;
+            bucket.get(key).rows.push(row);
+        });
+        return [...bucket.entries()]
+            .map(([key, data]) => ({ label: key, value: data.qty, unit, extra: extraBuilder ? extraBuilder(data.rows) : null }))
+            .sort((a, b) => b.value - a.value);
+    };
+    const combinedGroupSummary = (firstGroupIdx, secondGroupIdx, valueIdx, firstLabel, secondLabel) => {
+        return [
+            ...groupSummary(firstGroupIdx, valueIdx).map(item => ({ ...item, label: `${firstLabel}: ${item.label}` })),
+            ...groupSummary(secondGroupIdx, valueIdx).map(item => ({ ...item, label: `${secondLabel}: ${item.label}` })),
+        ];
+    };
+    const groupWithBreakdown = (groupIdx, valueIdx, breakIdx) => {
+        const bucket = new Map();
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const key = cells[groupIdx]?.innerText.trim() || 'N/A';
+            const breakKey = cells[breakIdx]?.innerText.trim() || 'N/A';
+            const value = parseTableNumber(cells[valueIdx]?.innerText);
+            if (!bucket.has(key)) bucket.set(key, { qty: 0, breakdown: new Map() });
+            const item = bucket.get(key);
+            item.qty += value;
+            item.breakdown.set(breakKey, (item.breakdown.get(breakKey) || 0) + value);
+        });
+        return [...bucket.entries()]
+            .map(([key, data]) => ({
+                label: key,
+                value: data.qty,
+                unit: 'KG',
+                extra: [...data.breakdown.entries()]
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([breakKey, value]) => `${breakKey}: ${value.toFixed(2)} KG`)
+                    .join(' | ')
+            }))
+            .sort((a, b) => b.value - a.value);
+    };
+
+    let items = [];
+    if (sectionId === 'sec-gate') {
+        const boxesIdx = getColumnIndex(headers, ['boxes']);
+        const productionForIdx = getColumnIndex(headers, ['production for']);
+        const boxes = rows.reduce((sum, row) => sum + parseTableNumber(row.querySelectorAll('td')[boxesIdx]?.innerText), 0);
+        const productionForCounts = new Map();
+        rows.forEach(row => {
+            const key = row.querySelectorAll('td')[productionForIdx]?.innerText.trim() || 'N/A';
+            productionForCounts.set(key, (productionForCounts.get(key) || 0) + 1);
+        });
+        items = [
+            { label: 'Vehicle Entries', value: rows.length, unit: 'Entries' },
+            { label: 'Boxes', value: boxes, unit: 'Boxes' },
+            ...[...productionForCounts.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, value]) => ({ label: `Production For: ${key}`, value, unit: 'Entries' }))
+        ];
+    } else if (sectionId === 'sec-rmp' || sectionId === 'sec-rmp-sum1') {
+        items = groupSummary(getColumnIndex(headers, ['count']), getColumnIndex(headers, ['received qty', 'quantity', 'qty']));
+    } else if (sectionId === 'sec-rmp-sum2') {
+        items = groupSummary(getColumnIndex(headers, ['supplier']), getColumnIndex(headers, ['received qty', 'quantity', 'qty']));
+    } else if (sectionId === 'sec-deh') {
+        const varietyIdx = getColumnIndex(headers, ['variety']);
+        const contractorIdx = getColumnIndex(headers, ['contractor']);
+        const qtyIdx = getColumnIndex(headers, ['hoso qty', 'quantity', 'qty']);
+        items = combinedGroupSummary(varietyIdx, contractorIdx, qtyIdx, 'Variety', 'Contractor');
+    } else if (sectionId === 'sec-grd' || sectionId === 'sec-grading-cards-wrapper') {
+        const varietyIdx = getColumnIndex(headers, ['variety']);
+        const countIdx = getColumnIndex(headers, ['graded count', 'count']);
+        const qtyIdx = getColumnIndex(headers, ['quantity', 'qty']);
+        items = groupSummary(varietyIdx, qtyIdx).map(item => {
+            if (countIdx >= 0) item.label = `${item.label}`;
+            return item;
+        });
+    } else if (sectionId === 'sec-pel') {
+        const varietyIdx = getColumnIndex(headers, ['variety']);
+        const contractorIdx = getColumnIndex(headers, ['contractor']);
+        const qtyIdx = getColumnIndex(headers, ['hlso qty', 'quantity', 'qty']);
+        items = combinedGroupSummary(varietyIdx, contractorIdx, qtyIdx, 'Variety', 'Contractor');
+    } else if (sectionId === 'sec-soak') {
+        const varietyIdx = getColumnIndex(headers, ['variety']);
+        const inQtyIdx = getColumnIndex(headers, ['in qty']);
+        const chemicalQtyIdx = getColumnIndex(headers, ['chem qty']);
+        const saltQtyIdx = getColumnIndex(headers, ['salt qty']);
+        items = groupSummary(varietyIdx, inQtyIdx, 'KG', groupedRows => {
+            const chemical = groupedRows.reduce((sum, row) => sum + parseTableNumber(row.querySelectorAll('td')[chemicalQtyIdx]?.innerText), 0);
+            const salt = groupedRows.reduce((sum, row) => sum + parseTableNumber(row.querySelectorAll('td')[saltQtyIdx]?.innerText), 0);
+            return `Chem ${chemical.toFixed(2)} KG | Salt ${salt.toFixed(2)} KG`;
+        });
+    } else if (sectionId === 'sec-prod') {
+        items = groupWithBreakdown(getColumnIndex(headers, ['variety']), getColumnIndex(headers, ['prod qty', 'quantity', 'qty']), getColumnIndex(headers, ['glaze']));
+    } else if (sectionId === 'sec-stk') {
+        items = groupWithBreakdown(getColumnIndex(headers, ['variety']), getColumnIndex(headers, ['quantity', 'qty']), getColumnIndex(headers, ['glaze']));
+    } else {
+        const qtyIdx = getColumnIndex(headers, ['available qty', 'opening qty', 'quantity', 'qty', 'out']);
+        const groupIdx = getColumnIndex(headers, ['variety', 'species', 'batch']);
+        items = qtyIdx >= 0 && groupIdx >= 0 ? groupSummary(groupIdx, qtyIdx) : [{ label: 'Rows', value: rows.length, unit: 'Rows' }];
+    }
+    if (sectionId !== 'sec-gate') {
+        const productionForIdx = getColumnIndex(headers, ['production for', 'prod for']);
+        if (productionForIdx >= 0) {
+            const countIdx = getColumnIndex(headers, ['prod qty', 'quantity', 'qty', 'received qty', 'in qty', 'hoso qty', 'hlso qty', 'peeled qty']);
+            const bucket = new Map();
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const key = cells[productionForIdx]?.innerText.trim() || 'N/A';
+                const value = countIdx >= 0 ? parseTableNumber(cells[countIdx]?.innerText) : 1;
+                bucket.set(key, (bucket.get(key) || 0) + (countIdx >= 0 ? value : 1));
+            });
+            items = [
+                ...items,
+                ...[...bucket.entries()]
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([key, value]) => ({ label: `Production For: ${key}`, value, unit: countIdx >= 0 ? 'KG' : 'Rows' }))
+            ];
+        }
+    }
+    updateSummaryList(sectionId, scopeLabel, items);
+}
+
+function renderBasicGradingCardsFromRaw() {
+    const cardsGrid = document.getElementById("sec-grading-cards");
+    const allRows = document.querySelectorAll("#rawGradingSummaryTable tbody tr");
+    if (!cardsGrid) return;
+    cardsGrid.innerHTML = "";
+    allRows.forEach((r) => {
+        const tds = r.querySelectorAll("td");
+        if (tds.length < 12) return;
+        const batch = tds[1].innerText.trim();
+        const species = tds[2].innerText.trim();
+        const hosoCount = tds[3].innerText.trim();
+        const variety = tds[4].innerText.trim();
+        const actualHoso = tds[5].innerText.trim();
+        const gradedQty = tds[6].innerText.trim();
+        const workoutCount = tds[7].innerText.trim();
+        const yieldPct = tds[8].innerText.trim();
+        const gradingHoso = tds[9].innerText.trim();
+        const diffKg = tds[10].innerText.trim();
+        const diffPct = tds[11].innerText.trim();
+        cardsGrid.insertAdjacentHTML('beforeend', `
+            <div class="report-card">
+                <div class="card-top">
+                    <div class="left-info">
+                        <div><b style="color:var(--accent);">BATCH: ${batch}</b></div>
+                        <div class="tag" style="margin-top:1px;">${species} | ${variety}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:7.5px; color:var(--text-muted); display:block; font-weight:800;">HOSO COUNT</span>
+                        <b style="font-size:11px; color:var(--text-main);">${hosoCount}</b>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-body-summary"><span>Actual HOSO:</span><b style="color:var(--accent);">${actualHoso} KG</b></div>
+                    <div class="card-body-summary"><span>Graded Qty:</span><b style="color:var(--accent);">${gradedQty} KG</b></div>
+                </div>
+                <div class="card-footer">
+                    <div>W/O: <b>${workoutCount}</b></div>
+                    <div style="text-align:right;">Yield: <b>${yieldPct}</b></div>
+                    <div>G/HOSO: <b>${gradingHoso}</b></div>
+                    <div style="text-align:right;">Diff: <b style="color:${parseFloat(diffKg) < 0 ? 'var(--danger)' : 'var(--success)'}">${diffKg} (${diffPct})</b></div>
+                </div>
+            </div>
+        `);
+    });
+}
+
+function renderPeriodicFlowChart(sectionId) {
+    const chart = (PERIODIC_FLOW_CHARTS || {})[sectionId];
+    const panel = document.querySelector(`.periodic-flow-chart[data-section="${sectionId}"]`);
+    if (!chart || !panel) return;
+
+    const mode = periodicChartModes[sectionId] || 'day';
+    const data = Array.isArray(chart[mode]) ? chart[mode] : [];
+    const canvas = panel.querySelector('canvas');
+    const empty = panel.querySelector('.flow-chart-empty');
+    if (!canvas) return;
+
+    if (!data.length) {
+        periodicChartPoints[sectionId] = [];
+        canvas.style.display = 'none';
+        if (empty) empty.style.display = 'flex';
+        return;
+    }
+    canvas.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+
+    const chartMain = panel.querySelector('.flow-chart-main') || panel;
+    const width = Math.max(chartMain.clientWidth - 8, 460);
+    const height = 185;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue('--accent').trim() || '#2563eb';
+    const muted = styles.getPropertyValue('--text-muted').trim() || '#64748b';
+    const border = styles.getPropertyValue('--border-color').trim() || '#e2e8f0';
+    const main = styles.getPropertyValue('--text-main').trim() || '#0f172a';
+    const maxValue = Math.max(...data.map(item => Number(item.value) || 0), 1);
+    const pad = { left: 44, right: 16, top: 14, bottom: 34 };
+    const chartWidth = width - pad.left - pad.right;
+    const chartHeight = height - pad.top - pad.bottom;
+    const xStep = data.length > 1 ? chartWidth / (data.length - 1) : chartWidth;
+
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    ctx.font = '8.5px Arial';
+    ctx.fillStyle = muted;
+
+    for (let i = 0; i <= 3; i++) {
+        const y = pad.top + (chartHeight / 3) * i;
+        const labelValue = maxValue - ((maxValue / 3) * i);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(labelValue.toFixed(labelValue >= 10 ? 0 : 1), 4, y + 3);
+    }
+
+    const points = data.map((item, index) => {
+        const value = Number(item.value) || 0;
+        return {
+            x: pad.left + (data.length > 1 ? xStep * index : chartWidth / 2),
+            y: pad.top + chartHeight - ((value / maxValue) * chartHeight),
+            label: item.label,
+            value,
+            mode
+        };
+    });
+    periodicChartPoints[sectionId] = points;
+
+    const areaGradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartHeight);
+    areaGradient.addColorStop(0, 'rgba(37, 99, 235, 0.24)');
+    areaGradient.addColorStop(0.65, 'rgba(16, 185, 129, 0.08)');
+    areaGradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
+    ctx.beginPath();
+    points.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+    });
+    ctx.lineTo(points[points.length - 1].x, pad.top + chartHeight);
+    ctx.lineTo(points[0].x, pad.top + chartHeight);
+    ctx.closePath();
+    ctx.fillStyle = areaGradient;
+    ctx.fill();
+
+    ctx.shadowColor = 'rgba(37, 99, 235, 0.28)';
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    points.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    points.forEach((point, index) => {
+        const selected = periodicActiveFilter && periodicActiveFilter.sectionId === sectionId && periodicActiveFilter.mode === point.mode && periodicActiveFilter.label === point.label;
+        ctx.fillStyle = selected ? '#10b981' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, selected ? 5.5 : 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = selected ? '#10b981' : accent;
+        ctx.lineWidth = selected ? 2.4 : 2;
+        ctx.stroke();
+        ctx.fillStyle = accent;
+
+        const shouldLabel = data.length <= 12 || index === 0 || index === data.length - 1 || index % Math.ceil(data.length / 8) === 0;
+        if (shouldLabel) {
+            ctx.save();
+            ctx.translate(point.x, height - 15);
+            ctx.rotate(data.length > 8 ? -0.45 : 0);
+            ctx.fillStyle = muted;
+            ctx.textAlign = data.length > 8 ? 'right' : 'center';
+            ctx.fillText(point.label, 0, 0);
+            ctx.restore();
+
+            ctx.fillStyle = main;
+            ctx.textAlign = 'center';
+            ctx.fillText(`${point.value.toFixed(point.value >= 10 ? 0 : 1)} ${chart.unit || ''}`.trim(), point.x, Math.max(point.y - 8, 10));
+        }
+    });
+}
+
+function updateActiveRowCount(sectionCard) {
+    const rowCount = document.getElementById('rowCount');
+    if (!rowCount || !sectionCard) return;
+    const cards = sectionCard.querySelectorAll('.report-card').length;
+    if (cards > 0) {
+        rowCount.innerText = `${cards} cards in current section`;
+        return;
+    }
+    const rows = [...sectionCard.querySelectorAll('tbody tr')].filter(row => {
+        return !row.classList.contains('subtotal-row') &&
+               !row.classList.contains('danger-subtotal') &&
+               !row.classList.contains('amber-subtotal') &&
+               !row.querySelector('td[colspan]') &&
+               row.style.display !== 'none';
+    }).length;
+    rowCount.innerText = `${rows} operational lines in current section`;
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     toggleDateInputs();
+    insertPeriodicFlowCharts();
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+        filterForm.addEventListener('submit', savePeriodicViewState);
+        filterForm.querySelectorAll('select, input').forEach(input => {
+            input.addEventListener('change', savePeriodicViewState);
+        });
+    }
+    restorePeriodicViewState();
 
     const allDetailedData = [
         {% for row in rows.grading_details %}
@@ -1211,6 +2065,11 @@ document.addEventListener("DOMContentLoaded", function() {
             cardsGrid.insertAdjacentHTML('beforeend', cardHTML);
         });
     }
+});
+
+window.addEventListener('resize', () => {
+    const active = document.querySelector('.section-card.active-section .toggle-content');
+    if (active) renderPeriodicFlowChart(active.id);
 });
 </script>
 <script src="/static/js/global-loader.js"></script>

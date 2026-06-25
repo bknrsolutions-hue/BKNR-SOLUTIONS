@@ -112,6 +112,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th>Employee Name</th>
                 <th>Designation</th>
                 <th>Attd (Days)</th>
+                <th style="text-align: right;">Adjustment (₹)</th>
                 <th style="text-align: right;">Gross (₹)</th>
                 <th style="text-align: right;">Deductions (₹)</th>
                 <th style="text-align: right;">Net Payable (₹)</th>
@@ -120,7 +121,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         </thead>
         <tbody id="tableBody">
             {% if not history %}
-            <tr><td colspan="10" style="padding:40px; color:var(--muted);">No Salary processing logs registered.</td></tr>
+            <tr><td colspan="11" style="padding:40px; color:var(--muted);">No Salary processing logs registered.</td></tr>
             {% else %}
                 {% for row in history %}
                 <tr class="data-row" data-id="{{ row.id }}" data-month="{{ row.month_year }}" onclick="selectRow(this, '{{ row.id }}')">
@@ -130,6 +131,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td style="text-align: left;">{{ row.employee_name }}</td>
                     <td>{{ row.designation or '-' }}</td>
                     <td>{{ row.present_days }} / {{ row.present_days + row.absent_days }}</td>
+                    <td style="text-align:right; color:{% if row.salary_adjustment %}var(--warning){% else %}var(--muted){% endif %};">{{ "{:,.2f}".format(row.salary_adjustment or 0.0) }}</td>
                     <td style="text-align: right;">{{ "{:,.2f}".format(row.gross_salary or 0.0) }}</td>
                     <td style="text-align: right; color:var(--danger);">{{ "{:,.2f}".format(row.total_deductions or 0.0) }}</td>
                     <td style="text-align: right; font-weight:700; color:var(--success);">{{ "{:,.2f}".format(row.net_payable or 0.0) }}</td>
@@ -139,6 +141,30 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </tr>
                 {% endfor %}
             {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-wrap" style="margin-top:16px;">
+    <table class="main-table">
+        <thead>
+            <tr><th colspan="6" style="text-align:left;">Payroll Audit Trail</th></tr>
+            <tr><th>Time</th><th>Employee Record</th><th>Check</th><th>Old / Expected</th><th>New / Actual</th><th>User</th></tr>
+        </thead>
+        <tbody>
+        {% for log in audit_history %}
+            {% set is_alert = log.field_name == 'PAYROLL_VARIANCE_ALERT' %}
+            <tr style="{% if is_alert %}background:rgba(239,68,68,.12); color:var(--danger);{% endif %}">
+                <td>{{ log.edited_at.strftime('%d-%m-%Y %H:%M') if log.edited_at else '-' }}</td>
+                <td>{{ log.record_id }}</td>
+                <td style="font-weight:800;">{{ log.field_name.replace('_', ' ') }}</td>
+                <td>{{ log.old_value or '-' }}</td>
+                <td>{{ log.new_value or '-' }}</td>
+                <td>{{ log.edited_by or '-' }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" style="padding:22px; text-align:center; color:var(--muted);">No payroll audits found.</td></tr>
+        {% endfor %}
         </tbody>
     </table>
 </div>
@@ -166,7 +192,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
                 <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;"></div>
 
-                <div class="field"><label>Present Days</label><input type="number" step="any" id="present_days" value="0" required></div>
+                <div class="field"><label>Present / Payable Days (26-day basis)</label><input type="number" step="0.5" min="0" id="present_days" oninput="recalcSalary()" value="0" required></div>
                 <div class="field"><label>Absent Days</label><input type="number" step="any" id="absent_days" value="0" required></div>
                 <div class="field"><label>OT Hours Worked</label><input type="number" step="any" id="ot_hours" value="0"></div>
 
@@ -180,7 +206,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>Special Allowance (₹)</label><input type="number" step="any" id="special_allowance" oninput="recalcSalary()" value="0"></div>
                 <div class="field"><label>OT Earnings (₹)</label><input type="number" step="any" id="ot_amount" oninput="recalcSalary()" value="0"></div>
                 <div class="field"><label>Other Earnings (₹)</label><input type="number" step="any" id="other_earnings" oninput="recalcSalary()" value="0"></div>
-                <div class="field" style="grid-column: span 3;"><label>Gross Monthly Salary (₹)</label><input type="number" step="any" id="gross_salary" readonly value="0"></div>
+                <div class="field"><label>System Earned Salary (₹)</label><input type="number" step="any" id="calculated_salary" readonly value="0"></div>
+                <div class="field"><label>Salary Adjustment +/- (₹)</label><input type="number" step="any" id="salary_adjustment" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Final Gross Salary (₹)</label><input type="number" step="any" id="gross_salary" readonly value="0"></div>
 
                 <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;">
                     <h4 style="margin:0; color:var(--danger); font-weight: 800; font-size: 10px; text-transform: uppercase;">B. Deductions &amp; Contributions</h4>
@@ -192,6 +220,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>TDS (Tax Deduct ₹)</label><input type="number" step="any" id="tds_salary" oninput="recalcSalary()" value="0"></div>
                 <div class="field"><label>Salary Advance Set-off</label><input type="number" step="any" id="advance_deduction" oninput="recalcSalary()" value="0"></div>
                 <div class="field"><label>LWF Contribution (₹)</label><input type="number" step="any" id="lwf_employee" oninput="recalcSalary()" value="0"></div>
+                <div class="field"><label>Other Deductions (₹)</label><input type="number" step="any" id="other_deductions" oninput="recalcSalary()" value="0"></div>
                 <div class="field" style="grid-column: span 3;"><label>Total Deductions (₹)</label><input type="number" step="any" id="total_deductions" readonly value="0"></div>
 
                 <div style="grid-column: span 3; border-bottom: 1px solid var(--border); margin: 5px 0;">
@@ -278,8 +307,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     function setFieldsToZero() {
         ['present_days','absent_days','ot_hours','ot_amount','basic_salary','hra',
          'conveyance_allowance','special_allowance','other_earnings','gross_salary',
+         'calculated_salary','salary_adjustment',
          'pf_employee','esi_employee','professional_tax','tds_salary','advance_deduction',
-         'lwf_employee','total_deductions','net_payable','pf_employer','esi_employer','lwf_employer'
+         'lwf_employee','other_deductions','total_deductions','net_payable','pf_employer','esi_employer','lwf_employer'
         ].forEach(id => { const el = document.getElementById(id); if(el) el.value = 0; });
     }
 
@@ -314,6 +344,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             document.getElementById('absent_days').value         = d.absent_days     ?? 0;
             document.getElementById('ot_hours').value            = d.ot_hours        ?? 0;
             document.getElementById('ot_amount').value           = d.ot_amount       ?? 0;
+            document.getElementById('salary_adjustment').value   = d.salary_adjustment ?? 0;
 
             // Fill earnings
             document.getElementById('basic_salary').value        = d.basic_salary    ?? 0;
@@ -329,6 +360,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             document.getElementById('tds_salary').value          = d.tds_salary      ?? 0;
             document.getElementById('advance_deduction').value   = d.advance_deduction ?? 0;
             document.getElementById('lwf_employee').value        = d.lwf_employee    ?? 0;
+            document.getElementById('other_deductions').value    = d.other_deductions ?? 0;
+            document.getElementById('pf_employer').value         = d.pf_employer     ?? 0;
+            document.getElementById('esi_employer').value        = d.esi_employer    ?? 0;
+            document.getElementById('lwf_employer').value        = d.lwf_employer    ?? 0;
 
             // Payment settings
             document.getElementById('payment_mode').value        = d.payment_mode    || 'BANK';
@@ -358,14 +393,19 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     }
 
     function recalcSalary() {
+        const presentDays = parseFloat(document.getElementById("present_days").value) || 0;
         const basic = parseFloat(document.getElementById("basic_salary").value) || 0;
         const hra = parseFloat(document.getElementById("hra").value) || 0;
         const conveyance = parseFloat(document.getElementById("conveyance_allowance").value) || 0;
         const special = parseFloat(document.getElementById("special_allowance").value) || 0;
         const ot = parseFloat(document.getElementById("ot_amount").value) || 0;
         const other_earn = parseFloat(document.getElementById("other_earnings").value) || 0;
+        const adjustment = parseFloat(document.getElementById("salary_adjustment").value) || 0;
         
-        const gross = basic + hra + conveyance + special + ot + other_earn;
+        const monthlyEarnings = basic + hra + conveyance + special + other_earn;
+        const calculatedSalary = (monthlyEarnings * presentDays / 26) + ot;
+        const gross = calculatedSalary + adjustment;
+        document.getElementById("calculated_salary").value = calculatedSalary.toFixed(2);
         document.getElementById("gross_salary").value = gross.toFixed(2);
         
         const pf = parseFloat(document.getElementById("pf_employee").value) || 0;
@@ -374,16 +414,17 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const tds = parseFloat(document.getElementById("tds_salary").value) || 0;
         const advance = parseFloat(document.getElementById("advance_deduction").value) || 0;
         const lwf = parseFloat(document.getElementById("lwf_employee").value) || 0;
+        const otherDeductions = parseFloat(document.getElementById("other_deductions").value) || 0;
         
-        const deductions = pf + esi + pt + tds + advance + lwf;
+        const fixedDeductions = pf + esi + pt + tds + lwf + otherDeductions;
+        const cappedAdvance = Math.min(advance, Math.max(gross - fixedDeductions, 0));
+        document.getElementById("advance_deduction").value = cappedAdvance.toFixed(2);
+        const deductions = fixedDeductions + cappedAdvance;
         document.getElementById("total_deductions").value = deductions.toFixed(2);
         
         const net = gross - deductions;
         document.getElementById("net_payable").value = net.toFixed(2);
 
-        // Auto-fill employer PF/ESI (12% of basic, 3.25% of gross)
-        document.getElementById("pf_employer").value = (basic * 0.12).toFixed(2);
-        document.getElementById("esi_employer").value = (gross * 0.0325).toFixed(2);
     }
 
     function applyFilters() {
@@ -428,6 +469,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             absent_days: parseFloat(document.getElementById("absent_days").value) || 0.0,
             ot_hours: parseFloat(document.getElementById("ot_hours").value) || 0.0,
             ot_amount: parseFloat(document.getElementById("ot_amount").value) || 0.0,
+            salary_adjustment: parseFloat(document.getElementById("salary_adjustment").value) || 0.0,
             basic_salary: parseFloat(document.getElementById("basic_salary").value) || 0.0,
             hra: parseFloat(document.getElementById("hra").value) || 0.0,
             conveyance_allowance: parseFloat(document.getElementById("conveyance_allowance").value) || 0.0,
@@ -440,7 +482,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             tds_salary: parseFloat(document.getElementById("tds_salary").value) || 0.0,
             advance_deduction: parseFloat(document.getElementById("advance_deduction").value) || 0.0,
             lwf_employee: parseFloat(document.getElementById("lwf_employee").value) || 0.0,
-            other_deductions: 0.0,
+            other_deductions: parseFloat(document.getElementById("other_deductions").value) || 0.0,
             total_deductions: parseFloat(document.getElementById("total_deductions").value) || 0.0,
             pf_employer: parseFloat(document.getElementById("pf_employer").value) || 0.0,
             esi_employer: parseFloat(document.getElementById("esi_employer").value) || 0.0,
@@ -458,7 +500,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire("Saved", "Salary slip processed successfully", "success").then(() => location.reload());
+                const action = out.save_mode === "UPDATED" ? "Existing monthly row updated" : "New monthly row created";
+                Swal.fire(
+                    "Saved",
+                    `${action} (#${out.record_id}) | Gross ₹${Number(out.gross_salary).toFixed(2)} | Net ₹${Number(out.net_payable).toFixed(2)}`,
+                    "success"
+                ).then(() => location.reload());
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }

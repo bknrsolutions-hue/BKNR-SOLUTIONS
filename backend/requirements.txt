@@ -15,4 +15,5 @@ pandas
 xhtml2pdf
 gunicorn
 APScheduler==3.11.2
+alembic==1.16.5
 redis>=5.0.0

@@ -95,16 +95,18 @@ body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smooth
   padding: 13px 12px;
   border-radius: var(--radius-premium);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 8px;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
+  min-height: 92px;
+  padding-right: 48px !important;
 }
 .card::before {
   content: '';
@@ -131,9 +133,9 @@ body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smooth
 .amber::before  { background: #f59e0b; }
 .violet::before { background: #7c3aed; }
 
-.card-meta { text-align: left; overflow: hidden; flex: 1; }
+.card-meta { text-align: left; overflow: hidden; min-width: 0; width: 100%; }
 .label { font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.7px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-.value { font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 3px; letter-spacing: -0.5px; line-height: 1; }
+.value { font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 14px; letter-spacing: -0.5px; line-height: 1; }
 .value small { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-left: 2px; }
 .card-delta { font-size: 9px; font-weight: 700; margin-top: 3px; }
 .delta-up   { color: var(--emerald); }
@@ -141,9 +143,10 @@ body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smooth
 .delta-flat { color: var(--text-muted); }
 
 .card-icon-zone {
-  width: 36px; height: 36px; border-radius: 10px;
+  position: absolute; top: 13px; right: 12px;
+  width: 28px; height: 28px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 15px; flex-shrink: 0;
+  font-size: 13px; flex-shrink: 0;
 }
 .blue   .card-icon-zone { color: #3b82f6;  background: rgba(59,130,246,0.1); }
 .green  .card-icon-zone { color: #10b981;  background: rgba(16,185,129,0.1); }
@@ -456,6 +459,7 @@ tr:hover { background: var(--hover-bg); }
   margin: 0 0 8px;
 }
 .rail-link {
+  width: 100%;
   min-height: 38px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -469,10 +473,16 @@ tr:hover { background: var(--hover-bg); }
   font-size: 11px;
   font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
   transition: 0.2s;
 }
 .rail-link i { width: 16px; color: var(--accent-blue); text-align: center; }
 .rail-link:hover { color: var(--accent-blue); border-color: var(--accent-blue); background: var(--sub-bg); }
+.hr-dashboard .module-rail .rail-title,
+.hr-dashboard .module-rail .rail-label,
+.hr-dashboard .module-rail .rail-link {
+  text-transform: none !important;
+}
 
 @media(max-width: 992px) {
   .module-shell { grid-template-columns: 1fr; }
@@ -500,8 +510,9 @@ tr:hover { background: var(--hover-bg); }
   syncThemeFromParent();
   window.addEventListener('load', syncThemeFromParent);
 </script>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
-<body>
+<body class="hr-dashboard">
 
 <div class="dashboard-container">
 <div class="module-shell">
@@ -509,20 +520,19 @@ tr:hover { background: var(--hover-bg); }
     <div class="rail-title"><i class="fa-solid fa-users-gear"></i> HRMS</div>
     <div class="rail-section">
       <div class="rail-label">Forms</div>
-      <a class="rail-link" href="/attendance/employee/register"><i class="fa-solid fa-id-card-clip"></i><span>Staff Registration</span></a>
-      <a class="rail-link" href="/attendance/employee-increment"><i class="fa-solid fa-arrow-trend-up"></i><span>Increment Details</span></a>
-      <a class="rail-link" href="/attendance/daily"><i class="fa-solid fa-fingerprint"></i><span>Daily Attendance</span></a>
-      <a class="rail-link" href="/attendance/tax-master"><i class="fa-solid fa-file-shield"></i><span>Payroll Master</span></a>
-      <a class="rail-link" href="/attendance/salary-advance"><i class="fa-solid fa-hand-holding-dollar"></i><span>Salary Advance</span></a>
-      <a class="rail-link" href="/finance_accounts/salary_processing/entry"><i class="fa-solid fa-calculator"></i><span>Salary Processing</span></a>
-      <a class="rail-link" href="/attendance/shifts"><i class="fa-solid fa-clock"></i><span>Shift Master</span></a>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/employee/register', 'Staff Registration')"><i class="fa-solid fa-id-card-clip"></i><span>Staff Registration</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/employee-increment', 'Increment Details')"><i class="fa-solid fa-arrow-trend-up"></i><span>Increment Details</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/daily', 'Daily Attendance')"><i class="fa-solid fa-fingerprint"></i><span>Daily Attendance</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/tax-master', 'Payroll Master')"><i class="fa-solid fa-file-shield"></i><span>Payroll Master</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/salary-advance', 'Salary Advance')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Salary Advance</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/finance_accounts/salary_processing/entry', 'Salary Processing')"><i class="fa-solid fa-calculator"></i><span>Salary Processing</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/shifts', 'Shift Master')"><i class="fa-solid fa-clock"></i><span>Shift Master</span></button>
     </div>
     <div class="rail-section">
       <div class="rail-label">Reports</div>
-      <a class="rail-link" href="/attendance/salary/monthly-sheet"><i class="fa-solid fa-money-check-dollar"></i><span>Monthly Salary Sheet</span></a>
-      <a class="rail-link" href="/attendance/today_all"><i class="fa-solid fa-clipboard-user"></i><span>Today Attendance</span></a>
-      <a class="rail-link" href="/attendance/audit_all"><i class="fa-solid fa-clock-rotate-left"></i><span>Attendance Audit</span></a>
-      <a class="rail-link" href="/dashboard/hr_command_center"><i class="fa-solid fa-chart-pie"></i><span>HR Dashboard</span></a>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/salary/monthly-sheet', 'Monthly Salary Sheet')"><i class="fa-solid fa-money-check-dollar"></i><span>Monthly Salary Sheet</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/today_all', 'Today Attendance')"><i class="fa-solid fa-clipboard-user"></i><span>Today Attendance</span></button>
+      <button class="rail-link" type="button" onclick="openEntryModal('/attendance/audit_all', 'Attendance Audit')"><i class="fa-solid fa-clock-rotate-left"></i><span>Attendance Audit</span></button>
     </div>
   </aside>
   <main class="module-main">
@@ -532,7 +542,7 @@ tr:hover { background: var(--hover-bg); }
   ================================================ -->
   <div class="header-panel">
     <div class="header-title">
-      <h2><i class="fa-solid fa-users-gear" style="color:var(--accent-blue); margin-right:7px;"></i>Enterprise HR Intelligence</h2>
+      <h2><i class="fa-solid fa-users-gear" style="color:var(--accent-blue); margin-right:7px;"></i>HR Dashboard</h2>
       <p>{{ company_id }} | Master Command Center &nbsp;·&nbsp; Live Data Feed</p>
     </div>
     <div class="header-right">
@@ -1511,6 +1521,15 @@ tr:hover { background: var(--hover-bg); }
 </div>
 </div><!-- /.dashboard-container -->
 
+<div id="entryModal" class="entry-modal-overlay">
+  <div class="entry-modal-content">
+    <div class="entry-modal-header">
+      <h3 id="entryModalTitle">HR Workspace</h3>
+      <button class="entry-modal-close" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <iframe id="entryFrame" src=""></iframe>
+  </div>
+</div>
 
 <!-- ================================================
      🪟 KPI DRILLDOWN MODAL
@@ -1534,6 +1553,24 @@ tr:hover { background: var(--hover-bg); }
 
 
 <script>
+function openEntryModal(url, title) {
+  document.getElementById('entryModalTitle').innerText = title;
+  document.getElementById('entryFrame').src = url;
+  document.getElementById('entryModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEntryModal() {
+  document.getElementById('entryModal').style.display = 'none';
+  document.getElementById('entryFrame').src = '';
+  document.body.style.overflow = 'auto';
+  location.reload();
+}
+
+window.addEventListener('click', function(event) {
+  if (event.target === document.getElementById('entryModal')) closeEntryModal();
+});
+
 // ============================================================
 // 🧭 TAB SWITCHING
 // ============================================================

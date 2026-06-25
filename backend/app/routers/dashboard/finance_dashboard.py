@@ -17,17 +17,50 @@ from app.database.models.payments import (
     BuyerAgingSummary
 )
 from app.database.models.enterprise_finance import LedgerMaster
-from app.database.models.criteria import production_for
+from app.database.models.enterprise_finance import VoucherHeader
+from app.services.accounting_reports import AccountingReportsService
 
 router = APIRouter(tags=["CORPORATE FINANCE DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
+
+
+def _current_fy_start(today: date) -> int:
+    return today.year if today.month >= 4 else today.year - 1
+
+
+def _parse_fy_start(fy_value: str, fallback_year: int) -> int:
+    if not fy_value:
+        return fallback_year
+    try:
+        return int(str(fy_value).split("-")[0])
+    except (TypeError, ValueError):
+        return fallback_year
+
+
+def _parse_iso_date(value: str) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except Exception:
+        return None
+
+
+def _apply_date_range(query, column, start_date: date | None, end_date: date | None):
+    if start_date:
+        query = query.filter(column >= start_date)
+    if end_date:
+        query = query.filter(column <= end_date)
+    return query
+
 
 @router.get("/finance_dashboard", response_class=HTMLResponse)
 def finance_dashboard(
     request: Request,
     db: Session = Depends(get_db),
     company_id: str = Query("", description="Selected Company ID for filtering data"),
+    fy: str = Query("", description="Financial year start, example: 2025 or 2025-26"),
     from_date: str = Query("", description="YYYY-MM-DD"),
     to_date: str = Query("", description="YYYY-MM-DD")
 ):
@@ -40,42 +73,27 @@ def finance_dashboard(
     if not email or not session_comp_code:
         return RedirectResponse("/auth/login", status_code=302)
 
-    comp_code = company_id if company_id else session_comp_code
+    comp_code = session_comp_code
 
     # ---------------------------------------------------------
     # 🏢 DROPDOWN COMPANIES
     # ---------------------------------------------------------
-    available_companies = []
-    try:
-        unique_company_records = db.query(
-            production_for.id, 
-            production_for.production_for
-        ).group_by(production_for.production_for, production_for.id).all()
+    available_companies = [{"name": session_comp_code, "code": session_comp_code}]
 
-        seen_names = set()
-        for row in unique_company_records:
-            if row.production_for and row.id:
-                clean_name = str(row.production_for).strip()
-                if clean_name not in seen_names:
-                    seen_names.add(clean_name)
-                    available_companies.append({
-                        "name": clean_name,
-                        "code": str(row.id).strip()
-                    })
-    except Exception as e:
-        logger.warning(f"Error fetching company dropdown: {e}")
-        db.rollback()
-        available_companies = [{"name": "Default Processing Corp", "code": session_comp_code}]
+    today = date.today()
+    current_fy_year = _current_fy_start(today)
+    selected_fy_year = _parse_fy_start(fy, current_fy_year)
+    selected_fy = f"{selected_fy_year}-{str(selected_fy_year + 1)[2:]}"
+    fy_options = [f"{year}-{str(year + 1)[2:]}" for year in range(current_fy_year, current_fy_year - 6, -1)]
 
-    # 📅 Date Range parsing
-    parsed_from = None
-    parsed_to = None
-    if from_date:
-        try: parsed_from = date.fromisoformat(from_date)
-        except Exception: pass
-    if to_date:
-        try: parsed_to = date.fromisoformat(to_date)
-        except Exception: pass
+    parsed_from = _parse_iso_date(from_date)
+    parsed_to = _parse_iso_date(to_date)
+    if not parsed_from:
+        parsed_from = date(selected_fy_year, 4, 1)
+        from_date = parsed_from.isoformat()
+    if not parsed_to:
+        parsed_to = date(selected_fy_year + 1, 3, 31)
+        to_date = parsed_to.isoformat()
 
     last_updated_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -84,44 +102,35 @@ def finance_dashboard(
         receivables_q = db.query(func.coalesce(func.sum(CustomerReceivable.balance_amount), 0.0)).filter(
             CustomerReceivable.company_id == comp_code
         )
-        if parsed_from: receivables_q = receivables_q.filter(CustomerReceivable.invoice_date >= parsed_from)
-        if parsed_to: receivables_q = receivables_q.filter(CustomerReceivable.invoice_date <= parsed_to)
+        receivables_q = _apply_date_range(receivables_q, CustomerReceivable.invoice_date, parsed_from, parsed_to)
         receivables_outstanding = float(receivables_q.scalar() or 0.0)
 
         # 2. Payables Outstanding
         payables_q = db.query(func.coalesce(func.sum(VendorPayment.balance), 0.0)).filter(
             VendorPayment.company_id == comp_code
         )
-        if parsed_from: payables_q = payables_q.filter(VendorPayment.bill_date >= parsed_from)
-        if parsed_to: payables_q = payables_q.filter(VendorPayment.bill_date <= parsed_to)
+        payables_q = _apply_date_range(payables_q, VendorPayment.bill_date, parsed_from, parsed_to)
         payables_outstanding = float(payables_q.scalar() or 0.0)
 
-        # 3. Bank balance sum (net debit - credit)
+        # 3. Bank/cash movement for the selected period.
         bank_debit = db.query(func.coalesce(func.sum(BankTransaction.debit), 0.0)).filter(
             BankTransaction.company_id == comp_code
         )
         bank_credit = db.query(func.coalesce(func.sum(BankTransaction.credit), 0.0)).filter(
             BankTransaction.company_id == comp_code
         )
-        if parsed_from:
-            bank_debit = bank_debit.filter(BankTransaction.transaction_date >= parsed_from)
-            bank_credit = bank_credit.filter(BankTransaction.transaction_date >= parsed_from)
-        if parsed_to:
-            bank_debit = bank_debit.filter(BankTransaction.transaction_date <= parsed_to)
-            bank_credit = bank_credit.filter(BankTransaction.transaction_date <= parsed_to)
-            
-        bank_balance = float(bank_debit.scalar() or 0.0) - float(bank_credit.scalar() or 0.0)
-        # Fallback to display positive net cash
-        if bank_balance == 0.0:
-            bank_balance = 1250000.00 # Placeholder default if no transactions exist
+        bank_debit = _apply_date_range(bank_debit, BankTransaction.transaction_date, parsed_from, parsed_to)
+        bank_credit = _apply_date_range(bank_credit, BankTransaction.transaction_date, parsed_from, parsed_to)
+        cash_inflow_period = float(bank_debit.scalar() or 0.0)
+        cash_outflow_period = float(bank_credit.scalar() or 0.0)
+        net_cash_flow = cash_inflow_period - cash_outflow_period
 
         # 4. Expense summary category wise (ExpenseVouchers)
         expense_q = db.query(ExpenseVoucher.expense_type, func.sum(ExpenseVoucher.total_amount).label("total")).filter(
             ExpenseVoucher.company_id == comp_code,
             ExpenseVoucher.status == "APPROVED"
         )
-        if parsed_from: expense_q = expense_q.filter(ExpenseVoucher.voucher_date >= parsed_from)
-        if parsed_to: expense_q = expense_q.filter(ExpenseVoucher.voucher_date <= parsed_to)
+        expense_q = _apply_date_range(expense_q, ExpenseVoucher.voucher_date, parsed_from, parsed_to)
         expense_summary_rows = expense_q.group_by(ExpenseVoucher.expense_type).all()
 
         expense_categories = []
@@ -132,13 +141,64 @@ def finance_dashboard(
             expense_amounts.append(float(row.total))
             total_expenses += float(row.total)
 
-        if not expense_categories:
-            expense_categories = ["Admin", "Fuel", "Welfare", "Repairs", "Others"]
-            expense_amounts = [15000.0, 45000.0, 12000.0, 8000.0, 20000.0]
-            total_expenses = sum(expense_amounts)
+        # 5. Profit from posted double-entry vouchers for the selected period.
+        period_end = parsed_to or today
+        period_start = parsed_from or date(period_end.year, period_end.month, 1)
+        profit_loss = AccountingReportsService.get_profit_and_loss(
+            db, comp_code, period_start, period_end
+        )
+        total_income = float(profit_loss["total_income"] or 0.0)
+        total_expense_books = float(profit_loss["total_expense"] or 0.0)
+        net_profit = profit_loss["net_profit"]
+        if total_expenses == 0 and total_expense_books:
+            expense_categories = [row["name"] for row in profit_loss["details"]["expense_ledgers"][:8]]
+            expense_amounts = [float(row["amount"] or 0.0) for row in profit_loss["details"]["expense_ledgers"][:8]]
+            total_expenses = total_expense_books
 
-        # 5. Income MTD vs Expense MTD (MTD Receipts vs MTD Vendor payments)
-        net_profit = bank_balance - total_expenses
+        balance_sheet = AccountingReportsService.get_balance_sheet(db, comp_code, period_end)
+        trial_balance = AccountingReportsService.get_trial_balance(db, comp_code, period_end)
+        bank_balance = sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") in {"Cash-in-hand", "Bank Accounts"}
+        )
+        current_assets = sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") in {"Cash-in-hand", "Bank Accounts", "Sundry Debtors", "Current Assets"}
+        )
+        current_liabilities = sum(
+            abs(float(row["balance"] or 0.0)) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "LIABILITY"
+            and row.get("group_name") in {"Sundry Creditors", "Current Liabilities", "Duties & Taxes", "Provisions"}
+        )
+        net_working_capital = current_assets - current_liabilities
+        current_ratio = round(current_assets / current_liabilities, 2) if current_liabilities else 0.0
+
+        voucher_q = db.query(VoucherHeader).filter(VoucherHeader.company_id == comp_code)
+        voucher_q = _apply_date_range(voucher_q, VoucherHeader.voucher_date, parsed_from, parsed_to)
+        voucher_rows = voucher_q.all()
+        voucher_stats = {
+            "total": len(voucher_rows),
+            "posted": sum(1 for v in voucher_rows if v.status == "POSTED"),
+            "draft": sum(1 for v in voucher_rows if v.status == "DRAFT"),
+            "pending": sum(1 for v in voucher_rows if v.status not in {"POSTED", "CANCELLED", "DRAFT"}),
+        }
+        ledger_count = db.query(func.count(LedgerMaster.id)).filter(
+            LedgerMaster.company_id == comp_code,
+            LedgerMaster.status == "ACTIVE",
+        ).scalar() or 0
+
+        receipts_q = db.query(func.coalesce(func.sum(PaymentReceipt.amount_inr), 0.0)).filter(PaymentReceipt.company_id == comp_code)
+        receipts_q = _apply_date_range(receipts_q, PaymentReceipt.entry_date, parsed_from, parsed_to)
+        receipts_total = float(receipts_q.scalar() or 0.0)
+
+        vendor_paid_q = db.query(func.coalesce(func.sum(VendorPayment.paid_amount), 0.0)).filter(VendorPayment.company_id == comp_code)
+        vendor_paid_q = _apply_date_range(vendor_paid_q, VendorPayment.payment_date, parsed_from, parsed_to)
+        vendor_paid_total = float(vendor_paid_q.scalar() or 0.0)
 
         # 6. Aging schedule of Receivables
         # Try to read from BuyerAgingSummary view or calculate directly
@@ -162,7 +222,9 @@ def finance_dashboard(
             db.rollback()
             # Calculate manually from CustomerReceivable
             today = date.today()
-            receivable_items = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code).all()
+            receivable_items_q = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code)
+            receivable_items_q = _apply_date_range(receivable_items_q, CustomerReceivable.invoice_date, parsed_from, parsed_to)
+            receivable_items = receivable_items_q.all()
             for r in receivable_items:
                 bal = float(r.balance_amount or 0.0)
                 if bal <= 0: continue
@@ -178,21 +240,38 @@ def finance_dashboard(
                 else:
                     aging_summary["bucket_above_90"] += bal
 
-        # Fallback if no data
-        total_aging = sum(aging_summary.values())
-        if total_aging == 0:
-            aging_summary = {
-                "current": receivables_outstanding * 0.50,
-                "bucket_1_30": receivables_outstanding * 0.25,
-                "bucket_31_60": receivables_outstanding * 0.15,
-                "bucket_61_90": receivables_outstanding * 0.07,
-                "bucket_above_90": receivables_outstanding * 0.03
-            }
+        # 7. Six-month cash flow from actual bank/cash transactions.
+        month_starts = []
+        cursor = date(period_end.year, period_end.month, 1)
+        for offset in range(5, -1, -1):
+            year = cursor.year
+            month = cursor.month - offset
+            while month <= 0:
+                month += 12
+                year -= 1
+            month_starts.append(date(year, month, 1))
 
-        # 7. Cash Flow Inflow vs Outflow Trend (MTD Receipts vs MTD Payments)
-        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-        inflows = [500000, 650000, 580000, 720000, 810000, bank_balance]
-        outflows = [450000, 480000, 510000, 530000, 600000, total_expenses]
+        trend_start = month_starts[0]
+        bank_rows = db.query(
+            func.extract("year", BankTransaction.transaction_date).label("year"),
+            func.extract("month", BankTransaction.transaction_date).label("month"),
+            func.coalesce(func.sum(BankTransaction.debit), 0.0).label("inflow"),
+            func.coalesce(func.sum(BankTransaction.credit), 0.0).label("outflow"),
+        ).filter(
+            BankTransaction.company_id == comp_code,
+            BankTransaction.transaction_date >= trend_start,
+            BankTransaction.transaction_date <= period_end,
+        ).group_by(
+            func.extract("year", BankTransaction.transaction_date),
+            func.extract("month", BankTransaction.transaction_date),
+        ).all()
+        trend_map = {
+            (int(row.year), int(row.month)): (float(row.inflow), float(row.outflow))
+            for row in bank_rows
+        }
+        months = [month.strftime("%b %y") for month in month_starts]
+        inflows = [trend_map.get((month.year, month.month), (0.0, 0.0))[0] for month in month_starts]
+        outflows = [trend_map.get((month.year, month.month), (0.0, 0.0))[1] for month in month_starts]
 
     except Exception as e:
         logger.critical(f"Critical Root Failure Inside Finance Dashboard Router: {str(e)}")
@@ -205,12 +284,32 @@ def finance_dashboard(
             "comp_code": comp_code,
             "email": email,
             "available_companies": available_companies,
+            "fy_options": fy_options,
+            "selected_fy": selected_fy,
+            "company_id": comp_code,
             "last_updated": last_updated_timestamp,
             "receivables_outstanding": round(receivables_outstanding, 2),
             "payables_outstanding": round(payables_outstanding, 2),
             "bank_balance": round(bank_balance, 2),
+            "cash_inflow_period": round(cash_inflow_period, 2),
+            "cash_outflow_period": round(cash_outflow_period, 2),
+            "net_cash_flow": round(net_cash_flow, 2),
             "total_expenses": round(total_expenses, 2),
+            "total_income": round(total_income, 2),
             "net_profit": round(net_profit, 2),
+            "total_assets": round(balance_sheet["total_assets"], 2),
+            "total_liabilities": round(balance_sheet["total_liabilities"], 2),
+            "total_equity": round(balance_sheet["total_equity"], 2),
+            "balance_sheet_difference": round(balance_sheet["difference"], 2),
+            "is_balance_sheet_balanced": balance_sheet["is_balanced"],
+            "current_assets": round(current_assets, 2),
+            "current_liabilities": round(current_liabilities, 2),
+            "net_working_capital": round(net_working_capital, 2),
+            "current_ratio": current_ratio,
+            "voucher_stats": voucher_stats,
+            "ledger_count": ledger_count,
+            "receipts_total": round(receipts_total, 2),
+            "vendor_paid_total": round(vendor_paid_total, 2),
             "expense_categories": expense_categories,
             "expense_amounts": expense_amounts,
             "aging_summary": aging_summary,

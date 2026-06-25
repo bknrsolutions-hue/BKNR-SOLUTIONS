@@ -16,9 +16,9 @@
 <title>PRODUCTION CONTROL - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link href="[https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap)" rel="stylesheet">
-<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
-<script src="[https://cdn.jsdelivr.net/npm/sweetalert2@11](https://cdn.jsdelivr.net/npm/sweetalert2@11)"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
@@ -111,6 +111,15 @@
 
     .panel { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .panel-header { padding: 10px; background: var(--header-bg); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; color: var(--text); text-transform: uppercase; }
+    .collapsible-panel .panel-header { cursor: pointer; user-select: none; }
+    .panel-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .panel-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .panel-toggle { width: 28px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+    .panel-toggle:hover { background: var(--row-hover); }
+    .panel-toggle i { transition: transform 0.2s ease; }
+    .collapsible-panel.is-collapsed .panel-toggle i { transform: rotate(-90deg); }
+    .collapsible-panel.is-collapsed .collapsible-content { display: none !important; }
+    .collapsible-panel.is-collapsed .panel-header { border-bottom: 0; }
 
     .grand-total-badge { background: var(--accent); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; }
     .sub-total-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-left: 5px; }
@@ -201,12 +210,15 @@
 </div>
 
 <div class="row-grid">
-    <div class="panel">
-        <div class="panel-header" style="color: var(--accent);">
-            <div><i class="fa-solid fa-droplet"></i> Active Soaking Lines</div>
-            <div class="grand-total-badge">{{ soaking_data | selectattr('status', 'ne', 'Completed') | sum(attribute='in_qty') | round(2) }} KG</div>
+    <div class="panel collapsible-panel is-collapsed">
+        <div class="panel-header" style="color: var(--accent);" onclick="togglePanel(this)">
+            <div class="panel-title"><i class="fa-solid fa-droplet"></i> Active Soaking Lines</div>
+            <div class="panel-actions">
+                <div class="grand-total-badge">{{ soaking_data | selectattr('status', 'ne', 'Completed') | sum(attribute='in_qty') | round(2) }} KG</div>
+                <button type="button" class="panel-toggle" aria-label="Toggle Active Soaking Lines" aria-expanded="false"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
         </div>
-        <div class="table-wrap" style="max-height: 300px;">
+        <div class="table-wrap collapsible-content" style="max-height: 300px;">
             <table id="soakingTable">
                 <thead>
                     <tr><th style="width:75px;">Sintex</th><th>Batch</th><th style="width:140px; text-align:left;">Variety</th><th>Cnt</th><th style="text-align:right;">Qty</th><th>Timer</th><th style="width:95px;">Status</th></tr>
@@ -228,7 +240,7 @@
                                 <td style="text-align:right; font-weight:700;">{{s.in_qty}}</td>
                                 <td class="timer-cell" data-start="{{s.date}}T{{s.time}}">00:00:00</td>
                                 <td>
-                                    <select class="status-badge {% if s.status == 'Pending' %}status-pending{% else %}status-running{% endif %}" onchange="updateSoakingStatus('{{s.id}}', this.value)">
+                                    <select class="status-badge {% if s.status == 'Pending' %}status-pending{% else %}status-running{% endif %}" data-current-status="{{s.status}}" onchange="updateSoakingStatus('{{s.id}}', this)">
                                         <option value="Pending" {% if s.status == 'Pending' %}selected{% endif %}>PND</option>
                                         <option value="Running" {% if s.status == 'Running' %}selected{% endif %}>RUN</option>
                                         <option value="Completed">DONE</option>
@@ -243,9 +255,14 @@
         </div>
     </div>
 
-    <div class="panel">
-        <div class="panel-header" style="color: var(--danger);"><div><i class="fa-solid fa-triangle-exclamation"></i> Rejection Stock Floor</div></div>
-        <div class="table-wrap" style="max-height: 300px;">
+    <div class="panel collapsible-panel is-collapsed">
+        <div class="panel-header" style="color: var(--danger);" onclick="togglePanel(this)">
+            <div class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Rejection Stock Floor</div>
+            <div class="panel-actions">
+                <button type="button" class="panel-toggle" aria-label="Toggle Rejection Stock Floor" aria-expanded="false"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+        </div>
+        <div class="table-wrap collapsible-content" style="max-height: 300px;">
             <table id="floorTable">
                 <thead>
                     <tr><th style="width:95px;">Batch</th><th style="width:130px; text-align:left;">Variety</th><th>Cnt</th><th style="text-align:right;">Rej Qty</th><th style="width:80px;">Action</th></tr>
@@ -270,12 +287,15 @@
 </div>
 
 <div class="full-width-grid">
-    <div class="panel">
-        <div class="panel-header" style="color: var(--warning);">
-            <div><i class="fa-solid fa-chart-bar"></i> Dynamic Yield Production Requirements</div>
-            <div class="grand-total-badge" id="prod_count_badge">{{ pending_orders|length }} Items Listed</div>
+    <div class="panel collapsible-panel is-collapsed">
+        <div class="panel-header" style="color: var(--warning);" onclick="togglePanel(this)">
+            <div class="panel-title"><i class="fa-solid fa-chart-bar"></i> Dynamic Yield Production Requirements</div>
+            <div class="panel-actions">
+                <div class="grand-total-badge" id="prod_count_badge">{{ pending_orders|length }} Items Listed</div>
+                <button type="button" class="panel-toggle" aria-label="Toggle Dynamic Yield Production Requirements" aria-expanded="false"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
         </div>
-        <div class="table-wrap" style="max-height: 500px;">
+        <div class="table-wrap collapsible-content" style="max-height: 500px;">
             <table id="reqTable">
                 <thead>
                     <tr>
@@ -505,6 +525,39 @@ const BACKEND_GLOBAL_LOCATION = "{{ global_location if global_location else '' }
 
 let selectedRowRef = null;
 
+function hasSwal() {
+    return typeof Swal !== 'undefined' && typeof Swal.fire === 'function';
+}
+
+function showAlert(options) {
+    if (hasSwal()) return Swal.fire(options);
+    if (options.showCancelButton) {
+        return Promise.resolve({ isConfirmed: confirm(options.text || options.title || 'Confirm this action?') });
+    }
+    alert(options.text || options.title || 'Action completed');
+    return Promise.resolve({ isConfirmed: true });
+}
+
+function showToast(options) {
+    if (hasSwal()) {
+        return Swal.fire({
+            timer: 1500,
+            showConfirmButton: false,
+            ...options
+        });
+    }
+    alert(options.text || options.title || 'Action completed');
+    return Promise.resolve({ isConfirmed: true });
+}
+
+function togglePanel(headerEl) {
+    const panel = headerEl.closest('.collapsible-panel');
+    if (!panel) return;
+    const collapsed = panel.classList.toggle('is-collapsed');
+    const button = panel.querySelector('.panel-toggle');
+    if (button) button.setAttribute('aria-expanded', String(!collapsed));
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initLogTable();
     initManualListeners(); 
@@ -512,10 +565,10 @@ document.addEventListener('DOMContentLoaded', function() {
     populateFilterBarDropdowns();
     
     {% if success_msg %}
-        Swal.fire({ title: 'Success!', text: "{{ success_msg }}", icon: 'success', timer: 1500, showConfirmButton: false });
+        showToast({ title: 'Success!', text: {{ success_msg|tojson }}, icon: 'success' });
     {% endif %}
     {% if error_msg %}
-        Swal.fire({ title: 'Error!', text: "{{ error_msg }}", icon: 'error', confirmButtonColor: '#dc2626' });
+        showAlert({ title: 'Error!', text: {{ error_msg|tojson }}, icon: 'error', confirmButtonColor: '#dc2626' });
     {% endif %}
     
     window.addEventListener('click', function(e) {
@@ -766,27 +819,68 @@ function applyGlobalFilters() {
     });
 }
 
-async function updateSoakingStatus(id, status) {
-    if (status === 'Completed') {
-        const res = await Swal.fire({ title: 'Complete Soaking?', text: "This batch will move to production logs.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#166534' });
-        if (!res.isConfirmed) return location.reload();
+async function updateSoakingStatus(id, selectEl) {
+    const status = selectEl.value;
+    const previousStatus = selectEl.dataset.currentStatus || '';
+
+    const confirmRes = await showAlert({
+        title: status === 'Completed' ? 'Complete Soaking?' : 'Update Status?',
+        text: status === 'Completed'
+            ? 'This soaking line will be marked as DONE and removed from active lines.'
+            : `Change this soaking line status to ${status}?`,
+        icon: status === 'Completed' ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#166534'
+    });
+
+    if (!confirmRes.isConfirmed) {
+        selectEl.value = previousStatus;
+        return;
     }
+
+    selectEl.disabled = true;
     try {
         const response = await fetch(`/processing/production/update_soaking_status/${id}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ status: status })
         });
-        if (response.ok) location.reload();
-    } catch (err) { Swal.fire('Error', 'Update failed', 'error'); }
+        const result = await response.json().catch(() => ({ status: 'error', message: 'Update failed' }));
+        if (!response.ok || result.status !== 'ok') {
+            throw new Error(result.message || 'Update failed');
+        }
+        selectEl.dataset.currentStatus = status;
+        await showToast({ title: 'Success!', text: result.message || 'Status updated', icon: 'success' });
+        location.reload();
+    } catch (err) {
+        selectEl.value = previousStatus;
+        selectEl.disabled = false;
+        showAlert({ title: 'Error', text: err.message || 'Update failed', icon: 'error', confirmButtonColor: '#dc2626' });
+    }
 }
 
-function markRejectionCompleted(id) {
-    Swal.fire({ title: 'Confirm', text: 'Floor balance processed?', icon: 'question', showCancelButton: true, confirmButtonColor: '#166534' }).then(res => {
-        if(res.isConfirmed) {
-            fetch(`/processing/production/complete_rejection/${id}`, { method: 'POST' }).then(() => location.reload());
-        }
+async function markRejectionCompleted(id) {
+    const res = await showAlert({
+        title: 'Complete Rejection?',
+        text: 'This rejection row will be marked DONE and an offset entry will be added.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#166534'
     });
+
+    if (!res.isConfirmed) return;
+
+    try {
+        const response = await fetch(`/processing/production/complete_rejection/${id}`, { method: 'POST' });
+        const result = await response.json().catch(() => ({ status: 'error', message: 'Update failed' }));
+        if (!response.ok || result.status !== 'ok') {
+            throw new Error(result.message || 'Update failed');
+        }
+        await showToast({ title: 'Success!', text: result.message || 'Rejection completed', icon: 'success' });
+        location.reload();
+    } catch (err) {
+        showAlert({ title: 'Error', text: err.message || 'Update failed', icon: 'error', confirmButtonColor: '#dc2626' });
+    }
 }
 
 function openModal() { 

@@ -122,6 +122,15 @@ class ContainerLog(Base):
     # 📅 Added tracking field to resolve costing dashboard query crash
     date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
 
+    # --- Accounting Integration (Added) ---
+    status = Column(String(20), default='DRAFT', index=True)
+    cost_center_id = Column(Integer, nullable=True)
+    journal_id = Column(Integer, nullable=True)
+    freight_ledger_id = Column(Integer, nullable=True)
+    vendor_ledger_id = Column(Integer, nullable=True)
+    input_gst_ledger_id = Column(Integer, nullable=True)
+    gst_register_id = Column(Integer, nullable=True)
+
 
 # =========================================================================
 # 🔬 5. QA TESTING LOGS (Fixed Architectural Mismatch)
@@ -139,6 +148,15 @@ class QATestingLog(Base):
 
     # 📅 Added native tracking date column referenced in router as test_date
     test_date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
+
+    # --- Accounting Integration (Added) ---
+    status = Column(String(20), default='DRAFT', index=True)
+    cost_center_id = Column(Integer, nullable=True)
+    journal_id = Column(Integer, nullable=True)
+    qa_expense_ledger_id = Column(Integer, nullable=True)
+    lab_ledger_id = Column(Integer, nullable=True) # Assuming lab is a vendor
+    input_gst_ledger_id = Column(Integer, nullable=True)
+    gst_register_id = Column(Integer, nullable=True)
 
 
 # =========================================================================
@@ -158,3 +176,11 @@ class OtherExpense(Base):
 
     # 📅 Date tracking column for router compliance
     date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
+
+    # --- Accounting Integration (Added) ---
+    status = Column(String(20), default='DRAFT', index=True)
+    cost_center_id = Column(Integer, nullable=True)
+    journal_id = Column(Integer, nullable=True)
+    expense_ledger_id = Column(Integer, nullable=True)
+    cash_or_bank_ledger_id = Column(Integer, nullable=True)
+    gst_register_id = Column(Integer, nullable=True)

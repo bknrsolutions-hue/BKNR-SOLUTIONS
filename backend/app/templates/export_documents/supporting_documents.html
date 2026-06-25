@@ -32,6 +32,7 @@ try {
   if (theme) document.documentElement.setAttribute("data-theme", theme);
 } catch(e) {}
 </script>
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 <div class="header">
@@ -85,7 +86,7 @@ try {
         <tr>
           <td>{{ row.document_kind }}</td>
           <td>{{ row.document_no or '-' }}</td>
-          <td>{% if row.file_path %}<a href="{{ row.file_path }}" target="_blank">{{ row.file_name }}</a>{% else %}{{ row.file_name }}{% endif %}</td>
+          <td><a href="/export_documents/files/{{ row.id }}/download" target="_blank">{{ row.file_name }}</a></td>
           <td>v{{ row.version_no }}</td>
           <td>{{ 'YES' if row.is_current else 'NO' }}</td>
           <td>{{ row.uploaded_at }}</td>
@@ -141,8 +142,8 @@ function appendHistoryRow(row) {
   const tbody = document.getElementById("historyBody");
   tbody.querySelector("td[colspan='7']")?.closest("tr")?.remove();
   const tr = document.createElement("tr");
-  const fileHtml = row.file_path
-    ? `<a href="${safeText(row.file_path)}" target="_blank">${safeText(row.file_name)}</a>`
+  const fileHtml = row.download_url || row.id
+    ? `<a href="${safeText(row.download_url || `/export_documents/files/${row.id}/download`)}" target="_blank">${safeText(row.file_name)}</a>`
     : safeText(row.file_name);
   tr.innerHTML = `
     <td>${safeText(row.document_kind)}</td>

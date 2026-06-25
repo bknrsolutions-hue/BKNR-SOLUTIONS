@@ -19,6 +19,13 @@ from app.services.accounting_reports import AccountingReportsService
 
 router = APIRouter()
 
+
+def require_company_code(request: Request) -> str:
+    company_code = request.session.get("company_code")
+    if not company_code:
+        raise HTTPException(status_code=401, detail="Company session is required")
+    return company_code
+
 DEFAULT_ACCOUNT_GROUPS = [
     ("Capital Account", "EQUITY", None),
     ("Current Assets", "ASSET", None),
@@ -153,7 +160,7 @@ class VoucherCreate(BaseModel):
 # =========================================================================
 @router.get("/groups")
 def get_groups(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     groups = db.query(AccountGroup).filter(AccountGroup.company_id == comp_code).all()
     
     # Construct hierarchical tree list
@@ -179,7 +186,14 @@ def get_groups(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/groups")
 def create_group(request: Request, payload: AccountGroupCreate, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
+    if payload.parent_group_id is not None:
+        parent = db.query(AccountGroup).filter(
+            AccountGroup.id == payload.parent_group_id,
+            AccountGroup.company_id == comp_code,
+        ).first()
+        if not parent:
+            raise HTTPException(status_code=400, detail="Invalid parent account group")
     
     # Check duplicate
     exists = db.query(AccountGroup).filter(
@@ -204,7 +218,7 @@ def create_group(request: Request, payload: AccountGroupCreate, db: Session = De
 # =========================================================================
 @router.get("/ledgers")
 def get_ledgers(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     return {
         "success": True, 
@@ -226,7 +240,7 @@ def get_ledgers(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/voucher-types")
 def get_voucher_types(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
     rows = db.query(VoucherType).filter(VoucherType.company_id == comp_code).order_by(VoucherType.name).all()
     return {
@@ -239,9 +253,16 @@ def get_voucher_types(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/ledgers")
 def create_ledger(request: Request, payload: LedgerCreate, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "system@bknr.com")
     
+    group = db.query(AccountGroup).filter(
+        AccountGroup.id == payload.group_id,
+        AccountGroup.company_id == comp_code,
+    ).first()
+    if not group:
+        raise HTTPException(status_code=400, detail="Invalid account group")
+
     exists = db.query(LedgerMaster).filter(
         LedgerMaster.company_id == comp_code,
         LedgerMaster.ledger_name == payload.ledger_name
@@ -279,7 +300,7 @@ def create_ledger(request: Request, payload: LedgerCreate, db: Session = Depends
 
 @router.post("/ledgers/import")
 async def import_ledgers_excel(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "system@bknr.com")
     
     contents = await file.read()
@@ -325,7 +346,7 @@ async def import_ledgers_excel(request: Request, file: UploadFile = File(...), d
 # =========================================================================
 @router.post("/vouchers")
 def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "system@bknr.com")
     
     v_type = db.query(VoucherType).filter(
@@ -335,12 +356,30 @@ def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session =
     if not v_type:
         raise HTTPException(status_code=404, detail="Voucher type configuration not found")
 
+    if len(payload.details) < 2:
+        raise HTTPException(status_code=400, detail="A voucher requires at least two ledger lines")
+
     # Format detail mapping list
     details_mapped = []
     for d in payload.details:
-        ledger = db.query(LedgerMaster).filter(LedgerMaster.id == d.ledger_id).first()
+        ledger = db.query(LedgerMaster).filter(
+            LedgerMaster.id == d.ledger_id,
+            LedgerMaster.company_id == comp_code,
+            LedgerMaster.status == "ACTIVE",
+        ).first()
         if not ledger:
             raise HTTPException(status_code=404, detail=f"Ledger with ID {d.ledger_id} not found")
+        if d.debit_amount < 0 or d.credit_amount < 0 or (d.debit_amount > 0 and d.credit_amount > 0):
+            raise HTTPException(status_code=400, detail="Each line must contain either a positive debit or credit")
+        if d.debit_amount == 0 and d.credit_amount == 0:
+            raise HTTPException(status_code=400, detail="Zero-value voucher lines are not allowed")
+        if d.cost_center_id is not None:
+            cost_center = db.query(CostCenter).filter(
+                CostCenter.id == d.cost_center_id,
+                CostCenter.company_id == comp_code,
+            ).first()
+            if not cost_center:
+                raise HTTPException(status_code=400, detail="Invalid cost center")
         details_mapped.append({
             "ledger_name": ledger.ledger_name,
             "group_name": ledger.group.group_name,
@@ -371,7 +410,7 @@ def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session =
 
 @router.post("/vouchers/{voucher_id}/submit")
 def submit_voucher(voucher_id: int, request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "system@bknr.com")
     
     voucher = db.query(VoucherHeader).filter(
@@ -396,7 +435,7 @@ def submit_voucher(voucher_id: int, request: Request, db: Session = Depends(get_
 
 @router.post("/vouchers/{voucher_id}/approve")
 def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "system@bknr.com")
     
     voucher = db.query(VoucherHeader).filter(
@@ -429,40 +468,43 @@ def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get
 # =========================================================================
 @router.get("/reports/trial-balance")
 def report_trial_balance(request: Request, as_of_date: Optional[date] = None, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date)
     return {"success": True, "data": tb}
 
 @router.get("/reports/profit-loss")
 def report_profit_loss(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     pl = AccountingReportsService.get_profit_and_loss(db, comp_code, start_date, end_date)
     return {"success": True, "data": pl}
 
 @router.get("/reports/balance-sheet")
 def report_balance_sheet(request: Request, as_of_date: Optional[date] = None, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     bs = AccountingReportsService.get_balance_sheet(db, comp_code, as_of_date)
     return {"success": True, "data": bs}
 
 @router.get("/reports/ledger-statement")
 def report_ledger_statement(request: Request, ledger_id: int, start_date: date, end_date: date, db: Session = Depends(get_db)):
-    statement = AccountingReportsService.get_ledger_statement(db, ledger_id, start_date, end_date)
+    comp_code = require_company_code(request)
+    statement = AccountingReportsService.get_ledger_statement(db, ledger_id, start_date, end_date, comp_code)
+    if not statement:
+        raise HTTPException(status_code=404, detail="Ledger not found")
     return {"success": True, "data": statement}
 
 @router.get("/reports/day-book")
 def report_day_book(request: Request, target_date: Optional[date] = None, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     return {"success": True, "data": AccountingReportsService.get_day_book(db, comp_code, target_date or date.today())}
 
 @router.get("/reports/gst-summary")
 def report_gst_summary(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     return {"success": True, "data": AccountingReportsService.get_gst_summary(db, comp_code, start_date, end_date)}
 
 @router.get("/dashboard/summary")
 def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
     as_of_date = date.today()
     tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date)
@@ -474,17 +516,17 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
     cash_bank = sum(
         row["balance"] for row in tb
         if row["type"] == "LEDGER" and row["group_type"] == "ASSET"
-        and any(token in row["name"].lower() for token in ["cash", "bank", "sbi", "hdfc", "icici"])
+        and row.get("group_name") in {"Cash-in-hand", "Bank Accounts"}
     )
     receivables = sum(
         row["balance"] for row in tb
         if row["type"] == "LEDGER" and row["group_type"] == "ASSET"
-        and any(token in row["name"].lower() for token in ["customer", "debtor", "receivable"])
+        and row.get("group_name") == "Sundry Debtors"
     )
     payables = abs(sum(
         row["balance"] for row in tb
         if row["type"] == "LEDGER" and row["group_type"] == "LIABILITY"
-        and any(token in row["name"].lower() for token in ["supplier", "creditor", "payable", "tds", "gst"])
+        and row.get("group_name") in {"Sundry Creditors", "Duties & Taxes"}
     ))
 
     return {
@@ -508,7 +550,7 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
 
 @router.post("/setup/defaults")
 def setup_default_accounting(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     email = request.session.get("email", "SYSTEM")
     created = ensure_default_accounting_setup(db, comp_code, email)
     return {"success": True, "message": "Default Tally-style accounting masters are ready.", "created": created}
@@ -518,7 +560,13 @@ def setup_default_accounting(request: Request, db: Session = Depends(get_db)):
 # =========================================================================
 @router.post("/bank/auto-match")
 def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
+    bank_ledger = db.query(LedgerMaster).filter(
+        LedgerMaster.id == bank_ledger_id,
+        LedgerMaster.company_id == comp_code,
+    ).first()
+    if not bank_ledger:
+        raise HTTPException(status_code=404, detail="Bank ledger not found")
     
     # Fetch unmatched statements
     unmatched_stmts = db.query(BankReconciliation).filter(
@@ -554,7 +602,7 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
 # =========================================================================
 @router.get("/tally_dashboard")
 def get_tally_dashboard(request: Request, db: Session = Depends(get_db)):
-    comp_code = request.session.get("company_code", "VNBK2162")
+    comp_code = require_company_code(request)
     ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
     templates = request.app.state.templates
     return templates.TemplateResponse(

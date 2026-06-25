@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>{{ title }} - {{ document_no }}</title>
 <style>
-@page { size: A4; margin: 14mm; }
+@page { size: A4; margin: 14mm 14mm 18mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8px; color: #6b7280; } }
 * { box-sizing: border-box; }
 body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 0; font-size: 11px; line-height: 1.35; }
 .doc { width: 100%; }
@@ -24,6 +24,8 @@ table { width: 100%; border-collapse: collapse; }
 .sign-box { border-top: 1px solid #111827; padding-top: 8px; min-height: 54px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .small { color: #6b7280; font-size: 9px; font-weight: 400; text-transform: none; margin-top: 3px; }
 .stamp { border: 1px dashed #9ca3af; height: 72px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-weight: 700; margin-top: 12px; }
+.control { margin-top: 12px; border-top: 1px solid #d1d5db; padding-top: 7px; display: flex; justify-content: space-between; color: #6b7280; font-size: 8px; }
+.status { display: inline-block; margin-top: 5px; padding: 3px 6px; border: 1px solid #9ca3af; font-size: 8px; font-weight: 700; text-transform: uppercase; }
 .print-actions { position: fixed; right: 14px; top: 14px; display: flex; gap: 8px; }
 .print-actions button { border: 1px solid #111827; background: #111827; color: #fff; padding: 7px 10px; border-radius: 4px; cursor: pointer; font-weight: 700; }
 @media print {
@@ -51,6 +53,7 @@ table { width: 100%; border-collapse: collapse; }
             <div class="meta-chip">{{ document_no }}</div>
             <p>Date: {{ document_date or generated_at.date() }}</p>
             <p>Generated: {{ generated_at.strftime("%d-%b-%Y %H:%M UTC") }}</p>
+            <span class="status">{{ record.approval_status if record.approval_status is defined else (record.status if record.status is defined else 'CONTROLLED COPY') }}</span>
         </div>
     </div>
 
@@ -87,6 +90,11 @@ table { width: 100%; border-collapse: collapse; }
         <div class="sign-box">Authorised Signatory<div class="small">Company Seal</div></div>
     </div>
     <div class="stamp">Company Stamp / Digital Approval</div>
+    <div class="control">
+        <span>ERP Document ID: {{ doc_type|upper }}-{{ record.id }}</span>
+        <span>Revision: {{ record.updated_at.strftime('%d-%b-%Y') if record.updated_at is defined and record.updated_at else 'Original' }}</span>
+        <span>Verify against the latest ERP record before external use.</span>
+    </div>
 </main>
 </body>
 </html>

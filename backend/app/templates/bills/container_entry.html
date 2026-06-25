@@ -5,6 +5,19 @@
 <title>CONTAINER LOGISTICS MANAGEMENT - BKNR SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script>
+function syncThemeFromParent() {
+  try {
+    const theme = window.parent.document.documentElement.getAttribute("data-theme");
+    if (theme) document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    const theme = localStorage.getItem("theme");
+    if (theme) document.documentElement.setAttribute("data-theme", theme);
+  }
+}
+syncThemeFromParent();
+</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -136,6 +149,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 
 <body>

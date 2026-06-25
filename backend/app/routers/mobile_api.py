@@ -16,6 +16,7 @@ from app.database.models.attendance import DailyAttendance, EmployeeRegistration
 from app.database.models.payments import CustomerReceivable, VendorPayment, BankTransaction, ExpenseVoucher
 from app.database.models.bills import ElectricityLog, DieselLog, PurchaseInvoice, ContainerLog, QATestingLog, OtherExpense
 from app.database.models.criteria import production_at
+from app.services.accounting_reports import AccountingReportsService
 from app.utils.global_filters import get_global_filters
 
 router = APIRouter(prefix="/api/mobile", tags=["MOBILE APP API"])
@@ -134,11 +135,9 @@ def get_mobile_dashboard_data(
         pee_q = db.query(func.coalesce(func.sum(Peeling.amount), 0.0)).filter(Peeling.company_id == comp_code)
         peeling_cost = float(pee_q.scalar() or 0.0)
 
-        gra_q = db.query(func.coalesce(func.sum(Grading.quantity), 0.0)).filter(Grading.company_id == comp_code)
-        grading_cost = float(gra_q.scalar() or 0.0) * 4.50 
-
-        soak_q = db.query(func.coalesce(func.sum(Soaking.in_qty), 0.0)).filter(Soaking.company_id == comp_code)
-        soaking_cost = float(soak_q.scalar() or 0.0) * 2.10
+        # No monetary grading/soaking source is stored in these tables.
+        grading_cost = 0.0
+        soaking_cost = 0.0
 
         # C. Utilities & Overheads
         elec_q = db.query(func.coalesce(func.sum(ElectricityLog.total_cost), 0.0)).join(
@@ -151,8 +150,8 @@ def get_mobile_dashboard_data(
         ).filter(and_(production_at.company_id == comp_code, DieselLog.type == "OUT"))
         diesel_cost = float(dies_q.scalar() or 0.0)
 
-        water_cost = electricity_cost * 0.12
-        ice_cost = diesel_cost * 0.22
+        water_cost = 0.0
+        ice_cost = 0.0
 
         pack_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(PurchaseInvoice.company_id == comp_code)
         packaging_cost = float(pack_q.scalar() or 0.0)
@@ -179,7 +178,13 @@ def get_mobile_dashboard_data(
                           packaging_cost + logistics_cost + qa_cost + payroll_cost + other_cost)
 
         net_profit = total_revenue - total_expenses
-        bank_balance = (total_revenue * 0.14) + 450000.00
+        trial_balance = AccountingReportsService.get_trial_balance(db, comp_code, date.today())
+        bank_balance = sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") in {"Cash-in-hand", "Bank Accounts"}
+        )
 
         # ==========================================
         # 4. DISK DISTRIBUTION CHARTS (DONUT / PIE REPRESENTATION)
@@ -210,29 +215,6 @@ def get_mobile_dashboard_data(
                 "value": pct,
                 "color": colors_list[idx % len(colors_list)]
             })
-
-        # Fallback to Production varieties if stock_entry is empty, to avoid dummy data
-        if not donut_data:
-            fallback_q = db.query(
-                Production.variety_name,
-                func.sum(Production.production_qty).label("qty")
-            ).filter(Production.company_id == comp_code)
-            if g_loc_clean and g_loc_clean != "ALL":
-                fallback_q = fallback_q.filter(func.upper(func.trim(Production.production_at)) == g_loc_clean)
-            elif user_allowed_locations:
-                fallback_q = fallback_q.filter(func.upper(func.trim(Production.production_at)).in_(user_allowed_locations))
-            
-            fallback_rows = fallback_q.group_by(Production.variety_name).order_by(func.sum(Production.production_qty).desc()).limit(3).all()
-            total_qty_donut = sum([float(v[1] or 0.0) for v in fallback_rows])
-            for idx, row in enumerate(fallback_rows):
-                v_name = row[0] or "Others"
-                v_qty = float(row[1] or 0.0)
-                pct = int((v_qty / total_qty_donut * 100)) if total_qty_donut > 0 else 0
-                donut_data.append({
-                    "label": v_name,
-                    "value": pct,
-                    "color": colors_list[idx % len(colors_list)]
-                })
 
         # ==========================================
         # 5. WEEKLY BAR CHART (Daily Production past 7 days)
@@ -775,4 +757,3 @@ def get_report_data_json(
     except Exception as e:
         logger.error(f"Failed to fetch report data for {report_name}: {e}")
         return JSONResponse({"status": "error", "message": f"Query execution error: {str(e)}"}, status_code=500)
-
