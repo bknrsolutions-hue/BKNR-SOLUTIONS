@@ -317,3 +317,5 @@ async def home_page(request: Request):
 @application.get("/health")
 def health():
     return {"status": "ok", "service": "BKNR_ERP"} # Reload Trigger 8
+# ASGI entrypoint for Render
+app = application
