@@ -79,7 +79,7 @@ if os.environ.get("RUN_MAIN") == "true" or not os.environ.get("UVICORN_RELOAD"):
         replace_existing=True
    )
     scheduler.start()
-    create_floor_balance_snapshot()
+    #create_floor_balance_snapshot()
 
     print("✅ Daily Inventory Snapshot Scheduler Started")
     print("✅ Daily Floor Balance Snapshot Scheduler Started")
