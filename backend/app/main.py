@@ -50,7 +50,7 @@ import app.database.models.assets
 import app.database.models.advanced_seafood_erp
 
 # Create all tables on startup if they don't exist
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 # =====================================================
 # =====================================================
 # 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
