@@ -1,184 +1,71 @@
 /* ==========================================================
-   BKNR ERP GLOBAL LOADER (LIGHT + DARK MODE)
-   Version 3.5 - Centralized Performance Sync
+   BKNR ERP GLOBAL LOADER
+   Simple empty spinner for navigation and save actions.
 ========================================================== */
 
 :root {
-    --loader-bg:
-        radial-gradient(circle at 50% 35%, rgba(37, 99, 235, 0.12), transparent 32%),
-        linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(226, 232, 240, 0.96));
-    --loader-card: rgba(255, 255, 255, 0.86);
-    --loader-border: rgba(148, 163, 184, 0.32);
-
-    --loader-accent: #0f5fa8;
-    --loader-accent-2: #38bdf8;
-    --loader-seal-bg: linear-gradient(145deg, #083b73 0%, #0f5fa8 52%, #1d9bd7 100%);
-
-    --loader-text: #1f2937;
-    --loader-subtext: #64748b;
+    --loader-bg: rgba(248, 250, 252, 0.74);
+    --loader-ring: rgba(148, 163, 184, 0.32);
+    --loader-ring-active: #2563eb;
 }
 
-/* 🌟 UNIVERSAL DARK THEME SELECTOR 
-   (HTML/BODY DATA-THEME అప్లై అయినా పక్కాగా వర్క్ అవుతుంది) 🌟 */
-html[data-theme="dark"], 
-body[data-theme="dark"], 
+html[data-theme="dark"],
+body[data-theme="dark"],
 [data-theme="dark"],
 .dark-mode {
-    --loader-bg: rgba(15, 23, 42, 0.98);
-    --loader-card: rgba(15, 23, 42, 0.84);
-    --loader-border: rgba(148, 163, 184, 0.22);
-
-    --loader-accent: #60a5fa;
-    --loader-accent-2: #7dd3fc;
-    --loader-seal-bg: linear-gradient(145deg, #0f172a 0%, #1d4ed8 56%, #38bdf8 100%);
-
-    --loader-text: #f8fafc;
-    --loader-subtext: #94a3b8;
+    --loader-bg: rgba(15, 23, 42, 0.72);
+    --loader-ring: rgba(148, 163, 184, 0.28);
+    --loader-ring-active: #60a5fa;
 }
 
-/* ==========================================================
-   LOADER OVERLAY Workspace
-========================================================== */
 #globalLoader {
     position: fixed;
     inset: 0;
     z-index: 999999;
-
     display: none;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-
     background: var(--loader-bg) !important;
-    backdrop-filter: blur(14px) saturate(1.2);
-    -webkit-backdrop-filter: blur(14px) saturate(1.2);
-
-    transition: opacity 0.28s ease, visibility 0.28s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
-/* ==========================================================
-   LOADER CONTAINER CARD
-========================================================== */
 .loader-container {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-
-    min-width: 270px;
-    padding: 34px 36px 30px;
-
-    background: var(--loader-card) !important;
-    border: 1px solid var(--loader-border) !important;
-    border-radius: 18px;
-    font-family: 'Inter', sans-serif;
-
-    box-shadow:
-        0 24px 60px rgba(15, 23, 42, 0.14),
-        inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: transform 0.3s ease;
+    width: 64px;
+    height: 64px;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
 }
 
-/* ==========================================================
-   PREMIUM BRAND SEAL
-========================================================== */
-.loader-brand-mark {
-    position: relative;
-    width: 76px;
-    height: 76px;
-    display: grid;
-    place-items: center;
-    border-radius: 22px;
-    background: var(--loader-seal-bg);
-    box-shadow:
-        0 18px 38px rgba(15, 95, 168, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34);
-    color: #ffffff;
-    font-size: 23px;
-    font-weight: 900;
-    letter-spacing: 0;
-    isolation: isolate;
+.loader-spinner {
+    width: 46px;
+    height: 46px;
+    border: 4px solid var(--loader-ring);
+    border-top-color: var(--loader-ring-active);
+    border-radius: 50%;
+    animation: loaderSpin 0.75s linear infinite;
 }
 
-.loader-brand-mark::before {
-    content: "";
-    position: absolute;
-    inset: -7px;
-    border-radius: 27px;
-    border: 1px solid rgba(56, 189, 248, 0.42);
-    animation: loaderPulse 1.45s ease-in-out infinite;
-}
-
-.loader-brand-mark::after {
-    content: "";
-    position: absolute;
-    inset: 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-@keyframes loaderPulse {
-    0%, 100% {
-        opacity: 0.55;
-        transform: scale(0.97);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.04);
-    }
-}
-
-/* ==========================================================
-   TEXT COMPONENTS TYPOGRAPHY
-========================================================== */
-.loader-text {
-    margin-top: 22px;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    color: var(--loader-text);
-    text-transform: uppercase;
-}
-
-.loader-subtext {
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--loader-subtext);
-    letter-spacing: 0.3px;
-}
-
+.loader-brand-mark,
+.loader-text,
+.loader-subtext,
 .loader-progress {
-    position: relative;
-    width: 168px;
-    height: 3px;
-    margin-top: 22px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.24);
+    display: none !important;
 }
 
-.loader-progress span {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 42%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--loader-accent), var(--loader-accent-2));
-    animation: loaderTrack 1.05s cubic-bezier(.45, 0, .2, 1) infinite;
+@keyframes loaderSpin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-@keyframes loaderTrack {
-    0% { transform: translateX(-115%); }
-    100% { transform: translateX(270%); }
-}
-
-/* ==========================================================
-   HIDE ANIMATION PIPELINE WITH SCALE EFFECT
-========================================================== */
 #globalLoader.hide {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-}
-#globalLoader.hide .loader-container {
-    transform: scale(0.95);
 }
