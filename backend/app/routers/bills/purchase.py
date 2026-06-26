@@ -11,7 +11,7 @@ import logging
 import io
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 
 from app.database import get_db
 from app.database.models.bills import PurchaseInvoice
@@ -475,7 +475,7 @@ def export_invoice_pdf(inv_id: int, request: Request, db: Session = Depends(get_
         "printed_on": ist_now()
     })
     
-    pdf = HTML(string=html_content).write_pdf()
+    pdf = render_pdf_from_html(html_content)
     return StreamingResponse(
         io.BytesIO(pdf),
         media_type="application/pdf",

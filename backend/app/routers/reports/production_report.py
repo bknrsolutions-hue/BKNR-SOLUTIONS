@@ -13,7 +13,7 @@ from app.utils.timezone import ist_now
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
@@ -408,7 +408,7 @@ def export_production_pdf(
         "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     
-    pdf_file = HTML(string=html_content).write_pdf()
+    pdf_file = render_pdf_from_html(html_content)
     disposition = "attachment" if download else "inline"
     
     return StreamingResponse(

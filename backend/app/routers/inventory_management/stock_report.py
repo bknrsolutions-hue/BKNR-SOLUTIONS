@@ -14,7 +14,7 @@ from app.services.cache import cache_get_or_set, invalidate_company_cache
 
 import openpyxl 
 from io import BytesIO
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
@@ -323,7 +323,7 @@ def export_pdf(
         "company_address": company_address, "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     
-    pdf_file = HTML(string=html).write_pdf()
+    pdf_file = render_pdf_from_html(html)
     disposition = "attachment" if download else "inline"
     
     return StreamingResponse(

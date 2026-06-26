@@ -15,7 +15,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
@@ -169,7 +169,7 @@ async def gate_export_pdf(
         "auto": 0  
     })
     
-    pdf = HTML(string=html_content).write_pdf()
+    pdf = render_pdf_from_html(html_content)
     return StreamingResponse(
         BytesIO(pdf), 
         media_type="application/pdf", 

@@ -54,34 +54,34 @@ import app.database.models.advanced_seafood_erp
 # =====================================================
 # 📸 DAILY INVENTORY SNAPSHOT SCHEDULER
 # =====================================================
+scheduler = None
 
-if os.environ.get("RUN_MAIN") == "true" or not os.environ.get("UVICORN_RELOAD"):
 
-    scheduler = BackgroundScheduler(
-        timezone="Asia/Kolkata"
-    )
+def start_snapshot_scheduler():
+    global scheduler
+    if scheduler and scheduler.running:
+        return
 
+    scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
     scheduler.add_job(
         create_inventory_snapshot,
         trigger="cron",
         hour=9,
-        minute=00,
+        minute=0,
         id="daily_inventory_snapshot",
-        replace_existing=True
+        replace_existing=True,
     )
     scheduler.add_job(
         create_floor_balance_snapshot,
         trigger="cron",
         hour=9,
-        minute=00,
+        minute=0,
         id="daily_floor_balance_snapshot",
-        replace_existing=True
-   )
+        replace_existing=True,
+    )
     scheduler.start()
-    #create_floor_balance_snapshot()
-
-    print("✅ Daily Inventory Snapshot Scheduler Started")
-    print("✅ Daily Floor Balance Snapshot Scheduler Started")
+    logger.info("Daily Inventory Snapshot Scheduler Started")
+    logger.info("Daily Floor Balance Snapshot Scheduler Started")
 
 # =====================================================
 # 🔐 3. SESSION & AUTH MIDDLEWARE (ORDER IS CRITICAL)
@@ -139,6 +139,19 @@ application.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@application.on_event("startup")
+def on_startup():
+    start_snapshot_scheduler()
+
+
+@application.on_event("shutdown")
+def on_shutdown():
+    global scheduler
+    if scheduler and scheduler.running:
+        scheduler.shutdown(wait=False)
+        logger.info("Snapshot Scheduler Stopped")
 
 
 # =====================================================

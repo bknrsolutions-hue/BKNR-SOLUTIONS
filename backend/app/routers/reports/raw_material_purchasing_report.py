@@ -14,7 +14,7 @@ import json
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
 
@@ -391,5 +391,5 @@ async def export_rmp_pdf(
     else:
         resp = print_table_view(request, ids, fy, batch, supplier, variety, peeling, hsn, production_for, db)
         
-    pdf = HTML(string=resp.body.decode()).write_pdf()
+    pdf = render_pdf_from_html(resp.body.decode())
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=RMP_{type}.pdf"})

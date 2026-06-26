@@ -15,7 +15,7 @@ from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
 
 from openpyxl import Workbook
-from weasyprint import HTML
+from app.services.pdf_renderer import render_pdf_from_html
 
 from app.database import get_db
 from app.database.models.processing import DeHeading, AuditLog
@@ -229,7 +229,7 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
         "avg_yield": round((t_hlso / t_hoso * 100) if t_hoso > 0 else 0, 2), "bill_date": ist_now()
     }
     if download:
-        pdf = HTML(string=templates.get_template("reports/de_heading_monthly_bill.html").render(data)).write_pdf()
+        pdf = render_pdf_from_html(templates.get_template("reports/de_heading_monthly_bill.html").render(data))
         return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Bill_{contractor}.pdf"})
     return templates.TemplateResponse(request=request, name="reports/de_heading_monthly_bill.html", context=data)
 
@@ -250,7 +250,7 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     if ids: 
         query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
         
-    pdf = HTML(string=templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": ist_now()})).write_pdf()
+    pdf = render_pdf_from_html(templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": ist_now()}))
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"})
 
 @router.get("/export_excel")
