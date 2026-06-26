@@ -294,9 +294,15 @@ body {
 .badge-default { background: rgba(255,255,255,0.15); color: var(--text-primary); }
 [data-theme="light"] .badge-default { background: rgba(0,0,0,0.1); }
 
-.sidebar-footer { padding: 16px; border-top: 1px solid var(--border-light); text-align: center; flex-shrink: 0;}
+.sidebar-footer { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-light); text-align: center; flex-shrink: 0;}
 .footer-quote { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; font-weight: 600;}
 .footer-powered { font-size: 10px; font-weight: 800; color: var(--text-primary); letter-spacing: 0.5px; }
+.profile-logout-section {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-light);
+    padding-top: 16px;
+    padding-bottom: 6px;
+}
 
 /* =========================================================
    🌟 HEADER & BREADCRUMB
@@ -547,6 +553,20 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     .icon-action-btn { width: 32px; height: 32px; font-size: 13px; }
     .corp-avatar { width: 30px; height: 30px; font-size: 12px; }
     .header-right-actions { gap: 8px; }
+    #profileDropdownConsole {
+        max-height: calc(100dvh - 92px);
+        overflow-y: auto;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
+    .profile-logout-section {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+    .sidebar {
+        bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+    .sidebar-footer {
+        padding-bottom: calc(26px + env(safe-area-inset-bottom));
+    }
     
     /* Breadcrumbs compact text */
     .app-breadcrumb { font-size: 10px; padding: 4px 8px; }
@@ -703,7 +723,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                     </div>
                 </div>
                 <div class="mega-menu-grid" id="dropdownMenuScrollBox"></div>
-                <div style="margin-top: 16px; border-top: 1px solid var(--border-light); padding-top: 16px;">
+                <div class="profile-logout-section">
                     <button style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
                 </div>
             </div>

@@ -132,12 +132,11 @@
         ========================================================== */
         .chart-grid { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
+            grid-template-columns: repeat(2, minmax(0, 1fr)); 
             gap: 16px; 
             padding: 0 16px 16px; 
             align-items: start; 
         }
-        @media(max-width: 1200px) { .chart-grid { grid-template-columns: repeat(2, 1fr); } }
         @media(max-width: 992px) { .chart-grid { grid-template-columns: 1fr; } }
         
         .chart-box { 
@@ -156,6 +155,189 @@
         }
         .chart-container-inner { 
             flex-grow: 1; position: relative; width: 100%; min-height: 0; height: 100%; 
+        }
+        .country-intel-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.65fr) minmax(140px, 0.85fr);
+            gap: 12px;
+            height: 100%;
+            min-height: 0;
+        }
+        .country-map-surface {
+            position: relative;
+            min-height: 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background:
+                radial-gradient(circle at 20% 20%, rgba(37,99,235,0.10), transparent 28%),
+                linear-gradient(135deg, rgba(15,23,42,0.03), rgba(16,185,129,0.05)),
+                var(--table-th-bg);
+            overflow: hidden;
+        }
+        .country-map-surface .jvm-container,
+        .country-map-surface svg {
+            width: 100%;
+            height: 100%;
+        }
+        .country-side-panel {
+            min-height: 0;
+            overflow: auto;
+            display: grid;
+            align-content: start;
+            gap: 6px;
+            padding-right: 2px;
+            scrollbar-width: thin;
+        }
+        .country-side-panel::-webkit-scrollbar { width: 4px; }
+        .country-side-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+        .country-rank-card {
+            display: grid;
+            gap: 4px;
+            padding: 7px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            cursor: pointer;
+            transition: 0.18s ease;
+        }
+        .country-rank-card:hover {
+            border-color: rgba(37,99,235,0.38);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        .country-rank-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 8.5px;
+            font-weight: 900;
+            color: var(--text);
+        }
+        .country-rank-value {
+            color: var(--accent);
+            white-space: nowrap;
+        }
+        .country-rank-track {
+            height: 5px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(148,163,184,0.18);
+        }
+        .country-rank-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #2563eb, #10b981);
+        }
+        .country-drill-header {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 7px 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow-sm);
+        }
+        .country-drill-title {
+            min-width: 0;
+            color: var(--text);
+            font-size: 9px;
+            font-weight: 900;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .country-drill-back {
+            border: 0;
+            border-radius: 6px;
+            padding: 4px 7px;
+            background: var(--accent-light);
+            color: var(--accent);
+            font-size: 8px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .country-drill-meta {
+            color: var(--sub);
+            font-size: 7.5px;
+            font-weight: 800;
+        }
+        .country-map-empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--sub);
+            font-size: 10px;
+            font-weight: 800;
+        }
+        .fallback-world-map {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+        .fallback-world-map svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .map-land {
+            fill: rgba(37, 99, 235, 0.18);
+            stroke: rgba(37, 99, 235, 0.28);
+            stroke-width: 2;
+        }
+        [data-theme="dark"] .map-land {
+            fill: rgba(59, 130, 246, 0.22);
+            stroke: rgba(125, 211, 252, 0.26);
+        }
+        .map-line {
+            fill: none;
+            stroke: rgba(148, 163, 184, 0.20);
+            stroke-width: 1;
+        }
+        .market-pin {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            border: 2px solid #ffffff;
+            border-radius: 999px;
+            background: #2563eb;
+            box-shadow: 0 0 0 5px rgba(37,99,235,0.16), 0 8px 20px rgba(15,23,42,0.18);
+            cursor: pointer;
+            padding: 0;
+            transition: 0.18s ease;
+        }
+        .market-pin:hover {
+            transform: translate(-50%, -50%) scale(1.14);
+        }
+        .market-pin span {
+            position: absolute;
+            left: 50%;
+            top: calc(100% + 5px);
+            transform: translateX(-50%);
+            max-width: 88px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px 5px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 7.5px;
+            font-weight: 900;
+            pointer-events: none;
+            box-shadow: var(--shadow-sm);
+        }
+        @media(max-width: 640px) {
+            .country-intel-layout { grid-template-columns: 1fr; }
+            .country-side-panel { display: none; }
         }
 
         /* ==========================================================
@@ -415,7 +597,7 @@
 
 <div class="chart-grid">
     <div class="chart-box"><h3>Revenue Trend</h3><div class="chart-container-inner"><canvas id="c_day_trend"></canvas></div></div>
-    <div class="chart-box"><h3>Market Share (Country)</h3><div class="chart-container-inner"><canvas id="c_country"></canvas></div></div>
+    <div class="chart-box"><h3>World Market Performance</h3><div class="chart-container-inner"><div class="country-intel-layout"><div id="c_country_map" class="country-map-surface"></div><div id="c_country_rank" class="country-side-panel"></div></div></div></div>
     <div class="chart-box"><h3>Variety Performance</h3><div class="chart-container-inner"><canvas id="c_variety"></canvas></div></div>
     <div class="chart-box"><h3>Top Grades (MT)</h3><div class="chart-container-inner"><canvas id="c_bar_grade"></canvas></div></div>
     <div class="chart-box"><h3>Top 5 Buyers</h3><div class="chart-container-inner"><canvas id="c_buyer"></canvas></div></div>
@@ -440,7 +622,7 @@
                     <tr class="data-row" 
                         data-dt="{{ s.invoice_date }}" data-m="{{ s.invoice_date[5:7] }}" 
                         data-y="{{ s.invoice_date[0:4] }}" data-st="{{ s.status }}" 
-                        data-buyer="{{ s.buyer_name | lower }}" data-country="{{ s.country | lower }}" data-brand="{{ s.brand | lower }}"
+                        data-buyer="{{ s.buyer_name | lower }}" data-buyername="{{ s.buyer_name }}" data-country="{{ s.country | lower }}" data-brand="{{ s.brand | lower }}"
                         data-countryname="{{ s.country }}" data-grade="{{ s.grade }}" 
                         data-variety="{{ s.variety }}" data-inv="{{ s.invoice_no }}" data-po="{{ s.po_number }}">
                         
@@ -659,7 +841,7 @@ function runAnalytics() {
     const q = document.getElementById('buyer_search').value.toLowerCase();
     const fyF = document.getElementById('f_fy').value;
     
-    let d = { rev:0, usd:0, pl:0, paid:0, unpaid:0, cost:0, pk:0, kg:0, mc:0, invs: new Set(), grades:{}, buyers:{}, varieties:{}, countries:{}, dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } };
+    let d = { rev:0, usd:0, pl:0, paid:0, unpaid:0, cost:0, pk:0, kg:0, mc:0, invs: new Set(), grades:{}, buyers:{}, varieties:{}, countries:{}, countryDrill:{}, dayTrend: {}, timeline: { labels:[], rev:[], pl:[] } };
     let fyRange = (fyF && fyF !== 'ALL') ? getFYDates(fyF) : null;
 
     document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
@@ -715,6 +897,20 @@ function runAnalytics() {
             d.varieties[tr.dataset.variety] = (d.varieties[tr.dataset.variety] || 0) + rev;
             d.buyers[tr.dataset.buyer.toUpperCase()] = (d.buyers[tr.dataset.buyer.toUpperCase()] || 0) + rev;
             d.countries[tr.dataset.countryname] = (d.countries[tr.dataset.countryname] || 0) + rev;
+            const countryName = tr.dataset.countryname || 'Unknown';
+            const buyerName = tr.dataset.buyername || tr.dataset.buyer || 'Unknown Buyer';
+            const poNumber = tr.dataset.po || 'Unknown PO';
+            if (!d.countryDrill[countryName]) d.countryDrill[countryName] = { value: 0, buyers: {} };
+            if (!d.countryDrill[countryName].buyers[buyerName]) {
+                d.countryDrill[countryName].buyers[buyerName] = { value: 0, poSet: new Set(), pos: {} };
+            }
+            if (!d.countryDrill[countryName].buyers[buyerName].pos[poNumber]) {
+                d.countryDrill[countryName].buyers[buyerName].pos[poNumber] = 0;
+            }
+            d.countryDrill[countryName].value += rev;
+            d.countryDrill[countryName].buyers[buyerName].value += rev;
+            d.countryDrill[countryName].buyers[buyerName].poSet.add(poNumber);
+            d.countryDrill[countryName].buyers[buyerName].pos[poNumber] += rev;
             d.dayTrend[dt] = (d.dayTrend[dt] || 0) + rev;
             
             let invLabel = tr.querySelector('.m-inv') ? tr.querySelector('.m-inv').innerText : tr.dataset.inv;
@@ -820,6 +1016,256 @@ function updateKPIs(d) {
     } else { cEl.innerText = "0% Collected"; cEl.className = "amt-sub badge-neutral"; document.getElementById('k_debt').style.color = "var(--text)"; }
 }
 
+const COUNTRY_CODE_MAP = {
+    "AFGHANISTAN":"AF","ALBANIA":"AL","ALGERIA":"DZ","ARGENTINA":"AR","AUSTRALIA":"AU","AUSTRIA":"AT","BAHRAIN":"BH",
+    "BANGLADESH":"BD","BELGIUM":"BE","BRAZIL":"BR","CANADA":"CA","CHILE":"CL","CHINA":"CN","COLOMBIA":"CO",
+    "DENMARK":"DK","EGYPT":"EG","FRANCE":"FR","GERMANY":"DE","GREECE":"GR","HONG KONG":"HK","INDIA":"IN",
+    "INDONESIA":"ID","IRAN":"IR","IRAQ":"IQ","IRELAND":"IE","ISRAEL":"IL","ITALY":"IT","JAPAN":"JP","JORDAN":"JO",
+    "KENYA":"KE","KUWAIT":"KW","MALAYSIA":"MY","MEXICO":"MX","MOROCCO":"MA","NETHERLANDS":"NL","NEW ZEALAND":"NZ",
+    "NIGERIA":"NG","NORWAY":"NO","OMAN":"OM","PAKISTAN":"PK","PHILIPPINES":"PH","POLAND":"PL","PORTUGAL":"PT",
+    "QATAR":"QA","RUSSIA":"RU","SAUDI ARABIA":"SA","SINGAPORE":"SG","SOUTH AFRICA":"ZA","SOUTH KOREA":"KR",
+    "SPAIN":"ES","SRI LANKA":"LK","SWEDEN":"SE","SWITZERLAND":"CH","TAIWAN":"TW","THAILAND":"TH","TURKEY":"TR",
+    "UNITED ARAB EMIRATES":"AE","UAE":"AE","UNITED KINGDOM":"GB","UK":"GB","UNITED STATES":"US","USA":"US",
+    "UNITED STATES OF AMERICA":"US","VIETNAM":"VN","VIET NAM":"VN"
+};
+const COUNTRY_COORD_MAP = {
+    "AUSTRALIA":[82,68],"BAHRAIN":[59,48],"BANGLADESH":[69,52],"BELGIUM":[49,37],"BRAZIL":[33,68],
+    "CANADA":[22,26],"CHINA":[71,43],"EGYPT":[54,50],"FRANCE":[48,41],"GERMANY":[50,37],"HONG KONG":[73,51],
+    "INDIA":[66,54],"INDONESIA":[74,66],"IRAN":[59,47],"IRAQ":[57,48],"ITALY":[51,44],"JAPAN":[82,43],
+    "JORDAN":[56,49],"KUWAIT":[58,49],"MALAYSIA":[72,62],"NETHERLANDS":[49,36],"OMAN":[61,53],"PAKISTAN":[63,51],
+    "QATAR":[59,50],"RUSSIA":[66,27],"SAUDI ARABIA":[57,54],"SINGAPORE":[73,63],"SOUTH AFRICA":[53,80],
+    "SOUTH KOREA":[79,43],"SPAIN":[46,44],"SRI LANKA":[66,60],"TAIWAN":[76,50],"THAILAND":[71,56],
+    "TURKEY":[54,45],"UNITED ARAB EMIRATES":[60,51],"UAE":[60,51],"UNITED KINGDOM":[47,35],"UK":[47,35],
+    "UNITED STATES":[20,43],"USA":[20,43],"UNITED STATES OF AMERICA":[20,43],"VIETNAM":[73,56],"VIET NAM":[73,56]
+};
+let countryMapPromise = null;
+let countryVectorMap = null;
+let countryDrillData = {};
+let currentCountryEntries = [];
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
+}
+
+function loadAsset(url, type = 'script') {
+    return new Promise((resolve, reject) => {
+        const selector = type === 'style' ? `link[href="${url}"]` : `script[src="${url}"]`;
+        const existing = document.querySelector(selector);
+        if (existing) {
+            if (existing.dataset.loaded === 'true') resolve();
+            existing.addEventListener('load', resolve, { once: true });
+            existing.addEventListener('error', reject, { once: true });
+            return;
+        }
+        const el = type === 'style' ? document.createElement('link') : document.createElement('script');
+        if (type === 'style') {
+            el.rel = 'stylesheet';
+            el.href = url;
+        } else {
+            el.src = url;
+            el.async = true;
+        }
+        el.onload = () => { el.dataset.loaded = 'true'; resolve(); };
+        el.onerror = reject;
+        document.head.appendChild(el);
+    });
+}
+
+function ensureCountryVectorMap() {
+    if (!countryMapPromise) {
+        countryMapPromise = loadAsset('https://cdn.jsdelivr.net/npm/jsvectormap@1.6.0/dist/css/jsvectormap.min.css', 'style')
+            .then(() => loadAsset('https://cdn.jsdelivr.net/npm/jsvectormap@1.6.0/dist/js/jsvectormap.min.js'))
+            .then(() => loadAsset('https://cdn.jsdelivr.net/npm/jsvectormap@1.6.0/dist/maps/world.js'));
+    }
+    return countryMapPromise;
+}
+
+function renderCountryRank(entries) {
+    const panel = document.getElementById('c_country_rank');
+    if (!panel) return;
+    const maxValue = Math.max(...entries.map(item => item.value), 0) || 1;
+    panel.innerHTML = entries.slice(0, 8).map((item, index) => `
+        <div class="country-rank-card" data-country="${escapeHtml(item.name)}">
+            <div class="country-rank-top">
+                <span>${index + 1}. ${escapeHtml(item.name)}</span>
+                <span class="country-rank-value">₹ ${(item.value / 100000).toFixed(1)}L</span>
+            </div>
+            <div class="country-rank-track"><div class="country-rank-fill" style="width:${Math.max(4, (item.value / maxValue) * 100)}%"></div></div>
+        </div>
+    `).join('') || '<div class="country-map-empty">No country data</div>';
+}
+
+function renderCountryBuyerDrill(countryName) {
+    const panel = document.getElementById('c_country_rank');
+    const country = countryDrillData[countryName];
+    if (!panel || !country) return;
+    const buyers = Object.entries(country.buyers || {})
+        .map(([name, data]) => ({ name, value: data.value || 0, poCount: data.poSet?.size || Object.keys(data.pos || {}).length }))
+        .sort((a, b) => b.value - a.value);
+    const maxValue = Math.max(...buyers.map(item => item.value), 0) || 1;
+    panel.innerHTML = `
+        <div class="country-drill-header">
+            <div>
+                <div class="country-drill-title">${escapeHtml(countryName)}</div>
+                <div class="country-drill-meta">Buyer wise · ${buyers.length} buyers · ₹ ${(country.value / 100000).toFixed(2)}L</div>
+            </div>
+            <button class="country-drill-back" type="button" onclick="renderCountryRank(currentCountryEntries)">Back</button>
+        </div>
+        ${buyers.map(item => `
+            <div class="country-rank-card" data-country="${escapeHtml(countryName)}" data-buyer="${escapeHtml(item.name)}">
+                <div class="country-rank-top">
+                    <span>${escapeHtml(item.name)}</span>
+                    <span class="country-rank-value">₹ ${(item.value / 100000).toFixed(1)}L</span>
+                </div>
+                <div class="country-drill-meta">${item.poCount} PO</div>
+                <div class="country-rank-track"><div class="country-rank-fill" style="width:${Math.max(4, (item.value / maxValue) * 100)}%"></div></div>
+            </div>
+        `).join('') || '<div class="country-map-empty">No buyer data</div>'}
+    `;
+}
+
+function renderBuyerPoDrill(countryName, buyerName) {
+    const panel = document.getElementById('c_country_rank');
+    const buyer = countryDrillData[countryName]?.buyers?.[buyerName];
+    if (!panel || !buyer) return;
+    const pos = Object.entries(buyer.pos || {})
+        .map(([po, value]) => ({ po, value }))
+        .sort((a, b) => b.value - a.value);
+    const maxValue = Math.max(...pos.map(item => item.value), 0) || 1;
+    panel.innerHTML = `
+        <div class="country-drill-header">
+            <div>
+                <div class="country-drill-title">${escapeHtml(buyerName)}</div>
+                <div class="country-drill-meta">${escapeHtml(countryName)} · PO wise · ₹ ${(buyer.value / 100000).toFixed(2)}L</div>
+            </div>
+            <button class="country-drill-back" type="button" id="country_buyer_back">Back</button>
+        </div>
+        ${pos.map(item => `
+            <div class="country-rank-card">
+                <div class="country-rank-top">
+                    <span>${escapeHtml(item.po)}</span>
+                    <span class="country-rank-value">₹ ${(item.value / 100000).toFixed(1)}L</span>
+                </div>
+                <div class="country-rank-track"><div class="country-rank-fill" style="width:${Math.max(4, (item.value / maxValue) * 100)}%"></div></div>
+            </div>
+        `).join('') || '<div class="country-map-empty">No PO data</div>'}
+    `;
+    document.getElementById('country_buyer_back')?.addEventListener('click', () => renderCountryBuyerDrill(countryName));
+}
+
+document.addEventListener('click', function(event) {
+    const card = event.target.closest('#c_country_rank .country-rank-card');
+    if (!card) return;
+    const countryName = card.dataset.country;
+    const buyerName = card.dataset.buyer;
+    if (countryName && buyerName) renderBuyerPoDrill(countryName, buyerName);
+    else if (countryName) renderCountryBuyerDrill(countryName);
+});
+
+function renderFallbackWorldMap(mapEl, entries) {
+    const maxValue = Math.max(...entries.map(item => item.value), 0) || 1;
+    const markers = entries.slice(0, 12).map(item => {
+        const key = String(item.name).trim().toUpperCase();
+        const point = COUNTRY_COORD_MAP[key];
+        if (!point) return '';
+        const size = Math.max(7, Math.min(22, 7 + (item.value / maxValue) * 15));
+        return `
+            <button class="market-pin" data-country="${escapeHtml(item.name)}" style="left:${point[0]}%;top:${point[1]}%;width:${size}px;height:${size}px" title="${escapeHtml(item.name)} - ₹ ${(item.value / 100000).toFixed(2)} L">
+                <span>${escapeHtml(item.name)}</span>
+            </button>
+        `;
+    }).join('');
+    mapEl.innerHTML = `
+        <div class="fallback-world-map">
+            <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet" aria-label="World market map">
+                <path class="map-land" d="M105 150c52-47 138-55 211-18 34 17 52 42 42 74-9 30-54 32-77 55-31 31-20 81-59 98-37 16-104-9-130-42-45-56-45-128 13-167z"/>
+                <path class="map-land" d="M297 330c55 5 105 39 115 92 10 49-20 85-63 92-51 8-94-31-104-79-9-45 9-89 52-105z"/>
+                <path class="map-land" d="M455 136c56-39 148-34 200-1 44 28 49 71 14 103-35 31-103 22-134 55-29 31-4 91-43 116-36 23-94-1-111-40-22-50 20-92 27-134 6-38 11-74 47-99z"/>
+                <path class="map-land" d="M610 255c48-19 113-4 137 39 25 45-7 93-44 125-43 37-98 40-132 3-42-45-15-143 39-167z"/>
+                <path class="map-land" d="M705 120c68-44 172-34 211 21 30 43 3 93-54 112-54 18-92-14-140-4-39 8-62 46-100 28-33-16-28-66 0-100 19-23 47-34 83-57z"/>
+                <path class="map-land" d="M748 340c61-40 138-16 160 41 20 53-17 109-73 117-63 9-117-43-111-98 2-23 9-43 24-60z"/>
+                <path class="map-line" d="M55 260h890M500 55v410M180 85c90 80 90 270 0 350M820 85c-90 80-90 270 0 350"/>
+            </svg>
+            ${markers}
+        </div>
+    `;
+    mapEl.querySelectorAll('.market-pin').forEach(pin => {
+        pin.addEventListener('click', () => renderCountryBuyerDrill(pin.dataset.country));
+    });
+}
+
+function renderCountryChart(countries, drillData = {}) {
+    const mapEl = document.getElementById('c_country_map');
+    if (!mapEl) return;
+    const entries = Object.entries(countries || {}).filter(([, value]) => Number(value) > 0);
+    const topCountries = entries
+        .map(([name, value]) => ({ name: name || 'Unknown', value: Number(value) }))
+        .sort((a, b) => b.value - a.value);
+    countryDrillData = drillData || {};
+    currentCountryEntries = topCountries;
+    renderCountryRank(topCountries);
+    if (!topCountries.length) {
+        mapEl.innerHTML = '<div class="country-map-empty">No country data</div>';
+        return;
+    }
+
+    const values = {};
+    topCountries.forEach(item => {
+        const code = COUNTRY_CODE_MAP[String(item.name).trim().toUpperCase()];
+        if (code) values[code] = item.value;
+    });
+
+    mapEl.innerHTML = '<div class="country-map-empty">Loading market map...</div>';
+    ensureCountryVectorMap()
+        .then(() => {
+            mapEl.innerHTML = '';
+            if (countryVectorMap?.destroy) countryVectorMap.destroy();
+            const theme = BKNRCharts.theme();
+            if (!window.jsVectorMap) throw new Error('jsVectorMap unavailable');
+            countryVectorMap = new jsVectorMap({
+                selector: '#c_country_map',
+                map: 'world',
+                zoomButtons: true,
+                zoomOnScroll: true,
+                backgroundColor: 'transparent',
+                regionStyle: {
+                    initial: {
+                        fill: theme.dark ? '#334155' : '#e2e8f0',
+                        fillOpacity: 0.86,
+                        stroke: theme.dark ? '#0f172a' : '#ffffff',
+                        strokeWidth: 0.6
+                    },
+                    hover: { fill: '#2563eb', fillOpacity: 0.92, cursor: 'pointer' },
+                    selected: { fill: '#10b981' }
+                },
+                series: {
+                    regions: [{
+                        values,
+                        scale: ['#bfdbfe', '#2563eb'],
+                        normalizeFunction: 'polynomial'
+                    }]
+                },
+                onRegionTooltipShow: function(event, tooltip, code) {
+                    const match = topCountries.find(item => COUNTRY_CODE_MAP[String(item.name).trim().toUpperCase()] === code);
+                    if (match) tooltip.text(`${match.name}: ₹ ${(match.value / 100000).toFixed(2)} L`);
+                },
+                onRegionClick: function(event, code) {
+                    const match = topCountries.find(item => COUNTRY_CODE_MAP[String(item.name).trim().toUpperCase()] === code);
+                    if (match) renderCountryBuyerDrill(match.name);
+                }
+            });
+        })
+        .catch(() => {
+            renderFallbackWorldMap(mapEl, topCountries);
+        });
+}
+
 function renderCharts(d) {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const cTxt = isDark ? '#94a3b8' : '#475569'; const cGrid = isDark ? '#334155' : '#f1f5f9';
@@ -833,11 +1279,7 @@ function renderCharts(d) {
         options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 }, color: cTxt } } } } 
     });
 
-    if(charts.cCountry) charts.cCountry.destroy();
-    charts.cCountry = BKNRCharts.create(document.getElementById('c_country'), { 
-        type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderColor: isDark ? '#1e293b' : '#fff' }] }, 
-        options: { maintainAspectRatio: false, cutout: '70%', plugins: dp } 
-    });
+    renderCountryChart(d.countries, d.countryDrill);
 
     if(charts.c2) charts.c2.destroy();
     charts.c2 = BKNRCharts.create(document.getElementById('c_variety'), { 
