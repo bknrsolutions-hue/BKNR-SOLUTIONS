@@ -558,8 +558,21 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/app-splash.css">
 </head>
 <body>
+
+<div id="appSplash" aria-label="Opening workspace">
+    <div class="app-splash-card">
+        <div class="app-splash-logo-wrap">
+            <img class="app-splash-logo" src="/static/icon-192.png" alt="Company logo">
+        </div>
+        <h1 class="app-splash-company">{{ request.session.get('company_name', 'BKNR ERP') }}</h1>
+        <div class="app-splash-label">Enterprise Workspace</div>
+        <div class="app-splash-quote" id="appSplashQuote">Preparing your workspace.</div>
+        <div class="app-splash-track"><span></span></div>
+    </div>
+</div>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
@@ -2021,5 +2034,6 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 <script src="/static/js/global-loader.js"></script>
+<script src="/static/js/app-splash.js"></script>
 </body>
 </html>

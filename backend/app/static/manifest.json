@@ -8,9 +8,8 @@
   "screenshots": [
     {
       "src": "/static/screenshot.png",
-      "sizes": "400x300",
+      "sizes": "400x400",
       "type": "image/png",
-      "form_factor": "wide",
       "label": "BKNR ERP premium workspace preview"
     }
   ],
