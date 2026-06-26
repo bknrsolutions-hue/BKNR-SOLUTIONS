@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <title>{{ request.session.get('company_name', 'Enterprise ERP') }} - Workspace</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="company-name" content="{{ request.session.get('company_name', 'BKNR ERP') }}">
 
 <link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,6 +19,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
+    window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'BKNR ERP')|tojson }};
     const savedTheme = localStorage.getItem("theme") || "dark";
     document.documentElement.setAttribute("data-theme", savedTheme);
 </script>

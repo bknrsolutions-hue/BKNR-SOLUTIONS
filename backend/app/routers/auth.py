@@ -159,14 +159,21 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     request.session.update({
         "email": user.email, "company_id": company.id, "company_code": company.company_code,
-        "name": user.name, "role": user.role, "permissions": user.permissions, "setup_completed": True, "last_activity": get_ist_time().timestamp()
+        "company_name": company.company_name, "name": user.name, "role": user.role,
+        "permissions": user.permissions, "setup_completed": True, "last_activity": get_ist_time().timestamp()
     })
     return JSONResponse({"status": "success", "setup_completed": True, "next_page": "/home"})
 
 @router.get("/session-info")
 def session_info(request: Request):
     if not request.session.get("email"): return JSONResponse({"authenticated": False}, status_code=401)
-    return {"authenticated": True, "email": request.session.get("email"), "name": request.session.get("name")}
+    return {
+        "authenticated": True,
+        "email": request.session.get("email"),
+        "name": request.session.get("name"),
+        "company_name": request.session.get("company_name"),
+        "company_code": request.session.get("company_code"),
+    }
 
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get_db)):
