@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -827,39 +828,39 @@ function renderCharts(d) {
 
     if(charts.cDay) charts.cDay.destroy();
     const sDates = Object.keys(d.dayTrend).sort();
-    charts.cDay = new Chart(document.getElementById('c_day_trend'), { 
+    charts.cDay = BKNRCharts.create(document.getElementById('c_day_trend'), { 
         type: 'line', data: { labels: sDates, datasets: [{ data: sDates.map(k=>d.dayTrend[k]), borderColor: '#3b82f6', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }] }, 
         options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 }, color: cTxt } } } } 
     });
 
     if(charts.cCountry) charts.cCountry.destroy();
-    charts.cCountry = new Chart(document.getElementById('c_country'), { 
+    charts.cCountry = BKNRCharts.create(document.getElementById('c_country'), { 
         type: 'doughnut', data: { labels: Object.keys(d.countries), datasets: [{ data: Object.values(d.countries), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderColor: isDark ? '#1e293b' : '#fff' }] }, 
         options: { maintainAspectRatio: false, cutout: '70%', plugins: dp } 
     });
 
     if(charts.c2) charts.c2.destroy();
-    charts.c2 = new Chart(document.getElementById('c_variety'), { 
+    charts.c2 = BKNRCharts.create(document.getElementById('c_variety'), { 
         type: 'pie', data: { labels: Object.keys(d.varieties), datasets: [{ data: Object.values(d.varieties), backgroundColor: ['#8b5cf6', '#14b8a6', '#f97316', '#ef4444', '#3b82f6'], borderColor: isDark ? '#1e293b' : '#fff' }] }, 
         options: { maintainAspectRatio: false, plugins: dp } 
     });
 
     if(charts.c3) charts.c3.destroy();
     const topG = Object.entries(d.grades).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    charts.c3 = new Chart(document.getElementById('c_bar_grade'), { 
+    charts.c3 = BKNRCharts.create(document.getElementById('c_bar_grade'), { 
         type: 'bar', data: { labels: topG.map(x=>x[0]), datasets: [{ data: topG.map(x=>x[1]), backgroundColor: '#10b981', borderRadius: 4 }] }, 
         options: { maintainAspectRatio: false, plugins: { ...cp, datalabels: { ...cp.datalabels, formatter: (v) => (v/1000).toFixed(1) + 'T' } }, scales: { y: { display: false }, x: { ticks: { font: { size: 8 }, color: cTxt }, grid: { color: cGrid } } } } 
     });
 
     if(charts.c4) charts.c4.destroy();
     const topB = Object.entries(d.buyers).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    charts.c4 = new Chart(document.getElementById('c_buyer'), { 
+    charts.c4 = BKNRCharts.create(document.getElementById('c_buyer'), { 
         type: 'bar', data: { labels: topB.map(x=>x[0]), datasets: [{ data: topB.map(x=>x[1]), backgroundColor: '#8b5cf6', borderRadius: 4 }] }, 
         options: { maintainAspectRatio: false, plugins: cp, scales: { y: { display: false }, x: { ticks: { font: { size: 8 }, color: cTxt }, grid: { color: cGrid } } } } 
     });
 
     if(charts.c5) charts.c5.destroy();
-    charts.c5 = new Chart(document.getElementById('c_line'), { 
+    charts.c5 = BKNRCharts.create(document.getElementById('c_line'), { 
         type: 'line', data: { labels: d.timeline.labels, datasets: [{ label: 'Rev', data: d.timeline.rev, borderColor: '#3b82f6', borderWidth: 1.5, tension: 0.3 }, { label: 'P&L', data: d.timeline.pl, borderColor: '#10b981', borderWidth: 1.5, tension: 0.3 }] }, 
         options: { maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: { size: 8 }, color: cTxt } }, datalabels: { display: false } }, scales: { y: { display: false }, x: { ticks: { font: { size: 7 }, color: cTxt }, grid: { color: cGrid } } } } 
     });

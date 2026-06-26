@@ -70,6 +70,42 @@ def _apply_text_location(query, column, location: str):
     return query
 
 
+def _blank_profit_loss():
+    return {
+        "total_income": 0.0,
+        "total_expense": 0.0,
+        "net_profit": 0.0,
+        "details": {"income_ledgers": [], "expense_ledgers": []},
+    }
+
+
+def _safe_accounting_call(db: Session, label: str, fallback, fn, *args):
+    try:
+        return fn(db, *args)
+    except Exception:
+        db.rollback()
+        logger.exception("Costing dashboard accounting fallback used for %s", label)
+        return fallback
+
+
+def _safe_scalar(db: Session, label: str, query, fallback=0.0):
+    try:
+        return query.scalar()
+    except Exception:
+        db.rollback()
+        logger.exception("Costing dashboard scalar fallback used for %s", label)
+        return fallback
+
+
+def _safe_all(db: Session, label: str, query, fallback=None):
+    try:
+        return query.all()
+    except Exception:
+        db.rollback()
+        logger.exception("Costing dashboard list fallback used for %s", label)
+        return [] if fallback is None else fallback
+
+
 def _sale_amounts(row, weight_map):
     pack_key = str(row.packing_style or "").strip()
     mc_weight = weight_map.get(pack_key, 1.0)
@@ -154,16 +190,17 @@ def costing_dashboard(
         rmp_q = _apply_text_location(rmp_q, RawMaterialPurchasing.peeling_at, location)
         qty_q = _apply_text_location(qty_q, RawMaterialPurchasing.peeling_at, location)
             
-        rmp_cost = float(rmp_q.scalar() or 0.0)
-        total_qty = float(qty_q.scalar() or 0.0)
+        rmp_cost = float(_safe_scalar(db, "raw_material_cost", rmp_q) or 0.0)
+        total_qty = float(_safe_scalar(db, "raw_material_qty", qty_q) or 0.0)
 
         # ---------------------------------------------------------
         # 📈 SALES DISPATCH
         # ---------------------------------------------------------
-        packing_rows = db.query(
+        packing_rows_q = db.query(
             packing_styles.packing_style,
             packing_styles.mc_weight,
-        ).filter(packing_styles.company_id == comp_code).all()
+        ).filter(packing_styles.company_id == comp_code)
+        packing_rows = _safe_all(db, "packing_style_weights", packing_rows_q)
         weight_map = {str(name or "").strip(): float(weight or 1.0) for name, weight in packing_rows}
 
         sales_rows_q = db.query(
@@ -176,7 +213,7 @@ def costing_dashboard(
         ).filter(sales_dispatch.company_id == comp_code)
         sales_rows_q = _apply_string_date_range(sales_rows_q, sales_dispatch.invoice_date, parsed_from, parsed_to)
         sales_rows_q = _apply_text_location(sales_rows_q, sales_dispatch.production_at, location)
-        sales_rows = sales_rows_q.all()
+        sales_rows = _safe_all(db, "sales_dispatch_rows", sales_rows_q)
 
         sales_qty = 0.0
         total_sales = 0.0
@@ -197,12 +234,12 @@ def costing_dashboard(
         deh_q = db.query(func.coalesce(func.sum(DeHeading.amount), 0.0)).filter(DeHeading.company_id == comp_code)
         deh_q = _apply_date_range(deh_q, DeHeading.date, parsed_from, parsed_to)
         deh_q = _apply_text_location(deh_q, DeHeading.peeling_at, location)
-        deheading_cost = float(deh_q.scalar() or 0.0)
+        deheading_cost = float(_safe_scalar(db, "deheading_cost", deh_q) or 0.0)
 
         pee_q = db.query(func.coalesce(func.sum(Peeling.amount), 0.0)).filter(Peeling.company_id == comp_code)
         pee_q = _apply_date_range(pee_q, Peeling.date, parsed_from, parsed_to)
         pee_q = _apply_text_location(pee_q, Peeling.peeling_at, location)
-        peeling_cost = float(pee_q.scalar() or 0.0)
+        peeling_cost = float(_safe_scalar(db, "peeling_cost", pee_q) or 0.0)
 
         # No monetary grading/soaking source is stored in these tables.
         grading_cost = 0.0
@@ -212,7 +249,7 @@ def costing_dashboard(
         prod_qty_q = db.query(func.coalesce(func.sum(Production.production_qty), 0.0)).filter(Production.company_id == comp_code)
         prod_qty_q = _apply_date_range(prod_qty_q, Production.date, parsed_from, parsed_to)
         prod_qty_q = _apply_text_location(prod_qty_q, Production.production_at, location)
-        prod_qty = float(prod_qty_q.scalar() or 0.0)
+        prod_qty = float(_safe_scalar(db, "production_qty", prod_qty_q) or 0.0)
 
         # ---------------------------------------------------------
         # ⚡ UTILITIES OPERATIONAL PIPELINES (With Table Joins)
@@ -222,14 +259,14 @@ def costing_dashboard(
         ).filter(production_at.company_id == comp_code)
         elec_q = _apply_date_range(elec_q, ElectricityLog.reading_date, parsed_from, parsed_to)
         elec_q = _apply_text_location(elec_q, production_at.production_at, location)
-        electricity_cost = float(elec_q.scalar() or 0.0)
+        electricity_cost = float(_safe_scalar(db, "electricity_cost", elec_q) or 0.0)
 
         dies_q = db.query(func.coalesce(func.sum(DieselLog.net_val), 0.0)).join(
             production_at, DieselLog.unit_id == production_at.id
         ).filter(and_(production_at.company_id == comp_code, DieselLog.type == "OUT"))
         dies_q = _apply_date_range(dies_q, DieselLog.log_date, parsed_from, parsed_to)
         dies_q = _apply_text_location(dies_q, production_at.production_at, location)
-        diesel_cost = float(dies_q.scalar() or 0.0)
+        diesel_cost = float(_safe_scalar(db, "diesel_cost", dies_q) or 0.0)
 
         water_cost = 0.0
         ice_cost = 0.0
@@ -242,30 +279,31 @@ def costing_dashboard(
             pack_q = pack_q.join(production_at, PurchaseInvoice.production_at_id == production_at.id)
             pack_q = _apply_text_location(pack_q, production_at.production_at, location)
         pack_q = _apply_date_range(pack_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
-        packaging_cost = float(pack_q.scalar() or 0.0)
+        packaging_cost = float(_safe_scalar(db, "packaging_cost", pack_q) or 0.0)
 
         log_q = db.query(func.coalesce(func.sum(ContainerLog.lended_total), 0.0)).filter(ContainerLog.company_id == comp_code)
         log_q = _apply_date_range(log_q, ContainerLog.date, parsed_from, parsed_to)
         log_q = _apply_text_location(log_q, ContainerLog.production_at, location)
-        logistics_cost = float(log_q.scalar() or 0.0)
+        logistics_cost = float(_safe_scalar(db, "container_logistics_cost", log_q) or 0.0)
 
         qa_q = db.query(func.coalesce(func.sum(QATestingLog.test_cost), 0.0)).join(
             production_at, QATestingLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         qa_q = _apply_date_range(qa_q, QATestingLog.test_date, parsed_from, parsed_to)
         qa_q = _apply_text_location(qa_q, production_at.production_at, location)
-        qa_cost = float(qa_q.scalar() or 0.0)
+        qa_cost = float(_safe_scalar(db, "qa_testing_cost", qa_q) or 0.0)
 
         oth_q = db.query(func.coalesce(func.sum(OtherExpense.amount), 0.0)).join(
             production_at, OtherExpense.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         oth_q = _apply_date_range(oth_q, OtherExpense.date, parsed_from, parsed_to)
         oth_q = _apply_text_location(oth_q, production_at.production_at, location)
-        other_cost = float(oth_q.scalar() or 0.0)
+        other_cost = float(_safe_scalar(db, "other_expense_cost", oth_q) or 0.0)
 
-        payroll_cost = float(db.query(func.coalesce(func.sum(EmployeeRegistration.current_salary), 0.0)).filter(
+        payroll_q = db.query(func.coalesce(func.sum(EmployeeRegistration.current_salary), 0.0)).filter(
             and_(EmployeeRegistration.company_id == comp_code, EmployeeRegistration.status == "ACTIVE")
-        ).scalar() or 0.0)
+        )
+        payroll_cost = float(_safe_scalar(db, "payroll_cost", payroll_q) or 0.0)
 
         # ---------------------------------------------------------
         # 💼 STOCK MANAGEMENT & WORKING CAPITAL MATRIX
@@ -275,7 +313,7 @@ def costing_dashboard(
         )
         inventory_q = _apply_string_date_range(inventory_q, stock_entry.date, parsed_from, parsed_to)
         inventory_q = _apply_text_location(inventory_q, stock_entry.production_at, location)
-        inventory_value = float(inventory_q.scalar() or 0.0)
+        inventory_value = float(_safe_scalar(db, "inventory_value", inventory_q) or 0.0)
 
         # Sales dispatch has no due-date field, so do not invent ageing buckets.
         receivable_ageing = {
@@ -299,11 +337,18 @@ def costing_dashboard(
             payable_unpaid_q = _apply_text_location(payable_unpaid_q, production_at.production_at, location)
         payable_q = _apply_date_range(payable_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
         payable_unpaid_q = _apply_date_range(payable_unpaid_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
-        payable_outstanding = float(payable_q.scalar() or 0.0)
-        payable_outstanding_unpaid = float(payable_unpaid_q.scalar() or 0.0)
+        payable_outstanding = float(_safe_scalar(db, "payable_outstanding", payable_q) or 0.0)
+        payable_outstanding_unpaid = float(_safe_scalar(db, "payable_outstanding_unpaid", payable_unpaid_q) or 0.0)
 
         report_end = parsed_to or today
-        trial_balance = AccountingReportsService.get_trial_balance(db, comp_code, report_end)
+        trial_balance = _safe_accounting_call(
+            db,
+            "trial_balance",
+            [],
+            AccountingReportsService.get_trial_balance,
+            comp_code,
+            report_end,
+        )
         cash_balance = sum(
             row["balance"] for row in trial_balance
             if row["type"] == "LEDGER"
@@ -330,14 +375,26 @@ def costing_dashboard(
         cash_conversion_cycle = (inventory_days + receivable_days) - payable_days
 
         current_period_start = parsed_from or date(report_end.year, report_end.month, 1)
-        current_pl = AccountingReportsService.get_profit_and_loss(
-            db, comp_code, current_period_start, report_end
+        current_pl = _safe_accounting_call(
+            db,
+            "current_profit_and_loss",
+            _blank_profit_loss(),
+            AccountingReportsService.get_profit_and_loss,
+            comp_code,
+            current_period_start,
+            report_end,
         )
         current_month_profit = current_pl["net_profit"]
         previous_month_end = current_period_start - timedelta(days=1)
         previous_month_start = date(previous_month_end.year, previous_month_end.month, 1)
-        previous_pl = AccountingReportsService.get_profit_and_loss(
-            db, comp_code, previous_month_start, previous_month_end
+        previous_pl = _safe_accounting_call(
+            db,
+            "previous_profit_and_loss",
+            _blank_profit_loss(),
+            AccountingReportsService.get_profit_and_loss,
+            comp_code,
+            previous_month_start,
+            previous_month_end,
         )
         prev_month_profit = previous_pl["net_profit"]
         profit_delta = current_month_profit - prev_month_profit
@@ -383,6 +440,7 @@ def costing_dashboard(
             ).scalar() or 0.0)
         except Exception:
             db.rollback()
+            logger.exception("Costing dashboard inventory ageing fallback used")
             fast_turn_q, std_hold_q, slow_clr_q, stagnant_q = 0.0, 0.0, 0.0, 0.0
 
         inventory_ageing_buckets = {
@@ -411,8 +469,14 @@ def costing_dashboard(
                 month_end = month_starts[index + 1] - timedelta(days=1)
             else:
                 month_end = report_end
-            month_pl = AccountingReportsService.get_profit_and_loss(
-                db, comp_code, month_start, month_end
+            month_pl = _safe_accounting_call(
+                db,
+                f"trend_profit_and_loss_{month_start.isoformat()}",
+                _blank_profit_loss(),
+                AccountingReportsService.get_profit_and_loss,
+                comp_code,
+                month_start,
+                month_end,
             )
             revenue_trend.append(month_pl["total_income"])
             expense_trend.append(month_pl["total_expense"])
@@ -426,7 +490,7 @@ def costing_dashboard(
         ).filter(stock_entry.company_id == comp_code)
         product_q = _apply_string_date_range(product_q, stock_entry.date, parsed_from, parsed_to)
         product_q = _apply_text_location(product_q, stock_entry.production_at, location)
-        product_rows = product_q.group_by(stock_entry.variety).all()
+        product_rows = _safe_all(db, "product_costing_matrix", product_q.group_by(stock_entry.variety))
         master_product_list = []
         for r in product_rows:
             if r.variety:
@@ -447,9 +511,16 @@ def costing_dashboard(
         top_products = sorted_products_by_margin[:5]
         bottom_products = sorted_products_by_margin[-5:] if len(sorted_products_by_margin) > 5 else sorted_products_by_margin
 
-    except Exception as e:
-        logger.critical(f"Critical Root Failure Inside Costing Dashboard Router: {str(e)}")
-        raise e
+    except Exception:
+        logger.exception(
+            "Costing dashboard failed company=%s fy=%s location=%s from=%s to=%s",
+            comp_code,
+            selected_fy,
+            location or "ALL",
+            from_date,
+            to_date,
+        )
+        raise
 
     # ---------------------------------------------------------
     # 🎯 DATA RECONCILIATION LAYER OUTPUT

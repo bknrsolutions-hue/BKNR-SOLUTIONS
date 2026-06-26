@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -9,6 +9,7 @@ from app.database import SessionLocal
 from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
 import os
+import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
@@ -25,6 +26,21 @@ application = FastAPI(title="BKNR ERP", version="1.0.0")
 # =====================================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
+
+
+@application.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_id = uuid.uuid4().hex[:10]
+    logger.exception(
+        "Unhandled server error [%s] path=%s query=%s",
+        error_id,
+        request.url.path,
+        request.url.query,
+    )
+    return PlainTextResponse(
+        f"Internal Server Error\nError ID: {error_id}\nPath: {request.url.path}",
+        status_code=500,
+    )
 
 # =====================================================
 # 🗄️ 2. DATABASE & MODELS IMPORT

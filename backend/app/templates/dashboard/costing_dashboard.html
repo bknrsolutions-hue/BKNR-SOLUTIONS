@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
 
 <style>
   /* 🌟 LIGHT MODE VARIABLES (DEFAULT) 🌟 */
@@ -714,7 +715,7 @@ document.addEventListener("DOMContentLoaded", function() {
   applyChartTheme();
 
   // Component Load Chart Initialization
-  window.charts.deptMiniChart = new Chart(document.getElementById("deptMiniChart"), {
+  window.charts.deptMiniChart = BKNRCharts.create(document.getElementById("deptMiniChart"), {
     type: "bar",
     options: { 
       responsive: true, maintainAspectRatio: false, 
@@ -742,7 +743,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // Dynamic Trajectory Trend Timeline Line Chart Initialization
-  window.charts.trendLineChart = new Chart(document.getElementById("trendLineChart"), {
+  window.charts.trendLineChart = BKNRCharts.create(document.getElementById("trendLineChart"), {
     type: "line",
     options: { 
       responsive: true, maintainAspectRatio: false,

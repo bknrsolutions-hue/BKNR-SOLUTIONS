@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="/static/css/bknr-standard.css">
 
@@ -130,6 +131,10 @@
         
         .chart-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; height: 360px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
         .chart-box h3 { font-size: 11px; font-weight: 800; margin-bottom: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;}
+        .chart-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; padding-bottom: 8px; }
+        .chart-head-row h3 { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+        .chart-clear-btn { border: 1px solid var(--border); background: transparent; color: var(--sub); font-size: 9px; font-weight: 800; padding: 5px 8px; border-radius: 5px; cursor: pointer; display: none; }
+        .chart-clear-btn.show { display: inline-flex; }
         .chart-container-inner { flex-grow: 1; position: relative; width: 100%; }
 
         /* ==========================================================
@@ -352,11 +357,16 @@
 
 <div class="chart-grid">
     <div class="chart-box">
-        <h3>Variety Stock Mix (Glaze Wise)</h3>
+        <div class="chart-head-row">
+            <h3 id="mixChartTitle">Variety Stock Mix (Glaze Wise)</h3>
+        </div>
         <div class="chart-container-inner"><canvas id="varietyChart"></canvas></div>
     </div>
     <div class="chart-box">
-        <h3>Grade Stock Mix (Glaze Wise)</h3>
+        <div class="chart-head-row">
+            <h3 id="gradeChartTitle">Grade Stock Mix (Variety + Glaze Wise)</h3>
+            <button type="button" class="chart-clear-btn" id="gradeChartClear" onclick="clearGradeChartFilter()">Clear</button>
+        </div>
         <div class="chart-container-inner"><canvas id="gradeChart"></canvas></div>
     </div>
     <div class="chart-box">
@@ -825,6 +835,8 @@ let opClChartInst = null;
 let flowChartInst = null;
 let varChartInst = null;
 let gradeChartInst = null;
+let gradeChartFilter = { type: null, value: null };
+let hiddenVarietyGlazes = new Set();
 window.chartsInstance = true; 
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
@@ -892,18 +904,54 @@ const customDataLabelsPlugin = {
 
 // SYNCHRONIZED LEGEND CLICK
 const syncLegendClick = function(e, legendItem, legend) {
-    const index = legendItem.datasetIndex;
-    const isVisible = varChartInst.isDatasetVisible(index);
-    
-    if (varChartInst) {
-        varChartInst.setDatasetVisibility(index, !isVisible);
-        varChartInst.update();
+    const sourceChart = legend.chart;
+    const label = legendItem.text;
+    const sourceIndex = legendItem.datasetIndex;
+    const isVisible = sourceChart.isDatasetVisible(sourceIndex);
+
+    if (sourceChart === varChartInst) {
+        if (isVisible) {
+            hiddenVarietyGlazes.add(label);
+        } else {
+            hiddenVarietyGlazes.delete(label);
+        }
+        sourceChart.setDatasetVisibility(sourceIndex, !isVisible);
+        updateDynamicCharts();
+        return;
     }
-    if (gradeChartInst) {
-        gradeChartInst.setDatasetVisibility(index, !isVisible);
-        gradeChartInst.update();
+
+    [varChartInst, gradeChartInst].forEach(chart => {
+        if (!chart) return;
+        const targetIndex = chart.data.datasets.findIndex(ds => ds.label === label);
+        if (targetIndex >= 0) {
+            chart.setDatasetVisibility(targetIndex, !isVisible);
+            chart.update();
+        }
+    });
+    if (![varChartInst, gradeChartInst].some(chart => chart && chart.data.datasets.some(ds => ds.label === label))) {
+        sourceChart.setDatasetVisibility(sourceIndex, !isVisible);
+        sourceChart.update();
     }
 };
+
+function clearGradeChartFilter() {
+    gradeChartFilter = { type: null, value: null };
+    updateDynamicCharts();
+}
+
+function updateGradeFilterLabel() {
+    const title = document.getElementById('gradeChartTitle');
+    const clearBtn = document.getElementById('gradeChartClear');
+    if (!title || !clearBtn) return;
+    if (gradeChartFilter.type && gradeChartFilter.value) {
+        const label = gradeChartFilter.type === 'grade' ? 'Grade' : 'Variety';
+        title.innerText = `Grade Stock Mix - ${label}: ${gradeChartFilter.value}`;
+        clearBtn.classList.add('show');
+    } else {
+        title.innerText = 'Grade Stock Mix (Variety + Glaze Wise)';
+        clearBtn.classList.remove('show');
+    }
+}
 
 function updateDynamicCharts() {
     let rows = document.querySelectorAll("#inventoryBody tr.inv-row");
@@ -911,6 +959,7 @@ function updateDynamicCharts() {
     let varietyMap = {};
     let gradeMap = {};
     let allGlazes = new Set();
+    let allGradeCombos = new Set();
 
     rows.forEach(tr => {
         if (tr.style.display !== "none") {
@@ -927,21 +976,33 @@ function updateDynamicCharts() {
             speciesMap[species].op += opQty;
             speciesMap[species].cl += clQty;
 
-            // Group for Stacked Charts
+            // Group for old Variety chart (Glaze wise stacked)
             if (clQty > 0) {
                 allGlazes.add(glaze);
                 if (!varietyMap[variety]) varietyMap[variety] = {};
                 if (!varietyMap[variety][glaze]) varietyMap[variety][glaze] = 0;
                 varietyMap[variety][glaze] += clQty;
+            }
 
+            const gradeFilterOk =
+                !gradeChartFilter.type ||
+                (gradeChartFilter.type === 'variety' && variety === gradeChartFilter.value) ||
+                (gradeChartFilter.type === 'grade' && grade === gradeChartFilter.value);
+            const glazeVisible = !hiddenVarietyGlazes.has(glaze);
+
+            // Grade chart shows non-zero Variety + Glaze combinations only.
+            if (clQty > 0 && gradeFilterOk && glazeVisible) {
                 if (!gradeMap[grade]) gradeMap[grade] = {};
-                if (!gradeMap[grade][glaze]) gradeMap[grade][glaze] = 0;
-                gradeMap[grade][glaze] += clQty;
+                const gradeCombo = `${variety} / ${glaze}`;
+                allGradeCombos.add(gradeCombo);
+                if (!gradeMap[grade][gradeCombo]) gradeMap[grade][gradeCombo] = 0;
+                gradeMap[grade][gradeCombo] += clQty;
             }
         }
     });
 
     let glazesArray = Array.from(allGlazes).sort();
+    let gradeCombosArray = Array.from(allGradeCombos).sort();
     let spLabels = Object.keys(speciesMap).sort();
 
     // 1. Opening vs Closing Data
@@ -966,23 +1027,27 @@ function updateDynamicCharts() {
     if (varChartInst) {
         varChartInst.data.labels = vLabels;
         varChartInst.data.datasets = vDatasets;
+        glazesArray.forEach((glaze, index) => {
+            varChartInst.setDatasetVisibility(index, !hiddenVarietyGlazes.has(glaze));
+        });
         varChartInst.update();
     }
 
-    // 3. Grade (Stacked by Glaze)
+    // 3. Grade (Stacked by Variety + Glaze)
     let gLabels = Object.keys(gradeMap).sort();
-    let gDatasets = glazesArray.map((glaze, index) => {
+    let gDatasets = gradeCombosArray.map((combo, index) => {
         return {
-            label: glaze,
-            data: gLabels.map(g => gradeMap[g][glaze] || 0),
+            label: combo,
+            data: gLabels.map(g => gradeMap[g][combo] || 0),
             backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
         };
     });
     if (gradeChartInst) {
         gradeChartInst.data.labels = gLabels;
-        gradeChartInst.data.datasets = gDatasets;
+        gradeChartInst.data.datasets = gDatasets.filter(ds => ds.data.reduce((sum, value) => sum + Number(value || 0), 0) > 0);
         gradeChartInst.update();
     }
+    updateGradeFilterLabel();
 }
 
 function renderCharts() {
@@ -998,13 +1063,21 @@ function renderCharts() {
     // Register our custom plugin
     Chart.register(customDataLabelsPlugin);
 
-    // 1. Variety (Stacked Horizontal) - SWAPPED
-    varChartInst = new Chart(document.getElementById('varietyChart'), {
+    // 1. Variety (Stacked Horizontal, Glaze wise) - click variety to filter Grade chart
+    varChartInst = BKNRCharts.create(document.getElementById('varietyChart'), {
         type: 'bar',
         data: { labels: [], datasets: [] },
         options: { 
             indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
             layout: { padding: { right: 35 } },
+            onClick: (event, elements, chart) => {
+                if (!elements.length) return;
+                const item = elements[0];
+                const label = chart.data.labels[item.index];
+                if (!label) return;
+                gradeChartFilter = { type: 'variety', value: label };
+                updateDynamicCharts();
+            },
             plugins: { 
                 legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } }
             }, 
@@ -1015,8 +1088,8 @@ function renderCharts() {
         }
     });
 
-    // 2. Grade (Stacked Vertical) - SWAPPED
-    gradeChartInst = new Chart(document.getElementById('gradeChart'), {
+    // 2. Grade (Stacked Vertical) - keeps old layout, with updated premium chart engine
+    gradeChartInst = BKNRCharts.create(document.getElementById('gradeChart'), {
         type: 'bar',
         data: { labels: [], datasets: [] },
         options: { 
@@ -1033,7 +1106,7 @@ function renderCharts() {
     });
 
     // 3. Opening vs Closing (From Table)
-    opClChartInst = new Chart(document.getElementById('opClChart'), {
+    opClChartInst = BKNRCharts.create(document.getElementById('opClChart'), {
         type:'bar',
         data:{ labels: [], datasets:[{ label:'Opening Stock', data: [], backgroundColor:'#3b82f6' },{ label:'Closing Stock', data: [], backgroundColor:'#10b981' }] },
         options:{ 
@@ -1045,7 +1118,7 @@ function renderCharts() {
     });
 
     // 4. Stock Movement Analysis Line Chart
-    flowChartInst = new Chart(document.getElementById('productionFlowChart'), {
+    flowChartInst = BKNRCharts.create(document.getElementById('productionFlowChart'), {
         type: 'line',
         data: {
             labels: {{ flow_labels | default('[]') | safe }},

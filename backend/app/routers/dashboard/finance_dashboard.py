@@ -55,6 +55,52 @@ def _apply_date_range(query, column, start_date: date | None, end_date: date | N
     return query
 
 
+def _blank_profit_loss():
+    return {
+        "total_income": 0.0,
+        "total_expense": 0.0,
+        "net_profit": 0.0,
+        "details": {"income_ledgers": [], "expense_ledgers": []},
+    }
+
+
+def _blank_balance_sheet():
+    return {
+        "total_assets": 0.0,
+        "total_liabilities": 0.0,
+        "total_equity": 0.0,
+        "difference": 0.0,
+        "is_balanced": True,
+    }
+
+
+def _safe_accounting_call(db: Session, label: str, fallback, fn, *args):
+    try:
+        return fn(db, *args)
+    except Exception:
+        db.rollback()
+        logger.exception("Finance dashboard accounting fallback used for %s", label)
+        return fallback
+
+
+def _safe_scalar(db: Session, label: str, query, fallback=0.0):
+    try:
+        return query.scalar()
+    except Exception:
+        db.rollback()
+        logger.exception("Finance dashboard scalar fallback used for %s", label)
+        return fallback
+
+
+def _safe_all(db: Session, label: str, query, fallback=None):
+    try:
+        return query.all()
+    except Exception:
+        db.rollback()
+        logger.exception("Finance dashboard list fallback used for %s", label)
+        return [] if fallback is None else fallback
+
+
 @router.get("/finance_dashboard", response_class=HTMLResponse)
 def finance_dashboard(
     request: Request,
@@ -103,14 +149,14 @@ def finance_dashboard(
             CustomerReceivable.company_id == comp_code
         )
         receivables_q = _apply_date_range(receivables_q, CustomerReceivable.invoice_date, parsed_from, parsed_to)
-        receivables_outstanding = float(receivables_q.scalar() or 0.0)
+        receivables_outstanding = float(_safe_scalar(db, "receivables_outstanding", receivables_q) or 0.0)
 
         # 2. Payables Outstanding
         payables_q = db.query(func.coalesce(func.sum(VendorPayment.balance), 0.0)).filter(
             VendorPayment.company_id == comp_code
         )
         payables_q = _apply_date_range(payables_q, VendorPayment.bill_date, parsed_from, parsed_to)
-        payables_outstanding = float(payables_q.scalar() or 0.0)
+        payables_outstanding = float(_safe_scalar(db, "payables_outstanding", payables_q) or 0.0)
 
         # 3. Bank/cash movement for the selected period.
         bank_debit = db.query(func.coalesce(func.sum(BankTransaction.debit), 0.0)).filter(
@@ -121,8 +167,8 @@ def finance_dashboard(
         )
         bank_debit = _apply_date_range(bank_debit, BankTransaction.transaction_date, parsed_from, parsed_to)
         bank_credit = _apply_date_range(bank_credit, BankTransaction.transaction_date, parsed_from, parsed_to)
-        cash_inflow_period = float(bank_debit.scalar() or 0.0)
-        cash_outflow_period = float(bank_credit.scalar() or 0.0)
+        cash_inflow_period = float(_safe_scalar(db, "bank_debit_inflow", bank_debit) or 0.0)
+        cash_outflow_period = float(_safe_scalar(db, "bank_credit_outflow", bank_credit) or 0.0)
         net_cash_flow = cash_inflow_period - cash_outflow_period
 
         # 4. Expense summary category wise (ExpenseVouchers)
@@ -131,7 +177,7 @@ def finance_dashboard(
             ExpenseVoucher.status == "APPROVED"
         )
         expense_q = _apply_date_range(expense_q, ExpenseVoucher.voucher_date, parsed_from, parsed_to)
-        expense_summary_rows = expense_q.group_by(ExpenseVoucher.expense_type).all()
+        expense_summary_rows = _safe_all(db, "expense_summary", expense_q.group_by(ExpenseVoucher.expense_type))
 
         expense_categories = []
         expense_amounts = []
@@ -144,8 +190,14 @@ def finance_dashboard(
         # 5. Profit from posted double-entry vouchers for the selected period.
         period_end = parsed_to or today
         period_start = parsed_from or date(period_end.year, period_end.month, 1)
-        profit_loss = AccountingReportsService.get_profit_and_loss(
-            db, comp_code, period_start, period_end
+        profit_loss = _safe_accounting_call(
+            db,
+            "profit_and_loss",
+            _blank_profit_loss(),
+            AccountingReportsService.get_profit_and_loss,
+            comp_code,
+            period_start,
+            period_end,
         )
         total_income = float(profit_loss["total_income"] or 0.0)
         total_expense_books = float(profit_loss["total_expense"] or 0.0)
@@ -155,8 +207,22 @@ def finance_dashboard(
             expense_amounts = [float(row["amount"] or 0.0) for row in profit_loss["details"]["expense_ledgers"][:8]]
             total_expenses = total_expense_books
 
-        balance_sheet = AccountingReportsService.get_balance_sheet(db, comp_code, period_end)
-        trial_balance = AccountingReportsService.get_trial_balance(db, comp_code, period_end)
+        balance_sheet = _safe_accounting_call(
+            db,
+            "balance_sheet",
+            _blank_balance_sheet(),
+            AccountingReportsService.get_balance_sheet,
+            comp_code,
+            period_end,
+        )
+        trial_balance = _safe_accounting_call(
+            db,
+            "trial_balance",
+            [],
+            AccountingReportsService.get_trial_balance,
+            comp_code,
+            period_end,
+        )
         bank_balance = sum(
             float(row["balance"] or 0.0) for row in trial_balance
             if row["type"] == "LEDGER"
@@ -180,25 +246,26 @@ def finance_dashboard(
 
         voucher_q = db.query(VoucherHeader).filter(VoucherHeader.company_id == comp_code)
         voucher_q = _apply_date_range(voucher_q, VoucherHeader.voucher_date, parsed_from, parsed_to)
-        voucher_rows = voucher_q.all()
+        voucher_rows = _safe_all(db, "voucher_rows", voucher_q)
         voucher_stats = {
             "total": len(voucher_rows),
             "posted": sum(1 for v in voucher_rows if v.status == "POSTED"),
             "draft": sum(1 for v in voucher_rows if v.status == "DRAFT"),
             "pending": sum(1 for v in voucher_rows if v.status not in {"POSTED", "CANCELLED", "DRAFT"}),
         }
-        ledger_count = db.query(func.count(LedgerMaster.id)).filter(
+        ledger_count_q = db.query(func.count(LedgerMaster.id)).filter(
             LedgerMaster.company_id == comp_code,
             LedgerMaster.status == "ACTIVE",
-        ).scalar() or 0
+        )
+        ledger_count = _safe_scalar(db, "active_ledger_count", ledger_count_q, 0) or 0
 
         receipts_q = db.query(func.coalesce(func.sum(PaymentReceipt.amount_inr), 0.0)).filter(PaymentReceipt.company_id == comp_code)
         receipts_q = _apply_date_range(receipts_q, PaymentReceipt.entry_date, parsed_from, parsed_to)
-        receipts_total = float(receipts_q.scalar() or 0.0)
+        receipts_total = float(_safe_scalar(db, "payment_receipts_total", receipts_q) or 0.0)
 
         vendor_paid_q = db.query(func.coalesce(func.sum(VendorPayment.paid_amount), 0.0)).filter(VendorPayment.company_id == comp_code)
         vendor_paid_q = _apply_date_range(vendor_paid_q, VendorPayment.payment_date, parsed_from, parsed_to)
-        vendor_paid_total = float(vendor_paid_q.scalar() or 0.0)
+        vendor_paid_total = float(_safe_scalar(db, "vendor_paid_total", vendor_paid_q) or 0.0)
 
         # 6. Aging schedule of Receivables
         # Try to read from BuyerAgingSummary view or calculate directly
@@ -211,7 +278,7 @@ def finance_dashboard(
         }
         
         try:
-            aging_rows = db.query(BuyerAgingSummary).filter(BuyerAgingSummary.company_id == comp_code).all()
+            aging_rows = _safe_all(db, "buyer_aging_summary", db.query(BuyerAgingSummary).filter(BuyerAgingSummary.company_id == comp_code))
             for r in aging_rows:
                 aging_summary["current"] += float(r.not_due or 0.0)
                 aging_summary["bucket_1_30"] += float(r.bucket_1_30_days or 0.0)
@@ -224,7 +291,7 @@ def finance_dashboard(
             today = date.today()
             receivable_items_q = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code)
             receivable_items_q = _apply_date_range(receivable_items_q, CustomerReceivable.invoice_date, parsed_from, parsed_to)
-            receivable_items = receivable_items_q.all()
+            receivable_items = _safe_all(db, "manual_receivable_aging_items", receivable_items_q)
             for r in receivable_items:
                 bal = float(r.balance_amount or 0.0)
                 if bal <= 0: continue
@@ -252,7 +319,7 @@ def finance_dashboard(
             month_starts.append(date(year, month, 1))
 
         trend_start = month_starts[0]
-        bank_rows = db.query(
+        bank_rows_q = db.query(
             func.extract("year", BankTransaction.transaction_date).label("year"),
             func.extract("month", BankTransaction.transaction_date).label("month"),
             func.coalesce(func.sum(BankTransaction.debit), 0.0).label("inflow"),
@@ -264,7 +331,8 @@ def finance_dashboard(
         ).group_by(
             func.extract("year", BankTransaction.transaction_date),
             func.extract("month", BankTransaction.transaction_date),
-        ).all()
+        )
+        bank_rows = _safe_all(db, "bank_monthly_trend", bank_rows_q)
         trend_map = {
             (int(row.year), int(row.month)): (float(row.inflow), float(row.outflow))
             for row in bank_rows
@@ -273,9 +341,15 @@ def finance_dashboard(
         inflows = [trend_map.get((month.year, month.month), (0.0, 0.0))[0] for month in month_starts]
         outflows = [trend_map.get((month.year, month.month), (0.0, 0.0))[1] for month in month_starts]
 
-    except Exception as e:
-        logger.critical(f"Critical Root Failure Inside Finance Dashboard Router: {str(e)}")
-        raise e
+    except Exception:
+        logger.exception(
+            "Finance dashboard failed company=%s fy=%s from=%s to=%s",
+            comp_code,
+            selected_fy,
+            from_date,
+            to_date,
+        )
+        raise
 
     return templates.TemplateResponse(
         request=request,

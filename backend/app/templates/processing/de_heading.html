@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <style>:root {
@@ -438,7 +439,7 @@ function renderStackedBar(dataMap) {
         label: loc, data: labels.map(label => dataMap[label][loc] || 0), backgroundColor: getLocationColor(loc), borderRadius: 4
     })).filter(ds => ds.data.some(v => v > 0));
 
-    chartInstance = new Chart(ctx, {
+    chartInstance = BKNRCharts.create(ctx, {
         type: 'bar', plugins: [ChartDataLabels], data: { labels: labels, datasets: datasets },
         options: {
             responsive: true, maintainAspectRatio: false,

@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
 
 <style>
   :root {
@@ -537,7 +538,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // 1. Cash Flow Inflow vs Outflow Trend Chart
-  window.charts.cashFlow = new Chart(document.getElementById("cashFlowChart"), {
+  window.charts.cashFlow = BKNRCharts.create(document.getElementById("cashFlowChart"), {
     type: "line",
     options: {
       responsive: true,
@@ -557,7 +558,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // 2. Expense Breakdown Pie Chart
-  window.charts.expense = new Chart(document.getElementById("expenseChart"), {
+  window.charts.expense = BKNRCharts.create(document.getElementById("expenseChart"), {
     type: "doughnut",
     options: {
       responsive: true,
@@ -576,7 +577,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // 3. Receivables Aging Bar Chart
-  window.charts.aging = new Chart(document.getElementById("agingChart"), {
+  window.charts.aging = BKNRCharts.create(document.getElementById("agingChart"), {
     type: "bar",
     options: {
       responsive: true,

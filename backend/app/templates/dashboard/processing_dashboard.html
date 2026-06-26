@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/bknr-charts.js"></script>
 
     <script>
         function syncThemeFromParent() {
@@ -552,9 +553,9 @@
         } 
     };
 
-    new Chart(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
-    new Chart(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
-    new Chart(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
+    BKNRCharts.create(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
+    BKNRCharts.create(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
+    BKNRCharts.create(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
 
     window.addEventListener("DOMContentLoaded", () => {
         syncIframeAndListenToParentHeader();
