@@ -58,6 +58,57 @@ body {
   border-right: 1px solid rgba(15, 23, 42, 0.06);
 }
 
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 1.6rem;
+}
+
+.brand-seal {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #083b73 0%, #0f5fa8 54%, #1d9bd7 100%);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+  box-shadow: 0 16px 34px rgba(0, 75, 147, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  position: relative;
+}
+
+.brand-seal::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.brand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.brand-meta strong {
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.brand-meta span {
+  color: var(--primary-color);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 /* Right Column: Ultra-Compact Premium Authentication Gate Matrix */
 .form-side {
   width: 440px; 
@@ -334,6 +385,13 @@ button:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box
 <div class="wrapper">
   
   <div class="branding-side">
+    <div class="brand-lockup">
+      <div class="brand-seal" aria-hidden="true">BK</div>
+      <div class="brand-meta">
+        <strong>BKNR ERP</strong>
+        <span>Enterprise Workspace</span>
+      </div>
+    </div>
     <h1 class="disc-title-main">BKNR ERP</h1>
     <div class="disc-subtitle-main">Next-Gen Operational Intelligence for Seafood Enterprises</div>
     

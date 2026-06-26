@@ -61,6 +61,33 @@ def _flow_chart_payload(title, unit, day_bucket):
     }
 
 
+def _multi_flow_chart_payload(title, unit, series_buckets):
+    series_payload = []
+    combined_day_bucket = defaultdict(float)
+    combined_month_bucket = defaultdict(float)
+
+    for name, day_bucket in series_buckets.items():
+        month_bucket = defaultdict(float)
+        for day_key, value in day_bucket.items():
+            amount = float(value or 0)
+            combined_day_bucket[day_key] += amount
+            month_bucket[day_key[:7]] += amount
+            combined_month_bucket[day_key[:7]] += amount
+        series_payload.append({
+            "name": name,
+            "day": [{"label": key, "value": round(day_bucket[key], 2)} for key in sorted(day_bucket)],
+            "month": [{"label": key, "value": round(month_bucket[key], 2)} for key in sorted(month_bucket)],
+        })
+
+    return {
+        "title": title,
+        "unit": unit,
+        "series": series_payload,
+        "day": [{"label": key, "value": round(combined_day_bucket[key], 2)} for key in sorted(combined_day_bucket)],
+        "month": [{"label": key, "value": round(combined_month_bucket[key], 2)} for key in sorted(combined_month_bucket)],
+    }
+
+
 def _current_fy_string(today_value=None):
     today_value = today_value or date.today()
     if today_value.month >= 4:
@@ -331,7 +358,7 @@ async def get_periodic_summary_report(
     soak_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.date >= db_start_date, Soaking.date <= db_end_date)
     prod_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= db_start_date, Production.date <= db_end_date)
     grd_q = db.query(Grading).filter(Grading.company_id == company_code, Grading.date >= db_start_date, Grading.date <= db_end_date)
-    stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.cargo_movement_type == 'IN', stock_entry.date >= db_start_date, stock_entry.date <= db_end_date)
+    stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.date >= db_start_date, stock_entry.date <= db_end_date)
 
     chart_gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code, GateEntry.date >= fy_start_date, GateEntry.date <= fy_end_date)
     chart_rmp_q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_code, RawMaterialPurchasing.date >= fy_start_date, RawMaterialPurchasing.date <= fy_end_date)
@@ -341,7 +368,7 @@ async def get_periodic_summary_report(
     chart_soak_q = db.query(Soaking).filter(Soaking.company_id == company_code, Soaking.date >= fy_start_date, Soaking.date <= fy_end_date)
     chart_prod_q = db.query(Production).filter(Production.company_id == company_code, Production.date >= fy_start_date, Production.date <= fy_end_date)
     chart_grd_q = db.query(Grading).filter(Grading.company_id == company_code, Grading.date >= fy_start_date, Grading.date <= fy_end_date)
-    chart_stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.cargo_movement_type == 'IN', stock_entry.date >= fy_start_date, stock_entry.date <= fy_end_date)
+    chart_stk_q = db.query(stock_entry).filter(stock_entry.company_id == company_code, stock_entry.date >= fy_start_date, stock_entry.date <= fy_end_date)
 
     # Apply 'Production For' Filter
     if production_for:
@@ -481,6 +508,8 @@ async def get_periodic_summary_report(
     rows["production"] = prod_q.all()
     rows["grading_details"] = grd_q.all()
     rows["stock"] = stk_q.all()
+    rows["stock_in"] = [row for row in rows["stock"] if str(row.cargo_movement_type or "").upper() == "IN"]
+    rows["stock_out"] = [row for row in rows["stock"] if str(row.cargo_movement_type or "").upper() == "OUT"]
     chart_rows = {
         "gate": chart_gate_q.all(),
         "rmp": chart_rmp_q.all(),
@@ -599,23 +628,83 @@ async def get_periodic_summary_report(
 
     is_today_active = (res_end_dt == date.today()) # 🟢 Mapped directly onto active live target dates
 
-    # 1. 🟢 STRICT OPENING LAYER: Always derived from Snapshot on res_start_dt. If empty, defaults to 0.
-    opening_snap_q = db.query(FloorBalanceSnapshot).filter(
-        FloorBalanceSnapshot.company_id == company_code,
-        FloorBalanceSnapshot.snapshot_date == res_start_dt
+    def apply_floor_snapshot_filters(query):
+        if production_for:
+            query = query.filter(func.trim(FloorBalanceSnapshot.production_for) == func.trim(production_for))
+        if production_at:
+            query = query.filter(func.trim(FloorBalanceSnapshot.location) == func.trim(production_at))
+        if batch:
+            query = query.filter(FloorBalanceSnapshot.batch_number == batch)
+        return query
+
+    def get_snapshot_rows_for_date(target_date):
+        base_query = db.query(FloorBalanceSnapshot).filter(FloorBalanceSnapshot.company_id == company_code)
+        base_query = apply_floor_snapshot_filters(base_query)
+        rows_for_date = base_query.filter(FloorBalanceSnapshot.snapshot_date == target_date).all()
+        if rows_for_date:
+            return rows_for_date
+
+        previous_date = base_query.with_entities(func.max(FloorBalanceSnapshot.snapshot_date)).filter(
+            FloorBalanceSnapshot.snapshot_date <= target_date
+        ).scalar()
+        if previous_date:
+            return base_query.filter(FloorBalanceSnapshot.snapshot_date == previous_date).all()
+
+        next_date = base_query.with_entities(func.min(FloorBalanceSnapshot.snapshot_date)).filter(
+            FloorBalanceSnapshot.snapshot_date >= target_date
+        ).scalar()
+        if next_date:
+            return base_query.filter(FloorBalanceSnapshot.snapshot_date == next_date).all()
+
+        return []
+
+    def append_snapshot_floor_rows(source_rows, target_list):
+        total_value = 0.0
+        for r in source_rows:
+            if r.opening_qty and float(r.opening_qty) > 0.01:
+                val = float(r.inventory_value or 0.0)
+                total_value += val
+                target_list.append({
+                    "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A",
+                    "variety": r.variety, "available_qty": float(r.opening_qty or 0.0), "value": val, "production_for": r.production_for
+                })
+        return total_value
+
+    def append_live_floor_rows(target_list):
+        live_query = db.query(FloorBalance).filter(FloorBalance.company_id == company_code)
+        if production_for:
+            live_query = live_query.filter(func.trim(FloorBalance.production_for) == func.trim(production_for))
+        if production_at:
+            live_query = live_query.filter(func.trim(FloorBalance.location) == func.trim(production_at))
+        if batch:
+            live_query = live_query.filter(FloorBalance.batch_number == batch)
+
+        total_value = 0.0
+        latest_map = {}
+        for r in live_query.all():
+            key = (r.batch_number, r.location, r.species, r.variety, r.count, r.production_for)
+            r_dt = f"{r.date} {r.time}" if r.date and r.time else "0000-00-00 00:00:00"
+            if key not in latest_map or r_dt > latest_map[key]["dt"]:
+                latest_map[key] = {"record": r, "dt": r_dt}
+
+        for item in latest_map.values():
+            r = item["record"]
+            if r.available_qty and float(r.available_qty) > 0.01:
+                val = float(r.inventory_value or 0.0)
+                total_value += val
+                target_list.append({
+                    "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A",
+                    "variety": r.variety, "available_qty": float(r.available_qty or 0.0), "value": val, "production_for": r.production_for
+                })
+        return total_value
+
+    # 1. Opening layer: exact snapshot first, then nearest available snapshot fallback.
+    total_open_floor_val = append_snapshot_floor_rows(
+        get_snapshot_rows_for_date(res_start_dt),
+        opening_floor_balance_list
     )
-    if production_for: opening_snap_q = opening_snap_q.filter(func.trim(FloorBalanceSnapshot.production_for) == func.trim(production_for))
-    if production_at: opening_snap_q = opening_snap_q.filter(func.trim(FloorBalanceSnapshot.location) == func.trim(production_at))
-    if batch: opening_snap_q = opening_snap_q.filter(FloorBalanceSnapshot.batch_number == batch)
-    
-    for r in opening_snap_q.all():
-        if r.opening_qty and float(r.opening_qty) > 0.01:
-            val = float(r.inventory_value or 0.0)
-            total_open_floor_val += val
-            opening_floor_balance_list.append({
-                "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A", 
-                "variety": r.variety, "available_qty": float(r.opening_qty or 0.0), "value": val, "production_for": r.production_for
-            })
+    if not opening_floor_balance_list:
+        total_open_floor_val = append_live_floor_rows(opening_floor_balance_list)
 
     # 2. 🟢 CONDITIONAL CLOSING LAYER: Live Table vs Snapshot Table (res_end_dt + 1 Day)
     if is_today_active:
@@ -654,22 +743,15 @@ async def get_periodic_summary_report(
     else:
         # If End Date is a Past Frame: Query Snapshot Table strictly on target_close_date (res_end_dt + 1)
         target_snap_close_date = res_end_dt + timedelta(days=1)
-        closing_snap_q = db.query(FloorBalanceSnapshot).filter(
-            FloorBalanceSnapshot.company_id == company_code,
-            FloorBalanceSnapshot.snapshot_date == target_snap_close_date
+        total_floor_val = append_snapshot_floor_rows(
+            get_snapshot_rows_for_date(target_snap_close_date),
+            closing_floor_balance_list
         )
-        if production_for: closing_snap_q = closing_snap_q.filter(func.trim(FloorBalanceSnapshot.production_for) == func.trim(production_for))
-        if production_at: closing_snap_q = closing_snap_q.filter(func.trim(FloorBalanceSnapshot.location) == func.trim(production_at))
-        if batch: closing_snap_q = closing_snap_q.filter(FloorBalanceSnapshot.batch_number == batch)
-        
-        for r in closing_snap_q.all():
-            if r.opening_qty and float(r.opening_qty) > 0.01:
-                val = float(r.inventory_value or 0.0)
-                total_floor_val += val
-                closing_floor_balance_list.append({
-                    "batch_number": r.batch_number, "peeling_at": r.location, "count": r.count or "N/A", "species": r.species or "N/A", 
-                    "variety": r.variety, "available_qty": float(r.opening_qty or 0.0), "value": val, "production_for": r.production_for
-                })
+        if not closing_floor_balance_list:
+            total_floor_val = append_live_floor_rows(closing_floor_balance_list)
+
+    if not closing_floor_balance_list:
+        total_floor_val = append_live_floor_rows(closing_floor_balance_list)
 
     # Assign KPI metrics dynamically. Default load shows today's/table range;
     # explicit FY selection switches process KPIs to FY totals.
@@ -690,8 +772,10 @@ async def get_periodic_summary_report(
     card["chemical_qty"] = sum(float(s.chemical_qty or 0) for s in kpi_rows["soaking"])
     card["salt_qty"] = sum(float(s.salt_qty or 0) for s in kpi_rows["soaking"])
     card["production_qty"] = sum(float(pr.production_qty or 0) for pr in kpi_rows["production"])
-    card["stock_qty"] = sum(float(st.quantity or 0) for st in kpi_rows["stock"])
-    card["stock_amount"] = sum(float(st.inventory_value or 0) for st in kpi_rows["stock"])
+    card["stock_qty"] = sum(float(st.quantity or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "IN")
+    card["stock_amount"] = sum(float(st.inventory_value or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "IN")
+    card["stock_out_qty"] = sum(float(st.quantity or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "OUT")
+    card["stock_out_amount"] = sum(float(st.inventory_value or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "OUT")
     
     card["floor_qty"] = round(total_open_floor_val, 2)
     card["floor_amount"] = round(total_open_floor_val, 2)
@@ -703,11 +787,26 @@ async def get_periodic_summary_report(
     chart_buckets = {section_id: defaultdict(float) for section_id in [
         "sec-open-floor", "sec-close-floor", "sec-gate", "sec-rmp", "sec-rep",
         "sec-rmp-sum1", "sec-rmp-sum2", "sec-recon", "sec-grading-cards-wrapper",
-        "sec-deh", "sec-grd", "sec-pel", "sec-soak", "sec-prod", "sec-stk"
+        "sec-deh", "sec-grd", "sec-pel", "sec-soak", "sec-prod", "sec-stk", "sec-stk-out"
     ]}
     summary_buckets = {section_id: defaultdict(lambda: {"qty": 0.0}) for section_id in chart_buckets}
     gate_entry_count_by_day = defaultdict(int)
     gate_production_for_summary = defaultdict(int)
+    stock_out_series_buckets = {
+        "Sales": defaultdict(float),
+        "Storing": defaultdict(float),
+        "Reprocess": defaultdict(float),
+    }
+    production_for_series_buckets = {
+        section_id: defaultdict(lambda: defaultdict(float)) for section_id in chart_buckets
+    }
+
+    def add_production_for_series(section_id, row, raw_date, value):
+        key = getattr(row, "production_for", None) or "N/A"
+        date_key = _periodic_date_key(raw_date)
+        if not date_key:
+            return
+        production_for_series_buckets[section_id][key][date_key] += float(value or 0)
 
     fy_snap_q = db.query(FloorBalanceSnapshot).filter(
         FloorBalanceSnapshot.company_id == company_code,
@@ -730,10 +829,13 @@ async def get_periodic_summary_report(
         floor_key = f"{row.variety or 'N/A'} / {row.count or 'N/A'}"
         summary_buckets["sec-open-floor"][floor_key]["qty"] += qty
         summary_buckets["sec-close-floor"][floor_key]["qty"] += qty
+        add_production_for_series("sec-open-floor", row, row.snapshot_date, qty)
+        add_production_for_series("sec-close-floor", row, row.snapshot_date, qty)
 
     for row in chart_rows["gate"]:
         gate_entry_count_by_day[_periodic_date_key(row.date)] += 1
         gate_production_for_summary[row.production_for or "N/A"] += 1
+        add_production_for_series("sec-gate", row, row.date, 1)
     for day_key, entry_count in gate_entry_count_by_day.items():
         _add_flow_point(chart_buckets["sec-gate"], day_key, entry_count)
     summary_buckets["sec-gate"]["Vehicle Entries"]["qty"] = len(chart_rows["gate"])
@@ -749,10 +851,14 @@ async def get_periodic_summary_report(
         summary_buckets["sec-rmp"][count_key]["qty"] += float(row.received_qty or 0)
         summary_buckets["sec-rmp-sum1"][variety_key]["qty"] += float(row.received_qty or 0)
         summary_buckets["sec-rmp-sum2"][supplier_key]["qty"] += float(row.received_qty or 0)
+        add_production_for_series("sec-rmp", row, row.date, row.received_qty)
+        add_production_for_series("sec-rmp-sum1", row, row.date, row.received_qty)
+        add_production_for_series("sec-rmp-sum2", row, row.date, row.received_qty)
 
     for row in chart_rows["reprocess"]:
         _add_flow_point(chart_buckets["sec-rep"], row.date, row.in_qty)
         summary_buckets["sec-rep"][row.variety or "N/A"]["qty"] += float(row.in_qty or 0)
+        add_production_for_series("sec-rep", row, row.date, row.in_qty)
 
     for row in chart_rows["deheading"]:
         _add_flow_point(chart_buckets["sec-deh"], row.date, row.hoso_qty)
@@ -762,6 +868,8 @@ async def get_periodic_summary_report(
         summary_buckets["sec-deh"][deh_key]["yield_sum"] = summary_buckets["sec-deh"][deh_key].get("yield_sum", 0.0) + float(row.yield_percent or 0)
         summary_buckets["sec-deh"][deh_key]["yield_count"] = summary_buckets["sec-deh"][deh_key].get("yield_count", 0) + 1
         summary_buckets["sec-recon"]["Deheading"]["qty"] += float(row.hlso_qty or 0)
+        add_production_for_series("sec-deh", row, row.date, row.hoso_qty)
+        add_production_for_series("sec-recon", row, row.date, row.hlso_qty)
 
     for row in chart_rows["grading_details"]:
         _add_flow_point(chart_buckets["sec-grd"], row.date, row.quantity)
@@ -769,12 +877,16 @@ async def get_periodic_summary_report(
         grade_key = f"{row.variety_name or 'N/A'} / {row.graded_count or 'N/A'}"
         summary_buckets["sec-grd"][grade_key]["qty"] += float(row.quantity or 0)
         summary_buckets["sec-grading-cards-wrapper"][grade_key]["qty"] += float(row.quantity or 0)
+        add_production_for_series("sec-grd", row, row.date, row.quantity)
+        add_production_for_series("sec-grading-cards-wrapper", row, row.date, row.quantity)
 
     for row in chart_rows["peeling"]:
         _add_flow_point(chart_buckets["sec-pel"], row.date, row.hlso_qty)
         _add_flow_point(chart_buckets["sec-recon"], row.date, row.peeled_qty)
         summary_buckets["sec-pel"][row.contractor_name or "N/A"]["qty"] += float(row.hlso_qty or 0)
         summary_buckets["sec-recon"]["Peeling"]["qty"] += float(row.peeled_qty or 0)
+        add_production_for_series("sec-pel", row, row.date, row.hlso_qty)
+        add_production_for_series("sec-recon", row, row.date, row.peeled_qty)
 
     for row in chart_rows["soaking"]:
         net_qty = float(row.in_qty or 0) - float(row.rejection_qty or 0)
@@ -782,16 +894,38 @@ async def get_periodic_summary_report(
         _add_flow_point(chart_buckets["sec-recon"], row.date, float(row.in_qty or 0) - float(row.rejection_qty or 0))
         summary_buckets["sec-soak"][row.variety_name or "N/A"]["qty"] += float(row.in_qty or 0)
         summary_buckets["sec-recon"]["Soaking"]["qty"] += net_qty
+        add_production_for_series("sec-soak", row, row.date, row.in_qty)
+        add_production_for_series("sec-recon", row, row.date, net_qty)
 
     for row in chart_rows["production"]:
         _add_flow_point(chart_buckets["sec-prod"], row.date, row.production_qty)
         _add_flow_point(chart_buckets["sec-recon"], row.date, row.production_qty)
         summary_buckets["sec-prod"][row.glaze or "N/A"]["qty"] += float(row.production_qty or 0)
         summary_buckets["sec-recon"]["Production"]["qty"] += float(row.production_qty or 0)
+        add_production_for_series("sec-prod", row, row.date, row.production_qty)
+        add_production_for_series("sec-recon", row, row.date, row.production_qty)
+
+    def stock_out_group(row):
+        raw = f"{getattr(row, 'purpose', '') or ''} {getattr(row, 'type_of_production', '') or ''} {getattr(row, 'cargo_movement_type', '') or ''}".upper()
+        if "SALES" in raw or "SALE" in raw:
+            return "Sales"
+        if "STORING" in raw or "STORE" in raw or "STORAGE" in raw:
+            return "Storing"
+        return "Reprocess"
 
     for row in chart_rows["stock"]:
-        _add_flow_point(chart_buckets["sec-stk"], row.date, row.quantity)
-        summary_buckets["sec-stk"][row.glaze or "N/A"]["qty"] += float(row.quantity or 0)
+        movement = str(row.cargo_movement_type or "").upper()
+        qty = float(row.quantity or 0)
+        if movement == "OUT":
+            group = stock_out_group(row)
+            _add_flow_point(chart_buckets["sec-stk-out"], row.date, qty)
+            _add_flow_point(stock_out_series_buckets[group], row.date, qty)
+            summary_buckets["sec-stk-out"][group]["qty"] += qty
+        else:
+            _add_flow_point(chart_buckets["sec-stk"], row.date, qty)
+            movement_key = f"Movement: {movement or 'N/A'}"
+            summary_buckets["sec-stk"][movement_key]["qty"] += qty
+            add_production_for_series("sec-stk", row, row.date, qty)
 
     flow_charts = {
         "sec-open-floor": _flow_chart_payload("Opening Floor Balance", "KG", chart_buckets["sec-open-floor"]),
@@ -808,11 +942,18 @@ async def get_periodic_summary_report(
         "sec-pel": _flow_chart_payload("Peeling Input Flow", "KG", chart_buckets["sec-pel"]),
         "sec-soak": _flow_chart_payload("Soaking Input Flow", "KG", chart_buckets["sec-soak"]),
         "sec-prod": _flow_chart_payload("Production Packing Flow", "KG", chart_buckets["sec-prod"]),
-        "sec-stk": _flow_chart_payload("Stock Inventory Flow", "KG", chart_buckets["sec-stk"]),
+        "sec-stk": _flow_chart_payload("Stock IN Flow", "KG", chart_buckets["sec-stk"]),
+        "sec-stk-out": _multi_flow_chart_payload("Stock OUT Flow", "KG", stock_out_series_buckets),
     }
     for section_id, payload in flow_charts.items():
         payload["summary"] = _summary_items_from_bucket(summary_buckets[section_id], payload.get("unit", "KG"))
         payload["fy"] = selected_fy
+        if section_id != "sec-stk-out":
+            payload["series"] = _multi_flow_chart_payload(
+                payload.get("title", "Flow Chart"),
+                payload.get("unit", "KG"),
+                production_for_series_buckets[section_id],
+            )["series"]
     flow_charts["sec-gate"]["summary"] = [
         {"label": "Vehicle Entries", "value": len(chart_rows["gate"]), "unit": "Entries", "extra": None},
         {"label": "Boxes", "value": round(sum(float(r.no_of_material_boxes or 0) for r in chart_rows["gate"]), 2), "unit": "Boxes", "extra": None},
@@ -878,21 +1019,68 @@ async def get_periodic_summary_report(
     ]
 
     stock_summary = defaultdict(lambda: {"qty": 0.0, "glaze": defaultdict(float)})
+    stock_out_summary = defaultdict(lambda: {"qty": 0.0, "glaze": defaultdict(float)})
+    stock_purpose_summary = defaultdict(float)
+    stock_for_summary = defaultdict(float)
+    stock_at_summary = defaultdict(float)
+    stock_movement_summary = defaultdict(float)
+    stock_out_purpose_summary = defaultdict(float)
+    stock_out_for_summary = defaultdict(float)
+    stock_out_at_summary = defaultdict(float)
     for row in chart_rows["stock"]:
+        movement = str(row.cargo_movement_type or "").upper()
         key = row.variety or "N/A"
         glaze_key = row.glaze or "N/A"
         qty = float(row.quantity or 0)
-        stock_summary[key]["qty"] += qty
-        stock_summary[key]["glaze"][glaze_key] += qty
-    flow_charts["sec-stk"]["summary"] = [
+        if movement == "OUT":
+            stock_out_summary[key]["qty"] += qty
+            stock_out_summary[key]["glaze"][glaze_key] += qty
+            stock_out_purpose_summary[row.purpose or "N/A"] += qty
+            stock_out_for_summary[row.production_for or "N/A"] += qty
+            stock_out_at_summary[row.production_at or row.location or "N/A"] += qty
+        else:
+            stock_summary[key]["qty"] += qty
+            stock_summary[key]["glaze"][glaze_key] += qty
+            stock_purpose_summary[row.purpose or "N/A"] += qty
+            stock_for_summary[row.production_for or "N/A"] += qty
+            stock_at_summary[row.production_at or row.location or "N/A"] += qty
+            stock_movement_summary[movement or "N/A"] += qty
+    flow_charts["sec-stk"]["summary"] = (
+        [{"label": f"Movement: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_movement_summary.items(), key=lambda item: item[1], reverse=True)] +
+        [{"label": f"Purpose: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_purpose_summary.items(), key=lambda item: item[1], reverse=True)] +
+        [
         {
-            "label": key,
+            "label": f"Variety: {key}",
             "value": round(values["qty"], 2),
             "unit": "KG",
             "extra": " | ".join(f"{glaze}: {round(qty, 2)} KG" for glaze, qty in sorted(values["glaze"].items(), key=lambda item: item[1], reverse=True)[:3])
         }
         for key, values in sorted(stock_summary.items(), key=lambda item: item[1]["qty"], reverse=True)
-    ]
+        ] +
+        [{"label": f"Production For: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_for_summary.items(), key=lambda item: item[1], reverse=True)] +
+        [{"label": f"Production At: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_at_summary.items(), key=lambda item: item[1], reverse=True)]
+    )
+    flow_charts["sec-stk-out"]["summary"] = (
+        [{"label": f"Purpose: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_out_purpose_summary.items(), key=lambda item: item[1], reverse=True)] +
+        [
+        {
+            "label": f"Variety: {key}",
+            "value": round(values["qty"], 2),
+            "unit": "KG",
+            "extra": " | ".join(f"{glaze}: {round(qty, 2)} KG" for glaze, qty in sorted(values["glaze"].items(), key=lambda item: item[1], reverse=True)[:3])
+        }
+        for key, values in sorted(stock_out_summary.items(), key=lambda item: item[1]["qty"], reverse=True)
+        ] +
+        [{"label": f"Production For: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_out_for_summary.items(), key=lambda item: item[1], reverse=True)] +
+        [{"label": f"Production At: {key}", "value": round(value, 2), "unit": "KG", "extra": None}
+         for key, value in sorted(stock_out_at_summary.items(), key=lambda item: item[1], reverse=True)]
+    )
 
     def append_production_for_summary(section_ids, source_rows, value_getter, label_getter=lambda row: getattr(row, "production_for", None), unit="KG"):
         buckets = defaultdict(float)
@@ -914,7 +1102,6 @@ async def get_periodic_summary_report(
     append_production_for_summary(["sec-pel"], chart_rows["peeling"], lambda row: row.hlso_qty)
     append_production_for_summary(["sec-soak"], chart_rows["soaking"], lambda row: row.in_qty)
     append_production_for_summary(["sec-prod", "sec-recon"], chart_rows["production"], lambda row: row.production_qty)
-    append_production_for_summary(["sec-stk"], chart_rows["stock"], lambda row: row.quantity)
 
     return templates.TemplateResponse(
         request=request, name="summary/periodic_summary.html", 

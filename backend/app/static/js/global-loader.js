@@ -15,8 +15,12 @@
             loader.classList.add("hide");
             loader.innerHTML = `
                 <div class="loader-container">
-                    <div class="loader-spinner"></div>
-                    <div class="loader-text">Loading...</div>
+                    <div class="loader-brand-mark" aria-hidden="true">
+                        <span>BK</span>
+                    </div>
+                    <div class="loader-text">BKNR ERP</div>
+                    <div class="loader-subtext">Preparing secure workspace</div>
+                    <div class="loader-progress" aria-hidden="true"><span></span></div>
                 </div>
             `;
             document.body.appendChild(loader);

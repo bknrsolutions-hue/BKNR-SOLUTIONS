@@ -5,7 +5,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from app.services.setup_service import SetupService
 from app.database import SessionLocal
 from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
@@ -108,22 +107,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return RedirectResponse("/", status_code=303)
 
         company_code = request.session.get("company_code")
-
-        # SETUP CHECK
-        if company_code and not request.session.get("setup_completed", False):
-            db = SessionLocal()
-            try:
-                completed = SetupService.is_completed(db, company_code)
-                request.session["setup_completed"] = completed
-
-                if not completed:
-                    next_page = SetupService.get_next_master(db, company_code)
-                    print("SETUP REDIRECT:", next_page)
-
-                    if not path.startswith("/criteria"):
-                        return RedirectResponse(next_page, status_code=303)
-            finally:
-                db.close()
+        request.session["setup_completed"] = True
 
         response = await call_next(request)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400:
@@ -252,16 +236,6 @@ async def home_page(request: Request):
         return RedirectResponse("/", status_code=303)
 
     company_code = request.session.get("company_code")
-
-    # Setup Check (Fallback incase session flag is out of sync)
-    if not request.session.get("setup_completed", False):
-        db = SessionLocal()
-        try:
-            next_page = SetupService.get_next_master(db, company_code)
-            if next_page and next_page != "/home":
-                return RedirectResponse(next_page, status_code=303)
-        finally:
-            db.close()
 
     # Universal filters come from indexed masters, not repeated transaction-table scans.
     db = SessionLocal()

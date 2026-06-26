@@ -236,6 +236,10 @@ tr:hover td { background-color: var(--table-hover-bg); }
 .flow-chart-btn { border: 0; background: transparent; color: var(--text-muted); font-size: 8.5px; font-weight: 800; border-radius: 4px; padding: 4px 8px; cursor: pointer; text-transform: uppercase; }
 .flow-chart-btn.active { background: var(--accent); color: #fff; }
 .flow-contractor-filter { border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 6px; height: 25px; font-size: 8.5px; font-weight: 800; padding: 0 6px; max-width: 150px; }
+.flow-series-legend { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+.flow-series-toggle { border: 1px solid var(--border-color); background: rgba(255,255,255,0.48); color: var(--text-main); border-radius: 5px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; gap: 5px; font-size: 8px; font-weight: 900; cursor: pointer; }
+.flow-series-toggle .series-swatch { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
+.flow-series-toggle.inactive { opacity: 0.42; text-decoration: line-through; }
 .flow-chart-canvas { width: 100%; height: 185px; display: block; cursor: pointer; border-radius: 7px; background: rgba(255,255,255,0.34); }
 .flow-chart-empty { height: 60px; display: none; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; font-weight: 700; border: 1px dashed var(--border-color); border-radius: 6px; }
 .flow-summary-card { border-left: 1px solid rgba(37, 99, 235, 0.18); padding-left: 8px; min-width: 0; background: rgba(255,255,255,0.18); border-radius: 7px; padding-top: 7px; padding-bottom: 7px; }
@@ -243,6 +247,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
 .flow-summary-list { display: grid; gap: 5px; max-height: 185px; overflow-y: auto; padding-right: 3px; scrollbar-width: thin; }
 .flow-summary-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .flow-summary-split.three-part { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.flow-summary-split.four-part { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .flow-summary-group-title { font-size: 8px; color: var(--text-muted); font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
 .flow-summary-group-list { display: grid; gap: 5px; align-content: start; }
 .flow-summary-item { background: rgba(255,255,255,0.48); border: 1px solid rgba(37, 99, 235, 0.14); border-radius: 6px; padding: 6px; min-width: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.34); }
@@ -393,7 +398,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-stk')">
                 <span class="ref-kpi-meta kpi-icon-row">Stock Vault Asset <i class="fas fa-warehouse"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.stock_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.stock_amount) }}</span></span>
+                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.stock_qty) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.stock_out_qty|default(0)) }} KG</span></span>
             </div>
             <div class="ref-kpi-card" onclick="openSection('sec-close-floor')">
                 <span class="ref-kpi-meta kpi-icon-row">Closing Floor Bal <i class="fas fa-balance-scale"></i></span>
@@ -404,7 +409,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
 
     <!-- 🟢 FILTERS BAR PANEL -->
     <div class="filter-panel no-print">
-        <form method="get" class="filter-form" id="filterForm">
+        <form method="get" action="/summary/periodic-report" class="filter-form" id="filterForm">
             <div class="input-field">
                 <label>Financial Year</label>
                 <select name="fy" id="f_fy" onchange="savePeriodicViewState(); this.form.submit()">
@@ -415,7 +420,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             </div>
             <div class="input-field">
                 <label>Date Filter</label>
-                <select name="date_filter_type" id="dateFilterType" onchange="toggleDateInputs()">
+                <select name="date_filter_type" id="dateFilterType" onchange="handleDateFilterChange()">
                     <option value="today" {% if selected_date_filter == 'today' or not selected_date_filter %}selected{% endif %}>Today</option>
                     <option value="yesterday" {% if selected_date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
                     <option value="month" {% if selected_date_filter == 'month' %}selected{% endif %}>By Month</option>
@@ -425,17 +430,17 @@ tr:hover td { background-color: var(--table-hover-bg); }
             
             <div class="input-field" id="startDateDiv" style="display:none;">
                 <label>Start Date</label>
-                <input type="date" name="start_date" value="{{ selected_start_date }}">
+                <input type="date" name="start_date" value="{{ selected_start_date }}" onchange="submitDateRangeIfReady()">
             </div>
             
             <div class="input-field" id="endDateDiv" style="display:none;">
                 <label>End Date</label>
-                <input type="date" name="end_date" value="{{ selected_end_date }}">
+                <input type="date" name="end_date" value="{{ selected_end_date }}" onchange="submitDateRangeIfReady()">
             </div>
             
             <div class="input-field" id="monthDiv" style="display:none;">
                 <label>Select Month</label>
-                <input type="month" name="selected_month" value="{{ selected_month }}">
+                <input type="month" name="selected_month" value="{{ selected_month }}" onchange="submitPeriodicFilters()">
             </div>
             
             <div class="input-field">
@@ -502,7 +507,8 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <button type="button" class="side-menu-btn" data-section="sec-pel" onclick="openSection('sec-pel')"><i class="fas fa-hands"></i> Peeling</button>
             <button type="button" class="side-menu-btn" data-section="sec-soak" onclick="openSection('sec-soak')"><i class="fas fa-water"></i> Soaking</button>
             <button type="button" class="side-menu-btn" data-section="sec-prod" onclick="openSection('sec-prod')"><i class="fas fa-box-open"></i> Production Packing</button>
-            <button type="button" class="side-menu-btn" data-section="sec-stk" onclick="openSection('sec-stk')"><i class="fas fa-warehouse"></i> Stock Inventory</button>
+            <button type="button" class="side-menu-btn" data-section="sec-stk" onclick="openSection('sec-stk')"><i class="fas fa-warehouse"></i> Stock IN</button>
+            <button type="button" class="side-menu-btn" data-section="sec-stk-out" onclick="openSection('sec-stk-out')"><i class="fas fa-truck-ramp-box"></i> Stock OUT</button>
         </aside>
 
         <main class="periodic-content">
@@ -1077,6 +1083,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <i id="icon-sec-stk" class="fas fa-chevron-down toggle-icon"></i>
         </div>
         <div id="sec-stk" class="table-wrap toggle-content" style="display: none;">
+            <div class="flow-summary-title" style="margin:4px 2px 6px; color:var(--success);">Stock IN</div>
             <table>
                 <thead>
                     <tr>
@@ -1104,7 +1111,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     {% set ns_stock = namespace(current_variety='', variety_qty=0, variety_val=0, variety_mc=0, variety_loose=0) %}
                     {% set grand_stock = namespace(qty=0.0, val=0.0, mc=0, loose=0) %}
                     
-                    {% for row in rows.stock|sort(attribute='variety') %}
+                    {% for row in rows.stock_in|sort(attribute='variety') %}
                         {% set grand_stock.qty = grand_stock.qty + (row.quantity | float if row.quantity else 0.0) %}
                         {% set grand_stock.val = grand_stock.val + (row.inventory_value | float if row.inventory_value else 0.0) %}
                         {% set grand_stock.mc = grand_stock.mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
@@ -1158,16 +1165,121 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             </tr>
                         {% endif %}
                     {% else %}
-                        <tr><td colspan="18" class="text-center text-muted py-2">No Active Stock Inventory Found.</td></tr>
+                        <tr><td colspan="18" class="text-center text-muted py-2">No Stock IN Inventory Found.</td></tr>
                     {% endfor %}
                     
-                    {% if rows.stock and rows.stock|length > 0 %}
+                    {% if rows.stock_in and rows.stock_in|length > 0 %}
                     <tr class="subtotal-row" style="border-top:1.5px solid var(--success); font-weight: 800;">
-                        <td colspan="14" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK LOG:</td>
+                        <td colspan="14" style="text-align:right; color:var(--success);">GRAND TOTAL STOCK IN:</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.mc }}</td>
                         <td class="text-right" style="color:var(--success);">{{ grand_stock.loose }}</td>
                         <td class="qty-cell" style="color:var(--success);">{{ "%.2f"|format(grand_stock.qty) }}</td>
                         <td class="money-cell" style="color:var(--success);">₹ {{ "{:,.2f}".format(grand_stock.val) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header" onclick="toggleSection('sec-stk-out')">
+            <div class="section-header-left"><i class="fas fa-truck-ramp-box"></i> 9. STOCK OUT LOG</div>
+            <i id="icon-sec-stk-out" class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div id="sec-stk-out" class="table-wrap toggle-content" style="display: none;">
+            <div class="flow-summary-title" style="margin:14px 2px 6px; color:var(--danger);">Stock OUT</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sl-no">Sl.No</th>
+                        <th>Species</th>
+                        <th>Location</th>
+                        <th>Production At</th>
+                        <th>Production For</th>
+                        <th>PO Number</th>
+                        <th>Purpose </th>
+                        <th>Movement Type</th>
+                        <th>Brand</th>
+                        <th>Freezer</th>
+                        <th>Packing Style</th>
+                        <th>Glaze</th>
+                        <th>Variety</th>
+                        <th>Grade</th>
+                        <th class="text-right">No of MC</th>
+                        <th class="text-right">Loose</th>
+                        <th class="qty-cell text-right">Quantity (KG)</th>
+                        <th class="money-cell text-right">Inventory Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set ns_stock_out = namespace(current_variety='', variety_qty=0, variety_val=0, variety_mc=0, variety_loose=0) %}
+                    {% set grand_stock_out = namespace(qty=0.0, val=0.0, mc=0, loose=0) %}
+
+                    {% for row in rows.stock_out|sort(attribute='variety') %}
+                        {% set grand_stock_out.qty = grand_stock_out.qty + (row.quantity | float if row.quantity else 0.0) %}
+                        {% set grand_stock_out.val = grand_stock_out.val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                        {% set grand_stock_out.mc = grand_stock_out.mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                        {% set grand_stock_out.loose = grand_stock_out.loose + (row.loose | int if row.loose else 0) %}
+
+                        {% if ns_stock_out.current_variety != '' and ns_stock_out.current_variety != row.variety %}
+                            <tr class="subtotal-row danger-subtotal">
+                                <td colspan="14" style="text-align:right">SUBTOTAL OUT ({{ ns_stock_out.current_variety }}):</td>
+                                <td class="text-right">{{ ns_stock_out.variety_mc }}</td>
+                                <td class="text-right">{{ ns_stock_out.variety_loose }}</td>
+                                <td class="qty-cell">{{ "%.2f"|format(ns_stock_out.variety_qty) }}</td>
+                                <td class="money-cell">₹ {{ "{:,.2f}".format(ns_stock_out.variety_val) }}</td>
+                            </tr>
+                            {% set ns_stock_out.variety_qty = 0 %}{% set ns_stock_out.variety_val = 0 %}{% set ns_stock_out.variety_mc = 0 %}{% set ns_stock_out.variety_loose = 0 %}
+                        {% endif %}
+
+                        <tr>
+                            <td class="sl-no">{{ loop.index }}</td>
+                            <td>{{ row.species or 'N/A' }}</td>
+                            <td>{{ row.location or 'N/A' }}</td>
+                            <td>{{ row.production_at or 'N/A' }}</td>
+                            <td>{{ row.production_for or 'N/A' }}</td>
+                            <td>{{ row.po_number or 'N/A' }}</td>
+                            <td>{{ row.purpose or 'N/A' }}</td>
+                            <td><span class="tag" style="color:var(--danger);">{{ row.cargo_movement_type }}</span></td>
+                            <td>{{ row.brand or 'N/A' }}</td>
+                            <td>{{ row.freezer or 'N/A' }}</td>
+                            <td>{{ row.packing_style or 'N/A' }}</td>
+                            <td>{{ row.glaze or 'N/A' }}</td>
+                            <td><span class="tag">{{ row.variety or 'N/A' }}</span></td>
+                            <td>{{ row.grade or 'N/A' }}</td>
+                            <td class="text-right">{{ row.no_of_mc or 0 }}</td>
+                            <td class="text-right">{{ row.loose or 0 }}</td>
+                            <td class="qty-cell">{{ "%.2f"|format(row.quantity | float if row.quantity else 0.0) }}</td>
+                            <td class="money-cell">₹ {{ "{:,.2f}".format(row.inventory_value | float if row.inventory_value else 0.0) }}</td>
+                        </tr>
+
+                        {% set ns_stock_out.current_variety = row.variety %}
+                        {% set ns_stock_out.variety_qty = ns_stock_out.variety_qty + (row.quantity | float if row.quantity else 0.0) %}
+                        {% set ns_stock_out.variety_val = ns_stock_out.variety_val + (row.inventory_value | float if row.inventory_value else 0.0) %}
+                        {% set ns_stock_out.variety_mc = ns_stock_out.variety_mc + (row.no_of_mc | int if row.no_of_mc else 0) %}
+                        {% set ns_stock_out.variety_loose = ns_stock_out.variety_loose + (row.loose | int if row.loose else 0) %}
+
+                        {% if loop.last %}
+                            <tr class="subtotal-row danger-subtotal">
+                                <td colspan="14" style="text-align:right">SUBTOTAL OUT ({{ ns_stock_out.current_variety }}):</td>
+                                <td class="text-right">{{ ns_stock_out.variety_mc }}</td>
+                                <td class="text-right">{{ ns_stock_out.variety_loose }}</td>
+                                <td class="qty-cell">{{ "%.2f"|format(ns_stock_out.variety_qty) }}</td>
+                                <td class="money-cell">₹ {{ "{:,.2f}".format(ns_stock_out.variety_val) }}</td>
+                            </tr>
+                        {% endif %}
+                    {% else %}
+                        <tr><td colspan="18" class="text-center text-muted py-2">No Stock OUT Inventory Found.</td></tr>
+                    {% endfor %}
+
+                    {% if rows.stock_out and rows.stock_out|length > 0 %}
+                    <tr class="subtotal-row danger-subtotal" style="border-top:1.5px solid var(--danger); font-weight: 800;">
+                        <td colspan="14" style="text-align:right; color:var(--danger);">GRAND TOTAL STOCK OUT:</td>
+                        <td class="text-right" style="color:var(--danger);">{{ grand_stock_out.mc }}</td>
+                        <td class="text-right" style="color:var(--danger);">{{ grand_stock_out.loose }}</td>
+                        <td class="qty-cell" style="color:var(--danger);">{{ "%.2f"|format(grand_stock_out.qty) }}</td>
+                        <td class="money-cell" style="color:var(--danger);">₹ {{ "{:,.2f}".format(grand_stock_out.val) }}</td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -1196,30 +1308,64 @@ const SELECTED_PRODUCTION_FOR = {{ (selected_company or '')|tojson }};
 const SELECTED_PRODUCTION_AT = {{ (selected_production_at or '')|tojson }};
 const periodicChartModes = {};
 const periodicChartPoints = {};
+const periodicHiddenSeries = {};
 let periodicActiveFilter = null;
 const PERIODIC_STATE_KEY = 'periodicReportViewState';
+const PERIODIC_SERIES_COLORS = ['#ef4444', '#f59e0b', '#2563eb', '#10b981', '#8b5cf6', '#14b8a6', '#f97316', '#64748b'];
 
 function getActiveSectionId() {
     return document.querySelector('.section-card.active-section .toggle-content')?.id || 'sec-close-floor';
 }
 
 function savePeriodicViewState() {
+    const sectionId = getActiveSectionId();
     sessionStorage.setItem(PERIODIC_STATE_KEY, JSON.stringify({
-        sectionId: getActiveSectionId(),
+        sectionId,
         scrollY: window.scrollY || window.pageYOffset || 0
     }));
+    if (history.replaceState) {
+        const url = new URL(window.location.href);
+        url.hash = sectionId;
+        history.replaceState(null, '', url.toString());
+    }
 }
 
 function restorePeriodicViewState() {
     try {
         const state = JSON.parse(sessionStorage.getItem(PERIODIC_STATE_KEY) || '{}');
-        const sectionId = state.sectionId || 'sec-close-floor';
+        const hashSection = window.location.hash ? window.location.hash.replace('#', '') : '';
+        const sectionId = hashSection || state.sectionId || 'sec-close-floor';
         openSection(sectionId, { scroll: false });
         if (Number.isFinite(Number(state.scrollY))) {
             setTimeout(() => window.scrollTo({ top: Number(state.scrollY), behavior: 'auto' }), 90);
         }
     } catch {
         openSection('sec-close-floor', { scroll: false });
+    }
+}
+
+function submitPeriodicFilters() {
+    const filterForm = document.getElementById('filterForm');
+    if (!filterForm) return;
+    savePeriodicViewState();
+    filterForm.action = '/summary/periodic-report' + (window.location.hash || `#${getActiveSectionId()}`);
+    filterForm.submit();
+}
+
+function handleDateFilterChange() {
+    toggleDateInputs();
+    const filterType = document.getElementById("dateFilterType")?.value || '';
+    if (filterType === 'today' || filterType === 'yesterday') {
+        submitPeriodicFilters();
+    }
+}
+
+function submitDateRangeIfReady() {
+    const filterType = document.getElementById("dateFilterType")?.value || '';
+    const start = document.querySelector('[name="start_date"]')?.value;
+    const end = document.querySelector('[name="end_date"]')?.value;
+    if (filterType === 'between' && start && end) {
+        submitPeriodicFilters();
     }
 }
 
@@ -1266,6 +1412,11 @@ function openSection(id, options = {}) {
         const parentCard = contentEl.closest('.section-card');
         if(parentCard) {
             parentCard.classList.add('active-section', 'margin-active-card');
+            if (history.replaceState) {
+                const url = new URL(window.location.href);
+                url.hash = id;
+                history.replaceState(null, '', url.toString());
+            }
             updateActiveRowCount(parentCard);
             setTimeout(() => renderPeriodicFlowChart(id), 80);
 
@@ -1292,11 +1443,32 @@ function chartGlobalFilterSelect(name, options, selected, allLabel) {
     `;
 }
 
+function getSeriesColor(index) {
+    return PERIODIC_SERIES_COLORS[index % PERIODIC_SERIES_COLORS.length];
+}
+
+function renderSeriesLegend(sectionId, chart) {
+    const series = Array.isArray(chart.series) ? chart.series : [];
+    if (!series.length) return '';
+    return `
+        <div class="flow-series-legend" data-section="${sectionId}">
+            ${series.map((item, index) => `
+                <button type="button" class="flow-series-toggle" data-series="${item.name || 'N/A'}" title="Show/Hide ${item.name || 'N/A'}">
+                    <span class="series-swatch" style="background:${getSeriesColor(index)}"></span>
+                    <span>${item.name || 'N/A'}</span>
+                </button>
+            `).join('')}
+        </div>
+    `;
+}
+
 function applyChartGlobalFilter(name, value) {
     savePeriodicViewState();
     const url = new URL(window.location.href);
+    url.pathname = '/summary/periodic-report';
     if (value) url.searchParams.set(name, value);
     else url.searchParams.delete(name);
+    url.hash = getActiveSectionId();
     window.location.href = url.toString();
 }
 
@@ -1329,6 +1501,7 @@ function insertPeriodicFlowCharts() {
             </div>
             <div class="flow-chart-grid">
                 <div class="flow-chart-main">
+                    ${renderSeriesLegend(sectionId, chart)}
                     <canvas class="flow-chart-canvas" height="185"></canvas>
                     <div class="flow-chart-empty">No flow data for selected filters.</div>
                     <div class="flow-filter-note">Click a day/month point to filter the table below.</div>
@@ -1351,6 +1524,20 @@ function insertPeriodicFlowCharts() {
         });
         panel.querySelectorAll('.chart-global-filter').forEach(select => {
             select.addEventListener('change', () => applyChartGlobalFilter(select.dataset.filter, select.value));
+        });
+        panel.querySelectorAll('.flow-series-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                periodicHiddenSeries[sectionId] = periodicHiddenSeries[sectionId] || new Set();
+                const name = btn.dataset.series || '';
+                if (periodicHiddenSeries[sectionId].has(name)) {
+                    periodicHiddenSeries[sectionId].delete(name);
+                    btn.classList.remove('inactive');
+                } else {
+                    periodicHiddenSeries[sectionId].add(name);
+                    btn.classList.add('inactive');
+                }
+                renderPeriodicFlowChart(sectionId);
+            });
         });
         const canvas = panel.querySelector('canvas');
         if (canvas) {
@@ -1461,7 +1648,7 @@ function handlePeriodicChartHover(sectionId, event) {
         return;
     }
     const chart = (PERIODIC_FLOW_CHARTS || {})[sectionId] || {};
-    tooltip.innerHTML = `${nearest.label}<br>${nearest.value.toFixed(nearest.value >= 10 ? 0 : 1)} ${chart.unit || ''}`;
+    tooltip.innerHTML = `${nearest.series ? `${nearest.series}<br>` : ''}${nearest.label}<br>${nearest.value.toFixed(nearest.value >= 10 ? 0 : 1)} ${chart.unit || ''}`;
     tooltip.style.left = `${event.clientX + 12}px`;
     tooltip.style.top = `${event.clientY + 12}px`;
     tooltip.style.display = 'block';
@@ -1624,6 +1811,41 @@ function updateSummaryList(sectionId, title, items) {
         `;
         return;
     }
+    if (sectionId === 'sec-stk-out') {
+        const varieties = items
+            .filter(item => String(item.label || '').startsWith('Variety:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Variety:\s*/, '') }));
+        const purposes = items
+            .filter(item => String(item.label || '').startsWith('Purpose:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Purpose:\s*/, '') }));
+        const productionAtItems = items
+            .filter(item => String(item.label || '').startsWith('Production At:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Production At:\s*/, '') }));
+        const productionForItems = items
+            .filter(item => String(item.label || '').startsWith('Production For:'))
+            .map(item => ({ ...item, label: String(item.label || '').replace(/^Production For:\s*/, '') }));
+        list.innerHTML = `
+            <div class="flow-summary-split four-part">
+                <div>
+                    <div class="flow-summary-group-title">Variety Wise</div>
+                    <div class="flow-summary-group-list">${varieties.length ? varieties.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No variety data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Purpose Wise</div>
+                    <div class="flow-summary-group-list">${purposes.length ? purposes.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No purpose data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Production At</div>
+                    <div class="flow-summary-group-list">${productionAtItems.length ? productionAtItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No at data.</div>'}</div>
+                </div>
+                <div>
+                    <div class="flow-summary-group-title">Production For</div>
+                    <div class="flow-summary-group-list">${productionForItems.length ? productionForItems.map(renderItem).join('') : '<div class="flow-chart-empty" style="display:flex;">No for data.</div>'}</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
     const productionForItems = items
         .filter(item => String(item.label || '').startsWith('Production For:'))
         .map(item => ({ ...item, label: String(item.label || '').replace(/^Production For:\s*/, '') }));
@@ -1764,6 +1986,18 @@ function updateFlowSummaryFromSection(sectionId, mode, label) {
         });
     } else if (sectionId === 'sec-prod') {
         items = groupWithBreakdown(getColumnIndex(headers, ['variety']), getColumnIndex(headers, ['prod qty', 'quantity', 'qty']), getColumnIndex(headers, ['glaze']));
+    } else if (sectionId === 'sec-stk-out') {
+        const varietyIdx = getColumnIndex(headers, ['variety']);
+        const purposeIdx = getColumnIndex(headers, ['purpose']);
+        const productionAtIdx = getColumnIndex(headers, ['production at']);
+        const productionForIdx = getColumnIndex(headers, ['production for']);
+        const qtyIdx = getColumnIndex(headers, ['quantity', 'qty']);
+        items = [
+            ...groupWithBreakdown(varietyIdx, qtyIdx, getColumnIndex(headers, ['glaze'])).map(item => ({ ...item, label: `Variety: ${item.label}` })),
+            ...groupSummary(purposeIdx, qtyIdx).map(item => ({ ...item, label: `Purpose: ${item.label}` })),
+            ...groupSummary(productionAtIdx, qtyIdx).map(item => ({ ...item, label: `Production At: ${item.label}` })),
+            ...groupSummary(productionForIdx, qtyIdx).map(item => ({ ...item, label: `Production For: ${item.label}` })),
+        ];
     } else if (sectionId === 'sec-stk') {
         items = groupWithBreakdown(getColumnIndex(headers, ['variety']), getColumnIndex(headers, ['quantity', 'qty']), getColumnIndex(headers, ['glaze']));
     } else {
@@ -1771,7 +2005,7 @@ function updateFlowSummaryFromSection(sectionId, mode, label) {
         const groupIdx = getColumnIndex(headers, ['variety', 'species', 'batch']);
         items = qtyIdx >= 0 && groupIdx >= 0 ? groupSummary(groupIdx, qtyIdx) : [{ label: 'Rows', value: rows.length, unit: 'Rows' }];
     }
-    if (sectionId !== 'sec-gate') {
+    if (!['sec-gate', 'sec-stk-out'].includes(sectionId)) {
         const productionForIdx = getColumnIndex(headers, ['production for', 'prod for']);
         if (productionForIdx >= 0) {
             const countIdx = getColumnIndex(headers, ['prod qty', 'quantity', 'qty', 'received qty', 'in qty', 'hoso qty', 'hlso qty', 'peeled qty']);
@@ -1846,11 +2080,15 @@ function renderPeriodicFlowChart(sectionId) {
 
     const mode = periodicChartModes[sectionId] || 'day';
     const data = Array.isArray(chart[mode]) ? chart[mode] : [];
+    const series = Array.isArray(chart.series) ? chart.series : [];
+    const hiddenSeries = periodicHiddenSeries[sectionId] || new Set();
+    const visibleSeries = series.filter(item => !hiddenSeries.has(item.name || 'N/A'));
     const canvas = panel.querySelector('canvas');
     const empty = panel.querySelector('.flow-chart-empty');
     if (!canvas) return;
 
-    if (!data.length) {
+    const hasSeriesData = visibleSeries.some(item => Array.isArray(item[mode]) && item[mode].length);
+    if ((series.length && !hasSeriesData) || (!data.length && !hasSeriesData)) {
         periodicChartPoints[sectionId] = [];
         canvas.style.display = 'none';
         if (empty) empty.style.display = 'flex';
@@ -1877,11 +2115,15 @@ function renderPeriodicFlowChart(sectionId) {
     const muted = styles.getPropertyValue('--text-muted').trim() || '#64748b';
     const border = styles.getPropertyValue('--border-color').trim() || '#e2e8f0';
     const main = styles.getPropertyValue('--text-main').trim() || '#0f172a';
-    const maxValue = Math.max(...data.map(item => Number(item.value) || 0), 1);
+    const allSeriesPoints = visibleSeries.flatMap(item => Array.isArray(item[mode]) ? item[mode] : []);
+    const maxValue = Math.max(...(hasSeriesData ? allSeriesPoints : data).map(item => Number(item.value) || 0), 1);
     const pad = { left: 44, right: 16, top: 14, bottom: 34 };
     const chartWidth = width - pad.left - pad.right;
     const chartHeight = height - pad.top - pad.bottom;
-    const xStep = data.length > 1 ? chartWidth / (data.length - 1) : chartWidth;
+    const baseLabels = hasSeriesData
+        ? [...new Set(visibleSeries.flatMap(item => (Array.isArray(item[mode]) ? item[mode] : []).map(point => point.label)))].sort()
+        : data.map(item => item.label);
+    const xStep = baseLabels.length > 1 ? chartWidth / (baseLabels.length - 1) : chartWidth;
 
     ctx.strokeStyle = border;
     ctx.lineWidth = 1;
@@ -1896,6 +2138,67 @@ function renderPeriodicFlowChart(sectionId) {
         ctx.lineTo(width - pad.right, y);
         ctx.stroke();
         ctx.fillText(labelValue.toFixed(labelValue >= 10 ? 0 : 1), 4, y + 3);
+    }
+
+    if (hasSeriesData) {
+        const points = [];
+        visibleSeries.forEach((serie, visibleIndex) => {
+            const originalIndex = series.findIndex(item => (item.name || 'N/A') === (serie.name || 'N/A'));
+            const color = getSeriesColor(originalIndex >= 0 ? originalIndex : 0);
+            const valuesByLabel = new Map((Array.isArray(serie[mode]) ? serie[mode] : []).map(item => [item.label, Number(item.value) || 0]));
+            const seriePoints = baseLabels.map((label, index) => {
+                const value = valuesByLabel.get(label) || 0;
+                return {
+                    x: pad.left + (baseLabels.length > 1 ? xStep * index : chartWidth / 2),
+                    y: pad.top + chartHeight - ((value / maxValue) * chartHeight),
+                    label,
+                    value,
+                    mode,
+                    series: serie.name,
+                    color
+                };
+            });
+            points.push(...seriePoints);
+            ctx.shadowColor = color + '44';
+            ctx.shadowBlur = 6;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            seriePoints.forEach((point, index) => {
+                if (index === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            seriePoints.forEach(point => {
+                if (point.value <= 0) return;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            ctx.fillStyle = color;
+            ctx.font = '8.5px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(serie.name, pad.left + (visibleIndex * 72), 10);
+        });
+        periodicChartPoints[sectionId] = points.filter(point => point.value > 0);
+        baseLabels.forEach((label, index) => {
+            const shouldLabel = baseLabels.length <= 12 || index === 0 || index === baseLabels.length - 1 || index % Math.ceil(baseLabels.length / 8) === 0;
+            if (!shouldLabel) return;
+            const x = pad.left + (baseLabels.length > 1 ? xStep * index : chartWidth / 2);
+            ctx.save();
+            ctx.translate(x, height - 15);
+            ctx.rotate(baseLabels.length > 8 ? -0.45 : 0);
+            ctx.fillStyle = muted;
+            ctx.textAlign = baseLabels.length > 8 ? 'right' : 'center';
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+        });
+        return;
     }
 
     const points = data.map((item, index) => {
@@ -1988,7 +2291,10 @@ document.addEventListener("DOMContentLoaded", function() {
     insertPeriodicFlowCharts();
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
-        filterForm.addEventListener('submit', savePeriodicViewState);
+        filterForm.addEventListener('submit', function() {
+            savePeriodicViewState();
+            filterForm.action = '/summary/periodic-report' + (window.location.hash || `#${getActiveSectionId()}`);
+        });
         filterForm.querySelectorAll('select, input').forEach(input => {
             input.addEventListener('change', savePeriodicViewState);
         });

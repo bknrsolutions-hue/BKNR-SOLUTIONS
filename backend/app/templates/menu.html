@@ -876,6 +876,9 @@ function broadcastUniversalFilters() {
     
     try {
         let currentUrl = new URL(iframe.src, window.location.origin);
+        if (iframe.contentWindow && iframe.contentWindow.location && iframe.contentWindow.location.hash) {
+            currentUrl.hash = iframe.contentWindow.location.hash;
+        }
         
         if (pFor) {
             currentUrl.searchParams.set("production_for", pFor);
