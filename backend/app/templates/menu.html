@@ -58,7 +58,7 @@
 
 /* 🌟 LIGHT MODE OVERRIDE 🌟 */
 [data-theme="light"] {
-    --bg-app: #f1f5f9;             
+    --bg-app: #eef6ff;             
     --surface-panel: rgba(255, 255, 255, 0.98);      
     --glass-bg: #ffffff; 
     
@@ -112,10 +112,11 @@ body {
     height: 70px; display: flex; align-items: center; justify-content: space-between; 
     padding: 0 20px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;
 }
-.brand-wrapper { display: flex; flex-direction: column; gap: 2px; }
-.brand-title { font-weight: 800; font-size: 15px; letter-spacing: -0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
+.brand-wrapper { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.brand-title { font-weight: 800; font-size: 15px; letter-spacing: 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand-title i { color: var(--corp-dash); font-size: 18px; }
-.brand-subtitle { font-size: 9px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 2px; text-transform: uppercase; margin-left: 28px; }
+.brand-subtitle { font-size: 9px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 1.2px; text-transform: uppercase; margin-left: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .close-sidebar-btn {
     display: flex; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); color: var(--text-secondary);
@@ -582,16 +583,17 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 </head>
 <body>
 
-<div id="appSplash" aria-label="Opening workspace">
+{% set has_app_session = request.session.get('email') and request.session.get('company_name') %}
+<div id="appSplash" class="{{ '' if has_app_session else 'app-splash-empty' }}" aria-label="Opening workspace">
+    {% if has_app_session %}
     <div class="app-splash-card">
-        <div class="app-splash-logo-wrap">
-            <img class="app-splash-logo" src="/static/icon-192.png" alt="Company logo">
-        </div>
-        <h1 class="app-splash-company">{{ request.session.get('company_name', 'BKNR ERP') }}</h1>
-        <div class="app-splash-label">Enterprise Workspace</div>
+        <h1 class="app-splash-company">{{ request.session.get('company_name') }}</h1>
         <div class="app-splash-quote" id="appSplashQuote">Preparing your workspace.</div>
         <div class="app-splash-track"><span></span></div>
     </div>
+    {% else %}
+    <div class="app-splash-spinner" aria-hidden="true"></div>
+    {% endif %}
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
@@ -599,8 +601,8 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="brand-wrapper">
-            <div class="brand-title"><i class="fa-solid fa-layer-group"></i> MY ERP</div>
-            <div class="brand-subtitle">WORKSPACE</div>
+            <div class="brand-title"><i class="fa-solid fa-layer-group"></i> <span>{{ request.session.get('name', 'User') }}</span></div>
+            <div class="brand-subtitle">{{ request.session.get('company_name', 'Workspace') }}</div>
         </div>
         <button class="close-sidebar-btn" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
     </div>

@@ -2,600 +2,1575 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP – Enterprise Resource Planning Platform</title>
+<title>BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="BKNR ERP is an integrated seafood enterprise platform for processing, inventory, finance, HR, reports, and export documentation.">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0f172a">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --primary-color: #004b93; 
-  --btn-bg: #002b5c; 
-  --btn-hover: #001a3a;
-  /* Ultra Light Platinum & Slate Premium Executive Shading */
-  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 25%, #e2e8f0 75%, #cbd5e1 100%); 
-  --card-bg: #ffffff;
-  --text-main: #0f172a; 
-  --text-muted: #475569; 
-  --border-color: rgba(15, 23, 42, 0.08);
-  --input-focus-border: rgba(0, 75, 147, 0.4);
-  --success-bg: #f0fdf4;
-  --success-text: #166534;
+  --ink: #0f172a;
+  --muted: #536173;
+  --soft: #eef6ff;
+  --paper: #ffffff;
+  --line: #cbd5e1;
+  --navy: #082f57;
+  --blue: #0f5fa8;
+  --cyan: #13a8d8;
+  --green: #0f8f6b;
+  --amber: #b7791f;
+  --rose: #b42345;
+  --shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
+  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --focus: rgba(15, 95, 168, 0.24);
   --error-bg: #fef2f2;
   --error-text: #991b1b;
+  --success-bg: #ecfdf5;
+  --success-text: #166534;
 }
 
-* { 
-  box-sizing: border-box; 
-  font-family: 'Inter', sans-serif; 
-  margin: 0; 
-  padding: 0; 
+* {
+  box-sizing: border-box;
 }
 
-body { 
-  background: var(--bg-gradient); 
-  color: var(--text-main); 
-  min-height: 100vh; 
-  display: flex; 
-  overflow-x: hidden;
+html {
+  scroll-behavior: smooth;
 }
 
-.wrapper { 
-  display: flex; 
-  width: 100vw; 
-  min-height: 100vh; 
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--soft);
 }
 
-/* Left Column: Premium Executive Value Proposition (CEO Facing) */
-.branding-side {
-  flex: 1.6;
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 4rem 4.5rem;
-  overflow-y: auto;
-  height: 100vh;
-  border-right: 1px solid rgba(15, 23, 42, 0.06);
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.brand-lockup {
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.site-shell {
+  min-height: 100vh;
+}
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px clamp(18px, 4vw, 56px);
+  background: rgba(238, 246, 255, 0.9);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.32);
+  backdrop-filter: blur(16px);
+}
+
+.brand {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 1.6rem;
+  gap: 12px;
+  min-width: 0;
 }
 
-.brand-seal {
-  width: 58px;
-  height: 58px;
+.brand-mark {
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #083b73 0%, #0f5fa8 54%, #1d9bd7 100%);
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 0;
-  box-shadow: 0 16px 34px rgba(0, 75, 147, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.34);
-  position: relative;
-}
-
-.brand-seal::after {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-.brand-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.brand-meta strong {
-  color: var(--text-main);
-  font-size: 0.95rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-
-.brand-meta span {
-  color: var(--primary-color);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-/* Right Column: Ultra-Compact Premium Authentication Gate Matrix */
-.form-side {
-  width: 440px; 
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; 
-  padding: 3.5rem 2.5rem 2rem 2.5rem;
-  position: relative;
-  height: 100vh;
-  overflow-y: auto;
-  border-left: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: -15px 0 50px rgba(15, 23, 42, 0.04);
-}
-
-.form-container-core {
-  width: 100%;
-  margin: auto 0; 
-}
-
-/* Typography Specifications */
-.disc-title-main {
-  color: var(--text-main);
-  font-size: 2.6rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-}
-
-.disc-subtitle-main {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-bottom: 2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.disc-paragraph {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.65;
-  margin-bottom: 1.2rem;
-  text-align: justify;
-  font-weight: 400;
-}
-
-.section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0) 100%);
-  margin: 1.75rem 0;
-}
-
-.feature-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-top: 1.75rem;
-  margin-bottom: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-left: 3px solid var(--primary-color);
-  padding-left: 10px;
-}
-
-.feature-list {
-  list-style: none;
-  padding-left: 0;
-  margin: 0 0 1.2rem 0;
-}
-
-.feature-list li {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-  line-height: 1.55;
-  display: flex;
-  align-items: flex-start;
-}
-
-.feature-list li::before {
-  content: "✦";
-  color: var(--primary-color);
-  margin-right: 10px;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-}
-
-/* Strategic Value Matrix Grid */
-.executive-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-
-.grid-card {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(15, 23, 42, 0.05);
-  padding: 1.1rem;
+  flex: 0 0 auto;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.01);
-  transition: all 0.3s ease;
-}
-
-.grid-card:hover {
-  background: #ffffff;
-  border-color: rgba(0, 75, 147, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 75, 147, 0.03);
-}
-
-.grid-card h4 {
-  margin: 0 0 0.3rem 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.grid-card p {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
-/* Human Touch Growth Statement Commitment Banner */
-.growth-statement {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
-  padding: 1.25rem;
-  border-radius: 8px;
-  margin-top: 2rem;
-  text-align: center;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, var(--navy), var(--blue) 62%, var(--cyan));
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(15, 95, 168, 0.24);
 }
 
-.growth-statement h4 {
-  margin: 0 0 0.3rem 0;
-  font-size: 0.8rem;
+.brand-copy strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.brand-copy span {
+  display: block;
+  margin-top: 2px;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 0.86rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #38bdf8;
 }
 
-.growth-statement p {
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: #cbd5e1;
-  font-style: italic;
-  font-weight: 300;
+.nav-links a {
+  padding: 9px 11px;
+  border-radius: 7px;
 }
 
-.disc-footer {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #94a3b8;
-  margin-top: 2.5rem;
-  text-align: center;
-  padding-top: 1.25rem;
-  border-top: 1px dashed rgba(15, 23, 42, 0.08);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+.nav-links a:hover {
+  background: #dbeafe;
+  color: var(--navy);
 }
 
-/* Form Structural Core Definitions */
-.card { display: none; width: 100%; animation: cubicFade .5s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes cubicFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-h2 { font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.3rem; text-align: center; letter-spacing: -0.03em; }
-.subtitle { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.75rem; text-align: center; line-height: 1.4; font-weight: 400; }
-
-.form-group { margin-bottom: 1.1rem; display: flex; flex-direction: column; }
-label { font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin-bottom: 0.35rem; display: block; letter-spacing: 0.01em; }
-
-/* Input Fields Configured to Pure Clean Design */
-input, textarea {
-  width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color);
-  font-size: 0.88rem; color: var(--text-main); background: #f8fafc; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-sizing: border-box; font-weight: 400;
-}
-input:focus, textarea:focus { outline: none; background: #ffffff; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--input-focus-border); }
-
-.password-field { position: relative; }
-.password-field input { padding-right: 42px; }
-.password-toggle {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-muted);
-  box-shadow: none;
+.nav-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  color: #ffffff;
+  background: var(--navy);
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(8, 47, 87, 0.18);
 }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 440px);
+  gap: clamp(24px, 4vw, 52px);
+  align-items: start;
+  padding: clamp(34px, 5vw, 72px) clamp(18px, 4vw, 56px) 28px;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-bottom: 18px;
+  padding: 7px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  color: #0f5fa8;
+  background: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero h1 {
+  max-width: 820px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(2.4rem, 4.2vw, 4.9rem);
+  line-height: 1.02;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.hero-lead {
+  max-width: 690px;
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.7;
+  font-weight: 500;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.primary-link,
+.secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.primary-link {
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow: 0 14px 28px rgba(15, 95, 168, 0.22);
+}
+
+.secondary-link {
+  color: var(--navy);
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+  max-width: 820px;
+  margin-top: 34px;
+}
+
+.metric {
+  min-height: 98px;
+  padding: 16px;
+  border: 1px solid #d7e4ef;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-soft);
+}
+
+.metric strong {
+  display: block;
+  color: var(--navy);
+  font-size: 1.42rem;
+  font-weight: 900;
+}
+
+.metric span {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.product-stage {
+  margin-top: 36px;
+  max-width: 910px;
+}
+
+.browser-frame {
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.browser-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid #dbeafe;
+  background: #f8fafc;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.dots span:nth-child(1) { background: #ef4444; }
+.dots span:nth-child(2) { background: #f59e0b; }
+.dots span:nth-child(3) { background: #10b981; }
+
+.browser-title {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.product-shot {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  min-height: 360px;
+  background: #f8fafc;
+}
+
+.mock-sidebar {
+  padding: 18px;
+  color: #dbeafe;
+  background: #082f57;
+}
+
+.mock-sidebar h3 {
+  margin: 0 0 18px;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.mock-link {
+  height: 32px;
+  margin-bottom: 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.mock-link:nth-child(3) { width: 86%; }
+.mock-link:nth-child(4) { width: 72%; }
+.mock-link:nth-child(5) { width: 92%; }
+.mock-link:nth-child(6) { width: 78%; }
+
+.mock-main {
+  padding: 22px;
+  background: #eef6ff;
+}
+
+.mock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mock-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mock-pill {
+  width: 118px;
+  height: 32px;
+  border-radius: 7px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+.mock-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mock-kpi {
+  height: 86px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.mock-chart {
+  height: 150px;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.mock-chart span {
+  display: block;
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: var(--blue);
+}
+
+.mock-chart span:nth-child(1) { height: 44%; background: var(--green); }
+.mock-chart span:nth-child(2) { height: 72%; }
+.mock-chart span:nth-child(3) { height: 54%; background: var(--cyan); }
+.mock-chart span:nth-child(4) { height: 84%; background: var(--amber); }
+.mock-chart span:nth-child(5) { height: 64%; background: var(--blue); }
+.mock-chart span:nth-child(6) { height: 48%; background: var(--rose); }
+
+.auth-panel {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+
+.form-side {
+  width: 100%;
+  padding: 28px;
+  border: 1px solid #c6d7e7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+}
+
+.form-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.form-brand strong {
+  display: block;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.form-brand span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.form-badge {
+  padding: 7px 9px;
+  border-radius: 7px;
+  color: #065f46;
+  background: #d1fae5;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.card {
+  display: none;
+  width: 100%;
+  animation: fadeIn 0.28s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font-size: 1.42rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+label {
+  color: #263649;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+input,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #bfcbda;
+  border-radius: 7px;
+  color: var(--ink);
+  background: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 74px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 58px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 6px;
+  color: var(--blue);
+  background: #e0f2fe;
+  box-shadow: none;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .password-toggle:hover,
 .password-toggle:focus-visible {
-  background: #e2e8f0;
-  color: var(--primary-color);
-  box-shadow: none;
+  background: #bfdbfe;
   transform: translateY(-50%);
-  outline: none;
 }
 
 button {
-  background: var(--btn-bg); color: #fff; width: 100%; margin-top: 0.5rem; padding: 11px;
-  border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
-  letter-spacing: 0.01em; box-shadow: 0 2px 4px rgba(0, 43, 92, 0.1);
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 7px;
+  color: #ffffff;
+  background: var(--navy);
+  box-shadow: 0 12px 22px rgba(8, 47, 87, 0.18);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 900;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
-button:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgba(0, 43, 92, 0.2); transform: translateY(-0.5px); }
-button:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.link { margin-top: 1.25rem; text-align: center; font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
-.link span { cursor: pointer; color: var(--primary-color); font-weight: 600; }
-.link span:hover { text-decoration: underline; }
-
-.msg { display: none; padding: 10px; margin-top: 12px; border-radius: 6px; text-align: center; font-size: 0.78rem; line-height: 1.4; font-weight: 600; }
-.error { background: var(--error-bg); color: var(--error-text); border: 1px solid rgba(153, 27, 27, 0.08); }
-.success { background: var(--success-bg); color: var(--success-text); border: 1px solid rgba(22, 101, 52, 0.08); }
-
-/* ULTRA COMPACT & MICRO-SIZED PREMIUM LEGAL DISCLAIMER NOTE */
-.disclaimer-box {
-  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(15, 23, 42, 0.05);
-  font-size: 0.65rem; color: #94a3b8; line-height: 1.5; text-align: justify; font-weight: 400;
-  letter-spacing: -0.01em;
+button:hover {
+  background: #041f3d;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(8, 47, 87, 0.24);
 }
-.disclaimer-box strong { color: #64748b; font-weight: 600; }
 
-@media (max-width: 950px) {
-  body { height: auto; min-height: 100vh; }
-  .wrapper { flex-direction: column; }
-  
-  .form-side { 
-    width: 100%; 
-    height: auto; 
-    padding: 3rem 1.5rem 2rem 1.5rem; 
-    box-shadow: none;
-    border-left: none;
-    order: 1;
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.link {
+  margin-top: 16px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.link span {
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.link span:hover {
+  text-decoration: underline;
+}
+
+.msg {
+  display: none;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 7px;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  font-weight: 800;
+}
+
+.error {
+  color: var(--error-text);
+  background: var(--error-bg);
+  border: 1px solid rgba(153, 27, 27, 0.14);
+}
+
+.success {
+  color: var(--success-text);
+  background: var(--success-bg);
+  border: 1px solid rgba(22, 101, 52, 0.14);
+}
+
+.section {
+  padding: 58px clamp(18px, 4vw, 56px);
+}
+
+.section-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.section-head {
+  max-width: 760px;
+  margin-bottom: 24px;
+}
+
+.section-kicker {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.1;
+}
+
+.section-text {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.module-card,
+.feature-card,
+.screenshot-card,
+.timeline-step {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+}
+
+.module-card {
+  min-height: 168px;
+  padding: 18px;
+}
+
+.module-card .tag {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: #ffffff;
+  background: var(--blue);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.module-card:nth-child(2) .tag { background: var(--green); }
+.module-card:nth-child(3) .tag { background: var(--amber); }
+.module-card:nth-child(4) .tag { background: var(--rose); }
+.module-card:nth-child(5) .tag { background: #7c3aed; }
+.module-card:nth-child(6) .tag { background: #0f766e; }
+.module-card:nth-child(7) .tag { background: #c2410c; }
+.module-card:nth-child(8) .tag { background: #475569; }
+
+.module-card h3,
+.feature-card h3,
+.timeline-step h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.module-card p,
+.feature-card p,
+.timeline-step p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+
+.screenshot-card {
+  overflow: hidden;
+}
+
+.screenshot-card.large {
+  min-height: 420px;
+}
+
+.screenshot-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  object-fit: cover;
+  background: #ffffff;
+}
+
+.screenshot-card .product-shot {
+  grid-template-columns: 1fr;
+  min-height: 300px;
+}
+
+.screenshot-caption {
+  padding: 16px;
+  border-top: 1px solid #dbeafe;
+}
+
+.screenshot-caption strong {
+  display: block;
+  font-weight: 900;
+}
+
+.screenshot-caption span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.mini-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.feature-band {
+  background: #ffffff;
+  border-top: 1px solid #dbeafe;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.photo-grid,
+.automation-grid,
+.app-screen-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.photo-grid {
+  grid-template-columns: 1.25fr 0.9fr 0.9fr;
+}
+
+.photo-card,
+.automation-card,
+.app-screen-card,
+.process-card {
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+}
+
+.photo-card {
+  min-height: 280px;
+}
+
+.photo-card.tall {
+  grid-row: span 2;
+}
+
+.photo-card img {
+  display: block;
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  background: #dbeafe;
+}
+
+.photo-card.tall img {
+  height: 450px;
+}
+
+.photo-copy,
+.automation-card,
+.process-card,
+.app-screen-copy {
+  padding: 18px;
+}
+
+.photo-copy strong,
+.automation-card h3,
+.process-card h3,
+.app-screen-copy strong {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.photo-copy span,
+.automation-card p,
+.process-card p,
+.app-screen-copy span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.automation-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.automation-card {
+  min-height: 210px;
+}
+
+.automation-card b,
+.process-card b {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  color: #ffffff;
+  background: var(--navy);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.automation-card:nth-child(2) b { background: var(--green); }
+.automation-card:nth-child(3) b { background: var(--amber); }
+.automation-card:nth-child(4) b { background: var(--rose); }
+.automation-card:nth-child(5) b { background: #7c3aed; }
+.automation-card:nth-child(6) b { background: #0f766e; }
+
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.process-card {
+  min-height: 210px;
+}
+
+.process-card ul {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.process-card li {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.process-card li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--blue);
+}
+
+.app-screen-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-screen-card {
+  min-height: 360px;
+}
+
+.app-window {
+  padding: 14px;
+  background: #eef6ff;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.app-window-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.app-window-title {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.app-window-pill {
+  width: 72px;
+  height: 24px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.screen-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.screen-kpis span {
+  height: 54px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.screen-table {
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.screen-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr;
+  gap: 0;
+  border-top: 1px solid #dbeafe;
+}
+
+.screen-row:first-child {
+  border-top: 0;
+  background: #f8fafc;
+}
+
+.screen-row span {
+  min-height: 30px;
+  border-right: 1px solid #dbeafe;
+}
+
+.screen-row span:last-child {
+  border-right: 0;
+}
+
+.screen-bars {
+  height: 132px;
+  display: flex;
+  align-items: end;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.screen-bars span {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: var(--blue);
+}
+
+.screen-bars span:nth-child(1) { height: 45%; background: var(--green); }
+.screen-bars span:nth-child(2) { height: 74%; }
+.screen-bars span:nth-child(3) { height: 58%; background: var(--cyan); }
+.screen-bars span:nth-child(4) { height: 86%; background: var(--amber); }
+.screen-bars span:nth-child(5) { height: 62%; background: var(--rose); }
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.feature-card {
+  min-height: 180px;
+  padding: 20px;
+}
+
+.feature-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--blue);
+  font-weight: 900;
+}
+
+.feature-card:nth-child(2) .feature-icon { background: var(--green); }
+.feature-card:nth-child(3) .feature-icon { background: var(--amber); }
+.feature-card:nth-child(4) .feature-icon { background: var(--rose); }
+.feature-card:nth-child(5) .feature-icon { background: #7c3aed; }
+.feature-card:nth-child(6) .feature-icon { background: #0f766e; }
+
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.timeline-step {
+  padding: 18px;
+}
+
+.timeline-step b {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--navy);
+  font-size: 0.86rem;
+}
+
+.cta {
+  margin: 0 clamp(18px, 4vw, 56px) 44px;
+  padding: 34px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #082f57;
+  box-shadow: var(--shadow);
+}
+
+.cta-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.cta h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+}
+
+.cta p {
+  margin: 10px 0 0;
+  max-width: 650px;
+  color: #cde7ff;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 18px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  color: var(--navy);
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.site-footer {
+  padding: 22px clamp(18px, 4vw, 56px) 34px;
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1120px) {
+  .hero {
+    grid-template-columns: 1fr;
   }
-  
-  .branding-side { 
-    width: 100%; 
-    height: auto; 
-    padding: 2.5rem 1.5rem; 
-    border-right: none;
-    border-top: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.5);
-    order: 2; 
+
+  .auth-panel {
+    position: static;
+    max-width: 520px;
   }
-  
-  .executive-grid { grid-template-columns: 1fr; gap: 0.75rem; }
-  .disc-title-main { font-size: 2rem; }
-  h2 { font-size: 1.25rem; }
+
+  .module-grid,
+  .automation-grid,
+  .process-grid,
+  .app-screen-grid,
+  .timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .site-nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nav-links {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .nav-action {
+    width: 100%;
+  }
+
+  .hero {
+    padding-top: 28px;
+  }
+
+  .metric-row,
+  .module-grid,
+  .automation-grid,
+  .process-grid,
+  .app-screen-grid,
+  .photo-grid,
+  .feature-grid,
+  .timeline,
+  .screenshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-shot {
+    grid-template-columns: 1fr;
+  }
+
+  .mock-sidebar {
+    display: none;
+  }
+
+  .mock-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .form-side {
+    padding: 22px;
+  }
+
+  .cta-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cta a {
+    width: 100%;
+  }
 }
 </style>
 </head>
 <body>
-
-<div class="wrapper">
-  
-  <div class="branding-side">
-    <div class="brand-lockup">
-      <div class="brand-seal" aria-hidden="true">BK</div>
-      <div class="brand-meta">
+<div class="site-shell">
+  <header class="site-nav">
+    <a class="brand" href="#top" aria-label="BKNR ERP home">
+      <span class="brand-mark">BK</span>
+      <span class="brand-copy">
         <strong>BKNR ERP</strong>
-        <span>Enterprise Workspace</span>
-      </div>
-    </div>
-    <h1 class="disc-title-main">BKNR ERP</h1>
-    <div class="disc-subtitle-main">Next-Gen Operational Intelligence for Seafood Enterprises</div>
-    
-    <p class="disc-paragraph">BKNR ERP transforms traditional seafood processing facilities into data-driven, highly optimized enterprise ecosystems. Engineered specifically to meet the high-stakes demands of enterprise executives and CEOs, the platform unifies production tracking, integrated HRMS protocols, cold storage metrics, and deep economic analytics into a single pane of glass.</p>
+        <span>Seafood Enterprise Workspace</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Website navigation">
+      <a href="#modules">Modules</a>
+      <a href="#screens">Screenshots</a>
+      <a href="#automation">Automation</a>
+      <a href="#photos">Photos</a>
+      <a href="#controls">Controls</a>
+      <a href="#implementation">Workflow</a>
+    </nav>
+    <a class="nav-action" href="#login">Login</a>
+  </header>
 
-    <div class="executive-grid">
-      <div class="grid-card">
-        <h4>Centralized Oversight</h4>
-        <p>Monitor multi-plant performance, live floor balances, and inventory margins in real-time.</p>
-      </div>
-      <div class="grid-card">
-        <h4>Leakage Elimination</h4>
-        <p>Enforce end-to-end auditability over grading yields, workforce overheads, and process conversions.</p>
-      </div>
-      <div class="grid-card">
-        <h4>Manpower Intelligence</h4>
-        <p>Track floor operations dynamically with integrated live-workforce attendance metrics.</p>
-      </div>
-      <div class="grid-card">
-        <h4>Enterprise Control</h4>
-        <p>Scale effortlessly with automated multi-company filters and rigorous asset security models.</p>
-      </div>
-    </div>
-
-    <div class="section-divider"></div>
-
-    <div class="feature-title">1. Multi-Company Command Architecture</div>
-    <p class="disc-paragraph">Manage your entire corporate footprint from a single centralized database environment. Perfect for enterprise groups operating across multiple processing facilities or geographical branches.</p>
-    <ul class="feature-list">
-      <li><strong>Company-Wise Data Insulation:</strong> Global backend filtering layers automatically scope and restrict data matrices by authenticated firm payload, ensuring total multi-tenant security.</li>
-      <li><strong>Isolated Enterprise Routing:</strong> Secure structural separation maps specific database queries dynamically per enterprise entity to avoid visibility overlap.</li>
-      <li><strong>Role-Based Delegation:</strong> Empower managers with plant-specific credentials while maintaining complete executive access at the group level.</li>
-    </ul>
-
-    <div class="growth-statement">
-      <h4>Our Core Commitment</h4>
-      <p>"visualising a shared path of technological progress and collective operational excellence."</p>
-    </div>
-
-    <div class="disc-footer">BKNR ERP – Enterprise Security Ecosystem</div>
-  </div>
-
-  <div class="form-side">
-    
-    <div class="form-container-core">
-
-      <div id="registerBox" class="card">
-        <h2>Company Registration</h2>
-        <p class="subtitle">Provide your firm parameters to fetch unique activation keys.</p>
-        <div class="form-group"><label>Company Name</label><input id="company_name" type="text" required></div>
-        <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required></div>
-        <div class="form-group"><label>Designation</label><input id="designation" type="text" required></div>
-        <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
-        <div class="form-group"><label>Email Address</label><input id="email" type="email" required></div>
-        <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" required></textarea></div>
-        
-        <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
-        <div id="regErr" class="msg error"></div>
-        <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
-      </div>
-
-      <div id="otpBox" class="card">
-        <h2>OTP Verification</h2>
-        <p class="subtitle">A 4-digit token handshake has been deployed to your corporate inbox.</p>
-        <div class="form-group">
-          <label>Enter OTP</label>
-          <input id="otp" maxlength="4" style="text-align: center; font-size: 1.4rem; letter-spacing: 0.3rem;" required>
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">ERP for seafood operations</p>
+        <h1>BKNR ERP brings factory, inventory, finance, HR, billing, and export work into one controlled system.</h1>
+        <p class="hero-lead">
+          A professional operating platform for seafood businesses that need daily production visibility, stock discipline,
+          finance control, auto billing, contractor/vendor tracking, salary generation, and document-ready export workflows from one secure login.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-link" href="#login">Open Login</a>
+          <a class="secondary-link" href="#screens">View Screenshots</a>
         </div>
-        <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
-        <div id="otpErr" class="msg error"></div>
-      </div>
+        <div class="metric-row" aria-label="BKNR ERP highlights">
+          <div class="metric"><strong>12+</strong><span>core business areas connected in one workspace</span></div>
+          <div class="metric"><strong>Auto</strong><span>requirements, bills, salaries, and documents generated from entries</span></div>
+          <div class="metric"><strong>Live</strong><span>floor balance, inventory, HR, finance, and sales dashboards</span></div>
+          <div class="metric"><strong>Reports</strong><span>production, stock, sales, costing, payroll, and export reports ready</span></div>
+        </div>
 
-      <div id="passBox" class="card">
-        <h2>Set Login Password</h2>
-        <p class="subtitle">Establish structural encryption keys to guard corporate ledgers.</p>
-        <div class="form-group"><label>Password (max 20 chars)</label><input id="pass1" type="password" maxlength="20" required></div>
-        <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" required></div>
-        <button id="btn-pass" onclick="savePassword()">Save Password</button>
-        <div id="passErr" class="msg error"></div>
-        <div id="passOk" class="msg success"></div>
-      </div>
-
-      <div id="loginBox" class="card">
-        <h2>Gateway Authentication</h2>
-        <p class="subtitle">Provide secure credentials to hook into BKNR architecture pools.</p>
-        <form id="loginForm" onsubmit="doLogin(event)">
-          <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" required></div>
-          <div class="form-group"><label>Email</label><input id="login_email" type="email" required></div>
-          <div class="form-group">
-            <label for="login_pwd">Password</label>
-            <div class="password-field">
-              <input id="login_pwd" type="password" maxlength="20" autocomplete="current-password" required>
-              <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password" title="Show password">
-                <i class="fa-regular fa-eye" aria-hidden="true"></i>
-              </button>
+        <div class="product-stage" aria-label="BKNR ERP dashboard screenshot preview">
+          <div class="browser-frame">
+            <div class="browser-top">
+              <span class="dots"><span></span><span></span><span></span></span>
+              <span class="browser-title">BKNR ERP dashboard</span>
+            </div>
+            <div class="product-shot">
+              <aside class="mock-sidebar">
+                <h3>BKNR ERP</h3>
+                <div class="mock-link"></div>
+                <div class="mock-link"></div>
+                <div class="mock-link"></div>
+                <div class="mock-link"></div>
+                <div class="mock-link"></div>
+              </aside>
+              <div class="mock-main">
+                <div class="mock-head">
+                  <h3>Processing Dashboard</h3>
+                  <div class="mock-pill"></div>
+                </div>
+                <div class="mock-kpis">
+                  <div class="mock-kpi"></div>
+                  <div class="mock-kpi"></div>
+                  <div class="mock-kpi"></div>
+                </div>
+                <div class="mock-chart">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
             </div>
           </div>
-          <button id="btn-login" type="submit">Login</button>
-        </form>
-        <div id="loginErr" class="msg error"></div>
-        <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
+        </div>
       </div>
 
-      <div id="forgotBox" class="card">
-        <h2>Password Recovery</h2>
-        <p class="subtitle">Enter your registered email to request a secure password configuration asset.</p>
-        <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
-        <button id="btn-forgot" onclick="sendResetLink()">Send Reset Link</button>
-        <div id="forgotErr" class="msg error"></div>
-        <div id="forgotOk" class="msg success"></div>
-        <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
+      <aside class="auth-panel" id="login">
+        <div class="form-side">
+          <div class="form-brand">
+            <div>
+              <strong>Account Access</strong>
+              <span>Login, register, OTP, and recovery</span>
+            </div>
+            <span class="form-badge">Secure</span>
+          </div>
+
+          <div id="registerBox" class="card">
+            <h2>Company Registration</h2>
+            <div class="form-group"><label>Company Name</label><input id="company_name" type="text" required></div>
+            <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required></div>
+            <div class="form-group"><label>Designation</label><input id="designation" type="text" required></div>
+            <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
+            <div class="form-group"><label>Email Address</label><input id="email" type="email" required></div>
+            <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" required></textarea></div>
+            <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
+            <div id="regErr" class="msg error"></div>
+            <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
+          </div>
+
+          <div id="otpBox" class="card">
+            <h2>OTP Verification</h2>
+            <div class="form-group">
+              <label>Enter OTP</label>
+              <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" required>
+            </div>
+            <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
+            <div id="otpErr" class="msg error"></div>
+          </div>
+
+          <div id="passBox" class="card">
+            <h2>Set Login Password</h2>
+            <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20" required></div>
+            <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" required></div>
+            <button id="btn-pass" onclick="savePassword()">Save Password</button>
+            <div id="passErr" class="msg error"></div>
+            <div id="passOk" class="msg success"></div>
+          </div>
+
+          <div id="loginBox" class="card">
+            <h2>Login</h2>
+            <form id="loginForm" onsubmit="doLogin(event)">
+              <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" autocomplete="organization" required></div>
+              <div class="form-group"><label>Email</label><input id="login_email" type="email" autocomplete="email" required></div>
+              <div class="form-group">
+                <label for="login_pwd">Password</label>
+                <div class="password-field">
+                  <input id="login_pwd" type="password" maxlength="20" autocomplete="current-password" required>
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">Show</button>
+                </div>
+              </div>
+              <button id="btn-login" type="submit">Login</button>
+            </form>
+            <div id="loginErr" class="msg error"></div>
+            <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
+          </div>
+
+          <div id="forgotBox" class="card">
+            <h2>Password Recovery</h2>
+            <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
+            <button id="btn-forgot" onclick="sendResetLink()">Send Reset Link</button>
+            <div id="forgotErr" class="msg error"></div>
+            <div id="forgotOk" class="msg success"></div>
+            <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section" id="modules">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Complete ERP coverage</p>
+          <h2>All daily departments get one consistent workspace.</h2>
+          <p class="section-text">BKNR ERP is arranged around real factory workflows, so teams can enter transactions, review dashboards, create bills, generate salary, and produce reports without moving between disconnected sheets.</p>
+        </div>
+        <div class="module-grid">
+          <article class="module-card"><span class="tag">Processing</span><h3>Factory operations</h3><p>Gate entry, RM purchasing, de-heading, grading, peeling, soaking, production, and re-process movement.</p></article>
+          <article class="module-card"><span class="tag">Inventory</span><h3>Stock and orders</h3><p>Stock entry, pending orders, cold storage holding, general store, inventory costing, and sales dispatch.</p></article>
+          <article class="module-card"><span class="tag">Finance</span><h3>Auto billing</h3><p>Electricity, diesel, purchase, packaging, logistics, QA, expenses, vendor payments, receipts, and ledgers.</p></article>
+          <article class="module-card"><span class="tag">HRMS</span><h3>Attendance and salary</h3><p>Staff registration, shifts, attendance, advances, increments, payroll master, and monthly salary sheets.</p></article>
+          <article class="module-card"><span class="tag">Reports</span><h3>Automatic reports</h3><p>Production, grading, peeling, soaking, floor balance, pending orders, sales, storage, and costing reports.</p></article>
+          <article class="module-card"><span class="tag">Export</span><h3>Shipment documents</h3><p>Export shipment, commercial invoice, packing list, container stuffing, shipping bill, BL, and health certificate.</p></article>
+          <article class="module-card"><span class="tag">Masters</span><h3>Setup controls</h3><p>Suppliers, vendors, contractors, buyers, species, grades, yields, freezers, packing styles, and HSN setup.</p></article>
+          <article class="module-card"><span class="tag">Dashboards</span><h3>Live control room</h3><p>Processing, inventory, HR, costing, finance, and Tally-style dashboards for daily management review.</p></article>
+        </div>
       </div>
+    </section>
 
-    </div>
+    <section class="section feature-band" id="screens">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">App screenshots and screen previews</p>
+          <h2>A clear visual workspace for office, floor, stores, accounts, and HR teams.</h2>
+          <p class="section-text">The interface keeps dashboards, KPI cards, table lines, filters, forms, and document views visually consistent across all modules.</p>
+        </div>
+        <div class="screenshot-grid">
+          <article class="screenshot-card large">
+            <img src="/static/bknr-app-preview.svg" alt="BKNR ERP app preview screenshot">
+            <div class="screenshot-caption"><strong>BKNR ERP workspace</strong><span>App identity, install-ready preview, and secure enterprise access.</span></div>
+          </article>
+          <div class="mini-stack">
+            <article class="screenshot-card">
+              <img src="/static/screenshot.png" alt="BKNR ERP mobile preview screenshot">
+              <div class="screenshot-caption"><strong>Mobile-ready preview</strong><span>Responsive access for quick review and field checks.</span></div>
+            </article>
+            <article class="screenshot-card">
+              <div class="product-shot">
+                <div class="mock-main">
+                  <div class="mock-head"><h3>Inventory View</h3><div class="mock-pill"></div></div>
+                  <div class="mock-kpis"><div class="mock-kpi"></div><div class="mock-kpi"></div><div class="mock-kpi"></div></div>
+                  <div class="mock-chart"><span></span><span></span><span></span><span></span><span></span></div>
+                </div>
+              </div>
+              <div class="screenshot-caption"><strong>Dashboard pattern</strong><span>KPI, chart, and table surfaces designed for fast scanning.</span></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div class="disclaimer-box">
-      <strong>⚠️ SECURE WORKSPACE DISCLAIMER:</strong> This enterprise portal is guarded by strict institutional access control mechanisms. All ecosystem interactions are recorded in live ledger contexts. Unauthorized traversal attempts trigger instant endpoint lockouts and network blocklisting. For information security compliance, idle sessions automatically self-terminate after 30 minutes of inactivity to protect localized state data.
-    </div>
+    <section class="section" id="operations">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Operations screens</p>
+          <h2>Processing, floor balance, inventory, sales, and reports work like one connected flow.</h2>
+          <p class="section-text">These app-style screen previews are based on the modules inside the ERP: entries feed dashboards, requirements, floor balance, sales reports, contractor bills, vendor bills, and salary sheets.</p>
+        </div>
+        <div class="app-screen-grid">
+          <article class="app-screen-card">
+            <div class="app-window">
+              <div class="app-window-top"><span class="app-window-title">Processing Dashboard</span><span class="app-window-pill"></span></div>
+              <div class="screen-kpis"><span></span><span></span><span></span></div>
+              <div class="screen-bars"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="app-screen-copy"><strong>Live processing control</strong><span>Gate entry, RM purchasing, de-heading, grading, peeling, soaking, and production entries become dashboard KPIs and floor movement.</span></div>
+          </article>
+          <article class="app-screen-card">
+            <div class="app-window">
+              <div class="app-window-top"><span class="app-window-title">Floor Balance Tracker</span><span class="app-window-pill"></span></div>
+              <div class="screen-table">
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <div class="app-screen-copy"><strong>Automatic floor balance</strong><span>Raw material in, grading, de-heading, peeling, soaking, re-process, and production outputs are grouped into live floor balance by batch, count, species, variety, and location.</span></div>
+          </article>
+          <article class="app-screen-card">
+            <div class="app-window">
+              <div class="app-window-top"><span class="app-window-title">Sales and Inventory Reports</span><span class="app-window-pill"></span></div>
+              <div class="screen-kpis"><span></span><span></span><span></span></div>
+              <div class="screen-table">
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+                <div class="screen-row"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <div class="app-screen-copy"><strong>Sales and stock visibility</strong><span>Stock entry, cold storage, pending orders, sales dispatch, floor balance value, and inventory costing come together for dispatch and business review.</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-  </div>
+    <section class="section feature-band" id="automation">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Automation inside your ERP</p>
+          <h2>Manual repeat work is reduced wherever the app already has enough data.</h2>
+          <p class="section-text">The system uses processing entries, masters, stock, attendance, and finance data to automatically calculate requirements, bills, balances, reports, and salary values.</p>
+        </div>
+        <div class="automation-grid">
+          <article class="automation-card"><b>Auto requirements</b><h3>Production requirement engine</h3><p>Pending orders are matched with existing stock, packing styles, grade mappings, HOSO/HLSO yields, glazes, and freezer data to calculate pending production, HLSO requirement, HOSO requirement, stock MC, and referral stock.</p></article>
+          <article class="automation-card"><b>Auto floor</b><h3>Live floor balance</h3><p>Factory movements update floor stock by location, production-for, batch, source type, species, variety, and count, so management can see where material is still available.</p></article>
+          <article class="automation-card"><b>Auto bills</b><h3>Contractor and vendor bills</h3><p>De-heading and peeling reports can generate contractor monthly bills, while finance captures vendor invoices, logistics, diesel, electricity, QA, purchase, packaging, and other expenses.</p></article>
+          <article class="automation-card"><b>Auto salary</b><h3>Salary processing</h3><p>Employee master, attendance, paid days, OT, advance, adjustment, TDS, and deductions flow into calculated salary, gross salary, net payable, and monthly salary sheets.</p></article>
+          <article class="automation-card"><b>Auto documents</b><h3>Export paperwork</h3><p>Commercial invoices can feed packing lists, container stuffing, shipping bills, bills of lading, health certificates, and supporting documents through auto-fill flows.</p></article>
+          <article class="automation-card"><b>Auto reports</b><h3>Business reports</h3><p>Processing, inventory, sales, pending orders, storage cost, floor balance value, periodic summary, batch summary, GST, ledgers, receivables, and payables are available from entered transactions.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="photos">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Real-world industry visuals</p>
+          <h2>The website now connects ERP screens with real seafood, cold chain, export, and finance work.</h2>
+          <p class="section-text">These photos support the story of the app: factory processing, cold storage control, export logistics, and back-office accounting.</p>
+        </div>
+        <div class="photo-grid">
+          <article class="photo-card tall">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Halteyri04.jpg/1024px-Halteyri04.jpg" alt="Seafood processing factory production line">
+            <div class="photo-copy"><strong>Seafood processing floor</strong><span>Processing entries, contractor work, yield tracking, and floor balances are designed for real factory movement.</span></div>
+          </article>
+          <article class="photo-card">
+            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80" alt="Export logistics containers">
+            <div class="photo-copy"><strong>Export logistics</strong><span>Shipment records, commercial invoices, packing lists, container stuffing, shipping bills, and BL workflows stay connected.</span></div>
+          </article>
+          <article class="photo-card">
+            <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80" alt="Finance accounting and billing workspace">
+            <div class="photo-copy"><strong>Finance and billing</strong><span>Vendor bills, receipts, ledgers, bank transactions, salary processing, and expense vouchers are handled in one place.</span></div>
+          </article>
+          <article class="photo-card">
+            <img src="https://images.unsplash.com/photo-1581093450021-4a7360e9a9d4?auto=format&fit=crop&w=1200&q=80" alt="Cold storage warehouse operations">
+            <div class="photo-copy"><strong>Cold chain and stock</strong><span>Inventory, cold storage holding, pending orders, stock reports, sales dispatch, and costing give stock discipline.</span></div>
+          </article>
+          <article class="photo-card">
+            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Office team working with business software">
+            <div class="photo-copy"><strong>Management dashboard</strong><span>Processing, HR, inventory, costing, finance, and Tally-style dashboards help daily decisions.</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="controls">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Control and visibility</p>
+          <h2>Built for day closing, audit clarity, and management review.</h2>
+          <p class="section-text">The platform focuses on clean data entry, company-wise access, report consistency, automatic calculations, and operational traceability.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><div class="feature-icon">01</div><h3>Company login</h3><p>Each company account uses its own company ID, users, permissions, and session flow.</p></article>
+          <article class="feature-card"><div class="feature-icon">02</div><h3>Live dashboards</h3><p>Processing, inventory, costing, finance, and HR dashboards help management check status quickly.</p></article>
+          <article class="feature-card"><div class="feature-icon">03</div><h3>Operational reports</h3><p>Daily and period reports are structured around production, stock, finance, and attendance needs.</p></article>
+          <article class="feature-card"><div class="feature-icon">04</div><h3>Document readiness</h3><p>Export documents and supporting forms are kept together for shipment preparation.</p></article>
+          <article class="feature-card"><div class="feature-icon">05</div><h3>Master discipline</h3><p>Centralized masters keep grades, varieties, suppliers, buyers, freezers, and packing styles consistent.</p></article>
+          <article class="feature-card"><div class="feature-icon">06</div><h3>Responsive access</h3><p>The ERP is designed for desktop operations and responsive review on smaller screens.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section feature-band" id="implementation">
+      <div class="section-inner">
+        <div class="section-head">
+          <p class="section-kicker">Workflow</p>
+          <h2>From setup to daily reporting in a structured flow.</h2>
+        </div>
+        <div class="timeline">
+          <article class="timeline-step"><b>1</b><h3>Company setup</h3><p>Register the company, verify OTP, set password, and receive the company ID.</p></article>
+          <article class="timeline-step"><b>2</b><h3>Master entry</h3><p>Configure suppliers, buyers, grades, varieties, packing styles, locations, and criteria.</p></article>
+          <article class="timeline-step"><b>3</b><h3>Daily transactions</h3><p>Teams enter purchasing, processing, stock, finance, HR, export, sales, and commercial bill transactions.</p></article>
+          <article class="timeline-step"><b>4</b><h3>Auto review</h3><p>Requirements, floor balances, reports, bills, salary sheets, dashboards, and documents are generated from the same ERP data.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="cta-inner">
+        <div>
+          <h2>Ready to access BKNR ERP?</h2>
+          <p>Use your company ID, email, and password to open the workspace. New companies can register from the same login panel.</p>
+        </div>
+        <a href="#login">Go to Login</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    BKNR ERP - Enterprise workspace for seafood processing, inventory, finance, HR, reports, and exports.
+  </footer>
 </div>
 
 <script>
-const BASE="/auth";
-let regEmail="";
+const BASE = "/auth";
+let regEmail = "";
 
-function togglePasswordVisibility(){
+function togglePasswordVisibility() {
   const input = document.getElementById("login_pwd");
   const button = input.parentElement.querySelector(".password-toggle");
-  const icon = button.querySelector("i");
   const showPassword = input.type === "password";
 
   input.type = showPassword ? "text" : "password";
-  icon.className = showPassword ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+  button.textContent = showPassword ? "Hide" : "Show";
   button.setAttribute("aria-label", showPassword ? "Hide password" : "Show password");
-  button.title = showPassword ? "Hide password" : "Show password";
 }
 
-/* ================= SWITCH UI ================= */
-function showBox(id){
-  document.querySelectorAll(".card").forEach(x=>x.style.display="none");
-  document.getElementById(id).style.display="block";
-  document.querySelectorAll(".msg").forEach(x=>x.style.display="none");
+function showBox(id, shouldScroll = true) {
+  document.querySelectorAll(".card").forEach((card) => {
+    card.style.display = "none";
+  });
+  document.getElementById(id).style.display = "block";
+  document.querySelectorAll(".msg").forEach((msg) => {
+    msg.style.display = "none";
+  });
+  if (shouldScroll) {
+    document.getElementById("login").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
-/* DEFAULT SCREEN */
-showBox("loginBox");
+showBox("loginBox", false);
 
-/* ================= 🛡️ 1. BROWSER HISTORY LOCK ENGINE ================= */
-(function () {
-    window.history.forward();
-    function noBack() {
-        window.history.forward();
-    }
-    window.onload = noBack;
-    window.onpageshow = function (evt) { if (evt.persisted) noBack(); }
-    window.onunload = function () { void (0); }
-})();
-
-/* ================= ⏱️ 2. FRONTEND INACTIVITY TIMEOUT MONITOR ================= */
-const INACTIVITY_LIMIT = 30 * 60 * 1000; 
-let inactivityTimer = setTimeout(forceSessionLogout, INACTIVITY_LIMIT);
-
-function resetInactivityCounter() {
-  clearTimeout(inactivityTimer);
-  inactivityTimer = setTimeout(forceSessionLogout, INACTIVITY_LIMIT);
-}
-
-window.onload = resetInactivityCounter;
-document.onmousemove = resetInactivityCounter;
-document.onkeydown = resetInactivityCounter;
-
-function forceSessionLogout() {
-  alert("Security Warning: Inactivity timeout reached. Redirecting to authentication gateway...");
-  window.location.href = `${BASE}/logout`;
-}
-
-/* ================= 🔴 REGISTER (SEND OTP WITH PYDANTIC ERROR HANDLING) ================= */
-async function sendOTP(){
+async function sendOTP() {
   const regErr = document.getElementById("regErr");
   const btn = document.getElementById("btn-reg");
   regErr.style.display = "none";
-  
+
   const emailInput = document.getElementById("email").value.trim();
   const mobileInput = document.getElementById("mobile").value.trim();
-  
-  // Basic empty check
-  if(!emailInput || !mobileInput || !document.getElementById("company_name").value) {
+
+  if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim()) {
     regErr.innerHTML = "Please fill out all required fields.";
     regErr.style.display = "block";
     return;
   }
 
-  // Button Loading State
   const originalText = btn.innerHTML;
   btn.innerHTML = "Processing...";
   btn.disabled = true;
 
   try {
-    let res = await fetch(`${BASE}/register`, {
+    const res = await fetch(`${BASE}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -608,20 +1583,17 @@ async function sendOTP(){
       })
     });
 
-    let data = await res.json();
-    
-    // Restore button state
+    const data = await res.json();
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if(res.ok){
-      regEmail = emailInput.toLowerCase(); 
+    if (res.ok) {
+      regEmail = emailInput.toLowerCase();
       showBox("otpBox");
     } else {
-      // 🔴 Catch Backend Errors (Pydantic Validation Array OR DB String Error)
       let errorMsg = "Registration failed";
       if (data.detail) {
-          errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+        errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
       }
       regErr.innerHTML = errorMsg;
       regErr.style.display = "block";
@@ -634,18 +1606,17 @@ async function sendOTP(){
   }
 }
 
-/* ================= OTP VERIFY ================= */
-async function verifyOTP(){
+async function verifyOTP() {
   const otpErr = document.getElementById("otpErr");
   const btn = document.getElementById("btn-otp");
-  otpErr.style.display="none";
+  otpErr.style.display = "none";
 
   const originalText = btn.innerHTML;
   btn.innerHTML = "Verifying...";
   btn.disabled = true;
 
   try {
-    let res = await fetch(`${BASE}/verify-otp`, {
+    const res = await fetch(`${BASE}/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -654,11 +1625,11 @@ async function verifyOTP(){
       })
     });
 
-    let data = await res.json();
+    const data = await res.json();
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if(res.ok){
+    if (res.ok) {
       showBox("passBox");
     } else {
       otpErr.innerHTML = data.detail || "Invalid OTP";
@@ -672,19 +1643,18 @@ async function verifyOTP(){
   }
 }
 
-/* ================= SAVE PASSWORD ================= */
-async function savePassword(){
+async function savePassword() {
   const passErr = document.getElementById("passErr");
   const passOk = document.getElementById("passOk");
   const btn = document.getElementById("btn-pass");
-  passErr.style.display="none";
-  passOk.style.display="none";
+  passErr.style.display = "none";
+  passOk.style.display = "none";
 
   const p1 = document.getElementById("pass1").value;
   const p2 = document.getElementById("pass2").value;
 
-  if(!p1 || p1 !== p2){
-    passErr.innerHTML = "Passwords do not match!";
+  if (!p1 || p1 !== p2) {
+    passErr.innerHTML = "Passwords do not match.";
     passErr.style.display = "block";
     return;
   }
@@ -694,21 +1664,21 @@ async function savePassword(){
   btn.disabled = true;
 
   try {
-    let res = await fetch(`${BASE}/set-password`, {
+    const res = await fetch(`${BASE}/set-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: regEmail,
-        password: p1.substring(0,20)
+        password: p1.substring(0, 20)
       })
     });
 
-    let data = await res.json();
+    const data = await res.json();
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if(res.ok){
-      passOk.innerHTML = `Account created! Company ID: <b>${data.company_id}</b><br>Please use this ID to Login.`;
+    if (res.ok) {
+      passOk.innerHTML = `Account created. Company ID: <b>${data.company_id}</b><br>Please use this ID to login.`;
       passOk.style.display = "block";
       setTimeout(() => showBox("loginBox"), 5000);
     } else {
@@ -723,40 +1693,35 @@ async function savePassword(){
   }
 }
 
-/* ================= DO LOGIN ================= */
-async function doLogin(event){
-  if(event) event.preventDefault();
+async function doLogin(event) {
+  if (event) event.preventDefault();
   const loginErr = document.getElementById("loginErr");
   const btn = document.getElementById("btn-login");
-  loginErr.style.display="none";
+  loginErr.style.display = "none";
 
   const originalText = btn.innerHTML;
   btn.innerHTML = "Authenticating...";
   btn.disabled = true;
 
   try {
-    let res = await fetch(`${BASE}/login`, {
+    const res = await fetch(`${BASE}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         company_id: document.getElementById("login_company_id").value.trim(),
         email: document.getElementById("login_email").value.trim().toLowerCase(),
-        password: document.getElementById("login_pwd").value.substring(0,20)
+        password: document.getElementById("login_pwd").value.substring(0, 20)
       })
     });
 
-    let data = await res.json();
+    const data = await res.json();
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if(res.ok){
-      if(data.next_page){
-          window.location.replace(data.next_page);
-      } else {
-          window.location.replace("/home");
-      }
+    if (res.ok) {
+      window.location.replace(data.next_page || "/home");
     } else {
-      loginErr.innerHTML = data.detail || "Invalid Credentials";
+      loginErr.innerHTML = data.detail || "Invalid credentials";
       loginErr.style.display = "block";
     }
   } catch (error) {
@@ -767,20 +1732,19 @@ async function doLogin(event){
   }
 }
 
-/* ================= FORGOT PASSWORD ================= */
-async function sendResetLink(){
+async function sendResetLink() {
   const forgotErr = document.getElementById("forgotErr");
   const forgotOk = document.getElementById("forgotOk");
   const btn = document.getElementById("btn-forgot");
-  forgotErr.style.display="none";
-  forgotOk.style.display="none";
+  forgotErr.style.display = "none";
+  forgotOk.style.display = "none";
 
   const originalText = btn.innerHTML;
   btn.innerHTML = "Processing...";
   btn.disabled = true;
 
   try {
-    let res = await fetch(`${BASE}/forgot-password`, {
+    const res = await fetch(`${BASE}/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -788,11 +1752,11 @@ async function sendResetLink(){
       })
     });
 
-    let data = await res.json();
+    const data = await res.json();
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if(res.ok){
+    if (res.ok) {
       forgotOk.innerHTML = "Reset link sent to your email";
       forgotOk.style.display = "block";
     } else {
@@ -807,6 +1771,5 @@ async function sendResetLink(){
   }
 }
 </script>
-
 </body>
 </html>

@@ -4,7 +4,7 @@
   --dashboard-text: #0f172a;
   --dashboard-muted: #475569;
   --dashboard-surface: #ffffff;
-  --dashboard-canvas: #f1f5f9;
+  --dashboard-canvas: #eef6ff;
   --dashboard-border: #cbd5e1;
 }
 
@@ -207,7 +207,7 @@ table td,
   --border: #cbd5e1;
   --sub: #475569;
   --table-th-bg: #f1f5f9;
-  --table-td-border: #e2e8f0;
+  --table-td-border: #cbd5e1;
 }
 
 :root[data-theme="dark"] .inventory-dashboard {

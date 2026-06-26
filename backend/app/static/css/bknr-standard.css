@@ -20,6 +20,7 @@
     --row-hover: #1e40af;
 
     --border: #334155;
+    --table-line: #475569;
 
     --text: #f8fafc;
     --text-muted: #94a3b8;
@@ -43,7 +44,7 @@
     --accent: #2563eb;
     --focus-ring: rgba(37, 99, 235, 0.25);
 
-    --bg: #f1f5f9;
+    --bg: #eef6ff;
     --card-bg: #ffffff;
 
     --header-bg: #f8fafc;
@@ -51,6 +52,7 @@
     --row-hover: #eff6ff;
 
     --border: #e2e8f0;
+    --table-line: #cbd5e1;
 
     --text: #0f172a;
     --text-muted: #475569;
@@ -80,7 +82,7 @@
     --surface-panel: var(--card-bg) !important;
     --table-header-bg: var(--header-bg) !important;
     --table-th-bg: var(--header-bg) !important;
-    --table-td-border: var(--border) !important;
+    --table-td-border: var(--table-line) !important;
     --border-color: var(--border) !important;
     --border-light: var(--border) !important;
     --primary-text: var(--text) !important;
@@ -117,10 +119,19 @@
 
     thead th, .main-table th, .data-table th, .rm-table th {
         background-color: var(--header-bg) !important;
+        border-color: var(--table-line) !important;
     }
 
     tbody tr, .main-table tbody tr, .data-table tbody tr, .rm-table tbody tr {
         background-color: var(--card-bg) !important;
+    }
+
+    table, .main-table, .data-table, .rm-table,
+    table th, table td,
+    .main-table th, .main-table td,
+    .data-table th, .data-table td,
+    .rm-table th, .rm-table td {
+        border-color: var(--table-line) !important;
     }
 
     tbody tr:nth-child(even) { background-color: var(--row-even) !important; }
@@ -158,7 +169,7 @@ body {
 /* Force Tables */
 table, thead, tbody, tfoot, tr, td, th {
     color: var(--text) !important;
-    border-color: var(--border) !important;
+    border-color: var(--table-line) !important;
 }
 
 thead th { background: var(--header-bg) !important; }
@@ -559,9 +570,10 @@ html[data-theme="dark"] textarea {
 /* 🌟 LIGHT MODE OVERRIDES 🌟 */
 html[data-theme="light"], 
 html[data-theme="light"] :root {
-    --bg: #f1f5f9 !important;
+    --bg: #eef6ff !important;
     --panel: #ffffff !important;
     --card-bg: #ffffff !important;
+    --table-line: #cbd5e1 !important;
     --text: #0f172a !important;
     --sub: #475569 !important;
     --border: #e2e8f0 !important;

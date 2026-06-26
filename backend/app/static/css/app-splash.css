@@ -1,6 +1,6 @@
 /* ==========================================================
    BKNR ERP APP SPLASH
-   Premium launch card with daily business motivation quote.
+   Launch card with daily business motivation quote.
 ========================================================== */
 
 :root {
@@ -40,7 +40,7 @@
     width: min(420px, calc(100vw - 36px));
     padding: 34px 30px 30px;
     border: 1px solid var(--splash-border);
-    border-radius: 26px;
+    border-radius: 8px;
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
         var(--splash-card);
@@ -52,55 +52,12 @@
     -webkit-backdrop-filter: blur(22px) saturate(1.15);
 }
 
-.app-splash-logo-wrap {
-    position: relative;
-    width: 104px;
-    height: 104px;
-    margin: 0 auto 20px;
-    display: grid;
-    place-items: center;
-}
-
-.app-splash-logo-wrap::before,
-.app-splash-logo-wrap::after {
-    content: "";
-    position: absolute;
-    inset: -8px;
-    border-radius: 30px;
-    border: 1px solid rgba(56, 189, 248, 0.34);
-}
-
-.app-splash-logo-wrap::after {
-    inset: -15px;
-    border-color: rgba(20, 184, 166, 0.18);
-    animation: splashPulse 1.6s ease-in-out infinite;
-}
-
-.app-splash-logo {
-    position: relative;
-    width: 92px;
-    height: 92px;
-    border-radius: 26px;
-    box-shadow:
-        0 22px 46px rgba(14, 165, 233, 0.24),
-        0 0 0 1px rgba(255, 255, 255, 0.12);
-}
-
 .app-splash-company {
     margin: 0;
     font-size: 20px;
     line-height: 1.2;
     font-weight: 900;
     letter-spacing: 0;
-}
-
-.app-splash-label {
-    margin-top: 6px;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--splash-accent);
 }
 
 .app-splash-quote {
@@ -132,15 +89,19 @@
     animation: splashTrack 1.05s cubic-bezier(.45, 0, .2, 1) infinite;
 }
 
-@keyframes splashPulse {
-    0%, 100% {
-        opacity: 0.42;
-        transform: scale(0.96);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.04);
-    }
+#appSplash.app-splash-empty {
+    background: var(--loader-bg, rgba(248, 250, 252, 0.74));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.app-splash-spinner {
+    width: 46px;
+    height: 46px;
+    border: 4px solid var(--loader-ring, rgba(148, 163, 184, 0.32));
+    border-top-color: var(--loader-ring-active, #2563eb);
+    border-radius: 50%;
+    animation: loaderSpin 0.75s linear infinite;
 }
 
 @keyframes splashTrack {

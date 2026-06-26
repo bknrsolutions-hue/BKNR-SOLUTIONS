@@ -97,7 +97,7 @@
 }
 
 .entry-modal-content {
-    background: var(--slate-bg, var(--bg, #f1f5f9));
+    background: var(--slate-bg, var(--bg, #eef6ff));
     width: 90%;
     height: 90vh;
     border-radius: 12px;

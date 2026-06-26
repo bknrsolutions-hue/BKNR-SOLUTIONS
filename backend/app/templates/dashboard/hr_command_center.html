@@ -17,8 +17,11 @@
    🌟 DESIGN TOKENS — LIGHT & DARK
 ========================================================== */
 :root {
-  --slate-bg: #f1f5f9;
+  --slate-bg: #eef6ff;
   --card-bg: #ffffff;
+  --kpi-bg: #ffffff;
+  --kpi-border: rgba(15, 23, 42, 0.1);
+  --kpi-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   --border-color: #e2e8f0;
   --text-main: #0f172a;
   --text-muted: #64748b;
@@ -40,6 +43,9 @@
 [data-theme="dark"] {
   --slate-bg: #0f172a;
   --card-bg: #1e293b;
+  --kpi-bg: #243044;
+  --kpi-border: rgba(148, 163, 184, 0.24);
+  --kpi-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
   --border-color: #334155;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
@@ -100,10 +106,10 @@ body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smooth
   flex-direction: column !important;
   justify-content: space-between !important;
   gap: 8px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--kpi-shadow);
   transition: all 0.2s ease;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0)), var(--kpi-bg);
+  border: 1px solid var(--kpi-border);
   position: relative;
   overflow: hidden;
   min-height: 92px;
@@ -118,7 +124,8 @@ body { background: var(--slate-bg); color: var(--text-main); -webkit-font-smooth
   transition: opacity 0.2s;
   border-radius: 0 0 var(--radius-premium) var(--radius-premium);
 }
-.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14); }
+[data-theme="dark"] .card:hover { box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34); }
 .card:hover::before { opacity: 1; }
 .card:active { transform: scale(0.97); }
 
@@ -512,6 +519,125 @@ tr:hover { background: var(--hover-bg); }
   window.addEventListener('load', syncThemeFromParent);
 </script>
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
+<style>
+/* HR dashboard controls must win over the global button enforcer. */
+.hr-dashboard .tab-btn {
+  background: var(--card-bg) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-color) !important;
+}
+.hr-dashboard .tab-btn.active {
+  background: var(--accent-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-blue) !important;
+}
+.hr-dashboard .tab-btn:hover:not(.active) {
+  background: var(--sub-bg) !important;
+  color: var(--accent-blue) !important;
+  border-color: var(--accent-blue) !important;
+}
+.hr-dashboard .refresh-btn {
+  background: var(--card-bg) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-color) !important;
+}
+.hr-dashboard .refresh-btn:hover {
+  background: var(--accent-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-blue) !important;
+}
+.hr-dashboard .module-rail .rail-link {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-color) !important;
+}
+.hr-dashboard .module-rail .rail-link:hover {
+  background: var(--sub-bg) !important;
+  color: var(--accent-blue) !important;
+  border-color: var(--accent-blue) !important;
+}
+.hr-dashboard .entry-modal-close,
+.hr-dashboard .close-btn {
+  background: var(--card-bg) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-color) !important;
+}
+.hr-dashboard .entry-modal-close:hover,
+.hr-dashboard .close-btn:hover {
+  background: var(--rose) !important;
+  color: #ffffff !important;
+  border-color: var(--rose) !important;
+}
+.hr-dashboard .entry-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.66);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.hr-dashboard .entry-modal-overlay.open {
+  display: flex;
+}
+.hr-dashboard .entry-modal-content {
+  width: min(1180px, 96vw);
+  height: min(900px, 92vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-premium);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+}
+.hr-dashboard .entry-modal-header {
+  min-height: 52px;
+  padding: 10px 14px 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--slate-bg);
+}
+.hr-dashboard .entry-modal-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+}
+.hr-dashboard .entry-modal-close {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.hr-dashboard #entryFrame {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: var(--slate-bg);
+}
+@media(max-width: 767px) {
+  .hr-dashboard .entry-modal-overlay { padding: 0; }
+  .hr-dashboard .entry-modal-content {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+}
+</style>
 </head>
 <body class="hr-dashboard">
 
@@ -1557,12 +1683,12 @@ tr:hover { background: var(--hover-bg); }
 function openEntryModal(url, title) {
   document.getElementById('entryModalTitle').innerText = title;
   document.getElementById('entryFrame').src = url;
-  document.getElementById('entryModal').style.display = 'flex';
+  document.getElementById('entryModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeEntryModal() {
-  document.getElementById('entryModal').style.display = 'none';
+  document.getElementById('entryModal').classList.remove('open');
   document.getElementById('entryFrame').src = '';
   document.body.style.overflow = 'auto';
   location.reload();
@@ -1682,7 +1808,7 @@ BKNRCharts.create(document.getElementById("attendanceTrendChart"), {
   data: {
     labels: {{ attendance_trend_labels|default([])|tojson }},
     datasets: [{
-      data: {{ attendance_trend_values|default([])|tojson }},
+      data: {{ attendance_trend_data|default([])|tojson }},
       borderColor: "#2563eb",
       backgroundColor: "rgba(37,99,235,0.08)",
       fill: true,

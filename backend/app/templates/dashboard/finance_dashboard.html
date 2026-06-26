@@ -20,8 +20,11 @@
 <style>
   :root {
     --primary-dark: #0f172a;
-    --slate-bg: #f1f5f9; 
+    --slate-bg: #eef6ff; 
     --card-bg: #ffffff;
+    --kpi-bg: #ffffff;
+    --kpi-border: rgba(15, 23, 42, 0.1);
+    --kpi-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
     --accent-blue: #1d4ed8;
     --border-color: #e2e8f0;
     --text-main: #0f172a;
@@ -50,6 +53,9 @@
     --primary-dark: #f8fafc; 
     --slate-bg: #0f172a; 
     --card-bg: #1e293b;
+    --kpi-bg: #243044;
+    --kpi-border: rgba(148, 163, 184, 0.24);
+    --kpi-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
     --accent-blue: #3b82f6;
     --border-color: #334155;
     --text-main: #e2e8f0;
@@ -184,10 +190,12 @@
       padding: 14px; border-radius: var(--radius-premium); 
       display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
       position: relative; min-height: 92px; padding-right: 48px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); transition: all 0.2s ease;
-      background: var(--card-bg); border: 1px solid var(--border-color);
+      box-shadow: var(--kpi-shadow); transition: all 0.2s ease;
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0)), var(--kpi-bg);
+      border: 1px solid var(--kpi-border);
   }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border-color: var(--accent-blue); }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14); border-color: var(--accent-blue); }
+  :root[data-theme="dark"] .card:hover { box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34); }
   .card-meta { text-align: left; min-width: 0; }
   .card-meta .label { max-width: 100%; font-size: 10px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
   .card-meta .value { font-size: 19px; font-weight: 800; color: var(--value-text); margin-top: 14px; letter-spacing: -0.3px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }

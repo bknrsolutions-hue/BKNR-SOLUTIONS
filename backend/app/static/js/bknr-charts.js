@@ -25,21 +25,28 @@
         };
     }
 
-    function setDatasetDefaults(dataset, index) {
+    function setDatasetDefaults(dataset, index, chartType) {
         if (!dataset) return dataset;
         const color = palette[index % palette.length];
+        const datasetType = dataset.type || chartType;
 
         if (!dataset.backgroundColor) dataset.backgroundColor = color;
-        if (!dataset.borderColor) dataset.borderColor = color;
-        if (dataset.type === "line" || dataset.borderColor || dataset.fill !== undefined) {
+
+        if (datasetType === "bar") {
+            dataset.borderWidth = dataset.borderWidth ?? 0;
+            dataset.borderRadius = dataset.borderRadius ?? 7;
+            dataset.borderSkipped = dataset.borderSkipped ?? false;
+            dataset.maxBarThickness = dataset.maxBarThickness ?? 34;
+        } else if (datasetType === "line" || dataset.fill !== undefined) {
+            if (!dataset.borderColor) dataset.borderColor = color;
             dataset.borderWidth = dataset.borderWidth ?? 2;
             dataset.tension = dataset.tension ?? 0.38;
             dataset.pointRadius = dataset.pointRadius ?? 2;
             dataset.pointHoverRadius = dataset.pointHoverRadius ?? 4;
+        } else if (datasetType === "doughnut" || datasetType === "pie") {
+            dataset.borderWidth = dataset.borderWidth ?? 0;
         } else {
-            dataset.borderRadius = dataset.borderRadius ?? 7;
-            dataset.borderSkipped = dataset.borderSkipped ?? false;
-            dataset.maxBarThickness = dataset.maxBarThickness ?? 34;
+            if (!dataset.borderColor) dataset.borderColor = color;
         }
         return dataset;
     }
@@ -123,7 +130,7 @@
             ...config,
             data: {
                 ...(config.data || {}),
-                datasets: (config.data?.datasets || []).map(setDatasetDefaults)
+                datasets: (config.data?.datasets || []).map((dataset, index) => setDatasetDefaults(dataset, index, config.type))
             },
             options: premiumOptions(config.options || {})
         };
