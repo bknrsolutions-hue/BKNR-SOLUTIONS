@@ -99,8 +99,8 @@ def get_floor_balance(
                 model_obj.production_at == location,
                 model_obj.new_batch_id == batch,
                 func.trim(cast(model_obj.grade, String)) == clean_count,
-                model_obj.species == species,
-                model_obj.variety == variety
+                func.upper(func.trim(model_obj.species)) == func.upper(func.trim(species)),
+                func.upper(func.trim(model_obj.variety)) == func.upper(func.trim(variety))
             )
         else:
             if hasattr(model_obj, 'peeling_at'):
@@ -109,12 +109,12 @@ def get_floor_balance(
                 q = q.filter(model_obj.production_at == location)
 
             q = q.filter(model_obj.batch_number == batch)
-            q = q.filter(model_obj.species == species)
+            q = q.filter(func.upper(func.trim(model_obj.species)) == func.upper(func.trim(species)))
 
             if hasattr(model_obj, 'variety_name'):
-                q = q.filter(model_obj.variety_name == variety_upper)
+                q = q.filter(func.upper(func.trim(model_obj.variety_name)) == variety_upper)
             elif hasattr(model_obj, 'variety'):
-                q = q.filter(model_obj.variety == variety_upper)
+                q = q.filter(func.upper(func.trim(model_obj.variety)) == variety_upper)
 
         if hasattr(model_obj, 'production_for'):
             p_for_clean = str(production_for).strip() if production_for else ""
