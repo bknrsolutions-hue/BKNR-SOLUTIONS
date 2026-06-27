@@ -757,3 +757,139 @@ def get_report_data_json(
     except Exception as e:
         logger.error(f"Failed to fetch report data for {report_name}: {e}")
         return JSONResponse({"status": "error", "message": f"Query execution error: {str(e)}"}, status_code=500)
+
+
+# -------------------------------------------------------------
+# MOBILE APP DROPDOWNS AND UTILITIES FOR NATIVE SCREENS
+# -------------------------------------------------------------
+
+@router.get("/form_dropdowns")
+def get_form_dropdowns(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
+
+    from app.database.models.criteria import (
+        suppliers as SuppliersTable,
+        purchasing_locations as PurchasingLocationsTable,
+        vehicle_numbers as VehicleNumbersTable,
+        peeling_at as PeelingAtTable,
+        varieties as VarietiesTable,
+        grades as GradesTable,
+        freezers as FreezersTable,
+        packing_styles as PackingStylesTable,
+        contractors as ContractorsTable,
+        production_for as ProductionForTable
+    )
+
+    companies_list = [x.production_for for x in db.query(ProductionForTable).filter(ProductionForTable.company_id == comp_code).distinct().all()]
+    locations_list = [x.location_name for x in db.query(PurchasingLocationsTable).filter(PurchasingLocationsTable.company_id == comp_code).distinct().all()]
+    suppliers_list = [x.supplier_name for x in db.query(SuppliersTable).filter(SuppliersTable.company_id == comp_code).distinct().all()]
+    contractors_list = [x.contractor_name for x in db.query(ContractorsTable).filter(ContractorsTable.company_id == comp_code).distinct().all()]
+    varieties_list = [x.variety_name for x in db.query(VarietiesTable).filter(VarietiesTable.company_id == comp_code).distinct().all()]
+    grades_list = [x.grade_name for x in db.query(GradesTable).filter(GradesTable.company_id == comp_code).distinct().all()]
+    freezers_list = [x.freezer_name for x in db.query(FreezersTable).filter(FreezersTable.company_id == comp_code).distinct().all()]
+    packing_styles_list = [x.packing_style for x in db.query(PackingStylesTable).filter(PackingStylesTable.company_id == comp_code).distinct().all()]
+    vehicles_list = [x.vehicle_number for x in db.query(VehicleNumbersTable).filter(VehicleNumbersTable.company_id == comp_code).distinct().all()]
+
+    return JSONResponse({
+        "status": "success",
+        "data": {
+            "companies": sorted(list(set(companies_list))),
+            "locations": sorted(list(set(locations_list))),
+            "suppliers": sorted(list(set(suppliers_list))),
+            "contractors": sorted(list(set(contractors_list))),
+            "varieties": sorted(list(set(varieties_list))),
+            "grades": sorted(list(set(grades_list))),
+            "freezers": sorted(list(set(freezers_list))),
+            "packing_styles": sorted(list(set(packing_styles_list))),
+            "vehicles": sorted(list(set(vehicles_list)))
+        }
+    })
+
+@router.get("/live_stock_batches")
+def get_live_stock_batches(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
+
+    from app.database.models.floor_balance import FloorBalance
+    rows = db.query(FloorBalance).filter(
+        FloorBalance.company_id == comp_code,
+        FloorBalance.available_qty > 0.01
+    ).all()
+
+    stock_items = []
+    for r in rows:
+        stock_items.append({
+            "batch": r.batch_number,
+            "location": r.location,
+            "production_for": r.production_for,
+            "species": r.species,
+            "variety": r.variety,
+            "count": r.count,
+            "qty": float(r.available_qty),
+            "source_type": r.source_type or "RMP"
+        })
+
+    return JSONResponse({
+        "status": "success",
+        "data": stock_items
+    })
+
+@router.get("/hrms_attendance_list")
+def get_hrms_attendance_list(request: Request, date_str: str = Query(None), db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
+
+    from app.database.models.attendance import EmployeeRegistration, DailyAttendance
+    query_date = date.fromisoformat(date_str) if date_str else date.today()
+
+    employees = db.query(EmployeeRegistration).filter(
+        EmployeeRegistration.company_id == comp_code,
+        EmployeeRegistration.status == "ACTIVE"
+    ).all()
+
+    attendance_map = {
+        att.employee_id: att for att in db.query(DailyAttendance).filter(
+            DailyAttendance.company_id == comp_code,
+            DailyAttendance.duty_date == query_date
+        ).all()
+    }
+
+    data = []
+    for emp in employees:
+        att = attendance_map.get(emp.employee_id)
+        data.append({
+            "employee_id": emp.employee_id,
+            "employee_name": emp.employee_name,
+            "designation": emp.designation,
+            "department": emp.department,
+            "attendance_status": att.attendance_status if att else "Absent",
+            "in_time": att.in_time if att else "09:00",
+            "out_time": att.out_time if att else "18:00",
+            "ot_hours": float(att.ot_hours or 0) if att else 0.0
+        })
+
+    return JSONResponse({
+        "status": "success",
+        "data": data
+    })
+
+@router.get("/contractor_rate")
+def get_contractor_rate_mobile(
+    contractor: str = Query(...), 
+    variety: str = Query("HOSO"), 
+    request: Request = None, 
+    db: Session = Depends(get_db)
+):
+    comp_code = request.session.get("company_code")
+    if not comp_code: return JSONResponse({"rate": 0})
+    from app.database.models.criteria import peeling_rates
+    row = db.query(peeling_rates).filter(
+        peeling_rates.contractor_name == contractor, 
+        peeling_rates.variety_name == variety, 
+        peeling_rates.company_id == comp_code
+    ).order_by(peeling_rates.effective_from.desc()).first()
+    return JSONResponse({"rate": float(row.rate) if row else 0})

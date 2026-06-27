@@ -42,6 +42,7 @@ async def de_heading_report(
     fy: str = Query(None), # Financial Year Filter
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import check_report_permission
     production_for, location = get_global_filters(request)
     company_id = request.session.get("company_code")
     role = request.session.get("role")
@@ -72,7 +73,8 @@ async def de_heading_report(
         query = db.query(DeHeading).filter(
             DeHeading.company_id == company_id,
             DeHeading.date >= start_date,
-            DeHeading.date <= end_date
+            DeHeading.date <= end_date,
+            DeHeading.is_cancelled != True
         )
 
         # Global Filters Integration
@@ -130,6 +132,10 @@ async def de_heading_report(
             "peeling_locations": get_unique("peeling_at"),
             "production_for_list": get_unique("production_for"),
             "is_admin": role == "admin",
+            "can_edit": check_report_permission(request, "report_edit"),
+            "can_delete": check_report_permission(request, "report_delete"),
+            "can_print": check_report_permission(request, "report_print"),
+            "can_export": check_report_permission(request, "report_export"),
             "selected_fy": fy,
             "datetime": datetime
         }
@@ -144,6 +150,8 @@ async def update_deheading_row(
     payload: dict = Body(...), 
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
 
@@ -213,9 +221,15 @@ async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db
 
 @router.get("/contractor_monthly_bill")
 def de_heading_monthly_bill(request: Request, month: str = Query(...), contractor: str = Query(...), ids: str = Query(None), download: bool = Query(False), db: Session = Depends(get_db)):
-    # 🔴 STRIKT POLICY: Untouched base layers. Universal filters purposefully bypassed here.
+    from app.utils.report_permissions import enforce_report_permission, check_report_permission
+    if not (check_report_permission(request, "report_print") or check_report_permission(request, "report_export")):
+        enforce_report_permission(request, "report_print")
     company_id = request.session.get("company_code")
-    query = db.query(DeHeading).filter(DeHeading.company_id == company_id, DeHeading.contractor == contractor)
+    query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id,
+        DeHeading.contractor == contractor,
+        DeHeading.is_cancelled != True
+    )
     if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
     else: query = query.filter(func.to_char(DeHeading.date, 'YYYY-MM') == month)
     rows = query.order_by(DeHeading.date.asc()).all()
@@ -235,8 +249,13 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
 
 @router.get("/export_pdf")
 def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
-    query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
+    query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id,
+        DeHeading.is_cancelled != True
+    )
     
     # 1. 🟢 Force evaluate incoming global interface context
     production_for, location = get_global_filters(request)
@@ -255,8 +274,13 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
 
 @router.get("/export_excel")
 def de_heading_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
-    query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
+    query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id,
+        DeHeading.is_cancelled != True
+    )
     
     # 2. 🟢 Force evaluate incoming global interface context
     production_for, location = get_global_filters(request)
@@ -279,6 +303,8 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
 
 @router.post("/delete")
 async def delete_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if row:

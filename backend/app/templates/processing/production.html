@@ -358,7 +358,7 @@
         <div id="menuWrap">
             <button type="button" class="menu-trigger" onclick="toggleMenu()"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="menuBox">
-                <div class="menu-item" onclick="deleteRow()" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+                <div class="menu-item" onclick="deleteRow()" style="color:var(--danger);"><i class="fa-solid fa-ban"></i> Cancel</div>
             </div>
         </div>
     </div>
@@ -370,7 +370,7 @@
                 </thead>
                 <tbody>
                     {% for r in today_data %}
-                    <tr class="log-data-row" data-id="{{r.id}}" data-company="{{r.production_for}}" data-variety="{{r.variety_name}}" data-glaze="{{r.glaze}}" data-freezer="{{r.freezer}}" data-grade="{{r.grade}}">
+                    <tr class="log-data-row {% if r.is_cancelled %}cancelled-row{% endif %}" data-id="{{r.id}}" data-company="{{r.production_for}}" data-variety="{{r.variety_name}}" data-glaze="{{r.glaze}}" data-freezer="{{r.freezer}}" data-grade="{{r.grade}}">
                         <td>{{r.id}}</td>
                         <td style="text-align:left;">{{r.production_for}}</td>
                         <td style="font-weight:800; color:var(--accent);">{{r.batch_number}}</td>
@@ -631,7 +631,6 @@ function fillFilterSelect(id, dataList, defaultText) {
     if(!el) return;
     let html = `<option value="">${defaultText}</option>`;
     dataList.forEach(item => {
-        // Glaze కి పక్కన % సింబల్ అలైన్ చేయడం కోసం (ఇప్పటికే % ఉంటే మళ్లీ యాడ్ చేయకుండా)
         let displayItem = item;
         if (id === 'filter_glaze') {
             if (typeof item === 'string' && !item.endsWith('%') && !isNaN(parseFloat(item))) {
@@ -773,7 +772,6 @@ function fillStaticSelect(id, arrayData, defaultText) {
     });
 }
 
-// 🟢 🔴 FIXED UNIFIED JAVASCRIPT FILTER MATRIX: గ్లేజ్ మరియు మిగతా స్ట్రింగ్స్ ని నార్మలైజ్ చేసి పక్కాగా మ్యాచ్ అయ్యేలా లాక్ చేసాను చిన్నా
 function applyGlobalFilters() {
     const co = document.getElementById("filter_company")?.value.toLowerCase().trim() || "";
     const varty = document.getElementById("filter_variety")?.value.toLowerCase().trim() || "";
@@ -798,7 +796,6 @@ function applyGlobalFilters() {
             const rCo = (row.getAttribute("data-company") || "").toLowerCase().trim();
             const rVa = (row.getAttribute("data-variety") || "").toLowerCase().trim();
             
-            // 🔴 % క్యారెక్టర్ మరియు ఖాళీ స్పేస్ లు సింక్ అవ్వడానికి క్లీన్ లాజిక్
             let rGz = (row.getAttribute("data-glaze") || "").toLowerCase().trim().replace('%', '');
             let targetGlaze = glaze.replace('%', '');
 
@@ -895,21 +892,48 @@ function initLogTable() {
     const rows = document.querySelectorAll("#dataTable tbody tr.log-data-row");
     rows.forEach(r => {
         r.onclick = () => {
+            if (r.classList.contains("cancelled-row")) {
+                rows.forEach(x => x.classList.remove("selected"));
+                selectedRowRef = null;
+                return;
+            }
             rows.forEach(x => x.classList.remove("selected")); r.classList.add("selected");
             selectedRowRef = r;
         }
     });
 }
 
-function deleteRow() {
+async function deleteRow() {
     if (!selectedRowRef) return;
     const id = selectedRowRef.dataset.id;
-    Swal.fire({ title: 'Delete Log?', text: "Confirm deletion permanently.", icon: 'error', showCancelButton: true, confirmButtonColor: '#dc2626' }).then(res => {
-        if(res.isConfirmed) {
-            const form = document.createElement('form'); form.method = 'POST'; form.action = `/processing/production/delete/${id}`;
-            document.body.appendChild(form); form.submit();
+    const { value: reason } = await Swal.fire({
+        title: 'Cancel Production?',
+        text: 'Please enter the cancellation reason:',
+        input: 'text',
+        inputPlaceholder: 'Reason for cancellation',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        confirmButtonText: 'Yes, Cancel it!',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'Cancellation reason is required!';
+            }
         }
     });
+    if(reason) {
+        const form = document.createElement('form'); 
+        form.method = 'POST'; 
+        form.action = `/processing/production/delete/${id}`;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'cancel_reason';
+        input.value = reason;
+        
+        form.appendChild(input);
+        document.body.appendChild(form); 
+        form.submit();
+    }
 }
 
 function updateTimers() {
@@ -931,6 +955,75 @@ function showDetails(data, title) {
     data.forEach(d => { content += `<tr><td style="text-align:left;">${d.po_no || d.location}</td><td style="text-align:right; font-weight:bold;">${d.utilized || d.available}</td></tr>`; });
     content += `</tbody></table></div>`;
     Swal.fire({ title: title, html: content, confirmButtonColor: '#143465' });
+}
+
+function getFormDataSummary(formEl) {
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+    
+    const elements = formEl.elements;
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        if (el.name && el.value !== "" && el.type !== "submit" && el.type !== "button" && el.type !== "textarea") {
+            let labelText = "";
+            if (el.id) {
+                const label = formEl.querySelector(`label[for="${el.id}"]`);
+                if (label) labelText = label.innerText.trim();
+            }
+            if (!labelText) {
+                const parentField = el.closest('.field');
+                if (parentField) {
+                    const label = parentField.querySelector('label');
+                    if (label) labelText = label.innerText.trim();
+                }
+            }
+            if (!labelText) {
+                labelText = el.name.replace(/_/g, ' ').toUpperCase();
+            }
+            
+            let valText = el.value;
+            if (el.tagName === 'SELECT') {
+                const opt = el.options[el.selectedIndex];
+                if (opt) valText = opt.text;
+            }
+            
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 6px; font-weight: bold; color: var(--text-muted); width: 40%; text-transform: uppercase;">${labelText}:</td><td style="padding: 6px; color: var(--text); font-weight: bold;">${valText}</td></tr>`;
+        }
+    }
+    
+    summaryHtml += '</table></div>';
+    return summaryHtml;
+}
+
+const productionForm = document.getElementById("productionForm");
+if (productionForm) {
+    productionForm.onsubmit = async function(e) {
+        if (this.dataset.confirmed === "true") {
+            return;
+        }
+        
+        e.preventDefault();
+        
+        const form = this;
+        const summaryHtml = getFormDataSummary(form);
+        
+        const confirmSave = await Swal.fire({
+            title: 'Confirm Save?',
+            html: `Do you want to save the written data card?<br>${summaryHtml}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--accent)',
+            confirmButtonText: 'Yes, Save it!',
+            cancelButtonText: 'Cancel'
+        });
+        
+        if (confirmSave.isConfirmed) {
+            form.dataset.confirmed = "true";
+            const btn = document.getElementById("submitBtn");
+            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+            form.submit();
+        }
+    };
 }
 </script>
 <script src="/static/js/global-loader.js"></script>

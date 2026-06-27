@@ -65,7 +65,8 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             query = db.query(Peeling).filter(
                 Peeling.company_id == comp_code,
                 Peeling.date >= start_date,
-                Peeling.date <= end_date
+                Peeling.date <= end_date,
+                Peeling.is_cancelled != True
             )
 
             if production_for:
@@ -110,6 +111,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     def get_unique(field):
         return sorted({getattr(r, field) for r in rows if getattr(r, field)})
 
+    from app.utils.report_permissions import check_report_permission
     return templates.TemplateResponse(
         request=request,
         name="reports/peeling_report.html",
@@ -122,6 +124,10 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             "locations": get_unique("peeling_at"),
             "production_for_list": get_unique("production_for"),
             "is_admin": role == "admin",
+            "can_edit": check_report_permission(request, "report_edit"),
+            "can_delete": check_report_permission(request, "report_delete"),
+            "can_print": check_report_permission(request, "report_print"),
+            "can_export": check_report_permission(request, "report_export"),
             "datetime": datetime
         }
     )
@@ -139,8 +145,8 @@ async def update_peeling(
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
     
-    if request.session.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
 
     row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
     if not row:
@@ -213,7 +219,13 @@ async def peeling_export_pdf(
     if not comp_code:
         raise HTTPException(status_code=401, detail="Session expired")
 
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
+
+    q = db.query(Peeling).filter(
+        Peeling.company_id == comp_code,
+        Peeling.is_cancelled != True
+    )
     
     # 1. 🟢 Apply global filter constraints to the PDF generation scope
     production_for, location = get_global_filters(request)
@@ -248,7 +260,10 @@ def peeling_export_excel(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
-    q = db.query(Peeling).filter(Peeling.company_id == comp_code)
+    q = db.query(Peeling).filter(
+        Peeling.company_id == comp_code,
+        Peeling.is_cancelled != True
+    )
     
     # 2. 🟢 Apply global filter constraints to the Excel workbook data scope
     production_for, location = get_global_filters(request)
@@ -389,7 +404,13 @@ def peeling_monthly_bill(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
-    query_bill = db.query(Peeling).filter(Peeling.company_id == comp_code, Peeling.contractor_name == contractor)
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_print")
+    query_bill = db.query(Peeling).filter(
+        Peeling.company_id == comp_code,
+        Peeling.contractor_name == contractor,
+        Peeling.is_cancelled != True
+    )
     
     if ids: 
         query_bill = query_bill.filter(Peeling.id.in_([int(i) for i in ids.split(",") if i.isdigit()]))
@@ -446,6 +467,8 @@ async def delete_peeling(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     row = db.query(Peeling).filter(Peeling.id == payload.get("id"), Peeling.company_id == comp_code).first()
     if row:
         db.add(AuditLog(

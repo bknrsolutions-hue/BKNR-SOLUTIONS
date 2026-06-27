@@ -17,6 +17,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     function syncTheme() {
@@ -289,16 +290,26 @@ tr.subtotal { background: var(--header-bg); font-weight: 800; color: var(--prima
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
+            {% if can_edit %}
             <div onclick="enableEdit()">✏️ Edit Row (Detailed Only)</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
+            {% endif %}
             <div onclick="toggleAudit()">📜 Full Audit History</div>
+            {% if can_print or can_export %}
             <hr style="border-top:1px solid var(--border); margin:4px 0;">
             <b>📋 Export Options</b>
+            {% if can_print %}
             <div onclick="askConfirm('print_table')">🖨 Print Table</div>
+            {% endif %}
+            {% if can_export %}
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF</div>
+            {% endif %}
+            {% endif %}
+            {% if can_delete %}
             <hr style="border-top:1px solid var(--border); margin:4px 0;">
             <div onclick="askConfirm('delete_row')" style="color:var(--danger)">🗑 Delete Row</div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -701,19 +712,55 @@ function enableEdit() {
     if(!selectedRow || !selectedRow.parentElement.id.includes("detailed")) return alert("Please select a valid row line inside Detailed View to enable modifications.");
     selectedRow.querySelectorAll(".editable").forEach(td => {
         const val = td.innerText.trim();
-        td.innerHTML = `<input class="edit-input" value="${val}">`;
+        td.innerHTML = `<input class="edit-input" data-orig="${val}" value="${val}">`;
     });
 }
 
 async function saveEdit() {
     if(!selectedRow) return;
     const payload = { id: selectedRow.dataset.id };
+    let changed = false;
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+    
     const inputs = selectedRow.querySelectorAll(".edit-input");
     if(!inputs.length) return;
-    inputs.forEach(i => payload[i.parentElement.dataset.field] = i.value);
     
+    inputs.forEach(i => {
+        const val = i.value;
+        const orig = i.dataset.orig || "";
+        if(val !== orig) {
+            const fieldName = (i.parentElement.dataset.field || '').replace(/_/g, ' ').toUpperCase();
+            payload[i.parentElement.dataset.field] = val;
+            changed = true;
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 4px; font-weight: bold; color: var(--text-muted);">${fieldName}:</td><td style="padding: 4px; color: var(--text);"><span style="text-decoration: line-through; color: var(--danger);">${orig}</span> &rarr; <span style="color: var(--success); font-weight: bold;">${val}</span></td></tr>`;
+        } else {
+            payload[i.parentElement.dataset.field] = val;
+        }
+    });
+    summaryHtml += '</table></div>';
+    
+    if(!changed) return;
+    
+    const confirmSave = await Swal.fire({
+        title: 'Confirm Changes?',
+        html: `Do you want to save the written data card?<br>${summaryHtml}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Yes, Save it!',
+        cancelButtonText: 'Cancel'
+    });
+    if (!confirmSave.isConfirmed) {
+        return;
+    }
+
     const res = await fetch(`${baseUrl}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-    if(res.ok) loadDetailedData(); else alert("Error processing ledger entry updates.");
+    if(res.ok) {
+        Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => loadDetailedData());
+    } else {
+        Swal.fire('Error', 'Save Failed!', 'error');
+    }
 }
 
 function toggleAudit() {
@@ -771,6 +818,16 @@ document.getElementById("btnYes").onclick = async () => {
         window.location.href = `${baseUrl}/export_pdf?${params.toString()}`;
     } 
     else if (currentAction === 'delete_row') {
+        const confirmDelete = await Swal.fire({
+            title: 'Confirm Delete?',
+            text: 'Are you sure you want to delete this record permanently?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'Cancel'
+        });
+        if (!confirmDelete.isConfirmed) return;
         try {
             const res = await fetch(`${baseUrl}/delete`, { 
                 method:"POST", 
@@ -778,13 +835,12 @@ document.getElementById("btnYes").onclick = async () => {
                 body:JSON.stringify({ id: selectedRow.dataset.id }) 
             });
             if(res.ok) {
-                alert("Record deleted successfully.");
-                loadDetailedData();
+                Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => loadDetailedData());
             } else {
-                alert("Failed to delete record.");
+                Swal.fire('Error', 'Delete Failed!', 'error');
             }
         } catch (err) {
-            alert("Server connection failed.");
+            Swal.fire('Error', 'Server connection failed.', 'error');
         }
     }
 };

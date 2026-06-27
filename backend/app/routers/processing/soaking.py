@@ -360,34 +360,62 @@ def update_soaking(
     return RedirectResponse("/processing/soaking", status_code=303)
 
 
+from app.utils.trace_lock import is_batch_used_downstream_from_soaking
+
 @router.post("/soaking/delete/{id}")
-def delete_soaking(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_soaking(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     email = request.session.get("email")
     company_id = request.session.get("company_code")
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     row = db.query(Soaking).filter(Soaking.id == id, Soaking.company_id == company_id).with_for_update().first()
-    if row:
-        scoped_production_for, scoped_location, _ = resolve_session_scope(
-            request, row.production_for, row.production_at
-        )
-        if (
-            scoped_production_for
-            and str(scoped_production_for).strip().upper() != str(row.production_for or "").strip().upper()
-        ) or (
-            scoped_location
-            and str(scoped_location).strip().upper() != str(row.production_at or "").strip().upper()
-        ):
-            return JSONResponse({"error": "Record is outside the active session scope"}, status_code=403)
-        if is_edit_locked(request, row.date):
-            return JSONResponse({"error": edit_lock_message()}, status_code=403)
-        # Full stack reverse automation refund processing
-        update_floor_balance_row(
-            db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,
-            row.production_at, row.production_for,
-            qty_delta=float(row.in_qty or 0) - float(row.rejection_qty or 0), email=email
-        )
-        db.delete(row)
-        db.commit()
+    if not row:
+        return JSONResponse({"error": "Record not found"}, status_code=404)
+
+    if row.is_cancelled:
+        return JSONResponse({"error": "This entry is already cancelled!"}, status_code=400)
+
+    scoped_production_for, scoped_location, _ = resolve_session_scope(
+        request, row.production_for, row.production_at
+    )
+    if (
+        scoped_production_for
+        and str(scoped_production_for).strip().upper() != str(row.production_for or "").strip().upper()
+    ) or (
+        scoped_location
+        and str(scoped_location).strip().upper() != str(row.production_at or "").strip().upper()
+    ):
+        return JSONResponse({"error": "Record is outside the active session scope"}, status_code=403)
+        
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
+
+    # 🔒 Downstream Traceability Check
+    is_used, stage = is_batch_used_downstream_from_soaking(db, row.batch_number, row.company_id)
+    if is_used:
+        return JSONResponse({
+            "error": f"❌ Cannot cancel: Batch '{row.batch_number}' is already processed in {stage}!"
+        }, status_code=400)
+
+    # Full stack reverse automation refund processing
+    update_floor_balance_row(
+        db, company_id, row.batch_number, row.in_count, row.species, row.variety_name,
+        row.production_at, row.production_for,
+        qty_delta=float(row.in_qty or 0) - float(row.rejection_qty or 0), email=email
+    )
+
+    # Soft Delete / Cancel
+    row.is_cancelled = True
+    row.status = "Cancelled"
+    row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+    row.cancelled_by = email
+    row.cancelled_at = ist_now()
+
+    db.commit()
     return JSONResponse({"status": "ok"})

@@ -1042,3 +1042,13 @@ a[href*="criteria/setup/next"],
 .setup-nav {
     display: none !important;
 }
+
+/* soft-delete cancelled row styling */
+.cancelled-row, tr.cancelled-row, table tbody tr.cancelled-row {
+    opacity: 0.55 !important;
+    text-decoration: line-through !important;
+    background-color: rgba(239, 68, 68, 0.08) !important;
+}
+.cancelled-row td, tr.cancelled-row td, table tbody tr.cancelled-row td {
+    color: var(--cancelled-text) !important;
+}

@@ -1,11 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Time, Float
-from app.database import Base
-
-
-# ---------------------------------------------------------
-# GATE ENTRY
-# ---------------------------------------------------------
-from sqlalchemy import Column, Integer, String, Float, Date, Time, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Time, Float, Boolean, DateTime, UniqueConstraint
 from app.database import Base
 
 class GateEntry(Base):
@@ -32,6 +25,12 @@ class GateEntry(Base):
     email = Column(String)
     company_id = Column(String(50))
     production_for = Column(String(255))
+
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
@@ -79,12 +78,17 @@ class RawMaterialPurchasing(Base):
     peeling_at = Column(String(255))
     production_for = Column(String(255))
 
-    # --- Accounting Integration (Added) ---
     # Auto-posted when RM purchase is confirmed
     journal_id = Column(Integer, nullable=True)              # FK → voucher_headers.id
     inventory_ledger_id = Column(Integer, nullable=True)     # FK → ledger_masters.id (RM Inventory Dr)
     supplier_ledger_id = Column(Integer, nullable=True)      # FK → ledger_masters.id (Supplier Cr)
     cost_center_id = Column(Integer, nullable=True)          # FK → cost_centers.id (e.g. Production)
+
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
 # ---------------------------------------------------------
 # DE-HEADING
 # ---------------------------------------------------------
@@ -112,6 +116,12 @@ class DeHeading(Base):
     email = Column(String)
     company_id = Column(String(50))
 
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+
 # ---------------------------------------------------------
 # GRADING (Matches PostgreSQL exactly)
 # ---------------------------------------------------------
@@ -133,6 +143,12 @@ class Grading(Base):
 
     email = Column(String)
     company_id = Column(String(50))
+
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
 
 
     
@@ -170,6 +186,12 @@ class Peeling(Base):
     email = Column(String(200))
     company_id = Column(String(50))
 
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+
 
 
 # ---------------------------------------------------------
@@ -205,6 +227,11 @@ class Soaking(Base):
     production_for = Column(String(255))
     status = Column(String, default="Pending")
 
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+
 
 # ---------------------------------------------------------
 # PRODUCTION
@@ -237,6 +264,12 @@ class Production(Base):
 
     company_id = Column(String(50))
     email = Column(String)
+
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(String, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
 
 
 

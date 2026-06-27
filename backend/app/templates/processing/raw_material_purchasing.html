@@ -191,6 +191,14 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 }
 #dataTable tbody tr:hover { background: var(--row-hover) !important; cursor: pointer; }
 #dataTable tbody tr.selected-row { background: var(--processing-bg) !important; }
+.cancelled-row {
+  opacity: 0.5 !important;
+  text-decoration: line-through !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+.cancelled-row td {
+  color: var(--danger) !important;
+}
 
 /* 🌟 FRACTIONAL WIDTH COLUMNS MATRIX SYSTEM */
 .w-id { width: 55px; } 
@@ -414,7 +422,7 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
         </thead>
         <tbody id="logTableBody">
             {% for r in today_data %}
-            <tr data-id="{{r.id}}" data-comp="{{r.production_for}}" data-batch="{{r.batch_number}}" data-var="{{r.variety_name}}" onclick="selectCard(this)">
+            <tr data-id="{{r.id}}" data-comp="{{r.production_for}}" data-batch="{{r.batch_number}}" data-var="{{r.variety_name}}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" onclick="selectCard(this)">
                 <td>{{r.id}}</td>
                 <td>{{r.date}}</td>
                 <td style="color:var(--text-muted);">{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
@@ -445,7 +453,7 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
     <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
     <div id="dropdownMenu">
         <div class="menu-item" onclick="editSelected()"><i class="fa-solid fa-pen"></i> Edit</div>
-        <div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+        <div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-ban"></i> Cancel</div>
     </div>
 </div>
 {% endif %}
@@ -563,6 +571,13 @@ function toggleForm() {
 
 function selectCard(el) {
     document.querySelectorAll("#logTableBody tr").forEach(x => x.classList.remove("selected-row"));
+    
+    if (el.classList.contains("cancelled-row")) {
+        selectedId = null;
+        document.getElementById("threeDotsMenu").style.display = "none";
+        return;
+    }
+    
     const id = el.dataset.id;
     
     document.querySelectorAll(`[data-id="${id}"]`).forEach(node => {
@@ -580,21 +595,106 @@ document.getElementById("dotsBtn")?.addEventListener("click",(e)=>{
 });
 
 function editSelected() { if(selectedId) location="/processing/raw_material_purchasing/edit/"+selectedId; }
-function deleteSelected() {
+async function deleteSelected() {
     if(!selectedId) return;
-    Swal.fire({title:'Delete this record permanently?', showCancelButton:true, confirmButtonColor:'#dc2626'}).then(r => {
-        if(r.isConfirmed) {
-            const f = document.createElement('form'); f.method='POST';
-            f.action="/processing/raw_material_purchasing/delete/"+selectedId;
-            document.body.appendChild(f); f.submit();
+    
+    const { value: reason } = await Swal.fire({
+        title: 'Cancel Purchase Record',
+        text: "Please enter the reason for cancellation:",
+        input: 'text',
+        inputPlaceholder: 'Reason for cancellation',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        confirmButtonText: 'Yes, Cancel it!',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'Cancellation reason is required!'
+            }
         }
     });
+
+    if (reason) {
+        const f = document.createElement('form'); 
+        f.method = 'POST';
+        f.action = "/processing/raw_material_purchasing/delete/" + selectedId;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'cancel_reason';
+        input.value = reason;
+        
+        f.appendChild(input);
+        document.body.appendChild(f); 
+        f.submit();
+    }
 }
 
-document.getElementById("purchasingForm").addEventListener("submit", function(e) {
+function getFormDataSummary(formEl) {
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+    
+    const elements = formEl.elements;
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        if (el.name && el.value !== "" && el.type !== "submit" && el.type !== "button" && el.type !== "textarea") {
+            let labelText = "";
+            if (el.id) {
+                const label = formEl.querySelector(`label[for="${el.id}"]`);
+                if (label) labelText = label.innerText.trim();
+            }
+            if (!labelText) {
+                const parentField = el.closest('.field');
+                if (parentField) {
+                    const label = parentField.querySelector('label');
+                    if (label) labelText = label.innerText.trim();
+                }
+            }
+            if (!labelText) {
+                labelText = el.name.replace(/_/g, ' ').toUpperCase();
+            }
+            
+            let valText = el.value;
+            if (el.tagName === 'SELECT') {
+                const opt = el.options[el.selectedIndex];
+                if (opt) valText = opt.text;
+            }
+            
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 6px; font-weight: bold; color: var(--text-muted); width: 40%; text-transform: uppercase;">${labelText}:</td><td style="padding: 6px; color: var(--text); font-weight: bold;">${valText}</td></tr>`;
+        }
+    }
+    
+    summaryHtml += '</table></div>';
+    return summaryHtml;
+}
+
+document.getElementById("purchasingForm").addEventListener("submit", async function(e) {
+    if (this.dataset.confirmed === "true") {
+        return;
+    }
+    
+    e.preventDefault();
+    
     this.querySelectorAll("input[type=text], input:not([type])").forEach(input => {
         input.value = input.value.toUpperCase().trim();
     });
+    
+    const form = this;
+    const summaryHtml = getFormDataSummary(form);
+    
+    const confirmSave = await Swal.fire({
+        title: 'Confirm Save?',
+        html: `Do you want to save the written data card?<br>${summaryHtml}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Yes, Save it!',
+        cancelButtonText: 'Cancel'
+    });
+    
+    if (confirmSave.isConfirmed) {
+        form.dataset.confirmed = "true";
+        form.submit();
+    }
 });
 
 window.onclick = () => {
@@ -603,7 +703,16 @@ window.onclick = () => {
 };
 </script>
 
-{% if message %}<script>Swal.fire({icon:'success', title:'Data Confirmed', timer:1500, showConfirmButton:false});</script>{% endif %}
+{% if message %}
+<script>
+  const msg = "{{ message }}";
+  if (msg.startsWith("❌")) {
+      Swal.fire({icon:'error', title: msg, confirmButtonColor: '#2563eb'});
+  } else {
+      Swal.fire({icon:'success', title: msg, timer:1500, showConfirmButton:false});
+  }
+</script>
+{% endif %}
 
 <script src="/static/js/global-loader.js"></script>
 </body>

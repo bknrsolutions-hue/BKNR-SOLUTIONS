@@ -263,7 +263,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
     <div style="display:flex; align-items:center;">
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-            <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div></div>
+            <div id="dropdownMenu"><div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-ban"></i> Cancel Entry</div></div>
         </div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ENTRY</button>
     </div>
@@ -288,7 +288,7 @@ body{background:var(--bg); color:var(--text); padding-bottom: 40px; overflow-x: 
         </thead>
         <tbody id="mainTableBody">
             {% for r in today_data %}
-            <tr data-id="{{r.id}}" data-batch="{{r.batch_number}}" data-comp="{{r.production_for}}" data-spec="{{r.species}}" data-var="{{r.variety_name}}" data-cnt="{{r.hlso_count}}" data-qty="{{r.peeled_qty}}" data-loc="{{r.peeling_at}}" data-cont="{{r.contractor_name}}" data-amt="{{r.amount}}" onclick="selectRow(this)">
+            <tr data-id="{{r.id}}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" data-batch="{{r.batch_number}}" data-comp="{{r.production_for}}" data-spec="{{r.species}}" data-var="{{r.variety_name}}" data-cnt="{{r.hlso_count}}" data-qty="{{r.peeled_qty}}" data-loc="{{r.peeling_at}}" data-cont="{{r.contractor_name}}" data-amt="{{r.amount}}" onclick="selectRow(this)">
                 <td style="font-weight:700; color:var(--accent);">{{ r.batch_number }}</td>
                 <td style="text-align:left;">{{r.production_for}}</td>
                 <td>{{r.species}}</td>
@@ -525,7 +525,6 @@ function buildFloorTable(type, bodyId) {
 }
 
 function buildTodaySummary() {
-    // 🟢 🔴 FIXED LOGIC: గ్లోబల్ లొకేషన్ 'FLOOR' లేదా 'OTHER FLOOR' యాక్టివ్ గా ఉన్నప్పుడు జావాస్క్రిప్ట్ ఈ ట్యాబ్ బాడీని ఓవర్‌రైట్ చేయకుండా రిటర్న్ అవుతుంది చిన్నా!
     const lF = document.getElementById('locFilter').value.trim().toUpperCase();
     if (lF === "FLOOR" || lF === "OTHER FLOOR") {
         return;
@@ -539,7 +538,7 @@ function buildTodaySummary() {
     todaySummaryBody.innerHTML = "";
     contractorSummaryBody.innerHTML = "";
     
-    const rows = [...document.querySelectorAll('#mainTableBody tr')].filter(r => r.style.display !== "none");
+    const rows = [...document.querySelectorAll('#mainTableBody tr')].filter(r => r.style.display !== "none" && !r.classList.contains("cancelled-row"));
     let todayTree = {}; let contractorTree = {};
     
     rows.forEach(r => {
@@ -735,18 +734,73 @@ async function loadRate(){
     } catch(e) { console.error("Rate Fetch Error:", e); }
 }
 
+function getFormDataSummary(formEl) {
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+    
+    const elements = formEl.elements;
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        if (el.name && el.value !== "" && el.type !== "submit" && el.type !== "button" && el.type !== "textarea") {
+            let labelText = "";
+            if (el.id) {
+                const label = formEl.querySelector(`label[for="${el.id}"]`);
+                if (label) labelText = label.innerText.trim();
+            }
+            if (!labelText) {
+                const parentField = el.closest('.field');
+                if (parentField) {
+                    const label = parentField.querySelector('label');
+                    if (label) labelText = label.innerText.trim();
+                }
+            }
+            if (!labelText) {
+                labelText = el.name.replace(/_/g, ' ').toUpperCase();
+            }
+            
+            let valText = el.value;
+            if (el.tagName === 'SELECT') {
+                const opt = el.options[el.selectedIndex];
+                if (opt) valText = opt.text;
+            }
+            
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 6px; font-weight: bold; color: var(--text-muted); width: 40%; text-transform: uppercase;">${labelText}:</td><td style="padding: 6px; color: var(--text); font-weight: bold;">${valText}</td></tr>`;
+        }
+    }
+    
+    summaryHtml += '</table></div>';
+    return summaryHtml;
+}
+
 document.getElementById("peelingForm").onsubmit = async function(e) {
     e.preventDefault();
-    const btn = document.getElementById("submitBtn");
     const stock = parseFloat(document.getElementById("floor_display").innerText) || 0;
     const inputQty = parseFloat(document.getElementById("f_qty_in").value) || 0;
     if(inputQty > (stock + 0.1)) {
         Swal.fire('Stock Alert', `Available floor stock: ${stock} KG!`, 'error');
         return;
     }
+    
+    const form = this;
+    const summaryHtml = getFormDataSummary(form);
+    
+    const confirmSave = await Swal.fire({
+        title: 'Confirm Save?',
+        html: `Do you want to save the written data card?<br>${summaryHtml}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Yes, Save it!',
+        cancelButtonText: 'Cancel'
+    });
+    if (!confirmSave.isConfirmed) {
+        return;
+    }
+
+    const btn = document.getElementById("submitBtn");
     btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
     try {
-        let r = await fetch('/processing/peeling', { method: "POST", body: new FormData(this) });
+        let r = await fetch('/processing/peeling', { method: "POST", body: new FormData(form) });
         if(r.ok) {
             Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => location.reload());
         } else {
@@ -758,6 +812,11 @@ document.getElementById("peelingForm").onsubmit = async function(e) {
 
 function selectRow(tr) {
     document.querySelectorAll('#mainTableBody tr').forEach(r=>r.classList.remove('selected-row'));
+    if (tr.classList.contains('cancelled-row')) {
+        selectedRowId = null;
+        document.getElementById('threeDotsMenu').style.display = 'none';
+        return;
+    }
     tr.classList.add('selected-row');
     selectedRowId = tr.dataset.id;
     document.getElementById('threeDotsMenu').style.display = 'block';
@@ -769,11 +828,40 @@ document.getElementById("dotsBtn").onclick = (e) => {
     m.style.display = (m.style.display === "block") ? "none" : "block"; 
 };
 
-function deleteSelected() {
+async function deleteSelected() {
     if(!selectedRowId) return;
-    Swal.fire({ title: 'Delete?', text: "Confirm deletion.", icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)' }).then((res) => { 
-        if(res.isConfirmed) fetch(`/processing/peeling/delete/${selectedRowId}`, {method:'POST'}).then(()=>location.reload()); 
+    const { value: reason } = await Swal.fire({
+        title: 'Cancel Entry',
+        text: 'Please enter the cancellation reason:',
+        input: 'text',
+        inputPlaceholder: 'Reason for cancellation',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        confirmButtonText: 'Yes, Cancel it!',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'Cancellation reason is required!';
+            }
+        }
     });
+    if(reason) {
+        try {
+            const formData = new FormData();
+            formData.append("cancel_reason", reason);
+            const resp = await fetch(`/processing/peeling/delete/${selectedRowId}`, {
+                method: 'POST',
+                body: formData
+            });
+            const resData = await resp.json();
+            if(resp.ok && resData.status === 'ok') {
+                location.reload();
+            } else {
+                throw new Error(resData.error || "Cancellation failed");
+            }
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
 }
 
 function openModal() { 

@@ -410,6 +410,13 @@ button.main-btn:hover { background: var(--btn-hover); box-shadow: 0 4px 12px rgb
                   <label class="item-label"><input type="checkbox" name="access" value="periodic_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-calendar-days"></i> Periodic Summary <span class="badge-tag">Time</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="batch_summary" onchange="updateSelectedCount()"><i class="fa-solid fa-rectangle-list"></i> Batch Summary <span class="badge-tag">Run</span></label>
                 </div>
+                <div class="category-title"><i class="fa-solid fa-user-shield"></i> Report Security & Actions</div>
+                <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="report_edit" onchange="updateSelectedCount()"><i class="fa-solid fa-file-pen"></i> Edit Reports <span class="badge-tag">Action</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="report_delete" onchange="updateSelectedCount()"><i class="fa-solid fa-file-circle-minus"></i> Delete Reports <span class="badge-tag">Action</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="report_print" onchange="updateSelectedCount()"><i class="fa-solid fa-print"></i> Print Reports / Bills <span class="badge-tag">Action</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="report_export" onchange="updateSelectedCount()"><i class="fa-solid fa-file-excel"></i> Export Reports (Excel/PDF) <span class="badge-tag">Action</span></label>
+                </div>
               </div>
             </div>
 

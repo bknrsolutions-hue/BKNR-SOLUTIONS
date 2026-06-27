@@ -17,6 +17,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -204,19 +205,29 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
+            {% if can_edit %}
             <div onclick="enableEdit()">✏️ Edit Selected Row</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
+            {% endif %}
             <div onclick="toggleAudit()">📜 Full Audit History</div>
+            {% if can_print or can_export %}
             <hr>
+            {% if can_print %}
             <div onclick="askConfirm('print_table')">🖨 Print Table</div>
             <div onclick="askConfirm('print_summary')">📋 Print Summary</div>
+            {% endif %}
+            {% if can_export %}
             <hr>
             <div onclick="askConfirm('excel_table')">📊 Export Excel (Table)</div>
             <div onclick="askConfirm('excel_summary')">📈 Export Excel (Summary)</div>
             <div onclick="askConfirm('pdf_table')">📄 Export PDF (Table)</div>
             <div onclick="askConfirm('pdf_summary')">📑 Export PDF (Summary)</div>
+            {% endif %}
+            {% endif %}
+            {% if can_delete %}
             <hr>
             <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -410,7 +421,7 @@ function enableEdit() {
             
             let htmlStr = `
                 <div class="searchable-dropdown-container">
-                    <input class="edit-input dropdown-search-input" data-field="${field}" value="${val}" autocomplete="off" oninput="filterInlineDropdown(this)">
+                    <input class="edit-input dropdown-search-input" data-field="${field}" data-orig="${val}" value="${val}" autocomplete="off" oninput="filterInlineDropdown(this)">
                     <div class="searchable-dropdown-list">
                         ${opts.map(o => `<div class="searchable-dropdown-item" onclick="selectInlineValue(this, '${o}')">${o}</div>`).join('')}
                     </div>
@@ -430,7 +441,7 @@ function enableEdit() {
                 listEl.style.display = 'block';
             });
         } else { 
-            td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" value="${val}">`; 
+            td.innerHTML = `<input class="edit-input simple-field" data-field="${field}" data-orig="${val}" value="${val}">`; 
         }
     });
     
@@ -491,22 +502,73 @@ function toggleMenu(e) {
 async function saveEdit() {
     if(!selectedRow) return;
     const payload = { id: selectedRow.dataset.id };
+    let changed = false;
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+    
     const inputs = selectedRow.querySelectorAll("input.edit-input");
     if(!inputs.length) return alert("Enable Edit mode first!");
-    inputs.forEach(i => { payload[i.dataset.field] = i.value; });
     
+    inputs.forEach(i => {
+        const val = i.value;
+        const orig = i.dataset.orig || "";
+        if(val !== orig) {
+            const fieldName = (i.dataset.field || i.parentElement.dataset.field || '').replace(/_/g, ' ').toUpperCase();
+            payload[i.dataset.field] = val;
+            changed = true;
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 4px; font-weight: bold; color: var(--text-muted);">${fieldName}:</td><td style="padding: 4px; color: var(--text);"><span style="text-decoration: line-through; color: var(--danger);">${orig}</span> &rarr; <span style="color: var(--success); font-weight: bold;">${val}</span></td></tr>`;
+        } else {
+            payload[i.dataset.field] = val;
+        }
+    });
+    summaryHtml += '</table></div>';
+    
+    if(!changed) return location.reload();
+    
+    const confirmSave = await Swal.fire({
+        title: 'Confirm Changes?',
+        html: `Do you want to save the written data card?<br>${summaryHtml}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Yes, Save it!',
+        cancelButtonText: 'Cancel'
+    });
+    if (!confirmSave.isConfirmed) {
+        return;
+    }
+
     const res = await fetch(`${baseUrl}/update`, { 
         method:"POST", 
         headers:{"Content-Type":"application/json"}, 
         body:JSON.stringify(payload) 
     });
-    if(res.ok) location.reload(); else alert("Error updating row.");
+    if(res.ok) {
+        Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => location.reload());
+    } else {
+        Swal.fire('Error', 'Update Failed!', 'error');
+    }
 }
 
 async function deleteRowAction() {
     if(!selectedRow) return;
+    const confirmDelete = await Swal.fire({
+        title: 'Confirm Delete?',
+        text: 'Are you sure you want to delete this record permanently?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Yes, Delete it!',
+        cancelButtonText: 'Cancel'
+    });
+    if (!confirmDelete.isConfirmed) return;
+
     const res = await fetch(`${baseUrl}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
-    if(res.ok) location.reload();
+    if(res.ok) {
+        Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => location.reload());
+    } else {
+        Swal.fire('Error', 'Delete Failed!', 'error');
+    }
 }
 
 // ⚙️ DOM elements mapped dynamically

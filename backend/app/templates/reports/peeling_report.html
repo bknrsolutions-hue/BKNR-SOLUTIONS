@@ -17,6 +17,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -275,22 +276,30 @@ tfoot td{
     <div class="menu-box">
         <div class="dots" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
-            {% if is_admin %}
+            {% if can_edit %}
             <div onclick="enableEdit()">✏️ Edit Selected Row</div>
             <div onclick="saveEdit()">💾 Save Changes</div>
             {% endif %}
             <div onclick="toggleAudit()">📜 View Audit History</div>
+            {% if can_print or can_export %}
             <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
             <b>📋 Export Options</b>
+            {% if can_print %}
             <div onclick="executeSystemPrint()">🖨 Print Current View</div>
+            {% endif %}
+            {% if can_export %}
             <div onclick="askConfirm('pdf_table')">📄 Export Table PDF</div>
             <div onclick="askConfirm('excel_table')">📊 Export Excel</div>
+            {% endif %}
+            {% endif %}
+            {% if can_print %}
             <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
             <b>🧾 Monthly Bill</b>
             <div onclick="askConfirm('print_bill')">🖨 Print Bill</div>
             <div onclick="askConfirm('pdf_bill')">📩 Download Bill PDF</div>
+            {% endif %}
+            {% if can_delete %}
             <hr style="margin:2px 0; border:0; border-top:1px solid #f1f5f9;">
-            {% if is_admin %}
             <div onclick="askConfirm('delete_row')" style="color:red">🗑 Delete Record</div>
             {% endif %}
         </div>
@@ -524,8 +533,22 @@ document.getElementById("btnYes").onclick = async () => {
         window.location.href = `${baseUrl}/contractor_monthly_bill?month=${month}&contractor=${encodeURIComponent(contractor)}&ids=${ids}&download=true`;
     }
     else if (currentAction === 'delete_row' && selectedRow) {
+        const confirmDelete = await Swal.fire({
+            title: 'Confirm Delete?',
+            text: 'Are you sure you want to delete this record permanently?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'Cancel'
+        });
+        if (!confirmDelete.isConfirmed) return;
         const res = await fetch(`${baseUrl}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
-        if(res.ok) location.reload();
+        if(res.ok) {
+            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', 'Delete Failed!', 'error');
+        }
     }
 };
 
@@ -645,10 +668,39 @@ async function saveEdit() {
     if(!inputs.length) return alert("Enable Edit mode first!");
     
     const payload = { id: selectedRow.dataset.id };
+    let changed = false;
+    let summaryHtml = '<div style="text-align: left; font-size: 11px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);">';
+    summaryHtml += '<table style="width: 100%; border-collapse: collapse;">';
+
     inputs.forEach(i => {
+        const val = i.value;
+        const orig = i.dataset.orig || "";
         const fName = i.dataset.field || i.parentElement.dataset.field;
-        payload[fName] = i.value;
+        if(val !== orig) {
+            const fieldLabel = fName.replace(/_/g, ' ').toUpperCase();
+            payload[fName] = val;
+            changed = true;
+            summaryHtml += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 4px; font-weight: bold; color: var(--text-muted);">${fieldLabel}:</td><td style="padding: 4px; color: var(--text);"><span style="text-decoration: line-through; color: var(--danger);">${orig}</span> &rarr; <span style="color: var(--success); font-weight: bold;">${val}</span></td></tr>`;
+        } else {
+            payload[fName] = val;
+        }
     });
+    summaryHtml += '</table></div>';
+    
+    if(!changed) return location.reload();
+    
+    const confirmSave = await Swal.fire({
+        title: 'Confirm Changes?',
+        html: `Do you want to save the written data card?<br>${summaryHtml}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Yes, Save it!',
+        cancelButtonText: 'Cancel'
+    });
+    if (!confirmSave.isConfirmed) {
+        return;
+    }
     
     try {
         const res = await fetch(`${baseUrl}/update`, { 
@@ -662,9 +714,11 @@ async function saveEdit() {
                  selectedRow.querySelector(".target-val").innerText = data.target_yield + "%";
                  selectedRow.querySelector(".yield-cell").dataset.target = data.target_yield;
             }
-            location.reload();
+            Swal.fire({ icon: 'success', title: 'Saved!', timer: 800, showConfirmButton: false }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', 'Save Failed!', 'error');
         }
-    } catch(e) { alert("Save failed!"); }
+    } catch(e) { Swal.fire('Error', 'Save failed!', 'error'); }
 }
 
 function executeSystemPrint() {

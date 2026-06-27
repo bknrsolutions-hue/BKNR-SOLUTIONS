@@ -104,7 +104,9 @@ def report_page(
             .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
             .filter(
                 RawMaterialPurchasing.company_id == comp_code,
+                RawMaterialPurchasing.is_cancelled != True,
                 GateEntry.company_id == comp_code,
+                GateEntry.is_cancelled != True,
                 GateEntry.date >= start_date,
                 GateEntry.date <= end_date
             )
@@ -143,6 +145,14 @@ def report_page(
     context["is_admin"] = role == "admin"
     context["datetime"] = datetime
 
+    from app.utils.report_permissions import check_report_permission
+    context.update({
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+    })
+
     return templates.TemplateResponse(
         request=request,
         name="reports/raw_material_purchasing_report.html",
@@ -174,6 +184,8 @@ def fetch_all_audit_logs(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/update")
 def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
     comp_code = request.session.get("company_code")
     edited_by = request.session.get("email")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
@@ -199,6 +211,8 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
 
 @router.post("/delete")
 def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     comp_code = request.session.get("company_code")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
     if row:
@@ -224,12 +238,21 @@ def export_rmp_excel(
     production_for: str = Query(None),
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     comp_code = request.session.get("company_code")
     
     # 🟢 FIX: Avoid parameter collision with explicit global_ prefixes
     global_production_for, global_location = get_global_filters(request)
     
-    query = db.query(RawMaterialPurchasing).join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number).filter(RawMaterialPurchasing.company_id == comp_code)
+    query = db.query(RawMaterialPurchasing).join(
+        GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
+    ).filter(
+        RawMaterialPurchasing.company_id == comp_code,
+        RawMaterialPurchasing.is_cancelled != True,
+        GateEntry.company_id == comp_code,
+        GateEntry.is_cancelled != True
+    )
     
     if global_production_for:
         query = query.filter(RawMaterialPurchasing.production_for == global_production_for)
@@ -279,6 +302,9 @@ def print_table_view(
     production_for: str = Query(None),
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission, check_report_permission
+    if not (check_report_permission(request, "report_print") or check_report_permission(request, "report_export")):
+        enforce_report_permission(request, "report_print")
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=303)
@@ -286,12 +312,13 @@ def print_table_view(
     # 🟢 FIX: In-memory evaluation tracking via global contextual scopes
     global_production_for, global_location = get_global_filters(request)
 
-    # Base Join Rules Structure Setup Enforced
     q = db.query(RawMaterialPurchasing).join(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
     ).filter(
         RawMaterialPurchasing.company_id == comp_code,
-        GateEntry.company_id == comp_code
+        RawMaterialPurchasing.is_cancelled != True,
+        GateEntry.company_id == comp_code,
+        GateEntry.is_cancelled != True
     )
     
     if global_production_for:
@@ -345,12 +372,18 @@ def print_table_view(
 
 @router.get("/print_summary", response_class=HTMLResponse)
 def print_summary_view(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission, check_report_permission
+    if not (check_report_permission(request, "report_print") or check_report_permission(request, "report_export")):
+        enforce_report_permission(request, "report_print")
     comp_code = request.session.get("company_code")
     
     # 🟢 FIX: In-memory evaluation tracking via global contextual scopes
     global_production_for, global_location = get_global_filters(request)
     
-    q = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == comp_code)
+    q = db.query(RawMaterialPurchasing).filter(
+        RawMaterialPurchasing.company_id == comp_code,
+        RawMaterialPurchasing.is_cancelled != True
+    )
     
     if global_production_for:
         q = q.filter(RawMaterialPurchasing.production_for == global_production_for)
@@ -386,6 +419,8 @@ async def export_rmp_pdf(
     type: str = Query("table"), 
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     if type == "summary":
         resp = print_summary_view(request, ids, db)
     else:

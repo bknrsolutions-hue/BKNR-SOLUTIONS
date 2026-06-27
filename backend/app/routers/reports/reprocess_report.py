@@ -68,17 +68,23 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
             # 4. COSTING LOGIC (Keep for Fallback)
             for b_num in unique_batches:
                 total_rmp_amt = db.query(func.sum(RawMaterialPurchasing.amount)).filter(
-                    RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == b_num
+                    RawMaterialPurchasing.company_id == comp_code,
+                    RawMaterialPurchasing.batch_number == b_num,
+                    RawMaterialPurchasing.is_cancelled != True
                 ).scalar() or 0
                 
                 rmp_avg_rate = db.query(func.avg(RawMaterialPurchasing.rate_per_kg)).filter(
-                    RawMaterialPurchasing.batch_number == b_num, RawMaterialPurchasing.company_id == comp_code
+                    RawMaterialPurchasing.batch_number == b_num,
+                    RawMaterialPurchasing.company_id == comp_code,
+                    RawMaterialPurchasing.is_cancelled != True
                 ).scalar() or 0
                 
                 total_floor_val = 0
                 combos = db.query(RawMaterialPurchasing.species, RawMaterialPurchasing.variety_name, 
                                 RawMaterialPurchasing.count, RawMaterialPurchasing.peeling_at).filter(
-                                    RawMaterialPurchasing.batch_number == b_num, RawMaterialPurchasing.company_id == comp_code
+                                    RawMaterialPurchasing.batch_number == b_num,
+                                    RawMaterialPurchasing.company_id == comp_code,
+                                    RawMaterialPurchasing.is_cancelled != True
                                 ).distinct().all()
 
                 for sp, vr, ct, loc in combos:

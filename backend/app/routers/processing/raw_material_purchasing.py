@@ -42,7 +42,6 @@ def get_today_range():
 def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
     start, _ = get_today_range()
     
-    # Base Raw Material Purchased Query Formulation
     purch_q = db.query(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.count,
@@ -50,7 +49,8 @@ def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations
     ).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.date >= start.date(),
-        func.upper(RawMaterialPurchasing.variety_name) == 'HOSO'
+        func.upper(RawMaterialPurchasing.variety_name) == 'HOSO',
+        RawMaterialPurchasing.is_cancelled == False
     )
     
     # Apply Global Filter layer on received today calculations
@@ -168,7 +168,10 @@ def get_cached_hoso_summary_data(db: Session, company_code: str, user_allowed_lo
 
 def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
     def build():
-        gate_q = db.query(GateEntry).filter(GateEntry.company_id == company_code)
+        gate_q = db.query(GateEntry).filter(
+            GateEntry.company_id == company_code,
+            GateEntry.is_cancelled == False
+        )
         if user_allowed_locations:
             allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
             if allowed_clean:
@@ -367,17 +370,52 @@ def update_rmp(
     request.session["message"] = "✔ Updated Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
+from app.utils.trace_lock import is_batch_used_downstream_from_rmp
+
 @router.post("/raw_material_purchasing/delete/{id}")
-def delete_rmp(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_rmp(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     comp_code = request.session.get("company_code")
-    entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
+    if not comp_code:
+        return RedirectResponse("/auth/login", status_code=303)
+
+    entry = db.query(RawMaterialPurchasing).filter(
+        RawMaterialPurchasing.id == id,
+        RawMaterialPurchasing.company_id == comp_code
+    ).first()
+
     if entry:
+        if entry.is_cancelled:
+            request.session["message"] = "❌ Already cancelled!"
+            return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+
         if is_edit_locked(request, entry.date):
             request.session["message"] = f"❌ {edit_lock_message()}"
             return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+
+        # 🔒 Downstream Traceability Check
+        is_used, stage = is_batch_used_downstream_from_rmp(db, entry.batch_number, entry.company_id)
+        if is_used:
+            request.session["message"] = f"❌ Cannot cancel: Batch '{entry.batch_number}' is already processed in {stage}!"
+            return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+
         batch_to_refresh = entry.batch_number
-        db.delete(entry)
+        
+        # Soft delete / Cancel
+        entry.is_cancelled = True
+        entry.status = "Cancelled"
+        entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+        entry.cancelled_by = request.session.get("email")
+        entry.cancelled_at = ist_now()
+
         db.commit()
         refresh_floor_balance(db, comp_code, batch_number=batch_to_refresh)
-    request.session["message"] = "🗑 Deleted Successfully!"
+        request.session["message"] = "✔ Cancelled Successfully!"
+    else:
+        request.session["message"] = "❌ Record not found!"
+
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)

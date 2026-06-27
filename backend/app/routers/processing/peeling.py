@@ -525,19 +525,36 @@ def save_peeling(
     return JSONResponse({"message": "Saved successfully"}) 
 
 
-# =====================================================
-# ACTION: DELETE PEELING
-# =====================================================
+from app.utils.trace_lock import is_batch_used_downstream_from_peeling
+
 @router.post("/peeling/delete/{id}")
-def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_peeling(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     company_id = request.session.get("company_code")
     email = request.session.get("email")
+    if not company_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     row = db.query(Peeling).filter(Peeling.company_id == company_id, Peeling.id == id).with_for_update().first()
     if not row:
         return JSONResponse({"error": "Record not found"}, status_code=404)
+
+    if row.is_cancelled:
+        return JSONResponse({"error": "This entry is already cancelled!"}, status_code=400)
+
     if is_edit_locked(request, row.date):
         return JSONResponse({"error": edit_lock_message()}, status_code=403)
+
+    # 🔒 Downstream Traceability Check
+    is_used, stage = is_batch_used_downstream_from_peeling(db, row.batch_number, row.company_id)
+    if is_used:
+        return JSONResponse({
+            "error": f"❌ Cannot cancel: Batch '{row.batch_number}' is already processed in {stage}!"
+        }, status_code=400)
 
     clean_loc = "FLOOR" if not row.peeling_at or row.peeling_at.strip() == "" else row.peeling_at.strip().upper()
 
@@ -567,6 +584,12 @@ def delete_peeling(id: int, request: Request, db: Session = Depends(get_db)):
         row.peeling_at, row.production_for, qty_delta=-row.peeled_qty, email=email
     )
 
-    db.delete(row)
+    # Soft Delete / Cancel
+    row.is_cancelled = True
+    row.status = "Cancelled"
+    row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+    row.cancelled_by = email
+    row.cancelled_at = ist_now()
+
     db.commit()
     return JSONResponse({"status": "ok"})

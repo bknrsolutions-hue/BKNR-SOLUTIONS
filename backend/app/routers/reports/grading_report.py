@@ -43,7 +43,9 @@ def get_fin_year(date_val):
 # ============================================================================
 def allow_grading(request: Request):
     role = request.session.get("role", "admin")
-    if role not in ("admin", "viewer"):
+    permissions_str = request.session.get("permissions", "")
+    allowed_routes = [p.strip() for p in permissions_str.split(",") if p.strip()]
+    if role != "admin" and "grading_report" not in allowed_routes:
         raise HTTPException(status_code=403, detail="Access Denied")
 
 # ============================================================================
@@ -62,7 +64,10 @@ def grading_report(
         return RedirectResponse("/auth/login", status_code=303)
 
     # 1. Base Queries setup for unique filter generation (Universal Filter Core Applied)
-    grading_base_query = db.query(Grading).filter(Grading.company_id == company_id)
+    grading_base_query = db.query(Grading).filter(
+        Grading.company_id == company_id,
+        Grading.is_cancelled != True
+    )
     
     if production_for:
         grading_base_query = grading_base_query.filter(Grading.production_for == production_for)
@@ -76,7 +81,10 @@ def grading_report(
 
     # CRITICAL CHANGE: Only process and fetch data if 'fy' parameter is explicitly provided
     if fy:
-        deheading_base_query = db.query(DeHeading).filter(DeHeading.company_id == company_id)
+        deheading_base_query = db.query(DeHeading).filter(
+            DeHeading.company_id == company_id,
+            DeHeading.is_cancelled != True
+        )
 
         if production_for:
             deheading_base_query = deheading_base_query.filter(DeHeading.production_for == production_for)
@@ -193,6 +201,7 @@ def grading_report(
     # Generate unique list of Financial Years from database entries
     unique_fy_years = sorted(list({str(get_fin_year(r.date)) for r in all_grading_records if r.date}), reverse=True)
 
+    from app.utils.report_permissions import check_report_permission
     return templates.TemplateResponse(
         request=request,
         name="reports/grading_report.html",
@@ -205,7 +214,11 @@ def grading_report(
             "species_list": get_unique_options("species"),
             "varieties": get_unique_options("variety_name"),
             "counts": get_unique_options("hoso_count"),
-            "datetime": datetime
+            "datetime": datetime,
+            "can_edit": check_report_permission(request, "report_edit"),
+            "can_delete": check_report_permission(request, "report_delete"),
+            "can_print": check_report_permission(request, "report_print"),
+            "can_export": check_report_permission(request, "report_export"),
         }
     )
 
@@ -226,16 +239,26 @@ def grading_details(
     if not company_id: return []
 
     if source == "all":
-        data = db.query(Grading).filter(Grading.company_id == company_id).order_by(desc(Grading.date), desc(Grading.time)).all()
+        data = db.query(Grading).filter(
+            Grading.company_id == company_id,
+            Grading.is_cancelled != True
+        ).order_by(desc(Grading.date), desc(Grading.time)).all()
     elif source == "hoso":
         data = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id, DeHeading.batch_number == batch,
-            DeHeading.species == species, DeHeading.hoso_count == hoso_count
+            DeHeading.company_id == company_id, 
+            DeHeading.batch_number == batch,
+            DeHeading.species == species, 
+            DeHeading.hoso_count == hoso_count,
+            DeHeading.is_cancelled != True
         ).all()
     else:
         data = db.query(Grading).filter(
-            Grading.company_id == company_id, Grading.batch_number == batch,
-            Grading.species == species, Grading.hoso_count == hoso_count, Grading.variety_name == variety
+            Grading.company_id == company_id, 
+            Grading.batch_number == batch,
+            Grading.species == species, 
+            Grading.hoso_count == hoso_count, 
+            Grading.variety_name == variety,
+            Grading.is_cancelled != True
         ).all()
 
     result = []
@@ -251,6 +274,8 @@ def grading_details(
 # ============================================================
 @router.post("/update")
 async def update_grading(request: Request, db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
     data = await request.json()
@@ -290,6 +315,8 @@ async def update_grading(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.post("/delete")
 async def delete_grading(request: Request, db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
     data = await request.json()
@@ -333,13 +360,16 @@ def get_grading_audits(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.get("/export_excel")
 def export_excel(request: Request, db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     
     # 🟢 Mapped and forced global criteria evaluation inside spreadsheet compiler
     production_for, location = get_global_filters(request)
 
     query = db.query(Grading).filter(
-        Grading.company_id == company_id
+        Grading.company_id == company_id,
+        Grading.is_cancelled != True
     )
 
     if production_for:

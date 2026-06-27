@@ -463,20 +463,47 @@ def sync_old_data(request: Request, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "All historical data synced successfully!"}
 
-# -----------------------------------------------------
-# POST: DELETE 
-# -----------------------------------------------------
+from app.utils.trace_lock import is_batch_used_downstream_from_grading
+
 @router.post("/grading/delete/{id}")
-def delete_grading(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_grading(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     entry = db.query(Grading).filter(Grading.id == id, Grading.company_id == company_code).first()
-    if entry:
-        if is_edit_locked(request, entry.date):
-            return JSONResponse({"status": "error", "message": edit_lock_message()}, status_code=403)
-        batch_to_refresh = entry.batch_number
-        rollback_grading_consumption(db, entry)
-        db.delete(entry)
-        db.commit()
-        refresh_floor_balance(db, company_code, batch_number=batch_to_refresh)
+    if not entry:
+        return JSONResponse({"error": "Record not found"}, status_code=404)
+
+    if entry.is_cancelled:
+        return JSONResponse({"error": "This entry is already cancelled!"}, status_code=400)
+
+    if is_edit_locked(request, entry.date):
+        return JSONResponse({"status": "error", "message": edit_lock_message()}, status_code=403)
+
+    # 🔒 Downstream Traceability Check
+    is_used, stage = is_batch_used_downstream_from_grading(db, entry.batch_number, entry.company_id)
+    if is_used:
+        return JSONResponse({
+            "error": f"❌ Cannot cancel: Batch '{entry.batch_number}' is already processed in {stage}!"
+        }, status_code=400)
+
+    batch_to_refresh = entry.batch_number
+    rollback_grading_consumption(db, entry)
+
+    # Soft Delete / Cancel
+    entry.is_cancelled = True
+    entry.status = "Cancelled"
+    entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+    entry.cancelled_by = email
+    entry.cancelled_at = ist_now()
+
+    db.commit()
+    refresh_floor_balance(db, company_code, batch_number=batch_to_refresh)
     return JSONResponse({"status": "ok"})

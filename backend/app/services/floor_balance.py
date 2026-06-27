@@ -92,6 +92,8 @@ def get_floor_balance(
 
     def apply_filters(query_obj, model_obj, is_repro=False):
         q = query_obj.filter(model_obj.company_id == company_id)
+        if hasattr(model_obj, 'is_cancelled'):
+            q = q.filter(model_obj.is_cancelled != True)
         if is_repro:
             q = q.filter(
                 model_obj.production_at == location,
@@ -154,7 +156,8 @@ def get_floor_balance(
             Peeling.batch_number == batch,
             Peeling.peeling_at == location,
             Peeling.species == species,
-            func.trim(cast(Peeling.hlso_count, String)) == clean_count
+            func.trim(cast(Peeling.hlso_count, String)) == clean_count,
+            Peeling.is_cancelled != True
         )
         if production_for and production_for != "N/A":
             p_q = p_q.filter(Peeling.production_for == production_for)
@@ -194,6 +197,8 @@ def get_floor_movement_after_snapshot(
 
     def apply_shift_filters(query_obj, model_obj, is_repro=False):
         q = query_obj.filter(model_obj.company_id == company_id)
+        if hasattr(model_obj, 'is_cancelled'):
+            q = q.filter(model_obj.is_cancelled != True)
         
         # 🟢 FIX 1 & 2: Handles multi-day offsets + standard string sorting matching validation matrix
         if hasattr(model_obj, 'date') and hasattr(model_obj, 'time'):
@@ -268,7 +273,8 @@ def get_floor_movement_after_snapshot(
             Peeling.batch_number == batch,
             Peeling.peeling_at == location,
             Peeling.species == species,
-            func.trim(cast(Peeling.hlso_count, String)) == clean_count
+            func.trim(cast(Peeling.hlso_count, String)) == clean_count,
+            Peeling.is_cancelled != True
         ).filter(
             or_(
                 Peeling.date > snapshot_date_str,

@@ -48,11 +48,11 @@ async def soaking_main_report(
         start_year = int(fy)
         end_year = start_year + 1
         
-        # 🟢 UPDATED: Filter rows specifically using global parameters and FY range
         query = db.query(Soaking).filter(
             Soaking.company_id == company_id,
             Soaking.date >= f"{start_year}-04-01",
-            Soaking.date <= f"{end_year}-03-31"
+            Soaking.date <= f"{end_year}-03-31",
+            Soaking.is_cancelled != True
         )
 
         if production_for:
@@ -68,6 +68,7 @@ async def soaking_main_report(
     locations = sorted(list({r.production_at for r in rows if r.production_at}))
     batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
 
+    from app.utils.report_permissions import check_report_permission
     return templates.TemplateResponse(
         request=request,
         name="reports/soaking_report.html",
@@ -80,6 +81,10 @@ async def soaking_main_report(
             "locations": locations,
             "batches": batches,
             "is_admin": role == "admin",
+            "can_edit": check_report_permission(request, "report_edit"),
+            "can_delete": check_report_permission(request, "report_delete"),
+            "can_print": check_report_permission(request, "report_print"),
+            "can_export": check_report_permission(request, "report_export"),
             "datetime": datetime 
         }
     )
@@ -94,11 +99,10 @@ async def update_soaking_row(
     db: Session = Depends(get_db)
 ):
     company_id = str(request.session.get("company_code"))
-    role = request.session.get("role")
     edited_by = request.session.get("email")
 
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
 
     row = db.query(Soaking).filter(
         Soaking.id == payload.get("id"), 
@@ -185,11 +189,16 @@ async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db))
 @router.get("/export_excel")
 def soaking_export_excel(request: Request, ids: str = Query(None), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     
     # 🟢 Force evaluate global contextual filter arrays inside Excel Compiler
     production_for, location = get_global_filters(request)
     
-    query = db.query(Soaking).filter(Soaking.company_id == company_id)
+    query = db.query(Soaking).filter(
+        Soaking.company_id == company_id,
+        Soaking.is_cancelled != True
+    )
     
     if production_for:
         query = query.filter(Soaking.production_for == production_for)
@@ -236,10 +245,8 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
 @router.post("/delete")
 async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    role = request.session.get("role")
-    
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
         
     row = db.query(Soaking).filter(
         Soaking.id == payload.get("id"), 

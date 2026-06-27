@@ -319,21 +319,41 @@ async def update_entry(
     return JSONResponse({"status": "success", "message": "Gate Entry Updated Successfully!"})
 
 
-# =========================================================
-# DELETE ENTRY
-# =========================================================
+from app.utils.trace_lock import is_batch_used_in_rmp
+
 @router.post("/gate_entry/delete/{id}")
-def delete_entry(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_entry(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     comp = request.session.get("company_code")
     if not comp:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     row = db.query(GateEntry).filter(GateEntry.company_id == comp, GateEntry.id == id).first()
-    if row:
-        if is_edit_locked(request, row.date):
-            return JSONResponse({"error": edit_lock_message()}, status_code=403)
-        db.delete(row)
-        db.commit()
-        return JSONResponse({"status": "success", "message": "Entry Deleted Successfully"})
+    if not row:
+        return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
 
-    return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+    if row.is_cancelled:
+        return JSONResponse({"error": "This entry is already cancelled!"}, status_code=400)
+
+    if is_edit_locked(request, row.date):
+        return JSONResponse({"error": edit_lock_message()}, status_code=403)
+
+    # 🔒 Traceability Check: Block cancellation if batch is already used in RMP
+    if is_batch_used_in_rmp(db, row.batch_number, row.company_id):
+        return JSONResponse({
+            "error": f"❌ Cannot cancel: Batch '{row.batch_number}' has already been processed in Raw Material Purchasing (RMP)!"
+        }, status_code=400)
+
+    # Perform Soft Delete / Cancellation
+    row.is_cancelled = True
+    row.status = "Cancelled"
+    row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+    row.cancelled_by = request.session.get("email")
+    row.cancelled_at = ist_now()
+
+    db.commit()
+    return JSONResponse({"status": "success", "message": "Entry Cancelled Successfully"})

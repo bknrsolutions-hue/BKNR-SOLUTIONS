@@ -576,24 +576,38 @@ def update_production(
         return RedirectResponse("/processing/production", status_code=303)
 
 
-# -----------------------------------------------------
-# DELETE PRODUCTION
-# -----------------------------------------------------
 @router.post("/production/delete/{id}")
-def delete_production(id: int, request: Request, db: Session = Depends(get_db)):
+def delete_production(
+    id: int,
+    request: Request,
+    cancel_reason: str = Form(None),
+    db: Session = Depends(get_db)
+):
     try:
         company_code = request.session.get("company_code")
+        email = request.session.get("email")
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
         
         entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
         if entry:
+            if entry.is_cancelled:
+                request.session["message"] = "❌ Already cancelled!"
+                return RedirectResponse("/processing/production", status_code=303)
+
             if is_edit_locked(request, entry.date):
                 request.session["message"] = f"❌ {edit_lock_message()}"
                 return RedirectResponse("/processing/production", status_code=303)
-            db.delete(entry)
+
+            # Soft Delete / Cancel
+            entry.is_cancelled = True
+            entry.status = "Cancelled"
+            entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+            entry.cancelled_by = email
+            entry.cancelled_at = ist_now()
+
             db.commit()
-            request.session["message"] = "🗑 Production Deleted Successfully!"
+            request.session["message"] = "✔ Production Cancelled Successfully!"
         else:
             request.session["message"] = "❌ Entry not found!"
         return RedirectResponse("/processing/production", status_code=303)

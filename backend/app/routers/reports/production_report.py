@@ -54,6 +54,7 @@ def production_report_page(
     to_date: str = "",
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import check_report_permission
     selected_production_for, selected_location = get_global_filters(request)
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
@@ -76,7 +77,10 @@ def production_report_page(
         )
     
     # Base Query
-    q = db.query(Production).filter(Production.company_id == comp_code)
+    q = db.query(Production).filter(
+        Production.company_id == comp_code,
+        Production.is_cancelled != True
+    )
     
     # 🟢 FIX 1: Syntax Bracket Alignment Resolved for Base Query Filter Pipeline
     if selected_production_for:
@@ -127,7 +131,8 @@ def production_report_page(
             soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
                 Soaking.company_id == comp_code,
                 Soaking.batch_number == r.batch_number,
-                Soaking.variety_name == r.variety_name
+                Soaking.variety_name == r.variety_name,
+                Soaking.is_cancelled != True
             ).scalar() or 0.0
 
             summary_subtotals[key] = {
@@ -190,7 +195,11 @@ def production_report_page(
             "prod_at_list": get_list(production_at, "production_at"),
             "prod_for_list": get_list(production_for, "production_for"),
             "prod_types_list": get_list(production_types, "production_type"),
-            "today_date": ist_now().strftime("%d %b, %Y")
+            "today_date": ist_now().strftime("%d %b, %Y"),
+            "can_edit": check_report_permission(request, "report_edit"),
+            "can_delete": check_report_permission(request, "report_delete"),
+            "can_print": check_report_permission(request, "report_print"),
+            "can_export": check_report_permission(request, "report_export"),
         }
     cache_context = dict(context)
     cache_context["summary_rows"] = [row_to_dict(r) for r in summary_rows]
@@ -211,8 +220,8 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
     comp_code = str(request.session.get("company_code"))
     user_email = request.session.get("email")
     
-    if request.session.get("role") != "admin": 
-        raise HTTPException(status_code=403, detail="Admin access required")
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
 
     row = db.query(Production).filter(Production.id == payload.get("id"), Production.company_id == comp_code).first()
     if not row: 
@@ -290,7 +299,9 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
 def delete_production(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     comp_code = str(request.session.get("company_code"))
     user_email = request.session.get("email")
-    if request.session.get("role") != "admin": raise HTTPException(status_code=403)
+    
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     
     row = db.query(Production).filter(Production.id == payload.get("id"), Production.company_id == comp_code).first()
     if row:
@@ -330,11 +341,16 @@ async def get_all_production_audit(request: Request, db: Session = Depends(get_d
 @router.get("/export_xlsx")
 def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids: str = Query(None), from_date: str = "", to_date: str = ""):
     comp_code = str(request.session.get("company_code"))
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     
     # 2. 🟢 FIX 2: Evaluate global contextual filter arrays inside Excel Compiler
     selected_production_for, selected_location = get_global_filters(request)
     
-    q = db.query(Production).filter(Production.company_id == comp_code)
+    q = db.query(Production).filter(
+        Production.company_id == comp_code,
+        Production.is_cancelled != True
+    )
     
     if selected_production_for:
         q = q.filter(Production.production_for == selected_production_for)
@@ -381,11 +397,16 @@ def export_production_pdf(
     download: bool = Query(False)
 ):
     comp_code = str(request.session.get("company_code"))
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     
     # 3. 🟢 FIX 3: Evaluate global contextual filter arrays inside PDF Compiler
     selected_production_for, selected_location = get_global_filters(request)
     
-    q = db.query(Production).filter(Production.company_id == comp_code)
+    q = db.query(Production).filter(
+        Production.company_id == comp_code,
+        Production.is_cancelled != True
+    )
     
     if selected_production_for:
         q = q.filter(Production.production_for == selected_production_for)

@@ -59,7 +59,10 @@ async def gate_entry_report(
 
     def build_report_context():
         # 🟢 META DROPDOWNS SYNC WITH func.trim()
-        meta_q = db.query(GateEntry).filter(GateEntry.company_id == company_id)
+        meta_q = db.query(GateEntry).filter(
+            GateEntry.company_id == company_id,
+            GateEntry.is_cancelled != True
+        )
         
         if production_for:
             meta_q = meta_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
@@ -91,7 +94,8 @@ async def gate_entry_report(
         query = db.query(GateEntry).filter(
             GateEntry.company_id == company_id,
             GateEntry.date >= start_date,
-            GateEntry.date <= end_date
+            GateEntry.date <= end_date,
+            GateEntry.is_cancelled != True
         )
 
         if production_for:
@@ -105,7 +109,16 @@ async def gate_entry_report(
     cache_key = f"bknr:processing_reports:{company_id}:gate_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
     context = cache_get_or_set(cache_key, build_report_context, ttl=75)
     context = dict(context)
-    context.update({"is_admin": role == "admin", "today_date": ist_now()})
+    
+    from app.utils.report_permissions import check_report_permission
+    context.update({
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+        "is_admin": role == "admin", 
+        "today_date": ist_now()
+    })
 
     if not fy:
         return templates.TemplateResponse(
@@ -131,6 +144,8 @@ async def gate_export_pdf(
     factory: str = Query(None),
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     company_name = request.session.get("company_name", "BKNR ENTERPRISES")
     if not fy: 
@@ -143,7 +158,8 @@ async def gate_export_pdf(
     query = db.query(GateEntry).filter(
         GateEntry.company_id == company_id,
         GateEntry.date >= start_date,
-        GateEntry.date <= end_date
+        GateEntry.date <= end_date,
+        GateEntry.is_cancelled != True
     )
     
     # 🟢 GLOBAL FILTERS LOCK FOR PDF WITH func.trim()
@@ -187,6 +203,8 @@ async def gate_export_excel(
     factory: str = Query(None),
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     company_name = request.session.get("company_name", "BKNR ENTERPRISES")
     if not fy: 
@@ -199,7 +217,8 @@ async def gate_export_excel(
     query = db.query(GateEntry).filter(
         GateEntry.company_id == company_id,
         GateEntry.date >= start_date,
-        GateEntry.date <= end_date
+        GateEntry.date <= end_date,
+        GateEntry.is_cancelled != True
     )
     
     # 🟢 GLOBAL FILTERS LOCK FOR EXCEL WITH func.trim()
@@ -319,6 +338,8 @@ async def update_gate_entry(
     payload: dict = Body(...), 
     db: Session = Depends(get_db)
 ):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_edit")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
 
@@ -380,6 +401,8 @@ async def get_gate_audit(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/delete")
 async def delete_gate_row(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    from app.utils.report_permissions import enforce_report_permission
+    enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
     row = db.query(GateEntry).filter(GateEntry.id == payload.get("id"), GateEntry.company_id == company_id).first()
     if row:
