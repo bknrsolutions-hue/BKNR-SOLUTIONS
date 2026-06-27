@@ -84,6 +84,8 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
 .opening-row { background: var(--card-bg)beb; font-style: italic; }
 
 .btn-primary{ background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.compact-scrollable-form::-webkit-scrollbar { height: 4px; }
+.compact-scrollable-form::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
 
 @media print {
   @page { margin: 6mm 8mm; size: A4 landscape; }
@@ -117,8 +119,8 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
 <div class="section" style="padding: 10px 15px; margin: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
   
   <!-- Compact Form/Filters -->
-  <form method="get" style="display: flex; align-items: flex-end; gap: 12px; margin: 0; padding: 0; background: none; border: none; box-shadow: none;">
-    <div style="display: flex; flex-direction: column; gap: 2px;">
+  <form method="get" class="compact-scrollable-form" style="display: flex; align-items: flex-end; gap: 12px; margin: 0; padding: 0 0 6px 0; background: none; border: none; box-shadow: none; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; width: auto; flex: 1; min-width: 280px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
       <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Production For</label>
       <select name="production_for" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 150px; background: var(--input-bg); color: var(--text);">
         <option value="">-- All Clients --</option>
@@ -127,11 +129,11 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
         {% endfor %}
       </select>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 2px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
       <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Billing Month</label>
       <input type="month" name="selected_month" value="{{selected_month}}" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 125px; background: var(--input-bg); color: var(--text);">
     </div>
-    <div style="display: flex; flex-direction: column; gap: 2px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;">
       <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Freezer</label>
       <select name="freezer" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 100px; background: var(--input-bg); color: var(--text);">
         <option value="">-- All --</option>
@@ -140,7 +142,7 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
         {% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn-primary" style="height: 28px; padding: 0 12px; font-size: 11px; line-height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin: 0;">Generate</button>
+    <button type="submit" class="btn-primary" style="height: 28px; padding: 0 12px; font-size: 11px; line-height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin: 0; flex-shrink: 0;">Generate</button>
   </form>
 
   <!-- Compact KPI Cards -->
