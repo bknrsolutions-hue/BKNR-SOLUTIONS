@@ -78,6 +78,8 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
 
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if p[0]]
+    if "General Stock" not in prod_for_list:
+        prod_for_list.append("General Stock")
 
     # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global & Permission Matrices)
     start, end = get_today_range()

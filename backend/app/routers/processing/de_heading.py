@@ -30,6 +30,8 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
     c_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all()]
     s_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_id).order_by(SpeciesMaster.species_name).all()]
     pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    if "General Stock" not in pf_list:
+        pf_list.append("General Stock")
     return {"contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
@@ -180,12 +182,19 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
     if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
         return {"batches": []}
 
-    rows = db.query(FloorBalance).filter(
+    fb_query = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_code,
-        func.trim(FloorBalance.production_for) == func.trim(production_for),
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
         FloorBalance.variety == "HOSO"
-    ).order_by(FloorBalance.batch_number).all()
+    )
+    
+    prod_for_clean = production_for.strip() if production_for else ""
+    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+        fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == "") | (func.upper(func.trim(FloorBalance.production_for)) == "GENERAL STOCK"))
+    else:
+        fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+
+    rows = fb_query.order_by(FloorBalance.batch_number).all()
     batches = {
         r.batch_number for r in rows
         if r.batch_number and get_floor_balance(db, company_code, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
@@ -207,13 +216,20 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
     if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
         return {"counts": []}
 
-    rows = db.query(FloorBalance).filter(
+    fb_query = db.query(FloorBalance).filter(
         FloorBalance.company_id == company_code,
         FloorBalance.batch_number == batch,
-        func.trim(FloorBalance.production_for) == func.trim(production_for),
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
         FloorBalance.variety == "HOSO"
-    ).order_by(FloorBalance.count).all()
+    )
+    
+    prod_for_clean = production_for.strip() if production_for else ""
+    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+        fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == "") | (func.upper(func.trim(FloorBalance.production_for)) == "GENERAL STOCK"))
+    else:
+        fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+
+    rows = fb_query.order_by(FloorBalance.count).all()
     counts = {
         r.count for r in rows
         if r.count and get_floor_balance(db, company_code, r.location, r.batch_number, r.count, r.species, r.variety, r.production_for, r.source_type or "RMP") > 0.01
@@ -299,15 +315,21 @@ def save_de_heading(
     clean_batch = batch_number.strip()
     clean_count = hoso_count.strip()
 
-    source_row = db.query(FloorBalance.source_type).filter(
+    fb_query = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_code,
         func.upper(func.trim(FloorBalance.location)) == deheading_at.strip().upper(),
-        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
         func.upper(func.trim(FloorBalance.batch_number)) == clean_batch.upper(),
         func.upper(func.trim(FloorBalance.count)) == clean_count.upper(),
         func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
         FloorBalance.variety == "HOSO"
-    ).first()
+    )
+    prod_for_clean = production_for.strip() if production_for else ""
+    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+        fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == "") | (func.upper(func.trim(FloorBalance.production_for)) == "GENERAL STOCK"))
+    else:
+        fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+
+    source_row = fb_query.first()
     avail = get_floor_balance(
         db, company_code, deheading_at, clean_batch, clean_count, species, "HOSO",
         production_for, source_row[0] if source_row else "RMP"
