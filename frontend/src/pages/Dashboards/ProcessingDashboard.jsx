@@ -177,7 +177,7 @@ export default function ProcessingDashboard({ theme }) {
         type: 'bar',
         data: {
           labels: data.hourly_labels,
-          datasets: [{ data: data.dh_hourly_data, backgroundColor: '#ea580c', borderRadius: 4 }]
+          datasets: [{ data: data.dh_hourly_data, backgroundColor: '#ea580c', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
         },
         options: chartOptions
       });
@@ -190,7 +190,7 @@ export default function ProcessingDashboard({ theme }) {
         type: 'bar',
         data: {
           labels: data.hourly_labels,
-          datasets: [{ data: data.peeling_hourly_data, backgroundColor: '#0d9488', borderRadius: 4 }]
+          datasets: [{ data: data.peeling_hourly_data, backgroundColor: '#0d9488', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
         },
         options: chartOptions
       });
@@ -203,7 +203,7 @@ export default function ProcessingDashboard({ theme }) {
         type: 'bar',
         data: {
           labels: data.hourly_labels,
-          datasets: [{ data: data.prod_hourly_data, backgroundColor: '#4f46e5', borderRadius: 4 }]
+          datasets: [{ data: data.prod_hourly_data, backgroundColor: '#4f46e5', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
         },
         options: chartOptions
       });

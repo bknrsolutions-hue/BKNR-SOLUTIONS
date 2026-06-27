@@ -176,7 +176,11 @@ export default function SalesReport({ activeRoute }) {
           datasets: [{
             label: 'Revenue (INR)',
             data: Object.values(varietyData),
-            backgroundColor: '#10b981'
+            backgroundColor: '#10b981',
+            borderWidth: 0,
+            borderRadius: 7,
+            borderSkipped: false,
+            maxBarThickness: 34
           }]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -192,7 +196,11 @@ export default function SalesReport({ activeRoute }) {
           datasets: [{
             label: 'Volume (KG)',
             data: Object.values(gradeData),
-            backgroundColor: '#f59e0b'
+            backgroundColor: '#f59e0b',
+            borderWidth: 0,
+            borderRadius: 7,
+            borderSkipped: false,
+            maxBarThickness: 34
           }]
         },
         options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
@@ -208,7 +216,11 @@ export default function SalesReport({ activeRoute }) {
           datasets: [{
             label: 'Revenue (INR)',
             data: Object.values(buyerData),
-            backgroundColor: '#8b5cf6'
+            backgroundColor: '#8b5cf6',
+            borderWidth: 0,
+            borderRadius: 7,
+            borderSkipped: false,
+            maxBarThickness: 34
           }]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -592,4 +604,3 @@ export default function SalesReport({ activeRoute }) {
     </div>
   );
 }
-

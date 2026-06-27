@@ -58,7 +58,10 @@ export default function AuthContainer({ handleLoginSuccess }) {
     try {
       const res = await fetch('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           company_id: companyId.trim(),
           email: email.trim().toLowerCase(),

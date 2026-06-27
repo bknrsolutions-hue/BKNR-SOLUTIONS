@@ -49,7 +49,8 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'dashboard_inventory', perm: 'inventory_dashboard', route: '/dashboard/inventory_dashboard', icon: 'fa-warehouse', label: 'Inventory', badge: 'LIVE' },
         { id: 'dashboard_hr', perm: 'hr_command_center', route: '/dashboard/hr_command_center', icon: 'fa-user-tie', label: 'HR & Staff', badge: 'LIVE' },
         { id: 'dashboard_costing', perm: 'costing_dashboard', route: '/dashboard/costing_dashboard', icon: 'fa-file-invoice-dollar', label: 'Costing & Fin', badge: 'LIVE' },
-        { id: 'dashboard_finance', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard', badge: 'LIVE' }
+        { id: 'dashboard_finance', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard', badge: 'LIVE' },
+        { id: 'tally_dashboard', perm: 'tally_dashboard', route: '/finance_accounts/tally_dashboard', icon: 'fa-chart-pie', label: 'Tally Dashboard', badge: 'LIVE' }
       ]
     },
     {

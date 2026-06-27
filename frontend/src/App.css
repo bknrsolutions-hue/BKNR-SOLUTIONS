@@ -12,6 +12,7 @@
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
   --border-light: rgba(255, 255, 255, 0.08);
+  --table-line: rgba(148, 163, 184, 0.32);
   --border-highlight: rgba(255, 255, 255, 0.15);
   --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -33,13 +34,14 @@
 }
 
 [data-theme="light"] {
-  --bg-app: #f1f5f9;
+  --bg-app: #eef6ff;
   --surface-panel: rgba(255, 255, 255, 0.98);
   --glass-bg: rgba(255, 255, 255, 0.9);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-tertiary: #94a3b8;
   --border-light: rgba(0, 0, 0, 0.08);
+  --table-line: #cbd5e1;
   --border-highlight: rgba(0, 0, 0, 0.12);
   --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.08);
   --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.04);
@@ -132,6 +134,27 @@ body {
 }
 .spin {
   animation: spin 1s linear infinite;
+}
+
+.route-loading {
+  min-height: 180px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.route-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--corp-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 
 /* Form Styles */
@@ -235,7 +258,7 @@ body {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--table-line);
   border-radius: var(--radius-element);
   margin-top: 16px;
 }
@@ -249,7 +272,7 @@ body {
 
 .bknr-table th {
   background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--table-line);
   padding: 8px 10px;
   font-size: 10px;
   font-weight: 800;
@@ -265,7 +288,7 @@ body {
 .bknr-table td {
   padding: 8px 10px;
   font-size: 11px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--table-line);
   color: var(--text-primary);
 }
 
@@ -584,7 +607,7 @@ body {
 [data-theme="light"] {
     --primary: #0f172a;
     --accent: #2563eb;
-    --bg: #f1f5f9;
+    --bg: #eef6ff;
     --card-bg: #ffffff;
     --header-bg: #f8fafc;
     --row-even: #f8fafc;
@@ -758,4 +781,3 @@ body {
     transform: translateY(-1px); 
     box-shadow: 0 4px 10px rgba(16, 185, 129, 0.45) !important;
 }
-

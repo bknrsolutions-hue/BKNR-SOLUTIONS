@@ -617,36 +617,85 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
           <div style={{ marginTop: '20px' }}>
             {/* KPI Cards */}
             <div style={kpiGridStyle}>
-              <div style={kpiCardStyle('var(--corp-dash)')}>
-                <span style={kpiTitleStyle}>RM Purchased Qty</span>
-                <span style={kpiValueStyle}>{data.card?.rmp_qty?.toFixed(2) || '0.00'} Kg</span>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #10b981' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>RM Purchased Qty</div>
+                  <div style={kpiValueStyle}>
+                    {data.card?.rmp_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
+                  </div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <i className="fa-solid fa-truck-ramp-box"></i>
+                </div>
               </div>
-              <div style={kpiCardStyle('var(--corp-ops)')}>
-                <span style={kpiTitleStyle}>RM Purchase Cost</span>
-                <span style={kpiValueStyle}>₹ {data.card?.rmp_amount?.toLocaleString('en-IN') || '0'}</span>
+
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #3b82f6' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>RM Purchase Cost</div>
+                  <div style={kpiValueStyle}>
+                    ₹ {data.card?.rmp_amount?.toLocaleString('en-IN') || '0'}
+                  </div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                  <i className="fa-solid fa-money-bill-wave"></i>
+                </div>
               </div>
-              <div style={kpiCardStyle('var(--corp-rep)')}>
-                <span style={kpiTitleStyle}>Processed & Graded</span>
-                <span style={kpiValueStyle}>{data.card?.grd_qty?.toFixed(2) || '0.00'} Kg</span>
+
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #8b5cf6' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>Processed & Graded</div>
+                  <div style={kpiValueStyle}>
+                    {data.card?.grd_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
+                  </div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+                  <i className="fa-solid fa-filter"></i>
+                </div>
               </div>
-              <div style={kpiCardStyle('var(--corp-fin)')}>
-                <span style={kpiTitleStyle}>Produced Yield</span>
-                <span style={kpiValueStyle}>{data.card?.production_qty?.toFixed(2) || '0.00'} Kg</span>
+
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #6366f1' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>Produced Yield</div>
+                  <div style={kpiValueStyle}>
+                    {data.card?.production_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
+                  </div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                  <i className="fa-solid fa-industry"></i>
+                </div>
               </div>
             </div>
 
             <div style={kpiGridStyle}>
-              <div style={kpiCardStyle('var(--corp-rep)')}>
-                <span style={kpiTitleStyle}>Opening WIP Floor Balance</span>
-                <span style={kpiValueStyle}>{data.card?.floor_opening_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.floor_opening_val?.toLocaleString('en-IN') || '0'})</span>
+               <div style={{ ...kpiCardStyle, borderLeft: '4px solid #f97316' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>Opening WIP Floor Balance</div>
+                  <div style={kpiValueStyle}>{data.card?.floor_opening_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
+                  <div style={kpiSubValueStyle}>₹ {data.card?.floor_opening_val?.toLocaleString('en-IN') || '0'}</div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(249, 115, 22, 0.1)', color: '#f97316' }}>
+                   <i className="fa-solid fa-warehouse"></i>
+                </div>
               </div>
-              <div style={kpiCardStyle('var(--corp-dash)')}>
-                <span style={kpiTitleStyle}>Closing WIP Floor Balance</span>
-                <span style={kpiValueStyle}>{data.card?.floor_closing_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.floor_closing_val?.toLocaleString('en-IN') || '0'})</span>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #f59e0b' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>Closing WIP Floor Balance</div>
+                  <div style={kpiValueStyle}>{data.card?.floor_closing_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
+                  <div style={kpiSubValueStyle}>₹ {data.card?.floor_closing_val?.toLocaleString('en-IN') || '0'}</div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                  <i className="fa-solid fa-warehouse"></i>
+                </div>
               </div>
-              <div style={kpiCardStyle('var(--corp-fin)')}>
-                <span style={kpiTitleStyle}>Current CS Inventory</span>
-                <span style={kpiValueStyle}>{data.card?.stock_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.stock_amount?.toLocaleString('en-IN') || '0'})</span>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #64748b' }}>
+                <div style={kpiMetaStyle}>
+                  <div style={kpiLabelStyle}>Current CS Inventory</div>
+                  <div style={kpiValueStyle}>{data.card?.stock_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
+                  <div style={kpiSubValueStyle}>₹ {data.card?.stock_amount?.toLocaleString('en-IN') || '0'}</div>
+                </div>
+                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(100, 116, 139, 0.1)', color: '#64748b' }}>
+                  <i className="fa-solid fa-cubes-stacked"></i>
+                </div>
               </div>
             </div>
 
@@ -1547,21 +1596,67 @@ const searchInputStyle = {
 const kpiGridStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '14px',
-  marginBottom: '16px'
+  gap: '12px',
+  marginBottom: '20px'
 };
 
-const kpiCardStyle = (accentColor) => ({
+const kpiCardStyle = {
   background: 'var(--surface-panel)',
-  border: `1px solid var(--border-light)`,
-  borderLeft: `4px solid ${accentColor}`,
-  padding: '14px 16px',
+  border: '1px solid var(--border-light)',
   borderRadius: 'var(--radius-element)',
+  padding: '14px',
   display: 'flex',
-  flexDirection: 'column',
-  gap: '4px',
-  boxShadow: 'var(--shadow-soft)'
-});
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.02)',
+  transition: 'transform 0.2s ease'
+};
+
+const kpiMetaStyle = {
+  textAlign: 'left'
+};
+
+const kpiLabelStyle = {
+  fontSize: '10px',
+  textTransform: 'uppercase',
+  fontWeight: '800',
+  color: 'var(--text-secondary)',
+  letterSpacing: '0.8px'
+};
+
+const kpiValueStyle = {
+  fontSize: '19px',
+  fontWeight: '800',
+  color: 'var(--text-primary)',
+  marginTop: '4px',
+  letterSpacing: '-0.5px'
+};
+
+const kpiUnitStyle = {
+  fontSize: '11px',
+  fontWeight: '800',
+  color: 'var(--text-secondary)',
+  marginLeft: '2px',
+  textTransform: 'uppercase'
+};
+
+const kpiIconWrapperStyle = {
+  width: '36px',
+  height: '36px',
+  borderRadius: '10px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '16px',
+  flexShrink: 0
+};
+
+const kpiSubValueStyle = {
+    fontSize: '11px',
+    fontWeight: '700',
+    color: 'var(--text-secondary)',
+    marginTop: '2px'
+};
 
 const kpiTitleStyle = {
   fontSize: '10px',
@@ -1571,11 +1666,6 @@ const kpiTitleStyle = {
   letterSpacing: '0.5px'
 };
 
-const kpiValueStyle = {
-  fontSize: '15px',
-  fontWeight: '800',
-  color: 'var(--text-primary)'
-};
 
 const tabsRowStyle = {
   display: 'flex',

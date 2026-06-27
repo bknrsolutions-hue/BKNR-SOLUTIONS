@@ -1,79 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 
 // Components
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
-// Auth Pages
-import AuthContainer from './pages/Auth/AuthContainer';
+const AuthContainer = lazy(() => import('./pages/Auth/AuthContainer'));
+const DashboardsConsole = lazy(() => import('./pages/Dashboards/DashboardsConsole'));
+const BackendConsole = lazy(() => import('./pages/BackendConsole'));
+const ReportViewer = lazy(() => import('./pages/Reports/ReportViewer'));
 
-// Dashboard Pages (kept as full React — charts, KPIs, live stats)
-import DashboardsConsole from './pages/Dashboards/DashboardsConsole';
+const GateEntryReport = lazy(() => import('./pages/Reports/GateEntryReport'));
+const RMPReport = lazy(() => import('./pages/Reports/RMPReport'));
+const DeHeadingReport = lazy(() => import('./pages/Reports/DeHeadingReport'));
+const GradingReport = lazy(() => import('./pages/Reports/GradingReport'));
+const PeelingReport = lazy(() => import('./pages/Reports/PeelingReport'));
+const SoakingReport = lazy(() => import('./pages/Reports/SoakingReport'));
+const ProductionReport = lazy(() => import('./pages/Reports/ProductionReport'));
+const ReprocessReport = lazy(() => import('./pages/Reports/ReprocessReport'));
+const FloorBalanceReport = lazy(() => import('./pages/Reports/FloorBalanceReport'));
+const StockReport = lazy(() => import('./pages/Reports/StockReport'));
+const PendingOrdersReport = lazy(() => import('./pages/Reports/PendingOrdersReport'));
+const SalesReport = lazy(() => import('./pages/Reports/SalesReport'));
+const GeneralStockReport = lazy(() => import('./pages/Reports/GeneralStockReport'));
+const ColdStorageHoldingReport = lazy(() => import('./pages/Reports/ColdStorageHoldingReport'));
+const StorageCostReport = lazy(() => import('./pages/Reports/StorageCostReport'));
+const FloorBalanceValue = lazy(() => import('./pages/Reports/FloorBalanceValue'));
+const InventoryCosting = lazy(() => import('./pages/Reports/InventoryCosting'));
 
-// Universal Backend Console — iframes every backend HTML template without touching them
-import BackendConsole from './pages/BackendConsole';
+const Buyers = lazy(() => import('./pages/Criteria/Buyers'));
+const BuyerAgents = lazy(() => import('./pages/Criteria/BuyerAgents'));
+const Suppliers = lazy(() => import('./pages/Criteria/Suppliers'));
+const Vendors = lazy(() => import('./pages/Criteria/Vendors'));
+const Countries = lazy(() => import('./pages/Criteria/Countries'));
+const Brands = lazy(() => import('./pages/Criteria/Brands'));
+const PurchasingLocations = lazy(() => import('./pages/Criteria/PurchasingLocations'));
+const Species = lazy(() => import('./pages/Criteria/Species'));
+const Varieties = lazy(() => import('./pages/Criteria/Varieties'));
+const Grades = lazy(() => import('./pages/Criteria/Grades'));
+const Freezers = lazy(() => import('./pages/Criteria/Freezers'));
+const Glazes = lazy(() => import('./pages/Criteria/Glazes'));
+const PackingStyles = lazy(() => import('./pages/Criteria/PackingStyles'));
+const Contractors = lazy(() => import('./pages/Criteria/Contractors'));
+const PeelingAt = lazy(() => import('./pages/Criteria/PeelingAt'));
+const PeelingRates = lazy(() => import('./pages/Criteria/PeelingRates'));
+const ProductionAt = lazy(() => import('./pages/Criteria/ProductionAt'));
+const ProductionFor = lazy(() => import('./pages/Criteria/ProductionFor'));
+const ProductionTypes = lazy(() => import('./pages/Criteria/ProductionTypes'));
+const Chemicals = lazy(() => import('./pages/Criteria/Chemicals'));
+const Purposes = lazy(() => import('./pages/Criteria/Purposes'));
+const GradeToHoso = lazy(() => import('./pages/Criteria/GradeToHoso'));
+const HosoHlso = lazy(() => import('./pages/Criteria/HosoHlso'));
+const ColdStorage = lazy(() => import('./pages/Criteria/ColdStorage'));
+const ColdstoreLocations = lazy(() => import('./pages/Criteria/ColdstoreLocations'));
+const VehicleNumbers = lazy(() => import('./pages/Criteria/VehicleNumbers'));
+const HsnCodes = lazy(() => import('./pages/Criteria/HsnCodes'));
+const ShippingVendors = lazy(() => import('./pages/Criteria/ShippingVendors'));
 
-// Report Viewer
-import ReportViewer from './pages/Reports/ReportViewer';
-
-// Custom React Reports
-import GateEntryReport from './pages/Reports/GateEntryReport';
-import RMPReport from './pages/Reports/RMPReport';
-import DeHeadingReport from './pages/Reports/DeHeadingReport';
-import GradingReport from './pages/Reports/GradingReport';
-import PeelingReport from './pages/Reports/PeelingReport';
-import SoakingReport from './pages/Reports/SoakingReport';
-import ProductionReport from './pages/Reports/ProductionReport';
-import ReprocessReport from './pages/Reports/ReprocessReport';
-import FloorBalanceReport from './pages/Reports/FloorBalanceReport';
-import StockReport from './pages/Reports/StockReport';
-import PendingOrdersReport from './pages/Reports/PendingOrdersReport';
-import SalesReport from './pages/Reports/SalesReport';
-import GeneralStockReport from './pages/Reports/GeneralStockReport';
-import ColdStorageHoldingReport from './pages/Reports/ColdStorageHoldingReport';
-import StorageCostReport from './pages/Reports/StorageCostReport';
-import FloorBalanceValue from './pages/Reports/FloorBalanceValue';
-import InventoryCosting from './pages/Reports/InventoryCosting';
-
-// Criteria / Masters Pages
-import Buyers from './pages/Criteria/Buyers';
-import BuyerAgents from './pages/Criteria/BuyerAgents';
-import Suppliers from './pages/Criteria/Suppliers';
-import Vendors from './pages/Criteria/Vendors';
-import Countries from './pages/Criteria/Countries';
-import Brands from './pages/Criteria/Brands';
-import PurchasingLocations from './pages/Criteria/PurchasingLocations';
-import Species from './pages/Criteria/Species';
-import Varieties from './pages/Criteria/Varieties';
-import Grades from './pages/Criteria/Grades';
-import Freezers from './pages/Criteria/Freezers';
-import Glazes from './pages/Criteria/Glazes';
-import PackingStyles from './pages/Criteria/PackingStyles';
-import Contractors from './pages/Criteria/Contractors';
-import PeelingAt from './pages/Criteria/PeelingAt';
-import PeelingRates from './pages/Criteria/PeelingRates';
-import ProductionAt from './pages/Criteria/ProductionAt';
-import ProductionFor from './pages/Criteria/ProductionFor';
-import ProductionTypes from './pages/Criteria/ProductionTypes';
-import Chemicals from './pages/Criteria/Chemicals';
-import Purposes from './pages/Criteria/Purposes';
-import GradeToHoso from './pages/Criteria/GradeToHoso';
-import HosoHlso from './pages/Criteria/HosoHlso';
-import ColdStorage from './pages/Criteria/ColdStorage';
-import ColdstoreLocations from './pages/Criteria/ColdstoreLocations';
-import VehicleNumbers from './pages/Criteria/VehicleNumbers';
-import HsnCodes from './pages/Criteria/HsnCodes';
-import ShippingVendors from './pages/Criteria/ShippingVendors';
-
-// Processing Operations Pages
-import GateEntry from './pages/Processing/GateEntry';
-import RawMaterialPurchasing from './pages/Processing/RawMaterialPurchasing';
-import DeHeading from './pages/Processing/DeHeading';
-import Grading from './pages/Processing/Grading';
-import Peeling from './pages/Processing/Peeling';
-import Soaking from './pages/Processing/Soaking';
-import Production from './pages/Processing/Production';
+const GateEntry = lazy(() => import('./pages/Processing/GateEntry'));
+const RawMaterialPurchasing = lazy(() => import('./pages/Processing/RawMaterialPurchasing'));
+const DeHeading = lazy(() => import('./pages/Processing/DeHeading'));
+const Grading = lazy(() => import('./pages/Processing/Grading'));
+const Peeling = lazy(() => import('./pages/Processing/Peeling'));
+const Soaking = lazy(() => import('./pages/Processing/Soaking'));
+const Production = lazy(() => import('./pages/Processing/Production'));
 
 const CRITERIA_COMPONENTS = {
   criteria_buyers: Buyers,
@@ -135,19 +126,32 @@ const REPORT_COMPONENTS = {
   report_inventory_costing: InventoryCosting,
 };
 
+function PageLoading() {
+  return (
+    <div className="route-loading" role="status" aria-live="polite">
+      <span className="route-loading-spinner" aria-hidden="true" />
+      <span>Loading page...</span>
+    </div>
+  );
+}
+
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [theme, setTheme]               = useState('dark');
   const [user, setUser]                 = useState(null);
-  const [activePage, setActivePage_]    = useState('dashboard_processing');
-  const [activeRoute, setActiveRoute]   = useState(null); // backend URL for current page
   const [loadingSession, setLoadingSession] = useState(true);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
 
-  // Combined setter — sidebar passes both id and route
-  const setActivePage = (id, route) => {
-    setActivePage_(id);
-    setActiveRoute(route || null);
-  };
+  const activePage = location.pathname.startsWith('/page/')
+    ? decodeURIComponent(location.pathname.slice('/page/'.length))
+    : 'dashboard_processing';
+  const activeRoute = new URLSearchParams(location.search).get('backend');
+
+  const setActivePage = useCallback((id, route) => {
+    const search = route ? `?backend=${encodeURIComponent(route)}` : '';
+    navigate(`/page/${encodeURIComponent(id)}${search}`);
+  }, [navigate]);
 
   // Sync theme to <html data-theme>
   useEffect(() => {
@@ -156,13 +160,15 @@ export default function App() {
 
   // Load session on mount
   useEffect(() => {
-    fetch('/auth/session-info')
+    fetch('/auth/session-info', {
+      credentials: 'include'
+    })
       .then(res => {
         if (res.ok) return res.json();
         throw new Error('Not authenticated');
       })
       .then(data => {
-        if (data.status === 'success') {
+        if (data.authenticated) {
           setUser({
             email: data.email,
             company: data.company_name,
@@ -171,6 +177,8 @@ export default function App() {
             role: data.role,
             permissions: data.permissions
           });
+        } else {
+          setUser(null);
         }
       })
       .catch(() => { setUser(null); })
@@ -181,10 +189,14 @@ export default function App() {
 
   const handleLoginSuccess = async () => {
     try {
-      const res = await fetch('/auth/session-info');
+      const res = await fetch('/auth/session-info', {
+        credentials: 'include'
+      });
+  
       if (res.ok) {
         const data = await res.json();
-        if (data.status === 'success') {
+  
+        if (data.authenticated) {
           setUser({
             email: data.email,
             company: data.company_name,
@@ -193,17 +205,23 @@ export default function App() {
             role: data.role,
             permissions: data.permissions
           });
+  
           setActivePage('dashboard_processing', null);
         }
       }
     } catch (err) {
-      console.error('Failed to load session after login:', err);
+      console.error(err);
     }
   };
 
   const handleLogout = async () => {
-    try { await fetch('/auth/logout'); } catch (_) {}
+    try {
+      await fetch('/auth/logout');
+    } catch {
+      // Local session state is still cleared if the server is unreachable.
+    }
     setUser(null);
+    navigate('/', { replace: true });
   };
 
   // ── Page Router ──────────────────────────────────────────────────────────
@@ -287,7 +305,11 @@ export default function App() {
 
   // ── Auth screen ──────────────────────────────────────────────────────────
   if (!user) {
-    return <AuthContainer handleLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Suspense fallback={<PageLoading />}>
+        <AuthContainer handleLoginSuccess={handleLoginSuccess} />
+      </Suspense>
+    );
   }
 
   // ── Main ERP Layout ──────────────────────────────────────────────────────
@@ -318,7 +340,9 @@ export default function App() {
         />
 
         <main className="main-content">
-          {renderActivePage()}
+          <Suspense fallback={<PageLoading />}>
+            {renderActivePage()}
+          </Suspense>
         </main>
       </div>
     </React.Fragment>
