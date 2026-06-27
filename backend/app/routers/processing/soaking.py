@@ -175,6 +175,10 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
         raise HTTPException(status_code=401, detail="Session expired")
     production_for, location, _ = resolve_session_scope(request, production_for, location)
 
+    prod_for_clean = production_for.strip() if production_for else ""
+    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+        prod_for_clean = None
+
     query = db.query(func.coalesce(func.sum(FloorBalance.available_qty), 0)).filter(
         FloorBalance.company_id == company_id,
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
@@ -183,8 +187,11 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
         func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
         func.upper(func.trim(FloorBalance.variety)) == variety.strip().upper()
     )
-    if production_for:
-        query = query.filter(func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper())
+    if prod_for_clean:
+        query = query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+    else:
+        query = query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == ""))
+        
     available_qty = float(query.scalar() or 0)
     return {"available_qty": round(available_qty, 2)}
 

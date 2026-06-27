@@ -117,10 +117,11 @@ def get_floor_balance(
                 q = q.filter(model_obj.variety == variety_upper)
 
         if hasattr(model_obj, 'production_for'):
-            if production_for and production_for != "N/A":
+            p_for_clean = str(production_for).strip() if production_for else ""
+            if p_for_clean and p_for_clean not in ("N/A", "General Stock", "GENERAL STOCK"):
                 q = q.filter(model_obj.production_for == production_for)
-            elif production_for == "N/A":
-                q = q.filter((model_obj.production_for == None) | (model_obj.production_for == ""))
+            else:
+                q = q.filter((model_obj.production_for == None) | (func.trim(model_obj.production_for) == ""))
         return q
 
     main_inward_qty = 0.0

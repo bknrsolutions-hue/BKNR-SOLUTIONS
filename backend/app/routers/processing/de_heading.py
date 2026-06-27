@@ -256,15 +256,25 @@ def get_available_qty(
     if user_allowed_locations and location.strip().upper() not in user_allowed_locations:
         return {"available_qty": 0}
     
-    source_row = db.query(FloorBalance.source_type).filter(
+    prod_for_clean = production_for.strip() if production_for else ""
+    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+        prod_for_clean = None
+
+    fb_query = db.query(FloorBalance.source_type).filter(
         FloorBalance.company_id == company_code,
         func.upper(func.trim(FloorBalance.location)) == location.strip().upper(),
-        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper(),
         func.upper(func.trim(FloorBalance.batch_number)) == batch.strip().upper(),
         func.upper(func.trim(FloorBalance.count)) == count.strip().upper(),
         func.upper(func.trim(FloorBalance.species)) == species_name.strip().upper(),
         FloorBalance.variety == "HOSO"
-    ).first()
+    )
+
+    if prod_for_clean:
+        fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+    else:
+        fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == ""))
+
+    source_row = fb_query.first()
     available_qty = get_floor_balance(
         db, company_code, location, batch, count, species_name, "HOSO",
         production_for, source_row[0] if source_row else "RMP"
