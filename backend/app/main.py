@@ -160,6 +160,11 @@ application.add_middleware(
 @application.on_event("startup")
 def on_startup():
     start_snapshot_scheduler()
+    try:
+        from app.database.migration import run_migration
+        run_migration()
+    except Exception as e:
+        logger.error(f"Database migration failed on startup: {e}")
 
 
 @application.on_event("shutdown")
