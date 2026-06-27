@@ -53,18 +53,26 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Admin section: only show 'My Complaints' + Logout (hide all other admin items)
-  const ALLOWED_ADMIN_IDS = ['raise_ticket'];
+  // Filter menu to show ONLY the screens/modules we implemented natively + complaints & logout
+  const ALLOWED_MODULE_IDS = [
+    'gate_entry',
+    'raw_material_purchasing',
+    'de_heading',
+    'grading',
+    'peeling',
+    'soaking',
+    'production',
+    'stock_entry',
+    'daily_attendance',
+    'raise_ticket'
+  ];
 
   const processedMenu = MENU_DATA.map(section => {
-    if (section.id === 'admin') {
-      return {
-        ...section,
-        modules: section.modules.filter(m => ALLOWED_ADMIN_IDS.includes(m.id)),
-      };
-    }
-    return section;
-  });
+    return {
+      ...section,
+      modules: section.modules.filter(m => ALLOWED_MODULE_IDS.includes(m.id)),
+    };
+  }).filter(section => section.modules.length > 0 || section.id === 'admin');
 
   // Filtered menu based on search
   const filteredMenu = search.trim()
