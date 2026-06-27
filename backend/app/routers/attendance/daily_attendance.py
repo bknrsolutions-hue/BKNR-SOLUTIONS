@@ -315,8 +315,9 @@ async def get_all_attendance_audit(request: Request, db: Session = Depends(get_d
 
     return [{
         "timestamp": l.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-        "user": l.edited_by.split('@')[0],
-        "invoice_no": l.field_name, 
+        "user": l.edited_by.split('@')[0] if l.edited_by else "System",
+        "email": l.edited_by if l.edited_by else "System",
+        "batch": f"Field: {l.field_name}" if l.field_name else f"ID Ref: {l.record_id}",
         "action": "PUNCH TRANSACTION",
         "details": l.new_value
     } for l in logs]

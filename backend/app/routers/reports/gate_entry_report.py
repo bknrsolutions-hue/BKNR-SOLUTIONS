@@ -385,18 +385,19 @@ async def update_gate_entry(
 @router.get("/audit")
 async def get_gate_audit(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    logs = db.query(AuditLog).filter(
-        AuditLog.table_name == "gate_entry",
-        AuditLog.company_id == comp_code
-    ).order_by(AuditLog.edited_at.desc()).limit(100).all()
-
+    logs = (
+        db.query(AuditLog, GateEntry.batch_number)
+        .join(GateEntry, AuditLog.record_id == GateEntry.id)
+        .filter(AuditLog.table_name == "gate_entry", AuditLog.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc()).limit(100).all()
+    )
     return [{
-        "record_id": l.record_id,
-        "field": l.field_name,
-        "old": l.old_value,
-        "new": l.new_value,
-        "user": l.edited_by.split('@')[0] if l.edited_by else "System",
-        "time": l.edited_at.strftime("%d-%m-%Y %H:%M:%S")
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 
 @router.post("/delete")

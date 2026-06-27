@@ -54,5 +54,13 @@
         "date": "2026-06-04 13:14:55",
         "status": "Success",
         "details": "Reverted last import. Deleted 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "EXPORT",
+        "module": "General Stock Module",
+        "date": "2026-06-27 21:59:09",
+        "status": "Success",
+        "details": "Exported General Stock records"
     }
 ]

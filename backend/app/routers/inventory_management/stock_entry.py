@@ -272,7 +272,10 @@ def stock_out_report(
         stock_entry.location, stock_entry.batch_number,
         func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)).label("available_mc"),
         func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)).label("available_loose"),
-    ).filter(stock_entry.company_id == company_code)
+    ).filter(
+        stock_entry.company_id == company_code,
+        stock_entry.is_cancelled == False
+    )
 
     if user_allowed_locations:
         query = query.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
@@ -353,4 +356,36 @@ def stock_out_save(
     invalidate_company_cache(company_code, "costing_dashboard")
     
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
+    return RedirectResponse("/inventory/stock_entry", status_code=303)
+
+@router.post("/stock_entry/delete/{id}")
+def delete_stock_entry(id: int, request: Request, cancel_reason: str = Form(None), db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return RedirectResponse("/auth/login", status_code=303)
+    
+    entry = db.query(stock_entry).filter(stock_entry.id == id, stock_entry.company_id == company_code).first()
+    if entry:
+        if entry.is_cancelled:
+            request.session["success_msg"] = "Stock Entry already cancelled!"
+            return RedirectResponse("/inventory/stock_entry", status_code=303)
+            
+        entry.is_cancelled = True
+        entry.status = "Cancelled"
+        entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+        entry.cancelled_by = request.session.get("email")
+        entry.cancelled_at = ist_now()
+        
+        db.commit()
+        
+        InventorySummaryService.refresh_inventory_summary(db=db, company_id=company_code)
+        ProductionRequirementService.refresh_requirements(db=db, company_id=company_code)
+        invalidate_company_cache(company_code, "inventory_report")
+        invalidate_company_cache(company_code, "inventory_dashboard")
+        invalidate_company_cache(company_code, "costing_dashboard")
+        
+        request.session["success_msg"] = "Stock Entry cancelled successfully!"
+    else:
+        request.session["success_msg"] = "Stock Entry not found!"
+        
     return RedirectResponse("/inventory/stock_entry", status_code=303)

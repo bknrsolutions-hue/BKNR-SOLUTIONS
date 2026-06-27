@@ -165,22 +165,20 @@ def report_page(
 @router.get("/audit")
 def fetch_all_audit_logs(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
-    logs = db.query(AuditLog).filter(
-        AuditLog.table_name == "rmp",
-        AuditLog.company_id == comp_code
-    ).order_by(AuditLog.edited_at.desc()).all()
-
-    return [
-        {
-            "record_id": log.record_id,
-            "field": log.field_name,
-            "old": log.old_value,
-            "new": log.new_value,
-            "user": log.edited_by.split('@')[0] if log.edited_by else "System",
-            "time": log.edited_at.strftime("%d-%m-%Y %H:%M:%S")
-        }
-        for log in logs
-    ]
+    logs = (
+        db.query(AuditLog, RawMaterialPurchasing.batch_number)
+        .join(RawMaterialPurchasing, AuditLog.record_id == RawMaterialPurchasing.id)
+        .filter(AuditLog.table_name == "rmp", AuditLog.company_id == comp_code)
+        .order_by(AuditLog.edited_at.desc()).all()
+    )
+    return [{
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
+    } for l in logs]
 
 @router.post("/update")
 def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):

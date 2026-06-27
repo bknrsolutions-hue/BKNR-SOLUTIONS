@@ -48,7 +48,8 @@ def check_stock_availability(db: Session, comp_code: str, batch: str, location: 
         stock_entry.batch_number == batch,
         stock_entry.location == location,
         stock_entry.grade == grade,
-        stock_entry.packing_style == packing
+        stock_entry.packing_style == packing,
+        stock_entry.is_cancelled == False
     )
     if exclude_id:
         q = q.filter(stock_entry.id != exclude_id)
@@ -124,7 +125,8 @@ async def stock_report_page(
     
     # బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
     q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
-        stock_entry.company_id == comp_code
+        stock_entry.company_id == comp_code,
+        stock_entry.is_cancelled == False
     )
 
     # 🟢 INJECT ACTIVE UNIVERSAL FILTERS ON BASE QUERY POOL
@@ -151,11 +153,8 @@ async def stock_report_page(
         if from_date: q = q.filter(stock_entry.date >= date.fromisoformat(from_date))
         if to_date: q = q.filter(stock_entry.date <= date.fromisoformat(to_date))
 
-    # If no FY and no dates, return empty rows safely
-    if not selected_fy and not from_date:
-        rows = []
-    else:
-        rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
+    # If no FY and no dates, load all records by default
+    rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
     context = {
         "request": request, 
@@ -238,7 +237,10 @@ def export_xlsx(
     # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
     global_production_for, global_location = get_global_filters(request)
 
-    q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+    q = db.query(stock_entry).filter(
+        stock_entry.company_id == comp_code,
+        stock_entry.is_cancelled == False
+    )
 
     # 🟢 Layer universal bindings safely onto workbook generation parameters pool
     if global_production_for:
@@ -298,7 +300,10 @@ def export_pdf(
     # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
     global_production_for, global_location = get_global_filters(request)
 
-    q = db.query(stock_entry).filter(stock_entry.company_id == comp_code)
+    q = db.query(stock_entry).filter(
+        stock_entry.company_id == comp_code,
+        stock_entry.is_cancelled == False
+    )
 
     # 🟢 Layer universal bindings safely onto PDF render parameter pipeline
     if global_production_for:
@@ -341,7 +346,14 @@ async def get_stock_audits(request: Request, db: Session = Depends(get_db)):
     logs = (db.query(AuditLog, stock_entry.batch_number).join(stock_entry, AuditLog.record_id == stock_entry.id)
             .filter(AuditLog.table_name == "stock_entry", AuditLog.company_id == comp_code)
             .order_by(AuditLog.edited_at.desc()).limit(100).all())
-    return JSONResponse([{"timestamp": l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"), "user": l.AuditLog.edited_by.split('@')[0], "batch": l.batch_number, "field": l.AuditLog.field_name.replace('_', ' ').title(), "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"} for l in logs])
+    return JSONResponse([{
+        "timestamp": l.AuditLog.edited_at.replace(tzinfo=pytz.utc).astimezone(IST).strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
+    } for l in logs])
 
 # ------------------------------------------------------------
 # DELETE RECORD - TRANSACTIONAL

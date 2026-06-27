@@ -465,6 +465,24 @@ function toggleMenu(e) {
     m.style.display = (m.style.display === "block") ? "none" : "block";
 }
 
+async function toggleAudit() {
+    const panel = document.getElementById("auditPanel");
+    if (panel.style.display === "flex") { panel.style.display = "none"; return; }
+    panel.style.display = "flex";
+    const content = document.getElementById("auditContent");
+    content.innerHTML = "Loading...";
+    try {
+        const res = await fetch(`/reports/gate_entry/audit`);
+        const logs = await res.json();
+        content.innerHTML = logs.map(l => `
+            <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:6px; background:var(--card-bg); padding:8px; font-size:10px; border-radius:4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); line-height:1.4; color:var(--text);">
+                <b>${l.timestamp}</b> | ${l.batch}<br>
+                ${l.action}: ${l.details}<br>
+                <small style="color:var(--text-muted); font-weight:700;">By: ${l.user} (${l.email})</small>
+            </div>`).join('');
+    } catch(e) { content.innerHTML = "Error loading logs."; }
+}
+
 async function saveEdit() {
     if(!selectedRow) return;
     const payload = { id: selectedRow.dataset.id };

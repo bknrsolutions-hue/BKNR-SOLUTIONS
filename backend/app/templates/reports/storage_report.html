@@ -86,11 +86,20 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
 .btn-primary{ background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
 @media print {
-  .section, .tab-container, .btn-primary { display: none; }
-  .tab-content { display: block !important; border: none; }
-  .table-wrap{
-    background: var(--card-bg) !important;
-} max-height: none; overflow: visible; }
+  @page { margin: 6mm 8mm; size: A4 landscape; }
+  body { background: #fff !important; color: #000 !important; font-size: 7.5px !important; }
+  .section, .tab-container, .btn-primary { display: none !important; }
+  .tab-content { display: block !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+  .table-wrap { background: #fff !important; max-height: none !important; overflow: visible !important; }
+  table { min-width: 100% !important; width: 100% !important; border: 1px solid #000 !important; }
+  thead th { background: #f1f5f9 !important; color: #000 !important; font-size: 7px !important; padding: 3px 4px !important; border: 1px solid #000 !important; }
+  tbody td { padding: 3px 4px !important; font-size: 7px !important; border: 1px solid #e2e8f0 !important; color: #000 !important; }
+  .row-in { color: #047857 !important; }
+  .row-out { color: #b91c1c !important; }
+  /* KPI Cards for print */
+  div[style*="display:grid"] { margin: 5px 0 !important; gap: 8px !important; }
+  div[style*="background:var(--card-bg)"] { border: 1px solid #000 !important; padding: 8px 12px !important; }
+  div[style*="font-size:18px"] { font-size: 14px !important; }
 }
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css">
@@ -104,40 +113,63 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
   <button onclick="window.print()" class="btn-primary" style="background:#059669;">Download PDF / Print</button>
 </div>
 
-<form method="get" class="section">
-  <div class="filter-grid">
-    <div class="field">
-      <label>Production For</label>
-      <select name="production_for">
+<!-- COMPACT FILTERS & KPI PANEL -->
+<div class="section" style="padding: 10px 15px; margin: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+  
+  <!-- Compact Form/Filters -->
+  <form method="get" style="display: flex; align-items: flex-end; gap: 12px; margin: 0; padding: 0; background: none; border: none; box-shadow: none;">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Production For</label>
+      <select name="production_for" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 150px; background: var(--input-bg); color: var(--text);">
         <option value="">-- All Clients --</option>
         {% for p in production_for_list %}
         <option value="{{p}}" {% if p==request.query_params.get('production_for') %}selected{% endif %}>{{p}}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="field">
-      <label>Billing Month</label>
-      <input type="month" name="selected_month" value="{{selected_month}}">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Billing Month</label>
+      <input type="month" name="selected_month" value="{{selected_month}}" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 125px; background: var(--input-bg); color: var(--text);">
     </div>
-    <div class="field">
-      <label>Freezer</label>
-      <select name="freezer">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <label style="font-size: 9px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin: 0;">Freezer</label>
+      <select name="freezer" style="font-size: 11px; padding: 4px 6px; height: 28px; border-radius: 4px; border: 1px solid var(--border); width: 100px; background: var(--input-bg); color: var(--text);">
         <option value="">-- All --</option>
         {% for f in freezers %}
         <option value="{{f}}" {% if f==request.query_params.get('freezer') %}selected{% endif %}>{{f}}</option>
         {% endfor %}
       </select>
     </div>
+    <button type="submit" class="btn-primary" style="height: 28px; padding: 0 12px; font-size: 11px; line-height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin: 0;">Generate</button>
+  </form>
+
+  <!-- Compact KPI Cards -->
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <div style="background: var(--card-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); min-width: 120px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">IN Qty (KG)</div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--primary);">{{ "%.2f"|format(total_qty_sum) }}</div>
+    </div>
+    <div style="background: var(--card-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); min-width: 120px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 8px; font-weight: 700; color: #d97706; text-transform: uppercase; margin-bottom: 2px;">Holding Cost</div>
+        <div style="font-size: 13px; font-weight: 800; color: #d97706;">₹{{ "%.2f"|format(total_holding_sum) }}</div>
+    </div>
+    <div style="background: var(--card-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); min-width: 120px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 8px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">Production Cost</div>
+        <div style="font-size: 13px; font-weight: 800; color: #2563eb;">₹{{ "%.2f"|format(total_payable_sum) }}</div>
+    </div>
+    <div style="background: var(--card-bg); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid #059669; min-width: 130px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 8px; font-weight: 700; color: #059669; text-transform: uppercase; margin-bottom: 2px;">Grand Total</div>
+        <div style="font-size: 13px; font-weight: 800; color: #059669;">₹{{ "%.2f"|format(total_holding_sum + total_payable_sum) }}</div>
+    </div>
   </div>
-  <div style="text-align:right; margin-top:15px">
-    <button type="submit" class="btn-primary">Generate Report</button>
-  </div>
-</form>
+
+</div>
+
 
 <div class="tab-container">
   <button class="tab-btn active" onclick="openTab(event, 'summary_tab')">1. CONSOLIDATED SUMMARY</button>
-  <button class="tab-btn" onclick="openTab(event, 'combo_tab')">2. COMBO WISE SUB-TOTALS</button>
-  <button class="tab-btn" onclick="openTab(event, 'original_tab')">3. DETAILED ORIGINAL ENTRIES</button>
+  <button class="tab-btn" onclick="openTab(event, 'original_tab')">2. DETAILED ORIGINAL ENTRIES</button>
+  <button class="tab-btn" onclick="openTab(event, 'bill_tab')">🧾 3. MONTHLY BILL</button>
 </div>
 
 {% macro table_header() %}
@@ -151,14 +183,9 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
   <th>Variety</th>
   <th>Grade</th>
   <th>Species</th>
-  <th>HLSO Count</th>
-  <th>HOSO Count</th>
   <th>MC</th>
   <th>Loose</th>
   <th>Quantity (KG)</th>
-  <th>Prod Kg Value</th>
-  <th>Inventory Value</th>
-  <th>Sales Ref Rate</th>
   <th>Purpose/PO</th>
   <th>Prod At</th>
   <th>Prod For</th>
@@ -174,7 +201,14 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
           <th>Month IN</th>
           <th>Month OUT</th>
           <th>Closing MC</th>
+          <th>Rate/MC/Day</th>
+          <th>Total Days</th>
+          <th>Free Days</th>
+          <th>Payable Days</th>
           <th>Holding Cost ₹</th>
+          <th>Prod Cost/KG</th>
+          <th>Production Cost ₹</th>
+          <th>Total Cost ₹</th>
         </tr>
       </thead>
       <tbody>
@@ -190,14 +224,9 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
           <td>{{r.variety}}</td>
           <td>{{r.grade}}</td>
           <td>{{r.species}}</td>
-          <td>{{r.details.hlso_count}}</td>
-          <td>{{r.details.hoso_count}}</td>
           <td>{{r.details.no_of_mc}}</td>
           <td>{{r.details.loose}}</td>
           <td>{{r.details.quantity}}</td>
-          <td>{{r.details.product_kg_value}}</td>
-          <td>{{r.details.inventory_value}}</td>
-          <td>{{r.details.sales_reference_rate}}</td>
           <td>{{r.details.po_number}}</td>
           <td>{{r.production_at}}</td>
           <td>{{r.production_for}}</td>
@@ -205,73 +234,35 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
           <td class="row-in">{{r.monthly_in_mc}}</td>
           <td class="row-out">{{r.monthly_out_mc}}</td>
           <td style="font-weight:800; background:#f1f5f9">{{r.closing_mc}}</td>
-          <td style="font-weight:800; color:#d97706">₹ {{r.holding_cost}}</td>
+          <td>₹ {{ "%.2f"|format(r.holding_cost_per_mc_day or 0.0) }}</td>
+          <td>{{ r.total_days or 0 }} days</td>
+          <td>{{ r.free_days_tm or 0 }} days</td>
+          <td>{{ r.payable_days or 0 }} days</td>
+          <td style="font-weight:800; color:#d97706">₹ {{ "%.2f"|format(r.holding_cost or 0.0) }}</td>
+          <td>₹ {{ "%.2f"|format(r.production_cost_per_kg or 0.0) }}</td>
+          <td style="font-weight:800; color:#2563eb;">₹ {{ "%.2f"|format(r.payable_amount or 0.0) }}</td>
+          <td style="font-weight:800; color:#059669; background:#f0fdf4;">₹ {{ "%.2f"|format((r.holding_cost or 0.0) + (r.payable_amount or 0.0)) }}</td>
         </tr>
         {% endfor %}
       </tbody>
+      <tfoot>
+        <tr style="font-weight:bold; background:#f1f5f9; border-top:2px solid #000; border-bottom:2px solid #000;">
+          <td colspan="16" style="text-align:right; font-weight:bold;">Sub Total:</td>
+          <td>{{ report_data|sum(attribute='opening_mc') }}</td>
+          <td>{{ report_data|sum(attribute='monthly_in_mc') }}</td>
+          <td>{{ report_data|sum(attribute='monthly_out_mc') }}</td>
+          <td>{{ report_data|sum(attribute='closing_mc') }}</td>
+          <td colspan="4"></td>
+          <td style="font-weight:bold; color:#d97706">₹ {{ "%.2f"|format(report_data|sum(attribute='holding_cost')) }}</td>
+          <td></td>
+          <td style="font-weight:bold; color:#2563eb">₹ {{ "%.2f"|format(report_data|sum(attribute='payable_amount')) }}</td>
+          <td style="font-weight:bold; color:#059669; background:#f0fdf4;">₹ {{ "%.2f"|format(report_data|sum(attribute='holding_cost') + report_data|sum(attribute='payable_amount')) }}</td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 </div>
 
-<div id="combo_tab" class="tab-content">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Type</th>
-          {{ table_header() }}
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in report_data %}
-        <tr class="combo-group-header">
-          <td colspan="23">BATCH: {{r.batch_number}} | {{r.variety}} | {{r.grade}} | {{r.freezer}}</td>
-        </tr>
-        <tr class="opening-row">
-          <td>{{ billing_start_date }}</td>
-          <td>OPENING</td>
-          <td colspan="10">Previous Stock Brought Forward</td>
-          <td>{{r.opening_mc}}</td>
-          <td colspan="8"></td>
-        </tr>
-        {% for m in r.this_month_ledger %}
-        <tr>
-          <td>{{m.date}}</td>
-          <td class="{% if m.cargo_movement_type == 'IN' %}row-in{% else %}row-out{% endif %}">{{m.cargo_movement_type}}</td>
-          <td>{{r.batch_number}}</td>
-          <td>{{m.type_of_production}}</td>
-          <td>{{m.location}}</td>
-          <td>{{m.brand}}</td>
-          <td>{{m.freezer}}</td>
-          <td>{{m.packing_style}}</td>
-          <td>{{m.glaze}}</td>
-          <td>{{m.variety}}</td>
-          <td>{{m.grade}}</td>
-          <td>{{m.species}}</td>
-          <td>{{m.hlso_count}}</td>
-          <td>{{m.hoso_count}}</td>
-          <td>{{m.no_of_mc}}</td>
-          <td>{{m.loose}}</td>
-          <td>{{m.quantity}}</td>
-          <td>{{m.product_kg_value}}</td>
-          <td>{{m.inventory_value}}</td>
-          <td>{{m.sales_reference_rate}}</td>
-          <td>{{m.po_number}}</td>
-          <td>{{m.production_at}}</td>
-          <td>{{m.production_for}}</td>
-        </tr>
-        {% endfor %}
-        <tr class="subtotal-row">
-          <td colspan="14" style="text-align:right">CLOSING BALANCE:</td>
-          <td>{{r.closing_mc}}</td>
-          <td colspan="8" style="text-align:right; color:#d97706">Total Holding: ₹ {{r.holding_cost}}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 
 <div id="original_tab" class="tab-content">
   <div class="table-wrap">
@@ -299,14 +290,9 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
             <td>{{m.variety}}</td>
             <td>{{m.grade}}</td>
             <td>{{m.species}}</td>
-            <td>{{m.hlso_count}}</td>
-            <td>{{m.hoso_count}}</td>
             <td>{{m.no_of_mc}}</td>
             <td>{{m.loose}}</td>
             <td>{{m.quantity}}</td>
-            <td>{{m.product_kg_value}}</td>
-            <td>{{m.inventory_value}}</td>
-            <td>{{m.sales_reference_rate}}</td>
             <td>{{m.po_number}}</td>
             <td>{{m.production_at}}</td>
             <td>{{m.production_for}}</td>
@@ -317,6 +303,195 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
     </table>
   </div>
 </div>
+
+{% if selected_production_for %}
+<div id="bill_tab" class="tab-content" style="padding:20px 0;">
+    <div style="text-align:right; margin-bottom:15px; padding-right:20px;">
+        <button onclick="printMonthlyBill()" class="btn-primary" style="background:#0284c7;">🖨️ Print Monthly Bill</button>
+    </div>
+
+    <!-- INVOICE CARD CONTAINER -->
+    <div id="monthlyBillInvoice" style="background:#fff; color:#000; border:1px solid #ccc; max-width:950px; margin:0 auto; padding:24px 28px; font-family:Arial,sans-serif; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+        
+        <!-- Center Header -->
+        <div style="text-align:center; margin-bottom:6px;">
+            <h2 style="margin:0; font-size:16px; color:#003366; letter-spacing:0.5px; text-transform:uppercase; font-weight:bold;">Stock Processing & Storage Monthly Bill</h2>
+        </div>
+
+        <!-- Company Header -->
+        <div style="text-align:center; margin-bottom:12px;">
+            <b style="font-size:13px; text-transform:uppercase;">{{ company_name|default('BKNR ERP') }}</b>
+        </div>
+
+        <!-- 2-Column Info Grid -->
+        <div style="display:flex; justify-content:space-between; margin-top:12px; border-bottom:1px solid #ccc; padding-bottom:8px; font-size:9.5px; line-height:1.4;">
+            <div style="width:48%;">
+                <b>Client Name :</b> {{ selected_production_for }}<br>
+                <b>Location :</b> {{ selected_location|default('ALL LOCATIONS') }}<br>
+                <b>Billing Period :</b> {{ billing_start_date.strftime('%B %Y') }}
+            </div>
+            <div style="width:48%; text-align:right;">
+                <b>Bill No :</b> SP-{{ selected_production_for[:3]|upper }}-{{ selected_month|replace('-', '') }}<br>
+                <b>Bill Date :</b> {{ billing_start_date.strftime('%d-%B-%Y') }}<br>
+                <b>System Generated Statement</b>
+            </div>
+        </div>
+
+        <!-- Section 1: Active Available Stock -->
+        <div style="margin-top:14px; margin-bottom:4px; font-weight:bold; font-size:10.5px; color:#003366; text-transform:uppercase;">📦 Active Available Stock</div>
+        <table style="width:100%; border-collapse:collapse; font-size:9px; font-family:Arial,sans-serif; min-width:auto; margin-bottom:20px;">
+            <thead>
+                <tr style="border-bottom:1.5px solid #000; font-weight:bold; color:#003366;">
+                    <th style="text-align:left; padding:4px 3px;">Batch No</th>
+                    <th style="text-align:left; padding:4px 3px;">In Date</th>
+                    <th style="text-align:left; padding:4px 3px;">Details (Variety / Grade)</th>
+                    <th style="text-align:center; padding:4px 3px;">Available MC</th>
+                    <th style="text-align:right; padding:4px 3px;">Available Qty (KG)</th>
+                    <th style="text-align:right; padding:4px 3px;">Storage Rate</th>
+                    <th style="text-align:center; padding:4px 3px;">Total Days</th>
+                    <th style="text-align:center; padding:4px 3px;">Free Days</th>
+                    <th style="text-align:center; padding:4px 3px;">Payable Days</th>
+                    <th style="text-align:right; padding:4px 3px;">Holding Cost (₹)</th>
+                    <th style="text-align:right; padding:4px 3px;">Prod Rate/KG</th>
+                    <th style="text-align:right; padding:4px 3px;">Production Cost (₹)</th>
+                    <th style="text-align:right; padding:4px 3px;">Total (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in available_stock_items %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:4px 3px; font-weight:bold;">{{ r.batch_number }}</td>
+                    <td style="padding:4px 3px;">{{ r.in_date.strftime('%d-%m-%Y') if r.in_date else '-' }}</td>
+                    <td style="padding:4px 3px;">{{ [r.variety, r.grade, r.freezer]|select|join(' / ') }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.available_mc }}</td>
+                    <td style="padding:4px 3px; text-align:right;">{{ "%.2f"|format(r.qty_kg) }}</td>
+                    <td style="padding:4px 3px; text-align:right;">₹{{ "%.2f"|format(r.holding_cost_per_mc_day) }}/d</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.total_days }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.free_days_tm }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.payable_days }}</td>
+                    <td style="padding:4px 3px; text-align:right;">₹{{ "%.2f"|format(r.holding_cost) }}</td>
+                    <td style="padding:4px 3px; text-align:right;">₹{{ "%.2f"|format(r.production_cost_per_kg) }}</td>
+                    <td style="padding:4px 3px; text-align:right;">₹{{ "%.2f"|format(r.payable_amount) }}</td>
+                    <td style="padding:4px 3px; text-align:right; font-weight:bold;">₹{{ "%.2f"|format(r.holding_cost + r.payable_amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="13" style="padding:10px; text-align:center; color:var(--text-muted); font-style:italic;">No active stock in storage for this period.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:bold; background:#f8fafc; border-top:1.5px solid #000; border-bottom:1.5px solid #000;">
+                    <td colspan="3" style="padding:4px 3px; text-align:right; font-weight:bold;">Sub Total:</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ available_stock_items|sum(attribute='available_mc') }}</td>
+                    <td style="padding:4px 3px; text-align:right;">{{ "%.2f"|format(available_stock_items|sum(attribute='qty_kg')) }}</td>
+                    <td colspan="4"></td>
+                    <td style="padding:4px 3px; text-align:right; color:#d97706;">₹{{ "%.2f"|format(available_stock_items|sum(attribute='holding_cost')) }}</td>
+                    <td></td>
+                    <td style="padding:4px 3px; text-align:right; color:#2563eb;">₹{{ "%.2f"|format(available_stock_items|sum(attribute='payable_amount')) }}</td>
+                    <td style="padding:4px 3px; text-align:right; font-weight:bold;">₹{{ "%.2f"|format(available_stock_items|sum(attribute='holding_cost') + available_stock_items|sum(attribute='payable_amount')) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Section 2: Dispatched Stock Details -->
+        <div style="margin-top:14px; margin-bottom:4px; font-weight:bold; font-size:10.5px; color:#003366; text-transform:uppercase;">🚚 Dispatched Stock (This Month)</div>
+        <table style="width:100%; border-collapse:collapse; font-size:9px; font-family:Arial,sans-serif; min-width:auto;">
+            <thead>
+                <tr style="border-bottom:1.5px solid #000; font-weight:bold; color:#003366;">
+                    <th style="text-align:left; padding:4px 3px;">Batch No</th>
+                    <th style="text-align:left; padding:4px 3px;">In Date</th>
+                    <th style="text-align:left; padding:4px 3px;">Out Date</th>
+                    <th style="text-align:left; padding:4px 3px;">Details (Variety / Grade)</th>
+                    <th style="text-align:center; padding:4px 3px;">Dispatched MC</th>
+                    <th style="text-align:right; padding:4px 3px;">Dispatched Qty (KG)</th>
+                    <th style="text-align:center; padding:4px 3px;">Total Days</th>
+                    <th style="text-align:center; padding:4px 3px;">Free Days</th>
+                    <th style="text-align:center; padding:4px 3px;">Payable Days</th>
+                    <th style="text-align:right; padding:4px 3px;">Storage Rate</th>
+                    <th style="text-align:right; padding:4px 3px;">Holding Cost (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in dispatches_this_month %}
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:4px 3px; font-weight:bold;">{{ r.batch_number }}</td>
+                    <td style="padding:4px 3px;">{{ r.in_date.strftime('%d-%m-%Y') if r.in_date else '-' }}</td>
+                    <td style="padding:4px 3px;">{{ r.out_date.strftime('%d-%m-%Y') if r.out_date else '-' }}</td>
+                    <td style="padding:4px 3px;">{{ [r.variety, r.grade, r.freezer]|select|join(' / ') }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.mc_dispatched }}</td>
+                    <td style="padding:4px 3px; text-align:right;">{{ "%.2f"|format(r.qty_kg) }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.total_days }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.free_days_tm }}</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ r.payable_days }}</td>
+                    <td style="padding:4px 3px; text-align:right;">₹{{ "%.2f"|format(r.holding_cost_per_mc_day) }}/d</td>
+                    <td style="padding:4px 3px; text-align:right; font-weight:bold;">₹{{ "%.2f"|format(r.holding_cost) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" style="padding:10px; text-align:center; color:var(--text-muted); font-style:italic;">No dispatches processed during this billing month.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:bold; background:#f8fafc; border-top:1.5px solid #000; border-bottom:1.5px solid #000;">
+                    <td colspan="4" style="padding:4px 3px; text-align:right; font-weight:bold;">Sub Total:</td>
+                    <td style="padding:4px 3px; text-align:center;">{{ dispatches_this_month|sum(attribute='mc_dispatched') }}</td>
+                    <td style="padding:4px 3px; text-align:right;">{{ "%.2f"|format(dispatches_this_month|sum(attribute='qty_kg')) }}</td>
+                    <td colspan="4"></td>
+                    <td style="padding:4px 3px; text-align:right; font-weight:bold; color:#d97706;">₹{{ "%.2f"|format(dispatches_this_month|sum(attribute='holding_cost')) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Summary Totals Table -->
+        <div style="margin-top:14px; width:100%; display:flex; justify-content:flex-end;">
+            <table style="width:45%; border-collapse:collapse; font-size:9.5px; line-height:1.4; min-width:auto;">
+                <tr style="border-bottom:1px solid #ccc;">
+                    <td style="padding:4px 0;">Total Storage Holding Cost:</td>
+                    <td style="padding:4px 0; text-align:right; font-weight:bold; color:#d97706;">₹ {{ "%.2f"|format(total_holding_sum) }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #ccc;">
+                    <td style="padding:4px 0;">Total Production Processing Cost:</td>
+                    <td style="padding:4px 0; text-align:right; font-weight:bold; color:#2563eb;">₹ {{ "%.2f"|format(total_payable_sum) }}</td>
+                </tr>
+                <tr style="font-weight:bold; border-top:1.5px solid #000; border-bottom:2px double #000; font-size:10.5px;">
+                    <td style="padding:6px 0; color:#003366;">GRAND TOTAL PAYABLE:</td>
+                    <td style="padding:6px 0; text-align:right; color:#003366;">₹ {{ "%.2f"|format(total_holding_sum + total_payable_sum) }}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="clear:both;"></div>
+
+        <!-- Terms & Conditions -->
+        <div style="margin-top:16px; font-size:9px; color:#334155; border-top:1px solid #cbd5e1; padding-top:8px;">
+            <h4 style="margin:4px 0 2px; font-size:9.5px; color:#003366; text-transform:uppercase; font-weight:bold;">Terms &amp; Conditions</h4>
+            <ol style="margin:0; padding-left:14px; line-height:1.3;">
+                <li>Holding rent calculated dynamically using FIFO balances after active free storage days.</li>
+                <li>Production processing fees based on weight received at plant.</li>
+                <li>This is a system generated document. Any disputes must be raised within 7 working days.</li>
+            </ol>
+        </div>
+
+        <!-- Signatures -->
+        <div style="margin-top:35px; display:flex; justify-content:space-between; font-size:9.5px;">
+            <div style="width:40%; text-align:center;">
+                <div style="margin-top:30px; border-top:1px solid #000; padding-top:4px; font-weight:bold; color:#475569;">Client Authorized Signatory</div>
+            </div>
+            <div style="width:40%; text-align:center;">
+                <div style="margin-top:30px; border-top:1px solid #000; padding-top:4px; font-weight:bold; color:#475569;">{{ company_name|default('Company') }} Authorized Representative</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% else %}
+<div id="bill_tab" class="tab-content" style="padding:20px; text-align:center;">
+    <div style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:15px; border-radius:5px; font-weight:700;">
+        ⚠️ Please select a client in the "Production For" filter dropdown at the top and click "Generate Report" to view and print the Monthly Bill.
+    </div>
+</div>
+{% endif %}
 
 <script>
 function openTab(evt, tabName) {
@@ -331,6 +506,51 @@ function openTab(evt, tabName) {
   }
   document.getElementById(tabName).style.display = "block";
   evt.currentTarget.className += " active";
+}
+
+function printMonthlyBill() {
+  const invoiceEl = document.getElementById('monthlyBillInvoice');
+  if (!invoiceEl) { alert('Invoice data not found'); return; }
+
+  const printWin = window.open('', '_blank', 'width=1100,height=900');
+  if (!printWin) {
+    alert('Popup blocker is active. Please allow popups for this site.');
+    return;
+  }
+
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monthly Bill - Print Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; background: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        thead th { border-bottom: 1.5px solid #000; font-weight: bold; color: #003366; text-align: left; padding: 4px 2px; text-transform: uppercase; font-size: 9.5px; }
+        tbody td { border-bottom: 1px solid #ccc; padding: 4px 2px; font-size: 9px; }
+        tfoot td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 4px 2px; font-size: 9px; font-weight: bold; }
+        @media print {
+            body { padding: 0; }
+            @page { margin: 12mm 8mm; size: A4 portrait; }
+            #monthlyBillInvoice { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="monthlyBillInvoice" style="background:#fff; color:#000; border:none; padding:0; font-family:Arial,sans-serif;">
+        ${invoiceEl.innerHTML}
+    </div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 300);
+        }
+    <\/script>
+</body>
+</html>`);
+  printWin.document.close();
 }
 </script>
 

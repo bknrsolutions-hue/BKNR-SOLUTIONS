@@ -9,6 +9,7 @@ import calendar
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry as Inventory
 from app.database.models.criteria import production_for as ProductionFor
+from app.database.models.users import Company
 from app.utils.global_filters import get_global_filters
 
 router = APIRouter()
@@ -119,6 +120,8 @@ def storage_cost_report(
 
     # 💰 FINAL CALCULATIONS
     report_data = []
+    available_stock_items = []
+    dispatches_this_month = []
     total_qty_sum = 0.0
     total_holding_sum = 0.0
     total_payable_sum = 0.0
@@ -133,31 +136,147 @@ def storage_cost_report(
             ProductionFor.company_id == company_code,
             ProductionFor.production_for == item["production_for"],
             ProductionFor.freezer_name == item["freezer"],
-            ProductionFor.apply_from <= item["earliest_in_date"]
+            ProductionFor.glaze_percent == item["glaze"],
+            ProductionFor.status == "Active",
+            ProductionFor.apply_from <= billing_end_date
         ).order_by(ProductionFor.apply_from.desc()).first()
+
+        if not costing:
+            costing = db.query(ProductionFor).filter(
+                ProductionFor.company_id == company_code,
+                ProductionFor.production_for == item["production_for"],
+                ProductionFor.freezer_name == item["freezer"],
+                ProductionFor.status == "Active",
+                ProductionFor.apply_from <= billing_end_date
+            ).order_by(ProductionFor.apply_from.desc()).first()
 
         rate = float(costing.rate_per_mc_day) if costing else 0.0
         free_days = int(costing.free_days) if costing else 0
         p_cost_kg = float(costing.production_cost_per_kg) if costing else 0.0
 
-        holding_cost = 0.0
-        for inv in item["in_movements"]:
-            if inv["rem"] > 0:
-                billable_start = inv["date"] + timedelta(days=free_days)
-                calc_start = max(billable_start, billing_start_date)
+        # We will reconstruct in_movements and track dispatches
+        in_blocks = []
+        batch_dispatches = []
+        
+        combo_rows = db.query(Inventory).filter(
+            Inventory.company_id == company_code,
+            Inventory.batch_number == item["batch_number"],
+            Inventory.freezer == item["freezer"],
+            Inventory.glaze == item["glaze"],
+            Inventory.grade == item["grade"],
+            Inventory.variety == item["variety"],
+            Inventory.packing_style == item["packing_style"]
+        ).order_by(Inventory.date.asc(), Inventory.id.asc()).all()
+        
+        for r in combo_rows:
+            qty_mc = int(r.no_of_mc or 0)
+            qty_kg = float(r.quantity or 0)
+            if r.cargo_movement_type == "IN":
+                in_blocks.append({
+                    "date": r.date,
+                    "qty_received": qty_mc,
+                    "current_qty": qty_mc,
+                    "quantity_kg": qty_kg
+                })
+            else:
+                temp_out = qty_mc
+                for inv in in_blocks:
+                    if temp_out <= 0: break
+                    take = min(inv["current_qty"], temp_out)
+                    if take > 0:
+                        inv["current_qty"] -= take
+                        temp_out -= take
+                        if r.date >= billing_start_date and r.date <= billing_end_date:
+                            rent_start = inv["date"] + timedelta(days=free_days)
+                            calc_start = max(rent_start, billing_start_date)
+                            tot_days = (r.date - max(inv["date"], billing_start_date)).days + 1
+                            if r.date >= calc_start:
+                                pay_days = (r.date - calc_start).days + 1
+                                holding_cost_disp = round(pay_days * rate * take, 2)
+                            else:
+                                pay_days = 0
+                                holding_cost_disp = 0.0
+                            free_days_tm = tot_days - pay_days
+                                
+                            batch_dispatches.append({
+                                "batch_number": item["batch_number"],
+                                "in_date": inv["date"],
+                                "out_date": r.date,
+                                "variety": item["variety"],
+                                "grade": item["grade"],
+                                "freezer": item["freezer"],
+                                "packing_style": item["packing_style"],
+                                "mc_dispatched": take,
+                                "qty_kg": round((take / inv["qty_received"]) * inv["quantity_kg"], 2) if inv["qty_received"] > 0 else 0.0,
+                                "total_days": tot_days,
+                                "free_days_tm": free_days_tm,
+                                "payable_days": pay_days,
+                                "holding_cost_per_mc_day": rate,
+                                "holding_cost": holding_cost_disp
+                            })
+
+        batch_holding_cost = 0.0
+        for inv in in_blocks:
+            if inv["current_qty"] > 0:
+                rent_start = inv["date"] + timedelta(days=free_days)
+                calc_start = max(rent_start, billing_start_date)
+                tot_days = (billing_end_date - max(inv["date"], billing_start_date)).days + 1
                 if billing_end_date >= calc_start:
-                    days = (billing_end_date - calc_start).days + 1
-                    holding_cost += days * rate * inv["rem"]
+                    pay_days = (billing_end_date - calc_start).days + 1
+                    holding_cost_rem = round(pay_days * rate * inv["current_qty"], 2)
+                else:
+                    pay_days = 0
+                    holding_cost_rem = 0.0
+                free_days_tm = tot_days - pay_days
+                
+                batch_holding_cost += holding_cost_rem
+                
+                available_stock_items.append({
+                    "batch_number": item["batch_number"],
+                    "in_date": inv["date"],
+                    "variety": item["variety"],
+                    "grade": item["grade"],
+                    "freezer": item["freezer"],
+                    "packing_style": item["packing_style"],
+                    "available_mc": inv["current_qty"],
+                    "qty_kg": round((inv["current_qty"] / inv["qty_received"]) * inv["quantity_kg"], 2) if inv["qty_received"] > 0 else 0.0,
+                    "total_days": tot_days,
+                    "free_days_tm": free_days_tm,
+                    "payable_days": pay_days,
+                    "holding_cost_per_mc_day": rate,
+                    "holding_cost": holding_cost_rem,
+                    "production_cost_per_kg": p_cost_kg,
+                    "payable_amount": round(round((inv["current_qty"] / inv["qty_received"]) * inv["quantity_kg"], 2) * p_cost_kg, 2) if (inv["qty_received"] > 0 and inv["date"] >= billing_start_date and inv["date"] <= billing_end_date) else 0.0
+                })
+
+        dispatches_this_month.extend(batch_dispatches)
+        total_batch_holding = batch_holding_cost + sum(d["holding_cost"] for d in batch_dispatches)
+        total_batch_payable = round(item["monthly_in_qty"] * p_cost_kg, 2)
+
+        # Batch-level overall days calculations based on earliest_in_date
+        tot_days = (billing_end_date - max(item["earliest_in_date"], billing_start_date)).days + 1
+        rent_start = item["earliest_in_date"] + timedelta(days=free_days)
+        calc_start = max(rent_start, billing_start_date)
+        if billing_end_date >= calc_start:
+            pay_days = (billing_end_date - calc_start).days + 1
+        else:
+            pay_days = 0
+        free_days_tm = tot_days - pay_days
 
         item.update({
             "holding_cost_per_mc_day": rate,
-            "holding_cost": round(holding_cost, 2),
-            "payable_amount": round(item["monthly_in_qty"] * p_cost_kg, 2)
+            "holding_cost": round(total_batch_holding, 2),
+            "free_days": free_days,
+            "total_days": tot_days,
+            "free_days_tm": free_days_tm,
+            "payable_days": pay_days,
+            "production_cost_per_kg": p_cost_kg,
+            "payable_amount": total_batch_payable
         })
         
         total_qty_sum += item["monthly_in_qty"]
-        total_holding_sum += item["holding_cost"]
-        total_payable_sum += item["payable_amount"]
+        total_holding_sum += total_batch_holding
+        total_payable_sum += total_batch_payable
         
         report_data.append(item)
 
@@ -166,11 +285,16 @@ def storage_cost_report(
     p_at_list = [x[0] for x in db.query(Inventory.production_at).filter(Inventory.company_id == company_code).distinct().all()]
     fzrs = [x[0] for x in db.query(Inventory.freezer).filter(Inventory.company_id == company_code).distinct().all()]
 
+    c_info = db.query(Company).filter(Company.company_code == company_code).first()
+    company_name = c_info.company_name if c_info else "BKNR ERP"
+
     return templates.TemplateResponse(
         request=request, 
         name="reports/storage_report.html",
         context={
             "report_data": report_data,
+            "available_stock_items": available_stock_items,
+            "dispatches_this_month": dispatches_this_month,
             "production_for_list": p_for_list,
             "production_at_list": p_at_list,
             "freezers": fzrs,
@@ -180,6 +304,7 @@ def storage_cost_report(
             "billing_start_date": billing_start_date,
             "total_qty_sum": round(total_qty_sum, 2),
             "total_holding_sum": round(total_holding_sum, 2),
-            "total_payable_sum": round(total_payable_sum, 2)
+            "total_payable_sum": round(total_payable_sum, 2),
+            "company_name": company_name
         }
     )

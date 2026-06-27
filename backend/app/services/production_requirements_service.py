@@ -38,7 +38,10 @@ class ProductionRequirementService:
             pending_orders.company_id == company_id,
             (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
         )
-        stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_id)
+        stock_q = db.query(stock_entry).filter(
+            stock_entry.company_id == company_id,
+            stock_entry.is_cancelled == False
+        )
 
         if production_for_filter:
             orders_q = orders_q.filter(func.trim(pending_orders.company_name) == func.trim(production_for_filter))

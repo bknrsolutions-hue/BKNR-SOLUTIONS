@@ -177,9 +177,10 @@ async def get_all_soaking_audit(request: Request, db: Session = Depends(get_db))
     )
     return [{
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-        "user": l.AuditLog.edited_by.split('@')[0],
-        "batch": l.batch_number,
-        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}",
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 

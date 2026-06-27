@@ -203,18 +203,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                 hoso_summary[key]["total_kg"] += req_hoso_qty
                 drill_down_data["hoso"][key].append({"po_no": p.po_number, "buyer": getattr(p, 'buyer', 'N/A'), "grade": p.grade, "qty": req_hoso_qty})
 
-    # 4. HIGH PERFORMANCE TABLE DATA CALL ENGINE
-    pending_pool_q = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code)
-    
-    if g_prod_clean and g_prod_clean != "ALL":
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.production_for)) == g_prod_clean)
-        
-    if g_loc_clean and g_loc_clean != "ALL":
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)) == g_loc_clean)
-    elif user_allowed_locations:
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)).in_(user_allowed_locations))
 
-    pending_pool_q = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code)
+
+    pending_pool_q = db.query(HlsoForGrading).filter(
+        HlsoForGrading.company_id == company_code,
+        HlsoForGrading.status != "Completed",
+        HlsoForGrading.available_qty > 0.01
+    )
     
     if g_prod_clean and g_prod_clean != "ALL":
         pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.production_for)) == g_prod_clean)

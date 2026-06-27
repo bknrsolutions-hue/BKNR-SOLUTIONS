@@ -14,7 +14,8 @@ TABLES = [
     "grading",
     "peeling",
     "soaking",
-    "production"
+    "production",
+    "stock_entry"
 ]
 
 COLUMNS = [

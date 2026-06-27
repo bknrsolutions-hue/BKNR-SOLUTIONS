@@ -234,12 +234,14 @@ iframe{ width:100%; height:100%; border:none; }
         <div class="summary-title" style="color: var(--accent) !important;"><i class="fa-solid fa-boxes-packing"></i> HLSO For Grading Queue</div>
         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table class="sum-table" id="poolTable">
-                <thead><tr><th>Batch / Location</th><th>Species | Count</th><th style="text-align:center;">Avail Qty</th><th style="text-align:center; width:110px;">Status</th></tr></thead>
+                <thead><tr><th>Batch / Location</th><th>Production For</th><th>Species | Count</th><th style="text-align:center;">Avail Qty</th><th style="text-align:center; width:110px;">Status</th></tr></thead>
                 <tbody id="poolTableBody">
                     {% if deheading_pending %}
                         {% for item in deheading_pending %}
+                        {% if item.available_qty > 0.01 and item.status != 'Completed' %}
                         <tr data-status="{{ item.status }}" data-prod-for="{{ item.production_for }}">
                             <td style="text-align:left !important; padding-left:10px;"><b>{{ item.batch_number }}</b><br><small style="color:var(--text-muted); font-size: 9px;">{{ item.peeling_at }}</small></td>
+                            <td style="text-align:left !important; padding-left:10px; font-weight:700;">{{ item.production_for }}</td>
                             <td style="text-align:left !important; padding-left:10px;">{{ item.species }}<br><small style="color:var(--accent); font-weight:700;">In: {{ item.hoso_count }}</small></td>
                             <td style="text-align:center; color:var(--success); font-weight:800;">{{ "{:,.2f}".format(item.available_qty) }} KG</td>
                             <td style="text-align:center;">
@@ -249,6 +251,7 @@ iframe{ width:100%; height:100%; border:none; }
                                 </select>
                             </td>
                         </tr>
+                        {% endif %}
                         {% endfor %}
                     {% else %}
                         <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>
@@ -264,8 +267,24 @@ iframe{ width:100%; height:100%; border:none; }
 </div>
 
 <form id="gradingForm" method="post" action="/processing/grading" onsubmit="return validateForm()">
-<div class="section" id="formSection">
+<div class="section" id="formSection" style="position: relative;">
   <div class="section-title">New Grading Entry</div>
+  
+  <!-- ✅ PREMIUM INLINE CONFIRM PANEL -->
+  <div id="inlineConfirmPanel" class="confirm-panel">
+      <div class="confirm-header-container">
+          <div class="confirm-icon-badge">
+              <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <h3 class="confirm-title">Verify & Confirm Entry</h3>
+          <p class="confirm-subtitle">Please review the details below before saving</p>
+      </div>
+      <div id="confirmSummaryTable" class="confirm-receipt-card"></div>
+      <div class="confirm-actions">
+          <button type="button" onclick="cancelInlineConfirm()" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+          <button type="button" id="proceedSaveBtn" onclick="proceedGradingSave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-circle-check"></i> Confirm & Save</button>
+      </div>
+  </div>
   <div class="form-grid">
     
     <div class="field">
@@ -431,7 +450,7 @@ function changeLiveStatus(selectElement) {
     const row = selectElement.closest("tr");
     
     const batchNumber = row.cells[0].querySelector("b").innerText.trim();
-    const speciesCountText = row.cells[1].querySelector("small").innerText; 
+    const speciesCountText = row.cells[2].querySelector("small").innerText; 
     const hosoCount = speciesCountText.replace("In:", "").trim();
     const productionFor = row.getAttribute("data-prod-for").trim(); 
 
@@ -457,10 +476,22 @@ function changeLiveStatus(selectElement) {
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    selectElement.className = nextVal === "Completed" ? "table-status-select status-completed-select" : "table-status-select status-pending-select";
-                    selectElement.setAttribute("data-prev", nextVal);
-                    row.setAttribute("data-status", nextVal);
-                    sortPoolTable();
+                    if (nextVal === "Completed") {
+                        row.style.transition = "all 0.3s ease";
+                        row.style.opacity = "0";
+                        setTimeout(() => {
+                            row.remove();
+                            const tbody = document.getElementById("poolTableBody");
+                            if (tbody && tbody.querySelectorAll("tr").length === 0) {
+                                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>`;
+                            }
+                        }, 300);
+                    } else {
+                        selectElement.className = nextVal === "Completed" ? "table-status-select status-completed-select" : "table-status-select status-pending-select";
+                        selectElement.setAttribute("data-prev", nextVal);
+                        row.setAttribute("data-status", nextVal);
+                        sortPoolTable();
+                    }
                     Swal.fire({ icon: 'success', title: 'DB Updated', text: `Status changed to ${nextVal}`, timer: 1500, showConfirmButton: false });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Failed', text: data.message || 'Error updating DB' });
@@ -493,6 +524,21 @@ window.onload = () => {
         if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
     } catch(e) {}
     sortPoolTable();
+
+    {% if message %}
+    (function() {
+        const msg = {{ message | tojson }};
+        const isError = msg.includes('❌') || msg.includes('Error') || msg.includes('error');
+        Swal.fire({
+            icon: isError ? 'error' : 'success',
+            title: isError ? 'Error!' : 'Success!',
+            text: msg,
+            timer: isError ? undefined : 2000,
+            showConfirmButton: isError ? true : false,
+            confirmButtonColor: isError ? '#ef4444' : 'var(--accent)'
+        });
+    })();
+    {% endif %}
 };
 
 function initializeFormCompanies() {
@@ -710,33 +756,55 @@ function getFormDataSummary(formEl) {
     return summaryHtml;
 }
 
-document.getElementById("gradingForm").onsubmit = async function(e) {
+document.getElementById("gradingForm").onsubmit = function(e) {
     if (this.dataset.confirmed === "true") {
-        return;
+        return; // let the actual submit through
     }
     
     e.preventDefault();
     
+    // Build summary receipt rows
     const form = this;
-    const summaryHtml = getFormDataSummary(form);
-    
-    const confirmSave = await Swal.fire({
-        title: 'Confirm Save?',
-        html: `Do you want to save the written data card?<br>${summaryHtml}`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: 'var(--accent)',
-        confirmButtonText: 'Yes, Save it!',
-        cancelButtonText: 'Cancel'
+    let receiptHtml = '';
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden') return;
+        let label = '';
+        const pf = el.closest('.field'); if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+        if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+        let val = el.value;
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+        
+        const isNumeric = label.toUpperCase().includes('QTY') || label.toUpperCase().includes('KG') || label.toUpperCase().includes('AMOUNT') || label.toUpperCase().includes('RATE') || label.toUpperCase().includes('COUNT');
+        const valClass = isNumeric ? 'confirm-receipt-value highlighted' : 'confirm-receipt-value';
+        
+        receiptHtml += `
+            <div class="confirm-receipt-row">
+                <span class="confirm-receipt-label">${label}</span>
+                <span class="${valClass}">${val}</span>
+            </div>
+        `;
     });
-    
-    if (confirmSave.isConfirmed) {
-        form.dataset.confirmed = "true";
-        const btn = document.getElementById("submitBtn");
-        if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    document.getElementById('confirmSummaryTable').innerHTML = receiptHtml;
+    document.getElementById('inlineConfirmPanel').style.display = 'block';
+};
+
+function cancelInlineConfirm() {
+    document.getElementById('inlineConfirmPanel').style.display = 'none';
+    const form = document.getElementById('gradingForm');
+    if (form) form.dataset.confirmed = '';
+}
+
+function proceedGradingSave() {
+    const btn = document.getElementById('submitBtn');
+    const confirmBtn = document.getElementById('proceedSaveBtn');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    const form = document.getElementById('gradingForm');
+    if (form) {
+        form.dataset.confirmed = 'true';
         form.submit();
     }
-};
+}
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

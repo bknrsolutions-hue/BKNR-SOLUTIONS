@@ -496,10 +496,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             
             if(Array.isArray(logs) && logs.length > 0) {
                 content.innerHTML = logs.map(l => `
-                    <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                        <b>${l.timestamp}</b> | Container: ${l.container_no || 'N/A'}<br>
+                    <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:6px; background:var(--card-bg); padding:8px; font-size:10px; border-radius:4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); line-height:1.4; color:var(--text);">
+                        <b>${l.timestamp}</b> | ${l.batch}<br>
                         ${l.action}: ${l.details}<br>
-                        <small>User Operator: ${l.user}</small>
+                        <small style="color:var(--text-muted); font-weight:700;">By: ${l.user} (${l.email})</small>
                     </div>`).join('');
             } else {
                 content.innerHTML = `<div style="font-size:10px; color:var(--muted); text-align:center; padding:20px;">No operational audit history lines found inside table stack.</div>`;

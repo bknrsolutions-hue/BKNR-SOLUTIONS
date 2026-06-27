@@ -661,30 +661,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             if (res.ok) {
                 const logs = await res.json();
                 if(logs && logs.length > 0) {
-                    content.innerHTML = logs.map(data => `
-                        <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card-bg); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                            <b>${data.created_date} | ${data.created_time}</b><br>
-                            Invoice: ${data.invoice_no} | Action: ${data.updated_by ? 'Modification Trace' : 'Initial Creation'}<br>
-                            <small>User: ${data.created_by || 'System'}</small>
-                            ${data.updated_by ? `<br><small style="color:var(--muted)">Details: ${data.updated_by}</small>` : ''}
-                        </div>
-                    `).join('');
+                    content.innerHTML = logs.map(l => `
+                        <div class="audit-item" style="border-left:2px solid var(--accent); margin-bottom:6px; background:var(--card-bg); padding:8px; font-size:10px; border-radius:4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); line-height:1.4; color:var(--text);">
+                            <b>${l.timestamp}</b> | ${l.batch}<br>
+                            ${l.action}: ${l.details}<br>
+                            <small style="color:var(--text-muted); font-weight:700;">By: ${l.user} (${l.email})</small>
+                        </div>`).join('');
                 } else {
                     content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;">No audit items found in ledger history.</div>`;
-                }
-            } else if (res.status === 404 && globalSelectedId) {
-                const fallbackRes = await fetch(`${API_BASE}/audit/${globalSelectedId}`);
-                const data = await fallbackRes.json();
-                if(data.success) {
-                    content.innerHTML = `
-                        <div style="border-left:2px solid var(--accent); margin-bottom:8px; background:var(--card-bg); padding:8px; font-size:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                            <b>${data.created_date} | ${data.created_time}</b><br>
-                            Invoice: ${data.invoice_no} | Action: Initial Creation<br>
-                            <small>User: ${data.created_by}</small>
-                            ${data.updated_by ? `<br><small style="color:var(--muted)">Details: ${data.updated_by}</small>` : ''}
-                        </div>`;
-                } else {
-                    content.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center; padding:20px;">No logs discovered.</div>`;
                 }
             } else {
                 content.innerHTML = `<div style="font-size:11px; color:var(--danger); text-align:center; padding:20px;">Error loading audit stream records.</div>`;

@@ -313,26 +313,54 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 </div>
 
 <form id="purchasingForm" method="post" action="{% if edit_data %}/processing/raw_material_purchasing/update/{{edit_data.id}}{% else %}/processing/raw_material_purchasing{% endif %}" autocomplete="off">
-<div class="section" id="formSection">
-  <div class="section-title"><i class="fa-solid fa-file-invoice"></i> Supplier & Variety</div>
+<div class="section" id="formSection" style="position: relative;">
+  
+  <!-- ✅ PREMIUM INLINE CONFIRM PANEL -->
+  <div id="inlineConfirmPanel" class="confirm-panel">
+      <div class="confirm-header-container">
+          <div class="confirm-icon-badge">
+              <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <h3 class="confirm-title">Verify & Confirm Entry</h3>
+          <p class="confirm-subtitle">Please review the details below before saving</p>
+      </div>
+      <div id="confirmSummaryTable" class="confirm-receipt-card"></div>
+      <div class="confirm-actions">
+          <button type="button" onclick="cancelInlineConfirm()" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+          <button type="button" id="proceedSaveBtn" onclick="proceedPurchasingSave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-circle-check"></i> Confirm & Save</button>
+      </div>
+  </div>
+
   <div class="form-grid">
     
     <div class="field">
       <label>Production For</label>
-      <input list="prod_for_list" name="production_for" id="prod_for_dd" required placeholder="Select Company..." value="{{edit_data.production_for if edit_data else ''}}" autocomplete="off">
-      <datalist id="prod_for_list">{% for p in prod_for_list %}<option value="{{p}}">{% endfor %}</datalist>
+      <select name="production_for" id="prod_for_dd" required onchange="rebuildBatchDropdown()">
+          <option value="">Select Company</option>
+          {% for p in prod_for_list %}
+          <option value="{{p}}" {% if edit_data and edit_data.production_for == p %}selected{% endif %}>{{p}}</option>
+          {% endfor %}
+      </select>
     </div>
     
     <div class="field">
       <label>Receiving At</label>
-      <input list="loc_list_data" name="peeling_at" id="peeling_at" required placeholder="Location..." value="{{edit_data.peeling_at if edit_data else ''}}" autocomplete="off">
-      <datalist id="loc_list_data">{% for loc in peeling_locations %}<option value="{{loc}}">{% endfor %}</datalist>
+      <select name="peeling_at" id="peeling_at" required onchange="rebuildBatchDropdown()">
+          <option value="">Select Location</option>
+          {% for loc in peeling_locations %}
+          <option value="{{loc}}" {% if edit_data and edit_data.peeling_at == loc %}selected{% endif %}>{{loc}}</option>
+          {% endfor %}
+      </select>
     </div>
     
     <div class="field">
       <label>Batch Number</label>
-      <input list="batch_list_data" name="batch_number" id="batch_dd" required placeholder="Select Batch..." value="{{edit_data.batch_number if edit_data else ''}}" autocomplete="off">
-      <datalist id="batch_list_data"></datalist>
+      <select name="batch_number" id="batch_dd" required onchange="updateSupplierName()">
+          <option value="">Select Batch</option>
+          {% if edit_data %}
+          <option value="{{edit_data.batch_number}}" selected>{{edit_data.batch_number}}</option>
+          {% endif %}
+      </select>
     </div>
 
     <div class="field">
@@ -342,8 +370,12 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 
     <div class="field">
       <label>Product</label>
-      <input list="hsn_list_data" id="product_desc" name="product_description" required placeholder="Product..." value="{{edit_data.product_description if edit_data else ''}}" autocomplete="off">
-      <datalist id="hsn_list_data">{% for desc in hsn_list %}<option value="{{ desc }}">{% endfor %}</datalist>
+      <select id="product_desc" name="product_description" required onchange="handleProductChange()">
+          <option value="">Select Product</option>
+          {% for desc in hsn_list %}
+          <option value="{{ desc }}" {% if edit_data and edit_data.product_description == desc %}selected{% endif %}>{{ desc }}</option>
+          {% endfor %}
+      </select>
     </div>
 
     <div class="field">
@@ -353,14 +385,22 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
 
     <div class="field">
       <label>Variety</label>
-      <input list="variety_list_data" name="variety_name" id="variety_name" required value="{{edit_data.variety_name if edit_data else ''}}" autocomplete="off">
-      <datalist id="variety_list_data">{% for v in variety_list %}<option value="{{v}}">{% endfor %}</datalist>
+      <select name="variety_name" id="variety_name" required>
+          <option value="">Select Variety</option>
+          {% for v in variety_list %}
+          <option value="{{v}}" {% if edit_data and edit_data.variety_name == v %}selected{% endif %}>{{v}}</option>
+          {% endfor %}
+      </select>
     </div>
 
     <div class="field">
       <label>Species</label>
-      <input list="species_list_data" name="species" id="species" required value="{{edit_data.species if edit_data else ''}}" autocomplete="off">
-      <datalist id="species_list_data">{% for s in species_list %}<option value="{{s}}">{% endfor %}</datalist>
+      <select name="species" id="species" required>
+          <option value="">Select Species</option>
+          {% for s in species_list %}
+          <option value="{{s}}" {% if edit_data and edit_data.species == s %}selected{% endif %}>{{s}}</option>
+          {% endfor %}
+      </select>
     </div>
 
     <div class="field"><label>Count / Grade</label><input name="count" value="{{edit_data.count if edit_data else ''}}" autocomplete="off"></div>
@@ -503,16 +543,26 @@ function applyLogFilters() {
     });
 }
 
+function updateSupplierName() {
+    const batchVal = document.getElementById("batch_dd").value;
+    document.getElementById("supplier_name").value = batchSupplierMap[batchVal]?.supplier || "";
+    editModeActive = false;
+}
+
+function handleProductChange() {
+    const prodVal = document.getElementById("product_desc").value;
+    document.getElementById("hsn_code").value = hsnMap[prodVal] || "";
+}
+
 function rebuildBatchDropdown() {
     const compVal = document.getElementById("prod_for_dd").value.trim().toUpperCase();
     const locVal = document.getElementById("peeling_at").value.trim().toUpperCase();
-    const batchDL = document.getElementById("batch_list_data");
-    const batchInput = document.getElementById("batch_dd");
+    const batchSelect = document.getElementById("batch_dd");
     
-    batchDL.innerHTML = "";
+    const prevVal = batchSelect.value;
+    batchSelect.innerHTML = '<option value="">Select Batch</option>';
     
     if(!editModeActive) {
-        batchInput.value = "";
         document.getElementById("supplier_name").value = "";
     }
 
@@ -527,29 +577,24 @@ function rebuildBatchDropdown() {
                 if(dbComp === compVal && dbLoc === locVal) {
                     const opt = document.createElement('option');
                     opt.value = b;
-                    batchDL.appendChild(opt);
+                    opt.innerText = b;
+                    if (b === prevVal || (editModeActive && editBatchVal === b)) {
+                        opt.selected = true;
+                    }
+                    batchSelect.appendChild(opt);
                 }
             }
         });
     }
+    updateSupplierName();
 }
 
-document.getElementById("prod_for_dd")?.addEventListener("input", rebuildBatchDropdown);
-document.getElementById("peeling_at")?.addEventListener("input", rebuildBatchDropdown);
-
 let editModeActive = {% if edit_data %} true {% else %} false {% endif %};
+let editBatchVal = "{% if edit_data %}{{ edit_data.batch_number }}{% else %}{% endif %}";
+
 if(editModeActive) {
     setTimeout(rebuildBatchDropdown, 200);
 }
-
-document.getElementById("batch_dd")?.addEventListener("input", function() {
-    document.getElementById("supplier_name").value = batchSupplierMap[this.value]?.supplier || "";
-    editModeActive = false;
-});
-
-document.getElementById("product_desc")?.addEventListener("input", function() {
-    document.getElementById("hsn_code").value = hsnMap[this.value] || "";
-});
 
 function calcFormula(){
   const g1 = parseFloat(document.getElementById("g1").value) || 0;
@@ -667,9 +712,9 @@ function getFormDataSummary(formEl) {
     return summaryHtml;
 }
 
-document.getElementById("purchasingForm").addEventListener("submit", async function(e) {
+document.getElementById("purchasingForm").addEventListener("submit", function(e) {
     if (this.dataset.confirmed === "true") {
-        return;
+        return; // let the actual submit through
     }
     
     e.preventDefault();
@@ -679,23 +724,49 @@ document.getElementById("purchasingForm").addEventListener("submit", async funct
     });
     
     const form = this;
-    const summaryHtml = getFormDataSummary(form);
     
-    const confirmSave = await Swal.fire({
-        title: 'Confirm Save?',
-        html: `Do you want to save the written data card?<br>${summaryHtml}`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: 'var(--accent)',
-        confirmButtonText: 'Yes, Save it!',
-        cancelButtonText: 'Cancel'
+    // Build summary receipt rows
+    let receiptHtml = '';
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden') return;
+        let label = '';
+        const pf = el.closest('.field'); if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+        if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+        let val = el.value;
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+        
+        const isNumeric = label.toUpperCase().includes('QTY') || label.toUpperCase().includes('KG') || label.toUpperCase().includes('AMOUNT') || label.toUpperCase().includes('RATE') || label.toUpperCase().includes('COUNT') || label.toUpperCase().includes('WEIGHT');
+        const valClass = isNumeric ? 'confirm-receipt-value highlighted' : 'confirm-receipt-value';
+        
+        receiptHtml += `
+            <div class="confirm-receipt-row">
+                <span class="confirm-receipt-label">${label}</span>
+                <span class="${valClass}">${val}</span>
+            </div>
+        `;
     });
+    document.getElementById('confirmSummaryTable').innerHTML = receiptHtml;
+    document.getElementById('inlineConfirmPanel').style.display = 'block';
+});
+
+function cancelInlineConfirm() {
+    document.getElementById('inlineConfirmPanel').style.display = 'none';
+    const form = document.getElementById("purchasingForm");
+    if (form) form.dataset.confirmed = '';
+}
+
+function proceedPurchasingSave() {
+    const btn = document.getElementById("submitBtn");
+    const confirmBtn = document.getElementById('proceedSaveBtn');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
     
-    if (confirmSave.isConfirmed) {
-        form.dataset.confirmed = "true";
+    const form = document.getElementById("purchasingForm");
+    if (form) {
+        form.dataset.confirmed = 'true';
         form.submit();
     }
-});
+}
 
 window.onclick = () => {
     const dm = document.getElementById("dropdownMenu");

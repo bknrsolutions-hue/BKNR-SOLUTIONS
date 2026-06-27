@@ -150,6 +150,17 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
     z-index: 100; border-radius: 12px;
 }
 .lock-cover.unlocked::after { display: none; }
+tr.selected-row td {
+    background-color: rgba(37, 99, 235, 0.12) !important;
+    color: var(--accent) !important;
+}
+
+/* FLOATING MENU */
+#threeDotsMenu { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: none; }
+.menu-trigger { background: var(--accent); color: #fff; width: 50px; height: 50px; border-radius: 25px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#dropdownMenu{ display:none; position:absolute; right:0; bottom: 60px; background:var(--card-bg) !important; border:1px solid var(--border); border-radius:8px; width:150px; box-shadow:0 4px 15px rgba(0,0,0,0.15); overflow: hidden; }
+.menu-item{ padding:12px 14px; font-size:11px; font-weight:600; cursor:pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); color: var(--text); transition: 0.1s; text-align: left; }
+.menu-item:hover { background: var(--row-hover); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -174,8 +185,25 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
   </div>
 </div>
 
-<form method="post" action="/inventory/stock_entry" id="stockInForm" onsubmit="return validateBeforeSubmit()">
-<div class="section hidden lock-cover" id="inBox">
+<form method="post" action="/inventory/stock_entry" id="stockInForm">
+<div class="section hidden lock-cover" id="inBox" style="position: relative;">
+    
+    <!-- ✅ PREMIUM INLINE CONFIRM PANEL (STOCK IN) -->
+    <div id="inlineConfirmPanelIn" class="confirm-panel">
+        <div class="confirm-header-container">
+            <div class="confirm-icon-badge">
+                <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <h3 class="confirm-title">Verify & Confirm Stock In</h3>
+            <p class="confirm-subtitle">Please review the details below before saving</p>
+        </div>
+        <div id="confirmSummaryTableIn" class="confirm-receipt-card"></div>
+        <div class="confirm-actions">
+            <button type="button" onclick="cancelInlineConfirm('In')" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+            <button type="button" id="proceedSaveBtnIn" onclick="proceedStockInSave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solidfa-circle-check"></i> Confirm & Save</button>
+        </div>
+    </div>
+
     <div class="section-title"><i class="fa-solid fa-circle-down"></i> Stock In Details</div>
     
     <div class="form-grid" style="position: relative; z-index: 101;">
@@ -262,7 +290,24 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
 </div>
 </form>
 
-<div class="section hidden lock-cover" id="outBox">
+<div class="section hidden lock-cover" id="outBox" style="position: relative;">
+    
+    <!-- ✅ PREMIUM INLINE CONFIRM PANEL (STOCK OUT) -->
+    <div id="inlineConfirmPanelOut" class="confirm-panel">
+        <div class="confirm-header-container">
+            <div class="confirm-icon-badge" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+                <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <h3 class="confirm-title">Verify & Confirm Stock Out</h3>
+            <p class="confirm-subtitle">Please review the details below before saving</p>
+        </div>
+        <div id="confirmSummaryTableOut" class="confirm-receipt-card"></div>
+        <div class="confirm-actions">
+            <button type="button" onclick="cancelInlineConfirm('Out')" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+            <button type="button" id="proceedSaveBtnOut" onclick="proceedStockOutSave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px; background: var(--danger) !important; border-color: var(--danger) !important;"><i class="fa-solid fa-circle-check"></i> Confirm & Save</button>
+        </div>
+    </div>
+
     <div class="section-title"><i class="fa-solid fa-circle-up"></i> Stock Out Search</div>
     <form id="outForm" method="post" action="/inventory/stock_out_save">
     
@@ -340,7 +385,7 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
 <div class="section">
     <div class="section-title"><i class="fa-solid fa-list-check"></i> Today's Warehouse Transactions</div>
     <div class="table-container">
-        <table style="min-width: 1850px;">
+        <table id="logTable" style="min-width: 1850px;">
         <thead>
             <tr>
                 <th style="width: 50px;">ID</th>
@@ -363,9 +408,9 @@ input[readonly] { background: var(--header-bg) !important; color: var(--text) !i
                 <th style="width: 110px; text-align: left;">User</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="dataTableBody">
         {% for r in table_data %}
-        <tr>
+        <tr onclick="selectRow(this)" data-id="{{r.id}}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" style="cursor: pointer;">
             <td>{{r.id}}</td>
             <td>{{r.date}}</td>
             <td style="color: var(--muted); font-size: 9px !important;">{{r.time.strftime('%H:%M:%S') if r.time else ''}}</td>
@@ -642,6 +687,214 @@ function validateBeforeSubmit() {
     return true;
 }
 
+// ✅ IN & OUT INLINE CONFIRMATION SUBMISSION TRIGGERS
+document.getElementById("stockInForm").onsubmit = function(e) {
+    if (this.dataset.confirmed === "true") {
+        return;
+    }
+    e.preventDefault();
+    if (!validateBeforeSubmit()) return;
+    
+    // Build summary receipt rows
+    const form = this;
+    let receiptHtml = '';
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden') return;
+        let label = '';
+        const pf = el.closest('.field'); if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+        if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+        let val = el.value;
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+        
+        const isNumeric = label.toUpperCase().includes('QTY') || label.toUpperCase().includes('KG') || label.toUpperCase().includes('AMOUNT') || label.toUpperCase().includes('RATE') || label.toUpperCase().includes('COUNT') || label.toUpperCase().includes('MC') || label.toUpperCase().includes('LOOSE');
+        const valClass = isNumeric ? 'confirm-receipt-value highlighted' : 'confirm-receipt-value';
+        
+        receiptHtml += `
+            <div class="confirm-receipt-row">
+                <span class="confirm-receipt-label">${label}</span>
+                <span class="${valClass}">${val}</span>
+            </div>
+        `;
+    });
+    document.getElementById('confirmSummaryTableIn').innerHTML = receiptHtml;
+    document.getElementById('inlineConfirmPanelIn').style.display = 'block';
+};
+
+document.getElementById("outForm").onsubmit = function(e) {
+    if (this.dataset.confirmed === "true") {
+        return;
+    }
+    e.preventDefault();
+    
+    // Copy table visible inputs values to hidden inputs
+    const rows = document.querySelectorAll("#reportRows tr");
+    let totalOutMC = 0;
+    let totalOutLoose = 0;
+    let itemsHtml = '';
+    
+    rows.forEach((tr, index) => {
+        const mcInput = tr.querySelector(`#mc_${index}`);
+        const loInput = tr.querySelector(`#lo_${index}`);
+        
+        const mcVal = parseInt(mcInput.value) || 0;
+        const loVal = parseInt(loInput.value) || 0;
+        
+        document.getElementById(`hmc_${index}`).value = mcVal;
+        document.getElementById(`hlo_${index}`).value = loVal;
+        
+        if (mcVal > 0 || loVal > 0) {
+            totalOutMC += mcVal;
+            totalOutLoose += loVal;
+            
+            const storeLoc = tr.cells[0].innerText.trim();
+            const batchNum = tr.querySelector('.text-green').innerText.trim();
+            
+            itemsHtml += `
+                <div class="confirm-receipt-row" style="grid-column: span 2; border-bottom: 1px dashed var(--border); background: rgba(239, 68, 68, 0.04); padding: 4px 8px; border-radius: 4px;">
+                    <span class="confirm-receipt-label" style="color:var(--danger);"><i class="fa-solid fa-arrow-up-from-bracket"></i> ${batchNum} (${storeLoc})</span>
+                    <span class="confirm-receipt-value highlighted">MC: ${mcVal} | LOOSE: ${loVal}</span>
+                </div>
+            `;
+        }
+    });
+    
+    if (totalOutMC <= 0 && totalOutLoose <= 0) {
+        Swal.fire('Input Error', 'Please enter OUT MC or OUT Loose for at least one batch row.', 'warning');
+        return;
+    }
+    
+    // Build summary receipt rows for common parameters
+    const form = this;
+    let receiptHtml = '';
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden' || el.name.startsWith('out_') || el.tagName === 'INPUT') return;
+        let label = '';
+        const pf = el.closest('.field'); if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+        if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+        let val = el.value;
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+        
+        receiptHtml += `
+            <div class="confirm-receipt-row">
+                <span class="confirm-receipt-label">${label}</span>
+                <span class="confirm-receipt-value">${val}</span>
+            </div>
+        `;
+    });
+    
+    document.getElementById('confirmSummaryTableOut').innerHTML = receiptHtml + itemsHtml;
+    document.getElementById('inlineConfirmPanelOut').style.display = 'block';
+};
+
+let selectedId = null;
+
+function selectRow(el) {
+    if (el.classList.contains("cancelled-row")) {
+        selectedId = null;
+        document.getElementById("threeDotsMenu").style.display = "none";
+        return;
+    }
+
+    const isSelected = el.classList.contains("selected-row");
+    document.querySelectorAll("#dataTableBody tr").forEach(x => x.classList.remove("selected-row"));
+    
+    if (isSelected) {
+        selectedId = null;
+        document.getElementById("threeDotsMenu").style.display = "none";
+        return;
+    }
+    
+    const id = el.dataset.id;
+    if (!id) return;
+    
+    el.classList.add("selected-row");
+    selectedId = id;
+    
+    // Show threeDotsMenu
+    const menu = document.getElementById("threeDotsMenu");
+    menu.style.display = "block";
+    
+    document.getElementById("dotsBtn").onclick = function(e) {
+        e.stopPropagation();
+        const dd = document.getElementById("dropdownMenu");
+        dd.style.display = (dd.style.display === "block") ? "none" : "block";
+    };
+}
+
+// Hide dropdown on clicking anywhere else
+document.addEventListener("click", function(e) {
+    if (!e.target.closest("#threeDotsMenu")) {
+        const dd = document.getElementById("dropdownMenu");
+        if (dd) dd.style.display = "none";
+    }
+});
+
+async function deleteSelected() {
+    if (!selectedId) return;
+    
+    const { value: reason } = await Swal.fire({
+        title: 'Cancel Stock Record',
+        text: "Please enter the reason for cancellation:",
+        input: 'text',
+        inputPlaceholder: 'Reason for cancellation',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        confirmButtonText: 'Yes, Cancel it!',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) {
+                return 'Cancellation reason is required!'
+            }
+        }
+    });
+
+    if (reason) {
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = `/inventory/stock_entry/delete/${selectedId}`;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'cancel_reason';
+        input.value = reason;
+        
+        f.appendChild(input);
+        document.body.appendChild(f);
+        f.submit();
+    }
+}
+
+function cancelInlineConfirm(mode) {
+    document.getElementById(`inlineConfirmPanel${mode}`).style.display = 'none';
+    const form = document.getElementById(mode === 'In' ? 'stockInForm' : 'outForm');
+    if (form) form.dataset.confirmed = '';
+}
+
+function proceedStockInSave() {
+    const btn = document.getElementById("submitInBtn");
+    const confirmBtn = document.getElementById("proceedSaveBtnIn");
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    
+    const form = document.getElementById("stockInForm");
+    if (form) {
+        form.dataset.confirmed = "true";
+        form.submit();
+    }
+}
+
+function proceedStockOutSave() {
+    const btn = document.getElementById("submitOutBtn");
+    const confirmBtn = document.getElementById("proceedSaveBtnOut");
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    
+    const form = document.getElementById("outForm");
+    if (form) {
+        form.dataset.confirmed = "true";
+        form.submit();
+    }
+}
+
 async function searchStock(){
   const params = new URLSearchParams(new FormData(document.getElementById('outForm')));
   const res = await fetch("/inventory/stock_out_report?"+params);
@@ -679,6 +932,23 @@ async function searchStock(){
   });
 }
 </script>
+<div id="threeDotsMenu">
+    <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
+    <div id="dropdownMenu">
+        <div class="menu-item" onclick="deleteSelected()" style="color:var(--danger);"><i class="fa-solid fa-ban"></i> Delete / Cancel</div>
+    </div>
+</div>
+{% if success_msg %}
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Saved!',
+        text: '{{ success_msg }}',
+        timer: 1500,
+        showConfirmButton: false
+    });
+</script>
+{% endif %}
 <script src="/static/js/global-loader.js"></script>
 </body>
 </html>

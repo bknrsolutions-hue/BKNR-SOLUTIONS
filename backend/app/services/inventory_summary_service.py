@@ -59,8 +59,8 @@ class InventorySummaryService:
             ).label("last_transaction_date")
 
         ).filter(
-            stock_entry.company_id == company_id
-
+            stock_entry.company_id == company_id,
+            stock_entry.is_cancelled == False
         ).group_by(
             stock_entry.company_id,
             stock_entry.species,

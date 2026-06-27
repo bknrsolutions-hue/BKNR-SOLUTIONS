@@ -222,7 +222,24 @@ tr.selected { background: var(--processing-bg) !important; }
 </div>
 
 <form id="entryForm" autocomplete="off">
-  <div class="section" id="formSection">
+  <div class="section" id="formSection" style="position: relative;">
+    
+    <!-- ✅ PREMIUM INLINE CONFIRM PANEL -->
+    <div id="inlineConfirmPanel" class="confirm-panel">
+        <div class="confirm-header-container">
+            <div class="confirm-icon-badge">
+                <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <h3 class="confirm-title">Verify & Confirm Entry</h3>
+            <p class="confirm-subtitle">Please review the details below before saving</p>
+        </div>
+        <div id="confirmSummaryTable" class="confirm-receipt-card"></div>
+        <div class="confirm-actions">
+            <button type="button" onclick="cancelInlineConfirm()" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+            <button type="button" id="proceedSaveBtn" onclick="proceedGateEntrySave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-circle-check"></i> Confirm & Save</button>
+        </div>
+    </div>
+
     <div class="form-grid">
       <div class="section-title"><i class="fa-solid fa-truck-ramp-box"></i> Entry Pipeline Details</div>
       
@@ -472,28 +489,45 @@ function getFormDataSummary(formEl) {
     return summaryHtml;
 }
 
-document.getElementById("entryForm").onsubmit = async (e) => {
+document.getElementById("entryForm").onsubmit = function(e) {
     e.preventDefault();
     
     const form = e.target;
-    const summaryHtml = getFormDataSummary(form);
     
-    const confirmSave = await Swal.fire({
-        title: 'Confirm Gate Entry?',
-        html: `Do you want to save the written data card?<br>${summaryHtml}`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: 'var(--accent)',
-        confirmButtonText: 'Yes, Save it!',
-        cancelButtonText: 'Cancel'
+    // Build summary receipt rows
+    let receiptHtml = '';
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden') return;
+        let label = '';
+        const pf = el.closest('.field'); if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+        if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+        let val = el.value;
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+        
+        const isNumeric = label.toUpperCase().includes('QTY') || label.toUpperCase().includes('BOX') || label.toUpperCase().includes('NUMBER') || label.toUpperCase().includes('PASS');
+        const valClass = isNumeric ? 'confirm-receipt-value highlighted' : 'confirm-receipt-value';
+        
+        receiptHtml += `
+            <div class="confirm-receipt-row">
+                <span class="confirm-receipt-label">${label}</span>
+                <span class="${valClass}">${val}</span>
+            </div>
+        `;
     });
-    if (!confirmSave.isConfirmed) {
-        return;
-    }
-    
+    document.getElementById('confirmSummaryTable').innerHTML = receiptHtml;
+    document.getElementById('inlineConfirmPanel').style.display = 'block';
+};
+
+function cancelInlineConfirm() {
+    document.getElementById('inlineConfirmPanel').style.display = 'none';
+}
+
+async function proceedGateEntrySave() {
+    const form = document.getElementById("entryForm");
+    const confirmBtn = document.getElementById('proceedSaveBtn');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
     const btn = document.getElementById("saveBtn");
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
 
     const formData = new FormData(form);
     try {
@@ -509,14 +543,16 @@ document.getElementById("entryForm").onsubmit = async (e) => {
                 window.location.reload();
             });
         } else {
+            document.getElementById('inlineConfirmPanel').style.display = 'none';
+            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE GATE ENTRY'; }
             Swal.fire({icon: 'error', title: data.error || 'Execution Error'});
-            btn.disabled = false;
-            btn.innerHTML = 'SAVE GATE ENTRY';
         }
     } catch (err) {
+        document.getElementById('inlineConfirmPanel').style.display = 'none';
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE GATE ENTRY'; }
         Swal.fire({icon: 'error', title: 'Local Connection Error'});
-        btn.disabled = false;
-        btn.innerHTML = 'SAVE GATE ENTRY';
     }
 };
 

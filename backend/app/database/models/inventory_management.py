@@ -7,6 +7,7 @@ from sqlalchemy import (
     Time,
     Text,
     DateTime,
+    Boolean,
     UniqueConstraint
 )
 from datetime import datetime  # ✅ Idhi kachithanga undali
@@ -45,6 +46,13 @@ class stock_entry(Base, metacolumns):
     production_at = Column(String(255))
     production_for = Column(String(255))
     species = Column(String(100))
+
+    # Cancellation attributes
+    status = Column(String(50), default="Active")
+    is_cancelled = Column(Boolean, default=False)
+    cancel_reason = Column(Text, nullable=True)
+    cancelled_by = Column(String(255), nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
 
     # ======================================
     # 🔥 INVENTORY COSTING COLUMNS (NEW)

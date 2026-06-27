@@ -341,18 +341,19 @@ async def delete_grading(request: Request, db: Session = Depends(get_db)):
 @router.get("/audit")
 def get_grading_audits(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    logs = db.query(AuditLog).filter(
-        AuditLog.company_id == company_id,
-        AuditLog.table_name == "grading"
-    ).order_by(desc(AuditLog.edited_at)).limit(100).all()
-    
+    logs = (
+        db.query(AuditLog, Grading.batch_number)
+        .join(Grading, AuditLog.record_id == Grading.id)
+        .filter(AuditLog.table_name == "grading", AuditLog.company_id == company_id)
+        .order_by(desc(AuditLog.edited_at)).limit(100).all()
+    )
     return [{
-        "record_id": l.record_id,
-        "field_name": l.field_name,
-        "old_value": l.old_value,
-        "new_value": l.new_value,
-        "edited_by": l.edited_by,
-        "edited_at": l.edited_at.strftime("%d-%m-%Y %H:%M")
+        "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
+        "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
 
 # ============================================================

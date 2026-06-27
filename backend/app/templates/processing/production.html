@@ -396,11 +396,28 @@
 {% endif %}
 
 <div id="entryModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="position: relative;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
             <h3 style="margin:0; font-size:13px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:0.5px;"><i class="fa-solid fa-plus-circle"></i> New Production Entry</h3>
             <span onclick="closeModal()" style="font-size:24px; cursor:pointer; color:var(--text-muted);">&times;</span>
         </div>
+
+        <!-- ✅ PREMIUM INLINE CONFIRM PANEL -->
+        <div id="inlineConfirmPanel" class="confirm-panel">
+            <div class="confirm-header-container">
+                <div class="confirm-icon-badge">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <h3 class="confirm-title">Verify & Confirm Entry</h3>
+                <p class="confirm-subtitle">Please review the details below before saving</p>
+            </div>
+            <div id="confirmSummaryTable" class="confirm-receipt-card"></div>
+            <div class="confirm-actions">
+                <button type="button" onclick="cancelInlineConfirm()" class="btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-arrow-left"></i> Edit Form</button>
+                <button type="button" id="proceedSaveBtn" onclick="proceedProductionSave()" class="btn btn-primary" style="flex:2; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="fa-solid fa-circle-check"></i> Confirm & Save</button>
+            </div>
+        </div>
+
         <form method="post" action="/processing/production" id="productionForm">
             <div class="form-grid">
                 
@@ -486,8 +503,8 @@
                 <div class="field"><label>Total KG</label><input type="number" step="0.01" id="kg" name="production_qty" readonly style="font-weight:800; color:var(--accent) !important; text-align:center;"></div>
             </div>
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-                <button type="button" onclick="closeModal()" style="background:var(--text-muted); color:white; border:none; padding:12px; border-radius:6px; font-weight:600; flex:1; cursor:pointer; text-transform:uppercase;">Cancel</button>
-                <button type="submit" id="submitBtn" style="flex:2; background:var(--accent); color:white; border:none; padding:12px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase;">Save Entry</button>
+                <button type="button" onclick="closeModal()" class="btn" style="flex:1; padding:12px; border-radius:6px; font-size:12px;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary" style="flex:2; padding:12px; border-radius:6px; font-size:12px;"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
             </div>
         </form>
     </div>
@@ -516,7 +533,7 @@ const RAW_PACKING_STYLES = [
 
 const SOAKING_MON_DATA = [
     {% for s in soaking_data %}
-    { batch: "{{s.batch_number}}", comp: "{{s.production_for}}", loc: "{{s.production_at}}", varty: "{{s.variety_name}}", sps: "{{s.species}}" },
+    { batch: {{ s.batch_number | tojson }}, comp: {{ s.production_for | tojson }}, loc: {{ s.production_at | tojson }}, varty: {{ s.variety_name | tojson }}, sps: {{ s.species | tojson }} },
     {% endfor %}
 ];
 
@@ -995,35 +1012,61 @@ function getFormDataSummary(formEl) {
     return summaryHtml;
 }
 
-const productionForm = document.getElementById("productionForm");
-if (productionForm) {
-    productionForm.onsubmit = async function(e) {
-        if (this.dataset.confirmed === "true") {
-            return;
+(function setupProductionForm() {
+    const productionForm = document.getElementById("productionForm");
+    if (!productionForm) return;
+
+    productionForm.addEventListener('submit', function(e) {
+        if (productionForm.dataset.confirmed === "true") {
+            return; // let the actual submit through
         }
-        
         e.preventDefault();
-        
-        const form = this;
-        const summaryHtml = getFormDataSummary(form);
-        
-        const confirmSave = await Swal.fire({
-            title: 'Confirm Save?',
-            html: `Do you want to save the written data card?<br>${summaryHtml}`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: 'var(--accent)',
-            confirmButtonText: 'Yes, Save it!',
-            cancelButtonText: 'Cancel'
+
+        // Build summary receipt rows
+        const form = productionForm;
+        let receiptHtml = '';
+        Array.from(form.elements).forEach(el => {
+            if (!el.name || el.value === '' || el.type === 'submit' || el.type === 'button' || el.type === 'hidden') return;
+            let label = '';
+            const pf = el.closest('.field');
+            if (pf) { const lb = pf.querySelector('label'); if (lb) label = lb.innerText.trim(); }
+            if (!label) label = el.name.replace(/_/g, ' ').toUpperCase();
+            let val = el.value;
+            if (el.tagName === 'SELECT' && el.selectedIndex >= 0) val = el.options[el.selectedIndex].text;
+            
+            const isNumeric = label.toUpperCase().includes('QTY') || label.toUpperCase().includes('KG') || label.toUpperCase().includes('AMOUNT') || label.toUpperCase().includes('MC') || label.toUpperCase().includes('LOOSE');
+            const valClass = isNumeric ? 'confirm-receipt-value highlighted' : 'confirm-receipt-value';
+            
+            receiptHtml += `
+                <div class="confirm-receipt-row">
+                    <span class="confirm-receipt-label">${label}</span>
+                    <span class="${valClass}">${val}</span>
+                </div>
+            `;
         });
-        
-        if (confirmSave.isConfirmed) {
-            form.dataset.confirmed = "true";
-            const btn = document.getElementById("submitBtn");
-            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
-            form.submit();
-        }
-    };
+        document.getElementById('confirmSummaryTable').innerHTML = receiptHtml;
+
+        // Show inline confirm panel
+        document.getElementById('inlineConfirmPanel').style.display = 'block';
+    });
+})();
+
+function cancelInlineConfirm() {
+    document.getElementById('inlineConfirmPanel').style.display = 'none';
+    const productionForm = document.getElementById('productionForm');
+    if (productionForm) productionForm.dataset.confirmed = '';
+}
+
+function proceedProductionSave() {
+    const btn = document.getElementById('submitBtn');
+    const confirmBtn = document.getElementById('proceedSaveBtn');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
+    const productionForm = document.getElementById('productionForm');
+    if (productionForm) {
+        productionForm.dataset.confirmed = 'true';
+        productionForm.submit();
+    }
 }
 </script>
 <script src="/static/js/global-loader.js"></script>

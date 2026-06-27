@@ -296,8 +296,9 @@ async def get_all_container_logistics_audit(request: Request, db: Session = Depe
 
     return [{
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
-        "user": l.AuditLog.edited_by.split('@')[0],
-        "container_no": l.container_no,
+        "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
+        "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
+        "batch": f"Container: {l.container_no}" if l.container_no else f"ID Ref: {l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name not in ["CREATE", "DELETE"] else l.AuditLog.field_name,
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}" if l.AuditLog.old_value != "NONE" else f"Created Entry Trace: {l.AuditLog.new_value}"
     } for l in logs]

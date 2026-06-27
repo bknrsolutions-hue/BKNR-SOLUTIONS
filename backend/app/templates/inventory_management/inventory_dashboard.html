@@ -757,6 +757,8 @@ document.addEventListener('click', function(event) {
 let globalAgeMin = 0;
 let globalAgeMax = 999999;
 let activeAgeCard = null;
+let globalVarietyChartFilter = null;
+let globalGradeChartFilter = null;
 
 function filterByAge(min, max, cardElement) {
     if(activeAgeCard === cardElement) {
@@ -790,10 +792,21 @@ function applyAllFilters() {
         let matchesSearch = text.indexOf(searchFilter) > -1;
         let matchesAge = (age >= globalAgeMin && age <= globalAgeMax);
         
-        if(matchesSearch && matchesAge){
+        let varietyText = tr.cells[4].innerText.trim();
+        let gradeText = tr.cells[7].innerText.trim();
+        let matchesVarietyChart = !globalVarietyChartFilter || (varietyText === globalVarietyChartFilter);
+        let matchesGradeChart = !globalGradeChartFilter || (gradeText === globalGradeChartFilter);
+        
+        let opQty = parseFloat(tr.dataset.openingQty || 0);
+        let clQty = parseFloat(tr.dataset.closingQty || 0);
+        let inQty = parseFloat(tr.dataset.inQty || 0);
+        let outQty = parseFloat(tr.dataset.outQty || 0);
+        let isZeroRow = (opQty === 0 && clQty === 0 && inQty === 0 && outQty === 0);
+        
+        if(matchesSearch && matchesAge && matchesVarietyChart && matchesGradeChart && !isZeroRow){
             tr.style.display = "";
-            sumOpQty += parseFloat(tr.dataset.openingQty || 0);
-            sumClQty += parseFloat(tr.dataset.closingQty || 0);
+            sumOpQty += opQty;
+            sumClQty += clQty;
             sumOpMC += parseInt(tr.dataset.openingMc || 0);
             sumClMC += parseInt(tr.dataset.closingMc || 0);
             sumClVal += parseFloat(tr.dataset.invVal || 0);
@@ -815,7 +828,9 @@ function applyAllFilters() {
         let age = parseInt(tr.getAttribute("data-age") || 0);
         let matchesSearch = text.indexOf(searchFilter) > -1;
         let matchesAge = (age >= globalAgeMin && age <= globalAgeMax);
-        tr.style.display = (matchesSearch && matchesAge) ? "" : "none";
+        let opQty = parseFloat(tr.dataset.openingQty || 0);
+        let isZeroRow = (opQty === 0);
+        tr.style.display = (matchesSearch && matchesAge && !isZeroRow) ? "" : "none";
     });
 
     // Update dynamic stacked charts based on visible data
@@ -936,16 +951,19 @@ const syncLegendClick = function(e, legendItem, legend) {
 
 function clearGradeChartFilter() {
     gradeChartFilter = { type: null, value: null };
-    updateDynamicCharts();
+    globalVarietyChartFilter = null;
+    globalGradeChartFilter = null;
+    applyAllFilters();
 }
 
 function updateGradeFilterLabel() {
     const title = document.getElementById('gradeChartTitle');
     const clearBtn = document.getElementById('gradeChartClear');
     if (!title || !clearBtn) return;
-    if (gradeChartFilter.type && gradeChartFilter.value) {
-        const label = gradeChartFilter.type === 'grade' ? 'Grade' : 'Variety';
-        title.innerText = `Grade Stock Mix - ${label}: ${gradeChartFilter.value}`;
+    if ((gradeChartFilter.type && gradeChartFilter.value) || globalGradeChartFilter || globalVarietyChartFilter) {
+        const label = globalGradeChartFilter ? 'Grade' : 'Variety';
+        const val = globalGradeChartFilter || globalVarietyChartFilter || gradeChartFilter.value;
+        title.innerText = `Grade Stock Mix - ${label}: ${val}`;
         clearBtn.classList.add('show');
     } else {
         title.innerText = 'Grade Stock Mix (Variety + Glaze Wise)';
@@ -977,7 +995,7 @@ function updateDynamicCharts() {
             speciesMap[species].cl += clQty;
 
             // Group for old Variety chart (Glaze wise stacked)
-            if (clQty > 0) {
+            if (clQty !== 0) {
                 allGlazes.add(glaze);
                 if (!varietyMap[variety]) varietyMap[variety] = {};
                 if (!varietyMap[variety][glaze]) varietyMap[variety][glaze] = 0;
@@ -991,7 +1009,7 @@ function updateDynamicCharts() {
             const glazeVisible = !hiddenVarietyGlazes.has(glaze);
 
             // Grade chart shows non-zero Variety + Glaze combinations only.
-            if (clQty > 0 && gradeFilterOk && glazeVisible) {
+            if (clQty !== 0 && gradeFilterOk && glazeVisible) {
                 if (!gradeMap[grade]) gradeMap[grade] = {};
                 const gradeCombo = `${variety} / ${glaze}`;
                 allGradeCombos.add(gradeCombo);
@@ -1003,7 +1021,7 @@ function updateDynamicCharts() {
 
     let glazesArray = Array.from(allGlazes).sort();
     let gradeCombosArray = Array.from(allGradeCombos).sort();
-    let spLabels = Object.keys(speciesMap).sort();
+    let spLabels = Object.keys(speciesMap).filter(sp => Math.abs(speciesMap[sp].op) > 0.01 || Math.abs(speciesMap[sp].cl) > 0.01).sort();
 
     // 1. Opening vs Closing Data
     let opData = spLabels.map(sp => speciesMap[sp].op);
@@ -1026,9 +1044,9 @@ function updateDynamicCharts() {
     });
     if (varChartInst) {
         varChartInst.data.labels = vLabels;
-        varChartInst.data.datasets = vDatasets;
-        glazesArray.forEach((glaze, index) => {
-            varChartInst.setDatasetVisibility(index, !hiddenVarietyGlazes.has(glaze));
+        varChartInst.data.datasets = vDatasets.filter(ds => ds.data.reduce((sum, value) => sum + Math.abs(Number(value || 0)), 0) > 0);
+        varChartInst.data.datasets.forEach((ds, idx) => {
+            varChartInst.setDatasetVisibility(idx, !hiddenVarietyGlazes.has(ds.label));
         });
         varChartInst.update();
     }
@@ -1044,7 +1062,7 @@ function updateDynamicCharts() {
     });
     if (gradeChartInst) {
         gradeChartInst.data.labels = gLabels;
-        gradeChartInst.data.datasets = gDatasets.filter(ds => ds.data.reduce((sum, value) => sum + Number(value || 0), 0) > 0);
+        gradeChartInst.data.datasets = gDatasets.filter(ds => ds.data.reduce((sum, value) => sum + Math.abs(Number(value || 0)), 0) > 0);
         gradeChartInst.update();
     }
     updateGradeFilterLabel();
@@ -1063,7 +1081,7 @@ function renderCharts() {
     // Register our custom plugin
     Chart.register(customDataLabelsPlugin);
 
-    // 1. Variety (Stacked Horizontal, Glaze wise) - click variety to filter Grade chart
+    // 1. Variety (Stacked Horizontal, Glaze wise) - click variety to filter Grade chart and table
     varChartInst = BKNRCharts.create(document.getElementById('varietyChart'), {
         type: 'bar',
         data: { labels: [], datasets: [] },
@@ -1075,11 +1093,23 @@ function renderCharts() {
                 const item = elements[0];
                 const label = chart.data.labels[item.index];
                 if (!label) return;
-                gradeChartFilter = { type: 'variety', value: label };
-                updateDynamicCharts();
+                
+                if (globalVarietyChartFilter === label) {
+                    globalVarietyChartFilter = null;
+                    gradeChartFilter = { type: null, value: null };
+                } else {
+                    globalVarietyChartFilter = label;
+                    gradeChartFilter = { type: 'variety', value: label };
+                }
+                applyAllFilters();
             },
             plugins: { 
-                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } }
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } },
+                tooltip: {
+                    filter: function(tooltipItem) {
+                        return tooltipItem.raw !== 0;
+                    }
+                }
             }, 
             scales: { 
                 x: { stacked: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, 
@@ -1088,15 +1118,33 @@ function renderCharts() {
         }
     });
 
-    // 2. Grade (Stacked Vertical) - keeps old layout, with updated premium chart engine
+    // 2. Grade (Stacked Vertical) - click grade to filter Variety chart and table
     gradeChartInst = BKNRCharts.create(document.getElementById('gradeChart'), {
         type: 'bar',
         data: { labels: [], datasets: [] },
         options: { 
             responsive: true, maintainAspectRatio: false, 
             layout: { padding: { top: 20 } },
+            onClick: (event, elements, chart) => {
+                if (!elements.length) return;
+                const item = elements[0];
+                const label = chart.data.labels[item.index];
+                if (!label) return;
+                
+                if (globalGradeChartFilter === label) {
+                    globalGradeChartFilter = null;
+                } else {
+                    globalGradeChartFilter = label;
+                }
+                applyAllFilters();
+            },
             plugins: { 
-                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } }
+                legend: { onClick: syncLegendClick, position: 'top', labels: { color: chartTextColor, boxWidth: 10, font: { size: 11 } } },
+                tooltip: {
+                    filter: function(tooltipItem) {
+                        return tooltipItem.raw !== 0;
+                    }
+                }
             }, 
             scales: { 
                 x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } }, 
