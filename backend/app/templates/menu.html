@@ -940,6 +940,7 @@ function broadcastUniversalFilters() {
             currentUrl.searchParams.delete("cold_storage_name");
         }
         
+        if (window.showLoader) window.showLoader();
         iframe.src = currentUrl.toString();
     } catch(e) {
         console.warn("Universal filter injection synchronized.");
@@ -973,6 +974,7 @@ function loadPage(url, element, customTitle = null) {
         targetUrl.searchParams.set("cold_storage_name", pLoc);
     }
 
+    if (window.showLoader) window.showLoader();
     document.getElementById('frame').src = targetUrl.toString();
     document.querySelectorAll('.submenu-item, .dropdown-submenu-item').forEach(el => el.classList.remove('active'));
     
@@ -1008,9 +1010,19 @@ function loadPage(url, element, customTitle = null) {
 
 const frame = document.getElementById('frame');
 frame.addEventListener('load', () => {
+    if (window.hideLoader) {
+        window.hideLoader();
+    }
     try {
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         if (!frameDoc) return;
+
+        // Hook internal iframe redirection/navigation to show loader immediately
+        if (frame.contentWindow) {
+            frame.contentWindow.addEventListener("beforeunload", () => {
+                if (window.showLoader) window.showLoader();
+            });
+        }
 
         const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
         frameDoc.documentElement.setAttribute("data-theme", currentTheme);
