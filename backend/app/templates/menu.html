@@ -1010,7 +1010,9 @@ function loadPage(url, element, customTitle = null) {
 
 const frame = document.getElementById('frame');
 frame.addEventListener('load', () => {
-    if (window.hideLoader) {
+    if (window.forceHideLoader) {
+        window.forceHideLoader();
+    } else if (window.hideLoader) {
         window.hideLoader();
     }
     try {
