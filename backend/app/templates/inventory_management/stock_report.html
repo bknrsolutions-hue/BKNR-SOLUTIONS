@@ -204,6 +204,28 @@ tfoot td{
     color: var(--primary);
 }
 
+/* ================= KPI AGEING GRID ================= */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.kpi-card {
+    cursor: pointer;
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
 /* ================= PRINT ENGINE ================= */
 @media print {
     @page { size: A4 landscape; margin: 5mm; }
@@ -223,6 +245,36 @@ tfoot td{
     #rowCount { font-size: 9px; }
     .dots { width: 22px; height: 22px; font-size: 10px; }
     .section { margin: 2px; }
+    
+    /* Mobile KPI 2 per row & compact padding */
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+    }
+    .kpi-card {
+        padding: 8px 10px !important;
+    }
+    .kpi-card h5 {
+        font-size: 8px !important;
+    }
+    .kpi-card span {
+        font-size: 13px !important;
+    }
+    
+    /* Compact Mobile Table formatting */
+    thead th {
+        padding: 5px 2px !important;
+        font-size: 8.5px !important;
+    }
+    tbody td {
+        padding: 4px 2px !important;
+        font-size: 8.5px !important;
+    }
+    tfoot td {
+        padding: 5px 2px !important;
+        font-size: 8.5px !important;
+    }
     
     table { display: table !important; min-width: 2100px !important; }
     thead { display: table-header-group !important; }
@@ -300,32 +352,32 @@ tfoot td{
 
 <div class="section">
     <!-- Stock Ageing KPI Cards Grid -->
-    <div class="kpi-grid no-print" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
-        <div class="kpi-card clickable-card" id="card_age_30" onclick="filterByAgeRange(0, 30, this)" style="cursor:pointer; background: var(--card-bg); border-left: 5px solid var(--success); padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="kpi-grid no-print">
+        <div class="kpi-card clickable-card" id="card_age_30" onclick="filterByAgeRange(0, 30, this)" style="border-left: 5px solid var(--success);">
             <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">0 - 30 Days</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_30" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
-        <div class="kpi-card clickable-card" id="card_age_90" onclick="filterByAgeRange(31, 90, this)" style="cursor:pointer; background: var(--card-bg); border-left: 5px solid #eab308; padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="kpi-card clickable-card" id="card_age_90" onclick="filterByAgeRange(31, 90, this)" style="border-left: 5px solid #eab308;">
             <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">31 - 90 Days</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_90" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
-        <div class="kpi-card clickable-card" id="card_age_150" onclick="filterByAgeRange(91, 150, this)" style="cursor:pointer; background: var(--card-bg); border-left: 5px solid #ea580c; padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="kpi-card clickable-card" id="card_age_150" onclick="filterByAgeRange(91, 150, this)" style="border-left: 5px solid #ea580c;">
             <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">91 - 150 Days</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_150" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
-        <div class="kpi-card clickable-card" id="card_age_300" onclick="filterByAgeRange(151, 300, this)" style="cursor:pointer; background: var(--card-bg); border-left: 5px solid #ef4444; padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="kpi-card clickable-card" id="card_age_300" onclick="filterByAgeRange(151, 300, this)" style="border-left: 5px solid #ef4444;">
             <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">151 - 300 Days</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_300" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
-        <div class="kpi-card clickable-card" id="card_age_above" onclick="filterByAgeRange(301, 999999, this)" style="cursor:pointer; background: var(--card-bg); border-left: 5px solid #7f1d1d; padding: 15px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="kpi-card clickable-card" id="card_age_above" onclick="filterByAgeRange(301, 999999, this)" style="border-left: 5px solid #7f1d1d;">
             <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">300+ Days</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_above" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
