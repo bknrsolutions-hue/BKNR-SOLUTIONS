@@ -30,6 +30,14 @@ logger = logging.getLogger("BKNR_ERP")
 
 @application.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    from fastapi.exceptions import RequestValidationError
+    from fastapi.responses import PlainTextResponse, JSONResponse
+    if isinstance(exc, StarletteHTTPException):
+        return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse({"detail": exc.errors()}, status_code=422)
+
     error_id = uuid.uuid4().hex[:10]
     logger.exception(
         "Unhandled server error [%s] path=%s query=%s",

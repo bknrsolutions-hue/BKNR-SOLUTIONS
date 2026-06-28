@@ -225,9 +225,28 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
             <button class="btn-module" style="grid-column: span 2; justify-content: center;" onclick="triggerSecureExport('HRMS', '/export/hrms')"><i class="fa-solid fa-users-gear" style="color:#ec4899;"></i> HRMS & Payroll</button>
         </div>
 
-        <button class="btn-outline" onclick="window.location.href='/data-management/template/master'">
-            <i class="fa-solid fa-file-excel"></i> Download Blank Import Template
-        </button>
+
+        <!-- Blank Sheet Download Panel -->
+        <div style="margin-top:20px; background:var(--file-bg); border:1px dashed var(--accent); border-radius:10px; padding:18px;">
+            <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-file-excel"></i> Download Blank Import Sheet
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:0 0 12px 0;">Select a table to download its blank template with column headers ready to fill in. Row 1 shows format hints.</p>
+            <div class="field" style="margin-bottom:10px;">
+                <label>Select Table</label>
+                <select id="blankSheetTable">
+                    <option value="">-- All Tables (Full Workbook) --</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button class="btn-primary" style="background:var(--success);" onclick="downloadBlankSheet()">
+                    <i class="fa-solid fa-download"></i> Download Selected
+                </button>
+                <button class="btn-primary" style="background:#6366f1;" onclick="downloadAllBlankSheets()">
+                    <i class="fa-solid fa-layer-group"></i> All Tables
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="data-card">
@@ -350,14 +369,63 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
                 dbSchema = data.tables;
                 const tableSelect = document.getElementById("dbTable");
                 const clearSelect = document.getElementById("clearDbTable");
+                const blankSelect = document.getElementById("blankSheetTable");
                 for (const table in dbSchema) {
                     tableSelect.innerHTML += `<option value="${table}">${table}</option>`;
                     clearSelect.innerHTML += `<option value="${table}">${table}</option>`;
+                    blankSelect.innerHTML += `<option value="${table}">${table}</option>`;
                 }
             }
             loadHistory();
         } catch(e) { console.error("Failed to load schema."); }
     };
+
+    // ==========================================
+    // 🟢 BLANK SHEET DOWNLOAD (OTP Protected)
+    // ==========================================
+    function downloadBlankSheet() {
+        const table = document.getElementById("blankSheetTable").value;
+        const label = table ? table : "All Tables (Full Workbook)";
+        const url = table
+            ? `/data-management/template/blank?table=${encodeURIComponent(table)}`
+            : `/data-management/template/blank`;
+
+        secureActionWithOTP('download', label, () => {
+            // Step 1: Spinner while generating
+            Swal.fire({
+                title: 'Preparing File...',
+                text: `Generating blank sheet for: ${label}`,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            // Step 2: Download via hidden iframe (page stays, no redirect)
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+
+            // Step 3: Close spinner → success toast
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Download Started!',
+                    text: `"${label}" blank sheet downloaded successfully.`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true
+                });
+            }, 2500);
+        });
+    }
+
+    function downloadAllBlankSheets() {
+        document.getElementById("blankSheetTable").value = "";
+        downloadBlankSheet();
+    }
+
 
     // ==========================================
     // 🟢 OTP VERIFICATION WRAPPER

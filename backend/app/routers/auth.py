@@ -15,6 +15,7 @@ from app.database.models.users import Company, User, OTPTable, UserLoginActivity
 from app.security.password_handler import hash_password, verify_password
 from app.services.setup_service import SetupService
 from app.database.models.criteria import production_at as ProductionAtModel, production_for as ProductionForModel
+from app.services.default_masters import seed_default_masters
 
 # =====================================================
 router = APIRouter(prefix="/auth", tags=["AUTH"])
@@ -40,18 +41,32 @@ def require_auth(request: Request):
     return request.session
 
 def send_email(to_email: str, subject: str, html: str):
-    if not BREVO_API_KEY:
-        raise HTTPException(500, "Email service not configured")
-    payload = {
-        "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html
-    }
-    headers = {"api-key": BREVO_API_KEY, "content-type": "application/json"}
-    res = requests.post(BREVO_URL, json=payload, headers=headers)
-    if res.status_code >= 400:
-        raise HTTPException(500, "Email sending failed")
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_PORT = 587
+    SENDER_EMAIL = "bknr.solutions@gmail.com"  
+    SENDER_PASSWORD = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
+    SENDER_NAME = "BKNR ERP"
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        
+        msg = MIMEMultipart()
+        msg['From'] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(html, 'html'))
+        
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"SMTP EMAIL ERROR: {e}")
+        raise HTTPException(500, f"Email sending failed: {e}")
 
 # ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
@@ -96,6 +111,9 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
         send_email(data.email, "BKNR ERP – OTP", f"<h2>{otp}</h2>")
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
+    
+    # 🔑 Fallback print to terminal so offline/unauthorized IP setups can proceed
+    print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {data.email}: {otp}\n")
     return {"message": "OTP sent"}
 
 @router.post("/verify-otp")
@@ -137,6 +155,12 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         user.password = hash_password(data.password)
         user.is_verified = True
     db.commit()
+
+    # 🌱 Seed default masters for new company
+    try:
+        seed_default_masters(db, company.company_code, email=extra.get("email", "system@bknr.com"))
+    except Exception as e:
+        print(f"SEED MASTERS ERROR: {e}")
 
     try:
         send_email(company.email, "BKNR ERP - Account Created", f"ID: {company.company_code}")
@@ -185,11 +209,34 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     db.add(OTPTable(email=data.email, otp=token, is_used=False, created_at=get_ist_time()))
     db.commit()
 
+    base_url = os.getenv("APP_URL", "https://bknrerp.in")
+    reset_link = f"{base_url}/auth/reset-password?token={token}"
+
     try:
-        send_email(data.email, "BKNR ERP – Reset Password", f"Link: {request.base_url}auth/reset-password?token={token}")
+        send_email(
+            data.email,
+            "BKNR ERP – Reset Password",
+            f"Click here to reset your password:<br><a href='{reset_link}'>{reset_link}</a>"
+        )
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
+    
+    # 🔑 Fallback print to terminal so offline/unauthorized IP setups can proceed
+    print(f"\n🔑 [OFFLINE/DEBUG] RESET PASSWORD LINK FOR {data.email}: {reset_link}\n")
     return {"message": "Reset link sent"}
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def get_reset_password(request: Request, token: str, db: Session = Depends(get_db)):
+    rec = db.query(OTPTable).filter(OTPTable.otp == token, OTPTable.is_used.is_(False)).first()
+    if not rec or get_ist_time() > rec.created_at + timedelta(minutes=RESET_EXPIRY_MIN):
+        return HTMLResponse("<h2>This password reset link has expired or is invalid.</h2>", status_code=400)
+    return templates.TemplateResponse(
+        request=request,
+        name="reset_password.html",
+        context={
+            "token": token
+        }
+    )
 
 @router.post("/reset-password")
 def reset_password(token: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
@@ -204,6 +251,18 @@ def reset_password(token: str = Form(...), password: str = Form(...), db: Sessio
         send_email(user.email, "Password Changed", "Success")
     except: pass
     return RedirectResponse("/", status_code=303)
+
+@router.get("/masters-check")
+def masters_check(request: Request, db: Session = Depends(get_db)):
+    """Returns True if key masters tables are empty for this company (used for first-login popup)."""
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"authenticated": False}, status_code=401)
+    from app.database.models.criteria import species as SpeciesModel, glazes as GlazesModel
+    has_species = db.query(SpeciesModel).filter(SpeciesModel.company_id == comp_code).count()
+    has_glazes  = db.query(GlazesModel).filter(GlazesModel.company_id == comp_code).count()
+    masters_empty = (has_species == 0 and has_glazes == 0)
+    return {"masters_empty": masters_empty, "company_code": comp_code}
 
 @router.get("/logout")
 def logout(request: Request, db: Session = Depends(get_db)):

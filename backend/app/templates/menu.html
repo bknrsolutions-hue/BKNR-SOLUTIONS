@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'BKNR ERP')|tojson }};
@@ -2049,6 +2050,43 @@ window.onload = () => {
     initIframeInactivityTracker('complaintsFrame');
     
     goHomeAction();
+
+    // 🟢 One-time setup alert popup for new users
+    setTimeout(() => {
+        const compCode = "{{ request.session.get('company_code', '') }}";
+        if (compCode) {
+            const popupSeenKey = `masters_popup_seen_${compCode}`;
+            if (!localStorage.getItem(popupSeenKey)) {
+                fetch('/auth/masters-check')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.masters_empty) {
+                            Swal.fire({
+                                title: '⚠️ Setup Required',
+                                html: `<div style="text-align: left; font-size: 14px; line-height: 1.5; color: var(--text-primary);">
+                                    First <b>Masters Data</b> ని fill చేయండి, అప్పుడే entries చేసుకోగలరు.<br><br>
+                                    Please fill the initial configuration tables first:
+                                    <ul style="margin-left: 20px; margin-top: 8px;">
+                                        <li>Species, Glazes, Grades</li>
+                                        <li>Countries, Freezers, Packing Styles, Brands</li>
+                                    </ul>
+                                </div>`,
+                                icon: 'info',
+                                confirmButtonText: 'Go to Setup Center',
+                                confirmButtonColor: '#3b82f6',
+                                allowOutsideClick: true
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    launchCmdApp('/data-management', 'Master Data Management');
+                                }
+                            });
+                            localStorage.setItem(popupSeenKey, 'true');
+                        }
+                    })
+                    .catch(e => console.error("Masters status check failed", e));
+            }
+        }
+    }, 1000);
 };
 
 if ("serviceWorker" in navigator) {
