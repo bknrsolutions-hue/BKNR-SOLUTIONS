@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Today's Attendance Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script>
+    function syncThemeFromParent() {
+        try {
+            if (window.parent && window.parent.document) {
+                const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+                if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
+            }
+        } catch(e) {}
+    }
+    syncThemeFromParent();
+    window.addEventListener('load', syncThemeFromParent);
+</script>
+
+<style>
+:root {
+  --primary: #0f172a; 
+  --accent: #2563eb; 
+  --border: #e2e8f0; 
+  --bg: #f8fafc;
+  --card: #ffffff; 
+  --text: #1e293b; 
+  --muted: #64748b; 
+  --success: #16a34a; 
+  --danger: #dc2626; 
+  --warning: #ea580c;
+  --info: #0284c7; 
+  
+  --card-hover: #f1f5f9;
+  --sub-bg: #eff6ff;
+  --table-border: #e2e8f0;
+  --text-heading: #0f172a;
+  --input-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --primary: #f8fafc; 
+  --accent: #3b82f6; 
+  --border: #334155; 
+  --bg: #020617;       
+  --card: #0f172a;     
+  --text: #f1f5f9;     
+  --muted: #94a3b8;    
+  --success: #22c55e; 
+  --danger: #ef4444; 
+  --warning: #f59e0b;
+  --info: #38bdf8;
+  
+  --card-hover: #1e293b;
+  --sub-bg: #1e293b;   
+  --table-border: #334155;
+  --text-heading: #f8fafc;
+  --input-bg: #0f172a;
+}
+
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+body {
+    margin: 0; padding: 15px;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
+}
+
+.report-container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Header Action Bar */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.title-section h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-heading);
+}
+
+.title-section p {
+    margin: 3px 0 0 0;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.location-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--sub-bg);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.controls-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    background: var(--card);
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+    background: var(--input-bg);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.search-input:focus {
+    border-color: var(--accent);
+}
+
+.filter-select {
+    padding: 8px 12px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+    background: var(--input-bg);
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.refresh-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+}
+
+.refresh-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Table Design */
+.table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    text-align: left;
+}
+
+th {
+    background: var(--bg);
+    padding: 12px 16px;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--muted);
+    border-bottom: 1px solid var(--table-border);
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--table-border);
+    color: var(--text);
+    font-weight: 600;
+}
+
+tr:hover td {
+    background: var(--card-hover);
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Timeline and Status Badges */
+.chip {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.c-in { color: #166534; background: #dcfce7; }
+.c-out { color: #9a3412; background: #ffedd5; }
+.c-exit { color: #991b1b; background: #fee2e2; }
+
+[data-theme="dark"] .c-in { color: #4ade80; background: #14532d; }
+[data-theme="dark"] .c-out { color: #fb923c; background: #7c2d12; }
+[data-theme="dark"] .c-exit { color: #f87171; background: #7f1d1d; }
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.status-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.s-open { color: var(--success); }
+.s-open .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2); }
+
+.s-away { color: var(--warning); }
+.s-away .dot { background: var(--warning); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2); }
+
+.s-closed { color: var(--muted); }
+.s-closed .dot { background: var(--muted); }
+
+.shift-tag {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    background: var(--sub-bg);
+    color: var(--accent);
+}
+
+.loading-state, .empty-state {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.loading-state i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--accent);
+}
+
+.empty-state i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--warning);
+}
+</style>
+</head>
+
+<body>
+
+<div class="report-container">
+    <div class="header-bar">
+        <div class="title-section">
+            <h2>Today's Live Attendance</h2>
+            <p>Real-time monitor of gate entry & terminal actions</p>
+        </div>
+        <div class="location-badge">
+            <i class="fa-solid fa-location-dot"></i> {{ actual_location }}
+        </div>
+    </div>
+
+    <div class="controls-bar">
+        <div class="search-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by name, ID, department..." oninput="filterData()">
+        </div>
+        
+        <select id="statusFilter" class="filter-select" onchange="filterData()">
+            <option value="ALL">All Statuses</option>
+            <option value="OPEN">Inside</option>
+            <option value="AWAY">On Break</option>
+            <option value="CLOSED">Checked Out</option>
+        </select>
+
+        <button class="refresh-btn" onclick="loadData()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;" class="text-center">Sl</th>
+                        <th>Personnel Info</th>
+                        <th>Department & Designation</th>
+                        <th>Shift</th>
+                        <th>Movement timeline</th>
+                        <th class="text-center">Hrs worked</th>
+                        <th class="text-center">OT Hrs</th>
+                        <th style="text-align: right;">Current State</th>
+                    </tr>
+                </thead>
+                <tbody id="tableRows">
+                    <tr>
+                        <td colspan="8" class="loading-state">
+                            <i class="fa-solid fa-spinner fa-spin"></i><br>
+                            Loading today's attendance logs...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let attendanceData = [];
+    const activeLocation = "{{ actual_location }}";
+
+    async function loadData() {
+        const tbody = document.getElementById("tableRows");
+        tbody.innerHTML = `<tr><td colspan="8" class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading today's attendance logs...</td></tr>`;
+        
+        try {
+            const locParam = activeLocation && activeLocation !== "ALL UNITS" ? `?location=${encodeURIComponent(activeLocation)}` : '';
+            const res = await fetch(`/attendance/today_all${locParam}`);
+            if (!res.ok) throw new Error("API failed");
+            
+            attendanceData = await res.json();
+            renderTable(attendanceData);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><br>Failed to retrieve data. Please reload page.</td></tr>`;
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById("tableRows");
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><i class="fa-solid fa-users-slash"></i><br>No active attendance entries found for today.</td></tr>`;
+            return;
+        }
+
+        data.forEach((r, idx) => {
+            const timeline = (r.movements || []).map(m => {
+                const typeClass = `c-${m.type.toLowerCase()}`;
+                return `<span class="chip ${typeClass}">${m.type} ${m.time}</span>`;
+            }).join(' <i class="fa fa-angle-right" style="font-size:8px;color:var(--border)"></i> ');
+
+            let statusMarkup = '';
+            if (r.status === 'OPEN') {
+                statusMarkup = `<div class="status-badge s-open"><div class="dot"></div> INSIDE</div>`;
+            } else if (r.status === 'AWAY') {
+                statusMarkup = `<div class="status-badge s-away"><div class="dot"></div> ON BREAK</div>`;
+            } else {
+                statusMarkup = `<div class="status-badge s-closed"><div class="dot"></div> LEFT</div>`;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center" style="color: var(--muted); font-weight:700;">${idx + 1}</td>
+                    <td>
+                        <div style="font-weight: 800; color: var(--text-heading);">${r.employee_name}</div>
+                        <div style="font-size: 9.5px; color: var(--muted); margin-top: 2px;">ID: ${r.employee_id}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700;">${r.department || 'GENERAL'}</div>
+                        <div style="font-size: 9.5px; color: var(--muted); margin-top: 2px;">${r.designation || 'STAFF'}</div>
+                    </td>
+                    <td><span class="shift-tag">${r.shift_name || 'GENERAL'}</span></td>
+                    <td><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${timeline || 'No movements'}</div></td>
+                    <td class="text-center" style="font-weight:800; font-size:12px;">${parseFloat(r.working_hours || 0).toFixed(2)}</td>
+                    <td class="text-center" style="font-weight:800; font-size:12px; color: var(--warning);">${parseFloat(r.calculated_ot_hours || 0).toFixed(2)}</td>
+                    <td style="text-align: right;">${statusMarkup}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function filterData() {
+        const searchInput = document.getElementById("searchInput").value.toUpperCase();
+        const statusFilter = document.getElementById("statusFilter").value;
+
+        const filtered = attendanceData.filter(r => {
+            const matchesSearch = 
+                r.employee_name.toUpperCase().includes(searchInput) ||
+                r.employee_id.toUpperCase().includes(searchInput) ||
+                (r.department || '').toUpperCase().includes(searchInput) ||
+                (r.shift_name || '').toUpperCase().includes(searchInput);
+            
+            const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+
+        renderTable(filtered);
+    }
+
+    // Auto load
+    loadData();
+</script>
+</body>
+</html>

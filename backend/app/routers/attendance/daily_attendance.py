@@ -251,11 +251,8 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # 🟢 🔴 Support query param location if fetch drops cookie
-    backend_location, _ = get_strict_location(request)
+    backend_location, user_allowed_locations = get_strict_location(request)
     actual_location = location.strip().upper() if location else backend_location
-
-    if not actual_location:
-        return JSONResponse({"error": "GLOBAL_FILTER_REQUIRED"}, status_code=400)
 
     query = db.query(
         DailyAttendance, 
@@ -269,12 +266,16 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
         )
     ).filter(
         DailyAttendance.company_id == company_id,
-        DailyAttendance.production_at == actual_location, 
         or_(
             DailyAttendance.duty_date == date.today(),
             DailyAttendance.status != "CLOSED"
         )
     )
+
+    if actual_location and actual_location != "ALL":
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)) == actual_location)
+    elif user_allowed_locations:
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations))
 
     rows = query.order_by(DailyAttendance.first_in.desc()).all()
 
@@ -329,11 +330,8 @@ def export_attendance_excel(request: Request, location: str = None, db: Session 
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    backend_location, _ = get_strict_location(request)
+    backend_location, user_allowed_locations = get_strict_location(request)
     actual_location = location.strip().upper() if location else backend_location
-
-    if not actual_location:
-        return RedirectResponse("/attendance/daily", status_code=302)
 
     query = db.query(
         DailyAttendance, 
@@ -346,9 +344,13 @@ def export_attendance_excel(request: Request, location: str = None, db: Session 
         )
     ).filter(
         DailyAttendance.company_id == company_id,
-        DailyAttendance.production_at == actual_location, 
         DailyAttendance.duty_date == date.today()
     )
+
+    if actual_location and actual_location != "ALL":
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)) == actual_location)
+    elif user_allowed_locations:
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations))
 
     rows = query.order_by(DailyAttendance.first_in.desc()).all()
 
@@ -415,9 +417,55 @@ def export_attendance_excel(request: Request, location: str = None, db: Session 
     wb.save(stream)
     stream.seek(0)
 
-    filename = f"{actual_location}_Attendance_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    loc_str = actual_location if (actual_location and actual_location != "ALL") else "ALL_UNITS"
+    filename = f"{loc_str}_Attendance_Ledger_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ============================================================
+# 🖥️ 5. HTML REPORT ROUTERS (IFRAME Drilldowns)
+# ============================================================
+@router.get("/today_report", response_class=HTMLResponse)
+def today_attendance_report(request: Request):
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    actual_location, _ = get_strict_location(request)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/today_report.html",
+        context={
+            "email": email,
+            "company_id": company_code,
+            "actual_location": actual_location or "ALL UNITS"
+        }
+    )
+
+
+@router.get("/audit_report", response_class=HTMLResponse)
+def attendance_audit_report(request: Request):
+    email = request.session.get("email")
+    company_code = request.session.get("company_code")
+
+    if not email or not company_code:
+        return RedirectResponse("/", status_code=302)
+
+    actual_location, _ = get_strict_location(request)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="attendance/audit_report.html",
+        context={
+            "email": email,
+            "company_id": company_code,
+            "actual_location": actual_location or "ALL UNITS"
+        }
     )
