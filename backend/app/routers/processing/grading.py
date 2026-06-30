@@ -1,5 +1,6 @@
 import json
 import re
+from types import SimpleNamespace
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -77,9 +78,14 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         pa_q = pa_q.filter(func.upper(func.trim(PeelingAtMaster.peeling_at)).in_(user_allowed_locations))
     peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
 
-    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if p[0]]
-    if "General Stock" not in prod_for_list:
-        prod_for_list.append("General Stock")
+    prod_for_list = [
+        p[0]
+        for p in db.query(distinct(ProductionForMaster.production_for))
+        .filter(ProductionForMaster.company_id == company_code)
+        .order_by(ProductionForMaster.production_for)
+        .all()
+        if p[0] and str(p[0]).strip().upper() != "GENERAL STOCK"
+    ]
 
     # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global & Permission Matrices)
     start, end = get_today_range()
@@ -205,21 +211,99 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
 
 
-    pending_pool_q = db.query(HlsoForGrading).filter(
-        HlsoForGrading.company_id == company_code,
-        HlsoForGrading.status != "Completed",
-        HlsoForGrading.available_qty > 0.01
+    # Build the grading queue from source transactions so the third table never
+    # depends on stale pool rows after imports, edits, or cancellations.
+    dh_q = db.query(
+        DeHeading.batch_number,
+        DeHeading.production_for,
+        DeHeading.peeling_at,
+        DeHeading.species,
+        DeHeading.hoso_count,
+        func.min(DeHeading.date).label("date"),
+        func.min(DeHeading.time).label("time"),
+        func.sum(DeHeading.hlso_qty).label("total_hlso_qty"),
+    ).filter(
+        DeHeading.company_id == company_code,
+        func.coalesce(DeHeading.is_cancelled, False) == False,
     )
-    
+
+    grad_q = db.query(
+        Grading.batch_number,
+        Grading.production_for,
+        Grading.peeling_at,
+        Grading.species,
+        Grading.hoso_count,
+        func.sum(Grading.quantity).label("graded_qty"),
+    ).filter(
+        Grading.company_id == company_code,
+        func.coalesce(Grading.is_cancelled, False) == False,
+    )
+
     if g_prod_clean and g_prod_clean != "ALL":
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.production_for)) == g_prod_clean)
+        dh_q = dh_q.filter(func.upper(func.trim(DeHeading.production_for)) == g_prod_clean)
+        grad_q = grad_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
         
     if g_loc_clean and g_loc_clean != "ALL":
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)) == g_loc_clean)
+        dh_q = dh_q.filter(func.upper(func.trim(DeHeading.peeling_at)) == g_loc_clean)
+        grad_q = grad_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
     elif user_allowed_locations:
-        pending_pool_q = pending_pool_q.filter(func.upper(func.trim(HlsoForGrading.peeling_at)).in_(user_allowed_locations))
+        dh_q = dh_q.filter(func.upper(func.trim(DeHeading.peeling_at)).in_(user_allowed_locations))
+        grad_q = grad_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
 
-    deheading_pending = pending_pool_q.order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
+    dh_totals = dh_q.group_by(
+        DeHeading.batch_number,
+        DeHeading.production_for,
+        DeHeading.peeling_at,
+        DeHeading.species,
+        DeHeading.hoso_count,
+    ).all()
+
+    grad_totals = grad_q.group_by(
+        Grading.batch_number,
+        Grading.production_for,
+        Grading.peeling_at,
+        Grading.species,
+        Grading.hoso_count,
+    ).all()
+
+    def pool_key(row):
+        return (
+            str(row.batch_number or "").strip().upper(),
+            str(row.production_for or "").strip().upper(),
+            str(row.peeling_at or "").strip().upper(),
+            str(row.species or "").strip().upper(),
+            str(row.hoso_count or "").strip().upper(),
+        )
+
+    graded_map = {pool_key(g): float(g.graded_qty or 0) for g in grad_totals}
+
+    status_rows = db.query(HlsoForGrading).filter(HlsoForGrading.company_id == company_code).all()
+    status_map = {pool_key(s): (s.status or "Pending") for s in status_rows}
+
+    deheading_pending = []
+    for d in dh_totals:
+        key = pool_key(d)
+        total_hlso = float(d.total_hlso_qty or 0)
+        graded_qty = graded_map.get(key, 0.0)
+        available_qty = round(total_hlso - graded_qty, 2)
+        status = status_map.get(key, "Pending")
+        if available_qty <= 0.01 or status == "Completed":
+            continue
+        deheading_pending.append(SimpleNamespace(
+            date=d.date,
+            time=d.time,
+            batch_number=d.batch_number,
+            production_for=d.production_for,
+            peeling_at=d.peeling_at,
+            species=d.species,
+            hoso_count=d.hoso_count,
+            total_hlso_qty=round(total_hlso, 2),
+            graded_qty=round(graded_qty, 2),
+            available_qty=available_qty,
+            status=status,
+        ))
+
+    deheading_pending.sort(key=lambda r: (r.date or date.min, r.time or datetime.min.time()))
 
     return templates.TemplateResponse(
         request=request, name="processing/grading.html",
@@ -389,21 +473,48 @@ def update_grading(
 @router.post("/grading/update_pool_status")
 def update_pool_status(
     request: Request, batch_number: str = Form(...), production_for: str = Form(...),
-    hoso_count: str = Form(...), status: str = Form(...), db: Session = Depends(get_db)
+    hoso_count: str = Form(...), status: str = Form(...),
+    peeling_at: str = Form(None), species: str = Form(None),
+    db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
     if not company_code:
         return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
 
-    pool_record = db.query(HlsoForGrading).filter(
+    pool_q = db.query(HlsoForGrading).filter(
         HlsoForGrading.company_id == company_code,
         HlsoForGrading.batch_number == batch_number,
         HlsoForGrading.production_for == production_for,
         HlsoForGrading.hoso_count == hoso_count
-    ).first()
+    )
+    if peeling_at:
+        pool_q = pool_q.filter(HlsoForGrading.peeling_at == peeling_at)
+    if species:
+        pool_q = pool_q.filter(HlsoForGrading.species == species)
+    pool_record = pool_q.first()
 
     if not pool_record:
-        return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+        if not peeling_at or not species:
+            return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+        current_ist = ist_now()
+        pool_record = HlsoForGrading(
+            date=current_ist.date(),
+            time=current_ist.time(),
+            batch_number=batch_number,
+            production_for=production_for,
+            peeling_at=peeling_at,
+            species=species,
+            hoso_count=hoso_count,
+            total_hlso_qty=0.0,
+            graded_qty=0.0,
+            available_qty=0.0,
+            status=status,
+            email=request.session.get("email"),
+            company_id=company_code,
+        )
+        db.add(pool_record)
+        db.commit()
+        return {"status": "success", "message": f"Status updated to {status}"}
 
     pool_record.status = status
     db.commit()

@@ -272,6 +272,71 @@ async def login_page(request: Request):
     )
 
 
+# 🟢 PUBLIC MARKETING / SAAS ENDPOINTS
+@application.get("/api/public/stats")
+async def public_stats():
+    db = SessionLocal()
+    try:
+        from app.database.models.users import User
+        user_count = db.query(User).count()
+    except Exception:
+        user_count = 0
+    finally:
+        db.close()
+    
+    return {
+        "production_weight": "14,842 KG",
+        "active_users": f"{36 + user_count} Active",
+        "pending_approvals": "6 Vouchers",
+        "inventory_accuracy": "99.98%",
+        "orders_processing": "12 Active POs",
+        "completed_batches": "36 Batches",
+        "cold_storage_utilization": "72% Capacity",
+        "export_shipments": "4 In-Transit"
+    }
+
+
+@application.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    return templates.TemplateResponse(request=request, name="privacy.html", context={"request": request})
+
+
+@application.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    return templates.TemplateResponse(request=request, name="terms.html", context={"request": request})
+
+
+@application.get("/cookies", response_class=HTMLResponse)
+async def cookies_page(request: Request):
+    return templates.TemplateResponse(request=request, name="cookies.html", context={"request": request})
+
+
+@application.get("/documentation", response_class=HTMLResponse)
+async def documentation_page(request: Request):
+    return templates.TemplateResponse(request=request, name="documentation.html", context={"request": request})
+
+
+@application.get("/api-docs", response_class=HTMLResponse)
+async def api_docs_page(request: Request):
+    return templates.TemplateResponse(request=request, name="documentation.html", context={"request": request})
+
+
+@application.get("/careers", response_class=HTMLResponse)
+async def careers_page(request: Request):
+    return templates.TemplateResponse(request=request, name="careers.html", context={"request": request})
+
+
+@application.get("/blog", response_class=HTMLResponse)
+async def blog_page(request: Request):
+    return templates.TemplateResponse(request=request, name="blog.html", context={"request": request})
+
+
+@application.get("/status", response_class=HTMLResponse)
+async def status_page(request: Request):
+    return templates.TemplateResponse(request=request, name="status.html", context={"request": request})
+
+
+
 @application.get("/home", response_class=HTMLResponse)
 async def home_page(request: Request):
     if not request.session.get("email"):

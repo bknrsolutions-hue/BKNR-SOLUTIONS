@@ -188,8 +188,41 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                         {% endfor %}
                     </select>
                 </div>
-                <div class="field"><label>Linked Invoice No</label><input type="text" id="invoice_no"></div>
-                <div class="field"><label>Linked Vendor Bill No</label><input type="text" id="vendor_bill_no"></div>
+                <div class="field" id="invoice_field">
+                    <label>Linked Invoice No</label>
+                    <select id="invoice_no">
+                        <option value="">-- SELECT INVOICE --</option>
+                        {% for inv in customer_invoices %}
+                            <option value="{{ inv.invoice_no }}"
+                                    data-party-ledger="{{ inv.buyer_name }}"
+                                    data-balance-inr="{{ inv.balance_amount }}"
+                                    data-exchange-rate="{{ inv.exchange_rate }}"
+                                    data-amount-foreign="{{ inv.invoice_value_foreign }}">
+                                {{ inv.invoice_no }} ({{ inv.buyer_name }} - Bal: ₹{{ "{:,.2f}".format(inv.balance_amount) }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field" id="vendor_bill_field" style="display:none;">
+                    <label>Linked Vendor Bill No</label>
+                    <select id="vendor_bill_no">
+                        <option value="">-- SELECT BILL --</option>
+                        {% for bill in vendor_bills %}
+                            <option value="{{ bill.bill_no }}"
+                                    data-party-ledger="{{ bill.vendor_name }}"
+                                    data-balance-inr="{{ bill.balance }}">
+                                {{ bill.bill_no }} ({{ bill.vendor_name }} - Bal: ₹{{ "{:,.2f}".format(bill.balance) }})
+                            </option>
+                        {% endfor %}
+                        {% for inv in purchase_invoices %}
+                            <option value="{{ inv.invoice_no }}"
+                                    data-party-ledger="{{ inv.vendor_name or '' }}"
+                                    data-balance-inr="{{ inv.grand_total }}">
+                                {{ inv.invoice_no }} ({{ inv.product_name }} - Bal: ₹{{ "{:,.2f}".format(inv.grand_total) }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="field"><label>Foreign Amount</label><input type="number" step="any" id="amount" value="0.00" oninput="recalcReceipt()"></div>
                 <div class="field"><label>Exchange Rate</label><input type="number" step="any" id="exchange_rate" value="1.00" oninput="recalcReceipt()"></div>
                 <div class="field"><label>INR Amount (₹)</label><input type="number" step="any" id="amount_inr" value="0.00" required></div>
@@ -232,8 +265,70 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('threeDotsMenu').style.display = 'block';
     }
 
-    function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+    function openModal() { 
+        document.getElementById('entryModal').style.display = 'flex'; 
+        toggleFields();
+    }
     function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+    
+    // Toggle Invoice/Bill fields based on transaction type
+    const transTypeSelect = document.getElementById("transaction_type");
+    const invoiceField = document.getElementById("invoice_field");
+    const vendorBillField = document.getElementById("vendor_bill_field");
+
+    function toggleFields() {
+        const val = transTypeSelect.value;
+        if (val === "VENDOR_PAYMENT") {
+            invoiceField.style.display = "none";
+            vendorBillField.style.display = "flex";
+            document.getElementById("invoice_no").value = "";
+        } else {
+            invoiceField.style.display = "flex";
+            vendorBillField.style.display = "none";
+            document.getElementById("vendor_bill_no").value = "";
+        }
+    }
+    transTypeSelect.addEventListener("change", toggleFields);
+
+    // Auto-fill from selected customer invoice
+    document.getElementById("invoice_no").addEventListener("change", function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt && opt.value) {
+            // Auto fill party ledger
+            const party = opt.getAttribute("data-party-ledger");
+            const partySelect = document.getElementById("party_ledger_id");
+            for (let i = 0; i < partySelect.options.length; i++) {
+                if (partySelect.options[i].text.includes(party)) {
+                    partySelect.selectedIndex = i;
+                    break;
+                }
+            }
+            // Auto fill amounts
+            document.getElementById("amount").value = opt.getAttribute("data-amount-foreign") || "0.00";
+            document.getElementById("exchange_rate").value = opt.getAttribute("data-exchange-rate") || "1.00";
+            document.getElementById("amount_inr").value = opt.getAttribute("data-balance-inr") || "0.00";
+        }
+    });
+
+    // Auto-fill from selected vendor bill
+    document.getElementById("vendor_bill_no").addEventListener("change", function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt && opt.value) {
+            // Auto fill party ledger
+            const party = opt.getAttribute("data-party-ledger");
+            const partySelect = document.getElementById("party_ledger_id");
+            for (let i = 0; i < partySelect.options.length; i++) {
+                if (partySelect.options[i].text.includes(party)) {
+                    partySelect.selectedIndex = i;
+                    break;
+                }
+            }
+            // Auto fill amount
+            document.getElementById("amount_inr").value = opt.getAttribute("data-balance-inr") || "0.00";
+            document.getElementById("amount").value = "0.00";
+            document.getElementById("exchange_rate").value = "1.00";
+        }
+    });
     
     function recalcReceipt() {
         const amt = parseFloat(document.getElementById("amount").value) || 0;

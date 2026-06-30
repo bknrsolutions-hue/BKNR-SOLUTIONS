@@ -1079,7 +1079,38 @@ def payment_receipt_entry(request: Request, db: Session = Depends(get_db)):
     if not comp_code: return RedirectResponse("/", status_code=302)
     history = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code).order_by(desc(PaymentReceipt.entry_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/payment_receipt.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
+    
+    # Query unpaid customer invoices & vendor bills for linkage dropdowns
+    from app.database.models.payments import CustomerReceivable, VendorPayment
+    from app.database.models.bills import PurchaseInvoice
+
+    customer_invoices = db.query(CustomerReceivable).filter(
+        CustomerReceivable.company_id == comp_code,
+        CustomerReceivable.payment_status != "PAID"
+    ).order_by(CustomerReceivable.invoice_no).all()
+
+    vendor_bills = db.query(VendorPayment).filter(
+        VendorPayment.company_id == comp_code,
+        VendorPayment.status != "Paid"
+    ).order_by(VendorPayment.bill_no).all()
+
+    purchase_invoices = db.query(PurchaseInvoice).filter(
+        PurchaseInvoice.company_id == comp_code,
+        PurchaseInvoice.status != "PAID"
+    ).order_by(PurchaseInvoice.invoice_no).all()
+
+    return templates.TemplateResponse(
+        request=request, 
+        name="finance_accounts/payment_receipt.html", 
+        context={
+            "history": history, 
+            "ledgers": ledgers, 
+            "company_id": comp_code,
+            "customer_invoices": customer_invoices,
+            "vendor_bills": vendor_bills,
+            "purchase_invoices": purchase_invoices
+        }
+    )
 
 @router.post("/payment_receipt/save")
 def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Session = Depends(get_db)):
@@ -1117,6 +1148,48 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
     )
     db.add(entry)
     db.flush()
+
+    # Auto-adjust outstanding balances
+    if payload.transaction_type == "CUSTOMER_RECEIPT" and payload.invoice_no:
+        receivable = db.query(CustomerReceivable).filter(
+            CustomerReceivable.company_id == comp_code,
+            CustomerReceivable.invoice_no == payload.invoice_no
+        ).first()
+        if receivable:
+            receivable.balance_amount = max(0.0, receivable.balance_amount - payload.amount_inr)
+            receivable.received_amount += payload.amount_inr
+            receivable.received_date = payload.entry_date
+            if receivable.balance_amount <= 0.01:
+                receivable.payment_status = "PAID"
+                receivable.status = "CLOSED"
+            else:
+                receivable.payment_status = "PARTIAL"
+            db.flush()
+
+    elif payload.transaction_type == "VENDOR_PAYMENT" and payload.vendor_bill_no:
+        v_pay = db.query(VendorPayment).filter(
+            VendorPayment.company_id == comp_code,
+            VendorPayment.bill_no == payload.vendor_bill_no
+        ).first()
+        if v_pay:
+            v_pay.balance = max(0.0, v_pay.balance - payload.amount_inr)
+            v_pay.paid_amount += payload.amount_inr
+            v_pay.payment_date = payload.entry_date
+            if v_pay.balance <= 0.01:
+                v_pay.status = "Paid"
+            else:
+                v_pay.status = "Partially Paid"
+            db.flush()
+
+        from app.database.models.bills import PurchaseInvoice
+        pur_inv = db.query(PurchaseInvoice).filter(
+            PurchaseInvoice.company_id == comp_code,
+            PurchaseInvoice.invoice_no == payload.vendor_bill_no
+        ).first()
+        if pur_inv:
+            pur_inv.status = "PAID"
+            db.flush()
+
     settlement_total = payload.amount_inr + payload.bank_charges + payload.adjustment_amount
     if payload.transaction_type == "VENDOR_PAYMENT":
         details = [
@@ -1150,6 +1223,44 @@ def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(
     entry = db.query(PaymentReceipt).filter(PaymentReceipt.id == log_id, PaymentReceipt.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
+        
+        # Revert outstanding balances on deletion
+        if entry.transaction_type == "CUSTOMER_RECEIPT" and entry.invoice_no:
+            receivable = db.query(CustomerReceivable).filter(
+                CustomerReceivable.company_id == comp_code,
+                CustomerReceivable.invoice_no == entry.invoice_no
+            ).first()
+            if receivable:
+                receivable.balance_amount += entry.amount_inr
+                receivable.received_amount = max(0.0, receivable.received_amount - entry.amount_inr)
+                if receivable.balance_amount >= receivable.invoice_value_inr:
+                    receivable.payment_status = "PENDING"
+                    receivable.status = "OPEN"
+                else:
+                    receivable.payment_status = "PARTIAL"
+                db.flush()
+        elif entry.transaction_type == "VENDOR_PAYMENT" and entry.vendor_bill_no:
+            v_pay = db.query(VendorPayment).filter(
+                VendorPayment.company_id == comp_code,
+                VendorPayment.bill_no == entry.vendor_bill_no
+            ).first()
+            if v_pay:
+                v_pay.balance += entry.amount_inr
+                v_pay.paid_amount = max(0.0, v_pay.paid_amount - entry.amount_inr)
+                if v_pay.balance >= v_pay.total_amount:
+                    v_pay.status = "Unpaid"
+                else:
+                    v_pay.status = "Partially Paid"
+                db.flush()
+            from app.database.models.bills import PurchaseInvoice
+            pur_inv = db.query(PurchaseInvoice).filter(
+                PurchaseInvoice.company_id == comp_code,
+                PurchaseInvoice.invoice_no == entry.vendor_bill_no
+            ).first()
+            if pur_inv:
+                pur_inv.status = "POSTED"
+                db.flush()
+
         write_audit(db, "payment_receipts", entry.id, comp_code, "DELETE", f"Receipt: {entry.receipt_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
@@ -1815,6 +1926,15 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
             email,
         )
 
+    # Auto-post to accounting ledger
+    if record.salary_journal_id:
+        cancel_linked_voucher(db, comp_code, record.salary_journal_id, email)
+        db.flush()
+
+    voucher = PostingEngineService.post_salary_approval(db=db, company_id=comp_code, entry=record)
+    record.salary_journal_id = voucher.id
+    record.status = "APPROVED"
+
     db.commit()
     return {
         "success": True,
@@ -1832,6 +1952,10 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     email = request.session.get("email")
     entry = db.query(SalaryProcessing).filter(SalaryProcessing.id == log_id, SalaryProcessing.company_id == comp_code).first()
     if entry:
+        if entry.salary_journal_id:
+            cancel_linked_voucher(db, comp_code, entry.salary_journal_id, email)
+        if entry.payment_journal_id:
+            cancel_linked_voucher(db, comp_code, entry.payment_journal_id, email)
         write_audit(db, "salary_processing", entry.id, comp_code, "DELETE", f"Emp: {entry.employee_name} Month: {entry.month_year}", "DELETED", email)
         db.delete(entry)
         db.commit()

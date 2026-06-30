@@ -239,7 +239,7 @@ iframe{ width:100%; height:100%; border:none; }
                     {% if deheading_pending %}
                         {% for item in deheading_pending %}
                         {% if item.available_qty > 0.01 and item.status != 'Completed' %}
-                        <tr data-status="{{ item.status }}" data-prod-for="{{ item.production_for }}">
+                        <tr data-status="{{ item.status }}" data-prod-for="{{ item.production_for }}" data-peeling-at="{{ item.peeling_at }}" data-species="{{ item.species }}">
                             <td style="text-align:left !important; padding-left:10px;"><b>{{ item.batch_number }}</b><br><small style="color:var(--text-muted); font-size: 9px;">{{ item.peeling_at }}</small></td>
                             <td style="text-align:left !important; padding-left:10px; font-weight:700;">{{ item.production_for }}</td>
                             <td style="text-align:left !important; padding-left:10px;">{{ item.species }}<br><small style="color:var(--accent); font-weight:700;">In: {{ item.hoso_count }}</small></td>
@@ -254,7 +254,7 @@ iframe{ width:100%; height:100%; border:none; }
                         {% endif %}
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>
+                        <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -470,6 +470,8 @@ function changeLiveStatus(selectElement) {
             formData.append("batch_number", batchNumber);
             formData.append("production_for", productionFor);
             formData.append("hoso_count", hosoCount);
+            formData.append("peeling_at", row.getAttribute("data-peeling-at") || "");
+            formData.append("species", row.getAttribute("data-species") || "");
             formData.append("status", nextVal);
 
             fetch("/processing/grading/update_pool_status", { method: "POST", body: formData })
@@ -483,7 +485,7 @@ function changeLiveStatus(selectElement) {
                             row.remove();
                             const tbody = document.getElementById("poolTableBody");
                             if (tbody && tbody.querySelectorAll("tr").length === 0) {
-                                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>`;
+                                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No stock data from de-heading</td></tr>`;
                             }
                         }, 300);
                     } else {

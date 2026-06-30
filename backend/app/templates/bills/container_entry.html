@@ -23,9 +23,22 @@ syncThemeFromParent();
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-:root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+:root {
+    --primary: var(--text);
+    --accent: var(--accent);
+    --border: var(--border);
+    --bg: var(--bg);
+    --header: var(--card-bg);
+    --text: var(--text);
+    --text-muted: var(--text-muted);
+    --muted: var(--text-muted);
+    --danger: var(--cancelled-text);
+    --success: var(--completed-text);
+    --card-bg: var(--card-bg);
+    --header-bg: var(--header-bg);
+    --row-hover: var(--row-hover);
+    --processing-bg: var(--processing-bg);
+    --card: var(--card-bg);
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}

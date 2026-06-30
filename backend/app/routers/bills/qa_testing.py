@@ -16,6 +16,59 @@ from app.database import get_db
 from app.database.models.bills import QATestingLog
 from app.database.models.processing import AuditLog  
 from app.database.models.criteria import production_at
+from app.services.posting_engine import PostingEngineService
+from app.database.models.enterprise_finance import VoucherHeader
+from app.routers.bills.purchase import cancel_linked_voucher
+
+def post_qa_testing_log_to_ledger(db: Session, company_id: str, entry: QATestingLog, lab_name: str, email: str) -> int:
+    try:
+        # Prepare double entry details: Debit Lab Testing charges, Credit Lab Vendor
+        details = [
+            {
+                "ledger_name": "Lab Testing Charges A/c",
+                "group_name": "Indirect Expenses",
+                "group_type": "EXPENSE",
+                "debit_amount": entry.test_cost,
+                "credit_amount": 0.0,
+                "remarks": f"QA Lab Testing - Batch: {entry.batch_no}, Report: {entry.report_ref}"
+            },
+            {
+                "ledger_name": f"{lab_name} - Supplier A/c",
+                "group_name": "Sundry Creditors",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": entry.test_cost,
+                "remarks": f"Payable for Lab report {entry.report_ref}"
+            }
+        ]
+
+        voucher = PostingEngineService.create_voucher(
+            db=db,
+            company_id=company_id,
+            voucher_type_name="Purchase",
+            voucher_date=entry.test_date,
+            narration=f"QA lab testing report {entry.report_ref} for batch {entry.batch_no}",
+            details=details,
+            reference_no=entry.report_ref,
+            created_by=email or "SYSTEM",
+            status="POSTED"
+        )
+        
+        # Populate ledger IDs
+        expense_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, "Lab Testing Charges A/c", "Indirect Expenses", "EXPENSE"
+        )
+        vendor_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, f"{lab_name} - Supplier A/c", "Sundry Creditors", "LIABILITY", "Current Liabilities"
+        )
+        entry.qa_expense_ledger_id = expense_ledger.id
+        entry.lab_ledger_id = vendor_ledger.id
+
+        return voucher.id
+    except Exception as e:
+        logger.error(f"Failed to post QA testing log to ledger: {str(e)}")
+        raise e
 
 router = APIRouter(
     prefix="/qa",
@@ -184,6 +237,17 @@ async def save_qa_testing(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
+        # Auto-post to accounting ledger
+        journal_id = post_qa_testing_log_to_ledger(
+            db=db,
+            company_id=comp_code,
+            entry=new_entry,
+            lab_name=lab_name,
+            email=email
+        )
+        new_entry.journal_id = journal_id
+        new_entry.status = 'POSTED'
+
         db.commit()
         return JSONResponse({"success": True, "message": f"QA Lab entry {payload.batch_no} saved successfully!"})
 
@@ -239,6 +303,10 @@ def delete_qa_log(expense_id: int, request: Request, db: Session = Depends(get_d
 
     if entry:
         try:
+            if entry.journal_id:
+                cancel_linked_voucher(db, company_code, entry.journal_id, email)
+                db.flush()
+
             db.add(AuditLog(
                 table_name="qa_testing_logs", record_id=entry.id, company_id=company_code,
                 field_name="DELETE", old_value=f"Batch: {entry.batch_no}", new_value="DELETED",

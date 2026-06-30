@@ -210,13 +210,61 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         document.getElementById('threeDotsMenu').style.display = 'block';
     }
 
-    function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+    function openModal() { 
+        document.getElementById('entryModal').style.display = 'flex'; 
+        // Set default group to "Indirect Expenses" if available
+        setDefaultGroup("Indirect Expenses");
+    }
     function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+
+    function setDefaultGroup(groupName) {
+        const groupSelect = document.getElementById("ledger_group");
+        for (let i = 0; i < groupSelect.options.length; i++) {
+            if (groupSelect.options[i].value === groupName || groupSelect.options[i].text.includes(groupName)) {
+                groupSelect.selectedIndex = i;
+                groupSelect.dispatchEvent(new Event("change"));
+                break;
+            }
+        }
+    }
 
     document.getElementById("ledger_group").addEventListener("change", (e) => {
         const selected = e.target.options[e.target.selectedIndex];
         const type = selected.getAttribute("data-type");
         if (type) document.getElementById("ledger_type").value = type;
+    });
+
+    document.getElementById("ledger_name").addEventListener("input", function() {
+        const name = this.value.toLowerCase();
+        let targetGroup = "";
+        
+        if (name.includes("gst") || name.includes("tax") || name.includes("duty") || name.includes("duties")) {
+            targetGroup = "Duties & Taxes";
+        } else if (name.includes("bank") || name.includes("eefc") || name.includes("epc") || name.includes("sbi") || name.includes("hdfc") || name.includes("icici")) {
+            targetGroup = "Bank Accounts";
+        } else if (name.includes("cash")) {
+            targetGroup = "Cash-in-hand";
+        } else if (name.includes("customer") || name.includes("debtor") || name.includes("buyer")) {
+            targetGroup = "Sundry Debtors";
+        } else if (name.includes("supplier") || name.includes("creditor") || name.includes("vendor") || name.includes("payable")) {
+            targetGroup = "Sundry Creditors";
+        } else if (name.includes("purchase")) {
+            targetGroup = "Purchase Accounts";
+        } else if (name.includes("sales") || name.includes("income")) {
+            targetGroup = "Sales Accounts";
+        } else if (name.includes("advance") || name.includes("recovery")) {
+            targetGroup = "Loans & Advances (Asset)";
+        } else if (name.includes("capital") || name.includes("equity") || name.includes("share")) {
+            targetGroup = "Capital Account";
+        } else if (name.includes("asset") || name.includes("machinery") || name.includes("land") || name.includes("building") || name.includes("furniture") || name.includes("computer")) {
+            targetGroup = "Fixed Assets";
+        } else if (name.includes("expense") || name.includes("charges") || name.includes("canteen") || name.includes("salary") || name.includes("electricity") || name.includes("freight") || name.includes("wage") || name.includes("welfare") || name.includes("rent") || name.includes("insurance") || name.includes("audit") || name.includes("depreciation")) {
+            targetGroup = "Indirect Expenses";
+        }
+        
+        if (targetGroup) {
+            setDefaultGroup(targetGroup);
+        }
     });
     
     function applyFilters() {

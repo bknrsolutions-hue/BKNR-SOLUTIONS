@@ -36,6 +36,80 @@ def get_today_range():
     end = start + timedelta(days=1) - timedelta(seconds=1)
     return start, end
 
+
+# --- Helper: Cancel Linked Finance Voucher ---
+def cancel_linked_voucher(db: Session, company_id: str, journal_id: int | None, email: str) -> None:
+    if not journal_id:
+        return
+    voucher = db.query(VoucherHeader).filter(
+        VoucherHeader.id == journal_id,
+        VoucherHeader.company_id == company_id,
+    ).first()
+    if voucher and voucher.status != "CANCELLED":
+        old_status = voucher.status
+        voucher.status = "CANCELLED"
+        PostingEngineService.write_finance_audit(
+            db,
+            company_id,
+            "voucher_headers",
+            voucher.id,
+            "CANCEL",
+            {"status": old_status},
+            {"status": "CANCELLED"},
+            email or "SYSTEM",
+        )
+
+
+# --- Helper: Post Raw Material Purchase Entry to Ledger ---
+def post_rm_purchase_to_ledger(db: Session, company_id: str, entry: RawMaterialPurchasing, email: str) -> int:
+    try:
+        # Determine gst_rate from HSN code description or code
+        gst_rate = 0.0
+        if entry.hsn_code:
+            hsn_obj = db.query(hsn_codes).filter(
+                hsn_codes.company_id == company_id,
+                ((hsn_codes.description == entry.hsn_code) | (hsn_codes.hsn_code == entry.hsn_code))
+            ).first()
+            if hsn_obj:
+                gst_rate = hsn_obj.gst_percent
+
+        # Determine tds_rate based on supplier PAN presence
+        supplier_obj = db.query(suppliers).filter(
+            suppliers.supplier_name == entry.supplier_name,
+            suppliers.company_id == company_id
+        ).first()
+        tds_rate = 1.0 if (supplier_obj and supplier_obj.pan_number) else 0.0
+
+        # Post using Seafood ERP auto-posting rule
+        voucher = PostingEngineService.post_shrimp_purchase(
+            db=db,
+            company_id=company_id,
+            supplier_name=entry.supplier_name,
+            total_amount=entry.amount,
+            gst_rate=gst_rate,
+            tds_rate=tds_rate,
+            batch_number=entry.batch_number,
+            invoice_date=entry.date
+        )
+
+        # Populate ledger IDs
+        inventory_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, "Raw Shrimp Purchase A/c", "Purchase Accounts", "EXPENSE"
+        )
+        supplier_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, f"{entry.supplier_name} - Supplier A/c", "Sundry Creditors", "LIABILITY", "Current Liabilities"
+        )
+        
+        entry.inventory_ledger_id = inventory_ledger.id
+        entry.supplier_ledger_id = supplier_ledger.id
+        entry.status = "POSTED"
+
+        return voucher.id
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to post raw material purchase to ledger: {str(e)}")
+        raise e
+
 # -----------------------------------------------------
 # HOSO SUMMARY CALCULATION (🟢 🔴 FIXED: NOW WITH USER PERMISSIONS & GLOBAL FILTERS WORKING)
 # -----------------------------------------------------
@@ -328,8 +402,22 @@ def save_rmp(
         material_boxes=material_boxes, remarks=remarks, email=request.session.get("email"),
         date=now.date(), time=now.time(), company_id=comp_code
     )
-    db.add(entry)
-    db.commit()
+    
+    try:
+        db.add(entry)
+        db.flush()
+
+        # Auto-post to accounting ledger
+        email = request.session.get("email")
+        journal_id = post_rm_purchase_to_ledger(db, comp_code, entry, email)
+        entry.journal_id = journal_id
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        request.session["message"] = f"❌ Save Failed: {str(e)}"
+        return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+
     refresh_floor_balance(db, comp_code, batch_number=batch_number)
     request.session["message"] = "✔ Saved Successfully!"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
@@ -353,17 +441,31 @@ def update_rmp(
     old_batch_number = entry.batch_number
     total_billable_qty = g1_qty + (g2_qty / 2)
     
-    entry.batch_number, entry.supplier_name = batch_number, supplier_name
-    entry.production_for = production_for 
-    entry.peeling_at = peeling_at
-    entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
-    entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
-    entry.received_qty = g1_qty + g2_qty + dc_qty
-    entry.amount = round(total_billable_qty * rate_per_kg, 2)
-    entry.rate_per_kg = rate_per_kg
-    entry.material_boxes, entry.remarks = material_boxes, remarks
-    
-    db.commit()
+    try:
+        entry.batch_number, entry.supplier_name = batch_number, supplier_name
+        entry.production_for = production_for 
+        entry.peeling_at = peeling_at
+        entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
+        entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
+        entry.received_qty = g1_qty + g2_qty + dc_qty
+        entry.amount = round(total_billable_qty * rate_per_kg, 2)
+        entry.rate_per_kg = rate_per_kg
+        entry.material_boxes, entry.remarks = material_boxes, remarks
+        
+        email = request.session.get("email")
+        # Cancel old linked voucher
+        if entry.journal_id:
+            cancel_linked_voucher(db, comp_code, entry.journal_id, email)
+            
+        # Post new voucher
+        journal_id = post_rm_purchase_to_ledger(db, comp_code, entry, email)
+        entry.journal_id = journal_id
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        request.session["message"] = f"❌ Update Failed: {str(e)}"
+        return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
     refresh_floor_balance(db, comp_code, batch_number=batch_number)
     if old_batch_number != batch_number:
         refresh_floor_balance(db, comp_code, batch_number=old_batch_number)
@@ -405,14 +507,23 @@ def delete_rmp(
 
         batch_to_refresh = entry.batch_number
         
-        # Soft delete / Cancel
-        entry.is_cancelled = True
-        entry.status = "Cancelled"
-        entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
-        entry.cancelled_by = request.session.get("email")
-        entry.cancelled_at = ist_now()
+        try:
+            # Soft delete / Cancel
+            entry.is_cancelled = True
+            entry.status = "Cancelled"
+            entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
+            entry.cancelled_by = request.session.get("email")
+            entry.cancelled_at = ist_now()
 
-        db.commit()
+            # Cancel linked voucher
+            if entry.journal_id:
+                cancel_linked_voucher(db, comp_code, entry.journal_id, entry.cancelled_by)
+
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            request.session["message"] = f"❌ Cancellation Failed: {str(e)}"
+            return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
         refresh_floor_balance(db, comp_code, batch_number=batch_to_refresh)
         request.session["message"] = "✔ Cancelled Successfully!"
     else:

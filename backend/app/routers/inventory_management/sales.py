@@ -13,6 +13,9 @@ from app.database.models.inventory_management import sales_dispatch, stock_entry
 from app.database.models.criteria import packing_styles, production_for
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
+from app.services.posting_engine import PostingEngineService
+from app.database.models.enterprise_finance import VoucherHeader
+from datetime import date
 
 # Router setup
 router = APIRouter(prefix="/inventory", tags=["SALES DISPATCH"])
@@ -160,11 +163,66 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     
     sale_item.exchange_rate = new_rate
     qty_kg = float(sale_item.no_of_mc or 0) * mc_weight
-    total_inr = (qty_kg * float(sale_item.price or 0)) * new_rate
+    total_usd = qty_kg * float(sale_item.price or 0.0)
+    total_inr = total_usd * new_rate
+
+    sale_item.sales_quantity = qty_kg
+    sale_item.amount_usd = total_usd
+    sale_item.amount_inr = total_inr
+
     sale_item.profit_loss = total_inr - (float(sale_item.stock_value or 0) + 
                                          float(sale_item.freight_cost or 0) + 
                                          float(sale_item.packing_cost or 0))
     
+    db.flush()
+
+    # Re-sum all items for this invoice and update ledger entry
+    invoice_no = sale_item.invoice_no
+    company_id = sale_item.company_id
+
+    all_invoice_items = db.query(sales_dispatch).filter(
+        sales_dispatch.invoice_no == invoice_no,
+        sales_dispatch.company_id == company_id
+    ).all()
+
+    invoice_total_usd = sum(float(item.amount_usd or 0.0) for item in all_invoice_items)
+
+    # Cancel previous voucher
+    old_voucher = db.query(VoucherHeader).filter(
+        VoucherHeader.reference_no == invoice_no,
+        VoucherHeader.company_id == company_id,
+        VoucherHeader.status != "CANCELLED"
+    ).first()
+
+    if old_voucher:
+        old_status = old_voucher.status
+        old_voucher.status = "CANCELLED"
+        PostingEngineService.write_finance_audit(
+            db, company_id, "voucher_headers", old_voucher.id, "CANCEL",
+            {"status": old_status}, {"status": "CANCELLED"},
+            request.session.get("email") or "SYSTEM"
+        )
+        db.flush()
+
+    # Parse invoice_date to date object for accounting
+    try:
+        inv_date_obj = datetime.strptime(str(sale_item.invoice_date), "%Y-%m-%d").date()
+    except Exception:
+        inv_date_obj = date.today()
+
+    # Post new voucher
+    PostingEngineService.post_sales_dispatch(
+        db=db,
+        company_id=company_id,
+        invoice_no=invoice_no,
+        customer_name=sale_item.buyer_name or "Customer",
+        amount_usd=invoice_total_usd,
+        exchange_rate=new_rate,
+        packing_cost=0.0,
+        freight_cost=0.0,
+        invoice_date=inv_date_obj
+    )
+
     db.commit()
     return {
         "status": "success", 

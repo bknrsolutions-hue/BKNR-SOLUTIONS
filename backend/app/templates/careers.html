@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Careers - BKNR ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #090d16;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.06);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+        h1 { font-size: 2.5rem; margin-bottom: 10px; color: #fff; font-weight: 800; text-align: center; }
+        .subtitle { font-size: 1.1rem; color: var(--text-muted); text-align: center; margin-bottom: 50px; }
+        .job-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .job-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+        .job-title { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .job-meta { font-size: 0.85rem; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+        .job-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px; }
+        .btn-apply {
+            display: inline-block;
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .btn-apply:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Homepage</a>
+        <h1>Build the Future of Seafood ERP</h1>
+        <p class="subtitle">Join our product development desk in Visakhapatnam, AP.</p>
+        
+        <div class="job-card">
+            <div class="job-title">Backend Python Engineer</div>
+            <div class="job-meta">Full-time • Visakhapatnam / Hybrid</div>
+            <div class="job-desc">Help build our high-frequency FastAPI transactional system, optimize PostgreSQL query pipelines for universal multi-company filters, and scale celery task runners.</div>
+            <a href="mailto:careers@bknrsolutions.com?subject=Backend Engineer Role" class="btn-apply">Apply Now</a>
+        </div>
+
+        <div class="job-card">
+            <div class="job-title">Full Stack React Developer</div>
+            <div class="job-meta">Full-time • Visakhapatnam / Hybrid</div>
+            <div class="job-desc">Work on high-fidelity dashboard views, real-time stock matrix tables, and biometric attendance layouts. Proficiency in React, React Router, and clean styling systems required.</div>
+            <a href="mailto:careers@bknrsolutions.com?subject=React Developer Role" class="btn-apply">Apply Now</a>
+        </div>
+
+        <div class="job-card">
+            <div class="job-title">Hardware Integrations Specialist</div>
+            <div class="job-meta">Full-time • Field Operations AP</div>
+            <div class="job-desc">Deploy and integrate physical weighing scale indicators and biometric check-in modules. Configure local caching scripts on factory-floor servers.</div>
+            <a href="mailto:careers@bknrsolutions.com?subject=Hardware Integrations Role" class="btn-apply">Apply Now</a>
+        </div>
+    </div>
+</body>
+</html>

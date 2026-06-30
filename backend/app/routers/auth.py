@@ -95,6 +95,36 @@ class ForgotReq(BaseModel):
 
 # ================= ROUTES =================
 
+@router.get("/login", response_class=HTMLResponse)
+def get_login_page(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="auth/login.html",
+        context={"request": request}
+    )
+
+@router.get("/register", response_class=HTMLResponse)
+def get_register_page(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="auth/register.html",
+        context={"request": request}
+    )
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+def get_forgot_password_page(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="auth/forgot_password.html",
+        context={"request": request}
+    )
+
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(or_(User.email == data.email, User.mobile == data.mobile)).first()

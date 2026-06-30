@@ -22,6 +22,8 @@ from app.database.models.criteria import (
     vendors,
     hsn_codes
 )
+from app.services.posting_engine import PostingEngineService
+from app.database.models.enterprise_finance import VoucherHeader
 
 router = APIRouter(
     prefix="/purchase",
@@ -52,6 +54,110 @@ class PurchaseInvoiceSchema(BaseModel):
 def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
+
+
+# --- Helper: Cancel Linked Finance Voucher ---
+def cancel_linked_voucher(db: Session, company_id: str, journal_id: int | None, email: str) -> None:
+    if not journal_id:
+        return
+    voucher = db.query(VoucherHeader).filter(
+        VoucherHeader.id == journal_id,
+        VoucherHeader.company_id == company_id,
+    ).first()
+    if voucher and voucher.status != "CANCELLED":
+        old_status = voucher.status
+        voucher.status = "CANCELLED"
+        PostingEngineService.write_finance_audit(
+            db,
+            company_id,
+            "voucher_headers",
+            voucher.id,
+            "CANCEL",
+            {"status": old_status},
+            {"status": "CANCELLED"},
+            email or "SYSTEM",
+        )
+
+
+# --- Helper: Post Purchase Invoice to Accounting Ledger ---
+def post_purchase_invoice_to_ledger(db: Session, company_id: str, invoice: PurchaseInvoice, vendor_name: str, email: str) -> int:
+    try:
+        taxable_value = round(invoice.qty * invoice.base_price, 2)
+        tax_amount = invoice.tax_amount or 0.0
+        grand_total = invoice.grand_total
+
+        # Determine purchase ledger based on product name
+        prod_name = (invoice.product_name or "").upper()
+        if any(x in prod_name for x in ["PACKING", "BOX", "CARTON", "STRAP", "TAPE", "BAG", "POLY", "LABEL", "ROLL", "PRINTED"]):
+            purchase_ledger_name = "Packing Material Purchase A/c"
+        else:
+            purchase_ledger_name = "Raw Shrimp Purchase A/c"
+
+        # Prepare details
+        details = [
+            {
+                "ledger_name": purchase_ledger_name,
+                "group_name": "Purchase Accounts",
+                "group_type": "EXPENSE",
+                "debit_amount": taxable_value,
+                "credit_amount": 0.0,
+                "remarks": f"Purchase - {invoice.product_name}"
+            }
+        ]
+
+        if tax_amount > 0:
+            details.append({
+                "ledger_name": "Input GST A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": tax_amount,
+                "credit_amount": 0.0,
+                "remarks": f"Input GST @ {invoice.gst_percent}%"
+            })
+
+        details.append({
+            "ledger_name": f"{vendor_name} - Supplier A/c",
+            "group_name": "Sundry Creditors",
+            "group_type": "LIABILITY",
+            "parent_group_name": "Current Liabilities",
+            "debit_amount": 0.0,
+            "credit_amount": grand_total,
+            "remarks": f"Vendor payable for invoice {invoice.invoice_no}"
+        })
+
+        voucher = PostingEngineService.create_voucher(
+            db=db,
+            company_id=company_id,
+            voucher_type_name="Purchase",
+            voucher_date=invoice.invoice_date,
+            narration=f"Purchase entry for invoice {invoice.invoice_no} from {vendor_name}",
+            details=details,
+            reference_no=invoice.invoice_no,
+            created_by=email or "SYSTEM",
+            status="POSTED"
+        )
+        
+        # Populate ledger IDs in invoice
+        purchase_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, purchase_ledger_name, "Purchase Accounts", "EXPENSE"
+        )
+        supplier_ledger = PostingEngineService.get_or_create_ledger(
+            db, company_id, f"{vendor_name} - Supplier A/c", "Sundry Creditors", "LIABILITY", "Current Liabilities"
+        )
+        invoice.purchase_ledger_id = purchase_ledger.id
+        invoice.supplier_ledger_id = supplier_ledger.id
+        
+        if tax_amount > 0:
+            gst_ledger = PostingEngineService.get_or_create_ledger(
+                db, company_id, "Input GST A/c", "Duties & Taxes", "LIABILITY", "Current Liabilities"
+            )
+            invoice.input_gst_ledger_id = gst_ledger.id
+
+        return voucher.id
+    except Exception as e:
+        logger.error(f"Failed to post purchase invoice to ledger: {str(e)}")
+        raise e
 
 
 # ============================================================
@@ -214,6 +320,23 @@ async def save_purchase_invoice(
             edited_by=email, edited_at=current_ist # 🟢 Synced onto common IST timeline
         ))
         
+        # Auto-post to Accounting Ledger
+        vendor_obj = db.query(vendors).filter(
+            vendors.id == payload.vendor_id,
+            vendors.company_id == company_id
+        ).first()
+        vendor_name = vendor_obj.name if vendor_obj else f"Vendor {payload.vendor_id}"
+        
+        journal_id = post_purchase_invoice_to_ledger(
+            db=db,
+            company_id=company_id,
+            invoice=new_invoice,
+            vendor_name=vendor_name,
+            email=email
+        )
+        new_invoice.journal_id = journal_id
+        new_invoice.status = 'POSTED'
+        
         db.commit()
         return JSONResponse({"success": True, "message": f"Invoice {payload.invoice_no} saved successfully!"})
 
@@ -284,6 +407,27 @@ async def update_purchase_invoice(
         invoice.updated_by = email
         invoice.updated_date = current_ist.strftime("%Y-%m-%d") # 🟢 Synced onto IST date
 
+        # Cancel old linked voucher
+        if invoice.journal_id:
+            cancel_linked_voucher(db, company_id, invoice.journal_id, email)
+
+        # Post new voucher
+        vendor_obj = db.query(vendors).filter(
+            vendors.id == invoice.vendor_id,
+            vendors.company_id == company_id
+        ).first()
+        vendor_name = vendor_obj.name if vendor_obj else f"Vendor {invoice.vendor_id}"
+        
+        journal_id = post_purchase_invoice_to_ledger(
+            db=db,
+            company_id=company_id,
+            invoice=invoice,
+            vendor_name=vendor_name,
+            email=email
+        )
+        invoice.journal_id = journal_id
+        invoice.status = 'POSTED'
+
         db.commit()
         return JSONResponse({"success": True, "message": f"Invoice {invoice.invoice_no} updated successfully!"})
 
@@ -336,6 +480,8 @@ def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db))
 
     if invoice:
         try:
+            if invoice.journal_id:
+                cancel_linked_voucher(db, company_id, invoice.journal_id, email)
             db.add(AuditLog(
                 table_name="purchase_invoice", record_id=invoice.id, company_id=company_id,
                 field_name="DELETE", old_value=invoice.invoice_no, new_value="DELETED",

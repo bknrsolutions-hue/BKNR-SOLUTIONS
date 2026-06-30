@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Register - BKNR ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+</script>
+
+<style>
+:root {
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --accent: #0ea5e9;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #0b0f19;
+  --card-bg: rgba(17, 24, 39, 0.75);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(59, 130, 246, 0.4);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --primary: #0f5fa8;
+  --primary-hover: #082f57;
+  --accent: #13a8d8;
+  --success: #0f8f6b;
+  --danger: #b42345;
+  --bg: #eef6ff;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --border: rgba(15, 95, 168, 0.15);
+  --border-focus: rgba(15, 95, 168, 0.4);
+  --text: #0f172a;
+  --text-muted: #475569;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --shadow: 0 20px 40px rgba(15, 95, 168, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 50%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  z-index: 10;
+}
+
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  transition: all 0.2s;
+}
+
+.back-home-btn:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+  transform: translateX(-2px);
+}
+
+.auth-card {
+  padding: 34px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.auth-header-copy strong {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.auth-header-copy span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.brand-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+h2 {
+  margin-bottom: 20px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input, textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 0.9rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s;
+}
+
+[data-theme="light"] input, [data-theme="light"] textarea {
+  background: #ffffff;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 4px var(--border-focus);
+}
+
+[data-theme="light"] input:focus, [data-theme="light"] textarea:focus {
+  background: #ffffff;
+}
+
+button.btn-action-primary {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.25);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 800;
+  transition: all 0.2s;
+}
+
+button.btn-action-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
+}
+
+.links-row {
+  margin-top: 20px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.links-row a {
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.links-row a:hover {
+  text-decoration: underline;
+}
+
+.card {
+  display: none;
+  width: 100%;
+  animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.error {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.success {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+</style>
+</head>
+<body>
+<div class="auth-container">
+  <a class="back-home-btn" href="/"><i class="fa-solid fa-arrow-left"></i> Back to Homepage</a>
+  
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-header-copy">
+        <strong>BKNR Registration</strong>
+        <span>SaaS Company Setup Wizard</span>
+      </div>
+      <span class="brand-badge">Onboard</span>
+    </div>
+
+    <!-- STEP 1: REGISTRATION DETAIL INFO -->
+    <div id="registerBox" class="card">
+      <h2>Company Setup</h2>
+      <div class="form-group"><label>Company Name</label><input id="company_name" type="text" placeholder="e.g. BKNR Seafoods Ltd" required></div>
+      <div class="form-group"><label>Your Name</label><input id="user_name" type="text" placeholder="Your Full Name" required></div>
+      <div class="form-group"><label>Designation</label><input id="designation" type="text" placeholder="e.g. Managing Director" required></div>
+      <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" placeholder="10 Digit Mobile Number" required></div>
+      <div class="form-group"><label>Email Address</label><input id="email" type="email" placeholder="corporate@domain.com" required></div>
+      <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" placeholder="Full Registered Address" required></textarea></div>
+      <button id="btn-reg" class="btn-action-primary" onclick="sendOTP()">Send OTP Authentication</button>
+      <div id="regErr" class="msg error"></div>
+      <div class="links-row">Already registered? <a href="/auth/login">Login here</a></div>
+    </div>
+
+    <!-- STEP 2: OTP VERIFICATION -->
+    <div id="otpBox" class="card">
+      <h2>OTP Verification</h2>
+      <div class="form-group">
+        <label>Enter 4-Digit OTP</label>
+        <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.6rem;font-weight:900;letter-spacing:10px;padding-left:24px;" placeholder="0000" required>
+      </div>
+      <button id="btn-otp" class="btn-action-primary" onclick="verifyOTP()">Verify Security Code</button>
+      <div id="otpErr" class="msg error"></div>
+    </div>
+
+    <!-- STEP 3: PASSWORD SETTING -->
+    <div id="passBox" class="card">
+      <h2>Create Password</h2>
+      <div class="form-group"><label>Create Password</label><input id="pass1" type="password" placeholder="Max 20 characters" maxlength="20" required></div>
+      <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" placeholder="Re-enter password" maxlength="20" required></div>
+      <button id="btn-pass" class="btn-action-primary" onclick="savePassword()">Initialize Account Credentials</button>
+      <div id="passErr" class="msg error"></div>
+      <div id="passOk" class="msg success"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = "/auth";
+let regEmail = "";
+
+function showBox(id) {
+  document.querySelectorAll(".card").forEach((card) => {
+    card.style.display = "none";
+  });
+  document.getElementById(id).style.display = "block";
+  document.querySelectorAll(".msg").forEach((msg) => {
+    msg.style.display = "none";
+  });
+}
+
+// Initial box setup
+showBox("registerBox");
+
+async function sendOTP() {
+  const regErr = document.getElementById("regErr");
+  const btn = document.getElementById("btn-reg");
+  regErr.style.display = "none";
+
+  const emailInput = document.getElementById("email").value.trim();
+  const mobileInput = document.getElementById("mobile").value.trim();
+
+  if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim()) {
+    regErr.innerHTML = "Please fill out all required fields.";
+    regErr.style.display = "block";
+    return;
+  }
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Processing...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: document.getElementById("company_name").value.trim(),
+        user_name: document.getElementById("user_name").value.trim(),
+        designation: document.getElementById("designation").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        mobile: mobileInput,
+        email: emailInput.toLowerCase()
+      })
+    });
+
+    const data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      regEmail = emailInput.toLowerCase();
+      showBox("otpBox");
+    } else {
+      let errorMsg = "Registration failed";
+      if (data.detail) {
+        errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+      }
+      regErr.innerHTML = errorMsg;
+      regErr.style.display = "block";
+    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    regErr.innerHTML = "Server connection failed.";
+    regErr.style.display = "block";
+  }
+}
+
+async function verifyOTP() {
+  const otpErr = document.getElementById("otpErr");
+  const btn = document.getElementById("btn-otp");
+  otpErr.style.display = "none";
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Verifying...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail,
+        otp: document.getElementById("otp").value.trim()
+      })
+    });
+
+    const data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      showBox("passBox");
+    } else {
+      otpErr.innerHTML = data.detail || "Invalid OTP";
+      otpErr.style.display = "block";
+    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    otpErr.innerHTML = "Server connection failed.";
+    otpErr.style.display = "block";
+  }
+}
+
+async function savePassword() {
+  const passErr = document.getElementById("passErr");
+  const passOk = document.getElementById("passOk");
+  const btn = document.getElementById("btn-pass");
+  passErr.style.display = "none";
+  passOk.style.display = "none";
+
+  const p1 = document.getElementById("pass1").value;
+  const p2 = document.getElementById("pass2").value;
+
+  if (!p1 || p1 !== p2) {
+    passErr.innerHTML = "Passwords do not match.";
+    passErr.style.display = "block";
+    return;
+  }
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Saving...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/set-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail,
+        password: p1.substring(0, 20)
+      })
+    });
+
+    const data = await res.json();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      passOk.innerHTML = `Account created! Company ID: <b>${data.company_id}</b><br>Redirecting to login portal in 5 seconds.`;
+      passOk.style.display = "block";
+      setTimeout(() => {
+          window.location.replace("/auth/login");
+      }, 5000);
+    } else {
+      passErr.innerHTML = data.detail || "Failed to set password";
+      passErr.style.display = "block";
+    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    passErr.innerHTML = "Server connection failed.";
+    passErr.style.display = "block";
+  }
+}
+</script>
+</body>
+</html>

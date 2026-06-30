@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Documentation - BKNR ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #090d16;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border: rgba(255, 255, 255, 0.06);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            background: rgba(10, 15, 30, 0.95);
+            border-right: 1px solid var(--border);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 0 0 10px 0; }
+        .sidebar a { color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 500; display: block; padding: 6px 0; }
+        .sidebar a:hover { color: var(--primary); }
+        .main-content {
+            flex: 1;
+            padding: 40px clamp(20px, 6vw, 80px);
+            overflow-y: auto;
+            max-width: 900px;
+            box-sizing: border-box;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+        h1 { font-size: 2.2rem; margin-bottom: 10px; color: #fff; font-weight: 800; }
+        h2 { font-size: 1.5rem; margin-top: 40px; margin-bottom: 15px; color: var(--primary); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        p, li { color: var(--text-muted); line-height: 1.6; font-size: 0.98rem; }
+        pre { background: rgba(0, 0, 0, 0.4); padding: 15px; border-radius: 8px; border: 1px solid var(--border); color: #818cf8; font-family: monospace; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div style="font-weight: 800; font-size: 1.2rem; color: #fff; margin-bottom: 20px;">
+            <i class="fa-solid fa-book" style="color: var(--primary); margin-right: 8px;"></i>BKNR Docs
+        </div>
+        <div>
+            <h3>Getting Started</h3>
+            <a href="#intro">Introduction</a>
+            <a href="#setup">Ecosystem Setup</a>
+        </div>
+        <div>
+            <h3>Core Modules</h3>
+            <a href="#processing">Processing Floor</a>
+            <a href="#coldstore">Cold Storage</a>
+            <a href="#payroll">Biometric HRMS</a>
+        </div>
+    </div>
+    <div class="main-content">
+        <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Home</a>
+        <h1 id="intro">Ecosystem Documentation</h1>
+        <p>Welcome to the BKNR ERP documentation repository. This portal assists factory administrators and engineers in configuring scales, biometric shifts, and financial pipelines.</p>
+        
+        <h2 id="setup">Ecosystem Setup</h2>
+        <p>After receiving your activation Company ID, log into the gateway and complete the initial master configuration:</p>
+        <ul>
+            <li>Create species entries (e.g. Vannamei, Black Tiger).</li>
+            <li>Configure sizing grades (e.g. 16/20, 21/25).</li>
+            <li>Register freezing chambers and plate setups.</li>
+        </ul>
+
+        <h2 id="processing">Processing Operations</h2>
+        <p>Operations track the workflow from raw material purchasing to block freezing:</p>
+        <pre>Gate Entry -> RMP Weighing -> De-Heading -> Grading -> Peeling -> Soaking -> Production Freezer</pre>
+
+        <h2 id="coldstore">Cold Vault Holding</h2>
+        <p>All finished goods (FG) are stored under mapped batch codes. To record a stock entry:</p>
+        <ul>
+            <li>Ensure batch cartons carry size-count markings.</li>
+            <li>Scan QR labels to assign location shelves.</li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -469,8 +469,10 @@
     let voucherTypesList = [];
 
     function money(value, side = "") {
-        const amount = Math.abs(parseFloat(value) || 0);
-        return `₹${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${side ? " " + side : ""}`;
+        const amount = parseFloat(value) || 0;
+        const formatted = Math.abs(amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const sign = (amount < 0 && !side) ? "-" : "";
+        return `${sign}₹${formatted}${side ? " " + side : ""}`;
     }
 
     async function setupAccountingDefaults() {
@@ -494,7 +496,19 @@
             if (!res.ok || !out.success) return;
             const k = out.kpis || {};
             document.getElementById("kpi-cash").innerText = money(k.cash_bank, k.cash_bank >= 0 ? "DR" : "CR");
-            document.getElementById("kpi-profit").innerText = money(k.net_profit, k.net_profit >= 0 ? "CR" : "DR");
+            
+            const profitKpi = document.getElementById("kpi-profit");
+            const profitVal = parseFloat(k.net_profit) || 0.0;
+            if (profitVal >= 0) {
+                profitKpi.innerText = money(profitVal);
+                profitKpi.style.color = "#16a34a"; // Green
+                profitKpi.parentElement.querySelector("h4").innerText = "Net Profit";
+            } else {
+                profitKpi.innerText = money(profitVal); // Formats with the negative sign: -₹...
+                profitKpi.style.color = "#ef4444"; // Red
+                profitKpi.parentElement.querySelector("h4").innerText = "Net Loss";
+            }
+            
             document.getElementById("kpi-receivable").innerText = money(k.receivables, "DR");
             document.getElementById("kpi-payable").innerText = money(k.payables, "CR");
             document.getElementById("kpi-daybook").innerText = k.day_vouchers || 0;
@@ -680,6 +694,11 @@
                 const d = data.data || {};
                 const incomeRows = ((d.details || {}).income_ledgers || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
                 const expenseRows = ((d.details || {}).expense_ledgers || []).map(r => `<tr><td class="text-left">${r.name}</td><td class="text-right">${money(r.amount)}</td></tr>`).join('');
+                
+                const isLoss = (d.net_profit || 0) < 0;
+                const netLabel = isLoss ? "Net Loss" : "Net Profit";
+                const netColor = isLoss ? "#ef4444" : "#16a34a";
+                
                 container.innerHTML = `
                     <table>
                         <thead><tr><th class="text-left">Profit & Loss Ledger</th><th class="text-right">Amount</th></tr></thead>
@@ -688,7 +707,10 @@
                             ${incomeRows}
                             <tr><td class="text-left" style="font-weight:800;">Expense</td><td class="text-right">${money(d.total_expense || 0)}</td></tr>
                             ${expenseRows}
-                            <tr><td class="text-left" style="font-weight:800;">Net Profit / Loss</td><td class="text-right" style="font-weight:800;">${money(d.net_profit || 0)}</td></tr>
+                            <tr>
+                                <td class="text-left" style="font-weight:800; color:${netColor};">${netLabel}</td>
+                                <td class="text-right" style="font-weight:800; color:${netColor};">${money(d.net_profit || 0)}</td>
+                            </tr>
                         </tbody>
                     </table>
                 `;
