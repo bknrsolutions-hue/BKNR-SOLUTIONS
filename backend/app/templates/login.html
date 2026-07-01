@@ -5,6 +5,12 @@
 <title>BKNR ERP - Enterprise Operating System for the Seafood Industry</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="BKNR ERP is a world-class enterprise SaaS operating platform for seafood exporters, cold stores, hatcheries, and aquaculture companies.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="BKNR ERP - Enterprise Operating System for the Seafood Industry">
+<meta property="og:description" content="Manage procurement, production, inventory, cold storage, finance, exports and analytics from one secure cloud platform.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/static/screenshot.png">
+<link rel="canonical" href="https://bknr.solutions/">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-512.png">
@@ -265,9 +271,11 @@ body {
   text-decoration: none;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .primary-link {
+  border: 1px solid transparent;
   color: #ffffff;
   background: var(--primary);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
@@ -1069,15 +1077,20 @@ body {
 }
 
 .faq-question {
+  width: 100%;
+  border: 0;
+  background: transparent;
   padding: 18px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  text-align: left;
   cursor: pointer;
   user-select: none;
   font-weight: 800;
   font-size: 0.95rem;
   color: var(--text);
+  font-family: inherit;
 }
 
 .faq-question:hover {
@@ -1221,6 +1234,15 @@ textarea {
 textarea {
   min-height: 110px;
   resize: vertical;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.9);
+  outline-offset: 3px;
 }
 
 input:focus,
@@ -2742,7 +2764,7 @@ button.btn-action-primary:hover {
       <a href="#contact">Contact</a>
     </nav>
     <div class="nav-actions">
-      <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Theme">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Theme" aria-label="Switch color theme">
         <i class="fa-solid fa-sun"></i>
       </button>
       <a class="nav-action" href="/auth/login">Login Portal</a>
@@ -2759,7 +2781,7 @@ button.btn-action-primary:hover {
           Manage procurement, production, inventory, cold storage, finance, exports and analytics from one secure cloud platform.
         </p>
         <div class="hero-actions">
-          <a class="primary-link" onclick="contactSales()">Schedule a Live Demo</a>
+          <button type="button" class="primary-link" onclick="contactSales()">Schedule a Live Demo</button>
           <a class="secondary-link" href="#switcher">Explore the Platform</a>
           <a class="secondary-link" href="/auth/register">Request Enterprise Access</a>
         </div>
@@ -3846,43 +3868,43 @@ button.btn-action-primary:hover {
       
       <div class="faq-list">
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>How is the company code data isolated?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>How is the company code data isolated?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Every registered tenant is allocated a unique, secure Company ID. Users, ledgers, transactions, and configurations are filtered strictly by company ID, preventing cross-tenant leakage.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Can we export transactional vouchers directly to Tally?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Can we export transactional vouchers directly to Tally?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Yes. Approved Sales invoices, purchase vouchers, cash receipts, and journal entries can be exported into standard Excel formats compatible with Tally XML importing rules.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Does the platform support barcode scanning for inventory?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Does the platform support barcode scanning for inventory?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Yes. The mobile PWA supports built-in QR/barcode scan logic. Dock teams can scan block carton tags to trigger inventory stock entry or dispatch logs.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>How does the salary advance deduction rule operate?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>How does the salary advance deduction rule operate?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>If an employee has outstanding salary advances, the payroll generator auto-deducts installment bounds from their calculated gross salary, posting net payouts to the ledger.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>What data is tracked in the audit trail log?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>What data is tracked in the audit trail log?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Critical transactions (ledger creation, payment edits, voucher cancels) log the record table ID, action type (INSERT, UPDATE, DELETE), IP metadata, timestamp, and active user email.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Is there a limit on the number of active freezer run logs?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Is there a limit on the number of active freezer run logs?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>No. Production records can log unlimited plate freezer or IQF tunnel runs daily, automatically updating floor balances by count size and variety.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>How is the yield loss calculated?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>How is the yield loss calculated?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>The system evaluates raw material purchasing weight against graded HLSO/peeled outputs to log yield efficiency percentages per batch.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Can we run the app offline on dock floors?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Can we run the app offline on dock floors?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Yes, critical inputs use local browser caches to support intermittent connectivity on dock floors, automatically synchronizing as network registers.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Are security keys required for password resets?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Are security keys required for password resets?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Yes. Recovery requests send safe urlsafe tokens. For offline/debug environments, links are logged to security logs to bypass email blockages.</p></div>
         </div>
         <div class="faq-item">
-          <div class="faq-question" onclick="toggleFaq(this)"><span>Can we configure contractor peeling wage rates dynamically?</span><i class="fa-solid fa-chevron-down faq-chevron"></i></div>
+          <button type="button" class="faq-question" onclick="toggleFaq(this)" aria-expanded="false"><span>Can we configure contractor peeling wage rates dynamically?</span><i class="fa-solid fa-chevron-down faq-chevron" aria-hidden="true"></i></button>
           <div class="faq-answer"><p>Yes. Peeling rate masters allow settings by size counts, species, and contractor bounds, driving automated peeling voucher calculations.</p></div>
         </div>
       </div>
@@ -3916,12 +3938,12 @@ button.btn-action-primary:hover {
 
           <div class="contact-form">
             <h3 style="font-size:1.1rem; font-weight:850; margin-bottom:6px;">Request Enterprise Access</h3>
-            <div class="form-group"><label>Company Name</label><input type="text" placeholder="Your seafood company" required></div>
-            <div class="form-group"><label>Contact Person</label><input type="text" placeholder="Full name" required></div>
-            <div class="form-group"><label>Email</label><input type="email" placeholder="name@company.com" required></div>
-            <div class="form-group"><label>Country</label><input type="text" placeholder="India" required></div>
-            <div class="form-group"><label>Business Type</label><select required><option value="">Select business type</option><option>Seafood Processing</option><option>Cold Storage</option><option>Aquaculture</option><option>Export House</option><option>Hatchery</option><option>Logistics</option></select></div>
-            <div class="form-group"><label>Message</label><textarea placeholder="Tell us about your plant, stock, finance or export workflow"></textarea></div>
+            <div class="form-group"><label for="contact-company">Company Name</label><input id="contact-company" type="text" placeholder="Your seafood company" required></div>
+            <div class="form-group"><label for="contact-person">Contact Person</label><input id="contact-person" type="text" placeholder="Full name" required></div>
+            <div class="form-group"><label for="contact-email">Email</label><input id="contact-email" type="email" placeholder="name@company.com" required></div>
+            <div class="form-group"><label for="contact-country">Country</label><input id="contact-country" type="text" placeholder="India" required></div>
+            <div class="form-group"><label for="contact-business-type">Business Type</label><select id="contact-business-type" required><option value="">Select business type</option><option>Seafood Processing</option><option>Cold Storage</option><option>Aquaculture</option><option>Export House</option><option>Hatchery</option><option>Logistics</option></select></div>
+            <div class="form-group"><label for="contact-message">Message</label><textarea id="contact-message" placeholder="Tell us about your plant, stock, finance or export workflow"></textarea></div>
             <button class="btn-action-primary" onclick="confirmDemoBooking()">Schedule a Live Demo</button>
           </div>
         </div>
@@ -3934,7 +3956,7 @@ button.btn-action-primary:hover {
         <h2>Bring Rigorous Control to Your Seafood Business</h2>
         <p>Book a focused enterprise consultation and see procurement, production, stock, accounts and exports in one operating flow.</p>
         <div class="cta-band-actions">
-          <a class="primary-link" onclick="contactSales()" style="background:#fff; color:#082f57;">Schedule a Live Demo</a>
+          <button type="button" class="primary-link" onclick="contactSales()" style="background:#fff; color:#082f57;">Schedule a Live Demo</button>
           <a class="secondary-link" href="#switcher">Explore the Platform</a>
           <a class="secondary-link" href="/auth/register">Request Enterprise Access</a>
         </div>
@@ -3985,7 +4007,7 @@ button.btn-action-primary:hover {
       <div class="footer-column">
         <h4>Access</h4>
         <ul class="footer-links">
-          <li><a onclick="contactSales()">Book Demo</a></li>
+          <li><a href="#contact" onclick="contactSales()">Book Demo</a></li>
           <li><a href="/auth/register">Request Access</a></li>
           <li><a href="#contact">Enterprise Consultation</a></li>
           <li><a href="/auth/login">Login Portal</a></li>
@@ -4000,19 +4022,21 @@ button.btn-action-primary:hover {
 </div>
 
 <!-- DEMO WALKTHROUGH MODAL -->
-<div class="demo-modal-overlay" id="demo-modal" onclick="if(event.target === this) closeDemoModal()">
+<div class="demo-modal-overlay" id="demo-modal">
   <div class="demo-modal-container">
     <div class="demo-modal-header">
       <h3 style="font-size:1rem; font-weight:800; color:#fff; margin:0;"><i class="fa-solid fa-circle-play" style="color:var(--primary); margin-right:8px;"></i> Watch 90-Second Walkthrough</h3>
-      <button class="demo-modal-close" onclick="closeDemoModal()"><i class="fa-solid fa-xmark"></i></button>
+      <button class="demo-modal-close" onclick="closeDemoModal()" aria-label="Close demo walkthrough"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="demo-modal-body">
       <div class="demo-video-sim">
         <div id="sim-play-screen" style="padding:40px; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center; box-sizing:border-box;">
-          <i class="fa-solid fa-circle-play" style="font-size:3.5rem; color:var(--primary); margin-bottom:16px; cursor:pointer;" onclick="startDemoWalkthrough()"></i>
+          <button type="button" onclick="startDemoWalkthrough()" aria-label="Start demo walkthrough" style="border:0; background:transparent; color:var(--primary); font-size:3.5rem; margin-bottom:16px; cursor:pointer;">
+            <i class="fa-solid fa-circle-play" aria-hidden="true"></i>
+          </button>
           <h4 style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">Interactive Platform Walkthrough</h4>
           <p style="font-size:0.8rem; color:var(--text-muted); max-width:440px; margin-bottom:20px; line-height:1.5;">Watch how weighing scales log floor weights, adjust peeling contractor wages dynamically, and update cold storage stock bounds.</p>
-          <div style="background:var(--primary); color:#fff; font-size:0.8rem; font-weight:700; padding:10px 20px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.2);" onclick="startDemoWalkthrough()">Start Presentation Walkthrough</div>
+          <button type="button" style="background:var(--primary); color:#fff; border:0; font-size:0.8rem; font-weight:700; padding:10px 20px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.2);" onclick="startDemoWalkthrough()">Start Presentation Walkthrough</button>
         </div>
         <div id="sim-video-screen" style="display:none; height:100%; width:100%;">
           <!-- Simulated Video Player Running Inside Modals -->
@@ -4041,7 +4065,7 @@ button.btn-action-primary:hover {
 
 <!-- 15. FLOATING ACTIONS -->
 <div class="floating-actions">
-  <a class="floating-btn demo" onclick="contactSales()" title="Schedule a Live Demo"><i class="fa-solid fa-calendar-days"></i></a>
+  <button type="button" class="floating-btn demo" onclick="contactSales()" title="Schedule a Live Demo" aria-label="Schedule a live demo"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></button>
 </div>
 
 <script>
@@ -4091,10 +4115,15 @@ function toggleFaq(questionEl) {
     const item = questionEl.closest(".faq-item");
     const isOpen = item.classList.contains("open");
     
-    document.querySelectorAll(".faq-item").forEach(el => el.classList.remove("open"));
+    document.querySelectorAll(".faq-item").forEach(el => {
+        el.classList.remove("open");
+        const trigger = el.querySelector(".faq-question");
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+    });
     
     if (!isOpen) {
         item.classList.add("open");
+        questionEl.setAttribute("aria-expanded", "true");
     }
 }
 
