@@ -18,11 +18,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'BKNR ERP')|tojson }};
@@ -82,7 +80,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background: var(--bg-app);
     color: var(--text-primary);
     display: flex; height: 100vh; overflow: hidden;
@@ -1478,7 +1476,7 @@ function renderOrganizedMenu() {
             cat.items.forEach(item => {
                 const [permissionKey, route, icon, label, oldBadge] = item;
                 if(!allow(permissionKey)) return;
-                html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
+                html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="${route}" data-route="${route}"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
             });
         } else if (cat.subgroups) {
             cat.subgroups.forEach(sub => {
@@ -1494,7 +1492,7 @@ function renderOrganizedMenu() {
                     <div class="reports-container">`;
                 allowedSubItems.forEach(item => {
                     const [permissionKey, route, icon, label, oldBadge] = item;
-                    html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
+                    html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="${route}" data-route="${route}"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
                 });
                 html += `</div></div>`;
             });
@@ -1502,6 +1500,7 @@ function renderOrganizedMenu() {
         html += `</div></div>`;
     });
     document.getElementById("sidebarMenu").innerHTML = html;
+    bindWorkspaceLinks(document.getElementById("sidebarMenu"));
 
     // Auto-open first category by default
     const firstPillar = document.querySelector('.pillar-block');
@@ -1527,11 +1526,22 @@ function renderDropdownConsoleMenu() {
             const [permissionKey, route, label, icon] = item;
             const iconClass = icon ? `fa-solid ${icon}` : 'fa-solid fa-circle';
             const iconStyle = icon ? 'font-size:12px; margin-right:8px;' : 'font-size:5px; margin-right:8px;';
-            html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', null, 'MASTERS > ${label.toUpperCase()}')"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
+            html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="${route}" data-route="${route}" data-label="MASTERS > ${label.toUpperCase()}"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
         });
         html += `</div>`;
     });
     document.getElementById("dropdownMenuScrollBox").innerHTML = html;
+    bindWorkspaceLinks(document.getElementById("dropdownMenuScrollBox"));
+}
+
+function bindWorkspaceLinks(container) {
+    if (!container) return;
+    container.querySelectorAll('a[data-route]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            loadPage(link.dataset.route, link.classList.contains('submenu-item') ? link : null, link.dataset.label);
+        });
+    });
 }
 
 function togglePillar(element) {
@@ -1879,7 +1889,7 @@ async function fetchRealNotifications() {
                 if (isImage) {
                     mediaHtml = `
                         <div style="margin-top: 6px; border-radius: 6px; overflow: hidden; max-width: 100%; max-height: 120px; border: 1px solid var(--border-light);">
-                            <a href="${item.media_path}" target="_blank" rel="noopener" onclick="event.stopPropagation();" aria-label="Open notification attachment">
+                            <a href="${item.media_path}" target="_blank" rel="noopener" aria-label="Open notification attachment">
                                 <img src="${item.media_path}" alt="Notification attachment" style="width: 100%; height: auto; display: block; object-fit: cover;">
                             </a>
                         </div>
@@ -1889,7 +1899,7 @@ async function fetchRealNotifications() {
                     mediaHtml = `
                         <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; font-size: 11px;">
                             <i class="fa-solid fa-file-arrow-down" style="font-size: 14px; color: var(--corp-dash);"></i>
-                            <a href="${item.media_path}" target="_blank" download style="color: var(--corp-dash); text-decoration: none; font-weight: 600; word-break: break-all;" onclick="event.stopPropagation();">${filename}</a>
+                            <a href="${item.media_path}" target="_blank" download style="color: var(--corp-dash); text-decoration: none; font-weight: 600; word-break: break-all;">${filename}</a>
                         </div>
                     `;
                 }
