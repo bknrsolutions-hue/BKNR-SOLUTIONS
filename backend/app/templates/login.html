@@ -13,7 +13,6 @@
 <!-- Icons and dialog library are deferred so first paint is not blocked. -->
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
-<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -365,6 +364,11 @@ body {
   0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
   50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
 }
 
 /* ==========================================
@@ -1540,7 +1544,6 @@ button.btn-action-primary:hover {
   display: none;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.5s ease;
   flex-direction: column;
 }
 .hero-panel.active {
@@ -2767,7 +2770,7 @@ button.btn-action-primary:hover {
           <div class="browser-header" style="justify-content: space-between; display: flex; align-items: center; padding: 10px 16px;">
             <span class="dots"><span></span><span></span><span></span></span>
             <span class="browser-title" id="hero-browser-title" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">BKNR Portal Command Center</span>
-            <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle-dot" style="animation: pulse 1s infinite; margin-right:4px;"></i> SECURE ENVIRONMENT</span>
+            <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle-dot" style="margin-right:4px;"></i> SECURE ENVIRONMENT</span>
           </div>
           
           <!-- Hero Dashboard Tabs -->
@@ -2954,7 +2957,7 @@ button.btn-action-primary:hover {
     </section>
 
     <!-- 2. ENTERPRISE TRUST AND PERFORMANCE -->
-    <section class="kpis-section reveal fade-up">
+    <section class="kpis-section">
       <div class="kpis-title">Built for Enterprise Operations</div>
       <div class="trust-grid">
         <div class="trust-badge"><i class="fa-solid fa-cloud"></i><strong>Cloud Based</strong><span>Central access for factory, office, cold store and management users.</span></div>
@@ -3524,7 +3527,7 @@ button.btn-action-primary:hover {
           <div class="ai-widget">
             <div class="ai-widget-header">
               <span style="color:#fff; font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-terminal" style="color:#c084fc; margin-right:6px;"></i> Live Forecast Engine</span>
-              <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle" style="animation: pulse 1s infinite; font-size:0.5rem; margin-right:4px;"></i> AI MODEL ACTIVE</span>
+              <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle" style="animation: status-pulse 1s infinite; font-size:0.5rem; margin-right:4px;"></i> AI MODEL ACTIVE</span>
             </div>
             
             <div class="ai-tab-btns">
@@ -4023,7 +4026,7 @@ button.btn-action-primary:hover {
             <div class="mini-erp-main">
               <div class="mini-erp-header" style="height:36px; padding:0 12px; font-size:0.7rem;">
                 <span id="sim-header-text">Gate Entry & RMP Stage</span>
-                <span style="color:var(--primary); font-weight:800; font-size:0.65rem;" id="sim-playback-indicator"><i class="fa-solid fa-circle-dot" style="animation: pulse 1s infinite; margin-right:4px;"></i> RUNNING SIMULATION</span>
+                <span style="color:var(--primary); font-weight:800; font-size:0.65rem;" id="sim-playback-indicator"><i class="fa-solid fa-circle-dot" style="animation: status-pulse 1s infinite; margin-right:4px;"></i> RUNNING SIMULATION</span>
               </div>
               <div class="mini-erp-content" style="padding:12px; overflow:hidden;" id="sim-console-viewport">
                 <!-- Sim Content -->
@@ -4096,7 +4099,22 @@ function toggleFaq(questionEl) {
 }
 
 // General Actions
-function contactSales() {
+let sweetAlertLoadPromise = null;
+function loadDialogLibrary() {
+    if (window.Swal) return Promise.resolve(window.Swal);
+    if (sweetAlertLoadPromise) return sweetAlertLoadPromise;
+    sweetAlertLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        script.onload = () => resolve(window.Swal);
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+    return sweetAlertLoadPromise;
+}
+
+async function contactSales() {
+    const Swal = await loadDialogLibrary();
     Swal.fire({
         title: "Schedule a Live Demo",
         html: `<div style="text-align:left; font-size:14px; color:var(--text); line-height:1.5;">
@@ -4109,7 +4127,8 @@ function contactSales() {
     });
 }
 
-function confirmDemoBooking() {
+async function confirmDemoBooking() {
+    const Swal = await loadDialogLibrary();
     Swal.fire({
         title: "Demo Reserved",
         text: "Your live session reservation has been confirmed. Our team will contact you via email shortly.",
@@ -4131,7 +4150,8 @@ function closeDemoModal() {
     if(window.simInterval) clearInterval(window.simInterval);
 }
 
-function notImplemented(feature) {
+async function notImplemented(feature) {
+    const Swal = await loadDialogLibrary();
     Swal.fire({
         title: "Information",
         text: `The ${feature} resource portal will be configured in the next system release.`,
@@ -4143,7 +4163,14 @@ function notImplemented(feature) {
 
 // 🟢 HERO TAB SELECTION
 let activeHeroTab = 0;
-let heroAutoPlayInterval = setInterval(cycleHeroTabs, 6000);
+let heroAutoPlayInterval = null;
+
+window.addEventListener('load', () => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  window.setTimeout(() => {
+    heroAutoPlayInterval = setInterval(cycleHeroTabs, 6000);
+  }, 12000);
+});
 
 function cycleHeroTabs() {
   activeHeroTab = (activeHeroTab + 1) % 4;
@@ -4152,7 +4179,7 @@ function cycleHeroTabs() {
 
 function setHeroPanel(index) {
   // Clear autoplay interval upon manual click
-  clearInterval(heroAutoPlayInterval);
+  if (heroAutoPlayInterval) clearInterval(heroAutoPlayInterval);
   activeHeroTab = index;
   updateHeroPanels();
 }

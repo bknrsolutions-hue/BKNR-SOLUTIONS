@@ -4,8 +4,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, Date
 from datetime import date, timedelta, datetime
-import os
 import shutil
+from pathlib import Path
 
 from app.database import get_db
 from app.database.models.helpdesk import SupportTicket, TicketMessage, EventNotification
@@ -14,6 +14,24 @@ from app.database.models.users import User, Company
 router = APIRouter(prefix="/admin", tags=["SUPER ADMIN HELPDESK"])
 
 ALLOWED_ADMINS = ["bknr.solutions@gmail.com"]
+STATIC_DIR = Path(__file__).resolve().parents[2] / "static"
+SUPPORT_UPLOAD_DIR = STATIC_DIR / "uploads" / "support"
+
+
+def save_support_upload(file: UploadFile) -> str:
+    SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{int(datetime.utcnow().timestamp())}_{Path(file.filename).name}"
+    dest_path = SUPPORT_UPLOAD_DIR / filename
+    with dest_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return f"/static/uploads/support/{filename}"
+
+
+def existing_static_media_path(media_path: str | None) -> str | None:
+    if not media_path or not media_path.startswith("/static/"):
+        return None
+    relative_path = media_path.removeprefix("/static/").lstrip("/")
+    return media_path if (STATIC_DIR / relative_path).is_file() else None
 
 def is_admin(request: Request):
     email = request.session.get("email")
@@ -72,7 +90,12 @@ async def admin_get_messages(ticket_id: int, request: Request, db: Session = Dep
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     messages = db.query(TicketMessage).filter(TicketMessage.ticket_id == ticket_id).order_by(TicketMessage.sent_at.asc()).all()
-    msg_data = [{"sender_type": m.sender_type, "message": m.message, "media_path": m.media_path, "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""} for m in messages]
+    msg_data = [{
+        "sender_type": m.sender_type,
+        "message": m.message,
+        "media_path": existing_static_media_path(m.media_path),
+        "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""
+    } for m in messages]
     
     return JSONResponse(content={"status": ticket.status, "subject": ticket.subject, "messages": msg_data})
 
@@ -126,13 +149,7 @@ async def admin_send_message(
 
     media_path = None
     if file and file.filename:
-        upload_dir = "app/static/uploads/support"
-        os.makedirs(upload_dir, exist_ok=True)
-        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
-        dest_path = os.path.join(upload_dir, filename)
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        media_path = f"/static/uploads/support/{filename}"
+        media_path = save_support_upload(file)
 
     new_msg = TicketMessage(
         ticket_id=ticket_id,

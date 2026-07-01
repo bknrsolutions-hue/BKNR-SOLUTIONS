@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Request, Depends, Query, Form, HTTPException, File, UploadFile
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-import os
 import shutil
+from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
@@ -19,6 +19,24 @@ from datetime import date
 
 router = APIRouter(prefix="/menu", tags=["Menu"])
 templates = Jinja2Templates(directory="app/templates")
+STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
+SUPPORT_UPLOAD_DIR = STATIC_DIR / "uploads" / "support"
+
+
+def save_support_upload(file: UploadFile) -> str:
+    SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{int(datetime.utcnow().timestamp())}_{Path(file.filename).name}"
+    dest_path = SUPPORT_UPLOAD_DIR / filename
+    with dest_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return f"/static/uploads/support/{filename}"
+
+
+def existing_static_media_path(media_path: str | None) -> str | None:
+    if not media_path or not media_path.startswith("/static/"):
+        return None
+    relative_path = media_path.removeprefix("/static/").lstrip("/")
+    return media_path if (STATIC_DIR / relative_path).is_file() else None
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -81,7 +99,7 @@ async def get_notifications(request: Request, db: Session = Depends(get_db)):
                 "time": ca.created_at.strftime("%I:%M %p") if ca.created_at else "Today",
                 "icon": icon,
                 "bg": bg,
-                "media_path": ca.media_path
+                "media_path": existing_static_media_path(ca.media_path)
             })
     except Exception as e:
         pass
@@ -260,13 +278,7 @@ async def create_company_announcement(
 
     media_path = None
     if file and file.filename:
-        upload_dir = "app/static/uploads/support"
-        os.makedirs(upload_dir, exist_ok=True)
-        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
-        dest_path = os.path.join(upload_dir, filename)
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        media_path = f"/static/uploads/support/{filename}"
+        media_path = save_support_upload(file)
 
     new_announce = CompanyAnnouncement(
         message=message or "",

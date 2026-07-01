@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
-import os
 import shutil
+from pathlib import Path
 from datetime import datetime
 from app.utils.timezone import ist_now
 
@@ -11,6 +11,24 @@ from app.database.models.helpdesk import SupportTicket, TicketMessage
 from app.database.models.users import Company
 
 router = APIRouter(prefix="/support", tags=["USER SUPPORT HELPDESK"])
+STATIC_DIR = Path(__file__).resolve().parents[2] / "static"
+SUPPORT_UPLOAD_DIR = STATIC_DIR / "uploads" / "support"
+
+
+def save_support_upload(file: UploadFile) -> str:
+    SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{int(datetime.utcnow().timestamp())}_{Path(file.filename).name}"
+    dest_path = SUPPORT_UPLOAD_DIR / filename
+    with dest_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return f"/static/uploads/support/{filename}"
+
+
+def existing_static_media_path(media_path: str | None) -> str | None:
+    if not media_path or not media_path.startswith("/static/"):
+        return None
+    relative_path = media_path.removeprefix("/static/").lstrip("/")
+    return media_path if (STATIC_DIR / relative_path).is_file() else None
 
 # 1. 🌟 మై టికెట్స్ (కంప్లైంట్స్) పేజీ లోడ్ చేయడానికి 
 @router.get("/my_tickets", response_class=HTMLResponse)
@@ -127,7 +145,7 @@ async def get_ticket_messages(ticket_id: int, request: Request, db: Session = De
         msg_data.append({
             "sender_type": m.sender_type,
             "message": m.message,
-            "media_path": m.media_path,
+            "media_path": existing_static_media_path(m.media_path),
             "time": m.sent_at.strftime("%I:%M %p") if m.sent_at else ""
         })
 
@@ -148,17 +166,7 @@ async def send_reply(
 
     media_path = None
     if file and file.filename:
-        # Guarantee static folder exists
-        upload_dir = "app/static/uploads/support"
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Save file with secure timestamp prefix
-        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
-        dest_path = os.path.join(upload_dir, filename)
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        media_path = f"/static/uploads/support/{filename}"
+        media_path = save_support_upload(file)
 
     new_msg = TicketMessage(
         ticket_id=ticket_id,
