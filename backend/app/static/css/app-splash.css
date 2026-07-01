@@ -11,7 +11,7 @@
     --splash-card: rgba(15, 23, 42, 0.76);
     --splash-border: rgba(255, 255, 255, 0.14);
     --splash-text: #f8fafc;
-    --splash-muted: #94a3b8;
+    --splash-muted: #cbd5e1;
     --splash-accent: #38bdf8;
 }
 
@@ -24,7 +24,7 @@
     padding: 24px;
     background: var(--splash-bg);
     color: var(--splash-text);
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     opacity: 1;
     visibility: visible;
     transition: opacity 0.45s ease, visibility 0.45s ease;

@@ -1867,57 +1867,6 @@ button.btn-action-primary:hover {
   border-color: #8b5cf6;
 }
 
-/* --- VIDEO DEMO MODAL --- */
-.demo-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(9,13,22,0.9);
-  backdrop-filter: blur(8px);
-  z-index: 2000;
-  display: none;
-  place-items: center;
-}
-.demo-modal-overlay.active {
-  display: grid;
-}
-.demo-modal-container {
-  width: 90%;
-  max-width: 800px;
-  background: #0b0f19;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-}
-.demo-modal-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.demo-modal-close {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.demo-modal-close:hover { color: #fff; }
-.demo-modal-body {
-  padding: 24px;
-}
-.demo-video-sim {
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  position: relative;
-}
-
 /* --- DASHBOARD PREVIEWS IN MODULE SWITCHER --- */
 .dashboard-img-wrapper {
   width: 100%;
@@ -4025,48 +3974,6 @@ button.btn-action-primary:hover {
   </footer>
 </div>
 
-<!-- DEMO WALKTHROUGH MODAL -->
-<div class="demo-modal-overlay" id="demo-modal">
-  <div class="demo-modal-container">
-    <div class="demo-modal-header">
-      <h3 style="font-size:1rem; font-weight:800; color:#fff; margin:0;"><i class="fa-solid fa-circle-play" style="color:var(--primary); margin-right:8px;"></i> Watch 90-Second Walkthrough</h3>
-      <button type="button" class="demo-modal-close" onclick="closeDemoModal()" aria-label="Close demo walkthrough"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-    </div>
-    <div class="demo-modal-body">
-      <div class="demo-video-sim">
-        <div id="sim-play-screen" style="padding:40px; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center; box-sizing:border-box;">
-          <button type="button" onclick="startDemoWalkthrough()" aria-label="Start demo walkthrough" style="border:0; background:transparent; color:var(--primary); font-size:3.5rem; margin-bottom:16px; cursor:pointer;">
-            <i class="fa-solid fa-circle-play" aria-hidden="true"></i>
-          </button>
-          <h4 style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">Interactive Platform Walkthrough</h4>
-          <p style="font-size:0.8rem; color:var(--text-muted); max-width:440px; margin-bottom:20px; line-height:1.5;">Watch how weighing scales log floor weights, adjust peeling contractor wages dynamically, and update cold storage stock bounds.</p>
-          <button type="button" style="background:var(--primary); color:#fff; border:0; font-size:0.8rem; font-weight:700; padding:10px 20px; border-radius:6px; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.2);" onclick="startDemoWalkthrough()">Start Presentation Walkthrough</button>
-        </div>
-        <div id="sim-video-screen" style="display:none; height:100%; width:100%;">
-          <!-- Simulated Video Player Running Inside Modals -->
-          <div class="mini-erp" style="height:100%;">
-            <div class="mini-erp-sidebar" style="width:140px; padding:8px; gap:4px; flex-shrink: 0;">
-              <div class="mini-erp-sidebar-item active" id="sim-sid-0" style="font-size:0.6rem; padding:6px 8px;"><i class="fa-solid fa-door-open"></i> Gate & RMP</div>
-              <div class="mini-erp-sidebar-item" id="sim-sid-1" style="font-size:0.6rem; padding:6px 8px;"><i class="fa-solid fa-scale-balanced"></i> Floor Balance</div>
-              <div class="mini-erp-sidebar-item" id="sim-sid-2" style="font-size:0.6rem; padding:6px 8px;"><i class="fa-solid fa-snowflake"></i> Cold Vault</div>
-              <div class="mini-erp-sidebar-item" id="sim-sid-3" style="font-size:0.6rem; padding:6px 8px;"><i class="fa-solid fa-wallet"></i> Accounts & Tally</div>
-            </div>
-            <div class="mini-erp-main">
-              <div class="mini-erp-header" style="height:36px; padding:0 12px; font-size:0.7rem;">
-                <span id="sim-header-text">Gate Entry & RMP Stage</span>
-                <span style="color:var(--primary); font-weight:800; font-size:0.65rem;" id="sim-playback-indicator"><i class="fa-solid fa-circle-dot" style="animation: status-pulse 1s infinite; margin-right:4px;"></i> RUNNING SIMULATION</span>
-              </div>
-              <div class="mini-erp-content" style="padding:12px; overflow:hidden;" id="sim-console-viewport">
-                <!-- Sim Content -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- 15. FLOATING ACTIONS -->
 <div class="floating-actions">
   <button type="button" class="floating-btn demo" onclick="contactSales()" title="Schedule a Live Demo" aria-label="Schedule a live demo"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></button>
@@ -4173,29 +4080,6 @@ async function confirmDemoBooking() {
     });
 }
 
-function watchDemo() {
-    document.getElementById('demo-modal').classList.add('active');
-}
-
-function closeDemoModal() {
-    document.getElementById('demo-modal').classList.remove('active');
-    // Reset video sim
-    document.getElementById('sim-play-screen').style.display = 'flex';
-    document.getElementById('sim-video-screen').style.display = 'none';
-    if(window.simInterval) clearInterval(window.simInterval);
-}
-
-async function notImplemented(feature) {
-    const Swal = await loadDialogLibrary();
-    Swal.fire({
-        title: "Information",
-        text: `The ${feature} resource portal will be configured in the next system release.`,
-        icon: "info",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#3b82f6"
-    });
-}
-
 // 🟢 HERO TAB SELECTION
 let activeHeroTab = 0;
 let heroAutoPlayInterval = null;
@@ -4248,27 +4132,6 @@ function updateHeroPanels() {
   if (titleEl) titleEl.innerText = titles[activeHeroTab];
 }
 
-// 🟢 PRICING SWITCH LOGIC
-function toggleBillingInterval(toggleEl) {
-  const isYearly = toggleEl.checked;
-  const starterPrice = document.getElementById('starter-price');
-  const proPrice = document.getElementById('pro-price');
-  const monthlyLabel = document.getElementById('billing-monthly');
-  const yearlyLabel = document.getElementById('billing-yearly');
-
-  if(isYearly) {
-    starterPrice.innerHTML = '$79<span style="font-size:0.95rem; font-weight:500; color:var(--text-muted);">/mo</span> <span style="font-size:0.75rem; color:var(--success); font-weight:700; display:block;">Billed Yearly ($948)</span>';
-    proPrice.innerHTML = '$239<span style="font-size:0.95rem; font-weight:500; color:var(--text-muted);">/mo</span> <span style="font-size:0.75rem; color:var(--success); font-weight:700; display:block;">Billed Yearly ($2,868)</span>';
-    yearlyLabel.classList.add('active');
-    monthlyLabel.classList.remove('active');
-  } else {
-    starterPrice.innerHTML = '$99<span style="font-size:0.95rem; font-weight:500; color:var(--text-muted);">/mo</span>';
-    proPrice.innerHTML = '$299<span style="font-size:0.95rem; font-weight:500; color:var(--text-muted);">/mo</span>';
-    monthlyLabel.classList.add('active');
-    yearlyLabel.classList.remove('active');
-  }
-}
-
 // 🟢 AI FORECAST TABS
 function setAiTab(tabIndex) {
   const tabs = document.querySelectorAll('.ai-tab-btn');
@@ -4298,123 +4161,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 });
 
-// 🟢 SIMULATED WALKTHROUGH PRESENTATION
-function startDemoWalkthrough() {
-    document.getElementById('sim-play-screen').style.display = 'none';
-    document.getElementById('sim-video-screen').style.display = 'block';
-
-    const consoleViewport = document.getElementById('sim-console-viewport');
-    const headerText = document.getElementById('sim-header-text');
-    const stages = [
-      {
-        title: "Stage 1: Gate Entry & RM Purchasing",
-        sidebar: 0,
-        content: `<div style="display:flex; flex-direction:column; gap:6px; color:var(--text); text-align:left;">
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block;">VN-9081</strong><span style="font-size:0.5rem; color:var(--text-muted);">Lot Code</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--primary);">14,842 KG</strong><span style="font-size:0.5rem; color:var(--text-muted);">Intake Weight</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--success);">Cleared</strong><span style="font-size:0.5rem; color:var(--text-muted);">Gate Status</span>
-                      </div>
-                    </div>
-                    <div style="border:1px dashed var(--success); padding:6px; border-radius:6px; background:rgba(16,185,129,0.05); margin-top:4px;">
-                      <div style="font-size:0.6rem; font-weight:800; color:var(--success);"><i class="fa-solid fa-circle-check"></i> Supplier Notification Dispatched</div>
-                      <p style="font-size:0.55rem; color:var(--text-muted); margin-top:2px; line-height:1.2;">[Auto-Email]: Weight ticket slip for 14,842 KG Vannamei automatically verified and sent to supplier ledger.</p>
-                    </div>
-                  </div>`
-      },
-      {
-        title: "Stage 2: Floor Balance & Peeling Yield",
-        sidebar: 1,
-        content: `<div style="display:flex; flex-direction:column; gap:6px; color:var(--text); text-align:left;">
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--warning);">3,420 KG</strong><span style="font-size:0.5rem; color:var(--text-muted);">Floor Stock</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block;">89.6%</strong><span style="font-size:0.5rem; color:var(--text-muted);">Peeling Yield</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--primary);">Active</strong><span style="font-size:0.5rem; color:var(--text-muted);">Freezer Load</span>
-                      </div>
-                    </div>
-                    <div style="border:1px solid var(--border); padding:6px; border-radius:6px; background:rgba(245,158,11,0.05); margin-top:4px;">
-                      <div style="font-size:0.6rem; font-weight:800; color:var(--warning);"><i class="fa-solid fa-arrows-spin"></i> Labor Auto-Allocation</div>
-                      <div style="width:100%; height:5px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:4px; overflow:hidden;">
-                        <div style="width:89%; height:100%; background:var(--warning);"></div>
-                      </div>
-                    </div>
-                  </div>`
-      },
-      {
-        title: "Stage 3: Finished Cold Storage & Sensors",
-        sidebar: 2,
-        content: `<div style="display:flex; flex-direction:column; gap:6px; color:var(--text); text-align:left;">
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--success);">-20.1°C</strong><span style="font-size:0.5rem; color:var(--text-muted);">CRYO-B1 Temp</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block;">482 Units</strong><span style="font-size:0.5rem; color:var(--text-muted);">Allocated Pallets</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--success);">Normal</strong><span style="font-size:0.5rem; color:var(--text-muted);">Vault Status</span>
-                      </div>
-                    </div>
-                    <div style="border:1px solid var(--border); padding:6px; border-radius:6px; background:rgba(16,185,129,0.05); margin-top:4px;">
-                      <div style="font-size:0.6rem; font-weight:800; color:var(--success);"><i class="fa-solid fa-snowflake"></i> Sensor Temperature Logs</div>
-                      <p style="font-size:0.55rem; color:var(--text-muted); margin-top:2px; line-height:1.2;">CryoVault Room B stability target -18°C successfully maintained.</p>
-                    </div>
-                  </div>`
-      },
-      {
-        title: "Stage 4: Accounts Posting & Tally Integration",
-        sidebar: 3,
-        content: `<div style="display:flex; flex-direction:column; gap:6px; color:var(--text); text-align:left;">
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--primary);">₹4,85,200</strong><span style="font-size:0.5rem; color:var(--text-muted);">Posted Vouch</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block; color:var(--success);">100%</strong><span style="font-size:0.5rem; color:var(--text-muted);">Tally Sync</span>
-                      </div>
-                      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px; border-radius:6px; text-align:center;">
-                        <strong style="font-size:0.75rem; display:block;">SBI CC</strong><span style="font-size:0.5rem; color:var(--text-muted);">Bank Routing</span>
-                      </div>
-                    </div>
-                    <div style="border:1px solid var(--primary); padding:6px; border-radius:6px; background:rgba(37,99,235,0.05); margin-top:4px;">
-                      <div style="font-size:0.6rem; font-weight:800; color:var(--primary);"><i class="fa-solid fa-share-from-square"></i> Tally XML Sync Active</div>
-                      <p style="font-size:0.55rem; color:var(--text-muted); margin-top:2px; line-height:1.2;">Synced purchase ledger voucher postings directly to Tally ERP corporate database.</p>
-                    </div>
-                  </div>`
-      }
-    ];
-
-    let currentStage = 0;
-    const runStage = () => {
-      const stage = stages[currentStage];
-      headerText.innerText = stage.title;
-      
-      // Update sidebar active highlights
-      for(let i=0; i<4; i++) {
-        const item = document.getElementById(`sim-sid-${i}`);
-        if (item) {
-          if(i === stage.sidebar) item.classList.add('active');
-          else item.classList.remove('active');
-        }
-      }
-
-      consoleViewport.innerHTML = stage.content;
-      currentStage = (currentStage + 1) % stages.length;
-    };
-
-    runStage();
-    window.simInterval = setInterval(runStage, 4000);
-}
 </script>
 </body>
 </html>
