@@ -589,6 +589,82 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
         display: inline-block; vertical-align: bottom; 
     }
 }
+
+/* Critical splash CSS must stay inline so the splash never pushes main.app-container before app-splash.css loads. */
+:root {
+    --splash-bg: linear-gradient(135deg, #061223 0%, #0f172a 48%, #111827 100%);
+    --splash-card: rgba(15, 23, 42, 0.76);
+    --splash-border: rgba(255, 255, 255, 0.14);
+    --splash-text: #f8fafc;
+    --splash-muted: #cbd5e1;
+}
+#appSplash {
+    position: fixed;
+    inset: 0;
+    z-index: 1000000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--splash-bg);
+    color: var(--splash-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    opacity: 1;
+    visibility: visible;
+}
+#appSplash.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.app-splash-card {
+    width: min(420px, calc(100vw - 36px));
+    min-height: 180px;
+    padding: 34px 30px 30px;
+    border: 1px solid var(--splash-border);
+    border-radius: 8px;
+    background: var(--splash-card);
+    text-align: center;
+}
+.app-splash-company {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+.app-splash-quote {
+    margin: 22px auto 0;
+    max-width: 330px;
+    min-height: 48px;
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 650;
+    color: var(--splash-muted);
+}
+.app-splash-track {
+    width: 178px;
+    height: 3px;
+    margin: 24px auto 0;
+    border-radius: 999px;
+    background: #2563eb;
+}
+.app-splash-track span {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: #38bdf8;
+}
+#appSplash.app-splash-empty {
+    background: var(--loader-bg, rgba(248, 250, 252, 0.74));
+}
+.app-splash-spinner {
+    width: 46px;
+    height: 46px;
+    border: 4px solid var(--loader-ring, rgba(148, 163, 184, 0.32));
+    border-top-color: var(--loader-ring-active, #2563eb);
+    border-radius: 50%;
+}
 </style>
 <link rel="preload" href="/static/css/global-loader.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <link rel="preload" href="/static/css/app-splash.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -2126,7 +2202,7 @@ window.onload = () => {
                             localStorage.setItem(popupSeenKey, 'true');
                         }
                     })
-                    .catch(e => console.error("Masters status check failed", e));
+                    .catch(e => console.warn("Masters status check failed", e));
             }
         }
     }, 1000);
