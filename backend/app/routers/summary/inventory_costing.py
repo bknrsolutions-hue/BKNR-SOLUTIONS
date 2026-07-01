@@ -34,9 +34,7 @@ from app.database.models.criteria import (
     production_for as ProductionForTable,
     brands, species as species_model, grades, glazes, freezers, packing_styles, production_at, production_types
 )
-from app.services.floor_balance import (
-    get_floor_balance
-)
+from app.database.models.floor_balance import FloorBalance
 
 router = APIRouter(
     prefix="/summary",
@@ -90,7 +88,14 @@ def calculate_hoso_equivalent_weight(db: Session, comp_code: str, row, v_records
     denominator = (peeling_yield * soaking_yield * hlso_yield)
     return (net_qty / denominator if denominator > 0 else net_qty)
 
-def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
+def get_dynamic_process_addon(
+    db: Session,
+    comp_code: str,
+    row,
+    master_map: dict | None = None,
+    rmp_source_map: dict | None = None,
+    reprocess_source_map: dict | None = None,
+) -> float:
     prod_for = str(row.production_for or "").strip()
     freezer = str(getattr(row, "freezer", "") or "").strip()
     glaze = str(row.glaze or "").strip()
@@ -101,34 +106,44 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
     is_finish_hlso = "HLSO" in finish_variety
     is_finish_va = not (is_finish_hoso or is_finish_hlso)
 
-    master = db.query(ProductionForTable).filter(
-        ProductionForTable.company_id == comp_code,
-        ProductionForTable.production_for == prod_for,
-        ProductionForTable.freezer_name == freezer,
-        ProductionForTable.glaze_percent == glaze,
-        ProductionForTable.status == "Active"
-    ).order_by(ProductionForTable.apply_from.desc()).first()
+    master = None
+    if master_map is not None:
+        master = master_map.get((prod_for, freezer, glaze))
+    else:
+        master = db.query(ProductionForTable).filter(
+            ProductionForTable.company_id == comp_code,
+            ProductionForTable.production_for == prod_for,
+            ProductionForTable.freezer_name == freezer,
+            ProductionForTable.glaze_percent == glaze,
+            ProductionForTable.status == "Active"
+        ).order_by(ProductionForTable.apply_from.desc()).first()
 
     if not master: return 5.0
 
-    is_source_rmp = db.query(RawMaterialPurchasing).filter(
-        RawMaterialPurchasing.company_id == comp_code,
-        RawMaterialPurchasing.batch_number == row.batch_number
-    ).first() is not None
-
-    source_variety = ""
-    if is_source_rmp:
-        rmp_rec = db.query(RawMaterialPurchasing.variety_name).filter(
+    if rmp_source_map is not None or reprocess_source_map is not None:
+        source_variety = str((rmp_source_map or {}).get(row.batch_number) or "").upper()
+        is_source_rmp = bool(source_variety)
+        if not source_variety:
+            source_variety = str((reprocess_source_map or {}).get(row.batch_number) or "").upper()
+    else:
+        is_source_rmp = db.query(RawMaterialPurchasing).filter(
             RawMaterialPurchasing.company_id == comp_code,
             RawMaterialPurchasing.batch_number == row.batch_number
-        ).first()
-        source_variety = str(rmp_rec[0] or "").upper() if rmp_rec else ""
-    else:
-        rep_rec = db.query(Reprocess.variety).filter(
-            Reprocess.company_id == comp_code,
-            Reprocess.new_batch_id == row.batch_number
-        ).first()
-        source_variety = str(rep_rec[0] or "").upper() if rep_rec else ""
+        ).first() is not None
+
+        source_variety = ""
+        if is_source_rmp:
+            rmp_rec = db.query(RawMaterialPurchasing.variety_name).filter(
+                RawMaterialPurchasing.company_id == comp_code,
+                RawMaterialPurchasing.batch_number == row.batch_number
+            ).first()
+            source_variety = str(rmp_rec[0] or "").upper() if rmp_rec else ""
+        else:
+            rep_rec = db.query(Reprocess.variety).filter(
+                Reprocess.company_id == comp_code,
+                Reprocess.new_batch_id == row.batch_number
+            ).first()
+            source_variety = str(rep_rec[0] or "").upper() if rep_rec else ""
 
     is_source_hoso = "HOSO" in source_variety
     is_source_hlso = "HLSO" in source_variety
@@ -191,7 +206,11 @@ def inventory_costing_page(
         fy_set.add(fy_str)
     financial_years = sorted(list(fy_set), reverse=True)
 
-    selected_fy = fy
+    show_all_years = fy == "all"
+    selected_fy = "" if show_all_years else fy
+    if not show_all_years and not selected_fy and not from_date and not to_date:
+        today = ist_now().date()
+        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 3. Base Queries Formulation
     q_stock = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
@@ -250,36 +269,120 @@ def inventory_costing_page(
     batch_numbers = list(set([r.batch_number for r in (plant_rows + cs_rows) if r.batch_number]))
     batch_residual_map = {}
     batch_total_hoso_weight_pool = {}
+    rmp_stats_map = {}
+    rep_stats_map = {}
+    rmp_source_variety_map = {}
+    reprocess_source_variety_map = {}
+    floor_rows_by_batch = {}
+    master_map = {}
+
+    if batch_numbers:
+        rmp_stats_map = {
+            row.batch_number: row
+            for row in db.query(
+                RawMaterialPurchasing.batch_number.label("batch_number"),
+                func.sum(RawMaterialPurchasing.received_qty).label("tq"),
+                func.sum(RawMaterialPurchasing.amount).label("ta")
+            ).filter(
+                RawMaterialPurchasing.company_id == comp_code,
+                RawMaterialPurchasing.batch_number.in_(batch_numbers)
+            ).group_by(RawMaterialPurchasing.batch_number).all()
+        }
+
+        rep_stats_map = {
+            row.new_batch_id: row
+            for row in db.query(
+                Reprocess.new_batch_id.label("new_batch_id"),
+                func.sum(Reprocess.out_qty).label("tq"),
+                func.sum(Reprocess.inventory_value).label("ta")
+            ).filter(
+                Reprocess.company_id == comp_code,
+                Reprocess.new_batch_id.in_(batch_numbers)
+            ).group_by(Reprocess.new_batch_id).all()
+        }
+
+        rmp_source_variety_map = {
+            batch: variety
+            for batch, variety in db.query(
+                RawMaterialPurchasing.batch_number,
+                func.max(RawMaterialPurchasing.variety_name)
+            ).filter(
+                RawMaterialPurchasing.company_id == comp_code,
+                RawMaterialPurchasing.batch_number.in_(batch_numbers)
+            ).group_by(RawMaterialPurchasing.batch_number).all()
+        }
+
+        reprocess_source_variety_map = {
+            batch: variety
+            for batch, variety in db.query(
+                Reprocess.new_batch_id,
+                func.max(Reprocess.variety)
+            ).filter(
+                Reprocess.company_id == comp_code,
+                Reprocess.new_batch_id.in_(batch_numbers)
+            ).group_by(Reprocess.new_batch_id).all()
+        }
+
+        floor_rows = db.query(
+            FloorBalance.batch_number,
+            FloorBalance.count,
+            FloorBalance.species,
+            FloorBalance.variety,
+            FloorBalance.production_for,
+            FloorBalance.location,
+            FloorBalance.source_type,
+            func.coalesce(func.sum(FloorBalance.available_qty), 0).label("available_qty")
+        ).filter(
+            FloorBalance.company_id == comp_code,
+            FloorBalance.batch_number.in_(batch_numbers)
+        ).group_by(
+            FloorBalance.batch_number,
+            FloorBalance.count,
+            FloorBalance.species,
+            FloorBalance.variety,
+            FloorBalance.production_for,
+            FloorBalance.location,
+            FloorBalance.source_type
+        ).having(func.sum(FloorBalance.available_qty) > 0.01).all()
+
+        for row in floor_rows:
+            floor_rows_by_batch.setdefault(row.batch_number, []).append(row)
+
+    for master in db.query(ProductionForTable).filter(
+        ProductionForTable.company_id == comp_code,
+        ProductionForTable.status == "Active"
+    ).order_by(ProductionForTable.apply_from.desc()).all():
+        key = (
+            str(master.production_for or "").strip(),
+            str(master.freezer_name or "").strip(),
+            str(master.glaze_percent or "").strip()
+        )
+        master_map.setdefault(key, master)
 
     # 4. Calculation Processing Pool Matrices
     for batch in batch_numbers:
-        rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty).label("tq"), func.sum(RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
-        raw_val = float(rmp_stats.ta or 0); raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
+        rmp_stats = rmp_stats_map.get(batch)
+        raw_val = float(rmp_stats.ta or 0) if rmp_stats else 0.0
+        raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
         
-        rep_stats = db.query(func.sum(Reprocess.out_qty).label("tq"), func.sum(Reprocess.inventory_value).label("ta")).filter(Reprocess.company_id == comp_code, Reprocess.new_batch_id == batch).first()
-        non_raw_val = float(rep_stats.ta or 0); non_raw_rate = (non_raw_val / rep_stats.tq if rep_stats and rep_stats.tq and rep_stats.tq > 0 else 0)
+        rep_stats = rep_stats_map.get(batch)
+        non_raw_val = float(rep_stats.ta or 0) if rep_stats else 0.0
+        non_raw_rate = (non_raw_val / rep_stats.tq if rep_stats and rep_stats.tq and rep_stats.tq > 0 else 0)
         
         total_batch_value = raw_val if raw_val > 0 else non_raw_val
         batch_avg_rate = raw_rate if raw_val > 0 else non_raw_rate
 
-        floor_combos = set()
-        for r in db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.batch_number == batch, RawMaterialPurchasing.company_id == comp_code).all():
-            floor_combos.add((r.batch_number, r.count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
-        for r in db.query(DeHeading).filter(DeHeading.batch_number == batch, DeHeading.company_id == comp_code).all():
-            floor_combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP"))
-        for r in db.query(Grading).filter(Grading.batch_number == batch, Grading.company_id == comp_code).all():
-            floor_combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
-        for r in db.query(Peeling).filter(Peeling.batch_number == batch, Peeling.company_id == comp_code).all():
-            floor_combos.add((r.batch_number, r.hlso_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP"))
-        for r in db.query(Reprocess).filter(Reprocess.new_batch_id == batch, Reprocess.company_id == comp_code).all():
-            floor_combos.add((r.new_batch_id, r.grade, r.species, r.variety, r.production_for, r.production_at or "Floor", "REPROCESS"))
-
         total_floor_value = 0
-        for b, cnt, sp, vr, pfor, loc, stype in floor_combos:
-            floor_qty = get_floor_balance(db, comp_code, loc, b, cnt, sp, vr, pfor, stype)
+        for floor_row in floor_rows_by_batch.get(batch, []):
+            floor_qty = float(floor_row.available_qty or 0)
             if floor_qty and float(floor_qty) > 0.01:
                 class Obj: pass
-                o = Obj(); o.quantity = floor_qty; o.glaze = "NWNC"; o.variety = vr; o.grade = cnt; o.species = sp
+                o = Obj()
+                o.quantity = floor_qty
+                o.glaze = "NWNC"
+                o.variety = floor_row.variety
+                o.grade = floor_row.count
+                o.species = floor_row.species
                 hoso_weight = calculate_hoso_equivalent_weight(db, comp_code, o, v_records)
                 total_floor_value += (hoso_weight * batch_avg_rate)
 
@@ -312,7 +415,14 @@ def inventory_costing_page(
                 pool_rate = (res_amt / total_pool if total_pool > 0 else 0)
                 base_rate = ((pool_rate * r.rm_eq_weight) / float(r.quantity or 1)) if float(r.quantity or 0) > 0 else 0
                 
-                addon = get_dynamic_process_addon(db, comp_code, r)
+                addon = get_dynamic_process_addon(
+                    db,
+                    comp_code,
+                    r,
+                    master_map=master_map,
+                    rmp_source_map=rmp_source_variety_map,
+                    reprocess_source_map=reprocess_source_variety_map
+                )
                 r.product_kg_value = round(base_rate + addon, 2)
             else:
                 match = next((x for x in reprocess_rows if x.new_batch_id == r.batch_number and x.variety == r.variety and x.grade == r.grade), None)
@@ -323,10 +433,13 @@ def inventory_costing_page(
             r.product_kg_value = match.product_kg_value if match else 0.0
 
         val = round(float(r.quantity or 0) * float(r.product_kg_value or 0), 2)
-        r.inventory_value = -val if m_type == "OUT" else val
-        db.add(r)
+        new_inventory_value = -val if m_type == "OUT" else val
+        if round(float(r.inventory_value or 0), 2) != new_inventory_value:
+            r.inventory_value = new_inventory_value
+            db.add(r)
 
-    db.commit()
+    if db.dirty:
+        db.commit()
     db.expire_all()
 
     # 5. Fetch Structured Output Records Set
