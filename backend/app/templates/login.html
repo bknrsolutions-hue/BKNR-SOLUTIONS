@@ -79,6 +79,18 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+.fa,
+.fa-solid,
+.fa-regular,
+.fa-brands {
+  display: inline-flex;
+  width: 1.1em;
+  min-width: 1.1em;
+  line-height: 1;
+  justify-content: center;
+  vertical-align: -0.08em;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -161,7 +173,7 @@ body {
   border-radius: 8px;
   text-decoration: none;
   color: var(--text-muted);
-  transition: all 0.2s;
+  transition: color 0.2s, background-color 0.2s;
 }
 
 .nav-links a:hover {
@@ -186,7 +198,7 @@ body {
   display: grid;
   place-items: center;
   font-size: 14px;
-  transition: all 0.2s;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
 }
 
 .theme-toggle-btn:hover {
@@ -207,7 +219,7 @@ body {
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-  transition: all 0.2s;
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 .nav-action:hover {
@@ -225,6 +237,7 @@ body {
   align-items: center;
   padding: 80px clamp(18px, 4vw, 56px);
   max-width: 1440px;
+  min-height: calc(100svh - 76px);
   margin: 0 auto;
 }
 
@@ -274,7 +287,7 @@ body {
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, background-color 0.2s, border-color 0.2s, color 0.2s;
   font-family: inherit;
 }
 
@@ -368,7 +381,6 @@ body {
   transform: translate(-50%, -50%);
   font-size: 3rem;
   color: rgba(59, 130, 246, 0.7);
-  animation: pulse 2s infinite;
   cursor: pointer;
 }
 
@@ -615,7 +627,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  transition: all 0.3s;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .industry-card:hover {
@@ -665,7 +677,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .switcher-tab:hover {
@@ -692,7 +704,6 @@ body {
 
 .switcher-panel {
   display: none;
-  animation: panelFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .switcher-panel.active {
@@ -824,7 +835,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  transition: all 0.3s;
+  transition: transform 0.3s, border-color 0.3s;
 }
 
 .trans-card:hover {
@@ -1212,7 +1223,7 @@ input {
   font-size: 0.9rem;
   font-weight: 500;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 [data-theme="light"] select,
@@ -1232,7 +1243,7 @@ textarea {
   font-size: 0.9rem;
   font-weight: 500;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 textarea {
@@ -1281,7 +1292,7 @@ button.btn-action-primary {
   cursor: pointer;
   font-size: 0.92rem;
   font-weight: 800;
-  transition: all 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
 }
 
 button.btn-action-primary:hover {
@@ -1312,7 +1323,7 @@ button.btn-action-primary:hover {
   place-items: center;
   font-size: 20px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-  transition: all 0.2s;
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
   text-decoration: none;
 }
 
