@@ -9,12 +9,15 @@
 <meta property="og:title" content="BKNR ERP - Enterprise Operating System for the Seafood Industry">
 <meta property="og:description" content="Manage procurement, production, inventory, cold storage, finance, exports and analytics from one secure cloud platform.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="/static/screenshot.png">
+<meta property="og:url" content="https://bknr.solutions/">
+<meta property="og:image" content="https://bknr.solutions/static/screenshot.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://bknr.solutions/">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0b0f19">
+<meta name="mobile-web-app-capable" content="yes">
 
 <!-- Icons and dialog library are deferred so first paint is not blocked. -->
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -41,7 +44,7 @@
   --card-bg: rgba(17, 24, 39, 0.7);
   --border: rgba(255, 255, 255, 0.06);
   --text: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-muted: #cbd5e1;
   
   --glass-bg: rgba(15, 23, 42, 0.6);
   --glass-border: rgba(255, 255, 255, 0.06);
@@ -61,7 +64,7 @@
   --card-bg: rgba(255, 255, 255, 0.95);
   --border: rgba(15, 95, 168, 0.08);
   --text: #0f172a;
-  --text-muted: #475569;
+  --text-muted: #334155;
   
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(15, 95, 168, 0.06);
@@ -2764,7 +2767,7 @@ button.btn-action-primary:hover {
       <a href="#contact">Contact</a>
     </nav>
     <div class="nav-actions">
-      <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Theme" aria-label="Switch color theme">
+      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Theme" aria-label="Switch color theme">
         <i class="fa-solid fa-sun"></i>
       </button>
       <a class="nav-action" href="/auth/login">Login Portal</a>
@@ -2796,11 +2799,11 @@ button.btn-action-primary:hover {
           </div>
           
           <!-- Hero Dashboard Tabs -->
-          <div class="hero-tabs">
-            <button class="hero-tab active" onclick="setHeroPanel(0)"><i class="fa-solid fa-lock" style="margin-right:6px;"></i> Login Screen</button>
-            <button class="hero-tab" onclick="setHeroPanel(1)"><i class="fa-solid fa-industry" style="margin-right:6px;"></i> Production</button>
-            <button class="hero-tab" onclick="setHeroPanel(2)"><i class="fa-solid fa-warehouse" style="margin-right:6px;"></i> Inventory</button>
-            <button class="hero-tab" onclick="setHeroPanel(3)"><i class="fa-solid fa-wallet" style="margin-right:6px;"></i> Accounts</button>
+          <div class="hero-tabs" role="tablist" aria-label="Dashboard preview tabs">
+            <button type="button" class="hero-tab active" role="tab" aria-selected="true" onclick="setHeroPanel(0)"><i class="fa-solid fa-lock" style="margin-right:6px;"></i> Login Screen</button>
+            <button type="button" class="hero-tab" role="tab" aria-selected="false" onclick="setHeroPanel(1)"><i class="fa-solid fa-industry" style="margin-right:6px;"></i> Production</button>
+            <button type="button" class="hero-tab" role="tab" aria-selected="false" onclick="setHeroPanel(2)"><i class="fa-solid fa-warehouse" style="margin-right:6px;"></i> Inventory</button>
+            <button type="button" class="hero-tab" role="tab" aria-selected="false" onclick="setHeroPanel(3)"><i class="fa-solid fa-wallet" style="margin-right:6px;"></i> Accounts</button>
           </div>
 
           <!-- Hero Dashboard Panels Viewport -->
@@ -3069,16 +3072,16 @@ button.btn-action-primary:hover {
           </div>
         </div>
 
-        <div class="switcher-tabs">
-          <button class="switcher-tab active" onclick="switchPanel(0)"><i class="fa-solid fa-chart-simple"></i> Processing</button>
-          <button class="switcher-tab" onclick="switchPanel(1)"><i class="fa-solid fa-warehouse"></i> Inventory</button>
-          <button class="switcher-tab" onclick="switchPanel(2)"><i class="fa-solid fa-wallet"></i> Finance</button>
-          <button class="switcher-tab" onclick="switchPanel(3)"><i class="fa-solid fa-user-tie"></i> HR & Staff</button>
-          <button class="switcher-tab" onclick="switchPanel(4)"><i class="fa-solid fa-file-export"></i> Export Docs</button>
-          <button class="switcher-tab" onclick="switchPanel(5)"><i class="fa-solid fa-chart-pie"></i> Tally</button>
-          <button class="switcher-tab" onclick="switchPanel(6)"><i class="fa-solid fa-file-invoice-dollar"></i> Costing & Fin</button>
-          <button class="switcher-tab" onclick="switchPanel(7)"><i class="fa-solid fa-coins"></i> Inventory Costing</button>
-          <button class="switcher-tab" onclick="switchPanel(8)"><i class="fa-solid fa-robot"></i> AI Signals</button>
+        <div class="switcher-tabs" role="tablist" aria-label="BKNR module dashboard previews">
+          <button type="button" class="switcher-tab active" role="tab" aria-selected="true" onclick="switchPanel(0)"><i class="fa-solid fa-chart-simple"></i> Processing</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(1)"><i class="fa-solid fa-warehouse"></i> Inventory</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(2)"><i class="fa-solid fa-wallet"></i> Finance</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(3)"><i class="fa-solid fa-user-tie"></i> HR & Staff</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(4)"><i class="fa-solid fa-file-export"></i> Export Docs</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(5)"><i class="fa-solid fa-chart-pie"></i> Tally</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(6)"><i class="fa-solid fa-file-invoice-dollar"></i> Costing & Fin</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(7)"><i class="fa-solid fa-coins"></i> Inventory Costing</button>
+          <button type="button" class="switcher-tab" role="tab" aria-selected="false" onclick="switchPanel(8)"><i class="fa-solid fa-robot"></i> AI Signals</button>
         </div>
 
         <div class="switcher-viewport">
@@ -3553,10 +3556,10 @@ button.btn-action-primary:hover {
             </div>
             
             <div class="ai-tab-btns">
-              <button class="ai-tab-btn active" onclick="setAiTab(0)">Yield Predict</button>
-              <button class="ai-tab-btn" onclick="setAiTab(1)">Cost Forecast</button>
-              <button class="ai-tab-btn" onclick="setAiTab(2)">Planning</button>
-              <button class="ai-tab-btn" onclick="setAiTab(3)">Alerts</button>
+              <button type="button" class="ai-tab-btn active" onclick="setAiTab(0)">Yield Predict</button>
+              <button type="button" class="ai-tab-btn" onclick="setAiTab(1)">Cost Forecast</button>
+              <button type="button" class="ai-tab-btn" onclick="setAiTab(2)">Planning</button>
+              <button type="button" class="ai-tab-btn" onclick="setAiTab(3)">Alerts</button>
             </div>
 
             <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); padding:16px; border-radius:8px;">
@@ -3944,7 +3947,7 @@ button.btn-action-primary:hover {
             <div class="form-group"><label for="contact-country">Country</label><input id="contact-country" type="text" placeholder="India" required></div>
             <div class="form-group"><label for="contact-business-type">Business Type</label><select id="contact-business-type" required><option value="">Select business type</option><option>Seafood Processing</option><option>Cold Storage</option><option>Aquaculture</option><option>Export House</option><option>Hatchery</option><option>Logistics</option></select></div>
             <div class="form-group"><label for="contact-message">Message</label><textarea id="contact-message" placeholder="Tell us about your plant, stock, finance or export workflow"></textarea></div>
-            <button class="btn-action-primary" onclick="confirmDemoBooking()">Schedule a Live Demo</button>
+            <button type="button" class="btn-action-primary" onclick="confirmDemoBooking()">Schedule a Live Demo</button>
           </div>
         </div>
       </div>
@@ -4026,7 +4029,7 @@ button.btn-action-primary:hover {
   <div class="demo-modal-container">
     <div class="demo-modal-header">
       <h3 style="font-size:1rem; font-weight:800; color:#fff; margin:0;"><i class="fa-solid fa-circle-play" style="color:var(--primary); margin-right:8px;"></i> Watch 90-Second Walkthrough</h3>
-      <button class="demo-modal-close" onclick="closeDemoModal()" aria-label="Close demo walkthrough"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <button type="button" class="demo-modal-close" onclick="closeDemoModal()" aria-label="Close demo walkthrough"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="demo-modal-body">
       <div class="demo-video-sim">
@@ -4096,8 +4099,10 @@ function switchPanel(panelIndex) {
     document.querySelectorAll(".switcher-tab").forEach((tab, index) => {
         if (index === panelIndex) {
             tab.classList.add("active");
+            tab.setAttribute("aria-selected", "true");
         } else {
             tab.classList.remove("active");
+            tab.setAttribute("aria-selected", "false");
         }
     });
     
@@ -4224,8 +4229,13 @@ function updateHeroPanels() {
   ];
   
   tabs.forEach((tab, i) => {
-    if(i === activeHeroTab) tab.classList.add('active');
-    else tab.classList.remove('active');
+    if(i === activeHeroTab) {
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+    } else {
+      tab.classList.remove('active');
+      tab.setAttribute('aria-selected', 'false');
+    }
   });
   
   panels.forEach((panel, i) => {
