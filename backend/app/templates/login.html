@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP - Seafood Enterprise Operating Platform</title>
+<title>BKNR ERP - Enterprise Operating System for the Seafood Industry</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="BKNR ERP is a world-class enterprise SaaS operating platform for seafood exporters, cold stores, hatcheries, and aquaculture companies.">
 <link rel="manifest" href="/static/manifest.json">
@@ -10,12 +10,10 @@
 <link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0b0f19">
 
-<!-- Typography and Icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Icons and dialog library are deferred so first paint is not blocked. -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -69,7 +67,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 html {
@@ -1539,15 +1537,32 @@ button.btn-action-primary:hover {
 .hero-panel {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
+  display: none;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease;
-  display: flex;
   flex-direction: column;
 }
 .hero-panel.active {
+  display: flex;
   opacity: 1;
   pointer-events: auto;
+}
+
+.industries-section,
+.module-switcher-section,
+.transformation-section,
+.comparison-section,
+.ai-highlight-section,
+.journey-section,
+.security-section,
+.workflow-section,
+.faq-section,
+.contact-section,
+.cta-band,
+.corporate-footer {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
 }
 
 /* --- MINI ERP DASHBOARD UI MOCKUPS --- */
@@ -4209,75 +4224,12 @@ window.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                
-                // If it is the KPIs section, trigger counter animations
-                if(entry.target.classList.contains('kpis-section')) {
-                  loadLiveStats();
-                }
             }
         });
     }, { threshold: 0.15 });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 });
-
-// 🟢 API STATISTICS LOADER & COUNT-UP ANIMATION
-async function loadLiveStats() {
-    let baseProd = 14842;
-    let baseUsers = 48;
-    let baseApprovals = 6;
-    let baseAccuracy = 99.98;
-    let baseOrders = 12;
-    let baseBatches = 36;
-    let baseStorage = 72;
-    let baseExport = 4;
-
-    try {
-        const res = await fetch('/api/public/stats');
-        if(res.ok) {
-            const data = await res.json();
-            baseProd = parseInt(data.production_weight.replace(/\D/g, ''));
-            baseUsers = parseInt(data.active_users.replace(/\D/g, ''));
-            baseApprovals = parseInt(data.pending_approvals.replace(/\D/g, ''));
-            baseAccuracy = parseFloat(data.inventory_accuracy);
-            baseOrders = parseInt(data.orders_processing.replace(/\D/g, ''));
-            baseBatches = parseInt(data.completed_batches.replace(/\D/g, ''));
-            baseStorage = parseInt(data.cold_storage_utilization.replace(/\D/g, ''));
-            baseExport = parseInt(data.export_shipments.replace(/\D/g, ''));
-        }
-    } catch(e) {
-        console.error(e);
-    }
-
-    animateCounter('kpi-prod-weight', baseProd, ' KG', 0);
-    animateCounter('kpi-active-users', baseUsers, ' Active', 0);
-    animateCounter('kpi-pending-approvals', baseApprovals, ' Bills', 0);
-    animateCounter('kpi-inv-accuracy', baseAccuracy, '%', 2);
-    animateCounter('kpi-orders-proc', baseOrders, ' Lots', 0);
-    animateCounter('kpi-comp-batches', baseBatches, ' Drafts', 0);
-    animateCounter('kpi-cold-util', baseStorage, '% Capacity', 0);
-    animateCounter('kpi-export-ship', baseExport, ' In-Transit', 0);
-}
-
-function animateCounter(id, target, suffix, decimals) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let start = 0;
-    const duration = 1500;
-    const stepTime = 30;
-    const steps = duration / stepTime;
-    const increment = target / steps;
-
-    const timer = setInterval(() => {
-        start += increment;
-        if(start >= target) {
-            el.innerText = target.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + suffix;
-            clearInterval(timer);
-        } else {
-            el.innerText = start.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + suffix;
-        }
-    }, stepTime);
-}
 
 // 🟢 SIMULATED WALKTHROUGH PRESENTATION
 function startDemoWalkthrough() {
