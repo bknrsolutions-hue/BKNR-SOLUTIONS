@@ -3,7 +3,7 @@ const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",
   "/static/screenshot.png",
-  "/static/css/app-splash.css",
+  "/static/css/app-splash.min.css",
   "/static/js/app-splash.js"
 ];
 

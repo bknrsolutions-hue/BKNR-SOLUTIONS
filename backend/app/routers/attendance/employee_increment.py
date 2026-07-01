@@ -246,9 +246,9 @@ def print_increment_voucher(request: Request, record_id: int, db: Session = Depe
             td {{ padding: 10px; border-bottom: 1px solid #ddd; font-size: 14px; }}
             .bold {{ font-weight: bold; }}
         </style>
-    <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
+    <link rel="stylesheet" href="/static/css/global-loader.min.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.min.css">
+<link rel="stylesheet" href="/static/css/bknr-columns.min.css">
 </head>
     <body onload="window.print()">
         <div class="voucher">
