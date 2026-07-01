@@ -469,6 +469,79 @@ body {
   text-transform: uppercase;
 }
 
+.trust-grid,
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.trust-badge,
+.performance-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--glass-bg);
+  padding: 14px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.trust-badge i,
+.performance-card i {
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+.trust-badge strong,
+.performance-card strong {
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trust-badge span,
+.performance-card span {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.workflow-mini-line {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.workflow-mini-step {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text);
+  background: rgba(255,255,255,0.02);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.workflow-mini-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  width: 8px;
+  height: 2px;
+  background: var(--primary);
+}
+
 /* ==========================================
    5. INDUSTRIES COVERED
    ========================================== */
@@ -1123,7 +1196,41 @@ input {
   transition: all 0.2s;
 }
 
+[data-theme="light"] select,
 [data-theme="light"] input {
+  background: #ffffff;
+}
+
+select,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 0.9rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
+}
+
+[data-theme="light"] textarea,
+[data-theme="light"] select {
   background: #ffffff;
 }
 
@@ -1345,6 +1452,19 @@ button.btn-action-primary:hover {
   }
   .kpis-grid, .industries-grid, .transformation-grid, .journey-timeline, .security-grid, .footer-grid {
     grid-template-columns: 1fr;
+  }
+  .trust-grid,
+  .performance-grid,
+  .workflow-mini-line {
+    grid-template-columns: 1fr;
+  }
+  .workflow-mini-step:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: -8px;
+    width: 2px;
+    height: 8px;
   }
   .footer-bottom {
     flex-direction: column;
@@ -1595,7 +1715,10 @@ button.btn-action-primary:hover {
 }
 .industry-card:nth-child(1)::before { background-image: url('/static/images/seafood_processing.jpg'); }
 .industry-card:nth-child(2)::before { background-image: url('/static/images/cold_storage.jpg'); }
-.industry-card:nth-child(3)::before { background-image: url('/static/images/logistics.jpg'); }
+.industry-card:nth-child(3)::before { background-image: url('/static/images/hatchery.jpg'); }
+.industry-card:nth-child(4)::before { background-image: url('/static/images/dash_export_docs.png'); }
+.industry-card:nth-child(5)::before { background-image: url('/static/images/feed_mill.jpg'); }
+.industry-card:nth-child(6)::before { background-image: url('/static/images/logistics.jpg'); }
 
 .industry-card::after {
   content: '';
@@ -1625,6 +1748,15 @@ button.btn-action-primary:hover {
   color: #fff;
   font-weight: 700;
   margin: 0;
+}
+.industry-card p {
+  position: relative;
+  z-index: 3;
+  margin: 6px 0 0;
+  color: rgba(255,255,255,0.78);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-weight: 650;
 }
 
 /* --- AI PREDICTION SECTION --- */
@@ -1689,141 +1821,6 @@ button.btn-action-primary:hover {
   background: #8b5cf6;
   color: #fff;
   border-color: #8b5cf6;
-}
-
-/* --- BILLING TOGGLE AND PRICING --- */
-.pricing-toggle-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 40px;
-}
-.pricing-toggle-label {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text);
-}
-.pricing-toggle-label.active {
-  color: var(--primary);
-}
-.discount-badge {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-left: 6px;
-}
-.pricing-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-}
-.pricing-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: var(--border);
-  transition: .3s;
-  border-radius: 34px;
-}
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .3s;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-input:checked + .slider {
-  background-color: var(--primary);
-}
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
-/* --- CLIENT LOGOS AND TESTIMONIALS --- */
-.testimonials-section {
-  padding: 80px clamp(18px, 4vw, 56px);
-  background: rgba(0,0,0,0.05);
-}
-.logo-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 40px;
-  opacity: 0.55;
-  margin-bottom: 60px;
-}
-.logo-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--text-muted);
-}
-.testimonial-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-}
-.testimonial-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-.testimonial-stars {
-  color: #fbbf24;
-  margin-bottom: 12px;
-}
-.testimonial-text {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: 20px;
-  font-style: italic;
-}
-.testimonial-author {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.testimonial-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--primary);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  color: #fff;
-  font-size: 0.9rem;
-}
-.author-info strong {
-  display: block;
-  font-size: 0.88rem;
-  color: #fff;
-}
-.author-info span {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--text-muted);
 }
 
 /* --- VIDEO DEMO MODAL --- */
@@ -2352,10 +2349,236 @@ input:checked + .slider:before {
   font-size: 0.66rem;
   line-height: 1.35;
 }
+.workflow-atlas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 34px;
+}
+.workflow-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)), var(--glass-bg);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  min-width: 0;
+}
+.workflow-card.wide {
+  grid-column: 1 / -1;
+}
+.workflow-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.workflow-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.96rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.workflow-card-title i {
+  color: var(--primary);
+}
+.workflow-card-copy {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  max-width: 760px;
+}
+.workflow-badge {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  border-radius: 999px;
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.08);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.process-line,
+.ledger-line,
+.document-line {
+  display: grid;
+  gap: 10px;
+}
+.process-line {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.flow-node {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.025);
+  padding: 10px;
+  min-height: 122px;
+}
+.flow-node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 28px;
+  right: -10px;
+  width: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+}
+.flow-node i {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+.flow-node strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+.flow-node span {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+.stock-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+}
+.stock-out-list,
+.feature-list {
+  display: grid;
+  gap: 8px;
+}
+.stock-out-list div,
+.feature-list div {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--text);
+  background: rgba(255,255,255,0.02);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.stock-out-list span,
+.feature-list span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+.requirement-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.req-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.req-card b {
+  display: block;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+.req-card span {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.insight-loop {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+.loop-card {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 11px 12px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text);
+  background: rgba(255,255,255,0.02);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+.payroll-lane,
+.finance-aging {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.lane-step,
+.aging-step {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px;
+  background: rgba(255,255,255,0.02);
+}
+.lane-step b,
+.aging-step b {
+  display: block;
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+.lane-step span,
+.aging-step span {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+.document-line {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
 @media (max-width: 820px) {
   .flow-subgroup-grid,
-  .flow-chain {
+  .flow-chain,
+  .workflow-atlas,
+  .process-line,
+  .stock-flow-grid,
+  .requirement-board,
+  .insight-loop,
+  .payroll-lane,
+  .finance-aging,
+  .document-line {
     grid-template-columns: 1fr;
+  }
+  .workflow-card.wide {
+    grid-column: auto;
+  }
+  .flow-node {
+    min-height: auto;
+  }
+  .flow-node:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    left: 18px;
+    bottom: -10px;
+    width: 2px;
+    height: 10px;
   }
 }
 .workflow-timeline {
@@ -2492,12 +2715,13 @@ input:checked + .slider:before {
       </span>
     </a>
     <nav class="nav-links" aria-label="Website navigation">
+      <a href="#top">Platform</a>
+      <a href="#solutions">Solutions</a>
       <a href="#industries">Industries</a>
-      <a href="#switcher">Module Switcher</a>
-      <a href="#transformation">Transformation</a>
-      <a href="#comparison">Features Comparison</a>
+      <a href="#switcher">Features</a>
       <a href="#security">Security</a>
-      <a href="#faq">Support</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
     </nav>
     <div class="nav-actions">
       <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Theme">
@@ -2512,13 +2736,14 @@ input:checked + .slider:before {
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Enterprise Seafood Operating Suite</p>
-        <h1>Live factory, billing, stock, and costing control for <span>seafood exporters.</span></h1>
+        <h1>Enterprise Operating System for the <span>Seafood Industry</span></h1>
         <p class="hero-lead">
-          Connect gate entry, de-heading, peeling, production, contractor bills, salaries, production costs, cold storage stocks, stock aging, ledger accounts, and export paperwork into one compact command center.
+          Manage procurement, production, inventory, cold storage, finance, exports and analytics from one secure cloud platform.
         </p>
         <div class="hero-actions">
-          <a class="primary-link" href="/auth/register">Start Free Trial</a>
-          <a class="secondary-link" onclick="watchDemo()"><i class="fa-solid fa-circle-play" style="margin-right:8px; color:var(--primary);"></i> Watch 90-second Demo</a>
+          <a class="primary-link" onclick="contactSales()">Schedule a Live Demo</a>
+          <a class="secondary-link" href="#switcher">Explore the Platform</a>
+          <a class="secondary-link" href="/auth/register">Request Enterprise Access</a>
         </div>
       </div>
       
@@ -2713,83 +2938,39 @@ input:checked + .slider:before {
       </div>
     </section>
 
-    <!-- 2. 8 REAL OPERATIONAL KPIS GRID -->
+    <!-- 2. ENTERPRISE TRUST AND PERFORMANCE -->
     <section class="kpis-section reveal fade-up">
-      <div class="kpis-title">Live Dummy Operations Feed For Product Preview</div>
-      <div class="kpis-grid">
-        
-        <!-- 1. Today's Production -->
-        <div class="kpi-card" style="--kpi-color: var(--success);" onclick="location.hash='#switcher'; switchPanel(0);">
-          <div class="kpi-header">
-            <span class="kpi-title">Today's Production</span>
-            <div class="kpi-icon"><i class="fa-solid fa-industry"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-prod-weight" data-target="14842">0</span><small>KG</small></div>
-        </div>
-
-        <!-- 2. Active Users -->
-        <div class="kpi-card" style="--kpi-color: var(--primary);" onclick="location.hash='#switcher'; switchPanel(3);">
-          <div class="kpi-header">
-            <span class="kpi-title">Active Users</span>
-            <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-active-users" data-target="48">0</span><small>Active</small></div>
-        </div>
-
-        <!-- 3. Pending Approvals -->
-        <div class="kpi-card" style="--kpi-color: var(--warning);" onclick="location.hash='#switcher'; switchPanel(2);">
-          <div class="kpi-header">
-            <span class="kpi-title">Auto Bills Ready</span>
-            <div class="kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-pending-approvals" data-target="6">0</span><small>Bills</small></div>
-        </div>
-
-        <!-- 4. Inventory Accuracy -->
-        <div class="kpi-card" style="--kpi-color: var(--success);" onclick="location.hash='#switcher'; switchPanel(1);">
-          <div class="kpi-header">
-            <span class="kpi-title">Inventory Accuracy</span>
-            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-inv-accuracy" data-target="99.98">0</span><small>%</small></div>
-        </div>
-
-        <!-- 5. Orders Processing -->
-        <div class="kpi-card" style="--kpi-color: var(--primary);" onclick="location.hash='#switcher'; switchPanel(4);">
-          <div class="kpi-header">
-            <span class="kpi-title">Stock Aging Alerts</span>
-            <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-orders-proc" data-target="12">0</span><small>Lots</small></div>
-        </div>
-
-        <!-- 6. Completed Batches -->
-        <div class="kpi-card" style="--kpi-color: var(--primary);" onclick="location.hash='#switcher'; switchPanel(0);">
-          <div class="kpi-header">
-            <span class="kpi-title">Contractor Bills</span>
-            <div class="kpi-icon"><i class="fa-solid fa-list-check"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-comp-batches" data-target="36">0</span><small>Drafts</small></div>
-        </div>
-
-        <!-- 7. Cold Storage Utilization -->
-        <div class="kpi-card" style="--kpi-color: var(--warning);" onclick="location.hash='#switcher'; switchPanel(6);">
-          <div class="kpi-header">
-            <span class="kpi-title">Cold Storage Util</span>
-            <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-cold-util" data-target="72">0</span><small>% Capacity</small></div>
-        </div>
-
-        <!-- 8. Export Shipments -->
-        <div class="kpi-card" style="--kpi-color: var(--accent);" onclick="location.hash='#switcher'; switchPanel(5);">
-          <div class="kpi-header">
-            <span class="kpi-title">Export Shipments</span>
-            <div class="kpi-icon"><i class="fa-solid fa-ship"></i></div>
-          </div>
-          <div class="kpi-value"><span id="kpi-export-ship" data-target="4">0</span><small>In-Transit</small></div>
-        </div>
-
+      <div class="kpis-title">Built for Enterprise Operations</div>
+      <div class="trust-grid">
+        <div class="trust-badge"><i class="fa-solid fa-cloud"></i><strong>Cloud Based</strong><span>Central access for factory, office, cold store and management users.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-brain"></i><strong>AI Powered</strong><span>Decision support for yield, cost, stock aging and planning signals.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-shield-halved"></i><strong>Enterprise Security</strong><span>Secure workspace with controlled access and protected sessions.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-user-shield"></i><strong>Role-Based Access</strong><span>Users see only permitted modules, locations and ledgers.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-chart-line"></i><strong>Real-time Analytics</strong><span>Dashboards show operations, inventory, finance and export status.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-clock-rotate-left"></i><strong>Audit Logs</strong><span>Critical edits, deletes and approvals keep trace history.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-lock"></i><strong>Encrypted Data</strong><span>Secure browser sessions protect operating and finance records.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-cloud-arrow-up"></i><strong>Cloud Backup</strong><span>Cloud-native deployment supports centralized plant access.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-building"></i><strong>Multi-Company</strong><span>Separate company code isolation for each business unit.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-map-location-dot"></i><strong>Multi-Location</strong><span>Production, cold store and branch filters stay controlled.</span></div>
+        <div class="trust-badge"><i class="fa-solid fa-file-lines"></i><strong>Real-Time Reporting</strong><span>Required, available and gap quantities stay visible for teams.</span></div>
+      </div>
+      <div class="workflow-mini-line">
+        <div class="workflow-mini-step">Gate Entry</div>
+        <div class="workflow-mini-step">Raw Material Purchase</div>
+        <div class="workflow-mini-step">Production</div>
+        <div class="workflow-mini-step">Cold Storage</div>
+        <div class="workflow-mini-step">Sales</div>
+        <div class="workflow-mini-step">Accounts</div>
+        <div class="workflow-mini-step">Reports</div>
+      </div>
+      <div class="kpis-title" style="margin-top:28px;">Why BKNR ERP</div>
+      <div class="performance-grid">
+        <div class="performance-card"><i class="fa-solid fa-gauge-high"></i><strong>Fast Navigation</strong><span>Compact screens designed for quick operator movement.</span></div>
+        <div class="performance-card"><i class="fa-solid fa-cloud"></i><strong>Cloud Native</strong><span>Access the same operating data across teams and sites.</span></div>
+        <div class="performance-card"><i class="fa-solid fa-brain"></i><strong>AI Assisted</strong><span>Yield, cost, stock aging and planning signals for managers.</span></div>
+        <div class="performance-card"><i class="fa-solid fa-boxes-stacked"></i><strong>Real-Time Inventory</strong><span>Live floor balance, stock entry, pending order and dispatch view.</span></div>
+        <div class="performance-card"><i class="fa-solid fa-wallet"></i><strong>Enterprise Accounting</strong><span>Ledger, journal, banking, payables, receivables and Tally-style flow.</span></div>
+        <div class="performance-card"><i class="fa-solid fa-file-export"></i><strong>Export Ready</strong><span>Shipment, invoice, packing, stuffing, BL, HC and LC documents.</span></div>
       </div>
     </section>
 
@@ -2799,21 +2980,33 @@ input:checked + .slider:before {
         <div class="section-head text-center" style="margin:0 auto 40px; text-align:center;">
           <p class="section-kicker">Multi-Industry Coverage</p>
           <h2>Supporting the Entire Supply Chain</h2>
-          <p class="section-text" style="max-width:800px; margin:14px auto 0;">From raw material processing floors and sub-zero storage vaults to global container logistics exports.</p>
+          <p class="section-text" style="max-width:800px; margin:14px auto 0;">Photo-led coverage across processing floors, storage, aquaculture, hatchery, export house and logistics operations.</p>
         </div>
         
         <div class="industries-grid">
           <div class="industry-card reveal zoom-in">
-            <i class="fa-solid fa-fish"></i>
-            <h4>Seafood</h4>
+            <h4>Seafood Processing</h4>
+            <p>Gate, purchase, de-heading, grading, peeling, soaking and production.</p>
           </div>
           <div class="industry-card reveal zoom-in">
-            <i class="fa-solid fa-snowflake"></i>
             <h4>Cold Storage</h4>
+            <p>Frozen stock, freezer rooms, holding, aging and dispatch readiness.</p>
           </div>
           <div class="industry-card reveal zoom-in">
-            <i class="fa-solid fa-truck-ramp-box"></i>
+            <h4>Aquaculture</h4>
+            <p>Supplier, pond-side purchase and raw material intake visibility.</p>
+          </div>
+          <div class="industry-card reveal zoom-in">
+            <h4>Export House</h4>
+            <p>Shipment, invoice, packing list, stuffing and supporting documents.</p>
+          </div>
+          <div class="industry-card reveal zoom-in">
+            <h4>Hatchery</h4>
+            <p>Multi-location operations with inventory, staff and finance control.</p>
+          </div>
+          <div class="industry-card reveal zoom-in">
             <h4>Logistics</h4>
+            <p>Container movement, freight bills, LC tracking and delivery support.</p>
           </div>
         </div>
       </div>
@@ -3405,7 +3598,7 @@ input:checked + .slider:before {
     </section>
 
     <!-- 7. CUSTOMER JOURNEY TIMELINE -->
-    <section class="journey-section">
+    <section class="journey-section" id="about">
       <div class="section-inner">
         <div class="section-head text-center" style="margin:0 auto 40px; text-align:center;">
           <p class="section-kicker">Process Steps</p>
@@ -3494,99 +3687,132 @@ input:checked + .slider:before {
 
 
     <!-- 10. COMPLETE APPLICATION FLOW MAP -->
-    <section class="workflow-section reveal fade-up" id="pricing">
+    <section class="workflow-section reveal fade-up" id="solutions">
       <div class="section-inner">
         <div class="section-head text-center" style="margin:0 auto 40px; text-align:center;">
-          <p class="section-kicker">Complete App Flow</p>
-          <h2>BKNR ERP Module Map</h2>
-          <p class="section-text" style="max-width:900px; margin:14px auto 0;">This mirrors the original app menu: dashboards, processing, inventory, export documentation, finance, reports, HRMS, masters, and admin setup.</p>
+          <p class="section-kicker">Complete Operating Flow</p>
+          <h2>BKNR ERP Workflow Atlas</h2>
+          <p class="section-text" style="max-width:960px; margin:14px auto 0;">Each chart explains how real plant work moves through BKNR ERP: communication, production, stock, reports, payroll, bills, accounts, and export documentation.</p>
         </div>
 
         <div class="flow-chain">
-          <div class="flow-chain-step"><strong>1. Setup Masters</strong><span>Business, production, inventory, finance, admin, users, shifts.</span></div>
-          <div class="flow-chain-step"><strong>2. Capture Operations</strong><span>Gate entry to production with floor balance and cost allocation.</span></div>
-          <div class="flow-chain-step"><strong>3. Hold Inventory</strong><span>Stock entry, cold storage holding, pending orders, general store.</span></div>
-          <div class="flow-chain-step"><strong>4. Export Documents</strong><span>Shipment, invoice, packing, stuffing, shipping bill, BL, HC, LC.</span></div>
-          <div class="flow-chain-step"><strong>5. Finance Posting</strong><span>Bills, ledgers, banking, receivables, payments, salary, costing.</span></div>
-          <div class="flow-chain-step"><strong>6. Reports & Dashboards</strong><span>Live dashboards and processing, inventory, costing reports.</span></div>
+          <div class="flow-chain-step"><strong>1. Masters</strong><span>Company, buyer, supplier, species, grades, contractors, freezers, banks, shifts.</span></div>
+          <div class="flow-chain-step"><strong>2. Operations</strong><span>Gate entry to production with live floor balance and batch trace.</span></div>
+          <div class="flow-chain-step"><strong>3. Inventory</strong><span>Stock entry, dispatch, pending orders, cold storage, general stock.</span></div>
+          <div class="flow-chain-step"><strong>4. Reports</strong><span>Required vs available, aging, floor value, processing and batch summaries.</span></div>
+          <div class="flow-chain-step"><strong>5. Finance</strong><span>Auto contractor bills, salary, vendor payments, receivables, Tally-style accounts.</span></div>
+          <div class="flow-chain-step"><strong>6. Export</strong><span>Shipment dossier, invoice, packing list, stuffing, shipping bill, BL, HC, LC.</span></div>
         </div>
 
-        <div class="app-flow-map">
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-chart-simple"></i> Dashboards</div><span class="flow-pillar-count">7 live consoles</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup" style="grid-column:1 / -1;"><h4>Dashboard Suite</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-chart-simple"></i>Processing</span><span class="flow-chip"><i class="fa-solid fa-warehouse"></i>Inventory</span><span class="flow-chip"><i class="fa-solid fa-user-tie"></i>HR & Staff</span><span class="flow-chip"><i class="fa-solid fa-file-export"></i>Export Docs</span><span class="flow-chip"><i class="fa-solid fa-file-invoice-dollar"></i>Costing & Fin</span><span class="flow-chip"><i class="fa-solid fa-wallet"></i>Finance Dashboard</span><span class="flow-chip"><i class="fa-solid fa-chart-pie"></i>Tally Dashboard</span>
-              </div></div>
+        <div class="workflow-atlas">
+          <div class="workflow-card wide">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-industry"></i> Processing Flow: Gate Entry to Production</div>
+                <p class="workflow-card-copy">Gate entry becomes the communication trigger. Vehicle, supplier, batch, and material details are captured once, then auto email alerts keep purchase, production, QC, and management teams informed at the same time.</p>
+              </div>
+              <span class="workflow-badge">Auto Communication</span>
+            </div>
+            <div class="process-line">
+              <div class="flow-node"><i class="fa-solid fa-door-open"></i><strong>Gate Entry</strong><span>Vehicle and supplier arrival captured. Auto email shares arrival details instantly.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-truck-ramp-box"></i><strong>RM Purchasing</strong><span>Batch, species, count, quantity, supplier rate and material boxes are posted.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-scissors"></i><strong>De-heading</strong><span>HOSO is consumed, HLSO is generated, contractor work and yield are tracked.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-filter"></i><strong>Grading</strong><span>Available HLSO queue shows what is ready for grading and what remains.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-hand-dots"></i><strong>Peeling</strong><span>Peeling contractor output, rate, yield, difference and bill base are captured.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-droplet"></i><strong>Soaking</strong><span>Chemical, salt, soaking gain/loss and rejection are logged by batch.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-industry"></i><strong>Production</strong><span>Finished goods are packed by brand, grade, glaze, freezer and production type.</span></div>
             </div>
           </div>
 
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-industry"></i> Operations</div><span class="flow-pillar-count">23 modules</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup"><h4>Processing</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-door-open"></i>Gate Entry</span><span class="flow-chip"><i class="fa-solid fa-truck-ramp-box"></i>RM Purchasing</span><span class="flow-chip"><i class="fa-solid fa-scissors"></i>De-Heading</span><span class="flow-chip"><i class="fa-solid fa-filter"></i>Grading</span><span class="flow-chip"><i class="fa-solid fa-hand-dots"></i>Peeling</span><span class="flow-chip"><i class="fa-solid fa-droplet"></i>Soaking</span><span class="flow-chip"><i class="fa-solid fa-industry"></i>Production</span><span class="flow-chip"><i class="fa-solid fa-coins"></i>Production Cost Allocation</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Inventory</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-boxes-stacked"></i>Stock Entry</span><span class="flow-chip"><i class="fa-solid fa-clock-rotate-left"></i>Pending Orders</span><span class="flow-chip"><i class="fa-solid fa-snowflake"></i>Cold Storage Holding</span><span class="flow-chip"><i class="fa-solid fa-shop"></i>General Store Entry</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Export Documents</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-file-export"></i>Export Dashboard</span><span class="flow-chip"><i class="fa-solid fa-ship"></i>Export Shipments</span><span class="flow-chip"><i class="fa-solid fa-file-invoice"></i>Commercial Invoices</span><span class="flow-chip"><i class="fa-solid fa-file-lines"></i>Packing Lists</span><span class="flow-chip"><i class="fa-solid fa-truck-ramp-box"></i>Container Stuffing</span><span class="flow-chip"><i class="fa-solid fa-clipboard-check"></i>Shipping Bills</span><span class="flow-chip"><i class="fa-solid fa-file-contract"></i>Bills of Lading</span><span class="flow-chip"><i class="fa-solid fa-file-medical"></i>Health Certificates</span><span class="flow-chip"><i class="fa-solid fa-folder-open"></i>Supporting Documents</span><span class="flow-chip"><i class="fa-solid fa-award"></i>Export Incentives</span><span class="flow-chip"><i class="fa-solid fa-file-shield"></i>LC Tracking</span>
-              </div></div>
+          <div class="workflow-card">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-boxes-stacked"></i> Stock Entry & Dispatch Flow</div>
+                <p class="workflow-card-copy">Finished production enters stock. Sales, reprocess, sample, transfer, or shipment dispatch reduce stock with clear batch, freezer and aging trace.</p>
+              </div>
+              <span class="workflow-badge">Stock Out Control</span>
+            </div>
+            <div class="stock-flow-grid">
+              <div class="stock-out-list">
+                <div>Production IN<span>Brand, grade, packing, glaze, freezer, MC and loose quantities enter inventory.</span></div>
+                <div>Order Allocation<span>Pending orders reserve required SKU combinations against current stock.</span></div>
+                <div>Stock OUT<span>Sales dispatch, export shipment, reprocess issue or internal transfer reduces inventory.</span></div>
+                <div>Aging Watch<span>0-30, 31-60 and 60+ stock aging helps dispatch priority decisions.</span></div>
+              </div>
+              <div class="requirement-board">
+                <div class="req-card"><b>Live</b><span>Available stock</span></div>
+                <div class="req-card"><b>Need</b><span>Pending order qty</span></div>
+                <div class="req-card"><b>Gap</b><span>Production required</span></div>
+                <div class="req-card"><b>Hold</b><span>Cold storage stock</span></div>
+                <div class="req-card"><b>Age</b><span>Stock aging</span></div>
+                <div class="req-card"><b>Value</b><span>Floor balance cost</span></div>
+              </div>
             </div>
           </div>
 
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-wallet"></i> Finance</div><span class="flow-pillar-count">21 modules</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup"><h4>Commercial Bills</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-bolt"></i>Electricity Bills</span><span class="flow-chip"><i class="fa-solid fa-gas-pump"></i>Diesel Consumption</span><span class="flow-chip"><i class="fa-solid fa-file-invoice-dollar"></i>Purchase & Packaging</span><span class="flow-chip"><i class="fa-solid fa-truck-fast"></i>Logistics & Freight</span><span class="flow-chip"><i class="fa-solid fa-microscope"></i>QA Testing Charges</span><span class="flow-chip"><i class="fa-solid fa-receipt"></i>Other Expenses</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Accounts & Ledgers</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-folder-open"></i>Ledger Master</span><span class="flow-chip"><i class="fa-solid fa-book"></i>Journal Entries</span><span class="flow-chip"><i class="fa-solid fa-building-columns"></i>Bank Master</span><span class="flow-chip"><i class="fa-solid fa-link"></i>Item Accounting Link</span><span class="flow-chip"><i class="fa-solid fa-building"></i>Fixed Assets</span><span class="flow-chip"><i class="fa-solid fa-percent"></i>GST Register</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Banking, Payables & Costing</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-building-columns"></i>Bank Transactions</span><span class="flow-chip"><i class="fa-solid fa-file-invoice-dollar"></i>Remittance & Receipts</span><span class="flow-chip"><i class="fa-solid fa-hand-holding-dollar"></i>Customer Receivables</span><span class="flow-chip"><i class="fa-solid fa-money-bill-transfer"></i>Vendor Payments</span><span class="flow-chip"><i class="fa-solid fa-receipt"></i>Expense Vouchers</span><span class="flow-chip"><i class="fa-solid fa-award"></i>Export Incentives</span><span class="flow-chip"><i class="fa-solid fa-file-shield"></i>LC Tracking</span><span class="flow-chip"><i class="fa-solid fa-calculator"></i>Salary Processing</span><span class="flow-chip"><i class="fa-solid fa-coins"></i>Production Cost Allocation</span>
-              </div></div>
+          <div class="workflow-card">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-file-lines"></i> Reports & Real-time Requirement View</div>
+                <p class="workflow-card-copy">Reports connect operations, inventory and finance so users know how much is available, how much is required, and where the shortfall is.</p>
+              </div>
+              <span class="workflow-badge">Live Intelligence</span>
+            </div>
+            <div class="insight-loop">
+              <div class="loop-card">Processing reports by batch, count, species and yield</div>
+              <div class="loop-card">Floor balance and stock status by freezer and aging</div>
+              <div class="loop-card">Pending orders show required quantity and exact SKU gap</div>
+              <div class="loop-card">Costing reports link production cost, storage and inventory value</div>
             </div>
           </div>
 
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-file-lines"></i> Reports</div><span class="flow-pillar-count">19 reports</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup"><h4>Processing Reports</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-file-lines"></i>Gate Entry Report</span><span class="flow-chip"><i class="fa-solid fa-file-invoice"></i>RM Purchase Report</span><span class="flow-chip"><i class="fa-solid fa-file-medical"></i>De-Heading Report</span><span class="flow-chip"><i class="fa-solid fa-file-shield"></i>Grading Report</span><span class="flow-chip"><i class="fa-solid fa-file-import"></i>Peeling Report</span><span class="flow-chip"><i class="fa-solid fa-file-word"></i>Soaking Report</span><span class="flow-chip"><i class="fa-solid fa-file-export"></i>Production Report</span><span class="flow-chip"><i class="fa-solid fa-arrows-rotate"></i>Re-Process Report</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Inventory Reports</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-scale-balanced"></i>Floor Balance Report</span><span class="flow-chip"><i class="fa-solid fa-boxes-packing"></i>Stock Status Report</span><span class="flow-chip"><i class="fa-solid fa-clock"></i>Pending Orders Report</span><span class="flow-chip"><i class="fa-solid fa-receipt"></i>Sales Report</span><span class="flow-chip"><i class="fa-solid fa-file-zipper"></i>General Store Report</span><span class="flow-chip"><i class="fa-solid fa-warehouse"></i>Cold Storage Report</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Costing Reports</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-coins"></i>Storage & Cost Report</span><span class="flow-chip"><i class="fa-solid fa-scale-balanced"></i>Floor Balance Value</span><span class="flow-chip"><i class="fa-solid fa-calculator"></i>Inventory Costing</span><span class="flow-chip"><i class="fa-solid fa-calendar-days"></i>Periodic Summary</span><span class="flow-chip"><i class="fa-solid fa-rectangle-list"></i>Batch Summary</span>
-              </div></div>
+          <div class="workflow-card">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-users-gear"></i> Attendance & Payroll Flow</div>
+                <p class="workflow-card-copy">Terminal-friendly attendance entry reduces daily HR effort. Salary, advance deduction, overtime and payroll vouchers are generated from attendance data.</p>
+              </div>
+              <span class="workflow-badge">Auto Payroll</span>
+            </div>
+            <div class="payroll-lane">
+              <div class="lane-step"><b>Staff Register</b><span>Employee profile, department, salary structure and shift mapping.</span></div>
+              <div class="lane-step"><b>Terminal Entry</b><span>Daily attendance can be entered quickly from floor or HR desk.</span></div>
+              <div class="lane-step"><b>Salary Engine</b><span>Attendance, advances, increments, deductions and overtime calculate net pay.</span></div>
+              <div class="lane-step"><b>Payroll Posting</b><span>Salary sheet and salary processing flow to finance records.</span></div>
             </div>
           </div>
 
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-users-gear"></i> HRMS</div><span class="flow-pillar-count">7 modules</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup" style="grid-column:1 / -1;"><h4>Staff, Attendance & Payroll</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-id-card-clip"></i>Staff Registration</span><span class="flow-chip"><i class="fa-solid fa-arrow-trend-up"></i>Increment Details</span><span class="flow-chip"><i class="fa-solid fa-fingerprint"></i>Daily Attendance</span><span class="flow-chip"><i class="fa-solid fa-money-check-dollar"></i>Monthly Salary Sheet</span><span class="flow-chip"><i class="fa-solid fa-file-shield"></i>Payroll Master</span><span class="flow-chip"><i class="fa-solid fa-hand-holding-dollar"></i>Salary Advance</span><span class="flow-chip"><i class="fa-solid fa-calculator"></i>Salary Processing</span>
-              </div></div>
+          <div class="workflow-card">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-wallet"></i> Bills, Payments & Tally-style Accounts</div>
+                <p class="workflow-card-copy">Contractor bills, vendor/supplier payments, receivables and accounting ledgers stay connected to production and procurement activity.</p>
+              </div>
+              <span class="workflow-badge">Aging Reminders</span>
+            </div>
+            <div class="finance-aging">
+              <div class="aging-step"><b>Auto Contractor Bills</b><span>De-heading, peeling and processing bill bases are prepared from actual kg, rate and contractor records.</span></div>
+              <div class="aging-step"><b>Vendor/Supplier Payables</b><span>Purchase, diesel, electricity, QA, logistics and other bills move into payment queues.</span></div>
+              <div class="aging-step"><b>Receivable Aging</b><span>Customer receivable aging and reminders show due amount by invoice age.</span></div>
+              <div class="aging-step"><b>Systematic Accounts</b><span>Ledger master, journal entries, bank transactions and Tally-style accounting reports stay aligned.</span></div>
             </div>
           </div>
 
-          <div class="flow-pillar-card">
-            <div class="flow-pillar-head"><div class="flow-pillar-title"><i class="fa-solid fa-screwdriver-wrench"></i> Masters & Admin</div><span class="flow-pillar-count">34 setup modules</span></div>
-            <div class="flow-subgroup-grid">
-              <div class="flow-subgroup"><h4>Business Masters</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-users"></i>Buyers</span><span class="flow-chip"><i class="fa-solid fa-user-tie"></i>Buyer Agents</span><span class="flow-chip"><i class="fa-solid fa-truck-field"></i>Suppliers</span><span class="flow-chip"><i class="fa-solid fa-store"></i>Vendors</span><span class="flow-chip"><i class="fa-solid fa-globe"></i>Countries</span><span class="flow-chip"><i class="fa-solid fa-building"></i>Brands</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Production Masters</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-fish"></i>Species</span><span class="flow-chip"><i class="fa-solid fa-seedling"></i>Varieties</span><span class="flow-chip"><i class="fa-solid fa-medal"></i>Grades</span><span class="flow-chip"><i class="fa-solid fa-snowflake"></i>Freezers</span><span class="flow-chip"><i class="fa-solid fa-igloo"></i>Glazes</span><span class="flow-chip"><i class="fa-solid fa-box"></i>Packing Styles</span><span class="flow-chip"><i class="fa-solid fa-hard-hat"></i>Contractors</span><span class="flow-chip"><i class="fa-solid fa-map-pin"></i>Peeling At</span><span class="flow-chip"><i class="fa-solid fa-money-bill"></i>Peeling Rates</span><span class="flow-chip"><i class="fa-solid fa-industry"></i>Production At</span><span class="flow-chip"><i class="fa-solid fa-building-flag"></i>Production For</span><span class="flow-chip"><i class="fa-solid fa-tags"></i>Production Types</span><span class="flow-chip"><i class="fa-solid fa-flask"></i>Chemicals</span><span class="flow-chip"><i class="fa-solid fa-bullseye"></i>Purposes</span><span class="flow-chip"><i class="fa-solid fa-exchange-alt"></i>Grade to HOSO</span><span class="flow-chip"><i class="fa-solid fa-ruler-combined"></i>HOSO & HLSO</span>
-              </div></div>
-              <div class="flow-subgroup"><h4>Inventory, Finance & Admin</h4><div class="flow-chip-list">
-                <span class="flow-chip"><i class="fa-solid fa-igloo"></i>Cold Storage Master</span><span class="flow-chip"><i class="fa-solid fa-map-location-dot"></i>Coldstore Locations</span><span class="flow-chip"><i class="fa-solid fa-truck"></i>Vehicle Numbers</span><span class="flow-chip"><i class="fa-solid fa-barcode"></i>HSN Codes</span><span class="flow-chip"><i class="fa-solid fa-university"></i>Bank Master</span><span class="flow-chip"><i class="fa-solid fa-link"></i>Item Accounting Link</span><span class="flow-chip"><i class="fa-solid fa-building"></i>Fixed Assets</span><span class="flow-chip"><i class="fa-solid fa-percent"></i>GST Register</span><span class="flow-chip"><i class="fa-solid fa-cubes"></i>General Store Items</span><span class="flow-chip"><i class="fa-solid fa-user-gear"></i>User Configuration</span><span class="flow-chip"><i class="fa-solid fa-business-time"></i>Shifts</span><span class="flow-chip"><i class="fa-solid fa-database"></i>Data Management</span>
-              </div></div>
+          <div class="workflow-card wide">
+            <div class="workflow-card-head">
+              <div>
+                <div class="workflow-card-title"><i class="fa-solid fa-file-export"></i> Advanced Export Document Flow</div>
+                <p class="workflow-card-copy">Export operations use one shipment record to prepare and track the complete document set needed by commercial, logistics and compliance teams.</p>
+              </div>
+              <span class="workflow-badge">Export Dossier</span>
+            </div>
+            <div class="document-line">
+              <div class="flow-node"><i class="fa-solid fa-ship"></i><strong>Export Shipment</strong><span>Buyer, container, vessel, destination and shipment references.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-file-invoice"></i><strong>Commercial Invoice</strong><span>Invoice values, buyer terms, currency and product lines.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-file-lines"></i><strong>Packing List</strong><span>Cartons, net weight, gross weight, grade and packing details.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-truck-ramp-box"></i><strong>Container Stuffing</strong><span>Container loading, seal, pallet and cold chain records.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-clipboard-check"></i><strong>Shipping Docs</strong><span>Shipping bill, bill of lading and health certificate tracking.</span></div>
+              <div class="flow-node"><i class="fa-solid fa-folder-open"></i><strong>Supporting Files</strong><span>LC tracking, export incentives and uploaded document archive.</span></div>
             </div>
           </div>
         </div>
@@ -3645,7 +3871,7 @@ input:checked + .slider:before {
     </section>
 
     <!-- 12. DOCK CONTACT SECTION WITH MOCK MAP -->
-    <section class="contact-section">
+    <section class="contact-section" id="contact">
       <div class="section-inner">
         <div class="section-head text-center" style="margin:0 auto 40px; text-align:center;">
           <p class="section-kicker">Get In Touch</p>
@@ -3671,10 +3897,14 @@ input:checked + .slider:before {
           </div>
 
           <div class="contact-form">
-            <h3 style="font-size:1.1rem; font-weight:850; margin-bottom:6px;">Book a Live Demo Session</h3>
-            <div class="form-group"><label>Your Full Name</label><input type="text" placeholder="G. Nagaraju" required></div>
-            <div class="form-group"><label>Company Email</label><input type="email" placeholder="corporate@domain.com" required></div>
-            <button class="btn-action-primary" onclick="confirmDemoBooking()">Confirm Session Reservation</button>
+            <h3 style="font-size:1.1rem; font-weight:850; margin-bottom:6px;">Request Enterprise Access</h3>
+            <div class="form-group"><label>Company Name</label><input type="text" placeholder="Your seafood company" required></div>
+            <div class="form-group"><label>Contact Person</label><input type="text" placeholder="Full name" required></div>
+            <div class="form-group"><label>Email</label><input type="email" placeholder="name@company.com" required></div>
+            <div class="form-group"><label>Country</label><input type="text" placeholder="India" required></div>
+            <div class="form-group"><label>Business Type</label><select required><option value="">Select business type</option><option>Seafood Processing</option><option>Cold Storage</option><option>Aquaculture</option><option>Export House</option><option>Hatchery</option><option>Logistics</option></select></div>
+            <div class="form-group"><label>Message</label><textarea placeholder="Tell us about your plant, stock, finance or export workflow"></textarea></div>
+            <button class="btn-action-primary" onclick="confirmDemoBooking()">Schedule a Live Demo</button>
           </div>
         </div>
       </div>
@@ -3684,10 +3914,11 @@ input:checked + .slider:before {
     <section class="cta-band">
       <div class="cta-band-inner">
         <h2>Bring Rigorous Control to Your Seafood Business</h2>
-        <p>Start your free trial today. Configure your species, grades, freezers, and ledgers in minutes.</p>
+        <p>Book a focused enterprise consultation and see procurement, production, stock, accounts and exports in one operating flow.</p>
         <div class="cta-band-actions">
-          <a class="primary-link" href="/auth/register" style="background:#fff; color:#082f57;">Start Free Trial</a>
-          <a class="secondary-link" onclick="contactSales()">Request Live Demo</a>
+          <a class="primary-link" onclick="contactSales()" style="background:#fff; color:#082f57;">Schedule a Live Demo</a>
+          <a class="secondary-link" href="#switcher">Explore the Platform</a>
+          <a class="secondary-link" href="/auth/register">Request Enterprise Access</a>
         </div>
       </div>
     </section>
@@ -3709,36 +3940,37 @@ input:checked + .slider:before {
       <div class="footer-column">
         <h4>Product</h4>
         <ul class="footer-links">
-          <li><a href="#switcher">Module Switcher</a></li>
-          <li><a href="#ai-intelligence">AI Intelligence</a></li>
-          <li><a href="#comparison">Feature Matrix</a></li>
-          <li><a href="#pricing">Licensing Plans</a></li>
+          <li><a href="#top">Platform</a></li>
+          <li><a href="#solutions">Solutions</a></li>
+          <li><a href="#switcher">Features</a></li>
+          <li><a href="#security">Security</a></li>
         </ul>
       </div>
       <div class="footer-column">
         <h4>Resources</h4>
         <ul class="footer-links">
           <li><a href="/documentation">Documentation</a></li>
+          <li><a href="/documentation">API Documentation</a></li>
           <li><a href="/status">System Status</a></li>
-          <li><a href="/api-docs">Developer APIs</a></li>
-          <li><a onclick="notImplemented('Audit Guide')">Audit Guide</a></li>
+          <li><a href="#solutions">Workflow Diagrams</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h4>Company</h4>
+        <h4>Legal</h4>
         <ul class="footer-links">
-          <li><a href="/blog">Blog News</a></li>
-          <li><a href="/careers">Careers</a></li>
           <li><a href="/privacy">Privacy Policy</a></li>
           <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/cookies">Cookie Policy</a></li>
+          <li><a href="#security">Security</a></li>
         </ul>
       </div>
       <div class="footer-column">
-        <h4>Support</h4>
+        <h4>Access</h4>
         <ul class="footer-links">
-          <li><a href="#faq">FAQ Help</a></li>
-          <li><a onclick="notImplemented('Contact Support')">Contact Support</a></li>
-          <li><a href="/cookies">Cookie Policy</a></li>
+          <li><a onclick="contactSales()">Book Demo</a></li>
+          <li><a href="/auth/register">Request Access</a></li>
+          <li><a href="#contact">Enterprise Consultation</a></li>
+          <li><a href="/auth/login">Login Portal</a></li>
         </ul>
       </div>
     </div>
@@ -3791,7 +4023,7 @@ input:checked + .slider:before {
 
 <!-- 15. FLOATING ACTIONS -->
 <div class="floating-actions">
-  <a class="floating-btn demo" onclick="contactSales()" title="Book Demo"><i class="fa-solid fa-calendar-days"></i></a>
+  <a class="floating-btn demo" onclick="contactSales()" title="Schedule a Live Demo"><i class="fa-solid fa-calendar-days"></i></a>
 </div>
 
 <script>
@@ -3851,13 +4083,13 @@ function toggleFaq(questionEl) {
 // General Actions
 function contactSales() {
     Swal.fire({
-        title: "Contact Sales Desk",
+        title: "Schedule a Live Demo",
         html: `<div style="text-align:left; font-size:14px; color:var(--text); line-height:1.5;">
-                 To arrange a secure multi-unit trial or book an assessment session, contact our engineering desk:<br><br>
+                 To book a platform walkthrough, request enterprise access or arrange an operations consultation, contact our engineering desk:<br><br>
                  <b>Email:</b> bknr.solutions@gmail.com
                </div>`,
         icon: "info",
-        confirmButtonText: "Close Window",
+        confirmButtonText: "Close",
         confirmButtonColor: "#3b82f6"
     });
 }

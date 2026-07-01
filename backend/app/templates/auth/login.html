@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <title>Sign In - BKNR ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -52,7 +47,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -114,6 +109,11 @@ body::after {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
   transition: all 0.2s;
+}
+
+.back-home-btn::before {
+  content: "<";
+  font-weight: 900;
 }
 
 .back-home-btn:hover {
@@ -270,6 +270,22 @@ button[type="submit"]:hover {
   box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
 }
 
+.btn-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .links-row {
   margin-top: 20px;
   color: var(--text-muted);
@@ -310,11 +326,138 @@ button[type="submit"]:hover {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
+
+@media (max-width: 600px) {
+  body {
+    align-items: flex-start;
+    min-height: 100svh;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  body::before,
+  body::after {
+    width: 70%;
+    height: 42%;
+    opacity: 0.7;
+  }
+
+  .auth-container {
+    max-width: 100%;
+    margin-top: 4px;
+  }
+
+  .back-home-btn {
+    margin-bottom: 8px;
+    padding: 5px 9px;
+    font-size: 0.72rem;
+    border-radius: 14px;
+  }
+
+  .auth-card {
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  .auth-header {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    gap: 10px;
+  }
+
+  .auth-header-copy strong {
+    font-size: 0.98rem;
+  }
+
+  .auth-header-copy span {
+    margin-top: 1px;
+    font-size: 0.68rem;
+  }
+
+  .brand-badge {
+    padding: 4px 7px;
+    font-size: 0.58rem;
+    letter-spacing: 0.3px;
+  }
+
+  h2 {
+    margin-bottom: 12px;
+    font-size: 1.08rem;
+  }
+
+  .form-group {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  label {
+    font-size: 0.66rem;
+    letter-spacing: 0.35px;
+  }
+
+  input {
+    min-height: 36px;
+    padding: 8px 11px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+  }
+
+  .password-field input {
+    padding-right: 60px;
+  }
+
+  .password-toggle {
+    right: 6px;
+    width: 48px;
+    min-height: 24px;
+    font-size: 0.62rem;
+  }
+
+  button[type="submit"] {
+    min-height: 38px;
+    margin-top: 6px;
+    padding: 9px 14px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+  }
+
+  .links-row {
+    margin-top: 12px;
+    padding-top: 10px;
+    font-size: 0.72rem;
+  }
+
+  .msg {
+    margin-top: 10px;
+    padding: 9px;
+    font-size: 0.74rem;
+  }
+}
+
+@media (max-width: 380px) {
+  body {
+    padding: 8px;
+  }
+
+  .auth-card {
+    padding: 14px;
+  }
+
+  .auth-header {
+    align-items: flex-start;
+  }
+
+  .links-row {
+    gap: 8px;
+    font-size: 0.68rem;
+  }
+}
 </style>
 </head>
 <body>
 <div class="auth-container">
-  <a class="back-home-btn" href="/"><i class="fa-solid fa-arrow-left"></i> Back to Homepage</a>
+  <a class="back-home-btn" href="/">Back to Homepage</a>
   
   <div class="auth-card">
     <div class="auth-header">
@@ -374,7 +517,7 @@ async function doLogin(event) {
   loginErr.style.display = "none";
 
   const originalText = btn.innerHTML;
-  btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Authenticating...";
+  btn.innerHTML = "<span class='btn-spinner'></span>Authenticating...";
   btn.disabled = true;
 
   try {

@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.database import SessionLocal
 from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
@@ -115,7 +116,8 @@ def start_snapshot_scheduler():
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         email = request.session.get("email") if hasattr(request, "session") else "NO_SESSION"
-        print(f"PATH= {request.url.path} EMAIL= {email}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("PATH=%s EMAIL=%s", request.url.path, email)
 
         path = request.url.path
 
@@ -136,6 +138,22 @@ class AuthMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400:
             invalidate_live_company_caches(company_code)
+        return response
+
+
+class PerformanceHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+
+        if path.startswith("/static/"):
+            response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        elif request.method == "GET" and "text/html" in response.headers.get("content-type", ""):
+            response.headers.setdefault("Cache-Control", "no-cache")
+
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         return response
 
 
@@ -163,6 +181,9 @@ application.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+application.add_middleware(GZipMiddleware, minimum_size=1000)
+application.add_middleware(PerformanceHeadersMiddleware)
 
 
 @application.on_event("startup")

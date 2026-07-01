@@ -1,6 +1,5 @@
-const CACHE_NAME = "bknr-erp-v6";
+const CACHE_NAME = "bknr-erp-v7";
 const ASSETS = [
-  "/",
   "/static/icon-192.png",
   "/static/icon-512.png",
   "/static/screenshot.png",
@@ -25,7 +24,29 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (url.pathname.startsWith("/static/")) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
