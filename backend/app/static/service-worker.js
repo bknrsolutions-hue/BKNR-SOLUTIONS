@@ -1,4 +1,4 @@
-const CACHE_NAME = "bknr-erp-v7";
+const CACHE_NAME = "bknr-erp-v8";
 const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",
@@ -9,18 +9,31 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.addAll(ASSETS);
+      } catch (error) {
+        // CacheStorage can fail in private/corrupt browser profiles; the app must still load.
+        console.warn("Service worker cache install skipped.", error);
+      }
+      await self.skipWaiting();
+    })()
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
-    })
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)));
+      } catch (error) {
+        console.warn("Service worker cache cleanup skipped.", error);
+      }
+      await self.clients.claim();
+    })()
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -35,18 +48,40 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+      (async () => {
+        try {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+
+          const response = await fetch(event.request);
+          if (response && response.ok) {
+            try {
+              const cache = await caches.open(CACHE_NAME);
+              await cache.put(event.request, response.clone());
+            } catch (error) {
+              console.warn("Service worker static cache write skipped.", error);
+            }
+          }
           return response;
-        });
-      })
+        } catch (error) {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          throw error;
+        }
+      })()
     );
     return;
   }
 
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(async () => {
+      try {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+      } catch (error) {
+        console.warn("Service worker fallback lookup skipped.", error);
+      }
+      throw new Error("Network request failed and no cached response was available.");
+    })
   );
 });

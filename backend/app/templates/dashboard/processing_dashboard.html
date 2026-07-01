@@ -594,11 +594,19 @@
         } 
     };
 
-    BKNRCharts.create(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
-    BKNRCharts.create(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
-    BKNRCharts.create(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
+    function initProcessingCharts() {
+        if (!window.BKNRCharts) {
+            console.warn("BKNR chart engine is not ready yet.");
+            return;
+        }
+
+        BKNRCharts.create(document.getElementById("dhChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ dh_hourly_data if dh_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
+        BKNRCharts.create(document.getElementById("peelingChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ peeling_hourly_data if peeling_hourly_data else '[]' }}, backgroundColor: '#10b981', borderRadius: 4 }] }, options: chartOptions });
+        BKNRCharts.create(document.getElementById("prodChart"), { type: 'bar', data: { labels: hours, datasets: [{ data: {{ prod_hourly_data if prod_hourly_data else '[]' }}, backgroundColor: '#2563eb', borderRadius: 4 }] }, options: chartOptions });
+    }
 
     window.addEventListener("DOMContentLoaded", () => {
+        initProcessingCharts();
         syncIframeAndListenToParentHeader();
         adjustFloorIframeHeightToWindowEnd(); 
     });

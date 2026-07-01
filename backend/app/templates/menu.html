@@ -2209,7 +2209,9 @@ window.onload = () => {
 };
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/service-worker.js");
+  navigator.serviceWorker
+    .register("/static/service-worker.js")
+    .catch((error) => console.warn("Service worker registration skipped.", error));
 }
 </script>
 <script defer src="/static/js/global-loader.js"></script>
