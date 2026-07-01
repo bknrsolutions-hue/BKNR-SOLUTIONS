@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -121,7 +121,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        exact_paths = ["/", "/health", "/docs", "/openapi.json"]
+        exact_paths = ["/", "/health", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
         prefix_paths = ["/auth/", "/static/", "/create-all"]
 
         # PUBLIC URLS BYPASS
@@ -290,6 +290,36 @@ async def login_page(request: Request):
         request=request,
         name="login.html",
         context={"request": request}
+    )
+
+
+@application.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    return "\n".join([
+        "User-agent: *",
+        "Allow: /",
+        "",
+        "Sitemap: https://bknrerp.in/sitemap.xml",
+    ])
+
+
+@application.get("/sitemap.xml")
+async def sitemap_xml():
+    urls = [
+        "https://bknrerp.in/",
+        "https://bknrerp.in/privacy",
+        "https://bknrerp.in/terms",
+        "https://bknrerp.in/cookies",
+        "https://bknrerp.in/documentation",
+        "https://bknrerp.in/status",
+    ]
+    items = "".join(
+        f"<url><loc>{url}</loc><changefreq>weekly</changefreq><priority>{'1.0' if url.endswith('/') else '0.7'}</priority></url>"
+        for url in urls
+    )
+    return Response(
+        content=f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{items}</urlset>',
+        media_type="application/xml",
     )
 
 
