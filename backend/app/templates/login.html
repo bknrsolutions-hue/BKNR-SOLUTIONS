@@ -110,6 +110,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,6 +126,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  min-width: 218px;
   text-decoration: none;
   color: var(--text);
 }
@@ -164,6 +166,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 38px;
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -237,7 +240,7 @@ body {
   align-items: center;
   padding: 80px clamp(18px, 4vw, 56px);
   max-width: 1440px;
-  min-height: calc(100svh - 76px);
+  min-height: 100vh;
   margin: 0 auto;
 }
 
@@ -315,6 +318,8 @@ body {
 
 .hero-visual {
   width: 100%;
+  min-height: 430px;
+  contain: layout paint;
 }
 
 .browser-mockup {
@@ -323,6 +328,8 @@ body {
   background: var(--card-bg);
   box-shadow: var(--shadow);
   overflow: hidden;
+  min-height: 430px;
+  aspect-ratio: 16 / 10;
 }
 
 .browser-header {
@@ -354,6 +361,10 @@ body {
   color: var(--text-muted);
   font-size: 0.74rem;
   font-weight: 700;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 210px;
+  white-space: nowrap;
 }
 
 .simulated-video {
@@ -514,6 +525,10 @@ body {
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.performance-card {
+  min-height: 118px;
 }
 
 .trust-badge i,
@@ -1478,6 +1493,7 @@ button.btn-action-primary:hover {
     align-items: flex-start;
     flex-direction: column;
     gap: 16px;
+    min-height: 164px;
   }
   .nav-links {
     width: 100%;
@@ -1488,6 +1504,15 @@ button.btn-action-primary:hover {
   .nav-actions {
     width: 100%;
     justify-content: space-between;
+  }
+  .hero {
+    min-height: auto;
+    padding-top: 44px;
+  }
+  .hero-visual,
+  .browser-mockup {
+    min-height: 480px;
+    aspect-ratio: auto;
   }
   .kpis-grid, .industries-grid, .transformation-grid, .journey-timeline, .security-grid, .footer-grid {
     grid-template-columns: 1fr;
@@ -1515,7 +1540,7 @@ button.btn-action-primary:hover {
 /* --- SCROLL ANIMATIONS --- */
 .reveal {
   opacity: 0;
-  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
 }
 .reveal.active {
@@ -1541,23 +1566,28 @@ button.btn-action-primary:hover {
 }
 .hero-tabs {
   display: flex;
+  min-height: 45px;
   background: rgba(0,0,0,0.3);
   border-bottom: 1px solid var(--border);
   padding: 8px 12px 0;
   gap: 4px;
 }
 .hero-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 8px 16px;
+  padding: 8px 10px;
   font-size: 0.8rem;
   font-weight: 700;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
   border: 1px solid transparent;
   border-bottom: none;
+  white-space: nowrap;
 }
 .hero-tab:hover {
   color: var(--text);
@@ -1572,19 +1602,21 @@ button.btn-action-primary:hover {
 }
 .hero-viewport {
   position: relative;
-  height: 380px;
+  height: 384px;
+  min-height: 384px;
   overflow: hidden;
 }
 .hero-panel {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  display: none;
+  display: flex;
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   flex-direction: column;
 }
 .hero-panel.active {
-  display: flex;
+  visibility: visible;
   opacity: 1;
   pointer-events: auto;
 }
@@ -1747,7 +1779,8 @@ button.btn-action-primary:hover {
 }
 .industry-card {
   position: relative;
-  height: 200px;
+  min-height: 220px;
+  aspect-ratio: 4 / 3;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -1756,7 +1789,7 @@ button.btn-action-primary:hover {
   justify-content: flex-end;
   padding: 24px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
   box-shadow: 0 10px 20px rgba(0,0,0,0.15);
 }
 .industry-card::before {
@@ -1824,12 +1857,7 @@ button.btn-action-primary:hover {
   overflow: hidden;
 }
 .ai-highlight-section::after {
-  content: '';
-  position: absolute;
-  top: -20%; left: 50%; width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0) 70%);
-  z-index: 1;
-  pointer-events: none;
+  content: none;
 }
 .ai-grid {
   max-width: 1200px;
@@ -1870,7 +1898,7 @@ button.btn-action-primary:hover {
   font-weight: 700;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
 }
 .ai-tab-btn.active {
   background: #8b5cf6;
@@ -2696,7 +2724,6 @@ button.btn-action-primary:hover {
   color: #f59e0b;
   font-size: 1.1rem;
   font-weight: bold;
-  animation: translate-x 1.2s infinite;
   display: inline-block;
 }
 
@@ -3513,7 +3540,7 @@ button.btn-action-primary:hover {
           <div class="ai-widget">
             <div class="ai-widget-header">
               <span style="color:#fff; font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-terminal" style="color:#c084fc; margin-right:6px;"></i> Live Forecast Engine</span>
-              <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle" style="animation: status-pulse 1s infinite; font-size:0.5rem; margin-right:4px;"></i> AI MODEL ACTIVE</span>
+              <span style="font-size:0.7rem; color:var(--success); font-weight:800;"><i class="fa-solid fa-circle" style="font-size:0.5rem; margin-right:4px;"></i> AI MODEL ACTIVE</span>
             </div>
             
             <div class="ai-tab-btns">
@@ -4093,23 +4120,8 @@ async function confirmDemoBooking() {
 
 // 🟢 HERO TAB SELECTION
 let activeHeroTab = 0;
-let heroAutoPlayInterval = null;
-
-window.addEventListener('load', () => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  window.setTimeout(() => {
-    heroAutoPlayInterval = setInterval(cycleHeroTabs, 6000);
-  }, 12000);
-});
-
-function cycleHeroTabs() {
-  activeHeroTab = (activeHeroTab + 1) % 4;
-  updateHeroPanels();
-}
 
 function setHeroPanel(index) {
-  // Clear autoplay interval upon manual click
-  if (heroAutoPlayInterval) clearInterval(heroAutoPlayInterval);
   activeHeroTab = index;
   updateHeroPanels();
 }
