@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Inventory Analysis | {{ company_name or 'COMPANY' }} ERP</title>
-<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
 <script>
     function syncTheme() {
@@ -108,8 +108,7 @@
         --stat-group-border: #334155;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-    .fa, .fa-solid, .fas { display: inline-flex; width: 1.1em; min-width: 1.1em; justify-content: center; line-height: 1; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     
     body { 
         background-color: var(--bg-main); 
@@ -329,10 +328,8 @@
 
     @media print { .header, .table-container, .control-bar, .nav-tabs { display: none !important; } body{background:var(--card-bg); padding:0;} }
 </style>
-<link rel="preload" href="/static/css/global-loader.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/static/css/global-loader.min.css"></noscript>
-<link rel="preload" href="/static/css/bknr-standard.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/static/css/bknr-standard.min.css"></noscript>
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 </head>
 <body>
 
@@ -521,7 +518,7 @@
         if (val) {
             url.searchParams.set('fy', val);
         } else {
-            url.searchParams.set('fy', 'all');
+            url.searchParams.delete('fy');
         }
         window.location.href = url.toString();
     }
@@ -634,7 +631,7 @@
 
         let totalMatchingRows = 0;
         rows.forEach(r => {
-            const txt = r.dataset.search || "";
+            const txt = r.innerText.toLowerCase();
             const rProdFor = r.getAttribute('data-prodfor') || "";
             const rProdAt = r.getAttribute('data-prodat') || "";
             
@@ -649,7 +646,7 @@
         let currentSlNo = totalMatchingRows;
 
         rows.forEach(r => {
-            const txt = r.dataset.search || "";
+            const txt = r.innerText.toLowerCase();
             const rProdFor = r.getAttribute('data-prodfor') || "";
             const rProdAt = r.getAttribute('data-prodat') || "";
             const rSpecies = r.getAttribute('data-species');
@@ -801,13 +798,10 @@
     document.addEventListener("DOMContentLoaded", function() {
         // 🟢 STRICT INITIAL SYNC - NO LOOPS
         syncParentScreenFilters();
-        document.querySelectorAll("#masterTbody tr").forEach(row => {
-            row.dataset.search = row.textContent.toLowerCase();
-        });
         populateDashboardFilters();
         applyFilters();
     });
 </script>
-<script defer src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js"></script>
 </body>
 </html>

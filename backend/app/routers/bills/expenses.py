@@ -16,79 +16,6 @@ from app.database import get_db
 from app.database.models.bills import OtherExpense
 from app.database.models.processing import AuditLog
 from app.database.models.criteria import production_at
-from app.services.posting_engine import PostingEngineService
-from app.database.models.enterprise_finance import VoucherHeader
-from app.routers.bills.purchase import cancel_linked_voucher
-
-def post_expense_voucher_to_ledger(db: Session, company_id: str, entry: OtherExpense, location_name: str, payload_gst_per: float, email: str) -> int:
-    try:
-        gst_percent = float(payload_gst_per or 0.0)
-        if gst_percent > 0:
-            base_amount = round(entry.amount / (1 + gst_percent / 100), 2)
-            gst_amount = round(entry.amount - base_amount, 2)
-        else:
-            base_amount = entry.amount
-            gst_amount = 0.0
-
-        # Debit: Expense Account (Category specific), Debit: Input GST, Credit: Cash-in-hand
-        details = [
-            {
-                "ledger_name": f"{entry.category} Expense A/c",
-                "group_name": "Indirect Expenses",
-                "group_type": "EXPENSE",
-                "debit_amount": base_amount,
-                "credit_amount": 0.0,
-                "remarks": f"Other Expense - Unit: {location_name}, Category: {entry.category}"
-            }
-        ]
-
-        if gst_amount > 0:
-            details.append({
-                "ledger_name": "Input GST A/c",
-                "group_name": "Duties & Taxes",
-                "group_type": "LIABILITY",
-                "parent_group_name": "Current Liabilities",
-                "debit_amount": gst_amount,
-                "credit_amount": 0.0,
-                "remarks": "Input GST on expense"
-            })
-
-        # Credit Cash/Bank
-        details.append({
-            "ledger_name": "Cash-in-hand",
-            "group_name": "Cash-in-hand",
-            "group_type": "ASSET",
-            "parent_group_name": "Current Assets",
-            "debit_amount": 0.0,
-            "credit_amount": entry.amount,
-            "remarks": f"Expense payment for category {entry.category}"
-        })
-
-        voucher = PostingEngineService.create_voucher(
-            db=db,
-            company_id=company_id,
-            voucher_type_name="Payment",
-            voucher_date=entry.date,
-            narration=f"Expense booking for {entry.category} at unit {location_name}",
-            details=details,
-            reference_no=f"EXP-{entry.id}",
-            created_by=email or "SYSTEM",
-            status="POSTED"
-        )
-
-        expense_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, f"{entry.category} Expense A/c", "Indirect Expenses", "EXPENSE"
-        )
-        cash_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, "Cash-in-hand", "Cash-in-hand", "ASSET", "Current Assets"
-        )
-        entry.expense_ledger_id = expense_ledger.id
-        entry.cash_or_bank_ledger_id = cash_ledger.id
-
-        return voucher.id
-    except Exception as e:
-        logger.error(f"Failed to post expense log to ledger: {str(e)}")
-        raise e
 
 router = APIRouter(
     prefix="/expenses",
@@ -235,21 +162,6 @@ async def save_expense(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
-        # Auto-post to accounting ledger
-        unit_info = db.query(production_at).filter(production_at.id == payload.production_at_id).first()
-        loc_name = unit_info.production_at if unit_info else f"Unit {payload.production_at_id}"
-        
-        journal_id = post_expense_voucher_to_ledger(
-            db=db,
-            company_id=company_code,
-            entry=new_entry,
-            location_name=loc_name,
-            payload_gst_per=payload.gst_per,
-            email=email
-        )
-        new_entry.journal_id = journal_id
-        new_entry.status = 'POSTED'
-
         db.commit()
         return JSONResponse({"success": True, "message": "Expense transaction logged successfully!"})
     except Exception as e:
@@ -304,10 +216,6 @@ def delete_expense(expense_id: int, request: Request, db: Session = Depends(get_
 
     if entry:
         try:
-            if entry.journal_id:
-                cancel_linked_voucher(db, company_code, entry.journal_id, email)
-                db.flush()
-
             db.add(AuditLog(
                 table_name="other_expenses", record_id=entry.id, company_id=company_code,
                 field_name="DELETE", old_value=f"Category: {entry.category}", new_value="DELETED",

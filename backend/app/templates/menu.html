@@ -3,24 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <title>{{ request.session.get('company_name', 'Enterprise ERP') }} - Workspace</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="BKNR ERP is an AI-powered Cloud ERP for Seafood Processing, Manufacturing, Inventory, Finance, HR, CRM and Export Management.">
-<meta name="keywords" content="ERP, Seafood ERP, Manufacturing ERP, Inventory ERP, Finance ERP, Export ERP, Cloud ERP">
-<meta name="robots" content="index,follow">
-<link rel="canonical" href="https://bknrerp.in/home">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="company-name" content="{{ request.session.get('company_name', 'BKNR ERP') }}">
+<meta name="robots" content="noindex,nofollow">
 
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0f172a">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css"></noscript>
-<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'BKNR ERP')|tojson }};
@@ -36,8 +34,8 @@
     --glass-bg: rgba(6, 9, 19, 0.95); 
     
     --text-primary: #ffffff;       
-    --text-secondary: #cbd5e1;     
-    --text-tertiary: #94a3b8;      
+    --text-secondary: #94a3b8;     
+    --text-tertiary: #64748b;      
     
     --border-light: rgba(255, 255, 255, 0.08); 
     --border-highlight: rgba(255, 255, 255, 0.15);
@@ -67,8 +65,8 @@
     --glass-bg: #ffffff; 
     
     --text-primary: #0f172a;       
-    --text-secondary: #334155;     
-    --text-tertiary: #475569;      
+    --text-secondary: #475569;     
+    --text-tertiary: #94a3b8;      
     
     --border-light: rgba(0, 0, 0, 0.08);
     --border-highlight: rgba(255, 255, 255, 0.8);
@@ -80,7 +78,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-app);
     color: var(--text-primary);
     display: flex; height: 100vh; overflow: hidden;
@@ -303,29 +301,24 @@ body {
 .footer-quote { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; font-weight: 600;}
 .footer-powered { font-size: 10px; font-weight: 800; color: var(--text-primary); letter-spacing: 0.5px; }
 .profile-logout-section {
-    margin-top: 16px;
+    margin-top: 12px;
     border-top: 1px solid var(--border-light);
-    padding-top: 16px;
-    padding-bottom: 6px;
+    padding-top: 12px;
+    padding-bottom: 14px;
 }
 
 /* =========================================================
    🌟 HEADER & BREADCRUMB
 ========================================================= */
-.app-container {
-    flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden;
-    height: 100vh; min-height: 100vh; padding: 12px; gap: 8px;
-    position: relative; z-index: 10; width: 100%; min-width: 0; margin-left: 0;
-    contain: layout paint;
-}
+.app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; gap: 8px; position: relative; z-index: 10; width: 100%; margin-left: 0; }
 
 .app-header {
-    height: var(--header-h); min-height: var(--header-h); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+    height: var(--header-h); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
     display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
     border-radius: var(--radius-panel); box-shadow: var(--shadow-soft); border: 1px solid var(--border-light); flex-shrink: 0; z-index: 1000;
 }
 
-.header-left-meta { display: flex; align-items: center; gap: 12px; min-width: 0; height: 100%; }
+.header-left-meta { display: flex; align-items: center; gap: 12px; }
 
 .hamburger-trigger-btn, .header-home-btn {
     display: flex; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light); color: var(--text-primary);
@@ -335,8 +328,8 @@ body {
 .hamburger-trigger-btn:hover, .header-home-btn:hover { background: var(--border-light); }
 
 .mobile-top-menu-btn {
-    display: none; background: #1d4ed8; border: 1px solid #1d4ed8; color: #ffffff;
-    border-radius: var(--radius-element); padding: 0 14px; min-width: 66px; height: 36px; font-size: 12px; font-weight: 800; letter-spacing: 1px; cursor: pointer; align-items: center; justify-content: center; transition: background-color 0.2s, border-color 0.2s;
+    display: none; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light); color: var(--corp-dash);
+    border-radius: var(--radius-element); padding: 0 14px; height: 36px; font-size: 12px; font-weight: 800; letter-spacing: 1px; cursor: pointer; align-items: center; justify-content: center; transition: 0.2s;
 }
 
 .header-brand-title-box { border-left: 3px solid var(--corp-ops); padding-left: 12px; margin-left: 8px; display: flex; flex-direction: column; justify-content: center; }
@@ -346,7 +339,6 @@ body {
 /* 🌟 GLOBAL SEARCH 🌟 */
 .global-search-container {
     flex: 1; max-width: 450px; margin: 0 24px; position: relative; display: flex; align-items: center;
-    border: 0; background: transparent; font-family: inherit; text-align: left;
 }
 .global-search-container input {
     width: 100%; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light);
@@ -373,7 +365,6 @@ body {
 /* 🌟 CORPORATE USER PROFILE 🌟 */
 .corp-profile-btn { 
     background: transparent; display: flex; align-items: center; gap: 10px; padding: 4px 8px; border-radius: var(--radius-element); cursor: pointer; transition: 0.2s; border: 1px solid transparent;
-    color: var(--text-primary); font-family: inherit;
 }
 .corp-profile-btn:hover, .corp-profile-btn.active { background: rgba(255,255,255,0.05); border-color: var(--border-light); }
 [data-theme="light"] .corp-profile-btn:hover { background: rgba(0,0,0,0.03); }
@@ -385,11 +376,10 @@ body {
 
 /* 🌟 BREADCRUMB 🌟 */
 .app-breadcrumb {
-    min-height: 24px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--text-primary); flex-shrink: 0;
+    padding: 4px 12px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
 }
-.app-breadcrumb i { font-size: 10px; color: var(--text-secondary); }
-.app-breadcrumb span.current { color: #60a5fa; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;}
-[data-theme="light"] .app-breadcrumb span.current { color: #0f5fa8; }
+.app-breadcrumb i { font-size: 10px; }
+.app-breadcrumb span.current { color: var(--corp-dash); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
 
 /* =========================================================
    🌟 DROPDOWNS & MEGA MENU (MASTERS)
@@ -406,7 +396,7 @@ body {
 
 /* Profile & Masters Mega Menu */
 #profileDropdownConsole { width: 650px; gap: 16px; }
-.mega-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-height: 450px; overflow-y: auto; padding-right: 4px;}
+.mega-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-height: 390px; overflow-y: auto; padding-right: 4px;}
 .dropdown-pillar-block { display: flex; flex-direction: column; gap: 4px; }
 .dropdown-pillar-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); border-bottom: 1px solid var(--border-light); padding-bottom: 6px; margin-bottom: 4px; }
 .dropdown-submenu-item { display: flex; align-items: center; padding: 6px 8px; color: var(--text-secondary); font-size: 11.5px; font-weight: 600; cursor: pointer; text-decoration: none; border-radius: var(--radius-element); transition: 0.2s; border-left: 2px solid transparent; }
@@ -452,7 +442,7 @@ body {
 .qa-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .qa-btn {
     background: rgba(255,255,255,0.03); border: 1px solid var(--border-light); border-radius: var(--radius-element);
-    width: 100%; padding: 12px 16px; display: flex; align-items: center; gap: 12px; color: var(--text-primary); font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; text-align: left;
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px; color: var(--text-primary); font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s;
 }
 [data-theme="light"] .qa-btn { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 .qa-btn:hover { border-color: var(--corp-dash); transform: translateY(-2px); }
@@ -484,7 +474,7 @@ body {
 .cmd-result-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .cmd-result-desc { font-size: 11px; color: var(--text-tertiary); }
 .cmd-section-title { display: block; font-size: 10px; font-weight: 800; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 16px 6px; }
-.cmd-result-item .fav-star { border: 0; background: transparent; font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s; color: var(--text-tertiary); opacity: 0.5; }
+.cmd-result-item .fav-star { font-size: 14px; cursor: pointer; padding: 4px; transition: 0.2s; color: var(--text-tertiary); opacity: 0.5; }
 .cmd-result-item .fav-star:hover { transform: scale(1.2); opacity: 1; }
 .cmd-result-item .fav-star.active { color: #f59e0b; opacity: 1; }
 
@@ -492,10 +482,10 @@ body {
    🌟 IFRAME WRAPPER
 ========================================================= */
 .iframe-wrapper {
-    flex: 1 1 auto; min-height: 0; background: var(--bg-app); border-radius: var(--radius-panel); overflow: hidden;
+    flex: 1; background: var(--bg-app); border-radius: var(--radius-panel); overflow: hidden;
     box-shadow: var(--shadow-float); border: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative; z-index: 10;
 }
-iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0; background: transparent; }
+iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
 /* =========================================================
    🌟 MOBILE GRID & MODALS
@@ -536,7 +526,7 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
     .global-search-container { display: none; } 
     .hamburger-trigger-btn { display: none; } 
     .mobile-top-menu-btn, .header-home-btn { display: flex; } 
-    .app-container { padding: 10px 10px 25px 10px; margin-left: 0; width: 100%; height: 100dvh; min-height: 100dvh; } 
+    .app-container { padding: 10px 10px 25px 10px; margin-left: 0; width: 100%; } 
     .user-profile span, .corp-info { display: none; }
     #profileDropdownConsole { width: calc(100vw - 32px); right: 16px; }
     .mega-menu-grid { grid-template-columns: 1fr 1fr; }
@@ -569,10 +559,10 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
     #profileDropdownConsole {
         max-height: calc(100dvh - 92px);
         overflow-y: auto;
-        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
     }
     .profile-logout-section {
-        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
     }
     .sidebar {
         bottom: calc(12px + env(safe-area-inset-bottom));
@@ -589,89 +579,9 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
         display: inline-block; vertical-align: bottom; 
     }
 }
-
-/* Critical splash CSS must stay inline so the splash never pushes main.app-container before app-splash.css loads. */
-:root {
-    --splash-bg: linear-gradient(135deg, #061223 0%, #0f172a 48%, #111827 100%);
-    --splash-card: rgba(15, 23, 42, 0.76);
-    --splash-border: rgba(255, 255, 255, 0.14);
-    --splash-text: #f8fafc;
-    --splash-muted: #cbd5e1;
-}
-#appSplash {
-    position: fixed;
-    inset: 0;
-    z-index: 1000000;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: var(--splash-bg);
-    color: var(--splash-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    opacity: 1;
-    visibility: visible;
-}
-#appSplash.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-.app-splash-card {
-    width: min(420px, calc(100vw - 36px));
-    min-height: 180px;
-    padding: 34px 30px 30px;
-    border: 1px solid var(--splash-border);
-    border-radius: 8px;
-    background: var(--splash-card);
-    text-align: center;
-}
-.app-splash-company {
-    margin: 0;
-    font-size: 20px;
-    line-height: 1.2;
-    font-weight: 900;
-    letter-spacing: 0;
-}
-.app-splash-quote {
-    margin: 22px auto 0;
-    max-width: 330px;
-    min-height: 48px;
-    font-size: 13px;
-    line-height: 1.55;
-    font-weight: 650;
-    color: var(--splash-muted);
-}
-.app-splash-track {
-    width: 178px;
-    height: 3px;
-    margin: 24px auto 0;
-    border-radius: 999px;
-    background: #2563eb;
-}
-.app-splash-track span {
-    display: block;
-    width: 42%;
-    height: 100%;
-    border-radius: inherit;
-    background: #38bdf8;
-}
-#appSplash.app-splash-empty {
-    background: var(--loader-bg, rgba(248, 250, 252, 0.74));
-}
-.app-splash-spinner {
-    width: 46px;
-    height: 46px;
-    border: 4px solid var(--loader-ring, rgba(148, 163, 184, 0.32));
-    border-top-color: var(--loader-ring-active, #2563eb);
-    border-radius: 50%;
-}
 </style>
-<link rel="preload" href="/static/css/global-loader.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<link rel="preload" href="/static/css/app-splash.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript>
-    <link rel="stylesheet" href="/static/css/global-loader.min.css">
-    <link rel="stylesheet" href="/static/css/app-splash.min.css">
-</noscript>
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/app-splash.css">
 </head>
 <body>
 
@@ -696,25 +606,25 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
             <div class="brand-title"><i class="fa-solid fa-layer-group"></i> <span>{{ request.session.get('name', 'User') }}</span></div>
             <div class="brand-subtitle">{{ request.session.get('company_name', 'Workspace') }}</div>
         </div>
-        <button type="button" class="close-sidebar-btn" onclick="toggleSidebar(false)" aria-label="Close navigation menu"><i class="fa-solid fa-xmark"></i></button>
+        <button class="close-sidebar-btn" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
     </div>
     
     <div class="sidebar-menu" id="sidebarMenu"></div>
 
-    <footer class="sidebar-footer">
+    <div class="sidebar-footer">
         <div class="footer-quote">Precision in every process.</div>
-        <div class="footer-powered"><i class="fa-solid fa-layer-group" style="color:var(--corp-dash); margin-right:4px;"></i> HORIZON ENGINE</div>
-    </footer>
+        <div class="footer-powered"><i class="fa-brands fa-hubspot" style="color:var(--corp-dash); margin-right:4px;"></i> HORIZON ENGINE</div>
+    </div>
 </div>
 
-<main class="app-container">
-    <header class="app-header">
+<div class="app-container">
+    <div class="app-header">
         <div class="header-left-meta">
-            <button type="button" class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Menu" aria-label="Open navigation menu">
+            <button class="hamburger-trigger-btn" onclick="toggleSidebar(true)" title="Menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <button type="button" class="mobile-top-menu-btn" onclick="toggleMobileCategories()">MENU</button>
-            <button type="button" class="header-home-btn" onclick="goHomeAction()" title="Home Workspace" aria-label="Open home workspace">
+            <button class="mobile-top-menu-btn" onclick="toggleMobileCategories()">MENU</button>
+            <button class="header-home-btn" onclick="goHomeAction()" title="Home Workspace">
                 <i class="fa-solid fa-house"></i>
             </button>
             <div class="header-brand-title-box">
@@ -722,44 +632,44 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
             </div>
         </div>
 
-        <div class="global-search-container" role="button" tabindex="0" onclick="openCommandPalette()" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openCommandPalette(); }" aria-label="Open global search command palette">
+        <div class="global-search-container" onclick="openCommandPalette()">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search Supplier, Invoice, Batch..." aria-label="Search supplier invoice or batch" readonly>
+            <input type="text" placeholder="Search Supplier, Invoice, Batch..." readonly>
             <span class="cmd-k-hint">Ctrl + K</span>
         </div>
         
         <div class="header-right-actions">
-            <button type="button" class="icon-action-btn" onclick="toggleQuickActions()" title="Quick Actions" aria-label="Open quick actions">
+            <div class="icon-action-btn" onclick="toggleQuickActions()" title="Quick Actions">
                 <i class="fa-solid fa-plus"></i>
-            </button>
+            </div>
 
-            <button type="button" class="icon-action-btn" onclick="openSupportShortcut()" title="Support & Helpdesk" aria-label="Open support and helpdesk">
+            <div class="icon-action-btn" onclick="openSupportShortcut()" title="Support & Helpdesk">
                 <i class="fa-solid fa-headset" style="color: var(--corp-dash);"></i>
-            </button>
+            </div>
 
-            <button type="button" class="icon-action-btn" onclick="toggleDropdown(event, 'notifDropdownConsole')" title="Notifications" aria-label="Open notifications">
+            <div class="icon-action-btn" onclick="toggleDropdown(event, 'notifDropdownConsole')" title="Notifications">
                 <i class="fa-solid fa-bell"></i>
                 <div class="notification-dot"></div>
-            </button>
+            </div>
 
-            <button type="button" class="icon-action-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Mode" aria-label="Switch color mode">
+            <div class="icon-action-btn" onclick="toggleTheme()" id="themeIcon" title="Switch Mode">
                 <i class="fa-solid fa-sun"></i>
-            </button>
+            </div>
             
-            <button type="button" class="corp-profile-btn" id="userProfileBtn" onclick="toggleDropdown(event, 'profileDropdownConsole')" aria-label="Open profile and company filters">
+            <div class="corp-profile-btn" id="userProfileBtn" onclick="toggleDropdown(event, 'profileDropdownConsole')">
                 <div class="corp-avatar" id="navUserInitial">U</div>
                 <div class="corp-info">
                     <span class="corp-name">{{ request.session.get('name', 'User') }}</span>
                     <span class="corp-role">{{ request.session.get('role', 'Role') }} | {{ request.session.get('company_name', 'Company') }}</span>
                 </div>
-            </button>
+            </div>
 
             <div class="dropdown-console" id="notifDropdownConsole">
                 <div class="notif-header">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         Notifications
                         {% if request.session.get('role') in ['Admin', 'admin', 'Super Admin', 'super_admin'] %}
-                        <button type="button" onclick="toggleNotifBroadcastForm(event)" aria-label="Create company broadcast" style="background: transparent; border: 0; cursor: pointer; color: var(--corp-dash); font-size: 14px;"><i class="fa-solid fa-circle-plus"></i></button>
+                        <i class="fa-solid fa-circle-plus" onclick="toggleNotifBroadcastForm(event)" style="cursor: pointer; color: var(--corp-dash); font-size: 14px;" title="Create Company Broadcast"></i>
                         {% endif %}
                     </div>
                     <span>Mark all read</span>
@@ -767,16 +677,16 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
                 
                 {% if request.session.get('role') in ['Admin', 'admin', 'Super Admin', 'super_admin'] %}
                 <div id="notifBroadcastForm" style="display: none; padding: 12px; border-bottom: 1px solid var(--border-light); background: rgba(59,130,246,0.04); flex-direction: column; gap: 8px;">
-                    <textarea id="notifBroadcastMsg" aria-label="Company broadcast message" placeholder="Type company broadcast alert..." rows="2" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: var(--bg-app); color: var(--text-primary); font-size: 12px; resize: none; font-family: inherit; outline: none;"></textarea>
+                    <textarea id="notifBroadcastMsg" placeholder="Type company broadcast alert..." rows="2" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: var(--bg-app); color: var(--text-primary); font-size: 12px; resize: none; font-family: inherit; outline: none;"></textarea>
                     
                     <div id="notifFilePreviewContainer" class="hidden" style="display: flex; align-items: center; justify-content: space-between; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--corp-dash);">
                         <span id="notifFilePreviewName" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;"></span>
-                        <button type="button" onclick="clearNotifFileSelection(event)" aria-label="Clear selected notification file" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-circle-xmark"></i></button>
+                        <button type="button" onclick="clearNotifFileSelection(event)" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-circle-xmark"></i></button>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" onclick="document.getElementById('notifBroadcastFile').click()" aria-label="Attach photo or file" style="background: none; border: none; color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--corp-dash)'" onmouseout="this.style.color='var(--text-secondary)'" title="Attach Photo/File"><i class="fa-solid fa-paperclip"></i></button>
+                            <button type="button" onclick="document.getElementById('notifBroadcastFile').click()" style="background: none; border: none; color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--corp-dash)'" onmouseout="this.style.color='var(--text-secondary)'" title="Attach Photo/File"><i class="fa-solid fa-paperclip"></i></button>
                             <input type="file" id="notifBroadcastFile" style="display: none;" onchange="handleNotifFileSelect()">
                             <span id="notifBroadcastStatus" style="font-size: 10px; font-weight: 600; display: none;"></span>
                         </div>
@@ -818,42 +728,42 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
                 </div>
                 <div class="mega-menu-grid" id="dropdownMenuScrollBox"></div>
                 <div class="profile-logout-section">
-                    <button type="button" style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
+                    <button style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
     <div class="app-breadcrumb">
         <i class="fa-solid fa-house"></i> Home <i class="fa-solid fa-chevron-right"></i> <span class="current" id="breadcrumbCurrent">Dashboard</span>
     </div>
 
     <div class="iframe-wrapper">
-        <iframe id="frame" name="frame" title="BKNR ERP Workspace Module"></iframe>
+        <iframe id="frame" name="frame"></iframe>
     </div>
-</main>
+</div>
 
 <div class="quick-action-panel" id="qaPanel">
     <div class="qa-header">
         <span class="qa-title">Quick Actions</span>
-        <button type="button" class="icon-action-btn" style="width:32px; height:32px;" onclick="toggleQuickActions()" aria-label="Close quick actions"><i class="fa-solid fa-xmark"></i></button>
+        <i class="fa-solid fa-xmark" style="cursor:pointer; color:var(--text-tertiary);" onclick="toggleQuickActions()"></i>
     </div>
     <div class="qa-body">
-        <button type="button" class="qa-btn" onclick="launchCmdApp('/processing/raw_material_purchasing', 'Purchase Entry')"><i class="fa-solid fa-truck-ramp-box"></i> RM Purchase Entry</button>
-        <button type="button" class="qa-btn" onclick="launchCmdApp('/processing/production', 'Production Entry')"><i class="fa-solid fa-industry"></i> Production Entry</button>
-        <button type="button" class="qa-btn" onclick="launchCmdApp('/export_documents/commercial_invoice/entry', 'Commercial Invoice')"><i class="fa-solid fa-file-invoice"></i> Create Invoice</button>
-        <button type="button" class="qa-btn" onclick="launchCmdApp('/export_documents/export_shipment/entry', 'Export Shipment')"><i class="fa-solid fa-ship"></i> New Shipment</button>
-        <button type="button" class="qa-btn" onclick="launchCmdApp('/finance_accounts/journal_entry/entry', 'Journal Voucher')"><i class="fa-solid fa-book"></i> Journal Voucher</button>
+        <div class="qa-btn" onclick="launchCmdApp('/processing/raw_material_purchasing', 'Purchase Entry')"><i class="fa-solid fa-truck-ramp-box"></i> RM Purchase Entry</div>
+        <div class="qa-btn" onclick="launchCmdApp('/processing/production', 'Production Entry')"><i class="fa-solid fa-industry"></i> Production Entry</div>
+        <div class="qa-btn" onclick="launchCmdApp('/export_documents/commercial_invoice/entry', 'Commercial Invoice')"><i class="fa-solid fa-file-invoice"></i> Create Invoice</div>
+        <div class="qa-btn" onclick="launchCmdApp('/export_documents/export_shipment/entry', 'Export Shipment')"><i class="fa-solid fa-ship"></i> New Shipment</div>
+        <div class="qa-btn" onclick="launchCmdApp('/finance_accounts/journal_entry/entry', 'Journal Voucher')"><i class="fa-solid fa-book"></i> Journal Voucher</div>
     </div>
 </div>
 
 <div class="quick-action-panel complaints-panel" id="complaintsPanel">
     <div class="qa-header">
         <span class="qa-title"><i class="fa-solid fa-headset" style="color: var(--corp-dash);"></i> Support & Complaints</span>
-        <button type="button" class="icon-action-btn" style="width:32px; height:32px;" onclick="toggleComplaintsPanel()" aria-label="Close support and complaints"><i class="fa-solid fa-xmark"></i></button>
+        <i class="fa-solid fa-xmark" style="cursor:pointer; color:var(--text-tertiary);" onclick="toggleComplaintsPanel()"></i>
     </div>
     <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-app);">
-        <iframe id="complaintsFrame" title="BKNR ERP Support and Complaints" src="about:blank" style="width:100%; height:100%; border:none; background:transparent;"></iframe>
+        <iframe id="complaintsFrame" src="about:blank" style="width:100%; height:100%; border:none; background:transparent;"></iframe>
     </div>
 </div>
 
@@ -901,7 +811,7 @@ iframe { flex: 1 1 auto; border: none; width: 100%; height: 100%; min-height: 0;
 
 <div class="mobile-app-grid-overlay" id="mobileAppGridOverlay">
     <div class="m-grid-header">
-        <button type="button" class="m-grid-back-btn" onclick="closeMobileAppGrid()" aria-label="Back to mobile categories"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="m-grid-back-btn" onclick="closeMobileAppGrid()"><i class="fa-solid fa-arrow-left"></i></button>
         <div class="m-grid-title" id="mGridTitle">Workspace</div>
     </div>
     <div class="m-grid-body"><div class="modules-launcher-grid" id="mGridBodyApps"></div></div>
@@ -1225,7 +1135,7 @@ function openSupportShortcut() {
     }
 }
 
-function logout() { if(confirm("Terminate Secure Workspace Session?")) window.top.location.href = "/auth/logout"; }
+function logout() { if(confirm("Do you want to log out?")) window.top.location.href = "/auth/logout"; }
 
 function goHomeAction() {
     toggleSidebar(false);
@@ -1539,6 +1449,7 @@ const dropdownConsoleMenuData = [
 function renderOrganizedMenu() {
     let html = "";
     sidebarMenuData.forEach(cat => {
+        if (cat.title === "MASTERS") return;
         let hasVisible = false;
         if (cat.items) {
             hasVisible = cat.items.some(item => allow(item[0]));
@@ -1562,7 +1473,7 @@ function renderOrganizedMenu() {
             cat.items.forEach(item => {
                 const [permissionKey, route, icon, label, oldBadge] = item;
                 if(!allow(permissionKey)) return;
-                html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="${route}" data-route="${route}"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
+                html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
             });
         } else if (cat.subgroups) {
             cat.subgroups.forEach(sub => {
@@ -1578,7 +1489,7 @@ function renderOrganizedMenu() {
                     <div class="reports-container">`;
                 allowedSubItems.forEach(item => {
                     const [permissionKey, route, icon, label, oldBadge] = item;
-                    html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="${route}" data-route="${route}"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
+                    html += `<div class="submenu-item-row"><a class="submenu-item ${catClass}" href="javascript:void(0)" onclick="loadPage('${route}', this)"><div style="display:flex; align-items:center; gap:8px;"><i class="fa-solid ${icon}"></i> ${label}</div></a></div>`;
                 });
                 html += `</div></div>`;
             });
@@ -1586,7 +1497,6 @@ function renderOrganizedMenu() {
         html += `</div></div>`;
     });
     document.getElementById("sidebarMenu").innerHTML = html;
-    bindWorkspaceLinks(document.getElementById("sidebarMenu"));
 
     // Auto-open first category by default
     const firstPillar = document.querySelector('.pillar-block');
@@ -1612,22 +1522,11 @@ function renderDropdownConsoleMenu() {
             const [permissionKey, route, label, icon] = item;
             const iconClass = icon ? `fa-solid ${icon}` : 'fa-solid fa-circle';
             const iconStyle = icon ? 'font-size:12px; margin-right:8px;' : 'font-size:5px; margin-right:8px;';
-            html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="${route}" data-route="${route}" data-label="MASTERS > ${label.toUpperCase()}"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
+            html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', null, 'MASTERS > ${label.toUpperCase()}')"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
         });
         html += `</div>`;
     });
     document.getElementById("dropdownMenuScrollBox").innerHTML = html;
-    bindWorkspaceLinks(document.getElementById("dropdownMenuScrollBox"));
-}
-
-function bindWorkspaceLinks(container) {
-    if (!container) return;
-    container.querySelectorAll('a[data-route]').forEach(link => {
-        link.addEventListener('click', event => {
-            event.preventDefault();
-            loadPage(link.dataset.route, link.classList.contains('submenu-item') ? link : null, link.dataset.label);
-        });
-    });
 }
 
 function togglePillar(element) {
@@ -1921,7 +1820,7 @@ async function updateSuggestions(query) {
 }
 
 function renderSearchItem(route, label, category, icon, isFav) {
-    const starClass = isFav ? "fa-solid fa-star active" : "fa-solid fa-star";
+    const starClass = isFav ? "fa-solid fa-star active" : "fa-regular fa-star";
     return `
         <div class="cmd-result-item" onclick="launchCmdApp('${route}', '${label}')">
             <i class="fa-solid ${icon}"></i>
@@ -1929,7 +1828,7 @@ function renderSearchItem(route, label, category, icon, isFav) {
                 <span class="cmd-result-title">${label}</span>
                 <span class="cmd-result-desc">${category}</span>
             </div>
-            <button type="button" class="${starClass} fav-star" onclick="toggleFavorite(event, '${route}')" aria-label="Toggle favorite for ${label}"></button>
+            <i class="${starClass} fav-star" onclick="toggleFavorite(event, '${route}')"></i>
         </div>
     `;
 }
@@ -1975,9 +1874,7 @@ async function fetchRealNotifications() {
                 if (isImage) {
                     mediaHtml = `
                         <div style="margin-top: 6px; border-radius: 6px; overflow: hidden; max-width: 100%; max-height: 120px; border: 1px solid var(--border-light);">
-                            <a href="${item.media_path}" target="_blank" rel="noopener" aria-label="Open notification attachment">
-                                <img src="${item.media_path}" alt="Notification attachment" style="width: 100%; height: auto; display: block; object-fit: cover;">
-                            </a>
+                            <img src="${item.media_path}" style="width: 100%; height: auto; display: block; object-fit: cover; cursor: pointer;" onclick="window.open('${item.media_path}', '_blank'); event.stopPropagation();">
                         </div>
                     `;
                 } else {
@@ -1985,7 +1882,7 @@ async function fetchRealNotifications() {
                     mediaHtml = `
                         <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; font-size: 11px;">
                             <i class="fa-solid fa-file-arrow-down" style="font-size: 14px; color: var(--corp-dash);"></i>
-                            <a href="${item.media_path}" target="_blank" download style="color: var(--corp-dash); text-decoration: none; font-weight: 600; word-break: break-all;">${filename}</a>
+                            <a href="${item.media_path}" target="_blank" download style="color: var(--corp-dash); text-decoration: none; font-weight: 600; word-break: break-all;" onclick="event.stopPropagation();">${filename}</a>
                         </div>
                     `;
                 }
@@ -2202,19 +2099,17 @@ window.onload = () => {
                             localStorage.setItem(popupSeenKey, 'true');
                         }
                     })
-                    .catch(e => console.warn("Masters status check failed", e));
+                    .catch(e => console.error("Masters status check failed", e));
             }
         }
     }, 1000);
 };
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/static/service-worker.js")
-    .catch((error) => console.warn("Service worker registration skipped.", error));
+  navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script defer src="/static/js/global-loader.js"></script>
-<script defer src="/static/js/app-splash.js"></script>
+<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/app-splash.js"></script>
 </body>
 </html>

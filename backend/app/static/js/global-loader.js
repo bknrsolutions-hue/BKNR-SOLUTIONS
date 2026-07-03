@@ -7,6 +7,45 @@
     let activeRequests = 0;
     let showTimer = null;
 
+    function syncFontAwesomeFallback() {
+        if (!document.body) return;
+
+        const probe = document.createElement("i");
+        probe.className = "fa-solid fa-circle-check";
+        probe.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;";
+        document.body.appendChild(probe);
+
+        const family = window.getComputedStyle(probe).fontFamily || "";
+        document.body.removeChild(probe);
+
+        document.documentElement.classList.toggle(
+            "fa-icons-fallback",
+            !/Font Awesome/i.test(family)
+        );
+    }
+
+    function syncModalOpenState() {
+        if (!document.body) return;
+        const hasOpenModal = Array.from(document.querySelectorAll(".modal")).some((modal) => {
+            const style = window.getComputedStyle(modal);
+            return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        });
+        document.body.classList.toggle("modal-open", hasOpenModal);
+    }
+
+    function watchModals() {
+        if (!document.body || !window.MutationObserver) return;
+        syncModalOpenState();
+        const observer = new MutationObserver(syncModalOpenState);
+        document.querySelectorAll(".modal").forEach((modal) => {
+            observer.observe(modal, { attributes: true, attributeFilter: ["class", "style"] });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") setTimeout(syncModalOpenState, 0);
+        });
+    }
+
     function ensureLoader() {
         let loader = document.getElementById("globalLoader");
         if (!loader && document.body) {
@@ -62,6 +101,9 @@
             loader.classList.add("hide");
             loader.style.display = "none";
         }
+        syncFontAwesomeFallback();
+        setTimeout(syncFontAwesomeFallback, 1200);
+        watchModals();
     });
 
     window.addEventListener("beforeunload", function () {

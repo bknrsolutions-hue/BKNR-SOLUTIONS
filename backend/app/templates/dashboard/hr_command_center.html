@@ -3,16 +3,16 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Enterprise HR Intelligence | BKNR ERP</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script defer src="/static/js/bknr-charts.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/js/bknr-charts.js"></script>
 
   <style>
     /* ==========================================================
@@ -1208,8 +1208,8 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/css/global-loader.min.css">
-  <link rel="stylesheet" href="/static/css/dashboard-ui.min.css">
+  <link rel="stylesheet" href="/static/css/global-loader.css">
+  <link rel="stylesheet" href="/static/css/dashboard-ui.css">
 
   <script>
     function syncThemeFromParent() {
@@ -1225,7 +1225,7 @@
     syncThemeFromParent();
     window.addEventListener('load', syncThemeFromParent);
   </script>
-  <link rel="stylesheet" href="/static/css/bknr-standard.min.css">
+  <link rel="stylesheet" href="/static/css/bknr-standard.css">
   <style>
     /* HR dashboard controls must win over the global button enforcer. */
     .hr-dashboard .tab-btn {
@@ -2506,135 +2506,126 @@
     // ============================================================
     // 🎨 CHART SETUP
     // ============================================================
-    function initHrCharts() {
-      if (!window.Chart || !window.BKNRCharts) {
-        console.warn("BKNR chart engine is not ready yet.");
-        return;
+    const getCssVar = (name) =>
+      getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    const chartGridColor = getCssVar('--chart-grid') || '#cbd5e1';
+    Chart.defaults.color = getCssVar('--text-muted') || '#475569';
+    Chart.defaults.borderColor = chartGridColor;
+    Chart.defaults.font.size = 11;
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.plugins.legend.display = false;
+
+    // Hours Logged Spectrum
+    BKNRCharts.create(document.getElementById("prodChart"), {
+      type: "bar",
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
+        }
+      },
+      data: {
+        labels: ["<4h Undertime", "4-8h Normal", "8-12h OT", "12h+ Extended"],
+        datasets: [{
+          data: {{ productivity_data | tojson }},
+          backgroundColor: ["#cbd5e1", "#93c5fd", "#6ee7b7", "#fcd34d"],
+          borderRadius: 5,
+          borderSkipped: false
+        }]
       }
+    });
 
-      const getCssVar = (name) =>
-        getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-      const chartGridColor = getCssVar('--chart-grid') || '#cbd5e1';
-      Chart.defaults.color = getCssVar('--text-muted') || '#475569';
-      Chart.defaults.borderColor = chartGridColor;
-      Chart.defaults.font.size = 11;
-      Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-      Chart.defaults.plugins.legend.display = false;
-
-      // Hours Logged Spectrum
-      BKNRCharts.create(document.getElementById("prodChart"), {
-        type: "bar",
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false } },
-            y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
-          }
-        },
-        data: {
-          labels: ["<4h Undertime", "4-8h Normal", "8-12h OT", "12h+ Extended"],
-          datasets: [{
-            data: {{ productivity_data | tojson }},
-            backgroundColor: ["#cbd5e1", "#93c5fd", "#6ee7b7", "#fcd34d"],
-            borderRadius: 5,
-            borderSkipped: false
-          }]
+    // Salary Tier Chart
+    BKNRCharts.create(document.getElementById("salaryChart"), {
+      type: "bar",
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
         }
-      });
+      },
+      data: {
+        labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
+        datasets: [{
+          data: {{ salary_tiers | tojson }},
+          backgroundColor: ["#94a3b8", "#60a5fa", "#3b82f6", "#34d399"],
+          borderRadius: 5,
+          borderSkipped: false
+        }]
+      }
+    });
 
-      // Salary Tier Chart
-      BKNRCharts.create(document.getElementById("salaryChart"), {
-        type: "bar",
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false } },
-            y: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } }
-          }
+    // Workforce Composition Doughnut
+    BKNRCharts.create(document.getElementById("compositionChart"), {
+      type: "doughnut",
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: "68%",
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }
+      },
+      data: {
+        labels: ["Permanent", "Contract"],
+        datasets: [{
+          data: [{{ perm_pct }}, {{ contract_pct }}],
+          backgroundColor: ["#3b82f6", "#f59e0b"],
+          borderWidth: 0
+        }]
+      }
+    });
+
+    // Attendance Trend Line
+    BKNRCharts.create(document.getElementById("attendanceTrendChart"), {
+      type: "line",
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { min: 0, max: 100, grid: { color: chartGridColor }, ticks: { callback: v => v + '%', font: { size: 11 } } }
         },
-        data: {
-          labels: ["0-10k", "10k-20k", "20k-30k", "30k+"],
-          datasets: [{
-            data: {{ salary_tiers | tojson }},
-            backgroundColor: ["#94a3b8", "#60a5fa", "#3b82f6", "#34d399"],
-            borderRadius: 5,
-            borderSkipped: false
-          }]
-        }
-      });
+        elements: { line: { tension: 0.4 }, point: { radius: 2 } }
+      },
+      data: {
+        labels: {{ attendance_trend_labels | default([]) | tojson }},
+        datasets: [{
+          data: {{ attendance_trend_data | default([]) | tojson }},
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37,99,235,0.08)",
+          fill: true,
+          borderWidth: 2
+        }]
+      }
+    });
 
-      // Workforce Composition Doughnut
-      BKNRCharts.create(document.getElementById("compositionChart"), {
-        type: "doughnut",
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: "68%",
-          plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }
-        },
-        data: {
-          labels: ["Permanent", "Contract"],
-          datasets: [{
-            data: [{{ perm_pct }}, {{ contract_pct }}],
-            backgroundColor: ["#3b82f6", "#f59e0b"],
-            borderWidth: 0
-          }]
+    // Department Headcount Bar
+    BKNRCharts.create(document.getElementById("deptHeadcountChart"), {
+      type: "bar",
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
         }
-      });
-
-      // Attendance Trend Line
-      BKNRCharts.create(document.getElementById("attendanceTrendChart"), {
-        type: "line",
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { display: false } },
-            y: { min: 0, max: 100, grid: { color: chartGridColor }, ticks: { callback: v => v + '%', font: { size: 11 } } }
-          },
-          elements: { line: { tension: 0.4 }, point: { radius: 2 } }
-        },
-        data: {
-          labels: {{ attendance_trend_labels | default([]) | tojson }},
-          datasets: [{
-            data: {{ attendance_trend_data | default([]) | tojson }},
-            borderColor: "#2563eb",
-            backgroundColor: "rgba(37,99,235,0.08)",
-            fill: true,
-            borderWidth: 2
-          }]
-        }
-      });
-
-      // Department Headcount Bar
-      BKNRCharts.create(document.getElementById("deptHeadcountChart"), {
-        type: "bar",
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: chartGridColor }, ticks: { font: { size: 11 } } },
-            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-          }
-        },
-        data: {
-          labels: {{ dept_cost_center | map(attribute = 'dept') | list | tojson }},
-          datasets: [{
-            data: {{ dept_cost_center | map(attribute = 'emps') | list | tojson }},
-            backgroundColor: [
-              "#2563eb", "#3b82f6", "#10b981", "#0ea5e9",
-              "#64748b", "#475569", "#94a3b8", "#0284c7", "#38bdf8"
-            ],
-            borderRadius: 4,
-            borderSkipped: false
-          }]
-        }
-      });
-    }
-
-    window.addEventListener("DOMContentLoaded", initHrCharts);
+      },
+      data: {
+        labels: {{ dept_cost_center | map(attribute = 'dept') | list | tojson }},
+        datasets: [{
+          data: {{ dept_cost_center | map(attribute = 'emps') | list | tojson }},
+          backgroundColor: [
+            "#2563eb", "#3b82f6", "#10b981", "#0ea5e9",
+            "#64748b", "#475569", "#94a3b8", "#0284c7", "#38bdf8"
+          ],
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      }
+    });
 
     // ============================================================
     // 🟢 KPI POPUP ENGINE

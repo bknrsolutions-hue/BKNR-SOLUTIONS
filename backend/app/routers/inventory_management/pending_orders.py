@@ -16,8 +16,6 @@ from app.services.inventory_summary_service import (
 from app.services.production_requirements_service import (
     ProductionRequirementService
 )
-from app.services.posting_engine import PostingEngineService
-from datetime import date
 
 # Database and Models
 from app.database import get_db
@@ -299,23 +297,7 @@ def move_to_sales(
         request.session["message"] = f"❌ {edit_lock_message()}"
         return RedirectResponse("/inventory/pending_orders", status_code=303)
 
-    # Fetch packing styles to calculate MC weight
-    packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
-
-    total_usd = 0.0
-    exchange_rate_val = 83.50
-    if items:
-        exchange_rate_val = float(items[0].exchange_rate or 83.50)
-
     for item in items:
-        style = str(item.packing_style).strip()
-        mc_weight = weight_map.get(style, 1.0)
-        qty_kg = float(item.no_of_mc or 0) * mc_weight
-        usd_val = qty_kg * float(item.selling_price or 0.0)
-        inr_val = usd_val * exchange_rate_val
-        total_usd += usd_val
-
         db.add(
             sales_dispatch(
                 company_id=company_code,
@@ -336,44 +318,18 @@ def move_to_sales(
                 grade=item.grade,
                 company_name=item.company_name,
                 production_at=item.production_at, 
-                exchange_rate=exchange_rate_val, 
+                exchange_rate=item.exchange_rate, 
                 stock_value=0.0,
                 profit_loss=0.0,
                 freight_cost=0.0,
                 packing_cost=0.0,
                 status="Unpaid",
-                sales_quantity=qty_kg,
-                amount_usd=usd_val,
-                amount_inr=inr_val,
                 created_at=ist_now().date()
             )
         )
 
     for item in items:
         item.progress_steps = "completed"
-
-    db.flush()
-
-    # Parse invoice_date to date object for accounting
-    try:
-        inv_date_obj = datetime.strptime(invoice_date, "%Y-%m-%d").date()
-    except Exception:
-        inv_date_obj = date.today()
-
-    buyer_name = items[0].buyer if items else "Customer"
-
-    # Auto-post to accounting ledger
-    PostingEngineService.post_sales_dispatch(
-        db=db,
-        company_id=company_code,
-        invoice_no=invoice_no,
-        customer_name=buyer_name,
-        amount_usd=total_usd,
-        exchange_rate=exchange_rate_val,
-        packing_cost=0.0,
-        freight_cost=0.0,
-        invoice_date=inv_date_obj
-    )
 
     db.commit()
 

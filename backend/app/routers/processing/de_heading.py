@@ -29,13 +29,9 @@ templates = Jinja2Templates(directory="app/templates")
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
     c_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all()]
     s_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_id).order_by(SpeciesMaster.species_name).all()]
-    pf_list = [
-        p[0]
-        for p in db.query(distinct(ProductionForMaster.production_for))
-        .filter(ProductionForMaster.company_id == company_id)
-        .all()
-        if p[0] and str(p[0]).strip().upper() != "GENERAL STOCK"
-    ]
+    pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    if "General Stock" not in pf_list:
+        pf_list.append("General Stock")
     return {"contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
@@ -112,11 +108,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
     peeling_locs = [p.peeling_at for p in peeling_q.all()]
 
     # 🟢 🔴 FIXED: STRICT GLOBAL PRODUCTION FOR OVERRIDE
-    final_prod_for_list = (
-        [global_production_for]
-        if global_production_for and global_production_for.strip().upper() != "GENERAL STOCK"
-        else masters["prod_for_list"]
-    )
+    final_prod_for_list = [global_production_for] if global_production_for else masters["prod_for_list"]
 
     today_q = db.query(DeHeading).filter(DeHeading.company_id == company_code, DeHeading.date == ist_now().date())
     if global_location:

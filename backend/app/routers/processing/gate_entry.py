@@ -12,6 +12,7 @@ from app.utils.company_service import get_gate_entry_report_emails
 
 from app.database import get_db
 from app.database.models.processing import GateEntry
+from app.database.models.attendance import EmployeeRegistration
 from app.database.models.criteria import (
     suppliers,
     purchasing_locations,
@@ -57,6 +58,15 @@ def load_dropdowns(db: Session, comp: str, user_allowed_locations: list = None, 
         x.vehicle_number for x in db.query(vehicle_numbers)
         .filter(vehicle_numbers.company_id == comp)
         .order_by(vehicle_numbers.vehicle_number).all()
+    ]
+
+    driver_rows = db.query(EmployeeRegistration.employee_name).filter(
+        EmployeeRegistration.company_id == comp,
+        func.lower(func.trim(EmployeeRegistration.designation)) == "driver",
+    ).distinct().order_by(EmployeeRegistration.employee_name).all()
+    driver_list = [
+        name.strip() for (name,) in driver_rows
+        if name and name.strip()
     ]
 
     # Peeling At / Factory dropdown also layered with the same location restrictions if required
@@ -105,6 +115,7 @@ def load_dropdowns(db: Session, comp: str, user_allowed_locations: list = None, 
         supplier_list, 
         location_list, 
         vehicle_list, 
+        driver_list,
         peeling_list, 
         prod_for_list,
         json.dumps(last_batch_map),
@@ -135,7 +146,7 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
         user_allowed_locations = session_locations
 
     # డ్రాప్‌డౌన్ లోడ్ అయ్యేటప్పుడే యూజర్ పర్మిషన్స్ మరియు గ్లోబల్ సెలెక్షన్స్ ని పంపి లాక్ చేసాను
-    (suppliers_dd, locations_dd, vehicles_dd, peeling_dd, prod_for_list, 
+    (suppliers_dd, locations_dd, vehicles_dd, drivers_dd, peeling_dd, prod_for_list, 
      lb_json, lc_json, lgp_json, last_gp) = load_dropdowns(
          db=db, 
          comp=comp, 
@@ -162,6 +173,7 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
             "suppliers": suppliers_dd,
             "locations": locations_dd,
             "vehicles": vehicles_dd,
+            "drivers": drivers_dd,
             "peeling_ats": peeling_dd,
             "prod_for_list": prod_for_list,
             "last_batch_map_json": lb_json,
@@ -214,6 +226,7 @@ async def save_entry(
     supplier_name: str = Form(...),
     purchasing_location: str = Form(...),
     vehicle_number: str = Form(...),
+    driver_name: str = Form(""),
     production_for: str = Form(...),
     no_of_material_boxes: float = Form(0),
     no_of_empty_boxes: float = Form(0),
@@ -246,6 +259,7 @@ async def save_entry(
         supplier_name=supplier_name,
         purchasing_location=purchasing_location,
         vehicle_number=vehicle_number,
+        driver_name=driver_name.strip() if driver_name else None,
         production_for=production_for,
         no_of_material_boxes=no_of_material_boxes,
         no_of_empty_boxes=no_of_empty_boxes,
@@ -278,6 +292,7 @@ async def update_entry(
     supplier_name: str = Form(...),
     purchasing_location: str = Form(...),
     vehicle_number: str = Form(...),
+    driver_name: str = Form(""),
     production_for: str = Form(...),
     no_of_material_boxes: float = Form(0),
     no_of_empty_boxes: float = Form(0),
@@ -310,6 +325,7 @@ async def update_entry(
     row.supplier_name = supplier_name
     row.purchasing_location = purchasing_location
     row.vehicle_number = vehicle_number
+    row.driver_name = driver_name.strip() if driver_name else None
     row.production_for = production_for
     row.no_of_material_boxes = no_of_material_boxes
     row.no_of_empty_boxes = no_of_empty_boxes

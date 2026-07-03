@@ -13,6 +13,7 @@ class GateEntry(Base):
     supplier_name = Column(String)
     purchasing_location = Column(String(255))
     vehicle_number = Column(String)
+    driver_name = Column(String(255))
 
     no_of_material_boxes = Column(Float)
     no_of_empty_boxes = Column(Float)

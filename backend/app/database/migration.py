@@ -26,6 +26,12 @@ COLUMNS = [
     ("cancelled_at", "TIMESTAMP WITH TIME ZONE")
 ]
 
+TABLE_COLUMNS = {
+    "gate_entry": [
+        ("driver_name", "VARCHAR(255)"),
+    ],
+}
+
 def run_migration():
     print("Starting database schema migration...")
     
@@ -41,7 +47,7 @@ def run_migration():
             """))
             existing_columns = {row[0] for row in res.fetchall()}
             
-            for col_name, col_type in COLUMNS:
+            for col_name, col_type in COLUMNS + TABLE_COLUMNS.get(table, []):
                 if col_name not in existing_columns:
                     print(f"  -> Adding column '{col_name}' ({col_type}) to table '{table}'")
                     try:

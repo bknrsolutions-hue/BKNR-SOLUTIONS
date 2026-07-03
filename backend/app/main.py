@@ -136,6 +136,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.session["setup_completed"] = True
 
         response = await call_next(request)
+        response.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
         if request.method in {"POST", "PUT", "PATCH", "DELETE"} and response.status_code < 400:
             invalidate_live_company_caches(company_code)
         return response
@@ -295,23 +296,42 @@ async def login_page(request: Request):
 
 @application.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
+    site_url = os.getenv("PUBLIC_SITE_URL", "https://bknrerp.in").rstrip("/")
     return "\n".join([
         "User-agent: *",
         "Allow: /",
+        "Disallow: /admin/",
+        "Disallow: /api/",
+        "Disallow: /attendance/",
+        "Disallow: /criteria/",
+        "Disallow: /dashboard/",
+        "Disallow: /documentation",
+        "Disallow: /export_documents/",
+        "Disallow: /finance_accounts/",
+        "Disallow: /general_stock/",
+        "Disallow: /home",
+        "Disallow: /inventory/",
+        "Disallow: /menu",
+        "Disallow: /processing/",
+        "Disallow: /privacy",
+        "Disallow: /reports/",
+        "Disallow: /summary/",
+        "Disallow: /terms",
+        "Disallow: /cookies",
+        "Disallow: /api-docs",
+        "Disallow: /careers",
+        "Disallow: /blog",
+        "Disallow: /status",
         "",
-        "Sitemap: https://bknrerp.in/sitemap.xml",
+        f"Sitemap: {site_url}/sitemap.xml",
     ])
 
 
 @application.get("/sitemap.xml")
 async def sitemap_xml():
+    site_url = os.getenv("PUBLIC_SITE_URL", "https://bknrerp.in").rstrip("/")
     urls = [
-        "https://bknrerp.in/",
-        "https://bknrerp.in/privacy",
-        "https://bknrerp.in/terms",
-        "https://bknrerp.in/cookies",
-        "https://bknrerp.in/documentation",
-        "https://bknrerp.in/status",
+        f"{site_url}/",
     ]
     items = "".join(
         f"<url><loc>{url}</loc><changefreq>weekly</changefreq><priority>{'1.0' if url.endswith('/') else '0.7'}</priority></url>"
@@ -398,7 +418,8 @@ async def home_page(request: Request):
     # Universal filters come from indexed masters, not repeated transaction-table scans.
     db = SessionLocal()
     try:
-        from app.database.models.criteria import coldstore_locations, peeling_at, production_at, production_for
+        from app.database.models.criteria import peeling_at, production_at, production_for
+        from app.database.models.inventory_management import cold_storage
 
         def build_menu_filters():
             companies = {
@@ -414,15 +435,22 @@ async def home_page(request: Request):
                 for model, column in (
                     (production_at, production_at.production_at),
                     (peeling_at, peeling_at.peeling_at),
-                    (coldstore_locations, coldstore_locations.coldstore_location),
                 )
                 for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
                 if value and str(value).strip()
             }
+            locations.update(
+                str(value).strip()
+                for (value,) in db.query(cold_storage.storage_name).filter(
+                    cold_storage.company_id == company_code,
+                    func.lower(cold_storage.is_active) == "active",
+                ).distinct().all()
+                if value and str(value).strip()
+            )
             return {"companies": sorted(companies), "locations": sorted(locations)}
 
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters",
+            f"bknr:menu:{company_code}:universal_filters:v2",
             build_menu_filters,
             ttl=300,
         )

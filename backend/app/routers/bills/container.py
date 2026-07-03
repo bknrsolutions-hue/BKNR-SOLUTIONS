@@ -18,82 +18,6 @@ from app.database.models.processing import AuditLog
 from app.database.models.criteria import vendors, production_at # 🟢 ADDED: production_at
 from app.database.models.inventory_management import pending_orders, sales_dispatch
 from app.utils.global_filters import get_global_filters # 🟢 ADDED: Global Filters
-from app.services.posting_engine import PostingEngineService
-from app.database.models.enterprise_finance import VoucherHeader
-from app.routers.bills.purchase import cancel_linked_voucher
-
-def post_container_log_to_ledger(db: Session, company_id: str, entry: ContainerLog, vendor_name: str, email: str) -> int:
-    try:
-        subtotal = entry.ocean_cost + entry.local_cost + entry.handling + entry.detention
-        gst_amount = round(entry.lended_total - subtotal, 2)
-        grand_total = entry.lended_total
-
-        # Prepare double entry details
-        details = [
-            # Debit Freight Expense
-            {
-                "ledger_name": "Freight & Logistics Expense A/c",
-                "group_name": "Direct Expenses",
-                "group_type": "EXPENSE",
-                "debit_amount": subtotal,
-                "credit_amount": 0.0,
-                "remarks": f"Container Logistics - PO: {entry.po_number}, Container: {entry.container_no}"
-            }
-        ]
-
-        if gst_amount > 0:
-            details.append({
-                "ledger_name": "Input GST A/c",
-                "group_name": "Duties & Taxes",
-                "group_type": "LIABILITY",
-                "parent_group_name": "Current Liabilities",
-                "debit_amount": gst_amount,
-                "credit_amount": 0.0,
-                "remarks": "Input GST on freight"
-            })
-
-        details.append({
-            "ledger_name": f"{vendor_name} - Supplier A/c",
-            "group_name": "Sundry Creditors",
-            "group_type": "LIABILITY",
-            "parent_group_name": "Current Liabilities",
-            "debit_amount": 0.0,
-            "credit_amount": grand_total,
-            "remarks": f"Freight payable for container {entry.container_no}"
-        })
-
-        voucher = PostingEngineService.create_voucher(
-            db=db,
-            company_id=company_id,
-            voucher_type_name="Purchase",
-            voucher_date=entry.date,
-            narration=f"Freight logistics booking for container {entry.container_no} (PO: {entry.po_number})",
-            details=details,
-            reference_no=entry.container_no,
-            created_by=email or "SYSTEM",
-            status="POSTED"
-        )
-        
-        # Populate ledger IDs
-        freight_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, "Freight & Logistics Expense A/c", "Direct Expenses", "EXPENSE"
-        )
-        vendor_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, f"{vendor_name} - Supplier A/c", "Sundry Creditors", "LIABILITY", "Current Liabilities"
-        )
-        entry.freight_ledger_id = freight_ledger.id
-        entry.vendor_ledger_id = vendor_ledger.id
-        
-        if gst_amount > 0:
-            gst_ledger = PostingEngineService.get_or_create_ledger(
-                db, company_id, "Input GST A/c", "Duties & Taxes", "LIABILITY", "Current Liabilities"
-            )
-            entry.input_gst_ledger_id = gst_ledger.id
-
-        return voucher.id
-    except Exception as e:
-        logger.error(f"Failed to post container log to ledger: {str(e)}")
-        raise e
 
 router = APIRouter(
     prefix="/container",
@@ -283,23 +207,6 @@ async def save_container_log(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
-        # Auto-post to accounting ledger
-        vendor_obj = db.query(vendors).filter(
-            vendors.id == payload.shipping_line_id,
-            vendors.company_id == comp_code
-        ).first()
-        vendor_name = vendor_obj.name if vendor_obj else f"Shipping Line {payload.shipping_line_id}"
-        
-        journal_id = post_container_log_to_ledger(
-            db=db,
-            company_id=comp_code,
-            entry=new_entry,
-            vendor_name=vendor_name,
-            email=email
-        )
-        new_entry.journal_id = journal_id
-        new_entry.status = 'POSTED'
-
         db.commit()
         return JSONResponse({"success": True, "message": f"Logistics container {payload.container_no} saved successfully!"})
 
@@ -362,28 +269,6 @@ async def update_container_log(
         tax_calculated = round((subtotal * payload.gst_percent) / 100, 2)
         entry.lended_total = round(subtotal + tax_calculated, 2)
 
-        # Cancel old linked voucher
-        if entry.journal_id:
-            cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-            db.flush()
-
-        # Post new voucher
-        vendor_obj = db.query(vendors).filter(
-            vendors.id == entry.vendor_id,
-            vendors.company_id == comp_code
-        ).first()
-        vendor_name = vendor_obj.name if vendor_obj else f"Vendor {entry.vendor_id}"
-        
-        journal_id = post_container_log_to_ledger(
-            db=db,
-            company_id=comp_code,
-            entry=entry,
-            vendor_name=vendor_name,
-            email=email
-        )
-        entry.journal_id = journal_id
-        entry.status = 'POSTED'
-
         db.commit()
         return JSONResponse({"success": True, "message": f"Container Logistics {entry.container_no} updated successfully!"})
 
@@ -441,10 +326,6 @@ def delete_container_log(
 
     if log_entry:
         try:
-            if log_entry.journal_id:
-                cancel_linked_voucher(db, comp_code, log_entry.journal_id, email)
-                db.flush()
-
             db.add(AuditLog(
                 table_name="container_logistics", record_id=log_entry.id, company_id=comp_code,
                 field_name="DELETE", old_value=log_entry.container_no, new_value="DELETED",

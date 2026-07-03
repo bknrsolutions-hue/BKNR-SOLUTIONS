@@ -19,58 +19,6 @@ from app.database import get_db
 from app.database.models.bills import ElectricityLog
 from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
 from app.database.models.criteria import production_at
-from app.services.posting_engine import PostingEngineService
-from app.database.models.enterprise_finance import VoucherHeader
-from app.routers.bills.purchase import cancel_linked_voucher
-
-def post_electricity_log_to_ledger(db: Session, company_id: str, entry: ElectricityLog, location_name: str, email: str) -> int:
-    try:
-        # Prepare double entry details: Debit Electricity Charges, Credit Electricity Payable
-        details = [
-            {
-                "ledger_name": "Electricity Charges A/c",
-                "group_name": "Indirect Expenses",
-                "group_type": "EXPENSE",
-                "debit_amount": entry.total_cost,
-                "credit_amount": 0.0,
-                "remarks": f"Electricity consumption - Unit: {location_name}, Date: {entry.reading_date}"
-            },
-            {
-                "ledger_name": "Electricity Charges Payable A/c",
-                "group_name": "Current Liabilities",
-                "group_type": "LIABILITY",
-                "debit_amount": 0.0,
-                "credit_amount": entry.total_cost,
-                "remarks": f"Payable for electricity - Unit: {location_name}"
-            }
-        ]
-
-        voucher = PostingEngineService.create_voucher(
-            db=db,
-            company_id=company_id,
-            voucher_type_name="Journal",
-            voucher_date=entry.reading_date,
-            narration=f"Electricity log booking for unit {location_name} on {entry.reading_date}",
-            details=details,
-            reference_no=f"ELE-{entry.id}",
-            created_by=email or "SYSTEM",
-            status="POSTED"
-        )
-        
-        # Populate ledger IDs
-        expense_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, "Electricity Charges A/c", "Indirect Expenses", "EXPENSE"
-        )
-        payable_ledger = PostingEngineService.get_or_create_ledger(
-            db, company_id, "Electricity Charges Payable A/c", "Current Liabilities", "LIABILITY"
-        )
-        entry.expense_ledger_id = expense_ledger.id
-        entry.cash_or_bank_ledger_id = payable_ledger.id
-
-        return voucher.id
-    except Exception as e:
-        logger.error(f"Failed to post electricity log to ledger: {str(e)}")
-        raise e
 
 router = APIRouter(
     prefix="/electricity",
@@ -243,20 +191,6 @@ async def save_electricity_entry(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
-        # Auto-post to accounting ledger
-        unit_info = db.query(production_at).filter(production_at.id == payload.unit_id).first()
-        loc_name = unit_info.production_at if unit_info else f"Unit {payload.unit_id}"
-        
-        journal_id = post_electricity_log_to_ledger(
-            db=db,
-            company_id=company_code,
-            entry=entry,
-            location_name=loc_name,
-            email=email
-        )
-        entry.journal_id = journal_id
-        entry.status = 'POSTED'
-
         db.commit()
         return JSONResponse({
             "success": True,
@@ -316,10 +250,6 @@ def delete_electricity_log(log_id: int, request: Request, db: Session = Depends(
 
     if entry:
         try:
-            if entry.journal_id:
-                cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-                db.flush()
-
             db.add(AuditLog(
                 table_name="electricity_logs", record_id=entry.id, company_id=comp_code,
                 field_name="DELETE", old_value=f"Cost: {entry.total_cost}", new_value="DELETED",

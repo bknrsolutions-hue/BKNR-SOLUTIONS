@@ -14,14 +14,14 @@
     </script>
 <meta charset="UTF-8">
 <title>Gate Entry – BKNR ERP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.min.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.min.css">
+<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css">
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -200,7 +200,7 @@ tr.selected { background: var(--processing-bg) !important; }
 /* Width Allocations Framework Lock */
 .w-id { width: 55px; } .w-tm { width: 75px; } .w-comp { width: 140px; } .w-fc { width: 130px; }
 .w-gp { width: 110px; } .w-bt { width: 110px; } .w-ch { width: 110px; } .w-sp { width: 180px; }
-.w-lc { width: 130px; } .w-vn { width: 110px; } .w-bx { width: 75px; } .w-usr { width: 130px; }
+.w-lc { width: 130px; } .w-vn { width: 110px; } .w-drv { width: 150px; } .w-bx { width: 75px; } .w-usr { width: 130px; }
 
 @media(max-width: 1024px){
   .section, .table-header-bar { width: 95%; }
@@ -300,6 +300,14 @@ tr.selected { background: var(--processing-bg) !important; }
         </select>
       </div>
 
+      <div class="field">
+        <label>Driver Name</label>
+        <input name="driver_name" id="driver_name" list="driver_name_list" placeholder="Select or type driver name">
+        <datalist id="driver_name_list">
+          {% for d in drivers %}<option value="{{d}}"></option>{% endfor %}
+        </datalist>
+      </div>
+
       <div class="field"><label>Material Boxes</label><input type="number" step="any" name="no_of_material_boxes" value="0"></div>
       <div class="field"><label>Empty Boxes</label><input type="number" step="any" name="no_of_empty_boxes" value="0"></div>
       <div class="field"><label>Ice Boxes</label><input type="number" step="any" name="no_of_ice_boxes" value="0"></div>
@@ -345,6 +353,7 @@ tr.selected { background: var(--processing-bg) !important; }
         <th class="w-sp" style="text-align:left;">Supplier</th>
         <th class="w-lc" style="text-align:left;">Location</th>
         <th class="w-vn">Vehicle</th>
+        <th class="w-drv" style="text-align:left;">Driver Name</th>
         <th class="w-bx" style="text-align:right;">Material Boxes</th>
         <th class="w-bx" style="text-align:right;">Empty Boxes</th>
         <th class="w-bx" style="text-align:right;">Ice Boxes</th>
@@ -364,6 +373,7 @@ tr.selected { background: var(--processing-bg) !important; }
         <td style="text-align:left !important;">{{ r.supplier_name }}</td>
         <td style="text-align:left !important;">{{ r.purchasing_location }}</td>
         <td>{{ r.vehicle_number }}</td>
+        <td style="text-align:left !important;">{{ r.driver_name or '' }}</td>
         <td style="color:var(--accent); text-align:right !important;">{{ r.no_of_material_boxes }}</td>
         <td style="text-align:right !important;">{{ r.no_of_empty_boxes }}</td>
         <td style="text-align:right !important;">{{ r.no_of_ice_boxes }}</td>

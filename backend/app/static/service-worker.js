@@ -1,10 +1,10 @@
-const CACHE_NAME = "bknr-erp-v8";
+const CACHE_NAME = "bknr-erp-v12";
 const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",
   "/static/screenshot.png",
   "/static/css/app-splash.min.css",
-  "/static/js/app-splash.js"
+  "/static/js/app-splash.min.js"
 ];
 
 self.addEventListener("install", (event) => {
